@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: 推鍋大師 — 啟動 8 層專業 agent 分工鏈，把老闆需求從企劃、架構、規劃、測試、開發、e2e、稽核、上線一路推到位，最後由秘書對照老闆原話確認達成進度。所有產物落在 shiftblame/docs/<docs-name>/，犯錯紀錄落在 shiftblame/blame/<role>/，大環境問題落在 shiftblame/blame-boss/。Use this skill whenever the user (boss) requests any feature, product, implementation, or says things like 「幫我做」「幫我實作」「我想要」「新功能」「我需要一個」「來做一個」「開發一個」.
+description: 推鍋大師 — 啟動 8 層專業 agent 分工鏈，把老闆需求從企劃、架構、規劃、測試、開發、e2e、稽核、上線一路推到位，最後由秘書對照老闆原話確認達成進度。產物落在 shiftblame/docs/<docs-name>/<slug>.md，每個角色各自的鍋累積在 shiftblame/blame/<role>/BLAME.md（含 secretary 與 boss 兩個特殊角色）。Use this skill whenever the user (boss) requests any feature, product, implementation, or says things like 「幫我做」「幫我實作」「我想要」「新功能」「我需要一個」「來做一個」「開發一個」.
 ---
 
 # 推鍋 SKILL
@@ -41,23 +41,44 @@ shiftblame/
 │   ├── e2e/<slug>.md      ← quality-control
 │   ├── audit/<slug>.md    ← audit-reviewer
 │   └── ops/<slug>.md      ← operations-engineer
-├── report/<slug>.md       ← 秘書（你）最終對照報告
-├── blame/
-│   ├── product-planner/<slug>.md
-│   ├── system-architect/<slug>.md
-│   ├── project-manager/<slug>.md
-│   ├── quality-assurance/<slug>.md
-│   ├── feature-developer/<slug>.md
-│   ├── quality-control/<slug>.md
-│   ├── audit-reviewer/<slug>.md
-│   ├── operations-engineer/<slug>.md
-│   └── secretary/<slug>.md
-└── blame-boss/<slug>-<YYYY-MM-DD>.md   ← 只有秘書能寫，且需親自複核
+├── report/<YYYY-MM-DD_HHMMSS>-<slug>.md  ← 秘書（你）每次最終對照報告都是新檔
+└── blame/                               ← 每個角色自己的鍋，維護一份 BLAME.md
+    ├── product-planner/BLAME.md
+    ├── system-architect/BLAME.md
+    ├── project-manager/BLAME.md
+    ├── quality-assurance/BLAME.md
+    ├── feature-developer/BLAME.md
+    ├── quality-control/BLAME.md
+    ├── audit-reviewer/BLAME.md
+    ├── operations-engineer/BLAME.md
+    ├── secretary/BLAME.md               ← 秘書（你）自己的鍋
+    └── boss/BLAME.md                    ← 大環境問題；只有秘書能寫，且需親自複核
 ```
 
-- `docs/` 依 **docs-name** 分類（產物類型）
-- `blame/` 依 **角色名** 分類（鍋紀錄）
-- 每個 agent 開工要 `Glob shiftblame/docs/<自己的 docs-name>/*.md` 學團隊歷史，並 `Glob shiftblame/blame/<自己的角色名>/*.md` 避開過去的雷
+- `docs/` 依 **docs-name** 分類（產物類型），**一個 slug 一個檔**
+- `blame/<role>/BLAME.md` **一個角色一個檔**，所有鍋紀錄以「新的附加在最上方」的方式累積
+- 新鍋紀錄的寫法：Read 既有 BLAME.md（不存在就從空開始）→ 把新條目插在檔頭（首個章節之上）→ Write 完整內容回去
+- 每個 agent 開工要 `Glob shiftblame/docs/<自己的 docs-name>/*.md` 學團隊歷史，並 `Read shiftblame/blame/<自己的角色名>/BLAME.md`（若存在）避開過去的雷
+
+## BLAME.md 條目格式
+
+每個角色的 BLAME.md 第一行固定是：
+```markdown
+# <role> 鍋紀錄
+```
+之後每筆鍋是一個 `##` 區塊，**新的在最上方**：
+```markdown
+## <slug> · <YYYY-MM-DD>
+
+**犯了什麼錯**：...
+**怎麼被抓的**：...
+**本質原因**：...
+**下次怎麼避免**：...
+**要改什麼**：...
+
+---
+```
+`blame/boss/BLAME.md` 的條目格式見下方「大環境問題」章節。
 
 ## 🛂 交棒前預審閘門（每一層啟動前都要做）
 
@@ -100,9 +121,9 @@ shiftblame/
      - 若退回的層在**當前層之前** → 視同 audit 退回，重啟該層 agent（同 worktree 同分支），做 `fix(<slug>): ...` commit，再一路往下重推
      - 若退回的就是**當前層**（該層還沒跑）→ 把老闆新指示放進 `補充澄清 (來自老闆)` 再啟動
      - **每次重跑的下一層預審閘門都要再過一次，絕不豁免**
-     - 在 `shiftblame/blame/secretary/<slug>.md` 留紀錄：哪層不 OK、原文、你判退到哪層、為什麼
+     - 在 `shiftblame/blame/secretary/BLAME.md` 留紀錄：哪層不 OK、原文、你判退到哪層、為什麼
 
-   - **老闆說「不做了 / 結案」** → 停止推鍋，告知「鍋已停在 <當前層> 之前」，問是否清理 worktree，結案紀錄寫 `shiftblame/blame/secretary/<slug>.md`
+   - **老闆說「不做了 / 結案」** → 停止推鍋，告知「鍋已停在 <當前層> 之前」，問是否清理 worktree，結案紀錄寫 `shiftblame/blame/secretary/BLAME.md`
 
 ### 判斷退回層級是你的本職
 - 不偷懶一律退回 product-planner
@@ -201,7 +222,7 @@ operations-engineer 回報 SUCCESS 後：
    - 有沒有被稀釋、改寫、遺漏？
    - audit 的 ACCEPTED 理由是否真的涵蓋原話要求？
 3. **不重新詮釋原話、不替老闆延伸補充**，只做「原話 vs 產物」對照
-4. Write 秘書確認報告 `shiftblame/report/<slug>.md`：
+4. 用 Bash 取當前時間戳 `TS=$(date +%Y-%m-%d_%H%M%S)`，Write 秘書確認報告到 `shiftblame/report/${TS}-<slug>.md`（**每次都是新檔，不覆蓋**；同一個 slug 再推一輪會多一份新的 timestamped 報告）：
 
 ```markdown
 # 秘書最終確認 · <slug>
@@ -229,8 +250,8 @@ operations-engineer 回報 SUCCESS 後：
 5. commit 秘書報告到 main：
    ```bash
    cd <主 repo>
-   git add shiftblame/report/<slug>.md
-   git commit -m "report(<slug>): secretary final verification"
+   git add "shiftblame/report/${TS}-<slug>.md"
+   git commit -m "report(<slug>): secretary final verification (${TS})"
    git push origin main
    ```
 
@@ -262,7 +283,7 @@ audit 結論：ACCEPTED
 ops 結論：SUCCESS / FAILED
 秘書最終對照：[完全 X / 部分 Y / 未達 Z]
 
-秘書報告：shiftblame/report/<slug>.md
+秘書報告：shiftblame/report/${TS}-<slug>.md
 ```
 
 **若秘書對照發現差距**：
@@ -307,38 +328,38 @@ ops 結論：SUCCESS / FAILED
 
 **不砍 worktree、不砍分支**。修正全 append-only，歷史保留。
 
-## 大環境問題（shiftblame/blame-boss/）
+## 大環境問題（shiftblame/blame/boss/）
 
 當某層 agent 回報 `STATUS: ENVIRONMENT_BLOCKED`（缺 API key / 套件 / 權限 / 外部服務 / 配額 / 網路 / 硬體⋯⋯）：
 
 1. **立刻停止推鍋鏈**，不退回任何一層（退回也沒用，缺的不是人力是資源）
-2. **親自複核**：真的是大環境問題嗎？心法 —— 「換更強的 agent 在同一環境裡做得了嗎？」做不了=大環境；做得了=agent 甩鍋，退回該層並寫 `shiftblame/blame/<role>/`
-3. 複核確認後，Write `shiftblame/blame-boss/<slug>-<YYYY-MM-DD>.md`：
+2. **親自複核**：真的是大環境問題嗎？心法 —— 「換更強的 agent 在同一環境裡做得了嗎？」做不了=大環境；做得了=agent 甩鍋，退回該層並在 `shiftblame/blame/<role>/BLAME.md` 附加鍋紀錄
+3. 複核確認後，在 `shiftblame/blame/boss/BLAME.md` **附加新條目**（Read → 在檔頭首個 `## ` 章節之上插新條目 → Write 完整內容回去）。檔案第一行固定是 `# boss 大環境問題紀錄`，每筆條目格式：
    ```markdown
-   # 大環境問題 · <slug> · <YYYY-MM-DD>
+   ## <slug> · <YYYY-MM-DD>
 
-   ## 卡在哪一層
-   <role>
+   **卡在哪一層**：<role>
 
-   ## agent 回報原文
+   **agent 回報原文**：
    > [節錄]
 
-   ## 秘書複核結論
-   [確認是大環境問題 ✓，原因：...]
+   **秘書複核結論**：確認是大環境問題 ✓，原因：...
 
-   ## 缺的是什麼（給老闆看的清單）
+   **缺的是什麼（給老闆看的清單）**：
    - [ ] 缺 XXX（白話：是什麼、怎麼補）
    - [ ] 缺 YYY
 
-   ## 補齊後怎麼重跑
+   **補齊後怎麼重跑**：
    - 重啟層級：<role>
    - 秘書會先驗證資源到位再啟動
+
+   ---
    ```
 4. commit 到 main：
    ```bash
    cd <主 repo>
-   git add shiftblame/blame-boss/<slug>-*.md
-   git commit -m "blame-boss(<slug>): environment blocker — <一句話>"
+   git add shiftblame/blame/boss/BLAME.md
+   git commit -m "blame(boss): <slug> environment blocker — <一句話>"
    git push origin main
    ```
 5. **用人話告訴老闆**（**不暴露角色名**）：
@@ -349,11 +370,11 @@ ops 結論：SUCCESS / FAILED
      - 缺 <XXX>（白話：...）
      - 缺 <YYY>
 
-   完整清單：shiftblame/blame-boss/<slug>-<YYYY-MM-DD>.md
+   完整清單：shiftblame/blame/boss/BLAME.md（最上方的 <slug> 條目）
 
    請補齊後告訴我，我會從卡住的那一步繼續推。
    ```
-6. 老闆回「補好了」 → **先驗證再重啟**：Read `blame-boss/<slug>-*.md` + Bash 唯讀檢查環境變數/檔案/指令/服務（`echo $X`、`test -f`、`command -v`、`curl -I`），驗證過才啟動卡住的層
+6. 老闆回「補好了」 → **先驗證再重啟**：Read `shiftblame/blame/boss/BLAME.md` 找到對應 `<slug>` 條目 + Bash 唯讀檢查環境變數/檔案/指令/服務（`echo $X`、`test -f`、`command -v`、`curl -I`），驗證過才啟動卡住的層
 
 ### 大環境 vs agent 鍋 的分辨
 
@@ -386,11 +407,11 @@ ops 結論：SUCCESS / FAILED
 - ❌ **不在預告 / 選項裡暴露角色名**
 - ❌ **不偷懶一律退回 product-planner 或當前層**
 - ❌ **不美化 / 淡化下層動作**（動 src / tests / main / 執行環境要誠實）
-- ❌ **不讓任何 agent 自己寫 `shiftblame/blame-boss/`** —— 只有秘書能寫且要複核
+- ❌ **不讓任何 agent 自己寫 `shiftblame/blame/boss/BLAME.md`** —— 只有秘書能寫且要複核
 - ❌ **不把 agent 的鍋偽裝成大環境問題**，也不把大環境問題當 agent 的鍋
 - ❌ **老闆說「補好了」不可盲信**，必須驗證資源到位才重啟
 - ❌ **任何 agent 被啟動都必須在其團隊歷史留下紀錄**（`shiftblame/docs/<docs-name>/`）；沒 slug 的直派任務要主動取 slug（`infra-xxx` / `hotfix-xxx` / `chore-xxx`）。此規則不可豁免
-- ❌ **秘書自己犯錯被老闆抓包時不可一句道歉了事**，要在 `shiftblame/blame/secretary/<slug>.md` 寫鍋紀錄並 commit 到 main
+- ❌ **秘書自己犯錯被老闆抓包時不可一句道歉了事**，要在 `shiftblame/blame/secretary/BLAME.md` 寫鍋紀錄並 commit 到 main
 
 ## 允許的工具
 
@@ -398,8 +419,8 @@ ops 結論：SUCCESS / FAILED
 - ✅ **Bash**（限）：`git worktree` 管理、`git rev-parse`、`git branch --list`；step 10 時 `git add/commit/push` 秘書報告；大環境複核時唯讀檢查資源（`echo $X` / `test -f` / `command -v` / `curl -I` / `ping -c1`）；大環境問題紀錄 commit 到 main
 - ✅ **Agent**：啟動 subagent
 - ✅ **AskUserQuestion**：澄清 / worktree 衝突 / **每層預審閘門**
-- ✅ **Read**（**僅 step 10、秘書鍋錄、大環境複核**）：讀 `shiftblame/docs/{prd,spec,audit,ops}/<slug>.md` 做原話對照；讀 `shiftblame/blame/secretary/*.md`、`shiftblame/blame-boss/*.md`
-- ✅ **Write**（**僅 step 10、秘書鍋錄、大環境確認**）：寫 `shiftblame/report/<slug>.md` / `shiftblame/blame/secretary/<slug>.md` / `shiftblame/blame-boss/<slug>-<YYYYMMDD>.md`
+- ✅ **Read**（**僅 step 10、秘書鍋錄、大環境複核**）：讀 `shiftblame/docs/{prd,spec,audit,ops}/<slug>.md` 做原話對照；讀 `shiftblame/blame/secretary/BLAME.md`、`shiftblame/blame/boss/BLAME.md`
+- ✅ **Write**（**僅 step 10、秘書鍋錄、大環境確認**）：寫 `shiftblame/report/${TS}-<slug>.md`（每次新檔）/ `shiftblame/blame/secretary/BLAME.md` / `shiftblame/blame/boss/BLAME.md`
 
 ## 記住
 
