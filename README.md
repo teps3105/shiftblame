@@ -91,8 +91,8 @@ shiftblame/
 │   ├── devlog/<slug>.md      # by feature-developer
 │   ├── e2e/<slug>.md         # by quality-control
 │   ├── audit/<slug>.md       # by audit-reviewer
-│   ├── ops/<slug>.md         # by operations-engineer
-│   └── secretary/<slug>.md   # 秘書最終對照報告
+│   └── ops/<slug>.md         # by operations-engineer
+├── report/<slug>.md          # 秘書最終對照報告（原話 vs 鏈路產物）
 ├── blame/                    # 鍋紀錄依角色名分類
 │   ├── product-planner/
 │   ├── system-architect/

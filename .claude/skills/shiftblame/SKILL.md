@@ -40,8 +40,8 @@ shiftblame/
 │   ├── devlog/<slug>.md   ← feature-developer
 │   ├── e2e/<slug>.md      ← quality-control
 │   ├── audit/<slug>.md    ← audit-reviewer
-│   ├── ops/<slug>.md      ← operations-engineer
-│   └── secretary/<slug>.md← 秘書（你）最終對照報告
+│   └── ops/<slug>.md      ← operations-engineer
+├── report/<slug>.md       ← 秘書（你）最終對照報告
 ├── blame/
 │   ├── product-planner/<slug>.md
 │   ├── system-architect/<slug>.md
@@ -201,7 +201,7 @@ operations-engineer 回報 SUCCESS 後：
    - 有沒有被稀釋、改寫、遺漏？
    - audit 的 ACCEPTED 理由是否真的涵蓋原話要求？
 3. **不重新詮釋原話、不替老闆延伸補充**，只做「原話 vs 產物」對照
-4. Write 秘書確認報告 `shiftblame/docs/secretary/<slug>.md`：
+4. Write 秘書確認報告 `shiftblame/report/<slug>.md`：
 
 ```markdown
 # 秘書最終確認 · <slug>
@@ -229,8 +229,8 @@ operations-engineer 回報 SUCCESS 後：
 5. commit 秘書報告到 main：
    ```bash
    cd <主 repo>
-   git add shiftblame/docs/secretary/<slug>.md
-   git commit -m "docs(<slug>): secretary final verification"
+   git add shiftblame/report/<slug>.md
+   git commit -m "report(<slug>): secretary final verification"
    git push origin main
    ```
 
@@ -256,13 +256,13 @@ feature 分支累積 7 個 commit：
 main 上另累積 2 個 commit：
   🎯 feat(<slug>): ...（audit 的 squash merge commit）
   🚀 deploy(<slug>): record deployment result         (operations-engineer)
-  📮 docs(<slug>): secretary final verification       (秘書 - 我)
+  📮 report(<slug>): secretary final verification     (秘書 - 我)
 
 audit 結論：ACCEPTED
 ops 結論：SUCCESS / FAILED
 秘書最終對照：[完全 X / 部分 Y / 未達 Z]
 
-秘書報告：shiftblame/docs/secretary/<slug>.md
+秘書報告：shiftblame/report/<slug>.md
 ```
 
 **若秘書對照發現差距**：
@@ -399,7 +399,7 @@ ops 結論：SUCCESS / FAILED
 - ✅ **Agent**：啟動 subagent
 - ✅ **AskUserQuestion**：澄清 / worktree 衝突 / **每層預審閘門**
 - ✅ **Read**（**僅 step 10、秘書鍋錄、大環境複核**）：讀 `shiftblame/docs/{prd,spec,audit,ops}/<slug>.md` 做原話對照；讀 `shiftblame/blame/secretary/*.md`、`shiftblame/blame-boss/*.md`
-- ✅ **Write**（**僅 step 10、秘書鍋錄、大環境確認**）：寫 `shiftblame/docs/secretary/<slug>.md` / `shiftblame/blame/secretary/<slug>.md` / `shiftblame/blame-boss/<slug>-<YYYYMMDD>.md`
+- ✅ **Write**（**僅 step 10、秘書鍋錄、大環境確認**）：寫 `shiftblame/report/<slug>.md` / `shiftblame/blame/secretary/<slug>.md` / `shiftblame/blame-boss/<slug>-<YYYYMMDD>.md`
 
 ## 記住
 
