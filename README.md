@@ -92,26 +92,27 @@ shiftblame/
 │   ├── e2e/<slug>.md         # by quality-control
 │   ├── audit/<slug>.md       # by audit-reviewer
 │   └── ops/<slug>.md         # by operations-engineer
-├── report/<slug>.md          # 秘書最終對照報告（原話 vs 鏈路產物）
-├── blame/                    # 鍋紀錄依角色名分類
-│   ├── product-planner/
-│   ├── system-architect/
-│   ├── project-manager/
-│   ├── quality-assurance/
-│   ├── feature-developer/
-│   ├── quality-control/
-│   ├── audit-reviewer/
-│   ├── operations-engineer/
-│   └── secretary/            # 秘書自己的鍋也要入庫
-└── blame-boss/               # 老闆的鍋 —— 只能怪大環境
-    └── <slug>-<YYYY-MM-DD>.md
+├── report/<YYYY-MM-DD_HHMMSS>-<slug>.md   # 秘書最終對照報告（每次都是新檔，不覆蓋）
+└── blame/                    # 各角色自己的鍋，每個角色一份 BLAME.md
+    ├── product-planner/BLAME.md
+    ├── system-architect/BLAME.md
+    ├── project-manager/BLAME.md
+    ├── quality-assurance/BLAME.md
+    ├── feature-developer/BLAME.md
+    ├── quality-control/BLAME.md
+    ├── audit-reviewer/BLAME.md
+    ├── operations-engineer/BLAME.md
+    ├── secretary/BLAME.md    # 秘書自己的鍋也要入庫
+    └── boss/BLAME.md         # 老闆的鍋 —— 只能怪大環境
 ```
 
-每個 agent 開工前都會 `Glob` 自己的 `shiftblame/docs/<docs-name>/*.md`（學團隊做事方式）與 `shiftblame/blame/<role>/*.md`（學過去踩過的雷）。
+- **`docs/<docs-name>/`** 一個 slug 一個檔（pipeline 產物）
+- **`blame/<role>/BLAME.md`** 每個角色一份，所有鍋以「新的附加在最上方」的方式累積
+- 每個 agent 開工前都會 `Glob` 自己的 `shiftblame/docs/<docs-name>/*.md`（學團隊做事方式）與 `Read shiftblame/blame/<role>/BLAME.md`（學過去踩過的雷）
 
-### 老闆的鍋（blame-boss/）
+### 老闆的鍋（blame/boss/）
 
-老闆也會錯，但老闆不能怪自己 —— 老闆只能怪「**大環境**」。當推鍋鏈中某一層卡住是因為**環境根本不具備完成條件**（缺 API key、缺套件、缺權限、外部服務掛掉、配額用完⋯⋯），秘書會親自複核確認這真的是大環境問題，然後把鍋寫進 `shiftblame/blame-boss/`，推鍋鏈暫停並用人話告訴老闆缺什麼。老闆去「**補充資源**」後告訴秘書，秘書會先**實際驗證資源到位**才重啟卡住的那一層。
+老闆也會錯，但老闆不能怪自己 —— 老闆只能怪「**大環境**」。當推鍋鏈中某一層卡住是因為**環境根本不具備完成條件**（缺 API key、缺套件、缺權限、外部服務掛掉、配額用完⋯⋯），秘書會親自複核確認這真的是大環境問題，然後把鍋寫進 `shiftblame/blame/boss/BLAME.md`，推鍋鏈暫停並用人話告訴老闆缺什麼。老闆去「**補充資源**」後告訴秘書，秘書會先**實際驗證資源到位**才重啟卡住的那一層。
 
 判斷原則：「換一個更強的 agent 在同一個環境裡，這件事做得了嗎？」做不了就是大環境的鍋，做得了就是 agent 自己的鍋。秘書負責戳破試圖偷懶甩鍋的 agent，也負責別讓老闆白白退回幾次才發現缺的是 API key。
 
