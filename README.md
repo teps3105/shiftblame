@@ -1,10 +1,27 @@
-# shiftblame · 推鍋大師
+<div align="center">
 
-> 「這件事不歸我管 —— 但老闆說的話，我幫他記著。」
+# 🍲 shiftblame
 
-一套給 [Claude Code](https://claude.com/claude-code) 用的**多層級專業分工流水線**。老闆（你）說一句話，秘書把需求從**企劃 → 架構 → 規劃 → 測試 → 開發 → E2E → 稽核驗收 → 上線**一路推到底，每一層都有專門的 agent 負責，每一層開工前還要先翻成人話請老闆預審，最後由秘書親自對照老闆原話確認達成進度。
+### 推鍋大師 · Push-Blame Pipeline for Claude Code
 
-推鍋如流水，一路推到底。
+_一套給 [Claude Code](https://claude.com/claude-code) 用的 8 層專業分工推鍋流水線_
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
+[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#這是什麼)
+[![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
+
+> _「這件事不歸我管 —— 但老闆說的話，我幫他記著。」_
+
+**[這是什麼](#這是什麼)** · **[運作原理](#運作原理)** · **[安裝](#安裝)** · **[使用](#使用)** · **[設計理念](#設計理念)**
+
+</div>
+
+---
+
+老闆（你）說一句話，秘書把需求從 **企劃 → 架構 → 規劃 → 測試 → 開發 → E2E → 稽核驗收 → 上線** 一路推到底。每一層都有專門的 agent 負責，每一層開工前還要先翻成人話請老闆預審，最後由秘書親自對照老闆原話確認達成進度。
+
+**推鍋如流水，一路推到底。**
 
 ---
 
