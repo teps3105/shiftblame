@@ -140,9 +140,9 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   │   └── e2e-test-engineer/BLAME.md       # E2E 測試工程師的鍋
 │   ├── feature-developer/
 │   │   ├── BLAME.md                         # 開發主管的鍋
-│   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋（掛在主管下）
-│   │   ├── backend-engineer/BLAME.md        # 後端工程師的鍋（掛在主管下）
-│   │   └── infra-engineer/BLAME.md          # 基建工程師的鍋（掛在主管下）
+│   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋
+│   │   ├── backend-engineer/BLAME.md        # 後端工程師的鍋
+│   │   └── infra-engineer/BLAME.md          # 基建工程師的鍋
 │   ├── quality-control/BLAME.md
 │   ├── audit-reviewer/BLAME.md
 │   ├── operations-engineer/BLAME.md
