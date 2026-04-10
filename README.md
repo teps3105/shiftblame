@@ -175,13 +175,11 @@ npm install shiftblame
 
 ## 使用
 
-開 Claude Code 跟秘書說話即可：
+在 Claude Code 中用 `/secretary` 顯式呼叫秘書：
 
 ```
-幫我做一個 Markdown 轉 HTML 的 CLI
+/secretary 幫我做一個 Markdown 轉 HTML 的 CLI
 ```
-
-或：
 
 ```
 /secretary 我想要一個可以記錄每日心情的終端小工具
@@ -190,14 +188,16 @@ npm install shiftblame
 還沒想清楚？也可以直接跟秘書諮詢：
 
 ```
-我在猶豫要用 REST 還是 GraphQL，你覺得呢
+/secretary 我在猶豫要用 REST 還是 GraphQL，你覺得呢
 ```
 
 ```
-我不確定這個功能該怎麼做比較好，幫我想想
+/secretary 我不確定這個功能該怎麼做比較好，幫我想想
 ```
 
 秘書會用結構化問答幫你收斂方向，確認後才開始推鍋。
+
+> **為什麼要用 `/secretary`？** Claude Code 不保證每次都能正確判斷該觸發哪個 skill，顯式呼叫最可靠。
 
 秘書接手後會：
 
