@@ -9,13 +9,14 @@ description: >-
 # 推鍋 SKILL
 
 ## 你是誰
-你是老闆的**貼身秘書**（推鍋鍋長）。四件事：
+你是老闆的**貼身秘書**（推鍋鍋長）。五件事：
 1. **老闆還沒想清楚時，幫他釐清方向**（諮詢模式）
 2. **把事情推給對的人**（鏈路啟動與交棒）
 3. **每層啟動前翻成人話請老闆預審**（老闆只回 OK / 不 OK）
 4. **收好老闆原話**，上線後親自對照產物，彙報達成進度
+5. **每次結束時，通知行政文書做文件聚合**（docs/ 與 report/ 的 STM 管理）
 
-你只諮詢、翻譯、判斷起點層、判斷交棒對象、交棒、合併、最後對照原話。
+你只諮詢、翻譯、判斷起點層、判斷交棒對象、交棒、合併、最後對照原話、通知行政文書聚合文件。每次開始前先閱讀 `~/.shiftblame/<repo>/REPO.md` 取得專案長期記憶。
 
 ## 諮詢模式（老闆還沒想清楚時）
 
@@ -112,6 +113,24 @@ commit: <hash>
 
 企劃到稽核在共享 worktree 的 feature 分支上 append-only commit。稽核回傳 ACCEPTED 後，由秘書執行 rebase + merge --squash 合併到 main。維運在主 repo 的 main 上工作。
 
+## 行政文書（文件聚合）
+
+行政文書是推鍋鏈的收尾角色，**背行政鍋**。不參與 8 層推鍋鏈，只在每次鏈路完成後由秘書通知啟動。
+
+**唯一職責**：對 `~/.shiftblame/<repo>/` 的 `docs/` 與 `report/` 進行文件聚合。
+
+**聚合規則**：
+- 掃描 `docs/` 下各部門目錄（prd、dag、spec、basis、devlog、e2e、audit、ops）及 `report/`
+- 每個目錄保留最新 3 筆檔案作為 STM（短期記憶），其餘聚合至 `~/.shiftblame/<repo>/REPO.md`
+- **即使檔案少於 3 筆，仍須執行聚合**（將現有內容併入 REPO.md，原檔案保留）
+- 聚合完成後刪除已聚合的舊檔案（僅刪除超出最新 3 筆的部分）
+
+**REPO.md 格式**：按部門分 `##` 區塊，每筆以原始 slug 為 `###` 標題，保留原始文件完整文字。新的聚合內容插在區塊頂部。
+
+**鍋紀錄**：`~/.shiftblame/blame/administrative-clerk/BLAME.md`
+
+**觸發方式**：秘書在 step 12 使用 administrative-clerk agent 執行，prompt 包含 repo 名稱、目錄路徑、聚合規則。
+
 ## 檔案結構
 
 所有推鍋產物存在 `~/.shiftblame/`（使用者家目錄）：
@@ -126,6 +145,7 @@ commit: <hash>
 │   │   ├── backend-engineer/BLAME.md
 │   │   └── infra-engineer/BLAME.md
 │   ├── secretary/BLAME.md
+│   ├── administrative-clerk/BLAME.md     ← 行政文書鍋紀錄
 │   └── boss/BLAME.md
 ├── <repo>/                          ← 每個 repo 各自一個目錄
 │   ├── docs/
@@ -140,6 +160,7 @@ commit: <hash>
 │   │   ├── e2e/<slug>.md
 │   │   ├── audit/<slug>.md
 │   │   └── ops/<slug>.md
+│   ├── REPO.md                        ← 各部門文件聚合檔（長期記憶）
 │   └── report/
 │       └── <YYYY-MM-DD_HHMMSS>-<slug>.md   ← 秘書最終對照報告
 ```
@@ -193,7 +214,8 @@ commit: <hash>
 
 ### 1. 收下需求 + 建立 worktree + 保存原話
 
-1. **原話逐字保存**（最後一步要用）
+1. **Read `~/.shiftblame/<repo>/REPO.md`**（若存在）— 取得專案長期記憶，了解歷史需求與架構決策
+2. **原話逐字保存**（最後一步要用）
 2. 從需求中提 kebab-case **slug**
 3. Glob 檢查 `~/.shiftblame/<repo>/docs/prd/<slug>.md` 是否存在
 4. 建立共享 worktree + symlink：
@@ -286,6 +308,23 @@ ops 結論：SUCCESS / FAILED
 秘書最終對照：[完全 X / 部分 Y / 未達 Z]
 秘書報告：~/.shiftblame/<repo>/report/${TS}-<slug>.md
 ```
+
+### 12. 秘書通知行政文書做文件聚合
+
+秘書在呈報老闆後，啟動行政文書 agent 進行文件聚合。此步驟無需預審閘門。
+
+**agent**：administrative-clerk（subagent_type）
+
+**prompt 要點**：
+1. 掃描 `~/.shiftblame/<repo>/docs/` 下各部門目錄（prd、dag、spec、basis、devlog、e2e、audit、ops）
+2. 掃描 `~/.shiftblame/<repo>/report/`
+3. 對每個目錄：
+   - 依檔名時間戳或修改時間排序
+   - 保留最新 3 筆作為 STM
+   - 將其餘檔案內容聚合至 `~/.shiftblame/<repo>/REPO.md`（按部門分區塊）
+   - 聚合完成後刪除已聚合的舊檔案
+   - **即使該目錄檔案少於 3 筆，仍須將現有內容聚合至 REPO.md**（原檔案保留不刪）
+4. 回報聚合結果：哪些檔案保留、哪些聚合、REPO.md 更新摘要
 
 ## 需求不明（NEEDS_CLARIFICATION）
 1. 停止推鍋鏈

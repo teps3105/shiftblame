@@ -57,6 +57,14 @@ _一套明確責任歸屬的 Agents 開發框架_
 | `audit-reviewer` | 該抓的沒抓到（放水）、退回理由不具體導致重工 |
 | `operations-engineer` | 部署步驟與 dag 不符、上線後 smoke test 沒跑或漏驗 |
 
+### 行政文書的鍋
+
+| 情境 | 為什麼是行政文書的鍋 |
+|------|---------------------|
+| **聚合遺漏**：未掃描到應聚合的舊文件 | 文件聚合是行政文書唯一職責 |
+| **REPO.md 格式錯亂**：聚合後內容不完整或格式錯誤 | 聚合品質由行政文書負責 |
+| **誤刪 STM 檔案**：刪掉應保留的最新 3 筆 | 保留規則由行政文書執行 |
+
 ---
 
 ## 運作原理
@@ -120,6 +128,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── audit-reviewer/BLAME.md
 │   ├── operations-engineer/BLAME.md
 │   ├── secretary/BLAME.md
+│   ├── administrative-clerk/BLAME.md       # 行政文書的鍋
 │   └── boss/BLAME.md
 └── <repo>/                                  # 每個 repo 各自一個目錄
     ├── docs/
@@ -134,6 +143,7 @@ _一套明確責任歸屬的 Agents 開發框架_
     │   ├── e2e/<slug>.md
     │   ├── audit/<slug>.md
     │   └── ops/<slug>.md
+    ├── REPO.md                            # 文件聚合檔（長期記憶）
     └── report/
         └── <YYYY-MM-DD_HHMMSS>-<slug>.md   # 秘書最終對照報告
 
@@ -211,6 +221,7 @@ npm install shiftblame
 3. 在每一層啟動前先用人話告訴你「接下來要做的事」，你回 OK 才繼續
 4. 全鏈路跑完後，親自對照原話產出**秘書最終確認報告**
 5. 呈報「完全達成 X / 部分達成 Y / 未達成 Z」
+6. 通知**行政文書**進行文件聚合——各部門目錄只保留最新 3 筆，其餘聚合至 `REPO.md`
 
 你在過程中只需要：
 
