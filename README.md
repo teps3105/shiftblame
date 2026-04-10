@@ -51,8 +51,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 | `product-planner` | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西 |
 | `system-architect` | 技術選型不可行、模組拆分導致後續無法實作 |
 | `project-manager` | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
-| `quality-assurance` | 測試沒涵蓋 spec 的驗收條件、測試寫錯（不該過的會過） |
-| `feature-developer` | **開發主管**：拆分任務不當導致工程師產出衝突、收合不完整、實作偏離 spec、引入新 bug、改了測試檔。底下三個工程師（frontend-engineer / backend-engineer / infra-engineer）的鍋也由主管扛 |
+| `quality-assurance` | **測試主管**：拆分任務不當導致測試工程師產出衝突、收合不完整、測試涵蓋度不足。底下三個測試工程師（unit-test-engineer / integration-test-engineer / e2e-test-engineer）的鍋也由主管扛 |
+| `feature-developer` | **開發主管**：拆分任務不當導致職能工程師產出衝突、收合不完整、實作偏離 spec、引入新 bug。底下三個職能工程師（frontend-engineer / backend-engineer / infra-engineer）的鍋也由主管扛 |
 | `quality-control` | e2e 場景遺漏關鍵流程、環境設定錯誤導致假綠 |
 | `audit-reviewer` | 該抓的沒抓到（放水）、退回理由不具體導致重工 |
 | `operations-engineer` | 部署步驟與 dag 不符、上線後 smoke test 沒跑或漏驗 |
@@ -211,6 +211,16 @@ npm install shiftblame
 ```
 
 秘書會用結構化問答幫你收斂方向，確認後才開始推鍋。
+
+### 聚合鍋紀錄
+
+當各角色的 BLAME.md 累積了一定歷史後，可以執行：
+
+```
+/shiftblame-reflect
+```
+
+這會掃描所有角色的鍋紀錄，將「下次怎麼避免」欄位提煉成條列式常識，重新寫回各角色的 BLAME.md 檔頭。
 
 > **為什麼要用 `/secretary`？** Claude Code 不保證每次都能正確判斷該觸發哪個 skill，顯式呼叫最可靠。
 
