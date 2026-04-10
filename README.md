@@ -110,6 +110,21 @@ _一套明確責任歸屬的 Agents 開發框架_
  下一層繼續（再走一次預審）
 ```
 
+### 8 層推鍋鏈
+
+| # | 角色 | 產出 | 主要工作 |
+|---|------|------|---------|
+| 1 | product-planner    | prd    | 把老闆原話轉 PRD |
+| 2 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
+| 3 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
+| 4 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅） |
+| 5 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠） |
+| 6 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 |
+| 7 | audit-reviewer     | audit  | 整條鏈路驗收，回傳 ACCEPTED / REJECTED |
+| 8 | operations-engineer| ops    | 在 main 依 dag 方案實際上線 |
+
+**行政文書**不參與 8 層鏈路，只在鏈路完成後進行文件聚合。
+
 ### 檔案結構
 
 ```
@@ -118,9 +133,13 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── product-planner/BLAME.md
 │   ├── system-architect/BLAME.md
 │   ├── project-manager/BLAME.md
-│   ├── quality-assurance/BLAME.md
+│   ├── quality-assurance/
+│   │   ├── BLAME.md                         # 測試主管的鍋
+│   │   ├── unit-test-engineer/BLAME.md      # 單元測試工程師的鍋
+│   │   ├── integration-test-engineer/BLAME.md # 整合測試工程師的鍋
+│   │   └── e2e-test-engineer/BLAME.md       # E2E 測試工程師的鍋
 │   ├── feature-developer/
-│   │   ├── BLAME.md                         # dev-lead 自己的鍋
+│   │   ├── BLAME.md                         # 開發主管的鍋
 │   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋（掛在主管下）
 │   │   ├── backend-engineer/BLAME.md        # 後端工程師的鍋（掛在主管下）
 │   │   └── infra-engineer/BLAME.md          # 基建工程師的鍋（掛在主管下）
@@ -135,7 +154,10 @@ _一套明確責任歸屬的 Agents 開發框架_
     │   ├── prd/<slug>.md
     │   ├── dag/<slug>.md
     │   ├── spec/<slug>.md
-    │   ├── basis/<slug>.md
+    │   ├── basis/<slug>/
+    │   │   ├── unit/...                    # unit-test-engineer 產出
+    │   │   ├── integration/...             # integration-test-engineer 產出
+    │   │   └── e2e/...                     # e2e-test-engineer 產出
     │   ├── devlog/<slug>/
     │   │   ├── frontend/...              # frontend-engineer 產出
     │   │   ├── backend/...               # backend-engineer 產出
