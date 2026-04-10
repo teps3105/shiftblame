@@ -127,7 +127,9 @@ cp -r shiftblame/.claude /path/to/your/project/
 /shiftblame-link
 ```
 
-這會在 repo 根目錄建立 `.shiftblame → ~/.shiftblame`，並自動建好 `~/.shiftblame/<repo>/docs/`、`~/.shiftblame/<repo>/report/`、`~/.shiftblame/blame/` 目錄結構。
+這會在 repo 根目錄建立 `.shiftblame/` 子目錄，內含兩個 symlink：
+- `.shiftblame/<repo>` → `~/.shiftblame/<repo>/`（本 repo 的 docs + report）
+- `.shiftblame/blame` → `~/.shiftblame/blame/`（跨 repo 共用的鍋紀錄）
 
 ---
 
