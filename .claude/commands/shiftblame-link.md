@@ -1,14 +1,28 @@
-在目前 repo 根目錄建立 `.shiftblame` symlink 指向 `~/.shiftblame`。
+在目前 repo 根目錄建立 `.shiftblame/` 子目錄，內含兩個 symlink：
+- `.shiftblame/<repo>` → `~/.shiftblame/<repo>/`（本 repo 的 docs + report）
+- `.shiftblame/blame` → `~/.shiftblame/blame/`（跨 repo 共用的鍋紀錄）
 
 步驟：
-1. 取得 repo 根目錄：`REPO_ROOT=$(git rev-parse --show-toplevel)`
-2. 確保 `~/.shiftblame` 目錄存在：`mkdir -p ~/.shiftblame/blame`
-3. 確保 repo 對應的子目錄存在：
+1. 取得 repo 資訊：
    ```bash
+   REPO_ROOT=$(git rev-parse --show-toplevel)
    REPO_NAME=$(basename "$REPO_ROOT")
-   mkdir -p ~/.shiftblame/"$REPO_NAME"/docs ~/.shiftblame/"$REPO_NAME"/report
    ```
-4. 如果 `$REPO_ROOT/.shiftblame` 已存在且是正確的 symlink → 回報「已連結」
-5. 如果 `$REPO_ROOT/.shiftblame` 已存在但不是 symlink → 警告使用者並詢問是否覆蓋
-6. 建立 symlink：`ln -sfn ~/.shiftblame "$REPO_ROOT/.shiftblame"`
-7. 回報結果：`$REPO_ROOT/.shiftblame → ~/.shiftblame`
+2. 確保遠端目錄存在：
+   ```bash
+   mkdir -p ~/.shiftblame/"$REPO_NAME"/docs ~/.shiftblame/"$REPO_NAME"/report ~/.shiftblame/blame
+   ```
+3. 建立本地 `.shiftblame/` 子目錄：
+   ```bash
+   mkdir -p "$REPO_ROOT/.shiftblame"
+   ```
+4. 建立兩個 symlink：
+   ```bash
+   ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
+   ln -sfn ~/.shiftblame/blame "$REPO_ROOT/.shiftblame/blame"
+   ```
+5. 回報結果：
+   ```
+   .shiftblame/<repo> → ~/.shiftblame/<repo>/
+   .shiftblame/blame  → ~/.shiftblame/blame/
+   ```
