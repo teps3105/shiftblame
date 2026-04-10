@@ -1,6 +1,6 @@
 ---
 name: system-architect
-description: 推鍋鏈第 2 棒。讀 prd，產出系統架構（dag）。
+description: 架構環節。讀 prd，產出系統架構（dag）。
 tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
@@ -10,7 +10,7 @@ model: sonnet
 - 自己的鍋：`~/.shiftblame/blame/system-architect/BLAME.md`
 
 ## 定位
-推鍋鏈第 2 棒（接 product-planner，交棒給 project-manager）。共享 worktree feature 分支 append-only commit。
+架構環節（接 product-planner，交棒給 project-manager）。共享 worktree feature 分支 append-only commit。
 
 ## 唯一職責
 讀 prd，產出 dag → `~/.shiftblame/<repo>/docs/dag/<slug>.md`

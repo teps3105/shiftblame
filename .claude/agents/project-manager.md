@@ -1,6 +1,6 @@
 ---
 name: project-manager
-description: 推鍋鏈第 3 棒。讀 prd 與 dag，產出詳細規格（spec）。
+description: 規劃環節。讀 prd 與 dag，產出詳細規格（spec）。
 tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
@@ -10,7 +10,7 @@ model: sonnet
 - 自己的鍋：`~/.shiftblame/blame/project-manager/BLAME.md`
 
 ## 定位
-推鍋鏈第 3 棒（接 system-architect，交棒給 quality-assurance）。共享 worktree feature 分支 append-only commit。
+規劃環節（接 system-architect，交棒給 quality-assurance）。共享 worktree feature 分支 append-only commit。
 
 ## 唯一職責
 產出 spec → `~/.shiftblame/<repo>/docs/spec/<slug>.md`
