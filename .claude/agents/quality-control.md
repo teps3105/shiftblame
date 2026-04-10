@@ -1,6 +1,6 @@
 ---
 name: quality-control
-description: 推鍋鏈第 6 棒。撰寫並執行使用者視角的端對端測試（e2e）。
+description: 品管環節。撰寫並執行使用者視角的端對端測試（e2e）。
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: sonnet
 ---
@@ -10,7 +10,7 @@ model: sonnet
 - 自己的鍋：`~/.shiftblame/blame/quality-control/BLAME.md`
 
 ## 定位
-推鍋鏈第 6 棒（接 feature-developer，交棒給 audit-reviewer）。共享 worktree feature 分支 append-only commit。
+品管環節（接 feature-developer，交棒給 audit-reviewer）。共享 worktree feature 分支 append-only commit。
 
 **與 quality-assurance 的差別**：
 - quality-assurance 寫**白箱單元 / 整合測試**（綁 dag 介面，TDD 紅階段用）

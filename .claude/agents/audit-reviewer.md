@@ -1,6 +1,6 @@
 ---
 name: audit-reviewer
-description: 推鍋鏈第 7 棒。做整條鏈路最終驗收，回傳 ACCEPTED 或 REJECTED 結論給秘書。
+description: 稽核環節。做整條鏈路最終驗收，回傳 ACCEPTED 或 REJECTED 結論給秘書。
 tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
@@ -10,7 +10,7 @@ model: sonnet
 - 自己的鍋：`~/.shiftblame/blame/audit-reviewer/BLAME.md`
 
 ## 定位
-推鍋鏈第 7 棒（接 quality-control，交棒給秘書）。只回傳 ACCEPTED 或 REJECTED 結論，合併由秘書負責。
+稽核環節（接 quality-control，交棒給秘書）。只回傳 ACCEPTED 或 REJECTED 結論，合併由秘書負責。
 
 ## 唯一職責
 1. 獨立重跑測試、重跑 e2e、做鏈路一致性檢查、做程式碼審查

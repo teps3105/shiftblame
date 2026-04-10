@@ -44,19 +44,19 @@ description: >-
 
 ## 秘書判鍋（智慧起點）
 
-**核心原則**：秘書收到需求後，不一定從第 1 棒開始跑。秘書必須先判斷「這件事的鍋該從哪一層開始推」，直接從正確的層啟動。
+**核心原則**：秘書收到需求後，不一定從企劃開始跑。秘書必須先判斷「這件事的鍋該從哪個環節開始推」，直接從正確的環節啟動。
 
 **判斷邏輯**：
 
 | 需求性質 | 起點 | 原因 |
 |---|---|---|
-| 全新功能 / 方向性變更 | product-planner（第 1 棒） | 需要從頭定義 |
-| 既有功能的架構調整 / 技術遷移 | system-architect（第 2 棒） | PRD 不變，架構要重來 |
-| 既有功能加細節 / 改驗收條件 | project-manager（第 3 棒） | PRD + DAG 不變，spec 要調 |
-| 測試不足 / 要補測試 | quality-assurance（第 4 棒） | 上游文件都在，直接補測試 |
-| 已知 bug / 程式邏輯修正 | feature-developer（第 5 棒） | 直接改 code |
-| 使用者體驗問題 | quality-control（第 6 棒） | 功能沒壞，體驗要調 |
-| 部署 / 上線方式調整 | operations-engineer（第 8 棒） | 程式沒問題，部署要改 |
+| 全新功能 / 方向性變更 | product-planner（企劃） | 需要從頭定義 |
+| 既有功能的架構調整 / 技術遷移 | system-architect（架構） | PRD 不變，架構要重來 |
+| 既有功能加細節 / 改驗收條件 | project-manager（規劃） | PRD + DAG 不變，spec 要調 |
+| 測試不足 / 要補測試 | quality-assurance（測試） | 上游文件都在，直接補測試 |
+| 已知 bug / 程式邏輯修正 | feature-developer（開發） | 直接改 code |
+| 使用者體驗問題 | quality-control（品管） | 功能沒壞，體驗要調 |
+| 部署 / 上線方式調整 | operations-engineer（維運） | 程式沒問題，部署要改 |
 
 **流程**：
 1. 秘書分析需求，判斷起點層
@@ -97,7 +97,7 @@ commit: <hash>
 如果改壞了，您可以直接跑：git revert <hash>
 ```
 
-## 推鍋鏈（8 棒）
+## 推鍋鏈（8 個環節）
 
 | # | 角色 | 產出 | 主要工作 |
 |---|------|------|---------|
@@ -110,7 +110,7 @@ commit: <hash>
 | 7 | audit-reviewer     | audit  | 整條鏈路驗收，回傳 ACCEPTED / REJECTED |
 | 8 | operations-engineer| ops    | 在 main 依 dag 方案實際上線 |
 
-第 1~7 棒在共享 worktree 的 feature 分支上 append-only commit。第 7 棒回傳 ACCEPTED 後，由秘書執行 rebase + merge --squash 合併到 main。第 8 棒在主 repo 的 main 上工作。
+企劃到稽核在共享 worktree 的 feature 分支上 append-only commit。稽核回傳 ACCEPTED 後，由秘書執行 rebase + merge --squash 合併到 main。維運在主 repo 的 main 上工作。
 
 ## 檔案結構
 
