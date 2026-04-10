@@ -52,7 +52,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | `system-architect` | 技術選型不可行、模組拆分導致後續無法實作 |
 | `project-manager` | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
 | `quality-assurance` | 測試沒涵蓋 spec 的驗收條件、測試寫錯（不該過的會過） |
-| `feature-developer` | 實作偏離 spec、引入新 bug、改了測試檔 |
+| `feature-developer` | **開發主管**：拆分任務不當導致工程師產出衝突、收合不完整、實作偏離 spec、引入新 bug、改了測試檔。底下三個工程師（frontend-engineer / backend-engineer / infra-engineer）的鍋也由主管扛 |
 | `quality-control` | e2e 場景遺漏關鍵流程、環境設定錯誤導致假綠 |
 | `audit-reviewer` | 該抓的沒抓到（放水）、退回理由不具體導致重工 |
 | `operations-engineer` | 部署步驟與 dag 不符、上線後 smoke test 沒跑或漏驗 |
@@ -111,7 +111,11 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── system-architect/BLAME.md
 │   ├── project-manager/BLAME.md
 │   ├── quality-assurance/BLAME.md
-│   ├── feature-developer/BLAME.md
+│   ├── feature-developer/
+│   │   ├── BLAME.md                         # dev-lead 自己的鍋
+│   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋（掛在主管下）
+│   │   ├── backend-engineer/BLAME.md        # 後端工程師的鍋（掛在主管下）
+│   │   └── infra-engineer/BLAME.md          # 基建工程師的鍋（掛在主管下）
 │   ├── quality-control/BLAME.md
 │   ├── audit-reviewer/BLAME.md
 │   ├── operations-engineer/BLAME.md
@@ -123,7 +127,10 @@ _一套明確責任歸屬的 Agents 開發框架_
     │   ├── dag/<slug>.md
     │   ├── spec/<slug>.md
     │   ├── basis/<slug>.md
-    │   ├── devlog/<slug>.md
+    │   ├── devlog/<slug>/
+    │   │   ├── frontend/...              # frontend-engineer 產出
+    │   │   ├── backend/...               # backend-engineer 產出
+    │   │   └── infra/...                 # infra-engineer 產出
     │   ├── e2e/<slug>.md
     │   ├── audit/<slug>.md
     │   └── ops/<slug>.md

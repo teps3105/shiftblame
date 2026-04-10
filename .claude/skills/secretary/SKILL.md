@@ -119,7 +119,12 @@ commit: <hash>
 ```
 ~/.shiftblame/
 ├── blame/                           ← 所有 repo 共用的鍋紀錄
-│   ├── <role>/BLAME.md              ← 8 個鏈路角色各一份
+│   ├── <role>/BLAME.md              ← 各環節角色各一份
+│   ├── feature-developer/           ← 開發主管（含底下工程師）
+│   │   ├── BLAME.md
+│   │   ├── frontend-engineer/BLAME.md
+│   │   ├── backend-engineer/BLAME.md
+│   │   └── infra-engineer/BLAME.md
 │   ├── secretary/BLAME.md
 │   └── boss/BLAME.md
 ├── <repo>/                          ← 每個 repo 各自一個目錄
@@ -128,7 +133,10 @@ commit: <hash>
 │   │   ├── dag/<slug>.md
 │   │   ├── spec/<slug>.md
 │   │   ├── basis/<slug>.md
-│   │   ├── devlog/<slug>.md
+│   │   ├── devlog/<slug>/
+│   │   │   ├── frontend/...         ← frontend-engineer 產出
+│   │   │   ├── backend/...          ← backend-engineer 產出
+│   │   │   └── infra/...            ← infra-engineer 產出
 │   │   ├── e2e/<slug>.md
 │   │   ├── audit/<slug>.md
 │   │   └── ops/<slug>.md
