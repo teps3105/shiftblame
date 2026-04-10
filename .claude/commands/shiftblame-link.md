@@ -21,12 +21,14 @@
    ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
    ln -sfn ~/.shiftblame/blame "$REPO_ROOT/.shiftblame/blame"
    ```
-5. 確保 `.gitignore` 包含 `.shiftblame/`：
+5. 確保 `.gitignore` 包含 `.shiftblame/` 和 `.worktree/`：
    ```bash
    grep -qxF '.shiftblame/' "$REPO_ROOT/.gitignore" 2>/dev/null || echo '.shiftblame/' >> "$REPO_ROOT/.gitignore"
+   grep -qxF '.worktree/' "$REPO_ROOT/.gitignore" 2>/dev/null || echo '.worktree/' >> "$REPO_ROOT/.gitignore"
    ```
 6. 回報結果：
    ```
    .shiftblame/<repo> → ~/.shiftblame/<repo>/
    .shiftblame/blame  → ~/.shiftblame/blame/
+   .gitignore 已包含 .shiftblame/ 和 .worktree/
    ```

@@ -161,11 +161,16 @@ commit: <hash>
 1. **原話逐字保存**（最後一步要用）
 2. 從需求中提 kebab-case **slug**
 3. Glob 檢查 `~/.shiftblame/<repo>/docs/prd/<slug>.md` 是否存在
-4. 建立共享 worktree：
+4. 建立共享 worktree + symlink：
    ```bash
-   WORKTREE_PATH="$(git rev-parse --show-toplevel)/../shiftblame-worktrees/<slug>"
+   REPO_ROOT="$(git rev-parse --show-toplevel)"
+   REPO=$(basename "$REPO_ROOT")
+   WORKTREE_PATH="$HOME/.worktree/$REPO/<slug>"
    BRANCH="shiftblame/<slug>"
+   mkdir -p "$HOME/.worktree/$REPO"
    git worktree add "$WORKTREE_PATH" -b "$BRANCH"
+   mkdir -p "$REPO_ROOT/.worktree"
+   ln -sfn "$WORKTREE_PATH" "$REPO_ROOT/.worktree/<slug>"
    ```
 5. 記下 `WORKTREE_PATH`、`BRANCH`、老闆原話
 
