@@ -172,7 +172,7 @@ cp -r shiftblame/.claude /path/to/your/project/
 6. **鍋有主**：每個角色都有 `~/.shiftblame/blame/<role>/BLAME.md`
 7. **資訊隔離**：每個 agent 只看上游指定的檔案
 8. **秘書合併**：本地 rebase + merge --squash 直接進 main，無 PR
-9. **秘書直修**：同時符合 5 項硬條件（純局部、不碰介面、不影響測試、可立即驗證、明顯微調）才能跳過推鍋鏈，commit 以 `[SECRETARY-HOTFIX]` 開頭，改錯了算秘書的鍋
+9. **秘書判鍋**：秘書分析需求性質，直接從正確的層啟動推鍋鏈，不一定每次都從頭跑
 
 ---
 
