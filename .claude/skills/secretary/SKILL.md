@@ -105,9 +105,9 @@ commit: <hash>
 | 1 | product-planner    | prd    | 把老闆原話轉 PRD |
 | 2 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
 | 3 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
-| 4 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅） |
+| 4 | quality-assurance  | basis  | 拆分測試給三位測試工程師（單元/整合/E2E），協調整合，產出測試設計（TDD 紅） |
 | 5 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠） |
-| 6 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 |
+| 6 | quality-control    | e2e    | 執行 E2E 測試，撰寫執行報告與驗收結論 |
 | 7 | audit-reviewer     | audit  | 整條鏈路驗收，回傳 ACCEPTED / REJECTED |
 | 8 | operations-engineer| ops    | 在 main 依 dag 方案實際上線 |
 
@@ -144,6 +144,11 @@ commit: <hash>
 │   │   ├── frontend-engineer/BLAME.md
 │   │   ├── backend-engineer/BLAME.md
 │   │   └── infra-engineer/BLAME.md
+│   ├── quality-assurance/           ← 測試主管（含底下測試工程師）
+│   │   ├── BLAME.md
+│   │   ├── unit-test-engineer/BLAME.md
+│   │   ├── integration-test-engineer/BLAME.md
+│   │   └── e2e-test-engineer/BLAME.md
 │   ├── secretary/BLAME.md
 │   ├── administrative-clerk/BLAME.md     ← 行政文書鍋紀錄
 │   └── boss/BLAME.md
