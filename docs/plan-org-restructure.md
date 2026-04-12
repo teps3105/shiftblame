@@ -2,166 +2,189 @@
 
 ## 背景
 
-現行推鍋鏈所有 agent 混在一起，沒有明確區分工作位置。
-需要新增資安工程師與 MIS 工程師角色，並重新劃分職能邊界。
+現行推鍋鏈所有 agent 混在一起，沒有明確區分層級與工作位置。
+需要依職能分為 L1–L4 四個層級，明確劃分責任邊界與模型配置。
 
 ---
 
-## 變更一覽
+## 核心原則
 
-### 1. Agent 分為兩類
-
-| 類別 | 工作位置 | 可否改 code | 成員 |
-|------|---------|------------|------|
-| 開發類 | worktree 分支 | 可以 | 7 個角色（含子 agent） |
-| 雜務類 | main / `~/.shiftblame/` | 不可以 | 4 個角色 |
-
-### 2. 開發類 Agents（worktree 分支）
-
-| # | Agent | 產出 |
-|---|-------|------|
-| 1 | product-planner | prd |
-| 2 | system-architect | dag |
-| 3 | project-manager | spec |
-| 4 | quality-assurance（+3 測試工程師） | basis |
-| 5 | feature-developer（+2 職能工程師） | devlog |
-| 6 | quality-control | e2e |
-| 7 | audit-reviewer | audit |
-
-feature-developer 子 agent：frontend-engineer、backend-engineer（共 2 位）。
-
-### 3. 雜務類 Agents（主分支 / 主 repo）
-
-| Agent | 職責 | 觸發時機 |
-|-------|------|---------|
-| mis-engineer（MIS） | 工具安裝、環境準備、依賴管理 | dag 之後、spec 之前 |
-| security-engineer（資安） | 依賴審計、漏洞掃描、敏感檔案檢查 | merge 後、deploy 前 |
-| operations-engineer（維運） | 部署上線 + 基礎建設 | 資安 SECURE 後 / MIS 轉介時 |
-| administrative-clerk（文書） | 文件聚合 STM → REPO.md | 秘書呈報後 |
+- **秘書不幹活**：所有工作至少交給 L1 以上的 agent 執行
+- **L4 用 opus**：企劃、架構、規格、資安稽核需要高階推理
+- **L3 以下用 sonnet**：執行層不需要最強模型，控制成本
 
 ---
 
-## 變更二：移除 infra-engineer
+## 四級架構
 
-### 原 infra 職能重新分配
-
-| 原 infra 職能 | 歸屬 | 理由 |
-|--------------|------|------|
-| DB schema 設計 / migration | backend-engineer | 開發工作，與業務邏輯綁定 |
-| Docker / 容器化設定 | operations-engineer | 基礎建設歸維運 |
-| CI/CD pipeline | operations-engineer | 部署流程歸維運 |
-| 環境變數 / config 管理 | operations-engineer | 環境管理歸維運 |
-| 開發用隔離環境 | mis-engineer → operations-engineer | 走申請鏈 |
+| 級別 | 定位 | 模型 | 成員 |
+|------|------|------|------|
+| **L1** | 日常支援 — 溝通調度、除錯、整理報告 | sonnet | MIS、行政文書 |
+| **L2** | 日常維運 — 處理 L3 提出的基建與環境需求 | sonnet | 雲端工程師、基建工程師 |
+| **L3** | 開發執行 — 品管、開發、品保 | sonnet | 品管、開發經理（+前端、後端）、品保（+3 測試工程師） |
+| **L4** | 規劃決策 — 企劃、架構、規格、資安稽核 | **opus** | 企劃師、架構師、專案經理、資安稽核 |
 
 ---
 
-## 變更三：新增 MIS 工程師
+## L1 — 日常支援
 
-### 定位
+| Agent | 職責 |
+|-------|------|
+| **mis-engineer（MIS）** | 工具安裝、環境準備、依賴管理、溝通調度開發需求 |
+| **administrative-clerk（行政文書）** | 文件聚合 STM → REPO.md、整理報告 |
 
-推鍋鏈啟動後、正式開發前的環境就緒保證人。
-
-### 職責
-
-1. 讀 dag — 從架構師的技術選型解析需要哪些工具
-2. 盤點現有環境 — `which` / `--version` 逐一確認
-3. 產出缺漏清單 — 哪些要裝、哪些要升版
-4. 向秘書報告 — 秘書翻譯成白話問老闆核准
-5. 核准後安裝 — 逐一安裝、驗證、紀錄
-6. 產出 env 報告 → `~/.shiftblame/<repo>/docs/env/<slug>.md`
-7. 回傳 READY / BLOCKED
+秘書接到任何需要動手的事，一律派給 L1 以上。MIS 是開發團隊的窗口，負責環境就緒與日常除錯支援。
 
 ### 隔離環境申請鏈
 
 ```
-feature-developer 需要隔離環境
-  → 向 MIS 申請（透過秘書轉介）
-  → MIS 評估需求 → 向 Ops 申請建置
-  → Ops 建置 → 回報 MIS
+開發（L3）需要隔離環境
+  → 向 MIS（L1）申請
+  → MIS 評估 → 向 L2 申請建置
+  → L2 建置 → 回報 MIS
   → MIS 配置給開發 → 回報秘書
 ```
 
 ---
 
-## 變更四：新增資安工程師
+## L2 — 日常維運
 
-### 定位
+| Agent | 職責 |
+|-------|------|
+| **cloud-engineer（雲端工程師）** | 部署上線、smoke test、版本驗證、雲端服務管理 |
+| **infra-engineer（基建工程師）** | 容器化/Docker、CI/CD pipeline、環境變數/config、基礎建設 |
 
-merge 到 main 之後、維運部署之前的安全閘門。
+L2 不主動發起工作，而是**回應 L3 的需求**（透過 MIS 轉介）或在推鍋鏈末端執行部署。
 
-### 職責
+### 觸發方式
 
-1. 依賴審計 — 掃描 `package.json` / `requirements.txt` / lock files
-2. 工具清單盤點 — 推鍋鏈新增的依賴變更差異
-3. 敏感檔案檢查 — `.env`、credentials、API key 是否意外 commit
-4. 安全規則驗證 — OWASP top 10 基本項
-5. 產出 sec 報告 → `~/.shiftblame/<repo>/docs/sec/<slug>.md`
-6. 回傳 SECURE / ALERT
+1. **推鍋鏈末端** — 資安稽核 SECURE 後，雲端工程師執行部署
+2. **MIS 轉介** — dag 階段 MIS 發現需要基礎建設時，轉介基建工程師
 
 ---
 
-## 變更五：operations-engineer 擴充
+## L3 — 開發執行
 
-原本只管「部署上線」，新增基礎建設職能：
+| Agent | 子 Agent | 產出 |
+|-------|---------|------|
+| **quality-control（品管）** | — | e2e |
+| **feature-developer（開發經理）** | frontend-engineer、backend-engineer | devlog |
+| **quality-assurance（品保）** | unit-test-engineer、integration-test-engineer、e2e-test-engineer | basis |
 
-- 容器化 / Docker 設定
-- CI/CD pipeline 維護
-- 環境變數 / config 管理
-- 接 MIS 轉介的環境建置需求
+L3 全部在 **worktree 分支** 上工作。
 
-觸發方式變為兩種：
-1. 推鍋鏈末端 — 資安 SECURE 後部署（原流程）
-2. MIS 轉介 — dag 階段 MIS 發現需要基礎建設時
+---
+
+## L4 — 規劃決策
+
+| Agent | 產出 |
+|-------|------|
+| **product-planner（企劃師）** | prd |
+| **system-architect（架構師）** | dag |
+| **project-manager（專案經理）** | spec |
+| **security-auditor（資安稽核）** | sec + audit（合併原 audit-reviewer 與 security-engineer） |
+
+L4 使用 **opus** 模型。資安稽核同時負責：
+- 整條鏈路最終驗收（原 audit-reviewer 職能）
+- 依賴審計、漏洞掃描、敏感檔案檢查（原 security-engineer 職能）
 
 ---
 
 ## 更新後完整流程
 
 ```
-老闆需求 → 秘書
+老闆需求 → 秘書（路由器，不幹活）
   │
   ▼
- 1. product-planner  → prd
- 2. system-architect → dag
+L4  1. product-planner   → prd
+L4  2. system-architect   → dag
   │
   ▼
- MIS preflight（讀 dag）
-  ├── 工具缺漏 → 核准 → 安裝
-  └── 需要基礎建設 → 轉介 Ops → 回報 READY
+L1  MIS preflight（讀 dag）
+     ├── 工具缺漏 → 核准 → 安裝
+     └── 需要基建 → 轉介 L2 infra-engineer → 回報 READY
   │
   ▼
- 3. project-manager   → spec
- 4. quality-assurance  → basis   （+3 測試工程師）
- 5. feature-developer  → devlog  （+2 職能工程師）
- 6. quality-control    → e2e
- 7. audit-reviewer     → audit
+L4  3. project-manager    → spec
+L3  4. quality-assurance   → basis   （+3 測試工程師）
+L3  5. feature-developer   → devlog  （+前端、後端）
+L3  6. quality-control     → e2e
   │
   ▼
- 秘書 merge → main
+秘書 merge → main
   │
   ▼
- 8. security-engineer  → sec
- 9. operations-engineer → ops
+L4  7. security-auditor    → sec + audit
+L2  8. cloud-engineer      → ops
   │
   ▼
- 秘書最終對照 → 呈報老闆
+秘書最終對照 → 呈報老闆
   │
   ▼
-10. administrative-clerk → REPO.md
+L1  9. administrative-clerk → REPO.md
 ```
 
 ---
 
-## 需修改的檔案清單
+## 原 infra-engineer（開發類）職能重分配
+
+| 原職能 | 歸屬 | 理由 |
+|--------|------|------|
+| DB schema / migration | L3 backend-engineer | 開發工作，與業務邏輯綁定 |
+| Docker / 容器化 | L2 infra-engineer | 基礎建設歸維運 |
+| CI/CD pipeline | L2 infra-engineer | 部署流程歸維運 |
+| 環境變數 / config | L2 infra-engineer | 環境管理歸維運 |
+| 開發用隔離環境 | L1 MIS → L2 infra-engineer | 走申請鏈 |
+
+---
+
+## 原 audit-reviewer + security-engineer 合併
+
+| 原角色 | 原職能 | 合併後歸屬 |
+|--------|--------|-----------|
+| audit-reviewer | 整條鏈路驗收、重跑測試、一致性檢查 | L4 security-auditor |
+| security-engineer | 依賴審計、漏洞掃描、敏感檔案檢查 | L4 security-auditor |
+
+合併理由：資安與稽核高度重疊，都需要高階推理能力，都在 merge 後執行。
+
+---
+
+## 檔案命名規則
+
+所有 agent 檔案以 `L{n}_` 前綴命名，平鋪在 `.claude/agents/` 下：
+
+```
+.claude/agents/
+├── L1_mis-engineer.md            ← 待新增
+├── L1_administrative-clerk.md
+├── L2_cloud-engineer.md          ← 待新增
+├── L2_infra-engineer.md          ← 待新增
+├── L3_quality-control.md
+├── L3_feature-developer.md
+├── L3_frontend-engineer.md
+├── L3_backend-engineer.md
+├── L3_quality-assurance.md
+├── L3_unit-test-engineer.md
+├── L3_integration-test-engineer.md
+├── L3_e2e-test-engineer.md
+├── L4_product-planner.md
+├── L4_system-architect.md
+├── L4_project-manager.md
+└── L4_security-auditor.md        ← 由 audit-reviewer 改名
+```
+
+---
+
+## 待辦（本機開發）
 
 | 動作 | 檔案 |
 |------|------|
-| 刪除 | `.claude/agents/infra-engineer.md` |
-| 新增 | `.claude/agents/mis-engineer.md` |
-| 新增 | `.claude/agents/security-engineer.md` |
-| 修改 | `.claude/agents/operations-engineer.md` — 擴充基礎建設職能 |
-| 修改 | `.claude/agents/backend-engineer.md` — 承接 DB schema/migration |
-| 修改 | `.claude/agents/feature-developer.md` — 子 agent 3→2 |
-| 修改 | `.claude/agents/administrative-clerk.md` — 新增 `docs/env/`、`docs/sec/` |
-| 修改 | `.claude/skills/secretary/SKILL.md` — 插入 MIS preflight + 資安掃描 |
-| 修改 | `README.md` — 組織架構分類 + 新角色 |
+| 新增 | `L1_mis-engineer.md` |
+| 新增 | `L2_cloud-engineer.md` |
+| 新增 | `L2_infra-engineer.md` |
+| 改寫 | `L4_security-auditor.md` — 合併 audit + security 職能 |
+| 修改 | `L3_feature-developer.md` — 子 agent 移除 infra，只剩前端+後端 |
+| 修改 | `L3_backend-engineer.md` — 承接 DB schema/migration |
+| 修改 | `L1_administrative-clerk.md` — 掃描目錄新增 `docs/env/`、`docs/sec/` |
+| 修改 | `secretary/SKILL.md` — 插入 MIS preflight + L 級別路由邏輯 |
+| 修改 | `README.md` — 四級架構說明 |

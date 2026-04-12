@@ -2,7 +2,7 @@
 name: system-architect
 description: 架構環節。讀 prd，產出系統架構（dag）。
 tools: Read, Write, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 做架構：讀 prd，產出系統架構藍圖。
