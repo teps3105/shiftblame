@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-25-blue.svg)](#三級架構)
+[![Agents](https://img.shields.io/badge/agents-26-blue.svg)](#三級架構)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -30,7 +30,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | 級別 | 定位 | 模型 | 部門 |
 |------|------|------|------|
 | **L1** | 支援與維運 | **haiku** | MIS、ADM、OPS（+cloud、infra）、AUTO（+ci、cd） |
-| **L2** | 開發執行 | **sonnet** | PM、DEV（+fe、be）、QA（+unit、integ、e2e） |
+| **L2** | 開發執行 | **sonnet** | PM、DEV（+fe、be、db）、QA（+unit、integ、e2e） |
 | **L3** | 規劃決策 | **opus** | PRD、ARC、MKT、QC（+edge、fuzz）、SEC（+red、blue） |
 
 ---
@@ -51,7 +51,6 @@ _一套明確責任歸屬的 Agents 開發框架_
 |------|------------------|
 | **路由判錯**：需求推給了錯誤的部門導致重工 | 秘書職責就是判斷該推給誰 |
 | **退回判錯**：老闆說不 OK 時推給了錯誤的部門 | 秘書職責就是判斷根因在哪 |
-| **合併出包**：rebase / merge --squash 過程出錯 | 合併是秘書親自執行的 |
 
 ### 各部門的鍋
 
@@ -66,7 +65,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | L3 QC | e2e 場景遺漏關鍵流程、邊緣/模糊測試不足 |
 | L3 SEC | 該抓的沒抓到（放水）、退回理由不具體、安全掃描遺漏 |
 | L1 OPS | 部署步驟與 ARC 不符、上線後 smoke test 沒跑或漏驗 |
-| L1 AUTO | CI/CD pipeline 配置錯誤、rollback 機制失效 |
+| L1 AUTO | CI/CD pipeline 配置錯誤、合併出包、rollback 機制失效 |
 | L1 MIS | 環境盤點遺漏、安裝了錯誤版本的工具 |
 | L1 ADM | 聚合遺漏、REPO.md 格式錯亂、誤刪 STM 檔案 |
 
@@ -131,7 +130,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | 環境 / 工具問題 | L1 MIS |
 | CI/CD / 自動化調整 | L1 AUTO |
 
-全新功能的典型路徑：`PRD → ARC → MIS → PM → QA → DEV → QC → SEC → OPS`，但秘書可依實際需求動態跳過或新增步驟。
+全新功能的典型路徑：`PRD → ARC → MIS → PM → QA → DEV → QC → SEC → AUTO CI(合併) → OPS`，但秘書可依實際需求動態跳過或新增步驟。
 
 ### 檔案結構
 
@@ -142,14 +141,14 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── L1/OPS/{LEAD,cloud,infra}/BLAME.md
 │   ├── L1/AUTO/{LEAD,ci,cd}/BLAME.md
 │   ├── L2/PM/LEAD/BLAME.md
-│   ├── L2/DEV/{LEAD,fe,be}/BLAME.md
+│   ├── L2/DEV/{LEAD,fe,be,db}/BLAME.md
 │   ├── L2/QA/{LEAD,unit,integ,e2e}/BLAME.md
 │   ├── L3/{PRD,ARC,MKT}/LEAD/BLAME.md
 │   ├── L3/QC/{LEAD,edge,fuzz}/BLAME.md
 │   ├── L3/SEC/{LEAD,red,blue}/BLAME.md
 │   ├── secretary/BLAME.md
 │   └── boss/BLAME.md
-└── <repo>/                                      # 每個 repo 各自一個目錄
+└── <repo>/
     ├── L1/{MIS,OPS,AUTO}/<slug>.md
     ├── L2/{PM,DEV,QA}/<slug>.md
     ├── L3/{PRD,ARC,MKT,QC,SEC}/<slug>.md

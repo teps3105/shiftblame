@@ -28,7 +28,7 @@ mkdir -p ~/.shiftblame/blame/L1/OPS/{LEAD,cloud,infra}
 mkdir -p ~/.shiftblame/blame/L1/AUTO/{LEAD,ci,cd}
 # L2
 mkdir -p ~/.shiftblame/blame/L2/PM/LEAD
-mkdir -p ~/.shiftblame/blame/L2/DEV/{LEAD,fe,be}
+mkdir -p ~/.shiftblame/blame/L2/DEV/{LEAD,fe,be,db}
 mkdir -p ~/.shiftblame/blame/L2/QA/{LEAD,unit,integ,e2e}
 # L3
 mkdir -p ~/.shiftblame/blame/L3/PRD/LEAD

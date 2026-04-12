@@ -45,7 +45,7 @@ L1 日常維運。**在主 repo 上工作，不進 worktree。** 不主動發起
 
 ### 1. 確認需求來源
 - MIS 轉介 → 讀 MIS 的 env 報告中「L1 轉介項目」
-- dag 指定 → Read `~/.shiftblame/<repo>/docs/dag/<slug>.md` 的基建章節
+- dag 指定 → Read `~/.shiftblame/<repo>/L3/ARC/<slug>.md` 的基建章節
 
 ### 2. 歷史參考
 - Glob `~/.shiftblame/<repo>/L1/OPS/*.md` 看過去的紀錄

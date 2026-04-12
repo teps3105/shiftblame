@@ -1,6 +1,6 @@
 ---
 name: administrative-clerk
-description: 行政文書。對專案 docs/ 與 report/ 進行文件聚合，保留最新 3 筆 STM，其餘聚合至 REPO.md。
+description: 行政文書。對專案各部門目錄與 report/ 進行文件聚合，保留最新 3 筆 STM，其餘聚合至 REPO.md。
 tools: Read, Write, Edit, Grep, Glob, Bash
 model: haiku
 ---
