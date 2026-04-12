@@ -239,19 +239,7 @@ REPO_NAME=$(basename "$REPO_ROOT")
 ```
 
 - `$REPO_ROOT/.shiftblame/` 不存在 → 呼叫 `Skill("blame-init")`
-- 已存在但結構過時（掃描 agents 目錄，比對 blame 目錄是否齊全）→ 呼叫 `Skill("blame-update")`
-- 已存在且結構一致 → 跳過
-
-**偵測方式**：
-```bash
-for f in "$REPO_ROOT"/.claude/agents/L*.md; do
-  NAME=$(basename "$f" .md)
-  LEVEL=$(echo "$NAME" | cut -d_ -f1)
-  DEPT=$(echo "$NAME" | cut -d_ -f2)
-  ROLE=$(echo "$NAME" | cut -d_ -f3)
-  [ -d ~/.shiftblame/blame/"$LEVEL"/"$DEPT"/"$ROLE" ] || NEED_UPDATE=1
-done
-```
+- 已存在 → 跳過
 
 ### 1. 掃描 agents + 收下需求
 

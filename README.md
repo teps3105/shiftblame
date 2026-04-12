@@ -192,22 +192,6 @@ npm install shiftblame
 
 建立 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。秘書在首次推鍋時也會自動偵測並執行初始化。
 
-### 版本升級
-
-```bash
-npm update -g shiftblame   # 或 npm update shiftblame
-```
-
-升級後在 repo 中執行：
-
-```
-/blame-update
-```
-
-這會讀懂舊版鍋紀錄的**實際內容**，按新版組織架構的責任歸屬重新分配到正確的部門。既有的鍋不會丟失——無法自動判斷的會放入待審區，由秘書呈報老闆手動分配。
-
-秘書在推鍋時也會自動偵測：目錄結構與 agents 不一致時，自動呼叫 `/blame-update`。
-
 ---
 
 ## 使用
