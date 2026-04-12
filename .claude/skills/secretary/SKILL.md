@@ -26,7 +26,7 @@ description: >-
 
 **流程**：
 1. 秘書辨識老闆處於「還沒想清楚」狀態
-2. 快速掃描現有 codebase 與 `~/.shiftblame/<repo>/docs/` 歷史產物，了解現況
+2. 快速掃描現有 codebase 與 `~/.shiftblame/<repo>/` 各部門歷史產物，了解現況
 3. 用 `AskUserQuestion` 提出**結構化問題**幫老闆收斂方向：
    - 每次最多 4 個問題，每題 2~4 個選項
    - 問題用老闆聽得懂的話，不帶技術術語（除非老闆先用了）
@@ -49,17 +49,17 @@ description: >-
 
 **判斷邏輯**：
 
-| 需求性質 | 起點 | 原因 |
+| 需求性質 | 起點部門 | 原因 |
 |---|---|---|
-| 全新功能 / 方向性變更 | L4 product-planner（企劃） | 需要從頭定義 |
-| 既有功能的架構調整 / 技術遷移 | L4 system-architect（架構） | PRD 不變，架構要重來 |
-| 既有功能加細節 / 改驗收條件 | L4 project-manager（規劃） | PRD + DAG 不變，spec 要調 |
-| 測試不足 / 要補測試 | L3 quality-assurance（品保） | 上游文件都在，直接補測試 |
-| 已知 bug / 程式邏輯修正 | L3 feature-developer（開發） | 直接改 code |
-| 使用者體驗問題 | L3 quality-control（品管） | 功能沒壞，體驗要調 |
-| 部署 / 上線方式調整 | L2 cloud-engineer（雲端） | 程式沒問題，部署要改 |
-| 環境 / 工具問題 | L1 mis-engineer（MIS） | 環境缺工具或版本不對 |
-| 基礎建設調整 | L2 infra-engineer（基建） | CI/CD、Docker、環境配置要改 |
+| 全新功能 / 方向性變更 | L4 PRD | 需要從頭定義 |
+| 既有功能的架構調整 / 技術遷移 | L4 ARC | PRD 不變，架構要重來 |
+| 既有功能加細節 / 改驗收條件 | L3 PM | PRD + ARC 不變，PM 要調 |
+| 測試不足 / 要補測試 | L3 QA | 上游文件都在，直接補測試 |
+| 已知 bug / 程式邏輯修正 | L3 DEV | 直接改 code |
+| 使用者體驗問題 | L4 QC | 功能沒壞，體驗要調 |
+| 部署 / 上線方式調整 | L2 OPS | 程式沒問題，部署要改 |
+| 環境 / 工具問題 | L1 MIS | 環境缺工具或版本不對 |
+| CI/CD / 自動化調整 | L2 AUTO | pipeline 要改 |
 
 **流程**：
 1. 秘書分析需求，判斷起點層
@@ -115,29 +115,29 @@ commit: <hash>
 
 ## 四級架構
 
-| 級別 | 定位 | 模型 | 成員 |
+| 級別 | 定位 | 模型 | 部門 |
 |------|------|------|------|
-| **L1** | 日常支援 | sonnet | MIS 工程師、行政文書 |
-| **L2** | 日常維運 | sonnet | 雲端工程師、基建工程師 |
-| **L3** | 開發執行 | sonnet | 品管、開發經理（+前端、後端）、品保（+3 測試工程師） |
-| **L4** | 規劃決策 | **opus** | 企劃師、架構師、專案經理、資安稽核 |
+| **L1** | 日常支援 | sonnet | MIS、ADM |
+| **L2** | 日常維運 | sonnet | OPS（+cloud、infra）、AUTO（+ci、cd） |
+| **L3** | 開發執行 | sonnet | PM、DEV（+fe、be）、QA（+unit、integ、e2e） |
+| **L4** | 規劃決策 | **opus** | PRD、ARC、QC（+edge、fuzz）、SEC（+red、blue） |
 
-**秘書不幹活**——所有工作至少交給 L1 以上的 agent 執行。
+**秘書不幹活**——所有工作至少交給 L1 以上的部門執行。
 
 ## 推鍋鏈
 
-| # | 級別 | 角色 | 產出 | 主要工作 |
-|---|------|------|------|---------|
-| 1 | L4 | product-planner    | prd    | 把老闆原話轉 PRD |
-| 2 | L4 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
-| — | L1 | mis-engineer       | env    | 讀 dag 盤點環境、安裝工具（需老闆核准） |
-| — | L2 | infra-engineer     | infra  | 基建需求（若 MIS 轉介） |
-| 3 | L4 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
-| 4 | L3 | quality-assurance  | basis  | 拆分測試給三位測試工程師（單元/整合/E2E），協調整合，產出測試設計（TDD 紅） |
-| 5 | L3 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠），子 agent：前端 + 後端 |
-| 6 | L3 | quality-control    | e2e    | 執行 E2E 測試，撰寫執行報告與驗收結論 |
-| 7 | L4 | security-auditor   | audit  | 整條鏈路驗收 + 安全掃描，回傳 ACCEPTED / REJECTED / ALERT |
-| 8 | L2 | cloud-engineer     | ops    | 在 main 依 dag 方案實際上線 |
+| # | 級別 | 部門 | 主要工作 |
+|---|------|------|---------|
+| 1 | L4 | PRD  | 把老闆原話轉 PRD |
+| 2 | L4 | ARC  | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
+| — | L1 | MIS  | 讀 ARC 盤點環境、安裝工具（需老闆核准） |
+| — | L2 | OPS  | 基建需求（若 MIS 轉介） |
+| 3 | L3 | PM   | 功能拆解、驗收條件、任務依賴 |
+| 4 | L3 | QA   | 拆分測試給三位測試工程師（單元/整合/E2E），產出測試設計（TDD 紅） |
+| 5 | L3 | DEV  | 寫最小實作讓測試全綠（TDD 綠），子 agent：fe + be |
+| 6 | L4 | QC   | 執行 E2E + 邊緣 + 模糊測試，撰寫品管報告 |
+| 7 | L4 | SEC  | 整條鏈路驗收 + 紅藍隊安全掃描，回傳 ACCEPTED / REJECTED / ALERT |
+| 8 | L2 | OPS  | 在 main 依 ARC 方案實際上線 |
 
 ### QA 與 QC 的本質差異（源自製造業）
 
@@ -153,13 +153,13 @@ QC（Quality Control）：
 
 QA 定規則。QC 依規則驗收。兩者必須分離——自己出題自己改考卷 = 沒有品管。
 
-L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commit。秘書合併到 main 後，L4 資安稽核在 main 上做驗收 + 安全掃描。L2 雲端工程師在 main 上部署。L1 MIS 在 dag 後介入做環境準備。
+L4 PRD 到 L4 QC 在共享 worktree 的 feature 分支上 append-only commit。秘書合併到 main 後，L4 SEC 在 main 上做驗收 + 安全掃描。L2 OPS 在 main 上部署。L1 MIS 在 ARC 後介入做環境準備。
 
 ## L1 行政文書（文件聚合）
 
 行政文書是 L1 日常支援角色，推鍋鏈的收尾，**背行政鍋**。不參與推鍋鏈主流程，只在每次鏈路完成後由秘書通知啟動。
 
-**唯一職責**：對 `~/.shiftblame/<repo>/` 的 `docs/` 與 `report/` 進行文件聚合。
+**唯一職責**：對 `~/.shiftblame/<repo>/` 的各層各部門目錄與 `report/` 進行文件聚合。
 
 **聚合規則**：
 - 掃描 `~/.shiftblame/<repo>/` 下各層各部門目錄及 `report/`
@@ -268,16 +268,16 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 
 **老闆不 OK 時**，秘書判斷根因退回哪層：
 
-| 老闆的意思 | 退回 |
+| 老闆的意思 | 退回部門 |
 |---|---|
-| 根本沒要這個 / 要加全新功能 | product-planner |
-| 細節不對 / 驗收條件漏了 | project-manager |
-| 技術/套件/部署不對 | system-architect |
-| 測試沒涵蓋到 X | quality-assurance |
-| 程式寫得不對 | feature-developer |
-| 使用者用起來不順 | quality-control 或上游 |
-| 驗收太鬆/太嚴 | security-auditor |
-| 先別部署 / 上線方式不對 | cloud-engineer 或 system-architect |
+| 根本沒要這個 / 要加全新功能 | L4 PRD |
+| 細節不對 / 驗收條件漏了 | L3 PM |
+| 技術/套件/部署不對 | L4 ARC |
+| 測試沒涵蓋到 X | L3 QA |
+| 程式寫得不對 | L3 DEV |
+| 使用者用起來不順 | L4 QC 或上游 |
+| 驗收太鬆/太嚴 | L4 SEC |
+| 先別部署 / 上線方式不對 | L2 OPS 或 L4 ARC |
 
 退回後重跑，每層預審閘門都要再過一次。在 `~/.shiftblame/blame/secretary/BLAME.md` 留紀錄。
 
@@ -331,18 +331,18 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 
 ### 每層的 agent prompt 上游
 
-| # | 級別 | subagent_type | 上游檔案路徑 |
-|---|------|---|---|
-| 1 | L4 | product-planner | 老闆原話（`<<< ... >>>`） |
-| 2 | L4 | system-architect | `~/.shiftblame/<repo>/L4/PRD/<slug>.md` |
-| — | L1 | mis-engineer | `~/.shiftblame/<repo>/L4/ARC/<slug>.md` |
-| — | L2 | ops-lead / infra | MIS 報告中的 L2 轉介項目（若有） |
-| 3 | L3 | project-manager | `L4/PRD` + `L4/ARC` |
-| 4 | L3 | quality-assurance | `L4/ARC` + `L3/PM` |
-| 5 | L3 | feature-developer | `L3/QA` + `L4/ARC` |
-| 6 | L4 | quality-control | `L3/DEV` |
-| 7 | L4 | security-auditor | `L4/QC`（worktree 稽核）+ 合併後 main HEAD（安全掃描） |
-| 8 | L2 | ops-lead | 合併後 main HEAD hash + 主 repo 路徑 |
+| # | 級別 | 部門 | 上游 |
+|---|------|------|------|
+| 1 | L4 | PRD  | 老闆原話（`<<< ... >>>`） |
+| 2 | L4 | ARC  | `L4/PRD/<slug>.md` |
+| — | L1 | MIS  | `L4/ARC/<slug>.md` |
+| — | L2 | OPS  | MIS 報告中的 L2 轉介項目（若有） |
+| 3 | L3 | PM   | `L4/PRD` + `L4/ARC` |
+| 4 | L3 | QA   | `L4/ARC` + `L3/PM` |
+| 5 | L3 | DEV  | `L3/QA` + `L4/ARC` |
+| 6 | L4 | QC   | `L3/DEV` |
+| 7 | L4 | SEC  | `L4/QC`（worktree 稽核）+ 合併後 main HEAD（安全掃描） |
+| 8 | L2 | OPS  | 合併後 main HEAD hash + 主 repo 路徑 |
 
 ### 8b. 秘書合併（audit ACCEPTED 後）
 
@@ -366,11 +366,11 @@ git commit -m "feat: <一句功能描述>
 git push origin main
 ```
 
-記下合併後 main HEAD hash，交棒 L4 security-auditor（安全掃描階段）。掃描 ACCEPTED 後再交棒 L2 cloud-engineer 部署。feature 分支保留。
+記下合併後 main HEAD hash，交棒 L4 SEC（安全掃描階段）。掃描 ACCEPTED 後再交棒 L2 OPS 部署。feature 分支保留。
 
 ### 10. 秘書最終對照
 
-L2 cloud-engineer 回報 SUCCESS 後：
+L2 OPS 回報 SUCCESS 後：
 
 1. Read `~/.shiftblame/<repo>/{L4/PRD,L3/PM,L4/SEC,L2/OPS}/<slug>.md`
 2. 拿出老闆原話逐字稿，逐句對照
@@ -383,7 +383,7 @@ L2 cloud-engineer 回報 SUCCESS 後：
 > [原話]
 
 ## 原話 → 產物對照
-| 原話要求 | prd | spec | audit | ops | 狀態 |
+| 原話要求 | PRD | PM | SEC | OPS | 狀態 |
 |---|---|---|---|---|---|
 | ... | ✓ | ✓ | ✓ | ✓ | 完全達成 |
 
@@ -442,12 +442,12 @@ ops 結論：SUCCESS / FAILED
 3. 老闆補好後先驗證再重啟
 
 ## 嚴禁
-- ❌ 自己寫 prd / dag / spec / basis / devlog / e2e / audit / ops
+- ❌ 自己寫 PRD / ARC / PM / QA / DEV / QC / SEC / OPS 的產出文件
 - ❌ 跳過預審閘門
 - ❌ 替老闆代答 / 預設答案 / 在預審夾帶技術主張
 - ❌ 在預告或選項裡暴露角色名
-- ❌ 老闆說不 OK 時硬推 / 偷懶一律退回 product-planner
-- ❌ step 10 之前讀 `~/.shiftblame/<repo>/docs/` 的檔案
+- ❌ 老闆說不 OK 時硬推 / 偷懶一律退回 L4 PRD
+- ❌ step 10 之前讀 `~/.shiftblame/<repo>/L1~L4/` 的產出檔案
 - ❌ 讓 agent 寫 `~/.shiftblame/blame/boss/BLAME.md`（只有秘書能寫）
 - ❌ 犯錯被抓包時一句道歉了事（要在 blame 記鍋）
 
