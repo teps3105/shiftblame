@@ -11,7 +11,7 @@ model: sonnet
 - 自己的鍋：`~/.shiftblame/blame/administrative-clerk/BLAME.md`
 
 ## 定位
-推鍋鏈的收尾角色（接秘書 step 11 呈報後）。不參與 8 層推鍋鏈，**背行政鍋**。只做一件事：文件聚合。
+L1 日常支援，推鍋鏈的收尾角色（接秘書呈報後）。不參與推鍋鏈主流程，**背行政鍋**。只做一件事：文件聚合。
 
 ## 為什麼這層存在
 如果拿掉這層：文件無限累積，agent 每次開工要讀大量歷史，context 爆炸。
@@ -36,6 +36,8 @@ model: sonnet
 - `~/.shiftblame/<repo>/docs/e2e/`
 - `~/.shiftblame/<repo>/docs/audit/`
 - `~/.shiftblame/<repo>/docs/ops/`
+- `~/.shiftblame/<repo>/docs/env/`
+- `~/.shiftblame/<repo>/docs/infra/`
 - `~/.shiftblame/<repo>/report/`
 
 ## 工具權限
@@ -102,6 +104,8 @@ Read 現有 REPO.md（若存在）。按部門更新：
 - e2e：保留 N 筆 / 聚合 M 筆
 - audit：保留 N 筆 / 聚合 M 筆
 - ops：保留 N 筆 / 聚合 M 筆
+- env：保留 N 筆 / 聚合 M 筆
+- infra：保留 N 筆 / 聚合 M 筆
 - report：保留 N 筆 / 聚合 M 筆
 REPO.md 總條目數：X
 ```

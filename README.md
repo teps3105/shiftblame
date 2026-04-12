@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#這是什麼)
+[![Agents](https://img.shields.io/badge/agents-16-blue.svg)](#這是什麼)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -19,7 +19,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-需求從企劃推到上線，經過 **8 層 agent**。每一層該誰負責、出了事該找誰，白紙黑字記在鍋紀錄裡。
+需求從企劃推到上線，經過 **L1–L4 四級 agent**。每一層該誰負責、出了事該找誰，白紙黑字記在鍋紀錄裡。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -52,10 +52,12 @@ _一套明確責任歸屬的 Agents 開發框架_
 | `system-architect` | 技術選型不可行、模組拆分導致後續無法實作 |
 | `project-manager` | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
 | `quality-assurance` | **測試主管**：拆分任務不當導致測試工程師產出衝突、收合不完整、測試涵蓋度不足。底下三個測試工程師（unit-test-engineer / integration-test-engineer / e2e-test-engineer）的鍋也由主管扛 |
-| `feature-developer` | **開發主管**：拆分任務不當導致職能工程師產出衝突、收合不完整、實作偏離 spec、引入新 bug。底下三個職能工程師（frontend-engineer / backend-engineer / infra-engineer）的鍋也由主管扛 |
+| `feature-developer` | **開發主管**：拆分任務不當導致職能工程師產出衝突、收合不完整、實作偏離 spec、引入新 bug。底下兩個職能工程師（frontend-engineer / backend-engineer）的鍋也由主管扛 |
 | `quality-control` | e2e 場景遺漏關鍵流程、環境設定錯誤導致假綠 |
-| `audit-reviewer` | 該抓的沒抓到（放水）、退回理由不具體導致重工 |
-| `operations-engineer` | 部署步驟與 dag 不符、上線後 smoke test 沒跑或漏驗 |
+| `security-auditor` | 該抓的沒抓到（放水）、退回理由不具體導致重工、安全掃描遺漏 |
+| `cloud-engineer` | 部署步驟與 dag 不符、上線後 smoke test 沒跑或漏驗 |
+| `mis-engineer` | 環境盤點遺漏、安裝了錯誤版本的工具 |
+| `infra-engineer` | 基建配置錯誤、CI/CD pipeline 不正確 |
 
 ### 行政文書的鍋
 
@@ -110,20 +112,31 @@ _一套明確責任歸屬的 Agents 開發框架_
  下一層繼續（再走一次預審）
 ```
 
-### 8 層推鍋鏈
+### 四級架構
 
-| # | 角色 | 產出 | 主要工作 |
-|---|------|------|---------|
-| 1 | product-planner    | prd    | 把老闆原話轉 PRD |
-| 2 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
-| 3 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
-| 4 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅）= **QA 定規則** |
-| 5 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠） |
-| 6 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 = **QC 依規則驗收** |
-| 7 | audit-reviewer     | audit  | 整條鏈路驗收，回傳 ACCEPTED / REJECTED |
-| 8 | operations-engineer| ops    | 在 main 依 dag 方案實際上線 |
+| 級別 | 定位 | 模型 | 成員 |
+|------|------|------|------|
+| **L1** | 日常支援 | sonnet | MIS 工程師、行政文書 |
+| **L2** | 日常維運 | sonnet | 雲端工程師、基建工程師 |
+| **L3** | 開發執行 | sonnet | 品管、開發經理（+前端、後端）、品保（+3 測試工程師） |
+| **L4** | 規劃決策 | **opus** | 企劃師、架構師、專案經理、資安稽核 |
 
-**行政文書**不參與 8 層鏈路，只在鏈路完成後進行文件聚合。
+### 推鍋鏈
+
+| # | 級別 | 角色 | 產出 | 主要工作 |
+|---|------|------|------|---------|
+| 1 | L4 | product-planner    | prd    | 把老闆原話轉 PRD |
+| 2 | L4 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
+| — | L1 | mis-engineer       | env    | 讀 dag 盤點環境、安裝工具 |
+| — | L2 | infra-engineer     | infra  | 基建需求（若 MIS 轉介） |
+| 3 | L4 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
+| 4 | L3 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅）= **QA 定規則** |
+| 5 | L3 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠），子 agent：前端 + 後端 |
+| 6 | L3 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 = **QC 依規則驗收** |
+| 7 | L4 | security-auditor   | audit  | 整條鏈路驗收 + 安全掃描 |
+| 8 | L2 | cloud-engineer     | ops    | 在 main 依 dag 方案實際上線 |
+
+**L1 行政文書**不參與推鍋鏈主流程，只在鏈路完成後進行文件聚合。
 
 ### 檔案結構
 
@@ -141,11 +154,12 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── feature-developer/
 │   │   ├── BLAME.md                         # 開發主管的鍋
 │   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋
-│   │   ├── backend-engineer/BLAME.md        # 後端工程師的鍋
-│   │   └── infra-engineer/BLAME.md          # 基建工程師的鍋
+│   │   └── backend-engineer/BLAME.md        # 後端工程師的鍋
 │   ├── quality-control/BLAME.md
-│   ├── audit-reviewer/BLAME.md
-│   ├── operations-engineer/BLAME.md
+│   ├── security-auditor/BLAME.md            # 資安稽核的鍋
+│   ├── mis-engineer/BLAME.md                # MIS 的鍋
+│   ├── cloud-engineer/BLAME.md              # 雲端工程師的鍋
+│   ├── infra-engineer/BLAME.md              # 基建工程師的鍋
 │   ├── secretary/BLAME.md
 │   ├── administrative-clerk/BLAME.md       # 行政文書的鍋
 │   └── boss/BLAME.md
@@ -160,11 +174,12 @@ _一套明確責任歸屬的 Agents 開發框架_
     │   │   └── e2e/...                     # e2e-test-engineer 產出
     │   ├── devlog/<slug>/
     │   │   ├── frontend/...              # frontend-engineer 產出
-    │   │   ├── backend/...               # backend-engineer 產出
-    │   │   └── infra/...                 # infra-engineer 產出
+    │   │   └── backend/...               # backend-engineer 產出
     │   ├── e2e/<slug>.md
     │   ├── audit/<slug>.md
-    │   └── ops/<slug>.md
+    │   ├── ops/<slug>.md
+    │   ├── env/<slug>.md                 # mis-engineer 產出
+    │   └── infra/<slug>.md               # infra-engineer 產出
     ├── REPO.md                            # 文件聚合檔（長期記憶）
     └── report/
         └── <YYYY-MM-DD_HHMMSS>-<slug>.md   # 秘書最終對照報告
