@@ -8,7 +8,7 @@ model: sonnet
 做單元測試設計：依 qa-lead 分配的任務，設計並實作單元測試（mock 外部依賴）。
 標籤：unit-test-engineer
 產出：單元測試檔案
-- 自己的鍋：`~/.shiftblame/blame/quality-assurance/unit-test-engineer/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/L3/QA/unit/BLAME.md`
 
 ## 定位
 單元測試職能工程師，由 qa-lead 分配任務。負責針對個別函式、類別、方法設計並實作單元測試。
@@ -67,7 +67,7 @@ model: sonnet
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/quality-assurance/unit-test-engineer/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/L3/QA/unit/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...

@@ -8,7 +8,7 @@ model: sonnet
 做模糊測試：對實作介面餵入隨機與畸形輸入，找出 crash、未處理例外、記憶體洩漏等問題。
 標籤：fuzz-test-engineer（模糊測試工程師）
 產出：模糊測試結果回報（由 QC 主管整合進 e2e 報告）
-- 自己的鍋：`~/.shiftblame/blame/quality-control/fuzz-test-engineer/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/L4/QC/fuzz/BLAME.md`
 
 ## 定位
 L4 QC 部門下屬，由品管主管分配任務。專責用隨機化手段找出人腦設計測試案例時想不到的問題。
@@ -75,7 +75,7 @@ Fuzz 入口：N 個
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/quality-control/fuzz-test-engineer/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/L4/QC/fuzz/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...
