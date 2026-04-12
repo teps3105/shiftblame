@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-26-blue.svg)](#三級架構)
+[![Agents](https://img.shields.io/badge/agents-27-blue.svg)](#三級架構)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -31,7 +31,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 |------|------|------|------|
 | **L1** | 支援與維運 | **haiku** | MIS、ADM、OPS（+cloud、infra）、AUTO（+ci、cd） |
 | **L2** | 開發執行 | **sonnet** | PM、DEV（+fe、be、db）、QA（+unit、integ、e2e） |
-| **L3** | 規劃決策 | **opus** | PRD、ARC、MKT、QC（+edge、fuzz）、SEC（+red、blue） |
+| **L3** | 規劃決策 | **opus** | PRD、ARC、MKT、QC（+edge、fuzz、user）、SEC（+red、blue） |
 
 ---
 
@@ -144,7 +144,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   ├── L2/DEV/{LEAD,fe,be,db}/BLAME.md
 │   ├── L2/QA/{LEAD,unit,integ,e2e}/BLAME.md
 │   ├── L3/{PRD,ARC,MKT}/LEAD/BLAME.md
-│   ├── L3/QC/{LEAD,edge,fuzz}/BLAME.md
+│   ├── L3/QC/{LEAD,edge,fuzz,user}/BLAME.md
 │   ├── L3/SEC/{LEAD,red,blue}/BLAME.md
 │   ├── secretary/BLAME.md
 │   └── boss/BLAME.md
