@@ -34,7 +34,7 @@ mkdir -p ~/.shiftblame/blame/L2/QA/{LEAD,unit,integ,e2e}
 mkdir -p ~/.shiftblame/blame/L3/PRD/LEAD
 mkdir -p ~/.shiftblame/blame/L3/ARC/LEAD
 mkdir -p ~/.shiftblame/blame/L3/MKT/LEAD
-mkdir -p ~/.shiftblame/blame/L3/QC/{LEAD,edge,fuzz}
+mkdir -p ~/.shiftblame/blame/L3/QC/{LEAD,edge,fuzz,user}
 mkdir -p ~/.shiftblame/blame/L3/SEC/{LEAD,red,blue}
 # 特殊
 mkdir -p ~/.shiftblame/blame/secretary
