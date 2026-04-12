@@ -1,8 +1,8 @@
 ---
-name: shiftblame-reflect
+name: blame-reflect
 description: >-
   聚合各部門的鍋紀錄（BLAME.md），提煉常識（規則）與認知（模型），寫回檔頭。
-  Use this skill when: the user says "reflect", "聚合鍋紀錄", "/shiftblame-reflect".
+  Use this skill when: the user says "reflect", "聚合鍋紀錄", "/blame-reflect".
 ---
 
 # shiftblame:reflect — 鍋紀錄聚合
