@@ -117,9 +117,9 @@ _一套明確責任歸屬的 Agents 開發框架_
 | 1 | product-planner    | prd    | 把老闆原話轉 PRD |
 | 2 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
 | 3 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
-| 4 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅） |
+| 4 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅）= **QA 定規則** |
 | 5 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠） |
-| 6 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 |
+| 6 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 = **QC 依規則驗收** |
 | 7 | audit-reviewer     | audit  | 整條鏈路驗收，回傳 ACCEPTED / REJECTED |
 | 8 | operations-engineer| ops    | 在 main 依 dag 方案實際上線 |
 
@@ -242,7 +242,7 @@ npm install shiftblame
 /shiftblame-reflect
 ```
 
-這會掃描所有角色的鍋紀錄，將「下次怎麼避免」欄位提煉成條列式常識，重新寫回各角色的 BLAME.md 檔頭。
+這會掃描所有角色的鍋紀錄，將「下次怎麼避免」提煉成**常識（規則）**，將「背後的機制」與「為什麼這條規則有效」提煉成**認知（模型）**，重新寫回各角色的 BLAME.md 檔頭。
 
 > **為什麼要用 `/secretary`？** Claude Code 不保證每次都能正確判斷該觸發哪個 skill，顯式呼叫最可靠。
 
