@@ -238,7 +238,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=$(basename "$REPO_ROOT")
 ```
 
-`$REPO_ROOT/.shiftblame/` 不存在 → 呼叫 `Skill("shiftblame-init")`，完成後繼續。
+`$REPO_ROOT/.shiftblame/` 不存在 → 呼叫 `Skill("blame-init")`，完成後繼續。
 
 ### 1. 掃描 agents + 收下需求
 

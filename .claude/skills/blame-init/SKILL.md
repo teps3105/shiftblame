@@ -1,8 +1,8 @@
 ---
-name: shiftblame-init
+name: blame-init
 description: >-
   初始化推鍋環境。建立 ~/.shiftblame/ 資料夾結構、repo symlink、.gitignore 檢查、commit 並推送。
-  Use this skill when: the repo has no .shiftblame/ directory, or when the user says "初始化", "init", "/shiftblame-init".
+  Use this skill when: the repo has no .shiftblame/ directory, or when the user says "初始化", "init", "/blame-init".
 ---
 
 # shiftblame:init — 資料夾結構管理
