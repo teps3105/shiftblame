@@ -19,7 +19,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-需求從企劃推到上線，經過 **L1–L4 四級 agent**。每一層該誰負責、出了事該找誰，白紙黑字記在鍋紀錄裡。
+需求從企劃推到上線，經過 **L1–L3 三級 agent**。每一層該誰負責、出了事該找誰，白紙黑字記在鍋紀錄裡。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -112,29 +112,28 @@ _一套明確責任歸屬的 Agents 開發框架_
  下一層繼續（再走一次預審）
 ```
 
-### 四級架構
+### 三級架構
 
-| 級別 | 定位 | 模型 | 成員 |
+| 級別 | 定位 | 模型 | 部門 |
 |------|------|------|------|
-| **L1** | 日常支援 | sonnet | MIS 工程師、行政文書 |
-| **L2** | 日常維運 | sonnet | 雲端工程師、基建工程師 |
-| **L3** | 開發執行 | sonnet | 品管、開發經理（+前端、後端）、品保（+3 測試工程師） |
-| **L4** | 規劃決策 | **opus** | 企劃師、架構師、專案經理、資安稽核 |
+| **L1** | 支援與維運 | **haiku** | MIS、ADM、OPS（+cloud、infra）、AUTO（+ci、cd） |
+| **L2** | 開發執行 | **sonnet** | PM、DEV（+fe、be）、QA（+unit、integ、e2e） |
+| **L3** | 規劃決策 | **opus** | PRD、ARC、QC（+edge、fuzz）、SEC（+red、blue） |
 
 ### 推鍋鏈
 
 | # | 級別 | 角色 | 產出 | 主要工作 |
 |---|------|------|------|---------|
-| 1 | L4 | product-planner    | prd    | 把老闆原話轉 PRD |
-| 2 | L4 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
+| 1 | L3 | product-planner    | prd    | 把老闆原話轉 PRD |
+| 2 | L3 | system-architect   | dag    | 技術選型、模組拓撲、檔案結構、介面簽章、部署方案 |
 | — | L1 | mis-engineer       | env    | 讀 dag 盤點環境、安裝工具 |
-| — | L2 | infra-engineer     | infra  | 基建需求（若 MIS 轉介） |
-| 3 | L4 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
-| 4 | L3 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅）= **QA 定規則** |
-| 5 | L3 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠），子 agent：前端 + 後端 |
-| 6 | L3 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 = **QC 依規則驗收** |
-| 7 | L4 | security-auditor   | audit  | 整條鏈路驗收 + 安全掃描 |
-| 8 | L2 | cloud-engineer     | ops    | 在 main 依 dag 方案實際上線 |
+| — | L1 | infra-engineer     | infra  | 基建需求（若 MIS 轉介） |
+| 3 | L3 | project-manager    | spec   | 功能拆解、驗收條件、任務依賴 |
+| 4 | L2 | quality-assurance  | basis  | 依 dag + spec 寫測試（TDD 紅）= **QA 定規則** |
+| 5 | L2 | feature-developer  | devlog | 寫最小實作讓測試全綠（TDD 綠），子 agent：前端 + 後端 |
+| 6 | L2 | quality-control    | e2e    | 使用者視角 e2e 測試並實際執行 = **QC 依規則驗收** |
+| 7 | L3 | security-auditor   | audit  | 整條鏈路驗收 + 安全掃描 |
+| 8 | L1 | cloud-engineer     | ops    | 在 main 依 dag 方案實際上線 |
 
 **L1 行政文書**不參與推鍋鏈主流程，只在鏈路完成後進行文件聚合。
 
@@ -145,8 +144,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 ├── blame/                                            # 鍋紀錄（所有 repo 共用）
 │   ├── L1/
 │   │   ├── ADM/LEAD/BLAME.md                        # 行政文書
-│   │   └── MIS/LEAD/BLAME.md                        # MIS
-│   ├── L2/
+│   │   ├── MIS/LEAD/BLAME.md                        # MIS
 │   │   ├── OPS/
 │   │   │   ├── LEAD/BLAME.md                        # 維運主管
 │   │   │   ├── cloud/BLAME.md                       # 雲端工程師
@@ -155,7 +153,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   │       ├── LEAD/BLAME.md                        # 自動化主管
 │   │       ├── ci/BLAME.md                          # CI 工程師
 │   │       └── cd/BLAME.md                          # CD 工程師
-│   ├── L3/
+│   ├── L2/
 │   │   ├── PM/LEAD/BLAME.md                         # 專案經理
 │   │   ├── DEV/
 │   │   │   ├── LEAD/BLAME.md                        # 開發主管
@@ -166,7 +164,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   │       ├── unit/BLAME.md                        # 單元測試
 │   │       ├── integ/BLAME.md                       # 整合測試
 │   │       └── e2e/BLAME.md                         # E2E 測試
-│   ├── L4/
+│   ├── L3/
 │   │   ├── PRD/LEAD/BLAME.md                        # 企劃師
 │   │   ├── ARC/LEAD/BLAME.md                        # 架構師
 │   │   ├── QC/
@@ -181,15 +179,14 @@ _一套明確責任歸屬的 Agents 開發框架_
 │   └── boss/BLAME.md
 └── <repo>/                                           # 每個 repo 各自一個目錄
     ├── L1/
-    │   └── MIS/<slug>.md                            # env 環境準備
-    ├── L2/
+    │   ├── MIS/<slug>.md                            # env 環境準備
     │   ├── OPS/<slug>.md                            # ops 部署紀錄
     │   └── AUTO/<slug>.md                           # 自動化紀錄
-    ├── L3/
+    ├── L2/
     │   ├── PM/<slug>.md                             # spec 規格
     │   ├── DEV/<slug>.md                            # devlog 開發筆記
     │   └── QA/<slug>.md                             # basis 測試設計
-    ├── L4/
+    ├── L3/
     │   ├── PRD/<slug>.md                            # prd 需求
     │   ├── ARC/<slug>.md                            # dag 架構
     │   ├── QC/<slug>.md                             # e2e 品管報告
