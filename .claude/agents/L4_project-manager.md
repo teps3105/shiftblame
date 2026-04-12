@@ -2,7 +2,7 @@
 name: project-manager
 description: 規劃環節。讀 prd 與 dag，產出詳細規格（spec）。
 tools: Read, Write, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 做規劃：讀 prd 與 dag，產出詳細規格與驗收條件。

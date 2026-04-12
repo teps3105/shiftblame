@@ -2,7 +2,7 @@
 name: product-planner
 description: 企劃環節。把老闆原話轉寫成 PRD。
 tools: Read, Write, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 做企劃：把老闆原話轉寫成 PRD。

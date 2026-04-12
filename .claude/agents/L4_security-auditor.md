@@ -2,7 +2,7 @@
 name: audit-reviewer
 description: 稽核環節。做整條鏈路最終驗收，回傳 ACCEPTED 或 REJECTED 結論給秘書。
 tools: Read, Write, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 做稽核：獨立驗收整條鏈路，重跑測試，回傳 ACCEPTED 或 REJECTED。
