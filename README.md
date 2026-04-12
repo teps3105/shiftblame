@@ -141,48 +141,62 @@ _一套明確責任歸屬的 Agents 開發框架_
 ### 檔案結構
 
 ```
-~/.shiftblame/                               # 推鍋產物（家目錄）
-├── blame/                                   # 鍋紀錄（所有 repo 共用）
-│   ├── product-planner/BLAME.md
-│   ├── system-architect/BLAME.md
-│   ├── project-manager/BLAME.md
-│   ├── quality-assurance/
-│   │   ├── BLAME.md                         # 測試主管的鍋
-│   │   ├── unit-test-engineer/BLAME.md      # 單元測試工程師的鍋
-│   │   ├── integration-test-engineer/BLAME.md # 整合測試工程師的鍋
-│   │   └── e2e-test-engineer/BLAME.md       # E2E 測試工程師的鍋
-│   ├── feature-developer/
-│   │   ├── BLAME.md                         # 開發主管的鍋
-│   │   ├── frontend-engineer/BLAME.md       # 前端工程師的鍋
-│   │   └── backend-engineer/BLAME.md        # 後端工程師的鍋
-│   ├── quality-control/BLAME.md
-│   ├── security-auditor/BLAME.md            # 資安稽核的鍋
-│   ├── mis-engineer/BLAME.md                # MIS 的鍋
-│   ├── cloud-engineer/BLAME.md              # 雲端工程師的鍋
-│   ├── infra-engineer/BLAME.md              # 基建工程師的鍋
+~/.shiftblame/                                        # 推鍋產物（家目錄）
+├── blame/                                            # 鍋紀錄（所有 repo 共用）
+│   ├── L1/
+│   │   ├── ADM/LEAD/BLAME.md                        # 行政文書
+│   │   └── MIS/LEAD/BLAME.md                        # MIS
+│   ├── L2/
+│   │   ├── OPS/
+│   │   │   ├── LEAD/BLAME.md                        # 維運主管
+│   │   │   ├── cloud/BLAME.md                       # 雲端工程師
+│   │   │   └── infra/BLAME.md                       # 基建工程師
+│   │   └── AUTO/
+│   │       ├── LEAD/BLAME.md                        # 自動化主管
+│   │       ├── ci/BLAME.md                          # CI 工程師
+│   │       └── cd/BLAME.md                          # CD 工程師
+│   ├── L3/
+│   │   ├── PM/LEAD/BLAME.md                         # 專案經理
+│   │   ├── DEV/
+│   │   │   ├── LEAD/BLAME.md                        # 開發主管
+│   │   │   ├── fe/BLAME.md                          # 前端
+│   │   │   └── be/BLAME.md                          # 後端
+│   │   └── QA/
+│   │       ├── LEAD/BLAME.md                        # 品保主管
+│   │       ├── unit/BLAME.md                        # 單元測試
+│   │       ├── integ/BLAME.md                       # 整合測試
+│   │       └── e2e/BLAME.md                         # E2E 測試
+│   ├── L4/
+│   │   ├── PRD/LEAD/BLAME.md                        # 企劃師
+│   │   ├── ARC/LEAD/BLAME.md                        # 架構師
+│   │   ├── QC/
+│   │   │   ├── LEAD/BLAME.md                        # 品管主管
+│   │   │   ├── edge/BLAME.md                        # 邊緣測試
+│   │   │   └── fuzz/BLAME.md                        # 模糊測試
+│   │   └── SEC/
+│   │       ├── LEAD/BLAME.md                        # 資安主管
+│   │       ├── red/BLAME.md                         # 紅隊
+│   │       └── blue/BLAME.md                        # 藍隊
 │   ├── secretary/BLAME.md
-│   ├── administrative-clerk/BLAME.md       # 行政文書的鍋
 │   └── boss/BLAME.md
-└── <repo>/                                  # 每個 repo 各自一個目錄
-    ├── docs/
-    │   ├── prd/<slug>.md
-    │   ├── dag/<slug>.md
-    │   ├── spec/<slug>.md
-    │   ├── basis/<slug>/
-    │   │   ├── unit/...                    # unit-test-engineer 產出
-    │   │   ├── integration/...             # integration-test-engineer 產出
-    │   │   └── e2e/...                     # e2e-test-engineer 產出
-    │   ├── devlog/<slug>/
-    │   │   ├── frontend/...              # frontend-engineer 產出
-    │   │   └── backend/...               # backend-engineer 產出
-    │   ├── e2e/<slug>.md
-    │   ├── audit/<slug>.md
-    │   ├── ops/<slug>.md
-    │   ├── env/<slug>.md                 # mis-engineer 產出
-    │   └── infra/<slug>.md               # infra-engineer 產出
-    ├── REPO.md                            # 文件聚合檔（長期記憶）
-    └── report/
-        └── <YYYY-MM-DD_HHMMSS>-<slug>.md   # 秘書最終對照報告
+└── <repo>/                                           # 每個 repo 各自一個目錄
+    ├── L1/
+    │   └── MIS/<slug>.md                            # env 環境準備
+    ├── L2/
+    │   ├── OPS/<slug>.md                            # ops 部署紀錄
+    │   └── AUTO/<slug>.md                           # 自動化紀錄
+    ├── L3/
+    │   ├── PM/<slug>.md                             # spec 規格
+    │   ├── DEV/<slug>.md                            # devlog 開發筆記
+    │   └── QA/<slug>.md                             # basis 測試設計
+    ├── L4/
+    │   ├── PRD/<slug>.md                            # prd 需求
+    │   ├── ARC/<slug>.md                            # dag 架構
+    │   ├── QC/<slug>.md                             # e2e 品管報告
+    │   └── SEC/<slug>.md                            # audit 稽核報告
+    ├── report/
+    │   └── <YYYY-MM-DD_HHMMSS>-<slug>.md            # 秘書最終對照報告
+    └── REPO.md                                      # 文件聚合檔（長期記憶）
 
 ~/.worktree/                                 # 共享 worktree（家目錄）
 └── <repo>/

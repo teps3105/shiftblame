@@ -162,14 +162,14 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 **唯一職責**：對 `~/.shiftblame/<repo>/` 的 `docs/` 與 `report/` 進行文件聚合。
 
 **聚合規則**：
-- 掃描 `docs/` 下各部門目錄（prd、dag、spec、basis、devlog、e2e、audit、ops、env、infra）及 `report/`
+- 掃描 `~/.shiftblame/<repo>/` 下各層各部門目錄及 `report/`
 - 每個目錄保留最新 3 筆檔案作為 STM（短期記憶），其餘聚合至 `~/.shiftblame/<repo>/REPO.md`
 - **即使檔案少於 3 筆，仍須執行聚合**（將現有內容併入 REPO.md，原檔案保留）
 - 聚合完成後刪除已聚合的舊檔案（僅刪除超出最新 3 筆的部分）
 
-**REPO.md 格式**：按部門分 `##` 區塊，每筆以原始 slug 為 `###` 標題，保留原始文件完整文字。新的聯合內容插在區塊頂部。
+**REPO.md 格式**：按部門分 `##` 區塊，每筆以原始 slug 為 `###` 標題，保留原始文件完整文字。新的聚合內容插在區塊頂部。
 
-**鍋紀錄**：`~/.shiftblame/blame/administrative-clerk/BLAME.md`
+**鍋紀錄**：`~/.shiftblame/blame/L1/ADM/LEAD/BLAME.md`
 
 **觸發方式**：秘書在 step 12 使用 administrative-clerk agent 執行，prompt 包含 repo 名稱、目錄路徑、聚合規則。
 
@@ -179,47 +179,67 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 
 ```
 ~/.shiftblame/
-├── blame/                           ← 所有 repo 共用的鍋紀錄
-│   ├── <role>/BLAME.md              ← 各環節角色各一份
-│   ├── feature-developer/           ← 開發主管（含底下工程師）
-│   │   ├── BLAME.md
-│   │   ├── frontend-engineer/BLAME.md
-│   │   └── backend-engineer/BLAME.md
-│   ├── mis-engineer/BLAME.md
-│   ├── cloud-engineer/BLAME.md
-│   ├── infra-engineer/BLAME.md
-│   ├── quality-assurance/           ← 測試主管（含底下測試工程師）
-│   │   ├── BLAME.md
-│   │   ├── unit-test-engineer/BLAME.md
-│   │   ├── integration-test-engineer/BLAME.md
-│   │   └── e2e-test-engineer/BLAME.md
+├── blame/                                    ← 所有 repo 共用的鍋紀錄
+│   ├── L1/
+│   │   ├── ADM/LEAD/BLAME.md                ← 行政文書
+│   │   └── MIS/LEAD/BLAME.md                ← MIS
+│   ├── L2/
+│   │   ├── OPS/
+│   │   │   ├── LEAD/BLAME.md                ← 維運主管
+│   │   │   ├── cloud/BLAME.md               ← 雲端工程師
+│   │   │   └── infra/BLAME.md               ← 基建工程師
+│   │   └── AUTO/
+│   │       ├── LEAD/BLAME.md                ← 自動化主管
+│   │       ├── ci/BLAME.md                  ← CI 工程師
+│   │       └── cd/BLAME.md                  ← CD 工程師
+│   ├── L3/
+│   │   ├── PM/LEAD/BLAME.md                 ← 專案經理
+│   │   ├── DEV/
+│   │   │   ├── LEAD/BLAME.md                ← 開發主管
+│   │   │   ├── fe/BLAME.md                  ← 前端
+│   │   │   └── be/BLAME.md                  ← 後端
+│   │   └── QA/
+│   │       ├── LEAD/BLAME.md                ← 品保主管
+│   │       ├── unit/BLAME.md                ← 單元測試
+│   │       ├── integ/BLAME.md               ← 整合測試
+│   │       └── e2e/BLAME.md                 ← E2E 測試
+│   ├── L4/
+│   │   ├── PRD/LEAD/BLAME.md                ← 企劃師
+│   │   ├── ARC/LEAD/BLAME.md                ← 架構師
+│   │   ├── QC/
+│   │   │   ├── LEAD/BLAME.md                ← 品管主管
+│   │   │   ├── edge/BLAME.md                ← 邊緣測試
+│   │   │   └── fuzz/BLAME.md                ← 模糊測試
+│   │   └── SEC/
+│   │       ├── LEAD/BLAME.md                ← 資安主管
+│   │       ├── red/BLAME.md                 ← 紅隊
+│   │       └── blue/BLAME.md                ← 藍隊
 │   ├── secretary/BLAME.md
-│   ├── administrative-clerk/BLAME.md     ← 行政文書鍋紀錄
 │   └── boss/BLAME.md
-├── <repo>/                          ← 每個 repo 各自一個目錄
-│   ├── docs/
-│   │   ├── prd/<slug>.md
-│   │   ├── dag/<slug>.md
-│   │   ├── spec/<slug>.md
-│   │   ├── basis/<slug>.md
-│   │   ├── devlog/<slug>/
-│   │   │   ├── frontend/...         ← frontend-engineer 產出
-│   │   │   ├── backend/...          ← backend-engineer 產出
-│   │   │   └── infra/...            ← infra-engineer 產出
-│   │   ├── e2e/<slug>.md
-│   │   ├── audit/<slug>.md
-│   │   ├── ops/<slug>.md
-│   │   ├── env/<slug>.md              ← mis-engineer 產出
-│   │   └── infra/<slug>.md            ← infra-engineer 產出
-│   ├── REPO.md                        ← 各部門文件聚合檔（長期記憶）
-│   └── report/
-│       └── <YYYY-MM-DD_HHMMSS>-<slug>.md   ← 秘書最終對照報告
+└── <repo>/                                   ← 每個 repo 各自一個目錄
+    ├── L1/
+    │   └── MIS/<slug>.md                    ← env 環境準備
+    ├── L2/
+    │   ├── OPS/<slug>.md                    ← ops 部署紀錄
+    │   └── AUTO/<slug>.md                   ← 自動化紀錄
+    ├── L3/
+    │   ├── PM/<slug>.md                     ← spec 規格
+    │   ├── DEV/<slug>.md                    ← devlog 開發筆記
+    │   └── QA/<slug>.md                     ← basis 測試設計
+    ├── L4/
+    │   ├── PRD/<slug>.md                    ← prd 需求
+    │   ├── ARC/<slug>.md                    ← dag 架構
+    │   ├── QC/<slug>.md                     ← e2e 品管報告
+    │   └── SEC/<slug>.md                    ← audit 稽核報告
+    ├── report/
+    │   └── <YYYY-MM-DD_HHMMSS>-<slug>.md   ← 秘書最終對照報告
+    └── REPO.md                              ← 文件聚合檔（長期記憶）
 ```
 
 - `<repo>` = `basename $(git rev-parse --show-toplevel)`
 - `blame/` 跨 repo 共用，新條目插在檔頭
-- 秘書在 step 1 確保 `~/.shiftblame/<repo>/docs/` 與 `~/.shiftblame/blame/` 存在（`mkdir -p`）
-- 每個 agent 開工讀 `~/.shiftblame/<repo>/docs/<自己的產出>/` 學團隊歷史，讀 `~/.shiftblame/blame/<自己>/BLAME.md` 避雷
+- 秘書在 step 1 確保 `~/.shiftblame/<repo>/` 各層目錄與 `~/.shiftblame/blame/` 存在（`mkdir -p`）
+- 每個 agent 開工讀 `~/.shiftblame/<repo>/<Ln>/<DEPT>/` 學團隊歷史，讀 `~/.shiftblame/blame/<Ln>/<DEPT>/<role>/BLAME.md` 避雷
 
 ## BLAME.md 條目格式
 
@@ -291,7 +311,7 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 1. **Read `~/.shiftblame/<repo>/REPO.md`**（若存在）— 取得專案長期記憶，了解歷史需求與架構決策
 2. **原話逐字保存**（最後一步要用）
 2. 從需求中提 kebab-case **slug**
-3. Glob 檢查 `~/.shiftblame/<repo>/docs/prd/<slug>.md` 是否存在
+3. Glob 檢查 `~/.shiftblame/<repo>/L4/PRD/<slug>.md` 是否存在
 4. 建立共享 worktree + symlink：
    ```bash
    REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -314,15 +334,15 @@ L4 企劃到 L3 品管在共享 worktree 的 feature 分支上 append-only commi
 | # | 級別 | subagent_type | 上游檔案路徑 |
 |---|------|---|---|
 | 1 | L4 | product-planner | 老闆原話（`<<< ... >>>`） |
-| 2 | L4 | system-architect | `~/.shiftblame/<repo>/docs/prd/<slug>.md` |
-| — | L1 | mis-engineer | `~/.shiftblame/<repo>/docs/dag/<slug>.md` |
-| — | L2 | infra-engineer | MIS env 報告中的 L2 轉介項目（若有） |
-| 3 | L4 | project-manager | `prd` + `dag` |
-| 4 | L3 | quality-assurance | `dag` + `spec` |
-| 5 | L3 | feature-developer | `basis` + `dag` |
-| 6 | L3 | quality-control | `devlog` |
-| 7 | L4 | security-auditor | `e2e`（worktree 稽核）+ 合併後 main HEAD（安全掃描） |
-| 8 | L2 | cloud-engineer | 合併後 main HEAD hash + 主 repo 路徑 |
+| 2 | L4 | system-architect | `~/.shiftblame/<repo>/L4/PRD/<slug>.md` |
+| — | L1 | mis-engineer | `~/.shiftblame/<repo>/L4/ARC/<slug>.md` |
+| — | L2 | ops-lead / infra | MIS 報告中的 L2 轉介項目（若有） |
+| 3 | L3 | project-manager | `L4/PRD` + `L4/ARC` |
+| 4 | L3 | quality-assurance | `L4/ARC` + `L3/PM` |
+| 5 | L3 | feature-developer | `L3/QA` + `L4/ARC` |
+| 6 | L4 | quality-control | `L3/DEV` |
+| 7 | L4 | security-auditor | `L4/QC`（worktree 稽核）+ 合併後 main HEAD（安全掃描） |
+| 8 | L2 | ops-lead | 合併後 main HEAD hash + 主 repo 路徑 |
 
 ### 8b. 秘書合併（audit ACCEPTED 後）
 
@@ -352,7 +372,7 @@ git push origin main
 
 L2 cloud-engineer 回報 SUCCESS 後：
 
-1. Read `~/.shiftblame/<repo>/docs/{prd,spec,audit,ops}/<slug>.md`
+1. Read `~/.shiftblame/<repo>/{L4/PRD,L3/PM,L4/SEC,L2/OPS}/<slug>.md`
 2. 拿出老闆原話逐字稿，逐句對照
 3. Write 秘書報告到 `~/.shiftblame/<repo>/report/${TS}-<slug>.md`：
 
@@ -392,7 +412,7 @@ ops 結論：SUCCESS / FAILED
 **agent**：administrative-clerk（subagent_type）
 
 **prompt 要點**：
-1. 掃描 `~/.shiftblame/<repo>/docs/` 下各部門目錄（prd、dag、spec、basis、devlog、e2e、audit、ops、env、infra）
+1. 掃描 `~/.shiftblame/<repo>/` 下各層各部門目錄（L1/MIS、L2/OPS、L2/AUTO、L3/PM、L3/DEV、L3/QA、L4/PRD、L4/ARC、L4/QC、L4/SEC）
 2. 掃描 `~/.shiftblame/<repo>/report/`
 3. 對每個目錄：
    - 依檔名時間戳或修改時間排序
