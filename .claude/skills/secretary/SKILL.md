@@ -95,7 +95,7 @@ ls .claude/agents/L*.md
 
 ```
 PRD → ARC → MIS(環境) → PM → QA(TDD紅) → DEV(TDD綠) → QC(品管)
-  → 秘書 merge → SEC(稽核+安全) → OPS(部署)
+  → SEC(稽核+安全) → AUTO CI(合併) → OPS(部署)
   → 秘書對照 → ADM(文件聚合)
 ```
 
@@ -280,24 +280,16 @@ L1 支援與維運類需求**不建 worktree**，直接在主 repo 操作。
 
 ### 5. 合併（若有 worktree）
 
-SEC ACCEPTED 後，秘書親自執行：
+SEC ACCEPTED 後，秘書推給 L1 AUTO（CI 工程師）執行合併：
 
-```bash
-cd <WORKTREE_PATH>
-git fetch origin main
-git rebase origin/main
-git push -u origin <BRANCH> --force-with-lease
-
-cd "$REPO_ROOT"
-git checkout main
-git pull --ff-only origin main
-git merge --squash <BRANCH>
-git commit -m "feat: <一句功能描述>
-
-推鍋完成。SEC 結論：ACCEPTED
-完整紀錄保留於分支 <BRANCH>。"
-git push origin main
 ```
+秘書 → AUTO CI：
+  worktree 路徑、分支名稱、slug、SEC ACCEPTED 確認
+  → CI 執行 rebase + merge --squash + push
+  → 回報合併後 main HEAD hash
+```
+
+**合併是 CI 的職責，不是秘書的。** 秘書只負責確認 SEC ACCEPTED 後交棒。
 
 ### 6. 秘書最終對照
 
