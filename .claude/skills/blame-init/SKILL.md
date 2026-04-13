@@ -1,7 +1,7 @@
 ---
 name: blame-init
 description: >-
-  初始化推鍋環境。建立 ~/.shiftblame/ 資料夾結構、repo symlink、.gitignore 檢查、commit 並推送。
+  初始化推鍋環境。建立 ~/.shiftblame/ 資料夾結構、REPO.md、repo symlink、.gitignore 檢查、commit 並推送。
   Use this skill when: the repo has no .shiftblame/ directory, or when the user says "初始化", "init", "/blame-init".
 ---
 
@@ -21,30 +21,24 @@ REPO_NAME=$(basename "$REPO_ROOT")
 
 #### blame 目錄（跨 repo 共用）
 ```bash
-# 支援與維運
-mkdir -p ~/.shiftblame/blame/ADM/LEAD
-mkdir -p ~/.shiftblame/blame/MIS/LEAD
-mkdir -p ~/.shiftblame/blame/OPS/{LEAD,cloud,infra}
-mkdir -p ~/.shiftblame/blame/AUTO/{LEAD,ci,cd}
 # 開發執行
-mkdir -p ~/.shiftblame/blame/PM/LEAD
-mkdir -p ~/.shiftblame/blame/DEV/{LEAD,fe,be,db}
-mkdir -p ~/.shiftblame/blame/QA/{LEAD,unit,integ,e2e}
+mkdir -p ~/.shiftblame/blame/DEV/{fe,be,db}
+mkdir -p ~/.shiftblame/blame/QA/{unit,integ,e2e}
+# 支援與維運
+mkdir -p ~/.shiftblame/blame/MIS/{infra,cicd,cloud}
 # 規劃決策
-mkdir -p ~/.shiftblame/blame/PRD/LEAD
-mkdir -p ~/.shiftblame/blame/ARC/LEAD
-mkdir -p ~/.shiftblame/blame/MKT/LEAD
-mkdir -p ~/.shiftblame/blame/QC/{LEAD,edge,fuzz,user}
-mkdir -p ~/.shiftblame/blame/SEC/{LEAD,audit,consistency,red,blue}
+mkdir -p ~/.shiftblame/blame/PRD/{plan,arch,market}
+mkdir -p ~/.shiftblame/blame/QC/{test,uni,user}
+mkdir -p ~/.shiftblame/blame/SEC/{red,white,blue}
 # 特殊
 mkdir -p ~/.shiftblame/blame/SECRETARY
 ```
 
 #### repo 文件目錄（per repo）
 ```bash
-mkdir -p ~/.shiftblame/"$REPO_NAME"/{MIS,OPS,AUTO,ADM}
-mkdir -p ~/.shiftblame/"$REPO_NAME"/{PM,DEV,QA}
-mkdir -p ~/.shiftblame/"$REPO_NAME"/{PRD,ARC,MKT,QC,SEC}
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{MIS}
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{DEV,QA}
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{PRD,QC,SEC}
 ```
 
 ### 3. 建立 repo 內 symlink
@@ -54,7 +48,32 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 ln -sfn ~/.shiftblame/blame "$REPO_ROOT/.shiftblame/blame"
 ```
 
-### 4. 檢查 .gitignore
+### 4. 建立 REPO.md（專案長期記憶）
+
+在 `~/.shiftblame/$REPO_NAME/REPO.md` 建立專案長期記憶檔案。若已存在則跳過。
+
+```bash
+REPO_MD=~/.shiftblame/"$REPO_NAME"/REPO.md
+if [ ! -f "$REPO_MD" ]; then
+  cat > "$REPO_MD" << EOF
+# $REPO_NAME — REPO.md
+
+## 專案簡介
+（待填寫）
+
+## 技術棧
+（待填寫）
+
+## 進行中
+（待填寫）
+EOF
+  echo "✅ REPO.md 已建立"
+else
+  echo "⏭️ REPO.md 已存在，跳過"
+fi
+```
+
+### 5. 檢查 .gitignore
 
 確認 `.gitignore` 存在且包含必要項目：
 
@@ -78,7 +97,7 @@ done
 
 若格式不對（例如項目被黏在其他行後面），修正為每項獨立一行。
 
-### 5. Commit 並推送
+### 6. Commit 並推送
 
 ```bash
 cd "$REPO_ROOT"
@@ -93,7 +112,7 @@ fi
 
 若 `.gitignore` 沒有變更（已經正確），跳過 commit。
 
-### 6. 回報結果
+### 7. 回報結果
 
 ```
 ✅ shiftblame:init 完成
@@ -102,14 +121,14 @@ symlink：
   .shiftblame/<repo> → ~/.shiftblame/<repo>/
   .shiftblame/blame  → ~/.shiftblame/blame/
 
+REPO.md：[已建立 / 已存在]
+
 目錄結構：
-  blame/{ADM,MIS,OPS,AUTO}/...
-  blame/{PM,DEV,QA}/...
-  blame/{PRD,ARC,MKT,QC,SEC}/...
+  blame/{DEV,MIS,PRD,QA,QC,SEC}/...
   blame/SECRETARY/
-  <repo>/{MIS,OPS,AUTO,ADM}/
-  <repo>/{PM,DEV,QA}/
-  <repo>/{PRD,ARC,MKT,QC,SEC}/
+  <repo>/{MIS}/
+  <repo>/{DEV,QA}/
+  <repo>/{PRD,QC,SEC}/
 
 .gitignore：✓ 已包含 .shiftblame/ 和 .worktree/
 commit：[已推送 / 無需變更]

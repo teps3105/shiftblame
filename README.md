@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-29-blue.svg)](#資源供給機制)
+[![Agents](https://img.shields.io/badge/agents-25-blue.svg)](#資源供給機制)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -31,9 +31,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 角色類型 | 模型 | 對象 |
 |----------|------|------|
-| **管理層**（多人部門 LEAD） | **haiku** | DEV-lead、QA-lead、OPS-lead、AUTO-lead、QC-lead、SEC-lead |
-| **執行職級**（sub-agent） | **opus** | fe、be、db、unit、integ、e2e、ci、cd、cloud、infra、edge、fuzz、user、audit、blue、red、consistency |
-| **一人部門**（無 sub-agent） | **sonnet** | PRD、ARC、MKT、PM、MIS、ADM |
+| **管理層**（調度 sub-agent） | **haiku** | PRD、DEV、QA、QC、SEC、MIS |
+| **執行職級**（sub-agent） | **sonnet**（預設）/**opus**（複雜度 ≥ 80） | 由主管按任務複雜度分配 |
 
 ---
 
@@ -52,18 +51,12 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 部門 | 典型犯錯情境 |
 |------|-------------|
-| PRD | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西 |
-| ARC | 技術選型不可行、模組拆分導致後續無法實作 |
-| MKT | 市調資料不準確、遺漏更好的替代方案 |
-| PM | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
+| PRD | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西、技術選型不可行、市調資料不準確 |
 | QA | 測試涵蓋度不足、拆分任務不當導致測試工程師產出衝突 |
 | DEV | 實作偏離 spec、引入新 bug、拆分任務不當導致工程師產出衝突 |
-| QC | e2e 場景遺漏關鍵流程、邊緣/模糊測試不足 |
+| QC | 品管場景遺漏關鍵流程、邊緣/模糊測試不足、一致性遺漏、使用者體驗問題 |
 | SEC | 該抓的沒抓到（放水）、退回理由不具體、安全掃描遺漏 |
-| OPS | 部署步驟與 ARC 不符、上線後 smoke test 沒跑或漏驗 |
-| AUTO | CI/CD pipeline 配置錯誤、合併出包、rollback 機制失效 |
-| MIS | 環境盤點遺漏、安裝了錯誤版本的工具 |
-| ADM | 聚合遺漏、REPO.md 格式亂、誤刪 STM 檔案 |
+| MIS | 環境盤點遺漏、CI/CD pipeline 配置錯誤、合併出包、部署失敗 |
 
 ---
 
@@ -116,40 +109,34 @@ _一套明確責任歸屬的 Agents 開發框架_
 | 需求性質 | 推給 |
 |---|---|
 | 全新功能 / 方向性變更 | PRD |
-| 技術選型 / 工具比較 | MKT |
-| 架構調整 / 技術遷移 | ARC |
-| 加細節 / 改驗收條件 | PM |
+| 技術選型 / 工具比較 | PRD |
+| 架構調整 / 技術遷移 | PRD |
+| 加細節 / 改驗收條件 | DEV |
 | 測試不足 / 要補測試 | QA |
 | 已知 bug / 程式修正 | DEV |
 | 使用者體驗問題 | QC |
-| 部署 / 上線方式調整 | OPS |
+| 部署 / 上線方式調整 | MIS |
 | 環境 / 工具問題 | MIS |
-| CI/CD / 自動化調整 | AUTO |
+| CI/CD / 自動化調整 | MIS |
 
-全新功能的典型路徑：`PRD → ARC → MIS → PM → QA → DEV → QC → SEC → AUTO CI(合併) → OPS`，但秘書可依實際需求動態跳過或新增步驟。
+全新功能的典型路徑：`PRD → MIS(環境) → QA → DEV → QC → SEC(安全) → MIS(合併+部署)`，但秘書可依實際需求動態跳過或新增步驟。
 
 ### 檔案結構
 
 ```
 ~/.shiftblame/
 ├── blame/                                       # 鍋紀錄（所有 repo 共用）
-│   ├── ADM/LEAD/BLAME.md
-│   ├── MIS/LEAD/BLAME.md
-│   ├── OPS/{LEAD,cloud,infra}/BLAME.md
-│   ├── AUTO/{LEAD,ci,cd}/BLAME.md
-│   ├── PM/LEAD/BLAME.md
-│   ├── DEV/{LEAD,fe,be,db}/BLAME.md
-│   ├── QA/{LEAD,unit,integ,e2e}/BLAME.md
-│   ├── PRD/LEAD/BLAME.md
-│   ├── ARC/LEAD/BLAME.md
-│   ├── MKT/LEAD/BLAME.md
-│   ├── QC/{LEAD,edge,fuzz,user}/BLAME.md
-│   ├── SEC/{LEAD,audit,consistency,red,blue}/BLAME.md
+│   ├── DEV/{fe,be,db}/BLAME.md
+│   ├── MIS/{infra,cicd,cloud}/BLAME.md
+│   ├── PRD/{plan,arch,market}/BLAME.md
+│   ├── QA/{unit,integ,e2e}/BLAME.md
+│   ├── QC/{test,uni,user}/BLAME.md
+│   ├── SEC/{red,white,blue}/BLAME.md
 │   └── SECRETARY/BLAME.md
 └── <repo>/
-    ├── {ADM,MIS,OPS,AUTO}/<slug>.md
-    ├── {PM,DEV,QA}/<slug>.md
-    ├── {PRD,ARC,MKT,QC,SEC}/<slug>.md
+    ├── {MIS}/<slug>.md
+    ├── {DEV,QA}/<slug>.md
+    ├── {PRD,QC,SEC}/<slug>.md
     └── REPO.md
 
 ~/.worktree/<repo>/<slug>/                       # 共享 worktree
@@ -227,7 +214,7 @@ npm install shiftblame
 2. 保存你的**原話逐字稿**
 3. 每個部門啟動前先用人話告訴你「接下來要做的事」，你回 OK 才繼續
 4. 完成後親自對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-5. 通知 ADM 進行文件聚合
+5. 完成後親自執行文件聚合
 
 你在過程中只需要：
 
