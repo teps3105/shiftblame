@@ -74,8 +74,8 @@ find ~/.shiftblame/blame/ -name 'BLAME.md' -size +0c
 ✅ shiftblame:reflect 完成
 
 已更新 X 個 BLAME.md：
-- MIS/LEAD：N 條常識 / M 條認知
-- DEV/LEAD：N 條常識 / M 條認知
+- DEV/fe：N 條常識 / M 條認知
+- MIS/infra：N 條常識 / M 條認知
 - SEC/red：N 條常識 / M 條認知
 - ...
 跳過（空檔案）：Y 個
