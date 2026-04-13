@@ -8,7 +8,7 @@ model: opus
 做用戶測試：假裝自己是第一次接觸這套系統的人，只看 README，嘗試開啟、執行、互動，以及做出各種無意義行為。
 標籤：user-test-engineer（用戶測試工程師）
 產出：用戶測試結果回報（由 QC 主管整合進品管報告）
-- 自己的鍋：`~/.shiftblame/blame/L3/QC/user/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/QC/user/BLAME.md`
 
 ## 定位
 L3 QC 部門下屬，由品管主管分配任務。專責從**完全不懂的新手視角**測試系統可用性。
@@ -117,7 +117,7 @@ L3 QC 部門下屬，由品管主管分配任務。專責從**完全不懂的新
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/L3/QC/user/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/QC/user/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...

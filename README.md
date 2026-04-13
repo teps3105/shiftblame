@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍲 shiftblame
+# shiftblame
 
 ### 推鍋
 
@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-29-blue.svg)](#三級架構)
+[![Agents](https://img.shields.io/badge/agents-29-blue.svg)](#資源供給機制)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -25,25 +25,21 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-## 三級架構
+## 資源供給機制
 
-| 級別 | 定位 | 模型 | 部門 |
-|------|------|------|------|
-| **L1** | 支援與維運 | **haiku** | MIS、ADM、OPS（+cloud、infra）、AUTO（+ci、cd） |
-| **L2** | 開發執行 | **sonnet** | PM、DEV（+fe、be、db）、QA（+unit、integ、e2e） |
-| **L3** | 規劃決策 | **opus** | PRD、ARC、MKT、QC（+edge、fuzz、user）、SEC（+audit、consistency、red、blue） |
+模型分配**按角色類型**，不按部門層級：
+
+| 角色類型 | 模型 | 對象 |
+|----------|------|------|
+| **管理層**（多人部門 LEAD） | **haiku** | DEV-lead、QA-lead、OPS-lead、AUTO-lead、QC-lead、SEC-lead |
+| **執行職級**（sub-agent） | **opus** | fe、be、db、unit、integ、e2e、ci、cd、cloud、infra、edge、fuzz、user、audit、blue、red、consistency |
+| **一人部門**（無 sub-agent） | **sonnet** | PRD、ARC、MKT、PM、MIS、ADM |
 
 ---
 
-## 誰的鍋？
+## 誰的鍋
 
-每個部門都有自己的 `~/.shiftblame/blame/<Ln>/<DEPT>/<role>/BLAME.md`，犯錯就記，下次避雷。
-
-### 老闆的鍋
-
-| 情境 | 為什麼是老闆的鍋 | 回退方式 |
-|------|------------------|----------|
-| **老闆明示直接修改**：親口說「直接改」「不用跑流程」 | 老闆下令跳過流程，改壞了自己扛。commit 以 `BOSS-HOTFIX:` 為前綴 | `git revert` |
+每個部門都有自己的 `~/.shiftblame/blame/<DEPT>/<role>/BLAME.md`，犯錯就記，下次避雷。
 
 ### 秘書的鍋
 
@@ -56,18 +52,18 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 部門 | 典型犯錯情境 |
 |------|-------------|
-| L3 PRD | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西 |
-| L3 ARC | 技術選型不可行、模組拆分導致後續無法實作 |
-| L3 MKT | 市調資料不準確、遺漏更好的替代方案 |
-| L2 PM | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
-| L2 QA | 測試涵蓋度不足、拆分任務不當導致測試工程師產出衝突 |
-| L2 DEV | 實作偏離 spec、引入新 bug、拆分任務不當導致工程師產出衝突 |
-| L3 QC | e2e 場景遺漏關鍵流程、邊緣/模糊測試不足 |
-| L3 SEC | 該抓的沒抓到（放水）、退回理由不具體、安全掃描遺漏 |
-| L1 OPS | 部署步驟與 ARC 不符、上線後 smoke test 沒跑或漏驗 |
-| L1 AUTO | CI/CD pipeline 配置錯誤、合併出包、rollback 機制失效 |
-| L1 MIS | 環境盤點遺漏、安裝了錯誤版本的工具 |
-| L1 ADM | 聚合遺漏、REPO.md 格式錯亂、誤刪 STM 檔案 |
+| PRD | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西 |
+| ARC | 技術選型不可行、模組拆分導致後續無法實作 |
+| MKT | 市調資料不準確、遺漏更好的替代方案 |
+| PM | 驗收條件與 PRD 矛盾、任務依賴排錯導致卡關 |
+| QA | 測試涵蓋度不足、拆分任務不當導致測試工程師產出衝突 |
+| DEV | 實作偏離 spec、引入新 bug、拆分任務不當導致工程師產出衝突 |
+| QC | e2e 場景遺漏關鍵流程、邊緣/模糊測試不足 |
+| SEC | 該抓的沒抓到（放水）、退回理由不具體、安全掃描遺漏 |
+| OPS | 部署步驟與 ARC 不符、上線後 smoke test 沒跑或漏驗 |
+| AUTO | CI/CD pipeline 配置錯誤、合併出包、rollback 機制失效 |
+| MIS | 環境盤點遺漏、安裝了錯誤版本的工具 |
+| ADM | 聚合遺漏、REPO.md 格式亂、誤刪 STM 檔案 |
 
 ---
 
@@ -119,16 +115,16 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 需求性質 | 推給 |
 |---|---|
-| 全新功能 / 方向性變更 | L3 PRD |
-| 技術選型 / 工具比較 | L3 MKT |
-| 架構調整 / 技術遷移 | L3 ARC |
-| 加細節 / 改驗收條件 | L2 PM |
-| 測試不足 / 要補測試 | L2 QA |
-| 已知 bug / 程式修正 | L2 DEV |
-| 使用者體驗問題 | L3 QC |
-| 部署 / 上線方式調整 | L1 OPS |
-| 環境 / 工具問題 | L1 MIS |
-| CI/CD / 自動化調整 | L1 AUTO |
+| 全新功能 / 方向性變更 | PRD |
+| 技術選型 / 工具比較 | MKT |
+| 架構調整 / 技術遷移 | ARC |
+| 加細節 / 改驗收條件 | PM |
+| 測試不足 / 要補測試 | QA |
+| 已知 bug / 程式修正 | DEV |
+| 使用者體驗問題 | QC |
+| 部署 / 上線方式調整 | OPS |
+| 環境 / 工具問題 | MIS |
+| CI/CD / 自動化調整 | AUTO |
 
 全新功能的典型路徑：`PRD → ARC → MIS → PM → QA → DEV → QC → SEC → AUTO CI(合併) → OPS`，但秘書可依實際需求動態跳過或新增步驟。
 
@@ -137,22 +133,23 @@ _一套明確責任歸屬的 Agents 開發框架_
 ```
 ~/.shiftblame/
 ├── blame/                                       # 鍋紀錄（所有 repo 共用）
-│   ├── L1/{ADM,MIS}/LEAD/BLAME.md
-│   ├── L1/OPS/{LEAD,cloud,infra}/BLAME.md
-│   ├── L1/AUTO/{LEAD,ci,cd}/BLAME.md
-│   ├── L2/PM/LEAD/BLAME.md
-│   ├── L2/DEV/{LEAD,fe,be,db}/BLAME.md
-│   ├── L2/QA/{LEAD,unit,integ,e2e}/BLAME.md
-│   ├── L3/{PRD,ARC,MKT}/LEAD/BLAME.md
-│   ├── L3/QC/{LEAD,edge,fuzz,user}/BLAME.md
-│   ├── L3/SEC/{LEAD,audit,consistency,red,blue}/BLAME.md
-│   ├── secretary/BLAME.md
-│   └── boss/BLAME.md
+│   ├── ADM/LEAD/BLAME.md
+│   ├── MIS/LEAD/BLAME.md
+│   ├── OPS/{LEAD,cloud,infra}/BLAME.md
+│   ├── AUTO/{LEAD,ci,cd}/BLAME.md
+│   ├── PM/LEAD/BLAME.md
+│   ├── DEV/{LEAD,fe,be,db}/BLAME.md
+│   ├── QA/{LEAD,unit,integ,e2e}/BLAME.md
+│   ├── PRD/LEAD/BLAME.md
+│   ├── ARC/LEAD/BLAME.md
+│   ├── MKT/LEAD/BLAME.md
+│   ├── QC/{LEAD,edge,fuzz,user}/BLAME.md
+│   ├── SEC/{LEAD,audit,consistency,red,blue}/BLAME.md
+│   └── SECRETARY/BLAME.md
 └── <repo>/
-    ├── L1/{MIS,OPS,AUTO}/<slug>.md
-    ├── L2/{PM,DEV,QA}/<slug>.md
-    ├── L3/{PRD,ARC,MKT,QC,SEC}/<slug>.md
-    ├── report/<YYYY-MM-DD_HHMMSS>-<slug>.md
+    ├── {ADM,MIS,OPS,AUTO}/<slug>.md
+    ├── {PM,DEV,QA}/<slug>.md
+    ├── {PRD,ARC,MKT,QC,SEC}/<slug>.md
     └── REPO.md
 
 ~/.worktree/<repo>/<slug>/                       # 共享 worktree
@@ -192,22 +189,6 @@ npm install shiftblame
 
 建立 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。秘書在首次推鍋時也會自動偵測並執行初始化。
 
-### 版本升級
-
-```bash
-npm update -g shiftblame   # 或 npm update shiftblame
-```
-
-升級後在 repo 中執行：
-
-```
-/blame-update
-```
-
-這會讀懂舊版鍋紀錄的**實際內容**，按新版組織架構的責任歸屬重新分配到正確的部門。既有的鍋不會丟失——無法自動判斷的會放入待審區，由秘書呈報老闆手動分配。
-
-秘書在推鍋時也會自動偵測：目錄結構與 agents 不一致時，自動呼叫 `/blame-update`。
-
 ---
 
 ## 使用
@@ -245,9 +226,8 @@ npm update -g shiftblame   # 或 npm update shiftblame
 1. 掃描 `.claude/agents/` 取得可用部門清單
 2. 保存你的**原話逐字稿**
 3. 每個部門啟動前先用人話告訴你「接下來要做的事」，你回 OK 才繼續
-4. 完成後親自對照原話產出**秘書最終確認報告**
-5. 呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-6. 通知 L1 ADM 進行文件聚合
+4. 完成後親自對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
+5. 通知 ADM 進行文件聚合
 
 你在過程中只需要：
 

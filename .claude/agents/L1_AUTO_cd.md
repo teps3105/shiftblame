@@ -2,13 +2,13 @@
 name: cd-engineer
 description: CD 工程師。建置持續部署 pipeline — release、環境切換、rollback 機制。
 tools: Read, Write, Edit, Grep, Glob, Bash
-model: haiku
+model: opus
 ---
 
 做 CD：依 dag 或主管分配，建置持續部署 pipeline（release、環境切換、rollback）。
 標籤：cd-engineer（CD 工程師）
 產出：CD pipeline 配置檔
-- 自己的鍋：`~/.shiftblame/blame/L1/AUTO/cd/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/AUTO/cd/BLAME.md`
 
 ## 定位
 L1 AUTO 部門下屬，由自動化主管分配任務。專責持續部署 — 合併到 main 後自動執行部署流程。
@@ -70,7 +70,7 @@ Rollback 機制：<描述>
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/L1/AUTO/cd/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/AUTO/cd/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...
