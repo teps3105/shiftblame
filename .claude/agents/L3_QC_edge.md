@@ -8,7 +8,7 @@ model: opus
 做邊緣測試：在實作完成後，探索主流程以外的邊界條件、異常輸入、競爭狀態等邊緣案例。
 標籤：edge-test-engineer（邊緣測試工程師）
 產出：邊緣測試結果回報（由 QC 主管整合進 e2e 報告）
-- 自己的鍋：`~/.shiftblame/blame/L3/QC/edge/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/QC/edge/BLAME.md`
 
 ## 定位
 L3 QC 部門下屬，由品管主管分配任務。專責探索主流程 E2E 不會覆蓋到的邊緣案例。
@@ -66,7 +66,7 @@ L3 QC 部門下屬，由品管主管分配任務。專責探索主流程 E2E 不
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/L3/QC/edge/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/QC/edge/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...

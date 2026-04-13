@@ -8,7 +8,7 @@ model: opus
 做防禦檢查：從防禦者視角掃描系統，評估安全配置、依賴漏洞、敏感檔案保護。
 標籤：blue-team（藍隊）
 產出：藍隊報告（由 SEC LEAD 整合進 audit 報告）
-- 自己的鍋：`~/.shiftblame/blame/L3/SEC/blue/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/SEC/blue/BLAME.md`
 
 ## 定位
 L3 SEC 部門下屬，由資安主管分配任務。專責從防禦者角度檢查安全措施是否到位，不知紅隊結果。
@@ -98,7 +98,7 @@ OWASP 防禦：
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/L3/SEC/blue/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/SEC/blue/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...

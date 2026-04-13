@@ -21,36 +21,30 @@ REPO_NAME=$(basename "$REPO_ROOT")
 
 #### blame 目錄（跨 repo 共用）
 ```bash
-# L1
-mkdir -p ~/.shiftblame/blame/L1/ADM/LEAD
-mkdir -p ~/.shiftblame/blame/L1/MIS/LEAD
-mkdir -p ~/.shiftblame/blame/L1/OPS/{LEAD,cloud,infra}
-mkdir -p ~/.shiftblame/blame/L1/AUTO/{LEAD,ci,cd}
-# L2
-mkdir -p ~/.shiftblame/blame/L2/PM/LEAD
-mkdir -p ~/.shiftblame/blame/L2/DEV/{LEAD,fe,be,db}
-mkdir -p ~/.shiftblame/blame/L2/QA/{LEAD,unit,integ,e2e}
-# L3
-mkdir -p ~/.shiftblame/blame/L3/PRD/LEAD
-mkdir -p ~/.shiftblame/blame/L3/ARC/LEAD
-mkdir -p ~/.shiftblame/blame/L3/MKT/LEAD
-mkdir -p ~/.shiftblame/blame/L3/QC/{LEAD,edge,fuzz,user}
-mkdir -p ~/.shiftblame/blame/L3/SEC/{LEAD,audit,consistency,red,blue}
+# 支援與維運
+mkdir -p ~/.shiftblame/blame/ADM/LEAD
+mkdir -p ~/.shiftblame/blame/MIS/LEAD
+mkdir -p ~/.shiftblame/blame/OPS/{LEAD,cloud,infra}
+mkdir -p ~/.shiftblame/blame/AUTO/{LEAD,ci,cd}
+# 開發執行
+mkdir -p ~/.shiftblame/blame/PM/LEAD
+mkdir -p ~/.shiftblame/blame/DEV/{LEAD,fe,be,db}
+mkdir -p ~/.shiftblame/blame/QA/{LEAD,unit,integ,e2e}
+# 規劃決策
+mkdir -p ~/.shiftblame/blame/PRD/LEAD
+mkdir -p ~/.shiftblame/blame/ARC/LEAD
+mkdir -p ~/.shiftblame/blame/MKT/LEAD
+mkdir -p ~/.shiftblame/blame/QC/{LEAD,edge,fuzz,user}
+mkdir -p ~/.shiftblame/blame/SEC/{LEAD,audit,consistency,red,blue}
 # 特殊
-mkdir -p ~/.shiftblame/blame/secretary
-mkdir -p ~/.shiftblame/blame/boss
+mkdir -p ~/.shiftblame/blame/SECRETARY
 ```
 
 #### repo 文件目錄（per repo）
 ```bash
-# L1
-mkdir -p ~/.shiftblame/"$REPO_NAME"/L1/{MIS,OPS,AUTO}
-# L2
-mkdir -p ~/.shiftblame/"$REPO_NAME"/L2/{PM,DEV,QA}
-# L3
-mkdir -p ~/.shiftblame/"$REPO_NAME"/L3/{PRD,ARC,MKT,QC,SEC}
-# report
-mkdir -p ~/.shiftblame/"$REPO_NAME"/report
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{MIS,OPS,AUTO,ADM}
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{PM,DEV,QA}
+mkdir -p ~/.shiftblame/"$REPO_NAME"/{PRD,ARC,MKT,QC,SEC}
 ```
 
 ### 3. 建立 repo 內 symlink
@@ -109,13 +103,13 @@ symlink：
   .shiftblame/blame  → ~/.shiftblame/blame/
 
 目錄結構：
-  blame/L1/{ADM,MIS,OPS,AUTO}/...
-  blame/L2/{PM,DEV,QA}/...
-  blame/L3/{PRD,ARC,MKT,QC,SEC}/...
-  <repo>/L1/{MIS,OPS,AUTO}/
-  <repo>/L2/{PM,DEV,QA}/
-  <repo>/L3/{PRD,ARC,MKT,QC,SEC}/
-  <repo>/report/
+  blame/{ADM,MIS,OPS,AUTO}/...
+  blame/{PM,DEV,QA}/...
+  blame/{PRD,ARC,MKT,QC,SEC}/...
+  blame/SECRETARY/
+  <repo>/{MIS,OPS,AUTO,ADM}/
+  <repo>/{PM,DEV,QA}/
+  <repo>/{PRD,ARC,MKT,QC,SEC}/
 
 .gitignore：✓ 已包含 .shiftblame/ 和 .worktree/
 commit：[已推送 / 無需變更]

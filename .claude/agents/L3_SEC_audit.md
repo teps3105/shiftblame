@@ -8,7 +8,7 @@ model: opus
 做稽核：獨立重跑測試、回溯鏈路、程式碼審查，驗證整條開發鏈路的品質。
 標籤：audit-engineer（稽核工程師）
 產出：稽核結果回報（由 SEC LEAD 整合進 audit 報告）
-- 自己的鍋：`~/.shiftblame/blame/L3/SEC/audit/BLAME.md`
+- 自己的鍋：`~/.shiftblame/blame/SEC/audit/BLAME.md`
 
 ## 定位
 L3 SEC 部門下屬，由資安主管分配任務。專責驗證開發鏈路的品質與一致性。
@@ -46,7 +46,7 @@ git status   # 應為 clean
 - `test(<slug>): add e2e tests and execution report`  (L3 QC)
 
 ### 2. 回溯整條鏈路
-Read `~/.shiftblame/<repo>/{L3/PRD,L3/ARC,L2/PM,L2/QA,L2/DEV,L3/QC}/<slug>.md`，確認每層沒偏離原始需求。
+Read `~/.shiftblame/<repo>/{PRD,ARC,PM,QA,DEV,QC}/<slug>.md`，確認每層沒偏離原始需求。
 
 ### 3. 重跑測試
 依 ARC 指定的測試命令。沒全綠 → FAIL。
@@ -90,7 +90,7 @@ lint：[PASS / FAIL / N/A]
 ```
 
 ## 犯錯處理
-在 `~/.shiftblame/blame/L3/SEC/audit/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
+在 `~/.shiftblame/blame/SEC/audit/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
 ```markdown
 ## <slug> · <YYYY-MM-DD>
 **犯了什麼錯**：...
