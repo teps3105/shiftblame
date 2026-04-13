@@ -9,6 +9,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
 [![Agents](https://img.shields.io/badge/agents-25-blue.svg)](#資源供給機制)
+[![Skills](https://img.shields.io/badge/skills-4-9cf.svg)](#skills)
+[![Hook](https://img.shields.io/badge/hook-auto_route-green.svg)](#自動路由)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -23,6 +25,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
+**自動路由**：老闆說話就自動觸發秘書，不需要手動輸入 `/secretary`。
+
 ---
 
 ## 資源供給機制
@@ -33,6 +37,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 |----------|------|------|
 | **管理層**（調度 sub-agent） | **haiku** | PRD、DEV、QA、QC、SEC、MIS |
 | **執行職級**（sub-agent） | **sonnet**（預設）/**opus**（複雜度 ≥ 80） | 由主管按任務複雜度分配 |
+| **獨立角色** | **sonnet** | SECRETARY（鍋長） |
 
 ---
 
@@ -180,14 +185,20 @@ npm install shiftblame
 
 ## 使用
 
-在 Claude Code 中用 `/secretary` 呼叫秘書：
+### 自動路由
+
+安裝後老闆說的每一句話都會**自動路由到秘書**，不需要手動輸入 `/secretary`。
+
+Hook 腳本位於 `.claude/hooks/user-prompt-submit.py`，透過 `UserPromptSubmit` 事件攔截所有使用者輸入：
+
+- **任務 / 需求 / 指令** → 自動注入 `systemMessage` 提醒路由到 SECRETARY agent
+- **Meta 操作**（`/help`、`/clear`、`/fast` 等）→ 直接放行
+- **已含 `/secretary`** → 直接放行
+
+也可手動呼叫：
 
 ```
 /secretary 幫我做一個 Markdown 轉 HTML 的 CLI
-```
-
-```
-/secretary 我想要一個可以記錄每日心情的終端小工具
 ```
 
 還沒想清楚？也可以諮詢：
@@ -196,7 +207,18 @@ npm install shiftblame
 /secretary 我在猶豫要用 REST 還是 GraphQL，你覺得呢
 ```
 
-秘書會用結構化問答幫你收斂方向，確認後才開始推鍋。
+### 派工流程
+
+```
+老闆 → 秘書（預審）→ 部門主管（分配工程師）→ 工程師（執行）→ 主管（收合回報）→ 秘書（彙報）→ 老闆
+```
+
+1. 秘書收到老闆原話，向老闆預審「派哪個部門、做什麼」
+2. 老闆 OK 後，秘書派工給部門主管（可建議人選但不強制）
+3. 主管自行決定派給哪個工程師，等待回報
+4. 主管向秘書回報「誰做了什麼 / 問題 / 解決方式 / 結果」
+5. 遇問題時主管回報秘書進行跨部門或部門內協調
+6. 秘書收齊所有主管回報後，向老闆做最終彙報
 
 ### 聚合鍋紀錄
 
@@ -208,13 +230,30 @@ npm install shiftblame
 
 掃描所有部門的鍋紀錄，將「下次怎麼避免」提煉成**常識（規則）**，將「背後的機制」提煉成**認知（模型）**，寫回各 BLAME.md 檔頭。
 
+### 聚合文件
+
+```
+/repo-reflect
+```
+
+掃描各 repo 的部門目錄，將舊紀錄合併至 `REPO.md`，每個部門保留最新 3 筆。原檔保留不刪。
+
+### 同步 README
+
+```
+/update-readme
+```
+
+掃描專案現狀（agents、skills、hooks、config、目錄結構），將 README.md 同步為最新。適用於任何 Claude Code 專案。
+
 ### 秘書接手後
 
 1. 掃描 `.claude/agents/` 取得可用部門清單
 2. 保存你的**原話逐字稿**
-3. 每個部門啟動前先用人話告訴你「接下來要做的事」，你回 OK 才繼續
-4. 完成後親自對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-5. 完成後親自執行文件聚合
+3. 每個部門啟動前先用人話告訴你「派哪個部門、做什麼」，你回 OK 才繼續
+4. 部門主管自行分配工程師、執行後回報「誰做了什麼 / 問題 / 解決方式 / 結果」
+5. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
+6. 完成後呼叫 `repo-reflect` 執行文件聚合
 
 你在過程中只需要：
 
