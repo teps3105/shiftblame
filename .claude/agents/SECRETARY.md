@@ -68,6 +68,8 @@ model: sonnet
 
 秘書派工時傳達 worktree 路徑給主管，主管再傳達給工程師。
 
+**每次派工前檢查**：確認 repo 的 `.gitignore` 包含 `.worktree/`，避免 worktree symlink 被誤 commit。
+
 ## 可調用 Skill
 - `Skill("blame-init")`：初始化推鍋環境（`.shiftblame/` 不存在或結構過時時自動呼叫）
 - `Skill("blame-reflect")`：聚合各部門鍋紀錄，提煉常識與認知
