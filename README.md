@@ -32,9 +32,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 角色類型 | 模型 | 對象 |
 |----------|------|------|
-| **管理層**（調度 sub-agent） | **haiku** | PRD、DEV、QA、QC、SEC、MIS |
-| **執行職級**（sub-agent） | **sonnet**（預設）/**opus**（複雜度 ≥ 80） | 由主管按任務複雜度分配 |
-| **獨立角色** | **sonnet** | SECRETARY（鍋長） |
+| **主管 / 秘書**（擋錯把關） | **opus** | PRD、DEV、QA、QC、SEC、MIS、SECRETARY |
+| **執行職級**（sub-agent） | **opus** / **sonnet** / **haiku**（依任務複雜度） | 由主管按任務複雜度分配 |
 
 ---
 
