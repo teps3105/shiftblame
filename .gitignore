@@ -1,2 +1,3 @@
 .shiftblame/
 .worktree/
+node_modules/
