@@ -52,6 +52,22 @@ model: sonnet
 待處理：<需老闆裁示的事項，無則寫「無」>
 ```
 
+## 標準開發路徑
+
+全新功能：`PRD → QA → DEV → QC`
+
+秘書可依實際需求動態調整步驟（例如加入 SEC / MIS）。
+
+## Worktree 機制
+
+派工時建立 worktree 隔離環境：
+
+- **共享目錄**：`~/.worktree/<repo>/`
+- **分支路徑**：`~/.worktree/<repo>/<slug>/`（`<slug>` 為任務簡稱）
+- **repo 內 symlink**：`.worktree/<slug>` → `~/.worktree/<repo>/<slug>/`
+
+秘書派工時傳達 worktree 路徑給主管，主管再傳達給工程師。
+
 ## 可調用 Skill
 - `Skill("blame-init")`：初始化推鍋環境（`.shiftblame/` 不存在或結構過時時自動呼叫）
 - `Skill("blame-reflect")`：聚合各部門鍋紀錄，提煉常識與認知
