@@ -10,7 +10,6 @@ _一套明確責任歸屬的 Agents 開發框架_
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
 [![Agents](https://img.shields.io/badge/agents-25-blue.svg)](#資源供給機制)
 [![Skills](https://img.shields.io/badge/skills-4-9cf.svg)](#skills)
-[![Hook](https://img.shields.io/badge/hook-auto_route-green.svg)](#自動路由)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -24,8 +23,6 @@ _一套明確責任歸屬的 Agents 開發框架_
 秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門該誰負責、出了事該找誰，白紙黑字記在鍋紀錄裡。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
-
-**自動路由**：老闆說話就自動觸發秘書，不需要手動輸入 `/secretary`。
 
 ---
 
@@ -124,7 +121,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | 環境 / 工具問題 | MIS |
 | CI/CD / 自動化調整 | MIS |
 
-全新功能的典型路徑：`PRD → MIS(環境) → QA → DEV → QC → SEC(安全) → MIS(合併+部署)`，但秘書可依實際需求動態跳過或新增步驟。
+全新功能的標準開發路徑：`PRD → QA → DEV → QC`，秘書可依實際需求動態調整步驟。
 
 ### 檔案結構
 
@@ -185,17 +182,9 @@ npm install shiftblame
 
 ## 使用
 
-### 自動路由
+### 顯式呼叫
 
-安裝後老闆說的每一句話都會**自動路由到秘書**，不需要手動輸入 `/secretary`。
-
-Hook 腳本位於 `.claude/hooks/user-prompt-submit.py`，透過 `UserPromptSubmit` 事件攔截所有使用者輸入：
-
-- **任務 / 需求 / 指令** → 自動注入 `systemMessage` 提醒路由到 SECRETARY agent
-- **Meta 操作**（`/help`、`/clear`、`/fast` 等）→ 直接放行
-- **已含 `/secretary`** → 直接放行
-
-也可手動呼叫：
+每個 session 開始時，使用 `/secretary` 進入秘書模式：
 
 ```
 /secretary 幫我做一個 Markdown 轉 HTML 的 CLI
