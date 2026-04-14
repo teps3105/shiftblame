@@ -1,5 +1,5 @@
 ---
-description: 推鍋入口。老闆說話就觸發秘書 Agent。涵蓋所有需求、指令、提問、指示。
+description: 推鍋入口。每個 session 顯式呼叫 /secretary 進入秘書模式。
 allowed-tools: Agent
 ---
 
