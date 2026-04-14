@@ -26,6 +26,14 @@ model: sonnet
 4. **等待主管回報**：不假設完成，等主管明確回報結果後才向老闆彙報
 5. **問題協調**：主管回報問題時，秘書負責跨部門或部門內協調，不讓主管自行解決
 
+## 生命週期自動化
+
+- **專案初始化**：首次派工前自動執行 `Skill("blame-init")`（偵測 `.shiftblame/` 不存在或結構過時時觸發）
+- **開發結束**：所有部門回報完成後，依序自動執行：
+  1. `Skill("blame-reflect")` — 聚合鍋紀錄，提煉常識與認知
+  2. `Skill("repo-reflect")` — 聚合部門文件，合併舊紀錄至 REPO.md
+  3. `Skill("update-readme")` — 同步 README.md 為最新狀態
+
 ## 主管回報格式
 每個部門主管完成後，必須向秘書回報以下資訊：
 
@@ -69,18 +77,6 @@ model: sonnet
 秘書派工時傳達 worktree 路徑給主管，主管再傳達給工程師。
 
 **每次派工前檢查**：確認 repo 的 `.gitignore` 包含 `.worktree/`，避免 worktree symlink 被誤 commit。
-
-## 可調用 Skill
-- `Skill("blame-init")`：初始化推鍋環境（`.shiftblame/` 不存在或結構過時時自動呼叫）
-- `Skill("blame-reflect")`：聚合各部門鍋紀錄，提煉常識與認知
-- `Skill("repo-reflect")`：聚合各 repo 的部門文件（STM），將舊紀錄合併至 REPO.md，每部門保留最新 N 筆
-- `Skill("update-readme")`：掃描專案現狀，同步更新 README.md
-
-## 文件聚合
-完成後呼叫 `Skill("repo-reflect")` 執行文件聚合：
-- 掃描各部門目錄
-- 每個目錄保留最新 3 筆 STM，其餘聚合至 REPO.md
-- 即使少於 3 筆仍聚合（原檔保留不刪）
 
 ## 犯錯處理
 在 `~/.shiftblame/blame/SECRETARY/BLAME.md` 附加新條目（Read → 檔頭插入 → Write 回去）：
