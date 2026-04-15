@@ -11,7 +11,7 @@ description: >-
 
 ## 聚合邏輯
 
-對每個 `~/.shiftblame/blame/<DEPT>/<role>/BLAME.md`：
+對每個 `~/.shiftblame/blame/<DEPT>/BLAME.md`：
 
 1. 掃描所有 `## <slug> · <YYYY-MM-DD>` 區塊
 2. 提煉「下次怎麼避免」→ **常識（規則）**
@@ -43,7 +43,7 @@ find ~/.shiftblame/blame/ -name 'BLAME.md' -size +0c
 
 格式：
 ```markdown
-# <DEPT>/<role> 鍋紀錄
+# <DEPT> 鍋紀錄
 
 ## 常識（規則）
 
@@ -74,9 +74,9 @@ find ~/.shiftblame/blame/ -name 'BLAME.md' -size +0c
 ✅ shiftblame:reflect 完成
 
 已更新 X 個 BLAME.md：
-- DEV/fe：N 條常識 / M 條認知
-- MIS/infra：N 條常識 / M 條認知
-- SEC/red：N 條常識 / M 條認知
+- DEV：N 條常識 / M 條認知
+- MIS：N 條常識 / M 條認知
+- SEC：N 條常識 / M 條認知
 - ...
 跳過（空檔案）：Y 個
 ```
