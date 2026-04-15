@@ -21,15 +21,13 @@ REPO_NAME=$(basename "$REPO_ROOT")
 
 #### blame 目錄（跨 repo 共用）
 ```bash
-# 開發執行
-mkdir -p ~/.shiftblame/blame/DEV/{fe,be,db}
-mkdir -p ~/.shiftblame/blame/QA/{unit,integ,e2e}
-# 支援與維運
-mkdir -p ~/.shiftblame/blame/MIS/{infra,cicd,cloud}
-# 規劃決策
-mkdir -p ~/.shiftblame/blame/PRD/{plan,arch,market}
-mkdir -p ~/.shiftblame/blame/QC/{test,uni,user}
-mkdir -p ~/.shiftblame/blame/SEC/{red,white,blue}
+# 六個部門（扁平結構，每人一個 BLAME.md）
+mkdir -p ~/.shiftblame/blame/DEV
+mkdir -p ~/.shiftblame/blame/QA
+mkdir -p ~/.shiftblame/blame/MIS
+mkdir -p ~/.shiftblame/blame/PRD
+mkdir -p ~/.shiftblame/blame/QC
+mkdir -p ~/.shiftblame/blame/SEC
 # 特殊
 mkdir -p ~/.shiftblame/blame/SECRETARY
 ```
@@ -124,8 +122,7 @@ symlink：
 REPO.md：[已建立 / 已存在]
 
 目錄結構：
-  blame/{DEV,MIS,PRD,QA,QC,SEC}/...
-  blame/SECRETARY/
+  blame/{DEV,QA,QC,SEC,MIS,PRD,SECRETARY}/
   <repo>/{MIS}/
   <repo>/{DEV,QA}/
   <repo>/{PRD,QC,SEC}/

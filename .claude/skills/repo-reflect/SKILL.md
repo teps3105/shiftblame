@@ -1,110 +1,107 @@
 ---
 name: repo-reflect
 description: >-
-  聚合各 repo 的部門文件（STM），將舊紀錄合併至 REPO.md，每部門保留最新 N 筆。
+  快照當前 main 分支的專案狀態，更新 REPO.md。
   Use this skill when: the user says "聚合文件", "文件聚合", "repo-reflect", "/repo-reflect".
 ---
 
-# shiftblame:repo-reflect — 文件聚合
+# shiftblame:repo-reflect — 專案快照
 
-掃描 `~/.shiftblame/` 下各 repo 的部門目錄，將歷史 STM（Short-Term Memory）文件聚合至 `REPO.md`，每個部門只保留最新 N 筆。
+查詢 main 分支的當下快照，將各部門最新狀態寫入 `REPO.md`。
 
-## 聚合邏輯
+## 快照邏輯
 
-對每個 `~/.shiftblame/<repo>/` 下的部門目錄（PRD/ARC/QA/DEV/QC/SEC/MIS 等）：
-
-1. Glob 部門目錄下所有 `*.md` 檔案（不含 REPO.md）
-2. 按修改時間排序（舊 → 新）
-3. 保留最新 N 筆（預設 N=3），其餘聚合至 `REPO.md`
-4. 聚合時將檔案內容附加到 `REPO.md` 對應部門的章節
-5. 被聚合的原檔保留不刪（供追溯）
-6. 即使少於 N 筆仍聚合（確保 REPO.md 有完整紀錄）
-
-## REPO.md 格式
-
-```markdown
-# <repo> 紀錄
-
-## PRD
-### <slug> · <YYYY-MM-DD>
-<原始檔案內容>
----
-
-## ARC
-### <slug> · <YYYY-MM-DD>
-<原始檔案內容>
----
-
-## QA
-...
-```
-
-每個部門章節內按時間排序（舊 → 新）。
+1. 切到 main 分支，讀取**當下**各部門目錄中的最新檔案
+2. 每個部門只取**最新 1 筆**（按修改時間排序）
+3. 將快照結果寫入 `~/.shiftblame/<repo>/REPO.md`
+4. 不刪除、不移動任何歷史檔案
 
 ## 執行步驟
 
-### 1. 掃描所有 repo
+### 1. 取得 repo 資訊
 
 ```bash
-ls -d ~/.shiftblame/*/
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
 ```
 
-排除 `blame/`（鍋紀錄，由 blame-reflect 處理）。
-
-### 2. 對每個 repo
+### 2. 切到 main 並拉最新
 
 ```bash
-# 找出所有部門目錄
-ls -d ~/.shiftblame/<repo>/*/
+cd "$REPO_ROOT"
+git checkout main
+git pull --ff-only origin main
 ```
 
-排除 `REPO.md`（目標檔案）。
+### 3. 掃描各部門最新檔案
 
-### 3. 對每個部門目錄
+對每個部門目錄 `~/.shiftblame/<repo>/{SEC,QA,PRD,DEV,QC,MIS}/`：
 
 ```bash
-# 按修改時間排序
-ls -t ~/.shiftblame/<repo>/<DEPT>/*.md
+# 取該部門最新的 .md 檔案（排除 REPO.md）
+ls -t ~/.shiftblame/<repo>/<DEPT>/*.md 2>/dev/null | head -1
 ```
 
-- 保留最新 N 筆（預設 N=3）
-- 其餘檔案讀取內容，準備聚合
+### 4. 讀取最新檔案並快照
 
-### 4. 寫入 REPO.md
+對每個部門的最新檔案：
+- Read 檔案內容
+- 取前 20 行作為摘要（或全文，若檔案小於 20 行）
 
-- 讀取現有 REPO.md（若存在）
-- 依部門章節整理聚合內容
-- 同一部門內按時間排序
-- Write 回 REPO.md
+### 5. 寫入 REPO.md
 
-### 5. 回報結果
+Write 到 `~/.shiftblame/<repo>/REPO.md`：
+
+```markdown
+# <repo> — REPO.md
+
+> 快照時間：<YYYY-MM-DD HH:MM> | main HEAD：<short hash>
+
+## SEC
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+
+## QA
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+
+## PRD
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+
+## DEV
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+
+## QC
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+
+## MIS
+### <slug>（<YYYY-MM-DD>）
+<摘要>
+```
+
+### 6. 回報結果
 
 ```
 ✅ shiftblame:repo-reflect 完成
 
-已處理 X 個 repo：
-- dnd-prototype：聚合 Y 筆至 REPO.md（保留 Z 筆 STM）
-  - PRD：聚合 N 筆、保留 M 筆
-  - QA：聚合 N 筆、保留 M 筆
-  - ...
-- shiftblame：聚合 Y 筆至 REPO.md（保留 Z 筆 STM）
-  - ...
-跳過（無文件）：W 個部門
+快照時間：<YYYY-MM-DD HH:MM>
+main HEAD：<hash>
+部門快照：
+  SEC：<slug>（最新）
+  QA：<slug>（最新）
+  PRD：<slug>（最新）
+  DEV：<slug>（最新）
+  QC：<slug>（最新）
+  MIS：<slug>（最新）
+跳過（無檔案）：<部門清單或「無」>
 ```
-
-## 參數
-
-| 參數 | 預設值 | 說明 |
-|------|--------|------|
-| `--keep` | 3 | 每部門保留的最新筆數 |
-| `--repo` | 全部 | 指定處理的 repo（預設處理全部） |
-| `--dept` | 全部 | 指定處理的部門（預設處理全部） |
-| `--dry-run` | false | 只顯示將聚合的檔案清單，不實際寫入 |
 
 ## 注意事項
 
-- 只處理 `~/.shiftblame/` 下的 repo 目錄
-- 不處理 `blame/` 目錄（由 blame-reflect 負責）
-- 被聚合的原檔保留不刪，確保可追溯
-- REPO.md 可能隨時間增長很大，未來可考慮分年月歸檔
-- 如果 REPO.md 不存在，自動建立
+- 只在 **main 分支**上快照，不讀 worktree 或 feature 分支
+- 只取每個部門的**最新 1 筆**，不做歷史聚合
+- 不刪除、不移動、不修改任何歷史檔案
+- 如果某部門目錄為空，該部門標記為「（無紀錄）」
