@@ -8,8 +8,8 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-7-blue.svg)](#資源供給機制)
-[![Skills](https://img.shields.io/badge/skills-4-9cf.svg)](#skills)
+[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#資源供給機制)
+[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#skills)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -20,7 +20,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門主管親自執行所有職能，出了事該找誰，白紙黑字記在鍋紀錄裡。
+秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門主管親自執行所有職能，出了事由秘書寫入各部門的鍋紀錄。所有修改透過 worktree 隔離，不直推 main。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -42,7 +42,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ## 誰的鍋
 
-每個部門都有自己的 `~/.shiftblame/blame/<DEPT>/BLAME.md`，犯錯就記，下次避雷。
+每個部門都有自己的 `~/.shiftblame/blame/<DEPT>/BLAME.md`，秘書負責寫入犯錯紀錄、提煉跨專案通用常識（規則 + 認知）。
 
 ### 秘書的鍋
 
@@ -181,7 +181,7 @@ _一套明確責任歸屬的 Agents 開發框架_
     ├── {PRD,QC,SEC}/<slug>.md
     └── REPO.md
 
-~/.worktree/<repo>/<slug>/                       # 共享 worktree
+~/.worktree/<repo>/<slug>/                       # shiftblame 自定義 worktree
 
 <repo>/
 ├── .shiftblame/                                 # symlink 目錄
@@ -210,17 +210,17 @@ npm install shiftblame
 
 ### 初始化
 
-安裝完成後，在目標 repo 中執行：
-
-```
-/blame-init
-```
-
-建立 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。秘書在首次推鍋時也會自動偵測並執行初始化。
+首次執行 `/secretary` 時，秘書會自動偵測並初始化 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。已有內容的 REPO.md 和 BLAME.md 會保留，空目錄才初始化。
 
 ---
 
 ## 使用
+
+### Skills
+
+| Skill | 用途 | 觸發方式 |
+|---|---|---|
+| `secretary` | 推鍋入口。初始化環境、派工、寫鍋紀錄、提煉常識、同步 README，全部整合在一個 skill 中 | `/secretary` |
 
 ### 顯式呼叫
 
@@ -249,41 +249,19 @@ npm install shiftblame
 5. 主管親自執行所有職能，完成後回報
 6. 秘書收齊所有主管回報後，向老闆做最終彙報
 
-### 聚合鍋紀錄
-
-當各部門的 BLAME.md 累積了一定歷史後，可以執行：
-
-```
-/blame-reflect
-```
-
-掃描所有部門的鍋紀錄，將「下次怎麼避免」提煉成**常識（規則）**，將「背後的機制」提煉成**認知（模型）**，寫回各 BLAME.md 檔頭。
-
-### 聚合文件
-
-```
-/repo-reflect
-```
-
-掃描各 repo 的部門目錄，將舊紀錄合併至 `REPO.md`，每個部門保留最新 3 筆。原檔保留不刪。
-
-### 同步 README
-
-```
-/update-readme
-```
-
-掃描專案現狀（agents、skills、hooks、config、目錄結構），將 README.md 同步為最新。適用於任何 Claude Code 專案。
-
 ### 秘書接手後
 
-1. 掃描 `.claude/agents/` 取得可用部門清單
-2. 保存你的**原話逐字稿**
-3. 評估認知複雜度，決定使用哪個 model
-4. 每個部門啟動前先用人話告訴你「派哪個部門、做什麼、用哪個 model」，你回 OK 才繼續
-5. 部門主管親自執行所有職能、回報「做了什麼 / 問題 / 解決方式 / 結果」
-6. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-7. 完成後依序自動執行 `blame-reflect` → `repo-reflect` → `update-readme`
+1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化（先讀現有內容，有就保留）
+2. 掃描 `.claude/agents/` 取得可用部門清單
+3. 保存你的**原話逐字稿**
+4. 評估認知複雜度，決定使用哪個 model
+5. 每個部門啟動前先用人話告訴你「派哪個部門、做什麼、用哪個 model」，你回 OK 才繼續
+6. 建立 worktree 隔離環境（shiftblame 自定義 worktree，非 Claude 內建）
+7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`
+8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
+9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
+10. 秘書負責寫入犯錯紀錄、提煉跨專案通用常識與專案常識
+11. 完成後自動同步 README.md
 
 你在過程中只需要：
 
