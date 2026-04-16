@@ -28,6 +28,40 @@ description: >-
 6. **主管產出路徑**：派工時提醒主管將產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`，一個 slug 只能有一個文件
 7. **worktree 隔離**：所有修改透過 worktree 隔離，禁止直推 main
 8. **鍋紀錄唯一正確位置**：`~/.shiftblame/blame/<部門>/BLAME.md`，絕對不要寫到 Claude memory 或其他記憶系統
+9. **協議疑慮必須向上確認**：秘書對任何協議條文的解讀有疑慮時（例如 QC「不跑測試」的確切含義），先向老闆確認再派工。不要自行解讀後把解讀結果當作事實傳遞給下游主管
+10. **回報後驗證 git 狀態**：每個產碼部門（PRD/DEV/QC/MIS）回報後，秘書必須執行 `cd <Worktree 路徑> && git status && git branch --show-current` 確認改動在 worktree 內、分支正確。主 repo 絕不可切離 main
+
+## 派工範本（強制）
+
+**每次派工前必須填寫派工單。`WORKTREE_PATH` 空白則不派出。派工 prompt 中必須要求 agent 在動手前執行 `pwd && git branch --show-current` 確認自己在 worktree 內。**
+
+```
+=== 派工單 ===
+SLUG:          (必填)
+DEPT:          (必填)
+MODEL:         (必填：haiku|sonnet|opus)
+WORKTREE_PATH: ~/.worktree/<repo>/<slug>/   (產碼部門 PRD/DEV/QC/MIS 必填，其他 N/A)
+BRANCH:        feat/<slug>                   (產碼部門必填，其他 N/A)
+UPSTREAM:      ~/.shiftblame/<repo>/<上游部門>/
+OUTPUT:        ~/.shiftblame/<repo>/<DEPT>/<slug>.md
+
+=== Worktree 建立步驟（產碼部門適用，由 SEC 執行）===
+1. git worktree add ~/.worktree/<repo>/<slug> -b feat/<slug>
+2. mkdir -p <repo_root>/.worktree
+3. ln -sfn ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
+4. 確認 .gitignore 包含 .worktree/
+```
+
+派工前逐條核對 BLAME.md「常識」清單，確認 prompt 含所有相關約束（worktree 路徑、分支名稱、隔離要求）。
+
+## QC 協議的正確定義
+
+**QC「不跑測試」= 不重複跑 DEV 已跑過的自動化綠燈，但必須像真實用戶一樣操作應用，驗證行為斷言成立。**
+
+派工 QC 時禁止在 prompt 中寫「你透過閱讀程式碼來驗證，不是執行測試」這種誤導語言。正確寫法：
+- ✅「逐條驗證 QA 斷言。你不重複跑 DEV 已通過的自動化測試，但必須親自啟動應用並做真實用戶操作，確認斷言在實際執行中成立」
+- ❌「你透過閱讀程式碼驗證斷言」
+- ❌「你不執行任何東西」
 
 ## 認知複雜度 model 路由
 
@@ -191,22 +225,34 @@ fi
 
 ### 循環圓流程
 
-| 順序 | 部門 | 做什麼 | 上游（可讀） | 產出寫入 |
-|---|---|---|---|---|
-| 1 | QA | 定義行為斷言 X→Y→Z（不寫程式碼，不區分測試項目） | MIS | `~/.shiftblame/<repo>/QA/` |
-| 2 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + worktree | QA | `~/.shiftblame/<repo>/SEC/` |
-| 3 | PRD | 市調 + 架構設計 + 測試區分 + 實作計畫 | SEC | `~/.shiftblame/<repo>/PRD/` |
-| 4 | DEV | 依計畫 TDD 開發，直到全綠 | PRD | `~/.shiftblame/<repo>/DEV/` |
-| 5 | QC | 驗證斷言行為（不跑測試）+ 紅藍隊攻防模擬 | DEV | `~/.shiftblame/<repo>/QC/` |
-| 6 | MIS | 部署上線 | QC | `~/.shiftblame/<repo>/MIS/` |
+| 順序 | 部門 | 做什麼 | 1 級上游 | 2 級上游 | 產出寫入 |
+|---|---|---|---|---|---|
+| 1 | QA | 定義行為斷言 X→Y→Z（含 E2E 基本斷言，不寫程式碼，不區分測試項目） | MIS | QC（上輪） | `~/.shiftblame/<repo>/QA/` |
+| 2 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + worktree | QA | MIS（上輪） | `~/.shiftblame/<repo>/SEC/` |
+| 3 | PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **親自在 worktree 寫測試檔** + 實作計畫 | SEC | QA | `~/.shiftblame/<repo>/PRD/` + worktree/tests |
+| 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠，commit 前語法檢查 | PRD | SEC | `~/.shiftblame/<repo>/DEV/` + worktree |
+| 5 | QC | **實際啟動應用做用戶操作驗證** PRD 翻譯後的驗收條件 + 紅藍隊攻防模擬（不重複跑自動化綠燈，不直接讀 QA 原文） | DEV | PRD | `~/.shiftblame/<repo>/QC/` |
+| 6 | MIS | 部署上線（部署指引從 QC 報告取得） | QC | DEV | `~/.shiftblame/<repo>/MIS/` |
 
-### 資料存取限制
+### 資料存取限制（單向跨兩級）
 
-**每個部門只能讀兩個地方：**
+**每個部門只能讀三個地方：**
 1. **自己的專案資料夾**：`~/.shiftblame/<repo>/<DEPT>/`（含自己的鍋紀錄 `~/.shiftblame/blame/<DEPT>/BLAME.md`）
-2. **上一流程的專案資料夾**：循環圓中前一個部門的 `~/.shiftblame/<repo>/<PREV>/`
+2. **上一流程（1 級上游）**：循環圓中前一個部門的 `~/.shiftblame/<repo>/<PREV>/`
+3. **上兩流程（2 級上游）**：循環圓中再前一個部門的 `~/.shiftblame/<repo>/<PREV2>/`
 
-嚴格禁止讀取其他部門的資料夾。這確保每個部門只基於上游的產出工作，不偷看不相干的資訊。
+| 部門 | 1 級上游 | 2 級上游 |
+|---|---|---|
+| QA | MIS | QC（上一輪的） |
+| SEC | QA | MIS（上一輪的） |
+| PRD | SEC | QA |
+| DEV | PRD | SEC |
+| QC | DEV | PRD |
+| MIS | QC | DEV |
+
+**嚴格禁止讀其他部門的資料夾**（含下游、同級、跨三級以上）。跨兩級規則的目的：
+- 避免透過中間層轉述造成資訊失真（直接讀原始上游）
+- 同時強制相鄰層級承擔「翻譯/過濾」的責任（如 QC 只讀 PRD 翻譯後的驗收條件，不看 QA 原文 → PRD 必須保證翻譯正確）
 
 ## Worktree 機制
 

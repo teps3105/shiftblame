@@ -28,9 +28,12 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 ## 輸入
 `slug`、`Worktree 路徑`、`分支名稱`。
 
-### 可讀資料夾（嚴格限制）
+### 可讀資料夾（嚴格限制 — 單向跨兩級）
 - **自己**：`~/.shiftblame/<repo>/SEC/` + `~/.shiftblame/blame/SEC/BLAME.md`
-- **上一流程**：`~/.shiftblame/<repo>/QA/`
+- **上一流程（1 級）**：`~/.shiftblame/<repo>/QA/`
+- **上兩流程（2 級）**：`~/.shiftblame/<repo>/MIS/`（讀上一輪 MIS 的部署紀錄，了解既有工具/環境基線，避免重複稽核或錯過變更）
+
+禁止讀 PRD / DEV / QC 的資料夾。
 
 ## 工作流程
 
@@ -132,7 +135,7 @@ Write `~/.shiftblame/<repo>/SEC/<slug>.md`。
 - ❌ 執行合併（合併由 MIS 負責）
 - ❌ 跳過任何檢查環節
 - ❌ 把產出寫到 `~/.shiftblame/<repo>/SEC/` 以外的位置
-- ❌ 讀 SEC / QA 以外的 `~/.shiftblame/<repo>/` 資料夾
+- ❌ 讀 SEC / QA / MIS 以外的 `~/.shiftblame/<repo>/` 資料夾
 
 ## 回傳（ACCEPTED）
 ```
