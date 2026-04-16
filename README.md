@@ -56,12 +56,12 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 部門 | 職能 | 典型犯錯情境 |
 |------|------|-------------|
-| PRD | 需求文件 + 架構設計 + 市場調研 | PRD 漏掉老闆明確提到的需求、自作主張加了老闆沒說的東西、技術選型不可行、市調資料不準確 |
-| QA | 單元測試 + 整合測試 + E2E 測試設計 | 測試涵蓋度不足、測試設計與驗收條件脫節 |
-| DEV | 前端 + 後端 + 資料庫全端實作 | 實作偏離 spec、引入新 bug、模組間介面不一致 |
-| QC | E2E 執行 + 稽核 + 邊緣/模糊測試 + 一致性 + 可用性 | 品管場景遺漏關鍵流程、邊緣/模糊測試不足、一致性遺漏、使用者體驗問題 |
-| SEC | 工具審核 + 紅隊攻擊 + 藍隊防禦 | 該抓的沒抓到（放水）、退回理由不具體、安全掃描遺漏 |
-| MIS | 環境盤點 + CI/CD + 合併 + 部署 | 環境盤點遺漏、CI/CD pipeline 配置錯誤、合併出包、部署失敗 |
+| QA | 行為斷言定義（X→Y→Z，不寫程式碼） | 斷言遺漏、斷言格式不精確、斷言與需求不符 |
+| SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + 環境管理規範 | 工具篩選不當、環境建置錯誤、安全遺漏 |
+| PRD | 市調 + 架構設計 + 測試區分 + 實作計畫 | 需求遺漏、架構不可行、測試區分不當 |
+| DEV | TDD 開發（依計畫實作直到全綠） | 測試未全綠、實作偏離計畫、引入新 bug |
+| QC | 驗證斷言行為（不跑測試）+ 紅藍隊攻防模擬 | 斷言驗證遺漏、紅藍隊模擬不完整 |
+| MIS | 部署上線 | 部署失敗、pipeline 配置錯誤、合併出包 |
 
 ---
 
@@ -72,25 +72,25 @@ _一套明確責任歸屬的 Agents 開發框架_
 六個部門形成封閉循環，嚴格按順序執行：
 
 ```
-        ┌─── SEC（法遵 / 安全基線）
-        │     只讀：SEC + MIS
+        ┌─── QA（定義行為斷言 X→Y→Z）
+        │     只讀：QA + MIS
         │
-        ├─── QA（做事前法遵 → 測試設計）
-        │     只讀：QA + SEC
+        ├─── SEC（資安稽核 + 工具篩選 + 隔離環境建置）
+        │     只讀：SEC + QA
         │
-        ├─── PRD（做規劃開發 → 需求 + 架構）
-        │     只讀：PRD + QA
+        ├─── PRD（市調 + 架構 + 測試區分 + 實作計畫）
+        │     只讀：PRD + SEC
         │
-        ├─── DEV（做規劃開發 → 全端實作）
+        ├─── DEV（TDD 開發 → 直到全綠）
         │     只讀：DEV + PRD
         │
-        ├─── QC（做品控上線 → 驗收）
+        ├─── QC（驗證斷言 + 紅藍隊攻防）
         │     只讀：QC + DEV
         │
-        └─── MIS（做品控上線 → 部署）
+        └─── MIS（部署上線）
               只讀：MIS + QC
               │
-              └→ 回到 SEC（下一輪）
+              └→ 回到 QA（下一輪）
 ```
 
 ### 資料存取限制
@@ -99,9 +99,9 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 部門 | 可讀自己 | 可讀上一流程 |
 |---|---|---|
-| SEC | `~/.shiftblame/<repo>/SEC/` | `~/.shiftblame/<repo>/MIS/` |
-| QA | `~/.shiftblame/<repo>/QA/` | `~/.shiftblame/<repo>/SEC/` |
-| PRD | `~/.shiftblame/<repo>/PRD/` | `~/.shiftblame/<repo>/QA/` |
+| QA | `~/.shiftblame/<repo>/QA/` | `~/.shiftblame/<repo>/MIS/` |
+| SEC | `~/.shiftblame/<repo>/SEC/` | `~/.shiftblame/<repo>/QA/` |
+| PRD | `~/.shiftblame/<repo>/PRD/` | `~/.shiftblame/<repo>/SEC/` |
 | DEV | `~/.shiftblame/<repo>/DEV/` | `~/.shiftblame/<repo>/PRD/` |
 | QC | `~/.shiftblame/<repo>/QC/` | `~/.shiftblame/<repo>/DEV/` |
 | MIS | `~/.shiftblame/<repo>/MIS/` | `~/.shiftblame/<repo>/QC/` |
@@ -109,7 +109,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 ### 秘書調度流程
 
 ```
- 老闆說話
+ 老闆提出用戶需求
       │
       ▼
  ┌─────────────────────────┐
@@ -153,15 +153,16 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 秘書根據需求性質，決定從循環圓的哪個節點切入：
 
-| 需求性質 | 切入點 | 完整路徑 |
-|---|---|---|
-| 全新功能 | SEC | SEC → QA → PRD → DEV → QC → MIS |
-| 安全合規問題 | SEC | SEC → QA → PRD → DEV → QC → MIS |
-| 測試不足 | QA | QA → PRD → DEV → QC → MIS → SEC |
-| 需求 / 架構變更 | PRD | PRD → DEV → QC → MIS → SEC → QA |
-| 已知 bug / 程式修正 | DEV | DEV → QC → MIS → SEC → QA → PRD |
-| 品質驗收問題 | QC | QC → MIS → SEC → QA → PRD → DEV |
-| 部署 / 上線問題 | MIS | MIS → SEC → QA → PRD → DEV → QC |
+| 需求性質 | 切入點 |
+|---|---|
+| 功能需求 / 斷言不足 | QA |
+| 安全合規問題 | SEC |
+| 需求 / 架構變更 | PRD |
+| 已知 bug / 程式修正 | DEV |
+| 品質驗收問題 | QC |
+| 部署 / 上線問題 | MIS |
+
+完整路徑：QA → SEC → PRD → DEV → QC → MIS → 新需求 → QA
 
 ### 檔案結構
 
@@ -216,25 +217,9 @@ npm install shiftblame
 
 ## 使用
 
-### Skills
+### 直接對話
 
-| Skill | 用途 | 觸發方式 |
-|---|---|---|
-| `secretary` | 推鍋入口。初始化環境、派工、寫鍋紀錄、提煉常識、同步 README，全部整合在一個 skill 中 | `/secretary` |
-
-### 顯式呼叫
-
-每個 session 開始時，使用 `/secretary` 進入秘書模式：
-
-```
-/secretary 幫我做一個 Markdown 轉 HTML 的 CLI
-```
-
-還沒想清楚？也可以諮詢：
-
-```
-/secretary 我在猶豫要用 REST 還是 GraphQL，你覺得呢
-```
+每次對話開始時，輸入「秘書」啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
 
 ### 派工流程
 
