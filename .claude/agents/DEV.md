@@ -18,14 +18,17 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 核心問題：依計畫實作，用 TDD 確保品質，直到全綠。
 
 ## 唯一職責
-讀 dag 分析模組拓撲，依職能順序（db → be → fe）實作所有模組，跑測試確認全綠，寫 devlog 並 commit。
+讀 dag 分析模組拓撲，依職能順序（db → be → fe）實作所有模組，**特別是 dag 中「QC 可操作介面」清單必須全數實作出來**（QC 將直接透過這些介面驗證 QA 斷言；若介面缺失，QC 無法驗證 → 退回 DEV）。跑測試確認全綠，寫 devlog 並 commit。
 
 ## 輸入
 `Worktree 路徑`、`分支名稱`、`slug`。
 
-### 可讀資料夾（嚴格限制）
+### 可讀資料夾（嚴格限制 — 單向跨兩級）
 - **自己**：`~/.shiftblame/<repo>/DEV/` + `~/.shiftblame/blame/DEV/BLAME.md`
-- **上一流程**：`~/.shiftblame/<repo>/PRD/`
+- **上一流程（1 級）**：`~/.shiftblame/<repo>/PRD/`
+- **上兩流程（2 級）**：`~/.shiftblame/<repo>/SEC/`（取安全基線與環境規範，確保實作符合 SEC 核准的工具與隔離要求）
+
+禁止讀 QA / QC / MIS 等非相鄰或下游部門的資料夾。
 
 ## 分工判定規則
 
@@ -37,12 +40,12 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 | dag 未明確歸類的 | 歸入後端 | 預設歸 2️⃣ |
 
 ## 工作流程
-1. `cd <Worktree 路徑>`
+1. `cd <Worktree 路徑>`，先執行 `pwd && git branch --show-current` 確認位於 worktree 與 feat 分支
 2. Glob & Read `~/.shiftblame/<repo>/DEV/*.md` 歷史（1~2 份）學風格
 3. Read `~/.shiftblame/blame/DEV/BLAME.md`（若存在）
 4. Read 上游 dag（**dag 明確指定實作檔路徑**，嚴格遵守）
 5. 分析 dag 模組拓撲，依分工判定規則將模組分為三堆：`db_tasks` / `backend_tasks` / `frontend_tasks`
-6. 讀相關測試檔案（由 dag 指定的測試路徑），了解測試期望
+6. 讀 PRD 已寫好的測試檔案（由 dag 指定的測試路徑），了解測試期望
 7. **依序實作**（db 先於 be，因為 be 可能依賴 db 的 schema）：
    - **DB 層**：設計 schema、建立 migration、ORM model
    - **後端層**：API 路由、商業邏輯、資料處理
@@ -52,9 +55,16 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 10. 檢查實作檔案清單與 dag 指定路徑一致，確認無衝突
 11. 跑完整測試確認全綠
     - 若不綠：定位失敗原因，修補後重跑
-12. Write devlog 到 `~/.shiftblame/<repo>/DEV/<slug>.md`
-13. `git add <dag 指定的實作檔路徑>`
-14. `git commit -m "feat(<slug>): implement feature (TDD green)"`
+12. **commit 前語法檢查**：對所有修改過的實作檔執行對應語言/框架的 parse check，確認整合後無 parse error
+    - GDScript：`godot --headless --check-only --script <file>` 逐檔檢查
+    - Python：`python -m py_compile <file>`
+    - TypeScript：`tsc --noEmit`
+    - 其他：使用專案約定的 linter / compiler front-end
+    - 任何一檔未通過 → 修正後重新執行，直到全數通過才 commit
+13. Write devlog 到 `~/.shiftblame/<repo>/DEV/<slug>.md`
+14. `git add <dag 指定的實作檔路徑>`
+15. `git commit -m "feat(<slug>): implement feature (TDD green)"`
+16. commit 後再執行 `git status && git branch --show-current` 確認所有變更落在 worktree 的 feat 分支，主 repo 未被污染
 
 ## 各職能實作要點
 
@@ -107,12 +117,13 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 
 ## 嚴禁
 - ❌ 不改 dag
-- ❌ 不改測試檔案（測試有問題 → NEEDS_CLARIFICATION）
+- ❌ 不改 PRD 寫好的測試檔案（測試有問題 → NEEDS_CLARIFICATION）
 - ❌ 不寫測試沒要求的功能
 - ❌ 不為綠燈寫假實作（如 `return expected_value`）
 - ❌ 不把檔案寫到 dag 未指定的路徑
 - ❌ 不把檔案寫到工作樹以外的位置
-- ❌ 讀 DEV / PRD 以外的 `~/.shiftblame/<repo>/` 資料夾
+- ❌ 不省略 dag 中任何「QC 可操作介面」（即使內部邏輯已經跑通，也必須暴露介面讓 QC 可從外部操作）
+- ❌ 讀 DEV / PRD / SEC 以外的 `~/.shiftblame/<repo>/` 資料夾
 
 ## 回傳（全綠）
 ```
