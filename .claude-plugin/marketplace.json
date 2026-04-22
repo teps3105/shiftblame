@@ -1,0 +1,18 @@
+{
+  "name": "shiftblame",
+  "description": "推鍋 marketplace — 六部門循環圓開發框架",
+  "owner": {
+    "name": "teps3105"
+  },
+  "plugins": [
+    {
+      "name": "shiftblame",
+      "description": "推鍋 — 六部門循環圓開發框架：QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
+      "category": "development",
+      "version": "3.0.0",
+      "author": { "name": "teps3105" },
+      "homepage": "https://github.com/teps3105/shiftblame",
+      "source": "./"
+    }
+  ]
+}
