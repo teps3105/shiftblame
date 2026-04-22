@@ -7,9 +7,9 @@
 _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#資源供給機制)
-[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#skills)
+[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
+[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#誰的鍋)
+[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -20,7 +20,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門主管親自執行所有職能，出了事由秘書寫入各部門的鍋紀錄。所有修改透過 worktree 隔離，不直推 main。
+秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門主管親自執行所有職能，出了事由秘書寫入各部門的鍋紀錄。所有修改透過 worktree 隔離，不直推 main。部署完畢後，秘書負責清理上一輪產出、更新 REPO.md、整理 blame 目錄，保持 `.shiftblame/` 清潔。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -59,11 +59,11 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 | 部門 | 職能 | 典型犯錯情境 |
 |------|------|-------------|
-| QA | 行為斷言定義（X→Y→Z，含 E2E 基本斷言，不寫程式碼） | 斷言遺漏、E2E 斷言缺失、格式不精確、斷言與需求不符 |
+| QA | 用戶業務邏輯的行為斷言定義（X→Y→Z，含 E2E 基本斷言，不寫程式碼） | 斷言遺漏、E2E 斷言缺失、格式不精確、斷言與需求不符 |
 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + 環境管理規範 | 工具篩選不當、環境建置錯誤、安全遺漏 |
 | PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **在 worktree 親自寫測試檔** + 實作計畫 | 驗收條件模糊、QC 可操作介面缺失、測試檔 parse error、E2E 測試缺失 |
 | DEV | TDD 開發（依計畫實作直到全綠，含 QC 可操作介面實作，commit 前語法檢查） | 測試未全綠、介面未實作、commit 前未做語法檢查、引入新 bug |
-| QC | **實際啟動應用做用戶操作驗證** PRD 翻譯後的驗收條件 + 紅藍隊攻防模擬 | 只做程式碼審查未啟動應用、直接偷看 QA 原文、驗證遺漏、紅藍隊模擬不完整 |
+| QC | **實際啟動應用做用戶操作驗證** PRD 翻譯後的驗收條件 + 與 QA 原始斷言交叉比對 + 紅藍隊攻防模擬 | 只做程式碼審查未啟動應用、驗證遺漏、紅藍隊模擬不完整 |
 | MIS | 部署上線 | 部署失敗、pipeline 配置錯誤、合併出包 |
 
 ---
@@ -75,43 +75,44 @@ _一套明確責任歸屬的 Agents 開發框架_
 六個部門形成封閉循環，嚴格按順序執行：
 
 ```
-        ┌─── QA（定義行為斷言 X→Y→Z，含 E2E 基本斷言）
-        │     只讀：QA + MIS + 上輪 QC
+        ┌─── QA（定義用戶業務邏輯的行為斷言 X→Y→Z）
+        │     可讀：僅自己
         │
         ├─── SEC（資安稽核 + 工具篩選 + 隔離環境建置）
-        │     只讀：SEC + QA + 上輪 MIS
+        │     可讀：自己 + QA
         │
         ├─── PRD（市調 + 架構 + 翻譯驗收條件 + 定義 QC 介面 + 寫測試 + 實作計畫）
-        │     只讀：PRD + SEC + QA
+        │     可讀：自己 + QA + SEC
         │
         ├─── DEV（TDD 開發 → 直到全綠，含 QC 介面實作與語法檢查）
-        │     只讀：DEV + PRD + SEC
+        │     可讀：自己 + QA + SEC + PRD
         │
-        ├─── QC（實際啟動應用驗證 + 紅藍隊攻防）
-        │     只讀：QC + DEV + PRD（禁讀 QA）
+        ├─── QC（實際啟動應用驗證 + 與 QA 交叉比對 + 紅藍隊攻防）
+        │     可讀：自己 + QA + SEC + PRD + DEV
         │
-        └─── MIS（部署上線）
-              只讀：MIS + QC + DEV
+        └─── MIS（部署上線 — 最後一道防線）
+              可讀：全部（QA + SEC + PRD + DEV + QC + 自己）
               │
               └→ 回到 QA（下一輪）
 ```
 
-### 資料存取限制（單向跨兩級）
+### 資料存取限制（金字塔累積制）
 
-每個部門**只能讀三個資料夾**：自己的 + 1 級上游 + 2 級上游。嚴禁跨三級、偷看同級或下游。
+每個部門可讀**自己 + 所有上游部門**的產出。越後面的部門可讀越多，MIS 讀全部。嚴禁讀下游部門。
 
-跨兩級設計目的：
-- **避免資訊失真**：直接讀原始上游，不依賴中間層轉述
-- **強制翻譯責任**：如 QC 只讀 PRD 翻譯後的驗收條件、不讀 QA 原文 → PRD 必須保證翻譯正確
+金字塔設計目的：
+- 部署後秘書清理所有產出，沒有「上一輪」文件，不存在跨輪存取需求
+- 每個部門直接讀所有上游原始產出，避免透過中間層轉述造成資訊失真
+- MIS 是最後一道防線，必須閱讀全部產出確認無誤才能部署；秘書是第二道保險
 
-| 部門 | 自己 | 1 級上游 | 2 級上游 |
-|---|---|---|---|
-| QA | `QA/` | `MIS/` | `QC/`（上輪） |
-| SEC | `SEC/` | `QA/` | `MIS/`（上輪） |
-| PRD | `PRD/` | `SEC/` | `QA/` |
-| DEV | `DEV/` | `PRD/` | `SEC/` |
-| QC | `QC/` | `DEV/` | `PRD/`（禁讀 QA） |
-| MIS | `MIS/` | `QC/` | `DEV/` |
+| 部門 | 可讀範圍 |
+|---|---|
+| QA | 自己 |
+| SEC | 自己 + QA |
+| PRD | 自己 + QA + SEC |
+| DEV | 自己 + QA + SEC + PRD |
+| QC | 自己 + QA + SEC + PRD + DEV |
+| MIS | 自己 + QA + SEC + PRD + DEV + QC（全部） |
 
 ### 秘書調度流程
 
@@ -156,21 +157,6 @@ _一套明確責任歸屬的 Agents 開發框架_
  秘書對照原話 → 呈報老闆
 ```
 
-### 需求路由
-
-秘書根據需求性質，決定從循環圓的哪個節點切入：
-
-| 需求性質 | 切入點 |
-|---|---|
-| 功能需求 / 斷言不足 | QA |
-| 安全合規問題 | SEC |
-| 需求 / 架構變更 | PRD |
-| 已知 bug / 程式修正 | DEV |
-| 品質驗收問題 | QC |
-| 部署 / 上線問題 | MIS |
-
-完整路徑：QA → SEC → PRD → DEV → QC → MIS → 新需求 → QA
-
 ### 檔案結構
 
 ```
@@ -203,17 +189,14 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ## 安裝
 
-### User 級別（所有 repo 共用）
+### 透過 Claude Code Marketplace Plugin
 
 ```bash
-npm install -g shiftblame
-```
+# 加入 marketplace（若尚未加入）
+/plugin marketplace add teps3105/shiftblame
 
-### Repo 級別（只在特定 repo 生效）
-
-```bash
-cd /path/to/your/project
-npm install shiftblame
+# 安裝 plugin
+/plugin install shiftblame
 ```
 
 ### 初始化
@@ -226,40 +209,64 @@ npm install shiftblame
 
 ### 直接對話
 
-每次對話開始時，輸入「秘書」啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
+每次對話開始時，輸入 `/secretary` 啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
 
 ### 派工流程
 
 ```
-老闆 → 秘書（預審 + 選 model + 決定切入點）→ 循環圓依序執行 → 秘書（彙報）→ 老闆
+老闆 → 秘書（預審 + 選 model）→ QA→SEC→PRD→DEV→QC→MIS 完整循環 → 秘書（彙報）→ 老闆
 ```
 
-1. 秘書收到老闆原話，評估認知複雜度，決定從循環圓哪個節點切入
-2. 向老闆預審「從哪個部門開始、做什麼、用哪個 model」，使用強制派工單範本（`WORKTREE_PATH` / `BRANCH` 空白則不派出）
-3. 老闆 OK 後，按循環圓順序逐一部門派工
-4. 每個部門只能讀自己 + 1 級上游 + 2 級上游的產出
-5. 主管親自執行所有職能，完成後回報
-6. 秘書在主管回報後執行 `git status && git branch --show-current` 驗證改動在 worktree、分支正確
-7. 秘書收齊所有主管回報後，向老闆做最終彙報
+1. 秘書收到老闆原話，評估認知複雜度
+2. 所有需求一律從 QA 起步，走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點
+3. 向老闆預審「做什麼、用哪個 model」，使用強制派工單範本（`WORKTREE_PATH` / `BRANCH` 空白則不派出）
+4. 老闆 OK 後，按循環圓順序逐一部門派工
+5. 每個部門只能讀自己 + 1 級上游 + 2 級上游的產出
+6. 主管親自執行所有職能，完成後回報
+7. 秘書在主管回報後執行 `git status && git branch --show-current` 驗證改動在 worktree、分支正確
+8. 秘書收齊所有主管回報後，向老闆做最終彙報
 
 ### 秘書接手後
 
 1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化（先讀現有內容，有就保留）
-2. 掃描 `.claude/agents/` 取得可用部門清單
+2. 掃描 agents 取得可用部門清單
 3. 保存你的**原話逐字稿**
 4. 評估認知複雜度，決定使用哪個 model
-5. 每個部門啟動前先用人話告訴你「派哪個部門、做什麼、用哪個 model」，你回 OK 才繼續
+5. 每個部門啟動前先用人話告訴你「這輪到哪個部門、做什麼、用哪個 model」，你回 OK 才繼續
 6. 建立 worktree 隔離環境（shiftblame 自定義 worktree，非 Claude 內建）
 7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`
 8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
 9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
 10. 秘書負責寫入犯錯紀錄、提煉跨專案通用常識與專案常識
 11. 完成後自動同步 README.md
+12. MIS 部署完畢後，秘書執行回合收尾：刪除上一輪所有部門產出檔案、更新 REPO.md、整理 blame 目錄常識去重，保持 `.shiftblame/` 清潔
 
 你在過程中只需要：
 
 - **OK**：繼續推
 - **不 OK + 原因**：秘書會判斷該推給哪個部門重做
+
+---
+
+## Plugin 結構
+
+```
+shiftblame/
+├── .claude-plugin/
+│   └── plugin.json        # Plugin manifest
+├── agents/
+│   ├── QA.md              # 品保主管
+│   ├── SEC.md             # 資安主管
+│   ├── PRD.md             # 企劃主管
+│   ├── DEV.md             # 開發主管
+│   ├── QC.md              # 品管主管
+│   └── MIS.md             # MIS 主管
+├── skills/
+│   └── secretary/
+│       └── SKILL.md       # 秘書 skill
+├── LICENSE
+└── README.md
+```
 
 ---
 

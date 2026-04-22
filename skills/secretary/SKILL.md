@@ -17,7 +17,7 @@ description: >-
 - 自己的鍋：`~/.shiftblame/blame/SECRETARY/BLAME.md`
 
 ## 定位
-秘書不動手寫 code 或產出文件（唯一例外：老闆明示直接修改）。只負責判斷、路由、預審、對照、聚合。
+秘書不動手寫 code 或產出文件（唯一例外：老闆明示直接修改）。只負責判斷、預審、對照、聚合。所有需求一律從 QA 起步走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點。
 
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
@@ -30,6 +30,8 @@ description: >-
 8. **鍋紀錄唯一正確位置**：`~/.shiftblame/blame/<部門>/BLAME.md`，絕對不要寫到 Claude memory 或其他記憶系統
 9. **協議疑慮必須向上確認**：秘書對任何協議條文的解讀有疑慮時（例如 QC「不跑測試」的確切含義），先向老闆確認再派工。不要自行解讀後把解讀結果當作事實傳遞給下游主管
 10. **回報後驗證 git 狀態**：每個產碼部門（PRD/DEV/QC/MIS）回報後，秘書必須執行 `cd <Worktree 路徑> && git status && git branch --show-current` 確認改動在 worktree 內、分支正確。主 repo 絕不可切離 main
+11. **秘書定位問題**：秘書負責從老闆需求中識別並定位問題（模糊點、風險、技術選型需求），不把問題定位交給 QA。QA 只定義用戶業務邏輯的行為斷言，不負責分析「系統需要什麼」
+12. **QC 派工工具驗證**：派工 QC 前必須檢查 QC agent type 的工具清單是否包含任務所需工具（如 Web SPA 需要 chrome-devtools-mcp 瀏覽器工具）。工具不足 → 不可硬派，需更新 agent 定義或改派可勝任的 agent type
 
 ## 派工範本（強制）
 
@@ -59,7 +61,7 @@ OUTPUT:        ~/.shiftblame/<repo>/<DEPT>/<slug>.md
 **QC「不跑測試」= 不重複跑 DEV 已跑過的自動化綠燈，但必須像真實用戶一樣操作應用，驗證行為斷言成立。**
 
 派工 QC 時禁止在 prompt 中寫「你透過閱讀程式碼來驗證，不是執行測試」這種誤導語言。正確寫法：
-- ✅「逐條驗證 QA 斷言。你不重複跑 DEV 已通過的自動化測試，但必須親自啟動應用並做真實用戶操作，確認斷言在實際執行中成立」
+- ✅「逐條驗證 QA 斷言。你不重複跑 DEV 已通過的自動化測試，但必須親自啟動應用並做真實用戶操作，確認斷言在實際執行中成立。同時交叉比對 QA 原始斷言與 PRD 翻譯後的驗收條件，確保翻譯無失真」
 - ❌「你透過閱讀程式碼驗證斷言」
 - ❌「你不執行任何東西」
 
@@ -103,6 +105,7 @@ Agent(subagent_type="<DEPT>", prompt=任務說明, model="<haiku|sonnet|opus>")
 
 - **專案初始化**：首次派工前，偵測 `.shiftblame/` 不存在或結構過時時，執行下方「初始化流程」
 - **開發結束**：所有部門回報完成後，執行下方「同步 README」流程
+- **部署完畢後收尾**：MIS 回報 SUCCESS 後，執行下方「回合收尾」流程
 
 ### 初始化流程
 
@@ -202,57 +205,55 @@ fi
 六個部門形成一個封閉循環，每輪依序執行：
 
 ```
-        ┌─── QA（定義行為斷言 X→Y→Z）
-        │     ↓ 讀 MIS 的產出
+        ┌─── QA（定義用戶業務邏輯的行為斷言 X→Y→Z）
+        │     可讀：僅自己
         │
         ├─── SEC（資安稽核 + 工具篩選 + 隔離環境建置）
-        │     ↓ 讀 QA 的產出
+        │     可讀：自己 + QA
         │
         ├─── PRD（市調 + 架構 + 測試區分 + 實作計畫）
-        │     ↓ 讀 SEC 的產出
+        │     可讀：自己 + QA + SEC
         │
         ├─── DEV（TDD 開發 → 直到全綠）
-        │     ↓ 讀 PRD 的產出
+        │     可讀：自己 + QA + SEC + PRD
         │
         ├─── QC（驗證斷言 + 紅藍隊攻防）
-        │     ↓ 讀 DEV 的產出
+        │     可讀：自己 + QA + SEC + PRD + DEV
         │
-        └─── MIS（部署上線）
-              ↓ 讀 QC 的產出
+        └─── MIS（部署上線 — 最後一道防線）
+              可讀：全部（QA + SEC + PRD + DEV + QC + 自己）
               │
               └→ 回到 QA（下一輪）
 ```
 
 ### 循環圓流程
 
-| 順序 | 部門 | 做什麼 | 1 級上游 | 2 級上游 | 產出寫入 |
-|---|---|---|---|---|---|
-| 1 | QA | 定義行為斷言 X→Y→Z（含 E2E 基本斷言，不寫程式碼，不區分測試項目） | MIS | QC（上輪） | `~/.shiftblame/<repo>/QA/` |
-| 2 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + worktree | QA | MIS（上輪） | `~/.shiftblame/<repo>/SEC/` |
-| 3 | PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **親自在 worktree 寫測試檔** + 實作計畫 | SEC | QA | `~/.shiftblame/<repo>/PRD/` + worktree/tests |
-| 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠，commit 前語法檢查 | PRD | SEC | `~/.shiftblame/<repo>/DEV/` + worktree |
-| 5 | QC | **實際啟動應用做用戶操作驗證** PRD 翻譯後的驗收條件 + 紅藍隊攻防模擬（不重複跑自動化綠燈，不直接讀 QA 原文） | DEV | PRD | `~/.shiftblame/<repo>/QC/` |
-| 6 | MIS | 部署上線（部署指引從 QC 報告取得） | QC | DEV | `~/.shiftblame/<repo>/MIS/` |
+| 順序 | 部門 | 做什麼 | 可讀上游 | 產出寫入 |
+|---|---|---|---|---|
+| 1 | QA | 定義用戶業務邏輯的行為斷言 X→Y→Z（含 E2E 基本斷言，不寫程式碼，不區分測試項目）。輸入：秘書的問題定位結果 | 無（首位） | `~/.shiftblame/<repo>/QA/` |
+| 2 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + worktree | QA | `~/.shiftblame/<repo>/SEC/` |
+| 3 | PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **親自在 worktree 寫測試檔** + 實作計畫 | QA + SEC | `~/.shiftblame/<repo>/PRD/` + worktree/tests |
+| 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠，commit 前語法檢查 | QA + SEC + PRD | `~/.shiftblame/<repo>/DEV/` + worktree |
+| 5 | QC | **實際啟動應用做用戶操作驗證** PRD 翻譯後的驗收條件 + 交叉比對 QA 原始斷言 + 紅藍隊攻防模擬（不重複跑自動化綠燈） | QA + SEC + PRD + DEV | `~/.shiftblame/<repo>/QC/` |
+| 6 | MIS | 部署上線（最後一道防線，閱讀所有部門產出確認無誤後才執行） | QA + SEC + PRD + DEV + QC（全部） | `~/.shiftblame/<repo>/MIS/` |
 
-### 資料存取限制（單向跨兩級）
+### 資料存取限制（金字塔累積制）
 
-**每個部門只能讀三個地方：**
-1. **自己的專案資料夾**：`~/.shiftblame/<repo>/<DEPT>/`（含自己的鍋紀錄 `~/.shiftblame/blame/<DEPT>/BLAME.md`）
-2. **上一流程（1 級上游）**：循環圓中前一個部門的 `~/.shiftblame/<repo>/<PREV>/`
-3. **上兩流程（2 級上游）**：循環圓中再前一個部門的 `~/.shiftblame/<repo>/<PREV2>/`
+每個部門可讀**自己 + 所有上游部門**的產出。越後面的部門可讀越多，MIS 可讀全部。
 
-| 部門 | 1 級上游 | 2 級上游 |
-|---|---|---|
-| QA | MIS | QC（上一輪的） |
-| SEC | QA | MIS（上一輪的） |
-| PRD | SEC | QA |
-| DEV | PRD | SEC |
-| QC | DEV | PRD |
-| MIS | QC | DEV |
+| 部門 | 可讀範圍 |
+|---|---|
+| QA | 自己 |
+| SEC | 自己 + QA |
+| PRD | 自己 + QA + SEC |
+| DEV | 自己 + QA + SEC + PRD |
+| QC | 自己 + QA + SEC + PRD + DEV |
+| MIS | 自己 + QA + SEC + PRD + DEV + QC（全部） |
 
-**嚴格禁止讀其他部門的資料夾**（含下游、同級、跨三級以上）。跨兩級規則的目的：
-- 避免透過中間層轉述造成資訊失真（直接讀原始上游）
-- 同時強制相鄰層級承擔「翻譯/過濾」的責任（如 QC 只讀 PRD 翻譯後的驗收條件，不看 QA 原文 → PRD 必須保證翻譯正確）
+**嚴格禁止讀下游部門的資料夾**。金字塔設計的目的：
+- 沒有「上一輪」的文件（部署後秘書清理），因此不存在跨輪存取需求
+- 每個部門直接讀所有上游原始產出，避免透過中間層轉述造成資訊失真
+- MIS 是最後一道防線，必須閱讀所有產出確認無誤才能部署，秘書是第二道保險
 
 ## Worktree 機制
 
@@ -280,6 +281,21 @@ ln -sfn ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
 刪除分支時，必須確認兩件事都完成：
 1. **worktree 目錄已刪除**：`~/.worktree/<repo>/<slug>/`
 2. **專案 symlink 已刪除**：`<repo_root>/.worktree/<slug>`
+
+### 回合收尾
+
+MIS 回報 SUCCESS 後，秘書執行以下清理，保持 `~/.shiftblame/` 目錄清潔：
+
+1. **刪除上一輪的部門產出**：清空 `~/.shiftblame/<repo>/{DEV,QA,QC,SEC,MIS,PRD}/` 下的所有 `<slug>.md`（保留目錄結構，只刪檔案）
+2. **更新 REPO.md**：執行「常識提煉」後，將本輪專案常識追加到 `~/.shiftblame/<repo>/REPO.md`
+3. **整理 blame 目錄**：確認各部門 `~/.shiftblame/blame/<DEPT>/BLAME.md` 檔頭常識已去重合併，歷史條目保留不動
+
+```bash
+# 1. 刪除上一輪部門產出（保留 REPO.md）
+find ~/.shiftblame/<repo>/{DEV,QA,QC,SEC,MIS,PRD}/ -name "*.md" -delete
+# 2. 刪除 worktree
+rm -rf ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
+```
 
 ## 犯錯處理
 

@@ -1,0 +1,11 @@
+{
+  "name": "shiftblame",
+  "description": "推鍋 — 六部門循環圓開發框架：QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
+  "version": "3.0.0",
+  "author": {
+    "name": "teps3105"
+  },
+  "repository": "https://github.com/teps3105/shiftblame",
+  "license": "MIT",
+  "keywords": ["agents", "workflow", "tdd", "development-framework", "six-department"]
+}

@@ -26,12 +26,11 @@ MIS 主管。循環圓第六位（末位），接 QC（上一流程），交棒�
 ## 輸入
 `Worktree 路徑`、`分支名稱`、`slug`。
 
-### 可讀資料夾（嚴格限制 — 單向跨兩級）
+### 可讀資料夾（金字塔 — 自己 + 所有上游）
 - **自己**：`~/.shiftblame/<repo>/MIS/` + `~/.shiftblame/blame/MIS/BLAME.md`
-- **上一流程（1 級）**：`~/.shiftblame/<repo>/QC/`
-- **上兩流程（2 級）**：`~/.shiftblame/<repo>/DEV/`（讀 devlog 取得實作檔清單與 commit hash，避免透過 QC 間接解讀造成合併範圍錯誤）
+- **所有上游**：`~/.shiftblame/<repo>/QC/` + `~/.shiftblame/<repo>/DEV/` + `~/.shiftblame/<repo>/PRD/` + `~/.shiftblame/<repo>/SEC/` + `~/.shiftblame/<repo>/QA/`
 
-禁止讀 QA / SEC / PRD 的資料夾。部署方案透過 QC 報告確認，不直接讀 PRD dag。
+MIS 是部署前的最後一道防線，必須閱讀所有部門產出確認無誤才能執行部署。
 
 ## 工作流程
 
@@ -41,6 +40,7 @@ MIS 主管。循環圓第六位（末位），接 QC（上一流程），交棒�
 
 ### 2. 確認 QC 驗收
 - Read QC 的品管報告，確認驗收結論為 PASS
+- **QC 報告品質檢查**：確認 QC 報告包含實際操作佐證（瀏覽器截圖 / 啟動日誌 / state 級證據）。無佐證 = 視為驗證未完成，拒絕部署，回報秘書
 - 若 FAIL → 不執行合併，回報秘書
 
 ### A. 分支合併（QC PASS 後）
@@ -104,7 +104,6 @@ MIS 主管。循環圓第六位（末位），接 QC（上一流程），交棒�
 - ❌ 在 QC 未 PASS 前執行合併
 - ❌ force push main
 - ❌ 合併衝突時自己改 code 解決（回報秘書）
-- ❌ 讀 MIS / QC / DEV 以外的 `~/.shiftblame/<repo>/` 資料夾
 
 ## 回傳（SUCCESS）
 ```

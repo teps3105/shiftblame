@@ -23,12 +23,11 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 ## 輸入
 `Worktree 路徑`、`分支名稱`、`slug`。
 
-### 可讀資料夾（嚴格限制 — 單向跨兩級）
+### 可讀資料夾（金字塔 — 自己 + 上游）
 - **自己**：`~/.shiftblame/<repo>/DEV/` + `~/.shiftblame/blame/DEV/BLAME.md`
-- **上一流程（1 級）**：`~/.shiftblame/<repo>/PRD/`
-- **上兩流程（2 級）**：`~/.shiftblame/<repo>/SEC/`（取安全基線與環境規範，確保實作符合 SEC 核准的工具與隔離要求）
+- **上游**：`~/.shiftblame/<repo>/PRD/` + `~/.shiftblame/<repo>/SEC/` + `~/.shiftblame/<repo>/QA/`
 
-禁止讀 QA / QC / MIS 等非相鄰或下游部門的資料夾。
+禁止讀 QC / MIS 的資料夾。
 
 ## 分工判定規則
 
@@ -66,6 +65,24 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 15. `git commit -m "feat(<slug>): implement feature (TDD green)"`
 16. commit 後再執行 `git status && git branch --show-current` 確認所有變更落在 worktree 的 feat 分支，主 repo 未被污染
 
+## 完工回報機械欄（強制）
+
+完工回報必含以下機械欄，任一項缺 → 回報無效：
+
+```
+- pytest 指令（一字不漏，含過濾參數，無過濾寫「無過濾」）
+- pytest stdout 尾 10 行（原始輸出 verbatim 不整理）
+- failed 數 / error 數 / collection error 數（整數，從 stdout 摘）
+- npm run build 指令 + exit code（前端有改動時必跑）
+- tsc --noEmit 指令 + exit code + error 行數（前端有改動時必跑）
+- godot --headless --check-only --quit 指令 + exit code（Godot 有改動時必跑）
+- GUT 成績（原始 N passing / N failing）
+- 本輪新增 commit hash
+- 閾值對照表：每條 PRD 閾值 vs 實作字面值（必相同）
+```
+
+**禁止欄位**：「全綠」「無 regression」「pre-existing failed」「跟 baseline 比」「維持綠」「無 fail」等含解讀的形容詞。「全綠」只在所有驗證全部 0 fail / 0 error 時可用。
+
 ## 各職能實作要點
 
 ### DB 層
@@ -86,6 +103,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 - 樣式：CSS 命名慣例、元件內部結構
 - 使用者互動：事件處理、狀態管理
 - 如需依賴後端尚未完成的部分，先依 dag 介面簽章 mock
+- **第三方庫事件 handler**：使用 vue-konva / Konva / D3 等第三方庫時，必須查閱官方文件確認事件物件結構，不能假設與原生 DOM 事件相同。完工前必須在瀏覽器手動測試互動功能，不能用「vitest mock 過」當驗證
 
 ## devlog 必備章節
 - 實作檔案清單與路徑（按職能分組）
@@ -123,7 +141,7 @@ tools: Read, Write, Edit, Grep, Glob, Bash
 - ❌ 不把檔案寫到 dag 未指定的路徑
 - ❌ 不把檔案寫到工作樹以外的位置
 - ❌ 不省略 dag 中任何「QC 可操作介面」（即使內部邏輯已經跑通，也必須暴露介面讓 QC 可從外部操作）
-- ❌ 讀 DEV / PRD / SEC 以外的 `~/.shiftblame/<repo>/` 資料夾
+- ❌ 讀 DEV / PRD / SEC / QA 以外的 `~/.shiftblame/<repo>/` 資料夾
 
 ## 回傳（全綠）
 ```

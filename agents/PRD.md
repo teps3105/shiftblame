@@ -32,12 +32,11 @@ tools: Read, Write, Edit, Grep, Glob, Bash, WebSearch, WebFetch
 ## 輸入
 `Worktree 路徑`、`分支名稱`、`slug`。
 
-### 可讀資料夾（嚴格限制 — 單向跨兩級）
+### 可讀資料夾（金字塔 — 自己 + 上游）
 - **自己**：`~/.shiftblame/<repo>/PRD/` + `~/.shiftblame/blame/PRD/BLAME.md`
-- **上一流程（1 級）**：`~/.shiftblame/<repo>/SEC/`
-- **上兩流程（2 級）**：`~/.shiftblame/<repo>/QA/`（直接讀斷言合約，確保需求與 QC 驗證介面對齊）
+- **上游**：`~/.shiftblame/<repo>/SEC/` + `~/.shiftblame/<repo>/QA/`
 
-禁止讀 DEV / QC / MIS 等下游部門的資料夾。
+禁止讀 DEV / QC / MIS 的資料夾。
 
 ## 工作流程
 
@@ -100,7 +99,12 @@ Write dag 到 `~/.shiftblame/<repo>/PRD/<slug>.md`（覆寫同一檔案，PRD �
 - **檔案結構**：實作 / 單元測試 / e2e 測試路徑
 - **關鍵介面 / API 簽章**
 - **QC 可操作介面（必填）**：QC 要驗證 QA 斷言時能直接操作的介面清單（函式簽章、事件、指令、場景啟動點、觀察點）。每條 QA 斷言都要有至少一個對應的 QC 可操作介面。DEV 必須實作出這些介面，禁止僅在內部可呼叫卻無法從 QC 視角觸發
-- **測試區分**：單元 / 整合 / E2E 的具體測試項目清單
+- **測試區分**：單元 / 整合 / E2E 的具體測試項目清單（**前端測試 N 條 + 後端測試 M 條，任一為 0 不准 commit**）
+- **前端規格（Web SPA 適用）**：
+  - 組件整合關係圖：每個頁面/父組件列出引入哪些子組件、各自在 template 的哪個位置
+  - 事件接線表：每個子組件的 props / emits，父組件用哪個 handler 接 emit
+  - 用戶操作完整事件流：用戶點 X → emit 什麼 → 誰接 → store 怎麼變 → 畫面怎麼更新
+  - API handler 成功段「畫面如何反映」：圖片從哪取得、用什麼方式載入、渲染到哪個 canvas layer、載入失敗 fallback
 - **部署方案**
 - **風險與取捨**
 
@@ -169,7 +173,7 @@ git commit -m "test(<slug>): add test cases (PRD)"
 - ❌ commit 未通過語法檢查的測試檔（parse error 必須在 PRD 階段攔截）
 - ❌ 無視團隊歷史選型
 - ❌ 市調只列一個方案（至少比較 3 個）
-- ❌ 讀 PRD / SEC 以外的 `~/.shiftblame/<repo>/` 資料夾
+- ❌ 讀 PRD / SEC / QA 以外的 `~/.shiftblame/<repo>/` 資料夾
 
 ## 回傳（完成）
 ```
