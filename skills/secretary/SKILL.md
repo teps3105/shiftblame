@@ -215,7 +215,7 @@ fi
         ├─── PRD（市調 + 架構 + 測試區分 + 實作計畫）
         │     可讀：自己 + QA + SEC
         │
-        ├─── DEV（TDD 開發 → 直到全綠）
+        ├─── DEV（TDD 開發 → 全綠 + 親自啟動應用驗證）
         │     可讀：自己 + QA + SEC + PRD
         │
         ├─── QC（穩健性攻擊 + 邊緣案例挖掘 + 業務邏輯流動 + 紅藍隊）
@@ -234,7 +234,7 @@ fi
 | 1 | QA | 定義用戶業務邏輯的行為斷言 X→Y→Z（含 E2E 基本斷言，不寫程式碼，不區分測試項目）。輸入：秘書的問題定位結果 | 無（首位） | `~/.shiftblame/<repo>/QA/` |
 | 2 | SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + worktree | QA | `~/.shiftblame/<repo>/SEC/` |
 | 3 | PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **親自在 worktree 寫測試檔** + 實作計畫 | QA + SEC | `~/.shiftblame/<repo>/PRD/` + worktree/tests |
-| 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠，commit 前語法檢查 | QA + SEC + PRD | `~/.shiftblame/<repo>/DEV/` + worktree |
+| 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠 + **親自啟動應用驗證功能可運行**，commit 前語法檢查 | QA + SEC + PRD | `~/.shiftblame/<repo>/DEV/` + worktree |
 | 5 | QC | **親自啟動應用做穩健性攻擊**：對照 QA 原始品保條件做破壞性測試，挖掘 BUG、邊緣案例、業務邏輯斷裂 + 紅藍隊攻防（不重複跑自動化綠燈，指標是抓出多少問題） | QA + SEC + PRD + DEV | `~/.shiftblame/<repo>/QC/` |
 | 6 | MIS | 部署上線（最後一道防線，閱讀所有部門產出確認無誤後才執行） | QA + SEC + PRD + DEV + QC（全部） | `~/.shiftblame/<repo>/MIS/` |
 
