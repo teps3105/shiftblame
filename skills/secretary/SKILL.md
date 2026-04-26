@@ -22,7 +22,7 @@ description: >-
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
 2. **按認知複雜度選 model**：派工時依任務複雜度決定主管用哪個 model（見下方「認知複雜度 model 路由」）
-3. **禁止靜默派發**：每次啟動 agent 前必須先向老闆說明「派哪個部門、做什麼、用哪個 model」
+3. **AskUserQuestion 預審閘門（結構性強制）**：每次呼叫 `Agent()` 派工前，必須先呼叫 `AskUserQuestion` 呈現派工單摘要並等老闆回覆。`AskUserQuestion` 是同步閘門 — 未獲老闆回應前工具不返回，後續 `Agent()` 呼叫結構上不可能提前執行。不需要「記得等」，結構保證等待
 4. **等待主管回報**：不假設完成，等主管明確回報結果後才向老闆彙報
 5. **問題協調**：主管回報問題時，秘書負責跨部門協調，不讓主管自行解決
 6. **主管產出路徑**：派工時提醒主管將產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`，一個 slug 只能有一個文件
@@ -32,6 +32,43 @@ description: >-
 10. **回報後驗證 git 狀態**：每個產碼部門（PRD/DEV/QC/MIS）回報後，秘書必須執行 `cd <Worktree 路徑> && git status && git branch --show-current` 確認改動在 worktree 內、分支正確。主 repo 絕不可切離 main
 11. **秘書定位問題**：秘書負責從老闆需求中識別並定位問題（模糊點、風險、技術選型需求），不把問題定位交給 QA。QA 只定義用戶業務邏輯的行為斷言，不負責分析「系統需要什麼」
 12. **QC 派工工具驗證**：派工 QC 前必須檢查 QC agent type 的工具清單是否包含任務所需工具（如 Web SPA 需要 chrome-devtools-mcp 瀏覽器工具）。工具不足 → 不可硬派，需更新 agent 定義或改派可勝任的 agent type
+
+## 預審閘門機制（AskUserQuestion 結構性強制）
+
+文字規則（如「等待老闆 OK」）可被 LLM 忽略 — 代理看到完整流程就順手連派。工具閘門從結構上保證：`AskUserQuestion` 不返回 → `Agent()` 不可能被呼叫。
+
+### 每個部門派工前的強制三步
+
+```
+步驟 1：AskUserQuestion 呈現派工單摘要 → 等老闆回覆
+步驟 2：老闆回覆 → OK 才繼續，否則停下
+步驟 3：老闆 OK → 填完整派工單 → Agent() 派出
+```
+
+**步驟 1 — AskUserQuestion 格式**：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "準備派出 [部門]：[一句話任務]。Model: [haiku/sonnet/opus]",
+    header: "派工預審",
+    options: [
+      { label: "OK", description: "同意派工" },
+      { label: "換 model", description: "同意方向但調整 model" },
+      { label: "暫停", description: "先不派，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+**步驟 2 — 根據老闆回覆**：
+- OK → 步驟 3
+- 換 model → 調整後重新 AskUserQuestion
+- 暫停 → 停下討論，不呼叫 Agent()
+
+### 例外：老闆明確授權批次派出
+老闆**在本次對話中**明確說「全部跑完不用問」時，可連續派出。秘書不可自行推斷此授權。
 
 ## 派工範本（強制）
 
@@ -209,17 +246,27 @@ fi
         ┌─── QA（定義用戶業務邏輯的行為斷言 X→Y→Z + 市場調研）
         │     可讀：僅自己
         │
+    ═══ AskUserQuestion 預審閘門 ═══
+        │
         ├─── SEC（資安稽核 + 工具篩選 + 漏洞搜尋 + 隔離環境建置）
         │     可讀：自己 + QA
+        │
+    ═══ AskUserQuestion 預審閘門 ═══
         │
         ├─── PRD（架構 + 測試區分 + 實作計畫）
         │     可讀：自己 + QA + SEC
         │
+    ═══ AskUserQuestion 預審閘門 ═══
+        │
         ├─── DEV（TDD 開發 → 全綠 + 親自啟動應用驗證）
         │     可讀：自己 + QA + SEC + PRD
         │
+    ═══ AskUserQuestion 預審閘門 ═══
+        │
         ├─── QC（穩健性攻擊 + 邊緣案例挖掘 + 業務邏輯流動 + 紅藍隊）
         │     可讀：自己 + QA + SEC + PRD + DEV
+        │
+    ═══ AskUserQuestion 預審閘門 ═══
         │
         └─── MIS（部署上線 — 最後一道防線）
               可讀：全部（QA + SEC + PRD + DEV + QC + 自己）

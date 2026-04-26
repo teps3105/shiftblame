@@ -1,7 +1,7 @@
 {
   "name": "shiftblame",
   "description": "推鍋 — 六部門循環圓開發框架：QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
-  "version": "3.3.0",
+  "version": "3.3.1",
   "author": {
     "name": "teps3105"
   },
