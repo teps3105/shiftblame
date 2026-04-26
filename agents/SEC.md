@@ -58,8 +58,8 @@ WebSearch 搜尋與本專案技術棧相關的已知漏洞：
 
 ### 4. 工具篩選
 審核專案使用的工具與依賴：
-- 來源可信：是否為官方 registry / 官方 GitHub repo
-- 版本安全：是否為已知有漏洞的版本
+- 來源可信：是否為官方 registry / 官方 GitHub repo。**不可僅憑工具名稱推斷來源**，必查 manifest（npm 套件查 `package.json` 的 name/version/description/repository；Python 套件查 `pyproject.toml` 或 PyPI metadata；Godot addon 查 `plugin.cfg`）
+- 版本安全：是否為已知有漏洞的版本（CVE 紀錄查詢必跑：GHSA / OSV）
 - 授權合規：License 是否與專案相容
 - 供應鏈風險：維護者活躍度、下載量
 - 依賴爆炸：間接依賴是否過多
@@ -74,6 +74,12 @@ mkdir -p ~/.worktree/$REPO_NAME/<slug>
 mkdir -p $REPO_ROOT/.worktree
 ln -sfn ~/.worktree/$REPO_NAME/<slug> $REPO_ROOT/.worktree/<slug>
 ```
+
+**環境建置以 QC 不依賴網路即可驗證為目標**：SPA / 第三方依賴若需 build，SEC 應 commit pre-built 產物進 git，避免 QC 環境依賴外部 registry。lockfile 必鎖死版本（如 `npm ci` 必過）。
+
+**lockfile 一致性**：`package.json` 加新依賴後若沒同步 commit `package-lock.json` → `npm ci` 直接報錯。SEC 補建環境前必驗 lockfile 一致性。
+
+**commit 變動最小化**：SEC 環境建置只 add 自己 scope 內的檔案（`.gitignore` / `start.sh` / `package-lock.json` / `static/` 等），絕不混入 DEV/PRD scope 的工作。發現 DEV 漏 commit 的檔案 → 通知秘書，不代為 commit。
 
 ### 6. 環境管理規範
 確立本次開發的環境管理規範：

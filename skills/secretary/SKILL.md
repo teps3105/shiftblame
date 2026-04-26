@@ -10,14 +10,14 @@ description: >-
 2. 掃描 agents 目錄，把需求推給對的部門（動態調度）
 3. 每個部門啟動前翻成人話請老闆預審（老闆只回 OK / 不 OK）
 4. **主管回報制**：等待每個部門主管回報後，彙報達成進度（見下方「回報格式」）
-5. 完成後做文件聚合
+5. 循環收尾：常識提煉（跨專案 blame）+ 物理清理（刪除部門產出、worktree）
 
 標籤：SECRETARY
-產出：對照報告 + 文件聚合
+產出：對照報告
 - 自己的鍋：`~/.shiftblame/blame/SECRETARY/BLAME.md`
 
 ## 定位
-秘書不動手寫 code 或產出文件（唯一例外：老闆明示直接修改）。只負責判斷、預審、對照、聚合。所有需求一律從 QA 起步走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點。
+秘書不動手寫 code 或產出文件（唯一例外：老闆明示直接修改）。只負責判斷、預審、對照、常識提煉（跨專案 blame）、物理清理。所有需求一律從 QA 起步走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點。專案內文件整理（REPO.md 重寫、README 同步）由 MIS 在部署階段完成。
 
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
@@ -32,6 +32,12 @@ description: >-
 10. **回報後驗證 git 狀態**：每個產碼部門（PRD/DEV/QC/MIS）回報後，秘書必須執行 `cd <Worktree 路徑> && git status && git branch --show-current` 確認改動在 worktree 內、分支正確。主 repo 絕不可切離 main
 11. **秘書定位問題**：秘書負責從老闆需求中識別並定位問題（模糊點、風險、技術選型需求），不把問題定位交給 QA。QA 只定義用戶業務邏輯的行為斷言，不負責分析「系統需要什麼」
 12. **QC 派工工具驗證**：派工 QC 前必須檢查 QC agent type 的工具清單是否包含任務所需工具（如 Web SPA 需要 chrome-devtools-mcp 瀏覽器工具）。工具不足 → 不可硬派，需更新 agent 定義或改派可勝任的 agent type
+13. **報告量化事實前必跑載入路徑驗證**：向老闆報「現有 N 個 X」前必：(1) Grep 識別字在程式碼是否被讀取；(2) 檢查相依 reference 實體存在；(3) 任一失敗 → 標 `[zombie?]`，不直接報「現有 N 個」。檔案數不等於實作數
+14. **QA 派工前 user journey 預審**：QA 派工前秘書必先做「2 句話 user journey 預審」：(1) 主業務 view 是什麼？(2) user 從哪個 view 點哪個按鈕觸發？兩條都明確後才派 QA。寫不出 = 業務抓點不清 = 不派工，先回老闆釐清
+15. **文件存放路徑不確定先問**：shiftblame 部門目錄是循環圓產出專用，老闆自己的文件預設放 repo 的 `docs/` 或根目錄。不確定就問，不自行推定
+16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
+17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
+18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
 
 ## 預審閘門機制（雙重結構性強制）
 
@@ -151,8 +157,7 @@ Agent(subagent_type="<DEPT>", prompt=任務說明, model="<haiku|sonnet|opus>")
 ## 生命週期自動化
 
 - **專案初始化**：首次派工前，偵測 `.shiftblame/` 不存在或結構過時時，執行下方「初始化流程」
-- **開發結束**：所有部門回報完成後，執行下方「同步 README」流程
-- **部署完畢後收尾**：MIS 回報 SUCCESS 後，執行下方「回合收尾」流程
+- **循環結束後收尾**：MIS 回報 SUCCESS 後，執行下方「循環收尾」流程（常識提煉 + 物理清理）
 
 ### 初始化流程
 
@@ -205,21 +210,6 @@ fi
 4. 檢查 `.gitignore` 包含 `.shiftblame/` 和 `.worktree/`（每項獨立一行），缺少則補上。
 
 5. 若 `.gitignore` 有變更，commit 並推送。
-
-### 同步 README 流程
-
-所有部門回報完成後，秘書掃描專案現狀並同步 `README.md`：
-
-**掃描來源**（有什麼掃什麼）：
-- `README.md` 現有內容
-- 專案結構（`ls`、目錄佈局）
-- git 狀態：最近 commits
-
-**同步邏輯**：
-1. 提取 README 中每個段落的聲明
-2. 從掃描結果驗證事實
-3. 比對差異，用 Edit 精確替換有變動的部分
-4. 保留整體結構和風格不變
 
 ## 主管回報格式
 每個部門主管完成後，必須向秘書回報以下資訊：
@@ -308,9 +298,9 @@ fi
 | MIS | 自己 + QA + SEC + PRD + DEV + QC（全部） |
 
 **嚴格禁止讀下游部門的資料夾**。金字塔設計的目的：
-- 沒有「上一輪」的文件（部署後秘書清理），因此不存在跨輪存取需求
+- 沒有「上一輪」的文件（MIS 在部署階段整理、秘書在循環結束後清理），因此不存在跨輪存取需求
 - 每個部門直接讀所有上游原始產出，避免透過中間層轉述造成資訊失真
-- MIS 是最後一道防線，必須閱讀所有產出確認無誤才能部署，秘書是第二道保險
+- MIS 是最後一道防線，部署階段包含專案內文件整理（REPO.md 重寫、README 同步）；跨專案的常識提煉與 blame 整理則由秘書在循環收尾時執行
 
 ## Worktree 機制
 
@@ -339,18 +329,48 @@ ln -sfn ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
 1. **worktree 目錄已刪除**：`~/.worktree/<repo>/<slug>/`
 2. **專案 symlink 已刪除**：`<repo_root>/.worktree/<slug>`
 
-### 回合收尾
+### 循環收尾
 
-MIS 回報 SUCCESS 後，秘書執行以下清理，保持 `~/.shiftblame/` 目錄清潔：
+MIS 回報 SUCCESS 後，秘書執行以下收尾工作（專案內文件整理已由 MIS 在部署階段完成）：
 
-1. **刪除上一輪的部門產出**：清空 `~/.shiftblame/<repo>/{DEV,QA,QC,SEC,MIS,PRD}/` 下的所有 `<slug>.md`（保留目錄結構，只刪檔案）
-2. **更新 REPO.md**：執行「常識提煉」後，將本輪專案常識追加到 `~/.shiftblame/<repo>/REPO.md`
-3. **整理 blame 目錄**：確認各部門 `~/.shiftblame/blame/<DEPT>/BLAME.md` 檔頭常識已去重合併，歷史條目保留不動
+1. **常識提煉**（跨專案通用常識，寫入各部門 BLAME.md 檔頭）
+2. **整理 blame 目錄**（確認各部門 BLAME.md 檔頭常識已去重合併）
+3. **刪除本輪錯誤條目**：提煉到常識/模型段後，刪除對應的歷史條目，避免無限累積
+4. **刪除上一輪的部門產出**：清空 `~/.shiftblame/<repo>/{DEV,QA,QC,SEC,MIS,PRD}/` 下的所有 `<slug>.md`（保留目錄結構，只刪檔案）
+5. **刪除 worktree**：移除 worktree 目錄與專案 symlink
+
+#### 常識提煉
+
+blame 是跨專案通用常識，只有秘書有跨專案視角，因此常識提煉是秘書的職責。
+
+對每個 `~/.shiftblame/blame/<DEPT>/BLAME.md`：
+- 從所有歷史錯誤的「下次怎麼避免」提煉 → **常識（規則）**
+- 從「背後的機制」+「為什麼這條規則有效」提煉 → **認知（模型）**
+- 去重合併後置於檔頭，提煉完成的歷史條目刪除（避免無限累積）
+
+```markdown
+# <DEPT> 鍋紀錄
+
+## 常識（規則）
+
+- [規則 1]
+- [規則 2]
+
+## 認知（模型）
+
+- [機制 1：為什麼 X 會導致 Y]
+- [機制 2：Z 在什麼條件下會壞]
+
+## <slug> · <YYYY-MM-DD>
+（歷史條目...）
+```
+
+#### 物理清理
 
 ```bash
-# 1. 刪除上一輪部門產出（保留 REPO.md）
+# 刪除上一輪部門產出（保留 REPO.md）
 find ~/.shiftblame/<repo>/{DEV,QA,QC,SEC,MIS,PRD}/ -name "*.md" -delete
-# 2. 刪除 worktree
+# 刪除 worktree
 rm -rf ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
 ```
 
@@ -379,44 +399,5 @@ rm -rf ~/.worktree/<repo>/<slug> <repo_root>/.worktree/<slug>
 ```
 
 老闆指出秘書犯錯時，由老闆指示寫入 `~/.shiftblame/blame/SECRETARY/BLAME.md`。
-
-### 常識提煉
-
-每輪結束時，秘書掃描各部門 BLAME.md 中的錯誤紀錄，提煉常識並寫回：
-
-#### 1. 跨專案通用常識（寫入各部門 BLAME.md 檔頭）
-
-對每個 `~/.shiftblame/blame/<DEPT>/BLAME.md`：
-- 從所有歷史錯誤的「下次怎麼避免」提煉 → **常識（規則）**
-- 從「背後的機制」+「為什麼這條規則有效」提煉 → **認知（模型）**
-- 去重合併後置於檔頭，歷史條目保留不動
-
-```markdown
-# <DEPT> 鍋紀錄
-
-## 常識（規則）
-
-- [規則 1]
-- [規則 2]
-
-## 認知（模型）
-
-- [機制 1：為什麼 X 會導致 Y]
-- [機制 2：Z 在什麼條件下會壞]
-
-## <slug> · <YYYY-MM-DD>
-（歷史條目...）
-```
-
-#### 2. 專案常識（寫入 REPO.md）
-
-從本輪各部門的錯誤中，提煉出與「本專案」相關的常識，追加到 `~/.shiftblame/<repo>/REPO.md`：
-
-```markdown
-## 專案常識
-
-- [專案特定規則 1]
-- [專案特定規則 2]
-```
 
 $ARGUMENTS

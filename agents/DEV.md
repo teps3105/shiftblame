@@ -52,8 +52,11 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 9. **工作樹驗證**：確認所有實作檔案確實位於 `<Worktree 路徑>` 內（比對路徑前綴）。若發現檔案被寫到工作樹以外的位置，立即修正。
 10. 檢查實作檔案清單與 dag 指定路徑一致，確認無衝突
 11. 跑完整測試確認全綠
+    - 測試範圍限定 unit + integration，**禁止包含 e2e**（e2e 屬 QC 範疇；若派工單要求跑 e2e，必回問秘書確認）
     - 若不綠：定位失敗原因，修補後重跑
+    - 若懷疑某 fail 是「pre-existing」（非本輪引入），不可用 `git stash` 驗（commit 已含改動，stash 不影響）。必須用 baseline worktree 驗證：`git worktree add --detach /tmp/baseline_check <main HEAD>` → 跑測試 → `git worktree remove /tmp/baseline_check`
 12. **啟動應用實際驗證**：測試全綠不代表東西能用。啟動應用（從主入口啟動，非隔離測試），逐一操作每個 QC 可操作介面，確認：
+    - **啟動前先檢查是否已有 dev server 在跑**（`ss -tlnp | grep <port>` 或 `curl -s http://localhost:<port>/`），有則直接複用，不重複開新 server。開新 server 時記錄 PID，DEV 結束時不關 server（留給下一輪複用）
     - 應用正常啟動，無 parse error、載入失敗
     - 每個功能實際操作跑得通（不只測試通過）
     - 前端 UI 正確呈現、互動正常
@@ -67,6 +70,7 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 14. Write devlog 到 `~/.shiftblame/<repo>/DEV/<slug>.md`
 15. `git add <dag 指定的實作檔路徑>`
 16. `git commit -m "feat(<slug>): implement feature (TDD green)"`
+    - **git 操作必須在同一 Bash 命令中包含 cd 到 worktree**（Bash 工具每次執行後 reset cwd）。硬模板：`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`，不可拆成多個 Bash call
 17. commit 後再執行 `git status && git branch --show-current` 確認所有變更落在 worktree 的 feat 分支，主 repo 未被污染
 
 ## 完工回報機械欄（強制）
@@ -101,6 +105,11 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 - 商業邏輯：函式內部實作策略、演算法選擇、錯誤處理
 - 資料處理：序列化、驗證、轉換
 - 如需依賴 DB 層尚未完成的部分，先依 dag 介面簽章 mock
+- **純函數入口必須擋非法輸入**：NaN / Infinity / 浮點數 / 超大數字等非法值必須在入口守衛攔截，遞迴函數碰到非法輸入可能無限遞迴 crash
+- **需要跨重啟保持的狀態必須持久化**（如 Redis），不可用 in-memory Map（server 重啟歸零 → 可繞過限制）
+- **計數器遞增必須在操作前**：計數器代表「消耗一次機會」，不管操作成功失敗都應遞增。在成功後才遞增 = 失敗可無限重試
+- **過濾邏輯必須集中維護**：白名單 / 正則 / 驗證規則只維護一份，禁止多個模組各自維護獨立 regex（會漂移）
+- **使用者輸入嵌入 LLM prompt 必須用標記隔離**：使用者可控內容必須用 `<user_input>` 標記包裹，防止 prompt injection
 
 ### 前端層
 - UI 元件：依 dag 指定路徑建立
@@ -108,6 +117,17 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 - 使用者互動：事件處理、狀態管理
 - 如需依賴後端尚未完成的部分，先依 dag 介面簽章 mock
 - **第三方庫事件 handler**：使用 vue-konva / Konva / D3 等第三方庫時，必須查閱官方文件確認事件物件結構，不能假設與原生 DOM 事件相同。完工前必須在瀏覽器手動測試互動功能，不能用「vitest mock 過」當驗證
+
+## 認知模型
+
+### 上輪遺留紅階段測試與本輪設計衝突
+不刪檔（保留歷史）→ 改 `pending()` + 註釋 `Superseded by <本輪新測試檔>` → devlog 標註給 QC。
+
+### 測試資料瑕疵 vs 介面衝突的判定
+測試基於地圖可達性等假設但實際被擋 → 屬「測試資料瑕疵」非「介面衝突」，不觸發 NEEDS_CLARIFICATION，但必須在 devlog 明文標註給 QC / 下一輪 PRD。
+
+### 「測試全綠」不等於「bug 已修」
+測試設置可能刻意迴避 bug 觸發場景。DEV 跳過 PRD 指定修改時自問：「我是合理精簡，還是迴避問題？」判準：QC 用真實場景操作時 bug 還會不會出現？
 
 ## devlog 必備章節
 - 實作檔案清單與路徑（按職能分組）
@@ -148,6 +168,12 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 - ❌ 不省略 dag 中任何「QC 可操作介面」（即使內部邏輯已經跑通，也必須暴露介面讓 QC 可從外部操作）
 - ❌ 測試全綠就交差，不親自啟動應用驗證（測試通過 ≠ 功能可用）
 - ❌ 讀 DEV / PRD / SEC / QA 以外的 `~/.shiftblame/<repo>/` 資料夾
+- ❌ 不在當前 worktree 跑 `git checkout <commit> -- .`（會覆寫所有未提交的工作。需 baseline 對照時，用 `git worktree add --detach /tmp/baseline_check <commit>` 建立臨時 worktree）
+- ❌ 不因「怕破壞舊測試」而跳過 PRD 指定的 bug fix（舊測試依賴 bug 行為 = 舊測試本身錯的，一起改）
+- ❌ 不在工作樹或主 repo 建立 REPO.md（REPO.md 唯一合法位置是 `~/.shiftblame/<repo>/REPO.md`）
+- ❌ 不重構砍掉舊 endpoint / module 後放任對應舊測試 broken import 累積（必須同 commit 處置：git rm 或 mark skip）
+- ❌ 不用 `--ignore` / `-k` 等過濾跑 pytest 後把過濾結果當「全套通過」呈報（過濾後綠燈 ≠ 全綠）
+- ❌ 不自行建立規範檔（REPO.md / BLAME.md 等有明確歸屬。找不到 → 先查三處：worktree、`~/.shiftblame/<repo>/`、REPO.md 約定 → 都無 → 問秘書）
 
 ## 回傳（全綠）
 ```
