@@ -97,7 +97,8 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 ```
 老闆提需求 → 秘書判斷方向是否明確
   ├─ 不明確：諮詢模式（結構化問答收斂）
-  └─ 明確：評估認知複雜度 → 指派 model
+<<<<<<< HEAD
+  └─ 明確：啟動循環圓（各 CLI 用自家 default 模型）
       → QA→SEC→PRD→DEV→QC→MIS 逐一部門派工
           → 每部門：三 PROXY 共議 → 執行 → 回報
           → 秘書交叉比對 → 呈報老闆
@@ -176,7 +177,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 輸入 `/secretary` 啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
 
 ```
-老闆 → /secretary → 秘書（路由 + 選 model）
+老闆 → /secretary → 秘書（路由 + 派工）
   → QA→SEC→PRD→DEV→QC→MIS 完整循環
   → 秘書（彙報）→ 老闆
 ```
