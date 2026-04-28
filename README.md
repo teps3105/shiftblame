@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#誰的鍋)
+[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#誰的鍋)
 [![Skills](https://img.shields.io/badge/skills-2-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
@@ -20,7 +20,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門按**能力路由**派出雙巨頭：資訊型部門（QA/PRD/SEC）派 Claude + Gemini，實作型部門（DEV/QC/MIS）派 Claude + Codex。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。MIS 在部署階段完成專案內文件整理；部署完畢後，秘書負責常識提煉與物理清理。
+秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門透過三巨頭 **PROXY agent**（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）路由任務到對應的 AI CLI。秘書動態決定巨頭組合，不硬編碼——最優組合由實務執行判定。單點失效時自動降級補救。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -28,26 +28,25 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ## 資源供給機制
 
-**三巨頭能力路由派工**：三個 AI 巨頭各有強項，秘書根據部門任務的核心能力需求選擇組合。
+**三巨頭 PROXY 動態路由**：秘書透過 PROXY agent 路由任務到三個 AI CLI，動態決定巨頭組合。
 
 ### 三巨頭能力定位
 
-| 巨頭 | 能力排序 | 強項 | 代理 agent |
+| 巨頭 | 能力排序 | 強項 | PROXY agent |
 |---|---|---|---|
-| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:<DEPT>` |
-| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX` |
-| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI` |
+| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:CLAUDE_PROXY` |
+| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX_PROXY` |
+| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI_PROXY` |
 
-### 各部門巨頭組合
+### 動態路由
 
-| 部門 | 組合 | 原因 |
-|---|---|---|
-| **QA** | Claude + Gemini | 斷言需要邏輯推理 + 市調需要外部資訊 |
-| **SEC** | Claude + Gemini | 安全架構需要邏輯 + 漏洞搜尋需要外部資訊 |
-| **PRD** | Claude + Gemini | 架構設計需要邏輯 + 技術調研需要外部資訊 |
-| **DEV** | Claude + Codex | TDD 實作需要邏輯引導 + 精確代碼需要細節實作 |
-| **QC** | Claude + Codex | 攻擊策略需要邏輯 + 實際操作驗證需要 GUI 能力 |
-| **MIS** | Claude + Codex | 部署流程需要邏輯 + 環境操作需要細節執行 |
+秘書分析每個任務的核心能力需求，動態決定派出哪個（些）巨頭。不硬編碼部門-巨頭組合——具體最優組合由實務執行累積經驗判定。
+
+### 單點失效補救
+
+當某個巨頭 PROXY 回報錯誤（rate limit / quota / CLI 不可用 / timeout），秘書自動降級：
+- 雙巨頭 → 單巨頭（仍可繼續，交叉比對缺省）
+- 單巨頭 → 無巨頭（回報老闆暫停等待）
 
 ### Claude model（按認知複雜度動態決定）
 
@@ -63,7 +62,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ### Gemini model（動態偵測，不自訂）
 
-從 `~/.gemini/settings.json` 讀取 `selected_model`，預設 `gemini-2.5-flash`。付費訂閱後自動升級為 `gemini-2.5-pro`。
+透過 Gemini API 即時查詢可用模型清單，優先選 pro（更強），其次 flash。不讀 config 預設值。
 
 ---
 
@@ -166,26 +165,24 @@ _一套明確責任歸屬的 Agents 開發框架_
    ▼
  ┌──────────────────────────────────────────┐
  │ 評估認知複雜度 → 指派 Claude model      │
- │ 能力路由 → 決定第二巨頭（Codex/Gemini） │
+ │ 動態路由 → 決定巨頭組合（不硬編碼）     │
  │ 按循環圓順序派工                         │
  └─────────┬────────────────────────────────┘
            │
    ┌───────┴────────┐
    │                │
- QA/PRD/SEC       DEV/QC/MIS
-   │                │
    ▼                ▼
- Claude+Gemini    Claude+Codex
- ┌───┬───┐        ┌───┬───┐
- │   │   │        │   │   │
- ▼   ▼   │        ▼   ▼   │
-CL  GM  │        CL  CX  │
- │   │   │        │   │   │
- ▼   ▼   │        ▼   ▼   │
- 交叉比對│         交叉比對│
- │       │         │      │
- ▼       ▼         ▼      ▼
- 呈報老闆           呈報老闆
+ PROXY 派工     單點失效補救
+ ┌───┬───┐      ┌──────────────┐
+ │   │   │      │ rate limit   │→ 降級/改派
+ ▼   ▼   │      │ quota        │→ 降級/改派
+CL  CX  │      │ timeout      │→ 重試/改派
+ │   │   │      │ CLI missing  │→ 標記不可用
+ ▼   ▼   │      └──────────────┘
+ 交叉比對│
+ │       │
+ ▼       ▼
+ 呈報老闆
 ```
 
 CL = Claude agent, GM = Gemini agent, CX = Codex agent
@@ -252,12 +249,12 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 
 1. 秘書收到老闆原話，評估認知複雜度
 2. 所有需求一律從 QA 起步，走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點
-3. 能力路由決定每個部門的巨頭組合（資訊型: Claude+Gemini，實作型: Claude+Codex）
+3. 能力路由決定每個部門的巨頭組合（由秘書動態決定，不硬編碼）
 4. 老闆 OK 後，按循環圓順序逐一部門派工
-5. 每個部門預設雙巨頭：`Agent()`（Claude 部門主管）+ `Agent()`（CODEX 或 GEMINI 代理）同一則訊息並行派出
+5. 每個部門透過 PROXY agent 路由到對應 AI CLI（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）
 6. 每個部門只能讀自己 + 所有上游的產出（金字塔累積制）
 7. 主管親自執行所有職能，完成後回報
-8. 秘書交叉比對雙巨頭產出，分歧呈報老闆裁決
+8. 秘書交叉比對 PROXY 回報，分歧呈報老闆裁決
 9. 秘書在主管回報後執行 `git status && git branch --show-current` 驗證改動在 worktree、分支正確
 10. 秘書收齊所有主管回報後，向老闆做最終彙報
 
@@ -266,8 +263,8 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化
 2. 掃描 agents 取得可用部門清單
 3. 保存你的**原話逐字稿**
-4. 評估認知複雜度，自動指派 Claude model；能力路由決定第二巨頭
-5. 每個部門完成後用 AskUserQuestion 回報結果，等老闆判定才推進下一部門
+4. 評估認知複雜度，自動指派 Claude model；動態決定巨頭組合
+5. 每個部門透過 PROXY agent 路由到 AI CLI，完成後用 AskUserQuestion 回報結果
 6. 建立 worktree 隔離環境
 7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`
 8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
@@ -290,14 +287,15 @@ shiftblame/
 ├── .claude-plugin/
 │   └── plugin.json        # Plugin manifest
 ├── agents/
-│   ├── QA.md              # 品保主管
+│   ├── QA.md              # 品保主管（廣義職責 + 產出規格）
 │   ├── SEC.md             # 資安主管
 │   ├── PRD.md             # 企劃主管
 │   ├── DEV.md             # 開發主管
 │   ├── QC.md              # 品管主管
 │   ├── MIS.md             # MIS 主管
-│   ├── CODEX.md           # Codex 代理（啟動 Codex CLI 並回報）
-│   └── GEMINI.md          # Gemini 代理（啟動 Gemini CLI 並回報）
+│   ├── CLAUDE_PROXY.md    # Claude CLI 代理（啟動 claude -p 並回報）
+│   ├── CODEX_PROXY.md     # Codex CLI 代理（啟動 codex exec 並回報）
+│   └── GEMINI_PROXY.md    # Gemini CLI 代理（啟動 gemini -p 並回報）
 ├── skills/
 │   └── secretary/
 │       └── SKILL.md       # 秘書 skill

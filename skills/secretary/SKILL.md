@@ -38,7 +38,7 @@ description: >-
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
-19. **能力路由派工（三巨頭按能力需求組合）**：三個 AI 體系各有強項——Claude（邏輯 > 細節 > 資訊）、Codex（細節 > 資訊 > 邏輯）、Gemini（資訊 > 邏輯 > 細節）。秘書分析任務的核心能力需求，選擇對應的巨頭組合派出。不是每個部門都派 Claude + Codex——QA/PRD/SEC 最需要外部資訊，應派 Claude + Gemini；DEV/QC/MIS 需要實作細節，才派 Claude + Codex。派工時在各自的 prompt 注入能力方向引導（「你的強項是 X，這個任務需要你發揮 X 能力」）。各巨頭的 model 由各自的偵測機制決定，不提供選項讓老闆選。任何巨頭不可用時不阻擋流程，降級為可用組合
+19. **能力路由派工（三巨頭 PROXY 動態路由）**：秘書透過三個 PROXY agent（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）路由任務到三個 AI CLI。秘書分析每個部門任務的核心能力需求，動態決定派出哪個（些）巨頭——不硬編碼部門-巨頭組合（具體組合由實務執行判定）。各巨頭 model 由各自的偵測機制動態決定。任何巨頭失效時啟動補救策略（見下方「單點失效補救」）
 
 ## 部門完成閘門機制（結構性強制）
 
@@ -144,26 +144,26 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 - ❌「你不執行任何東西」
 - ❌「逐條驗證 PRD 翻譯後的驗收條件是否符合」（QC 不是照單打勾的驗收員）
 
-## 能力路由派工（三巨頭按能力需求組合）
+## 能力路由派工（三巨頭 PROXY 動態路由）
 
-三個 AI 巨頭各有強項，秘書根據部門任務的核心能力需求，選擇對應的巨頭組合：
+三個 AI 巨頭透過 PROXY agent 執行，秘書動態決定每個部門任務派出哪個（些）巨頭。
 
-| 巨頭 | 能力排序 | 強項 | 代理 agent |
+### 三巨頭能力定位
+
+| 巨頭 | 能力排序 | 強項 | PROXY agent |
 |---|---|---|---|
-| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:<DEPT>` |
-| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX` |
-| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI` |
+| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:CLAUDE_PROXY` |
+| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX_PROXY` |
+| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI_PROXY` |
 
-### 各部門巨頭組合
+### 動態路由原則
 
-| 部門 | 組合 | 原因 |
-|---|---|---|
-| **QA** | Claude + Gemini | 斷言需要邏輯推理 + 市調需要外部資訊 |
-| **SEC** | Claude + Gemini | 安全架構需要邏輯 + 漏洞搜尋需要外部資訊 |
-| **PRD** | Claude + Gemini | 架構設計需要邏輯 + 技術調研需要外部資訊 |
-| **DEV** | Claude + Codex | TDD 實作需要邏輯引導 + 精確代碼需要細節實作 |
-| **QC** | Claude + Codex | 攻擊策略需要邏輯 + 實際操作驗證需要 GUI 能力 |
-| **MIS** | Claude + Codex | 部署流程需要邏輯 + 環境操作需要細節執行 |
+秘書分析每個部門任務的核心能力需求，**動態決定**派出哪個（些）巨頭。不硬編碼部門-巨頭組合——具體最優組合應經由實務執行判定，邏輯推演不等於實務最優。
+
+路由考量維度：
+- **任務核心能力需求**：這個任務最需要的是邏輯推理、精確實作、還是外部資訊？
+- **歷史經驗**：前幾輪哪些巨頭在這個部門表現更好？（從交叉比對結果累積經驗）
+- **當前可用性**：哪些巨頭目前可用？（受 rate limit / quota / 安裝狀態影響）
 
 ### Claude model 路由（認知複雜度）
 
@@ -175,7 +175,7 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 | **中** | sonnet | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
 | **高** | opus | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
 
-**Codex model** 由 CODEX 代理自動偵測（`codex debug models`）。**Gemini model** 由 GEMINI 代理自動偵測（`~/.gemini/settings.json`）。三個體系各用最擅長的模型，互不映射。
+**三巨頭 model 各自動態偵測**：CLAUDE_PROXY 由秘書指定 model、CODEX_PROXY 透過 `codex debug models` 偵測、GEMINI_PROXY 透過 Gemini API 查詢。三個體系各用最擅長的模型，互不映射。
 
 ### 複雜度評估維度
 
@@ -186,32 +186,48 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 - **風險**：安全相關、資料遷移、架構變更 → 複雜度提高
 - **依賴複雜度**：上下游依賴多 → 複雜度提高
 
-### 各部門典型複雜度
+### 派工時的同步 PROXY 呼叫
 
-| 部門 | 低 (haiku) | 中 (sonnet) | 高 (opus) |
-|---|---|---|---|
-| QA | 簡單行為斷言 | 標準斷言合約 + 市調 | 複雜跨模組斷言 / 模糊需求解析 / 深度市調 |
-| SEC | 單一工具審核 + 簡單環境 | 標準資安稽核 + 環境建置 | 複雜工具篩選 + 安全架構決策 |
-| PRD | 簡單功能計畫 + 已知架構 | 標準架構 + 測試區分 | 全新產品方向 / 模糊需求解析 |
-| DEV | 簡單 CRUD / 樣板碼 | 標準 TDD 實作 | 複雜跨模組整合 / 演算法 |
-| QC | 例行穩健性攻擊 | 標準攻擊 + 邊緣案例挖掘 + 紅藍隊 | 深度混亂測試 + 複雜業務邏輯流動驗證 + 紅藍隊 |
-| MIS | 單一部署 | 標準 pipeline + 部署 | 複雜環境 / 合併衝突 |
-
-### 派工時的同步雙 Agent 呼叫
-
-秘書根據部門的巨頭組合，在同一則訊息中發出兩個 `Agent()` tool call：
+秘書讀取部門定義檔（`agents/<DEPT>.md`），將廣義職責 + 產出規格注入 PROXY prompt，在同一則訊息中發出 PROXY Agent() 呼叫：
 
 ```python
-# QA/PRD/SEC — Claude + Gemini（資訊型）
-Agent(subagent_type="shiftblame:<DEPT>", prompt=claude_prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
-Agent(subagent_type="shiftblame:GEMINI", prompt=gemini_prompt, model="haiku", name="<slug>-gemini")
+# 組合 A：Claude + 第二巨頭（由秘書動態決定是 Codex 或 Gemini）
+Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=claude_proxy_prompt, model="haiku", name="<slug>-claude")
+Agent(subagent_type="shiftblame:<CODEX_PROXY|GEMINI_PROXY>", prompt=second_proxy_prompt, model="haiku", name="<slug>-<codex|gemini>")
 
-# DEV/QC/MIS — Claude + Codex（實作型）
-Agent(subagent_type="shiftblame:<DEPT>", prompt=claude_prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
-Agent(subagent_type="shiftblame:CODEX", prompt=codex_prompt, model="haiku", name="<slug>-codex")
+# 單體模式（僅一個巨頭可用時）
+Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=claude_proxy_prompt, model="haiku", name="<slug>-claude")
 ```
 
-兩個 Agent 各自回報，秘書收到雙方回報後交叉比對。CODEX/GEMINI 代理的 model 固定用 haiku（代理只負責組裝指令 + 執行 + 讀檔 + 回報，認知負荷極低），實際 AI 工作由各 CLI 用自己的模型完成。任何巨頭不可用時不阻擋流程，降級為可用組合（例如 Gemini 不可用 → QA 降級為 Claude 單體）。
+PROXY agent 的 model 固定用 haiku（代理只負責組裝指令 + 執行 + 讀檔 + 回報，認知負荷極低），實際 AI 工作由各 CLI 用自己的模型完成。
+
+### PROXY prompt 組裝
+
+秘書在派工時組裝 PROXY prompt，包含：
+1. **部門角色**：從 `agents/<DEPT>.md` 讀取的廣義職責 + 產出規格
+2. **具體任務**：本次派工的任務描述、上游產出參照
+3. **能力方向引導**：「你的強項是 X，這個任務需要你發揮 X 能力」
+4. **工作環境參數**：WORKDIR、OUTPUT 路徑、WORKTREE 路徑、BRANCH
+5. **權限與工具**：本次任務可用的工具、可讀的目錄範圍
+
+### 單點失效補救策略
+
+當 PROXY 回報錯誤代碼時，秘書依以下策略補救：
+
+| 錯誤代碼 | 補救策略 |
+|---|---|
+| `CLI_UNAVAILABLE` | 該巨標記為不可用，任務降級為剩餘可用巨頭 |
+| `RATE_LIMITED` | 標記該巨頭暫時不可用（5 分鐘），改派其他巨頭。若全部 rate limited → 向老闆回報暫停 |
+| `QUOTA_EXCEEDED` | 該巨頭本輪不可用，任務降級為剩餘巨頭 |
+| `AUTH_FAILURE` | 回報老闆，需手動修復認證 |
+| `TIMEOUT` | 可重試一次，仍失敗則改派其他巨頭 |
+| `EXEC_FAILED(N)` | 記錄 exit code，改派其他巨頭 |
+| `EMPTY_OUTPUT` | 可重試一次，仍空則改派其他巨頭 |
+
+**降級規則**：
+- 雙巨頭 → 單巨頭：仍可繼續，但交叉比對變為缺省
+- 單巨頭 → 無巨頭：向老闆回報，等待恢復或人工介入
+- 跨部門累積：若某巨頭在連續多個部門都失敗，標記為本輪不可用，不再嘗試
 
 ## 生命週期自動化
 
@@ -334,7 +350,7 @@ fi
 
 ### 循環圓流程
 
-每個部門同步派出雙巨頭 agent（依能力路由組合），雙方各自回報後秘書交叉比對。
+每個部門透過 PROXY agent 路由到三巨頭（由秘書動態決定組合），各自回報後秘書交叉比對。
 
 | 順序 | 部門 | 做什麼 | 可讀上游 | 產出寫入 |
 |---|---|---|---|---|
@@ -345,14 +361,14 @@ fi
 | 5 | QC | **親自啟動應用做穩健性攻擊**：對照 QA 原始品保條件做破壞性測試，挖掘 BUG、邊緣案例、業務邏輯斷裂 + 紅藍隊攻防（不重複跑自動化綠燈，指標是抓出多少問題） | QA + SEC + PRD + DEV | `~/.shiftblame/<repo>/QC/` |
 | 6 | MIS | 部署上線（最後一道防線，閱讀所有部門產出確認無誤後才執行） | QA + SEC + PRD + DEV + QC（全部） | `~/.shiftblame/<repo>/MIS/` |
 
-### 每個部門的雙巨頭回報流程
+### 每個部門的 PROXY 回報流程
 
 ```
-秘書同步派出 Claude agent + 第二巨頭 agent（Codex 或 Gemini）
+秘書同步派出 PROXY agents（由秘書動態決定組合）
          │                    │
          ▼                    ▼
-   Claude 主管回報       第二巨頭代理回報
-   （邏輯型產出）        （細節型 或 資訊型產出）
+   CLAUDE_PROXY 回報     第二 PROXY 回報
+   （Claude CLI 產出）    （Codex/Gemini CLI 產出）
          │                    │
          └────────┬───────────┘
                   ▼
