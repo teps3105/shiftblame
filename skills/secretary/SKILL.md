@@ -22,8 +22,8 @@ description: >-
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
 2. **按認知複雜度選 model**：派工時依任務複雜度決定主管用哪個 model（見下方「認知複雜度 model 路由」）
-3. **AskUserQuestion 預審閘門 + turn boundary（雙重結構性強制）**：每次呼叫 `Agent()` 派工前，必須先通過兩道結構閘門：(1) AskUserQuestion 呈現派工單摘要並等老闆回覆（工具閘門）；(2) 覆述老闆選擇後結束 turn，等老闆下一則訊息明確批准（turn boundary 閘門）。兩層都是結構保證，不依賴 LLM 記得
-4. **等待主管回報**：不假設完成，等主管明確回報結果後才向老闆彙報
+3. **部門完成閘門（結構性強制）**：每個部門完成後，秘書必須用 AskUserQuestion 回報結果（含雙模式交叉比對分歧項）並等老闆判定。覆述老闆選擇後結束 turn，等老闆下一則訊息才能推進下一部門。從流程上斷絕自動推進的可能（見下方「部門完成閘門機制」）
+4. **等待主管回報**：不假設完成，等主管明確回報結果後才做交叉比對並向老闆回報
 5. **問題協調**：主管回報問題時，秘書負責跨部門協調，不讓主管自行解決
 6. **主管產出路徑**：派工時提醒主管將產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`，一個 slug 只能有一個文件
 7. **worktree 隔離**：所有修改透過 worktree 隔離，禁止直推 main
@@ -40,51 +40,74 @@ description: >-
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
 19. **雙體系發散（預設雙模式，圖靈×馮諾伊曼）**：每個部門派工時預設同步啟動 Codex CLI。兩個體系**同一問題、不同方向發散**——Claude 為圖靈派（可計算性優先、演繹推理、追求邏輯完備），Codex 為馮諾伊曼派（可建造性優先、歸納推理、追求工程穩健）。秘書在各自的 prompt 開頭注入方向引導（見 codex-cross skill）。產碼部門建立獨立 `-codex` worktree 避免衝突。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程。老闆可在預審時選擇「單模式」跳過 Codex。秘書自動指派兩個體系的 model，不提供 model 選項讓老闆選
 
-## 預審閘門機制（雙重結構性強制）
+## 部門完成閘門機制（結構性強制）
 
-單層閘門的盲區：`AskUserQuestion` 不返回 → `Agent()` 不可能被呼叫 ✓，但工具回傳後的解讀是行為層，LLM 會腦補「回傳 = 批准」。
+每個部門完成後，秘書**必須**用 AskUserQuestion 回報結果並等待老闆判定，才能推進到下一部門。從流程上斷絕自動推進的可能。
 
-雙層閘門：第一層是工具閘門（AskUserQuestion 不返回就不能動），第二層是 turn boundary（工具回傳後覆述並結束 turn → 老闆必須發下一則訊息才能繼續）。兩層都是結構性保證，不依賴 LLM 記得。
+### 為什麼是完成後閘門而非派工前閘門
 
-### 每個部門派工前的強制步驟
+派工前預審只能預測，老闆看不到實際產出就做不了真正判斷。完成後閘門讓老闆基於**實際結果**做決策——尤其是雙模式交叉比對的分歧項，老闆必須親自裁定。
+
+### 每個部門完成後的強制步驟
 
 ```
-步驟 1：AskUserQuestion 呈現派工單摘要 → 等老闆回覆（工具閘門）
-步驟 2：工具回傳 → 覆述「您選了 [X]」，此 turn 立即結束，禁止呼叫 Agent()（turn boundary 閘門）
-步驟 3：老闆下一則訊息到達 → 判讀意圖
-步驟 4：明確批准 → 填派工單 → Agent() 派出；非批准 → 討論後回到步驟 1 或停止
+步驟 1：部門完成 → 秘書交叉比對 Claude / Codex 產出
+步驟 2：AskUserQuestion 呈報結果 + 分歧項 → 等老闆判定（工具閘門）
+步驟 3：工具回傳 → 覆述「您選了 [X]」，此 turn 立即結束（turn boundary 閘門）
+步驟 4：老闆下一則訊息到達 → 判讀意圖
+         明確批准 → 派工下一部門
+         要求修正 → 重新派出同一部門或調整
+         暫停 → 停下，等老闆指示
 ```
 
-**步驟 1 — AskUserQuestion 格式**：
+**步驟 2 — AskUserQuestion 格式（無分歧時）**：
 
 ```
 AskUserQuestion({
   questions: [{
-    question: "準備派出 [部門]：[一句話任務]。Claude: [model], Codex: [model]",
-    header: "派工預審",
+    question: "[部門] 完成。結果：<摘要>。雙模式比對：<N> 項收斂 / <M> 項分歧。\n\n分歧項：\n<逐條列出 CLAUDE_ONLY / CODEX_ONLY / CONFLICT>",
+    header: "部門回報",
     options: [
-      { label: "OK", description: "同意雙模式並行派工（Claude + Codex）" },
-      { label: "單模式", description: "只派 Claude，不啟動 Codex" },
-      { label: "暫停", description: "先不派，有問題要討論" }
+      { label: "繼續", description: "結果 OK，推進下一部門" },
+      { label: "重做", description: "有問題，要求該部門重新執行" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
     ],
     multiSelect: false
   }]
 })
 ```
 
-**步驟 2 — 覆述確認（turn boundary）**：
-AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對不可在同一 turn 內呼叫 Agent()。** turn boundary 是第二道結構閘門：老闆不發訊息 → 秘書不可能繼續 → Agent() 結構上不可能被呼叫。
+**步驟 2 — AskUserQuestion 格式（有分歧時）**：
 
-**步驟 3 — 判讀老闆下一則訊息**：
-- 明確批准（「好」「go」「派出」「確認」「ok」等肯定語）→ 步驟 4（雙模式）
-- 選擇「單模式」→ 步驟 4（只啟動 Claude agent，不啟動 Codex）
-- 追問或修改 → 回應討論，回到步驟 1 重新預審
-- 取消或暫停 → 停下，不呼叫 Agent()
+```
+AskUserQuestion({
+  questions: [{
+    question: "[部門] 完成。雙模式比對發現 <M> 項分歧：\n\n| # | 類型 | Claude | Codex | 影響 |\n|---|---|---|---|---|\n| 1 | CODEX_ONLY | — | <Codex 發現> | <影響> |\n| 2 | CONFLICT | <Claude> | <Codex> | <影響> |\n\n請裁定分歧項：",
+    header: "分歧裁決",
+    options: [
+      { label: "採 Claude", description: "分歧項以 Claude 圖靈派結論為準" },
+      { label: "採 Codex", description: "分歧項以 Codex 馮諾伊曼派結論為準" },
+      { label: "兩者都要", description: "合併兩方結論，下游部門都要考量" },
+      { label: "暫停", description: "先暫停，需要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
 
-**步驟 4 — 派出**：填完整派工單 → `Agent()` 派出
+**步驟 3 — 覆述確認（turn boundary）**：
+AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對不可在同一 turn 內派工下一部門。** turn boundary 是結構閘門：老闆不發訊息 → 秘書不可能繼續 → 下一部門結構上不可能被派出。
 
-### 例外：老闆明確授權批次派出
-老闆**在本次對話中**明確說「全部跑完不用問」時，可跳過步驟 2-3 連續派出（步驟 1 的 AskUserQuestion 仍不可省略）。秘書不可自行推斷此授權。
+**步驟 4 — 判讀老闆下一則訊息**：
+- 明確批准（「好」「go」「繼續」「ok」等肯定語）→ 派工下一部門
+- 分歧裁決（「採 Claude」「採 Codex」「兩者都要」）→ 記錄裁決結果，派工下一部門時注入裁決結論
+- 要求修正 → 重新派出同一部門
+- 追問或修改 → 回應討論，回到步驟 2
+- 取消或暫停 → 停下
+
+### 裁決結果的傳遞
+
+老闆裁定分歧項後，秘書將裁決結論寫入該部門產出檔案末尾（`<slug>.verdict.md`），下游部門派工時在 prompt 中引用，確保分歧裁決結果沿循環圓傳遞。
 
 ## 派工範本（強制）
 
@@ -279,27 +302,27 @@ fi
         ┌─── QA（定義用戶業務邏輯的行為斷言 X→Y→Z + 市場調研）
         │     可讀：僅自己
         │
-    ═══ AskUserQuestion 預審閘門 ═══
+    ═══ QA 完成 → 交叉比對 → AskUserQuestion 回報老闆 → 老闆裁定 → 推進 ═══
         │
         ├─── SEC（資安稽核 + 工具篩選 + 漏洞搜尋 + 隔離環境建置）
         │     可讀：自己 + QA
         │
-    ═══ AskUserQuestion 預審閘門 ═══
+    ═══ SEC 完成 → 交叉比對 → AskUserQuestion 回報老闆 → 老闆裁定 → 推進 ═══
         │
         ├─── PRD（架構 + 測試區分 + 實作計畫）
         │     可讀：自己 + QA + SEC
         │
-    ═══ AskUserQuestion 預審閘門 ═══
+    ═══ PRD 完成 → 交叉比對 → AskUserQuestion 回報老闆 → 老闆裁定 → 推進 ═══
         │
         ├─── DEV（TDD 開發 → 全綠 + 親自啟動應用驗證）
         │     可讀：自己 + QA + SEC + PRD
         │
-    ═══ AskUserQuestion 預審閘門 ═══
+    ═══ DEV 完成 → 交叉比對 → AskUserQuestion 回報老闆 → 老闆裁定 → 推進 ═══
         │
         ├─── QC（穩健性攻擊 + 邊緣案例挖掘 + 業務邏輯流動 + 紅藍隊）
         │     可讀：自己 + QA + SEC + PRD + DEV
         │
-    ═══ AskUserQuestion 預審閘門 ═══
+    ═══ QC 完成 → 交叉比對 → AskUserQuestion 回報老闆 → 老闆裁定 → 推進 ═══
         │
         └─── MIS（部署上線 — 最後一道防線）
               可讀：全部（QA + SEC + PRD + DEV + QC + 自己）
