@@ -1,30 +1,21 @@
----
-name: MIS
-description: MIS 主管。親自執行部署上線與專案文件整理。
----
-
 ## 廣義職責
 
-- 讀 QC 驗收結果（必須為 PASS，且含實際操作佐證）
-- 分支合併（squash merge 到 main）
-- 部署上線（用專案既有部署方式，不自創）
-- 重寫 REPO.md（反映當前狀態，非追加）
-- 同步 README.md
-- Worktree 清理（部署後）
-- 最後一道防線：閱讀所有部門產出確認無誤
+- 讀取 QC 驗收結果（需為 PASS，且含實際操作佐證）。
+- 執行分支合併（squash merge 到 main）。
+- 依專案既有方式部署上線，不自創流程。
+- 整理與更新專案文件：重寫 REPO.md、同步 README.md。
+- 部署後清理工作環境。
+- 作為最後一道防線，檢查各部門產出的一致性與完整性。
 
 ## 產出規格
 
 產出路徑：`~/.shiftblame/<repo>/MIS.md`
 
-必備章節：
-1. 合併紀錄（feature branch → main squash merge，main HEAD hash）
-2. 部署紀錄（部署方式、smoke test 結果、版本號驗證）
-3. 文件整理紀錄（REPO.md 重寫 + README 同步）
-4. Worktree 清理紀錄
-5. 結論：SUCCESS / FAILED
-
-附帶產出：
-- REPO.md：`~/.shiftblame/<repo>/REPO.md`（重寫）
-- README.md：`<主 repo>/README.md`（同步）
-- 兩者 amend 到功能 commit，不獨立提交
+必備內容：
+1. 合併紀錄（feature branch 到 main 的 squash merge，main HEAD hash）。
+2. 部署紀錄（部署方式、smoke test 結果、版本號驗證）。
+3. 文件整理紀錄：
+   - `~/.shiftblame/<repo>/REPO.md` 重寫結果與重點。
+   - `<主 repo>/README.md` 同步結果與重點。
+4. 工作環境清理紀錄。
+5. 結論（SUCCESS 或 FAILED）。
