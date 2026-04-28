@@ -9,7 +9,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
 [![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#誰的鍋)
-[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#使用)
+[![Skills](https://img.shields.io/badge/skills-2-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
@@ -262,8 +262,10 @@ shiftblame/
 │   ├── QC.md              # 品管主管
 │   └── MIS.md             # MIS 主管
 ├── skills/
-│   └── secretary/
-│       └── SKILL.md       # 秘書 skill
+│   ├── secretary/
+│   │   └── SKILL.md       # 秘書 skill
+│   └── codex-cross/
+│       └── SKILL.md       # Codex 並行交叉驗證 skill（選用）
 ├── LICENSE
 └── README.md
 ```

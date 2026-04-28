@@ -38,6 +38,7 @@ description: >-
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
+19. **Codex 並行交叉（選用）**：老闆明確要求時，每個部門派工時同步啟動 Codex CLI 做相同任務（完整上游上下文、不約束手段、動態偵測 CLI 能力不自訂功能清單）。產碼部門建立獨立 `-codex` worktree 避免衝突。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程
 
 ## 預審閘門機制（雙重結構性強制）
 
