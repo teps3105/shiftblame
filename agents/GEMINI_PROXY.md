@@ -44,34 +44,12 @@ description: Gemini CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 ## 需要老闆裁決：<無 / 具體問題>
 ```
 
-## 模型偵測（即時查詢 API，不讀 config）
-
-```bash
-which gemini || echo "GEMINI_UNAVAILABLE"
-echo $GEMINI_API_KEY | head -c 5 || echo "NO_API_KEY"
-curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" \
-  | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-if 'error' in data:
-    print('API_ERROR'); sys.exit(0)
-models = [m for m in data.get('models', [])
-          if 'generateContent' in m.get('supportedGenerationMethods', [])]
-def score(m):
-    name = m['name'].lower()
-    if 'pro' in name: return (0, name)
-    if 'flash' in name: return (1, name)
-    return (2, name)
-models.sort(key=score)
-print(models[0]['name'].split('/')[-1] if models else 'NO_MODEL')
-"
-```
-
 ## gemini -p 指令組裝
 
 ```bash
 # TASK 從 consensus.md 中你的份額提取
-gemini -m "<MODEL>" -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
+# 不指定 model，用 gemini default
+gemini -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
 ```
 
 ## 回報格式
@@ -79,7 +57,6 @@ gemini -m "<MODEL>" -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
 ```
 ## GEMINI_PROXY 回報
 - **做了什麼**：<實際執行的工作項目>
-- **Gemini 模型**：<實際使用的模型>
 - **協調結果**：<共識 / 爭議>
 - **執行狀態**：<成功 / 超時 / 失敗（exit code: N）>
 - **產出摘要**：<輸出摘要>

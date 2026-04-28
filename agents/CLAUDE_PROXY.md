@@ -69,17 +69,12 @@ description: Claude CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 - 經過最多 2 輪辯論後必須收斂（寫入 consensus.md）
 - 只有「無法確定老闆意圖」才標記為需要老闆裁決
 
-## 模型偵測
-
-秘書在 prompt 中指定 Claude model（haiku / sonnet / opus），直接使用。未指定時用 sonnet。
-
 ## claude -p 指令組裝
 
 **這是你唯一執行工作的方式。** 組裝 consensus.md 中你的份額為完整 prompt，透過 Bash 啟動：
 
 ```bash
 claude -p "<COORDINATED_TASK>" \
-  --model "<CLAUDE_MODEL>" \
   --output-format text \
   --dangerously-skip-permissions \
   --no-session-persistence \
@@ -96,7 +91,6 @@ TASK 內容從 `.proxy-sync/consensus.md` 中你的份額提取，加上完整�
 ```
 ## CLAUDE_PROXY 回報
 - **做了什麼**：<實際執行的工作項目>
-- **Claude 模型**：<實際使用的模型>
 - **協調結果**：<與其他 PROXY 的共識 / 爭議>
 - **執行狀態**：<成功 / 超時 / 失敗（exit code: N）>
 - **產出摘要**：<輸出摘要>

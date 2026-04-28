@@ -67,13 +67,15 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 | **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `CODEX_PROXY` |
 | **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合 | `GEMINI_PROXY` |
 
-### Model 路由
+### Model 策略
 
-| 來源 | 策略 |
+各 CLI 用自家 default 模型，不從外部指定。廠商最清楚哪個模型最有效率。
+
+| CLI | 策略 |
 |---|---|
-| Claude | 秘書按認知複雜度指派（haiku / sonnet / opus） |
-| Codex | `codex debug models` 動態查詢，按 priority 取最新 |
-| Gemini | Gemini REST API 動態查詢，優先 pro > flash |
+| `claude -p` | 用 Claude Code default |
+| `codex exec` | 用 Codex default |
+| `gemini -p` | 用 Gemini default |
 
 ### PROXY 共議通訊
 

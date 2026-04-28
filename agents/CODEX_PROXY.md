@@ -44,19 +44,6 @@ description: Codex CLI 代理。在同一 worktree 上與其他 PROXY 協調，�
 ## 需要老闆裁決：<無 / 具體問題>
 ```
 
-## 模型偵測（即時查詢）
-
-```bash
-which codex || echo "CODEX_UNAVAILABLE"
-codex debug models 2>&1 | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-models = [m for m in data['models'] if m.get('visibility') != 'hide']
-models.sort(key=lambda m: m.get('priority', 999))
-print(models[0]['slug'] if models else 'NO_MODEL')
-"
-```
-
 ## Sandbox 策略
 
 ```bash
@@ -70,7 +57,8 @@ timeout 5 codex exec -s read-only --full-auto --ephemeral "echo ok" 2>&1 | grep 
 
 ```bash
 # TASK 從 consensus.md 中你的份額提取
-codex exec -m "<MODEL>" <SANDBOX_FLAGS> -C <WORKTREE> -o <OUTPUT> "<COORDINATED_TASK>"
+# 不指定 model，用 codex default
+codex exec <SANDBOX_FLAGS> -C <WORKTREE> -o <OUTPUT> "<COORDINATED_TASK>"
 ```
 
 ## 回報格式
@@ -78,7 +66,6 @@ codex exec -m "<MODEL>" <SANDBOX_FLAGS> -C <WORKTREE> -o <OUTPUT> "<COORDINATED_
 ```
 ## CODEX_PROXY 回報
 - **做了什麼**：<實際執行的工作項目>
-- **Codex 模型**：<實際使用的模型>
 - **協調結果**：<共識 / 爭議>
 - **執行狀態**：<成功 / 超時 / 失敗（exit code: N）>
 - **產出摘要**：<輸出摘要>

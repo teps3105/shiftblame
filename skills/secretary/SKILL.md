@@ -21,7 +21,7 @@ description: >-
 
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
-2. **按認知複雜度選 model**：派工時依任務複雜度決定主管用哪個 model（見下方「認知複雜度 model 路由」）
+2. **不指定 model**：各 CLI 用自家 default 模型，廠商最清楚哪個模型最有效率
 3. **部門完成閘門（結構性強制）**：每個部門完成後，秘書必須用 AskUserQuestion 回報結果（含雙巨頭交叉比對分歧項）並等老闆判定。覆述老闆選擇後結束 turn，等老闆下一則訊息才能推進下一部門。從流程上斷絕自動推進的可能（見下方「部門完成閘門機制」）
 4. **等待主管回報**：不假設完成，等主管明確回報結果後才做交叉比對並向老闆回報
 5. **問題協調**：主管回報問題時，秘書負責跨部門協調，不讓主管自行解決
@@ -37,7 +37,7 @@ description: >-
 15. **文件存放路徑不確定先問**：shiftblame 部門目錄是循環圓產出專用，老闆自己的文件預設放 repo 的 `docs/` 或根目錄。不確定就問，不自行推定
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
-18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
+18. **派工 prompt 開頭加強 git commit 單命令警告**：prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
 19. **PROXY 自組織派工（三巨頭共享 worktree 自行協調）**：秘書在同一 worktree 建立 `.proxy-sync/` 通訊目錄，下達同一個部門任務給所有可用 PROXY（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）。三個 PROXY 在同一 worktree 上自行溝通、辯論、分配職責、執行、回報。秘書不干預分工——只設定邊界（部門定義 + 產出規格）。PROXY 之間無法確定老闆意圖時才標記上報。任何 PROXY 失效時，其他 PROXY 在協調中吸收其份額
 
 ## 部門完成閘門機制（結構性強制）
@@ -117,7 +117,6 @@ AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對
 === 派工單 ===
 SLUG:          (必填)
 DEPT:          (必填)
-MODEL:         (必填：haiku|sonnet|opus — CLAUDE_PROXY 內部用)
 WORKTREE_PATH: ~/.worktree/<repo>/<slug>/   (產碼部門 PRD/DEV/QC/MIS 必填，其他 N/A)
 BRANCH:        feat/<slug>                   (產碼部門必填，其他 N/A)
 UPSTREAM:      ~/.shiftblame/<repo>/<上游部門>.md
@@ -197,29 +196,17 @@ PROXY 自行處理：
 
 ```python
 # 三個 PROXY 對等派工，每個內部啟動各自的外部 CLI
-Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-claude")
-Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-codex")
-Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-gemini")
+Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude")
+Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex")
+Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini")
 
 # proxy_prompt 包含：
 # - WORKTREE 路徑（絕對路徑）
 # - .proxy-sync/ 位置
-# - CLAUDE_PROXY 專用的 model（haiku/sonnet/opus，按認知複雜度）
+# - 不指定 model：各 CLI 用自家 default
 ```
 
-**關鍵約束**：PROXY agent 的 model 固定用 haiku（代理外殼只負責組裝指令 + 啟動 CLI + 回報）。CLAUDE_PROXY 傳給 `claude -p` 的 model 由秘書依認知複雜度決定。三個 PROXY 各自啟動外部 CLI（`claude -p` / `codex exec` / `gemini -p`），不直接做事——確保上下文乾淨、三 CLI 對等。
-
-### Claude model 路由（認知複雜度）
-
-秘書根據任務認知複雜度指派 CLAUDE_PROXY 的 `claude -p` model：
-
-| 認知複雜度 | model | 判斷依據 |
-|---|---|---|
-| **低** | haiku | 簡單明確：已知模式、例行檢查 |
-| **中** | sonnet | 標準開發：常規功能、標準架構 |
-| **高** | opus | 深度推理：跨模組整合、模糊需求 |
-
-**三巨頭 model 各自動態偵測**，互不映射。
+**關鍵約束**：三個 PROXY 各自啟動外部 CLI（`claude -p` / `codex exec` / `gemini -p`），不指定 model，不直接做事——確保上下文乾淨、三 CLI 對等。各 CLI 用自家 default 模型，廠商最清楚哪個模型最有效率。
 
 ### 單點失效補救
 
