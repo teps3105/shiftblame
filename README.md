@@ -97,7 +97,6 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 ```
 老闆提需求 → 秘書判斷方向是否明確
   ├─ 不明確：諮詢模式（結構化問答收斂）
-<<<<<<< HEAD
   └─ 明確：啟動循環圓（各 CLI 用自家 default 模型）
       → QA→SEC→PRD→DEV→QC→MIS 逐一部門派工
           → 每部門：三 PROXY 共議 → 執行 → 回報
