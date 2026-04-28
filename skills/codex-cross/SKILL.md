@@ -45,22 +45,41 @@ description: >-
 
 ## CLI 能力偵測協議
 
-**不硬編碼 Codex 的功能清單**。每次調用前動態偵測，OpenAI 迭代時自動獲益。
+**不硬編碼 Codex 的功能清單或模型名稱**。每次調用前動態偵測，OpenAI 迭代時自動獲益。
 
 ### 偵測步驟
 
-秘書在每次並行啟動前執行：
+秘書在每輪首次並行派工前執行：
 
 ```bash
 # 1. CLI 可用性
 which codex || echo "CODEX_UNAVAILABLE"
 
-# 2. 動態偵測可用功能
-codex exec --help 2>&1
+# 2. 動態偵測最新可用模型（即時查詢 API，不讀 config）
+codex debug models 2>&1 | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+models = [m for m in data['models'] if m.get('visibility') != 'hide']
+models.sort(key=lambda m: m.get('priority', 999))
+best = models[0] if models else None
+if best:
+    print(best['slug'])
+else:
+    print('NO_MODEL')
+"
 
-# 3. 預設模型
-grep '^model\s*=' ~/.codex/config.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/'
+# 3. 動態偵測可用 flag
+codex exec --help 2>&1
 ```
+
+### 模型選取規則
+
+1. `codex debug models` 回傳 JSON 模型目錄，每個模型有 `priority`（數字越小越新）
+2. 過濾 `visibility != 'hide'` 的模型
+3. 按 `priority` 升序排列，取第一個 = **最新可用模型**
+4. 寫入派工單 `CODEX_MODEL` 欄位
+5. 偵測失敗時 fallback：讀取 `~/.codex/config.toml` 的 `model` 欄位（靜態備援）
+6. config 也沒有 → 不加 `-m` flag，讓 Codex 用自己的預設
 
 ### 指令組裝規則
 
@@ -68,7 +87,7 @@ grep '^model\s*=' ~/.codex/config.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/'
 
 1. 解析 `--help` 找出可用 flag
 2. 根據偵測結果填入參數：
-   - 有 `-m` → 填入步驟 3 偵測到的模型（若無模型設定則不加 `-m`）
+   - 有 `-m` → 填入步驟 2 偵測到的最新模型
    - 有 `-s` / `--sandbox` → 按部門類型選 sandbox 等級
    - 有 `--full-auto` → 加上（全自動執行）
    - 有 `--ephemeral` → 加上（不持久化 session）

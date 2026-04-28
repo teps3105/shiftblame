@@ -139,14 +139,20 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 # 1. CLI 可用性
 which codex || echo "CODEX_UNAVAILABLE"
 
-# 2. 預設模型（從 config 讀取，不硬編碼）
-grep '^model\s*=' ~/.codex/config.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/'
+# 2. 最新可用模型（即時查詢 API 目錄，取 priority 最高者）
+codex debug models 2>&1 | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+models = [m for m in data['models'] if m.get('visibility') != 'hide']
+models.sort(key=lambda m: m.get('priority', 999))
+print(models[0]['slug'] if models else 'NO_MODEL')
+"
 
 # 3. 動態偵測可用 flag（組裝指令用）
 codex exec --help 2>&1
 ```
 
-偵測結果填入派工單 `CODEX_MODEL` 欄位。Codex 不可用時 `CODEX_MODEL = N/A`，自動降級為單模式。
+偵測結果填入派工單 `CODEX_MODEL` 欄位。Codex 不可用時 `CODEX_MODEL = N/A`，自動降級為單模式。步驟 2 失敗時 fallback 讀 `~/.codex/config.toml` 的 `model` 欄位。
 
 ### 複雜度評估維度
 
