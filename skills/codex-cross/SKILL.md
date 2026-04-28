@@ -107,13 +107,14 @@ codex exec --help 2>&1
 ## 並行執行流程
 
 ```
-秘書準備任務 prompt（含完整上游上下文）
+秘書準備任務 prompt（含完整上游上下文 + 方向引導）
        │
        ├──────────────────────┐
        │                      │
        ▼                      ▼
   Claude Agent            Codex CLI
-  (Agent tool)           (Bash, run_in_background)
+  (Agent tool)           (Bash tool, codex exec)
+  圖靈派方向引導          馮諾伊曼派方向引導
   正常 worktree          獨立 codex worktree
        │                      │
        ▼                      ▼
@@ -133,12 +134,36 @@ codex exec --help 2>&1
 
 ### 執行步驟
 
-1. **準備 prompt**：秘書組裝與 Claude agent 完全相同的任務 prompt + 完整上游上下文
-2. **啟動 Codex**（背景執行）：`Bash` with `run_in_background: true`
-3. **啟動 Claude**（前景執行）：`Agent()` 派工
-4. **等待兩者完成**
-5. **交叉比對**：讀取 `slug.md` + `slug.codex.md`
-6. **呈報結果**：收斂項只報數量，分歧項逐條呈報
+1. **準備雙 prompt**：秘書組裝相同的任務 + 上游上下文，但分別注入圖靈派 / 馮諾伊曼派方向引導
+2. **同步派出**：**同一則訊息中同時發出 `Agent()` + `Bash()` tool call**，Claude 和 Codex 並行啟動
+3. **等待兩者完成**
+4. **交叉比對**：讀取 `slug.md` + `slug.codex.md`
+5. **呈報結果**：收斂項只報數量，分歧項逐條呈報
+
+### 同步派工格式
+
+秘書在同一則訊息中發出一個 Agent tool call + 一個 Bash tool call：
+
+```python
+# Claude agent（圖靈派）— 用 Agent tool
+Agent(
+  subagent_type="shiftblame:<DEPT>",
+  prompt="你是 <部門職稱>，你是圖靈派的推理者。\n\n...\n\n任務：<任務描述>\n\n== 上游產出 ==\n...\n\n== 輸出要求 ==\n...",
+  model="<haiku|sonnet|opus>",
+  name="<slug>-claude"
+)
+
+# Codex（馮諾伊曼派）— 用 Bash 直接呼叫 codex exec
+# codex exec 本身就是 agent 系統，不需要包裝
+Bash(
+  command="codex exec -m <CODEX_MODEL> <flags> '<馮諾伊曼派 prompt>'",
+  description="Codex agent: <部門> <任務摘要>",
+  timeout=300000,
+  run_in_background=true
+)
+```
+
+**為什麼不用 Agent tool 包 Codex**：Codex CLI 是獨立的 agent 系統，有自己的模型、工具鏈、sandbox。用 `Agent(subagent_type="general-purpose")` 包裝等於強迫 Claude 模型模擬 Codex——模型體系不同，工具鏈不同，結果是四不像。直接 `Bash` 呼叫 `codex exec` 才是正確的介面。
 
 ## Codex Worktree（產碼部門）
 
@@ -256,26 +281,33 @@ prompt 中**禁止**出現「你只能用 X」「你不可以用 Y」等工具�
 | 情境 | 處理 |
 |---|---|
 | Codex CLI 不存在（`which codex` 失敗） | 跳過並行，Claude 正常執行，不阻擋 |
+| `codex debug models` 失敗 | fallback 讀 `~/.codex/config.toml` 的 model 欄位 |
 | `codex exec --help` 解析失敗 | 用最保守的指令組裝（只加 `--full-auto`） |
-| Codex 執行超時 | Bash 設 300000ms，超時 → 跳過並行 |
+| Codex 執行超時 | Bash 設 300000ms，超時 → 跳過比對 |
 | Codex 非零 exit code | 跳過比對，Claude 產出照常呈報 |
 | Codex 產出為空 | 跳過比對，Claude 產出照常呈報 |
 | Codex worktree 建立失敗 | 降級為 sandbox-only 模式（不加 `-C`，只產出文件） |
 
-**原則：Codex 任何失敗都不阻擋流程。** 並行交叉是可選的品質強化，不是閘門。
+**原則：Codex 任何失敗都不阻擋流程。** 並行交叉是品質強化，不是閘門。
 
 ## 完整指令範本
 
 以下是秘書動態組裝的範例（實際指令由能力偵測結果決定）：
 
 ```bash
-# 能力偵測
-CODEX_MODEL=$(grep '^model\s*=' ~/.codex/config.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/')
+# 1. 動態偵測最新模型
+CODEX_MODEL=$(codex debug models 2>&1 | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+models = [m for m in data['models'] if m.get('visibility') != 'hide']
+models.sort(key=lambda m: m.get('priority', 999))
+print(models[0]['slug'] if models else 'NO_MODEL')
+")
 
-# 讀取上游產出
+# 2. 讀取上游產出
 UPSTREAM=$(cat /home/derek/.shiftblame/<repo>/<UPSTREAM_DEPT>/*.md)
 
-# 組裝並執行（背景）
+# 3. 組裝並執行 codex exec（背景）
 codex exec \
   -m "$CODEX_MODEL" \
   -s workspace-write \
@@ -283,7 +315,13 @@ codex exec \
   --ephemeral \
   -C /home/derek/.worktree/<repo>/<slug>-codex \
   -o /home/derek/.shiftblame/<repo>/<DEPT>/<slug>.codex.md \
-  "你是 <部門職稱>。任務：<完整任務描述>
+  "你是 <部門職稱>，你是馮諾伊曼派的實踐者。
+
+你的思維方式：可建造性優先。關注系統怎麼組裝、架構怎麼支撐規模、
+容錯設計怎麼做、降級策略怎麼安排。追求工程可行與穩健性，
+而非邏輯完備。用歸納法從經驗找規律，不從公理推結論。
+
+任務：<完整任務描述>
 
 == 上游產出 ==
 $UPSTREAM

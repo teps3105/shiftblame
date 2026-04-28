@@ -174,15 +174,19 @@ codex exec --help 2>&1
 | QC | 例行穩健性攻擊 | 標準攻擊 + 邊緣案例挖掘 + 紅藍隊 | 深度混亂測試 + 複雜業務邏輯流動驗證 + 紅藍隊 |
 | MIS | 單一部署 | 標準 pipeline + 部署 | 複雜環境 / 合併衝突 |
 
-### 派工時的 model 參數
+### 派工時的同步雙體系呼叫
+
+雙模式下，秘書在同一則訊息中同時發出 `Agent()` + `Bash()` tool call：
 
 ```python
-# Claude agent（秘書依認知複雜度指派）
-Agent(subagent_type="<DEPT>", prompt=任務說明, model="<haiku|sonnet|opus>")
+# Claude（圖靈派）— Agent tool，用 Claude 自己的模型體系
+Agent(subagent_type="shiftblame:<DEPT>", prompt=圖靈派prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
 
-# Codex CLI（背景執行，模型由能力偵測取得，不自訂）
-codex exec -m "$CODEX_MODEL" ... (CODEX_MODEL = 偵測到的預設模型)
+# Codex（馮諾伊曼派）— Bash tool 直接呼叫 codex exec，用 Codex 自己的模型體系
+Bash(command="codex exec -m <CODEX_MODEL> <flags> '<馮諾伊曼派prompt>'", timeout=300000, run_in_background=true)
 ```
+
+兩個體系各自用自己的模型、自己的 agent 系統，不互相包裝。同一則訊息並行 = 真正同步。
 
 ## 生命週期自動化
 
