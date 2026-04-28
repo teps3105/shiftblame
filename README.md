@@ -8,128 +8,45 @@ _一套 PROXY 共議常識的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#部門常識)
-[![Skills](https://img.shields.io/badge/skills-2-9cf.svg)](#使用)
+[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#部門職能)
+[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
 
-**[部門常識](#部門常識)** · **[運作原理](#運作原理)** · **[安裝](#安裝)** · **[使用](#使用)**
+**[架構](#架構)** · **[部門職能](#部門職能)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
 </div>
 
 ---
 
-秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門透過三巨頭 **PROXY agent**（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）路由任務到對應的 AI CLI。秘書動態決定巨頭組合，不硬編碼——最優組合由實務執行判定。單點失效時自動降級補救。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。
+## 核心概念
 
-還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再派工。
+三個 AI CLI（Claude / Codex / Gemini）作為 **PROXY agent** 在同一 worktree 上共議分工、自主執行、互相辯論。秘書是純調度器——只設定邊界、下達任務、收齊回報，不干預巨頭內部協調。
 
----
+每個部門由三個 PROXY 同時派工，透過 `.proxy-sync/` 通訊目錄自組織：
+1. 各自提出分工提案
+2. 辯論收斂（最多 2 輪）
+3. 寫入共識後各自執行
+4. 回報結果，由秘書彙整呈報老闆
 
-## 資源供給機制
-
-**三巨頭 PROXY 動態路由**：秘書透過 PROXY agent 路由任務到三個 AI CLI，動態決定巨頭組合。
-
-### 三巨頭能力定位
-
-| 巨頭 | 能力排序 | 強項 | PROXY agent |
-|---|---|---|---|
-| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:CLAUDE_PROXY` |
-| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX_PROXY` |
-| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI_PROXY` |
-
-### 動態路由
-
-秘書分析每個任務的核心能力需求，動態決定派出哪個（些）巨頭。不硬編碼部門-巨頭組合——具體最優組合由實務執行累積經驗判定。
-
-### 單點失效補救
-
-當某個巨頭 PROXY 回報錯誤（rate limit / quota / CLI 不可用 / timeout），秘書自動降級：
-- 雙巨頭 → 單巨頭（仍可繼續，交叉比對缺省）
-- 單巨頭 → 無巨頭（回報老闆暫停等待）
-
-### Claude model（按認知複雜度動態決定）
-
-| 認知複雜度 | model | 適用情境 |
-|----------|------|------|
-| **低** | **haiku** | 簡單明確的任務：已知模式的 CRUD、例行性檢查、格式化、簡單配置 |
-| **中** | **sonnet** | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
-| **高** | **opus** | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、模糊需求解析 |
-
-### Codex model（動態偵測，不自訂）
-
-透過 `codex debug models` 即時查詢 API 模型目錄，按 `priority` 取最新可用模型。不硬編碼模型名稱，OpenAI 推新模型時自動獲益。
-
-### Gemini model（動態偵測，不自訂）
-
-透過 Gemini API 即時查詢可用模型清單，優先選 pro（更強），其次 flash。不讀 config 預設值。
+單點失效時自動降級：其他 PROXY 吸收失敗者的份額。
 
 ---
 
-## 部門常識
+## 架構
 
-每個部門都有自己的 `~/.shiftblame/common/<DEPT>.md`，由 PROXY 共議產出部門常識、秘書提煉跨專案通用常識（規則 + 認知）。
+### 循環圓
 
-### 秘書的常識
-
-| 情境 | 為什麼是秘書的常識 |
-|------|------------------|
-| **路由判錯**：需求推給了錯誤的部門導致重工 | 秘書職責就是判斷該推給誰 |
-| **退回判錯**：老闆說不 OK 時推給了錯誤的部門 | 秘書職責就是判斷根因在哪 |
-| **model 選錯**：高複雜度任務派了 haiku 導致品質低落 | 秘書職責就是評估認知複雜度 |
-| **巨頭組合選錯**：資訊型部門沒派 Gemini、實作型沒派 Codex | 秘書職責就是能力路由 |
-| **派工單缺欄位**：WORKTREE_PATH 或 BRANCH 空白仍派出 | 秘書是派工流程的閘門 |
-| **回報後未驗證 git**：agent 回報完成後未檢查分支/路徑 | 秘書的事後驗證是最後防線 |
-
-### 各部門的常識
-
-| 部門 | 職能 | 典型犯錯情境 |
-|------|------|-------------|
-| QA | 用戶業務邏輯的行為斷言定義（X→Y→Z，含 E2E 基本斷言，不寫程式碼） | 斷言遺漏、E2E 斷言缺失、格式不精確、斷言與需求不符 |
-| SEC | 資安稽核 + 工具篩選 + 隔離環境建置 + 環境管理規範 | 工具篩選不當、環境建置錯誤、安全遺漏 |
-| PRD | 市調 + 架構設計 + 翻譯斷言為驗收條件 + 定義 QC 可操作介面 + 測試區分 + **在 worktree 親自寫測試檔** + 實作計畫 | 驗收條件模糊、QC 可操作介面缺失、測試檔 parse error、E2E 測試缺失 |
-| DEV | TDD 開發（依計畫實作直到全綠，含 QC 可操作介面實作，commit 前語法檢查）+ **親自啟動應用驗證功能可運行** | 測試未全綠、介面未實作、commit 前未做語法檢查、測試全綠但未啟動驗證、引入新 bug |
-| QC | **親自啟動應用做穩健性攻擊**：對照 QA 原始品保條件做破壞性測試，挖掘 BUG、邊緣案例、業務邏輯斷裂 + 紅藍隊攻防（指標是抓出多少問題，不是通過多少規格） | 只做程式碼審查未啟動應用、照規格打勾不主動攻擊、邊緣案例遺漏、紅藍隊模擬不完整 |
-| MIS | 部署上線 + 專案內文件整理（REPO.md 重寫、README 同步） | 部署失敗、pipeline 配置錯誤、合併出包、REPO.md 遺漏重寫 |
-
----
-
-## 運作原理
-
-### 循環圓（標準作業流程）
-
-六個部門形成封閉循環，嚴格按順序執行：
+六個部門嚴格按序執行，形成封閉循環：
 
 ```
-        ┌─── QA（定義用戶業務邏輯的行為斷言 X→Y→Z）
-        │     可讀：僅自己
-        │
-        ├─── SEC（資安稽核 + 工具篩選 + 隔離環境建置）
-        │     可讀：自己 + QA
-        │
-        ├─── PRD（市調 + 架構 + 翻譯驗收條件 + 定義 QC 介面 + 寫測試 + 實作計畫）
-        │     可讀：自己 + QA + SEC
-        │
-        ├─── DEV（TDD 開發 → 全綠 + 親自啟動應用驗證，含 QC 介面實作與語法檢查）
-        │     可讀：自己 + QA + SEC + PRD
-        │
-        ├─── QC（穩健性攻擊 + 邊緣案例挖掘 + 業務邏輯流動 + 紅藍隊攻防）
-        │     可讀：自己 + QA + SEC + PRD + DEV
-        │
-        └─── MIS（部署上線 + 專案文件整理 — 最後一道防線）
-              可讀：全部（QA + SEC + PRD + DEV + QC + 自己）
-              │
-              └→ 回到 QA（下一輪）
+QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 ```
 
-### 資料存取限制（金字塔累積制）
+### 資料存取（金字塔累積制）
 
-每個部門可讀**自己 + 所有上游部門**的產出。越後面的部門可讀越多，MIS 讀全部。嚴禁讀下游部門。
-
-金字塔設計目的：
-- 部署後秘書清理所有產出，沒有「上一輪」文件，不存在跨輪存取需求
-- 每個部門直接讀所有上游原始產出，避免透過中間層轉述造成資訊失真
-- MIS 是最後一道防線，必須閱讀全部產出確認無誤才能部署，部署後完成專案內文件整理（REPO.md 重寫、README 同步）；秘書負責跨專案常識提煉與物理清理
+每個部門可讀**自己 + 所有上游**的產出。MIS 讀全部。
 
 | 部門 | 可讀範圍 |
 |---|---|
@@ -138,60 +55,77 @@ _一套 PROXY 共議常識的 Agents 開發框架_
 | PRD | 自己 + QA + SEC |
 | DEV | 自己 + QA + SEC + PRD |
 | QC | 自己 + QA + SEC + PRD + DEV |
-| MIS | 自己 + QA + SEC + PRD + DEV + QC（全部） |
+| MIS | 全部 |
+
+### 三巨頭能力定位
+
+| 巨頭 | 能力排序 | 強項 | PROXY agent |
+|---|---|---|---|
+| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `CLAUDE_PROXY` |
+| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `CODEX_PROXY` |
+| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合 | `GEMINI_PROXY` |
+
+### Model 路由
+
+| 來源 | 策略 |
+|---|---|
+| Claude | 秘書按認知複雜度指派（haiku / sonnet / opus） |
+| Codex | `codex debug models` 動態查詢，按 priority 取最新 |
+| Gemini | Gemini REST API 動態查詢，優先 pro > flash |
+
+### PROXY 共議通訊
+
+```
+<WORKTREE>/.proxy-sync/
+├── task.md              # 秘書下達的任務
+├── dept.md              # 部門定義（廣義職責 + 產出規格）
+├── claude/proposal.md   # Claude 分工提案
+├── codex/proposal.md    # Codex 分工提案
+├── gemini/proposal.md   # Gemini 分工提案
+├── consensus.md         # 三方共識
+├── claude/result.md     # Claude 執行結果
+├── codex/result.md      # Codex 執行結果
+└── gemini/result.md     # Gemini 執行結果
+```
 
 ### 秘書調度流程
 
 ```
- 老闆提出用戶需求
-      │
-      ▼
- ┌─────────────────────────┐
- │ 秘書判斷：方向明確嗎？  │
- └─────────┬───────────────┘
-           │
-   ┌───────┴────────┐
-   │                │
- 明確              不確定
-   │                │
-   ▼                ▼
- 原話留底      ┌──────────────────────┐
-   │           │ 諮詢模式             │
-   │           │ 結構化問答釐清方向   │
-   │           │ 確認後才派工         │
-   │           └──────────┬───────────┘
-   │                      │
-   │◄─────────────────────┘
-   ▼
- ┌──────────────────────────────────────────┐
- │ 評估認知複雜度 → 指派 Claude model      │
- │ 動態路由 → 決定巨頭組合（不硬編碼）     │
- │ 按循環圓順序派工                         │
- └─────────┬────────────────────────────────┘
-           │
-   ┌───────┴────────┐
-   │                │
-   ▼                ▼
- PROXY 派工     單點失效補救
- ┌───┬───┐      ┌──────────────┐
- │   │   │      │ rate limit   │→ 降級/改派
- ▼   ▼   │      │ quota        │→ 降級/改派
-CL  CX  │      │ timeout      │→ 重試/改派
- │   │   │      │ CLI missing  │→ 標記不可用
- ▼   ▼   │      └──────────────┘
- 交叉比對│
- │       │
- ▼       ▼
- 呈報老闆
+老闆提需求 → 秘書判斷方向是否明確
+  ├─ 不明確：諮詢模式（結構化問答收斂）
+  └─ 明確：評估認知複雜度 → 指派 model
+      → QA→SEC→PRD→DEV→QC→MIS 逐一部門派工
+          → 每部門：三 PROXY 共議 → 執行 → 回報
+          → 秘書交叉比對 → 呈報老闆
+      → MIS 回報 SUCCESS → 常識提煉 + 物理清理
 ```
 
-CL = Claude agent, GM = Gemini agent, CX = Codex agent
+---
 
-### 檔案結構
+## 部門職能
+
+每個部門的定義檔只包含**廣義職責**和**產出規格**，權限由秘書在派工時動態注入。
+
+| 部門 | 職能 | 產出 |
+|---|---|---|
+| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z），不寫程式碼 | `~/.shiftblame/<repo>/QA.md` |
+| **SEC** | 資安稽核 + 工具篩選 + worktree 建置 + 隔離環境 | `~/.shiftblame/<repo>/SEC.md` |
+| **PRD** | 市調 + 架構設計 + 驗收條件 + 定義 QC 介面 + 實作計畫 | `~/.shiftblame/<repo>/PRD.md` |
+| **DEV** | TDD 開發直到全綠 + 親自啟動應用驗證 + 語法檢查 | `~/.shiftblame/<repo>/DEV.md` |
+| **QC** | 穩健性攻擊 + 邊緣案例挖掘 + 紅藍隊攻防 | `~/.shiftblame/<repo>/QC.md` |
+| **MIS** | 部署上線 + REPO.md 重寫 + README 同步 + worktree 清理 | `~/.shiftblame/<repo>/MIS.md` |
+
+### 部門常識
+
+每個部門的跨專案通用常識存放在 `~/.shiftblame/common/<DEPT>.md`，由 PROXY 共議產出、秘書提煉。包含規則（做什麼）和認知（為什麼有效）。
+
+---
+
+## 檔案結構
 
 ```
 ~/.shiftblame/
-├── common/                                      # 跨 repo 共用經驗
+├── common/                  # 跨 repo 部門常識
 │   ├── DEV.md
 │   ├── QA.md
 │   ├── QC.md
@@ -199,88 +133,54 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 │   ├── MIS.md
 │   ├── PRD.md
 │   └── SECRETARY.md
-└── <repo>/
-    ├── QA.md                                    # 品保產出（flat 檔案，每部門一個）
-    ├── SEC.md                                   # 資安產出
-    ├── PRD.md                                   # 企劃產出
-    ├── DEV.md                                   # 開發產出
-    ├── QC.md                                    # 品管產出
-    ├── MIS.md                                   # 部署產出
-    └── REPO.md                                  # 專案知識（MIS 最終整理）
+└── <repo>/                  # 各 repo 產出（flat 檔案）
+    ├── QA.md
+    ├── SEC.md
+    ├── PRD.md
+    ├── DEV.md
+    ├── QC.md
+    ├── MIS.md
+    └── REPO.md              # 專案知識（MIS 最終整理）
 
-~/.worktree/<repo>/<slug>/                       # shiftblame 自定義 worktree
-    └── .proxy-sync/                             # PROXY 協調通訊目錄
+~/.worktree/<repo>/<slug>/   # worktree（agents 工作空間）
+    └── .proxy-sync/         # PROXY 協調通訊
 
-<repo>/
-├── .shiftblame/                                 # symlink 目錄
-│   ├── <repo> → ~/.shiftblame/<repo>/
+<repo>/                      # 專案根目錄（老闆 IDE 看到）
+├── .shiftblame/             # symlink → ~/.shiftblame/<repo>/
 │   └── common → ~/.shiftblame/common/
-└── .worktree/
-    └── <slug> → ~/.worktree/<repo>/<slug>/
+└── .worktree/               # symlink → ~/.worktree/<repo>/
 ```
+
+> **注意**：`.shiftblame/` 和 `.worktree/` symlink 建在**專案根目錄**，是給老闆在 IDE 瀏覽用的。agents 直接用絕對路徑操作，不依賴這些 symlink。
 
 ---
 
 ## 安裝
 
-### 透過 Claude Code Marketplace Plugin
-
 ```bash
-# 加入 marketplace（若尚未加入）
+# 透過 Claude Code Marketplace Plugin
 /plugin marketplace add teps3105/shiftblame
-
-# 安裝 plugin
 /plugin install shiftblame
 ```
 
-### 初始化
-
-首次執行 `/secretary` 時，秘書會自動偵測並初始化 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。已有內容的 REPO.md 和部門常識檔會保留，空目錄才初始化。
+首次執行 `/secretary` 時自動初始化 `~/.shiftblame/`、專案根目錄 symlink、`.gitignore`。
 
 ---
 
 ## 使用
 
-### 直接對話
-
-每次對話開始時，輸入 `/secretary` 啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
-
-### 派工流程
+輸入 `/secretary` 啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
 
 ```
-老闆 → 秘書（能力路由 + 選 model）→ QA→SEC→PRD→DEV→QC→MIS 完整循環 → 秘書（彙報）→ 老闆
+老闆 → /secretary → 秘書（路由 + 選 model）
+  → QA→SEC→PRD→DEV→QC→MIS 完整循環
+  → 秘書（彙報）→ 老闆
 ```
 
-1. 秘書收到老闆原話，評估認知複雜度
-2. 所有需求一律從 QA 起步，走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點
-3. 能力路由決定每個部門的巨頭組合（由秘書動態決定，不硬編碼）
-4. 老闆 OK 後，按循環圓順序逐一部門派工
-5. 每個部門透過 PROXY agent 路由到對應 AI CLI（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）
-6. 每個部門只能讀自己 + 所有上游的產出（金字塔累積制）
-7. 主管親自執行所有職能，完成後回報
-8. 秘書交叉比對 PROXY 回報，分歧呈報老闆裁決
-9. 秘書在主管回報後執行 `git status && git branch --show-current` 驗證改動在 worktree、分支正確
-10. 秘書收齊所有主管回報後，向老闆做最終彙報
+老闆在過程中只需：
 
-### 秘書接手後
-
-1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化
-2. 掃描 agents 取得可用部門清單
-3. 保存你的**原話逐字稿**
-4. 評估認知複雜度，自動指派 Claude model；動態決定巨頭組合
-5. 每個部門透過 PROXY agent 路由到 AI CLI，完成後用 AskUserQuestion 回報結果
-6. 建立 worktree 隔離環境
-7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>.md`
-8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
-9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-10. 秘書負責寫入部門常識
-11. MIS 在部署階段完成專案內文件整理：重寫 REPO.md、同步 README
-12. MIS 回報 SUCCESS 後，秘書執行循環收尾：常識提煉 + 物理清理
-
-你在過程中只需要：
-
-- **OK**：繼續推
-- **不 OK + 原因**：秘書會判斷該推給哪個部門重做
+- **OK**：繼續
+- **不 OK + 原因**：秘書判斷推給哪個部門重做
 
 ---
 
@@ -289,17 +189,18 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 ```
 shiftblame/
 ├── .claude-plugin/
-│   └── plugin.json        # Plugin manifest
+│   ├── plugin.json
+│   └── marketplace.json
 ├── agents/
-│   ├── QA.md              # 品保主管（廣義職責 + 產出規格）
+│   ├── QA.md              # 品保主管
 │   ├── SEC.md             # 資安主管
 │   ├── PRD.md             # 企劃主管
 │   ├── DEV.md             # 開發主管
 │   ├── QC.md              # 品管主管
 │   ├── MIS.md             # MIS 主管
-│   ├── CLAUDE_PROXY.md    # Claude CLI 代理（啟動 claude -p 並回報）
-│   ├── CODEX_PROXY.md     # Codex CLI 代理（啟動 codex exec 並回報）
-│   └── GEMINI_PROXY.md    # Gemini CLI 代理（啟動 gemini -p 並回報）
+│   ├── CLAUDE_PROXY.md    # Claude CLI 代理
+│   ├── CODEX_PROXY.md     # Codex CLI 代理
+│   └── GEMINI_PROXY.md    # Gemini CLI 代理
 ├── skills/
 │   └── secretary/
 │       └── SKILL.md       # 秘書 skill
