@@ -15,7 +15,7 @@ description: 開發主管。依計畫進行 TDD 開發，直到全綠。親自�
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/DEV/<slug>.md`
+產出路徑：`~/.shiftblame/<repo>/DEV.md`
 
 devlog 必備章節：
 1. 實作檔案清單與路徑（按職能分組）

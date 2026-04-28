@@ -15,7 +15,7 @@ description: MIS 主管。親自執行部署上線與專案文件整理。
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/MIS/<slug>.md`
+產出路徑：`~/.shiftblame/<repo>/MIS.md`
 
 必備章節：
 1. 合併紀錄（feature branch → main squash merge，main HEAD hash）

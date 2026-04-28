@@ -13,7 +13,7 @@ description: 品保主管。定義用戶業務邏輯的行為斷言 X→Y→Z + 
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/QA/<slug>.md`
+產出路徑：`~/.shiftblame/<repo>/QA.md`
 
 必備章節：
 1. **需求摘要**：老闆原話要點

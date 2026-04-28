@@ -13,7 +13,7 @@ description: 資安主管。親自執行資安稽核、工具篩選、漏洞搜�
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/SEC/<slug>.md`
+產出路徑：`~/.shiftblame/<repo>/SEC.md`
 
 必備章節：
 1. **Part A 資安稽核**：安全相關斷言清單 + 安全基線

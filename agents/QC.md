@@ -16,7 +16,7 @@ description: 品管主管。親自啟動應用，對照 QA 原始品保條件做
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/QC/<slug>.md`
+產出路徑：`~/.shiftblame/<repo>/QC.md`
 
 必備章節：
 1. 開發環境端到端測試結果（含操作佐證）

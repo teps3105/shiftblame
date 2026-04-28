@@ -68,7 +68,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ## 誰的鍋
 
-每個部門都有自己的 `~/.shiftblame/blame/<DEPT>/BLAME.md`，秘書負責寫入犯錯紀錄、提煉跨專案通用常識（規則 + 認知）。
+每個部門都有自己的 `~/.shiftblame/common/<DEPT>.md`，秘書負責寫入犯錯紀錄、提煉跨專案通用常識（規則 + 認知）。
 
 ### 秘書的鍋
 
@@ -191,26 +191,30 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 
 ```
 ~/.shiftblame/
-├── blame/                                       # 鍋紀錄（所有 repo 共用）
-│   ├── DEV/BLAME.md
-│   ├── QA/BLAME.md
-│   ├── QC/BLAME.md
-│   ├── SEC/BLAME.md
-│   ├── MIS/BLAME.md
-│   ├── PRD/BLAME.md
-│   └── SECRETARY/BLAME.md
+├── common/                                      # 跨 repo 共用經驗
+│   ├── DEV.md
+│   ├── QA.md
+│   ├── QC.md
+│   ├── SEC.md
+│   ├── MIS.md
+│   ├── PRD.md
+│   └── SECRETARY.md
 └── <repo>/
-    ├── {MIS}/<slug>.md
-    ├── {DEV,QA}/<slug>.md
-    ├── {PRD,QC,SEC}/<slug>.md
-    └── REPO.md
+    ├── QA.md                                    # 品保產出（flat 檔案，每部門一個）
+    ├── SEC.md                                   # 資安產出
+    ├── PRD.md                                   # 企劃產出
+    ├── DEV.md                                   # 開發產出
+    ├── QC.md                                    # 品管產出
+    ├── MIS.md                                   # 部署產出
+    └── REPO.md                                  # 專案知識（MIS 最終整理）
 
 ~/.worktree/<repo>/<slug>/                       # shiftblame 自定義 worktree
+    └── .proxy-sync/                             # PROXY 協調通訊目錄
 
 <repo>/
 ├── .shiftblame/                                 # symlink 目錄
 │   ├── <repo> → ~/.shiftblame/<repo>/
-│   └── blame → ~/.shiftblame/blame/
+│   └── common → ~/.shiftblame/common/
 └── .worktree/
     └── <slug> → ~/.worktree/<repo>/<slug>/
 ```
@@ -266,7 +270,7 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 4. 評估認知複雜度，自動指派 Claude model；動態決定巨頭組合
 5. 每個部門透過 PROXY agent 路由到 AI CLI，完成後用 AskUserQuestion 回報結果
 6. 建立 worktree 隔離環境
-7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`
+7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>.md`
 8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
 9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
 10. 秘書負責寫入犯錯紀錄
