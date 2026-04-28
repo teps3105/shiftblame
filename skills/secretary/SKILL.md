@@ -38,7 +38,7 @@ description: >-
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
-19. **雙體系發散（預設雙模式，圖靈×馮諾伊曼）**：每個部門派工時預設同步啟動 Codex CLI。兩個體系**同一問題、不同方向發散**——Claude 為圖靈派（可計算性優先、演繹推理、追求邏輯完備），Codex 為馮諾伊曼派（可建造性優先、歸納推理、追求工程穩健）。秘書在各自的 prompt 開頭注入方向引導（見 codex-cross skill）。產碼部門建立獨立 `-codex` worktree 避免衝突。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程。老闆可在預審時選擇「單模式」跳過 Codex。秘書自動指派兩個體系的 model，不提供 model 選項讓老闆選
+19. **雙體系發散（預設雙模式，圖靈×馮諾伊曼）**：每個部門派工時預設同步啟動 CODEX 代理 agent。兩個體系**同一問題、不同方向發散**——Claude 為圖靈派（可計算性優先、演繹推理、追求邏輯完備），Codex 為馮諾伊曼派（可建造性優先、歸納推理、追求工程穩健）。秘書在各自的 prompt 開頭注入方向引導。產碼部門建立獨立 `-codex` worktree 避免衝突。CODEX 代理透過 `codex exec` 啟動 Codex CLI，完成後讀取產出並回報秘書。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程。秘書自動指派兩個體系的 model，不提供 model 選項讓老闆選
 
 ## 部門完成閘門機制（結構性強制）
 
@@ -118,7 +118,7 @@ AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對
 SLUG:          (必填)
 DEPT:          (必填)
 MODEL:         (必填：haiku|sonnet|opus — Claude agent 用)
-CODEX_MODEL:   (必填：由 Codex 能力偵測協議自動取得，不硬編碼。Codex 不可用或單模式時為 N/A)
+CODEX_MODEL:   (CODEX 代理 agent 自動偵測，秘書不需預填。單模式時為 N/A)
 WORKTREE_PATH: ~/.worktree/<repo>/<slug>/   (產碼部門 PRD/DEV/QC/MIS 必填，其他 N/A)
 BRANCH:        feat/<slug>                   (產碼部門必填，其他 N/A)
 UPSTREAM:      ~/.shiftblame/<repo>/<上游部門>/
@@ -154,28 +154,7 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 | **中** | sonnet | 自動偵測 | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
 | **高** | opus | 自動偵測 | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
 
-**Codex model 由能力偵測協議自動決定**（見 codex-cross skill「CLI 能力偵測協議」）：每輪首次派工前執行 `codex exec --help` 及讀取 `~/.codex/config.toml`，取得 Codex 當前預設模型。Codex 有自己的模型體系，與 Claude 的 haiku/sonnet/opus 是不同架構，不硬編碼映射——直接用 Codex 自己的預設配置，讓兩個體系各用最擅長的模型，才是真正的互補。
-
-### Codex model 偵測步驟（每輪首次派工前執行一次）
-
-```bash
-# 1. CLI 可用性
-which codex || echo "CODEX_UNAVAILABLE"
-
-# 2. 最新可用模型（即時查詢 API 目錄，取 priority 最高者）
-codex debug models 2>&1 | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-models = [m for m in data['models'] if m.get('visibility') != 'hide']
-models.sort(key=lambda m: m.get('priority', 999))
-print(models[0]['slug'] if models else 'NO_MODEL')
-"
-
-# 3. 動態偵測可用 flag（組裝指令用）
-codex exec --help 2>&1
-```
-
-偵測結果填入派工單 `CODEX_MODEL` 欄位。Codex 不可用時 `CODEX_MODEL = N/A`，自動降級為單模式。步驟 2 失敗時 fallback 讀 `~/.codex/config.toml` 的 `model` 欄位。
+**Codex model 由 CODEX 代理 agent 自動偵測**：CODEX 代理啟動時自行執行 `codex debug models` 取得最新可用模型，不需要秘書預先偵測。Codex 有自己的模型體系，與 Claude 的 haiku/sonnet/opus 是不同架構，不硬編碼映射——讓 CODEX 代理動態偵測，兩個體系各用最擅長的模型，才是真正的互補。
 
 ### 複雜度評估維度
 
@@ -197,19 +176,19 @@ codex exec --help 2>&1
 | QC | 例行穩健性攻擊 | 標準攻擊 + 邊緣案例挖掘 + 紅藍隊 | 深度混亂測試 + 複雜業務邏輯流動驗證 + 紅藍隊 |
 | MIS | 單一部署 | 標準 pipeline + 部署 | 複雜環境 / 合併衝突 |
 
-### 派工時的同步雙體系呼叫
+### 派工時的同步雙 Agent 呼叫
 
-雙模式下，秘書在同一則訊息中同時發出 `Agent()` + `Bash()` tool call：
+雙模式下，秘書在同一則訊息中同時發出兩個 `Agent()` tool call：
 
 ```python
-# Claude（圖靈派）— Agent tool，用 Claude 自己的模型體系
+# Claude（圖靈派）— 部門主管 agent，用 Claude 自己的模型體系
 Agent(subagent_type="shiftblame:<DEPT>", prompt=圖靈派prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
 
-# Codex（馮諾伊曼派）— Bash tool 直接呼叫 codex exec，用 Codex 自己的模型體系
-Bash(command="codex exec -m <CODEX_MODEL> <flags> '<馮諾伊曼派prompt>'", timeout=300000, run_in_background=true)
+# Codex（馮諾伊曼派）— CODEX 代理 agent，內部啟動 codex exec，用 Codex 自己的模型體系
+Agent(subagent_type="shiftblame:CODEX", prompt=codex代理prompt, model="haiku", name="<slug>-codex")
 ```
 
-兩個體系各自用自己的模型、自己的 agent 系統，不互相包裝。同一則訊息並行 = 真正同步。
+兩個 Agent 各自回報，秘書收到雙方回報後交叉比對。CODEX 代理的 model 用 haiku（代理只負責組裝指令 + 執行 + 讀檔 + 回報，認知負荷極低），實際 AI 工作由 Codex CLI 用自己的模型完成。
 
 ## 生命週期自動化
 
@@ -332,6 +311,8 @@ fi
 
 ### 循環圓流程
 
+每個部門同步派出 Claude agent（圖靈派）+ CODEX agent（馮諾伊曼派），雙方各自回報後秘書交叉比對。
+
 | 順序 | 部門 | 做什麼 | 可讀上游 | 產出寫入 |
 |---|---|---|---|---|
 | 1 | QA | 定義用戶業務邏輯的行為斷言 X→Y→Z（含 E2E 基本斷言，不寫程式碼，不區分測試項目）+ 市場調研。輸入：秘書的問題定位結果 | 無（首位） | `~/.shiftblame/<repo>/QA/` |
@@ -340,6 +321,30 @@ fi
 | 4 | DEV | 依計畫 TDD 開發（含 QC 可操作介面實作），直到全綠 + **親自啟動應用驗證功能可運行**，commit 前語法檢查 | QA + SEC + PRD | `~/.shiftblame/<repo>/DEV/` + worktree |
 | 5 | QC | **親自啟動應用做穩健性攻擊**：對照 QA 原始品保條件做破壞性測試，挖掘 BUG、邊緣案例、業務邏輯斷裂 + 紅藍隊攻防（不重複跑自動化綠燈，指標是抓出多少問題） | QA + SEC + PRD + DEV | `~/.shiftblame/<repo>/QC/` |
 | 6 | MIS | 部署上線（最後一道防線，閱讀所有部門產出確認無誤後才執行） | QA + SEC + PRD + DEV + QC（全部） | `~/.shiftblame/<repo>/MIS/` |
+
+### 每個部門的雙 Agent 回報流程
+
+```
+秘書同步派出 Claude agent + CODEX agent
+         │                    │
+         ▼                    ▼
+   Claude 主管回報       CODEX 代理回報
+   （圖靈派產出）        （馮諾伊曼派產出）
+         │                    │
+         └────────┬───────────┘
+                  ▼
+          秘書交叉比對
+                  │
+                  ▼
+     AskUserQuestion 回報老闆
+                  │
+         ┌────────┴────────┐
+         │                 │
+     老闆批准          老闆裁決分歧
+         │                 │
+         ▼                 ▼
+    推進下一部門     記錄裁決 → 推進
+```
 
 ### 資料存取限制（金字塔累積制）
 

@@ -279,12 +279,11 @@ shiftblame/
 │   ├── PRD.md             # 企劃主管
 │   ├── DEV.md             # 開發主管
 │   ├── QC.md              # 品管主管
-│   └── MIS.md             # MIS 主管
+│   ├── MIS.md             # MIS 主管
+│   └── CODEX.md           # Codex 代理（啟動 Codex CLI 並回報）
 ├── skills/
-│   ├── secretary/
-│   │   └── SKILL.md       # 秘書 skill
-│   └── codex-cross/
-│       └── SKILL.md       # 圖靈×馮諾伊曼雙體系發散驗證 skill（預設啟用）
+│   └── secretary/
+│       └── SKILL.md       # 秘書 skill
 ├── LICENSE
 └── README.md
 ```
