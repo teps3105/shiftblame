@@ -38,7 +38,7 @@ description: >-
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
-19. **Codex 並行交叉（選用）**：老闆明確要求時，每個部門派工時同步啟動 Codex CLI 做相同任務（完整上游上下文、不約束手段、動態偵測 CLI 能力不自訂功能清單）。產碼部門建立獨立 `-codex` worktree 避免衝突。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程
+19. **Codex 並行交叉（預設雙模式）**：每個部門派工時預設同步啟動 Codex CLI 做相同任務（完整上游上下文、不約束手段、動態偵測 CLI 能力不自訂功能清單）。產碼部門建立獨立 `-codex` worktree 避免衝突。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程。老闆可在預審時選擇「單模式」跳過 Codex。秘書自動指派兩個體系的 model，不提供 model 選項讓老闆選
 
 ## 預審閘門機制（雙重結構性強制）
 
@@ -60,11 +60,11 @@ description: >-
 ```
 AskUserQuestion({
   questions: [{
-    question: "準備派出 [部門]：[一句話任務]。Model: [haiku/sonnet/opus]",
+    question: "準備派出 [部門]：[一句話任務]。Claude: [model], Codex: [model]",
     header: "派工預審",
     options: [
-      { label: "OK", description: "同意派工" },
-      { label: "換 model", description: "同意方向但調整 model" },
+      { label: "OK", description: "同意雙模式並行派工（Claude + Codex）" },
+      { label: "單模式", description: "只派 Claude，不啟動 Codex" },
       { label: "暫停", description: "先不派，有問題要討論" }
     ],
     multiSelect: false
@@ -76,10 +76,10 @@ AskUserQuestion({
 AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對不可在同一 turn 內呼叫 Agent()。** turn boundary 是第二道結構閘門：老闆不發訊息 → 秘書不可能繼續 → Agent() 結構上不可能被呼叫。
 
 **步驟 3 — 判讀老闆下一則訊息**：
-- 明確批准（「好」「go」「派出」「確認」「ok」等肯定語）→ 步驟 4
+- 明確批准（「好」「go」「派出」「確認」「ok」等肯定語）→ 步驟 4（雙模式）
+- 選擇「單模式」→ 步驟 4（只啟動 Claude agent，不啟動 Codex）
 - 追問或修改 → 回應討論，回到步驟 1 重新預審
 - 取消或暫停 → 停下，不呼叫 Agent()
-- 「換 model」→ 調整後回到步驟 1
 
 **步驟 4 — 派出**：填完整派工單 → `Agent()` 派出
 
@@ -94,11 +94,13 @@ AskUserQuestion 回傳後，秘書輸出覆述文字然後結束 turn。**絕對
 === 派工單 ===
 SLUG:          (必填)
 DEPT:          (必填)
-MODEL:         (必填：haiku|sonnet|opus)
+MODEL:         (必填：haiku|sonnet|opus — Claude agent 用)
+CODEX_MODEL:   (必填：由 Codex 能力偵測協議自動取得，不硬編碼。Codex 不可用或單模式時為 N/A)
 WORKTREE_PATH: ~/.worktree/<repo>/<slug>/   (產碼部門 PRD/DEV/QC/MIS 必填，其他 N/A)
 BRANCH:        feat/<slug>                   (產碼部門必填，其他 N/A)
 UPSTREAM:      ~/.shiftblame/<repo>/<上游部門>/
 OUTPUT:        ~/.shiftblame/<repo>/<DEPT>/<slug>.md
+MODE:          dual|single                   (預設 dual，老闆選單模式時填 single)
 
 === Worktree 建立步驟（產碼部門適用，由 SEC 執行）===
 1. git worktree add ~/.worktree/<repo>/<slug> -b feat/<slug>
@@ -119,15 +121,32 @@ OUTPUT:        ~/.shiftblame/<repo>/<DEPT>/<slug>.md
 - ❌「你不執行任何東西」
 - ❌「逐條驗證 PRD 翻譯後的驗收條件是否符合」（QC 不是照單打勾的驗收員）
 
-## 認知複雜度 model 路由
+## 認知複雜度 model 路由（雙模式）
 
-秘書在派工時，根據任務的認知複雜度決定主管使用的 model：
+秘書在派工時，根據任務的認知複雜度**自動指派 Claude model**，**動態偵測 Codex model**。不提供選項讓老闆選：
 
-| 認知複雜度 | model | 判斷依據 |
-|---|---|---|
-| **低** | haiku | 簡單明確的任務：已知模式的 CRUD、例行性檢查、格式化、簡單配置 |
-| **中** | sonnet | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
-| **高** | opus | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
+| 認知複雜度 | Claude model | Codex model | 判斷依據 |
+|---|---|---|---|
+| **低** | haiku | 自動偵測 | 簡單明確的任務：已知模式的 CRUD、例行性檢查、格式化、簡單配置 |
+| **中** | sonnet | 自動偵測 | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
+| **高** | opus | 自動偵測 | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
+
+**Codex model 由能力偵測協議自動決定**（見 codex-cross skill「CLI 能力偵測協議」）：每輪首次派工前執行 `codex exec --help` 及讀取 `~/.codex/config.toml`，取得 Codex 當前預設模型。Codex 有自己的模型體系，與 Claude 的 haiku/sonnet/opus 是不同架構，不硬編碼映射——直接用 Codex 自己的預設配置，讓兩個體系各用最擅長的模型，才是真正的互補。
+
+### Codex model 偵測步驟（每輪首次派工前執行一次）
+
+```bash
+# 1. CLI 可用性
+which codex || echo "CODEX_UNAVAILABLE"
+
+# 2. 預設模型（從 config 讀取，不硬編碼）
+grep '^model\s*=' ~/.codex/config.toml | head -1 | sed 's/.*=\s*"\(.*\)"/\1/'
+
+# 3. 動態偵測可用 flag（組裝指令用）
+codex exec --help 2>&1
+```
+
+偵測結果填入派工單 `CODEX_MODEL` 欄位。Codex 不可用時 `CODEX_MODEL = N/A`，自動降級為單模式。
 
 ### 複雜度評估維度
 
@@ -152,7 +171,11 @@ OUTPUT:        ~/.shiftblame/<repo>/<DEPT>/<slug>.md
 ### 派工時的 model 參數
 
 ```python
+# Claude agent（秘書依認知複雜度指派）
 Agent(subagent_type="<DEPT>", prompt=任務說明, model="<haiku|sonnet|opus>")
+
+# Codex CLI（背景執行，模型由能力偵測取得，不自訂）
+codex exec -m "$CODEX_MODEL" ... (CODEX_MODEL = 偵測到的預設模型)
 ```
 
 ## 生命週期自動化
