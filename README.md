@@ -4,17 +4,17 @@
 
 ### 推鍋
 
-_一套明確責任歸屬的 Agents 開發框架_
+_一套 PROXY 共議常識的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#誰的鍋)
+[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#部門常識)
 [![Skills](https://img.shields.io/badge/skills-2-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
 > _「這不是我的鍋。」_
 
-**[誰的鍋](#誰的鍋)** · **[運作原理](#運作原理)** · **[安裝](#安裝)** · **[使用](#使用)**
+**[部門常識](#部門常識)** · **[運作原理](#運作原理)** · **[安裝](#安裝)** · **[使用](#使用)**
 
 </div>
 
@@ -22,7 +22,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門透過三巨頭 **PROXY agent**（CLAUDE_PROXY / CODEX_PROXY / GEMINI_PROXY）路由任務到對應的 AI CLI。秘書動態決定巨頭組合，不硬編碼——最優組合由實務執行判定。單點失效時自動降級補救。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。
 
-還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
+還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再派工。
 
 ---
 
@@ -66,13 +66,13 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-## 誰的鍋
+## 部門常識
 
-每個部門都有自己的 `~/.shiftblame/common/<DEPT>.md`，秘書負責寫入犯錯紀錄、提煉跨專案通用常識（規則 + 認知）。
+每個部門都有自己的 `~/.shiftblame/common/<DEPT>.md`，由 PROXY 共議產出部門常識、秘書提煉跨專案通用常識（規則 + 認知）。
 
-### 秘書的鍋
+### 秘書的常識
 
-| 情境 | 為什麼是秘書的鍋 |
+| 情境 | 為什麼是秘書的常識 |
 |------|------------------|
 | **路由判錯**：需求推給了錯誤的部門導致重工 | 秘書職責就是判斷該推給誰 |
 | **退回判錯**：老闆說不 OK 時推給了錯誤的部門 | 秘書職責就是判斷根因在哪 |
@@ -81,7 +81,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 | **派工單缺欄位**：WORKTREE_PATH 或 BRANCH 空白仍派出 | 秘書是派工流程的閘門 |
 | **回報後未驗證 git**：agent 回報完成後未檢查分支/路徑 | 秘書的事後驗證是最後防線 |
 
-### 各部門的鍋
+### 各部門的常識
 
 | 部門 | 職能 | 典型犯錯情境 |
 |------|------|-------------|
@@ -158,7 +158,7 @@ _一套明確責任歸屬的 Agents 開發框架_
  原話留底      ┌──────────────────────┐
    │           │ 諮詢模式             │
    │           │ 結構化問答釐清方向   │
-   │           │ 確認後才推鍋         │
+   │           │ 確認後才派工         │
    │           └──────────┬───────────┘
    │                      │
    │◄─────────────────────┘
@@ -235,7 +235,7 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 
 ### 初始化
 
-首次執行 `/secretary` 時，秘書會自動偵測並初始化 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。已有內容的 REPO.md 和 BLAME.md 會保留，空目錄才初始化。
+首次執行 `/secretary` 時，秘書會自動偵測並初始化 `~/.shiftblame/` 完整目錄結構、repo 內 symlink、檢查 `.gitignore`。已有內容的 REPO.md 和部門常識檔會保留，空目錄才初始化。
 
 ---
 
@@ -273,7 +273,7 @@ CL = Claude agent, GM = Gemini agent, CX = Codex agent
 7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>.md`
 8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
 9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
-10. 秘書負責寫入犯錯紀錄
+10. 秘書負責寫入部門常識
 11. MIS 在部署階段完成專案內文件整理：重寫 REPO.md、同步 README
 12. MIS 回報 SUCCESS 後，秘書執行循環收尾：常識提煉 + 物理清理
 
@@ -311,6 +311,6 @@ shiftblame/
 
 ## 授權
 
-> _「倉庫已經發出來了，接下來怎麼用就不是我的鍋了。」_
+> _「倉庫已經發出來了，接下來的常識就是你們自己的了。」_
 
 MIT
