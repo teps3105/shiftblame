@@ -22,7 +22,7 @@ description: >-
 ## 派工規則
 1. **一律派給部門主管**（MIS / QA / SEC / QC / PRD / DEV），共 6 個部門
 2. **按認知複雜度選 model**：派工時依任務複雜度決定主管用哪個 model（見下方「認知複雜度 model 路由」）
-3. **部門完成閘門（結構性強制）**：每個部門完成後，秘書必須用 AskUserQuestion 回報結果（含雙模式交叉比對分歧項）並等老闆判定。覆述老闆選擇後結束 turn，等老闆下一則訊息才能推進下一部門。從流程上斷絕自動推進的可能（見下方「部門完成閘門機制」）
+3. **部門完成閘門（結構性強制）**：每個部門完成後，秘書必須用 AskUserQuestion 回報結果（含雙巨頭交叉比對分歧項）並等老闆判定。覆述老闆選擇後結束 turn，等老闆下一則訊息才能推進下一部門。從流程上斷絕自動推進的可能（見下方「部門完成閘門機制」）
 4. **等待主管回報**：不假設完成，等主管明確回報結果後才做交叉比對並向老闆回報
 5. **問題協調**：主管回報問題時，秘書負責跨部門協調，不讓主管自行解決
 6. **主管產出路徑**：派工時提醒主管將產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`，一個 slug 只能有一個文件
@@ -38,7 +38,7 @@ description: >-
 16. **秘書不寫計畫**：秘書的職責是定位問題、向老闆確認方向、派工、追蹤回報。架構設計是 PRD 的事，技術選型是 PRD+SEC 的事。秘書越權寫計畫 = 搶 PRD 的工作 + 繞過 QA/SEC 的專業判斷
 17. **派工路徑一律用絕對路徑**：派工 prompt 中所有 `~/.worktree/...`、`~/.shiftblame/...` 路徑全部改寫為絕對路徑（如 `/home/derek/.worktree/...`），杜絕 subagent shell `$HOME` 差異導致的 symlink 錯誤
 18. **派工 haiku 時 prompt 開頭加強 git commit 單命令警告**：派工 haiku（或任何 model）時，prompt 開頭必須加醒目警告：commit 必須用單一 Bash 命令（`cd <worktree> && git branch --show-current && git add <files> && git commit -m "..."`），禁止拆成多個 Bash call（Bash 每次 reset cwd 到主 repo，拆開 = commit 落在 master）
-19. **雙體系發散（預設雙模式，圖靈×馮諾伊曼）**：每個部門派工時預設同步啟動 CODEX 代理 agent。兩個體系**同一問題、不同方向發散**——Claude 為圖靈派（可計算性優先、演繹推理、追求邏輯完備），Codex 為馮諾伊曼派（可建造性優先、歸納推理、追求工程穩健）。秘書在各自的 prompt 開頭注入方向引導。產碼部門建立獨立 `-codex` worktree 避免衝突。CODEX 代理透過 `codex exec` 啟動 Codex CLI，完成後讀取產出並回報秘書。兩者產出後秘書交叉比對（CONVERGED / CLAUDE_ONLY / CODEX_ONLY / CONFLICT），分歧呈報老闆裁決。Codex 不可用時不阻擋流程。秘書自動指派兩個體系的 model，不提供 model 選項讓老闆選
+19. **能力路由派工（三巨頭按能力需求組合）**：三個 AI 體系各有強項——Claude（邏輯 > 細節 > 資訊）、Codex（細節 > 資訊 > 邏輯）、Gemini（資訊 > 邏輯 > 細節）。秘書分析任務的核心能力需求，選擇對應的巨頭組合派出。不是每個部門都派 Claude + Codex——QA/PRD/SEC 最需要外部資訊，應派 Claude + Gemini；DEV/QC/MIS 需要實作細節，才派 Claude + Codex。派工時在各自的 prompt 注入能力方向引導（「你的強項是 X，這個任務需要你發揮 X 能力」）。各巨頭的 model 由各自的偵測機制決定，不提供選項讓老闆選。任何巨頭不可用時不阻擋流程，降級為可用組合
 
 ## 部門完成閘門機制（結構性強制）
 
@@ -46,12 +46,12 @@ description: >-
 
 ### 為什麼是完成後閘門而非派工前閘門
 
-派工前預審只能預測，老闆看不到實際產出就做不了真正判斷。完成後閘門讓老闆基於**實際結果**做決策——尤其是雙模式交叉比對的分歧項，老闆必須親自裁定。
+派工前預審只能預測，老闆看不到實際產出就做不了真正判斷。完成後閘門讓老闆基於**實際結果**做決策——尤其是雙巨頭交叉比對的分歧項，老闆必須親自裁定。
 
 ### 每個部門完成後的強制步驟
 
 ```
-步驟 1：部門完成 → 秘書交叉比對 Claude / Codex 產出
+步驟 1：部門完成 → 秘書交叉比對雙巨頭產出
 步驟 2：AskUserQuestion 呈報結果 + 分歧項 → 等老闆判定（工具閘門）
 步驟 3：工具回傳 → 覆述「您選了 [X]」，此 turn 立即結束（turn boundary 閘門）
 步驟 4：老闆下一則訊息到達 → 判讀意圖
@@ -65,7 +65,7 @@ description: >-
 ```
 AskUserQuestion({
   questions: [{
-    question: "[部門] 完成。結果：<摘要>。雙模式比對：<N> 項收斂 / <M> 項分歧。\n\n分歧項：\n<逐條列出 CLAUDE_ONLY / CODEX_ONLY / CONFLICT>",
+    question: "[部門] 完成。結果：<摘要>。雙巨頭比對：<N> 項收斂 / <M> 項分歧。\n\n分歧項：\n<逐條列出 CLAUDE_ONLY / SECONDARY_ONLY / CONFLICT>",
     header: "部門回報",
     options: [
       { label: "繼續", description: "結果 OK，推進下一部門" },
@@ -82,11 +82,11 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "[部門] 完成。雙模式比對發現 <M> 項分歧：\n\n| # | 類型 | Claude | Codex | 影響 |\n|---|---|---|---|---|\n| 1 | CODEX_ONLY | — | <Codex 發現> | <影響> |\n| 2 | CONFLICT | <Claude> | <Codex> | <影響> |\n\n請裁定分歧項：",
+    question: "[部門] 完成。雙巨頭比對發現 <M> 項分歧：\n\n| # | 類型 | Claude | <第二巨頭> | 影響 |\n|---|---|---|---|---|\n| 1 | SECONDARY_ONLY | — | <第二巨頭發現> | <影響> |\n| 2 | CONFLICT | <Claude> | <第二巨頭> | <影響> |\n\n請裁定分歧項：",
     header: "分歧裁決",
     options: [
-      { label: "採 Claude", description: "分歧項以 Claude 圖靈派結論為準" },
-      { label: "採 Codex", description: "分歧項以 Codex 馮諾伊曼派結論為準" },
+      { label: "採 Claude", description: "分歧項以 Claude 結論為準" },
+      { label: "採第二巨頭", description: "分歧項以第二巨頭（Codex/Gemini）結論為準" },
       { label: "兩者都要", description: "合併兩方結論，下游部門都要考量" },
       { label: "暫停", description: "先暫停，需要討論" }
     ],
@@ -144,17 +144,38 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 - ❌「你不執行任何東西」
 - ❌「逐條驗證 PRD 翻譯後的驗收條件是否符合」（QC 不是照單打勾的驗收員）
 
-## 認知複雜度 model 路由（雙模式）
+## 能力路由派工（三巨頭按能力需求組合）
 
-秘書在派工時，根據任務的認知複雜度**自動指派 Claude model**，**動態偵測 Codex model**。不提供選項讓老闆選：
+三個 AI 巨頭各有強項，秘書根據部門任務的核心能力需求，選擇對應的巨頭組合：
 
-| 認知複雜度 | Claude model | Codex model | 判斷依據 |
+| 巨頭 | 能力排序 | 強項 | 代理 agent |
 |---|---|---|---|
-| **低** | haiku | 自動偵測 | 簡單明確的任務：已知模式的 CRUD、例行性檢查、格式化、簡單配置 |
-| **中** | sonnet | 自動偵測 | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
-| **高** | opus | 自動偵測 | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
+| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:<DEPT>` |
+| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX` |
+| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI` |
 
-**Codex model 由 CODEX 代理 agent 自動偵測**：CODEX 代理啟動時自行執行 `codex debug models` 取得最新可用模型，不需要秘書預先偵測。Codex 有自己的模型體系，與 Claude 的 haiku/sonnet/opus 是不同架構，不硬編碼映射——讓 CODEX 代理動態偵測，兩個體系各用最擅長的模型，才是真正的互補。
+### 各部門巨頭組合
+
+| 部門 | 組合 | 原因 |
+|---|---|---|
+| **QA** | Claude + Gemini | 斷言需要邏輯推理 + 市調需要外部資訊 |
+| **SEC** | Claude + Gemini | 安全架構需要邏輯 + 漏洞搜尋需要外部資訊 |
+| **PRD** | Claude + Gemini | 架構設計需要邏輯 + 技術調研需要外部資訊 |
+| **DEV** | Claude + Codex | TDD 實作需要邏輯引導 + 精確代碼需要細節實作 |
+| **QC** | Claude + Codex | 攻擊策略需要邏輯 + 實際操作驗證需要 GUI 能力 |
+| **MIS** | Claude + Codex | 部署流程需要邏輯 + 環境操作需要細節執行 |
+
+### Claude model 路由（認知複雜度）
+
+秘書根據任務認知複雜度**自動指派 Claude model**，不提供選項讓老闆選：
+
+| 認知複雜度 | Claude model | 判斷依據 |
+|---|---|---|
+| **低** | haiku | 簡單明確的任務：已知模式的 CRUD、例行性檢查、格式化、簡單配置 |
+| **中** | sonnet | 標準開發任務：常規功能實作、標準測試設計、CI/CD 配置、標準架構 |
+| **高** | opus | 需要深度推理的任務：複雜跨模組整合、安全攻防、架構決策、創新解法、模糊需求解析 |
+
+**Codex model** 由 CODEX 代理自動偵測（`codex debug models`）。**Gemini model** 由 GEMINI 代理自動偵測（`~/.gemini/settings.json`）。三個體系各用最擅長的模型，互不映射。
 
 ### 複雜度評估維度
 
@@ -178,17 +199,19 @@ MODE:          dual|single                   (預設 dual，老闆選單模式�
 
 ### 派工時的同步雙 Agent 呼叫
 
-雙模式下，秘書在同一則訊息中同時發出兩個 `Agent()` tool call：
+秘書根據部門的巨頭組合，在同一則訊息中發出兩個 `Agent()` tool call：
 
 ```python
-# Claude（圖靈派）— 部門主管 agent，用 Claude 自己的模型體系
-Agent(subagent_type="shiftblame:<DEPT>", prompt=圖靈派prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
+# QA/PRD/SEC — Claude + Gemini（資訊型）
+Agent(subagent_type="shiftblame:<DEPT>", prompt=claude_prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
+Agent(subagent_type="shiftblame:GEMINI", prompt=gemini_prompt, model="haiku", name="<slug>-gemini")
 
-# Codex（馮諾伊曼派）— CODEX 代理 agent，內部啟動 codex exec，用 Codex 自己的模型體系
-Agent(subagent_type="shiftblame:CODEX", prompt=codex代理prompt, model="haiku", name="<slug>-codex")
+# DEV/QC/MIS — Claude + Codex（實作型）
+Agent(subagent_type="shiftblame:<DEPT>", prompt=claude_prompt, model="<haiku|sonnet|opus>", name="<slug>-claude")
+Agent(subagent_type="shiftblame:CODEX", prompt=codex_prompt, model="haiku", name="<slug>-codex")
 ```
 
-兩個 Agent 各自回報，秘書收到雙方回報後交叉比對。CODEX 代理的 model 用 haiku（代理只負責組裝指令 + 執行 + 讀檔 + 回報，認知負荷極低），實際 AI 工作由 Codex CLI 用自己的模型完成。
+兩個 Agent 各自回報，秘書收到雙方回報後交叉比對。CODEX/GEMINI 代理的 model 固定用 haiku（代理只負責組裝指令 + 執行 + 讀檔 + 回報，認知負荷極低），實際 AI 工作由各 CLI 用自己的模型完成。任何巨頭不可用時不阻擋流程，降級為可用組合（例如 Gemini 不可用 → QA 降級為 Claude 單體）。
 
 ## 生命週期自動化
 
@@ -311,7 +334,7 @@ fi
 
 ### 循環圓流程
 
-每個部門同步派出 Claude agent（圖靈派）+ CODEX agent（馮諾伊曼派），雙方各自回報後秘書交叉比對。
+每個部門同步派出雙巨頭 agent（依能力路由組合），雙方各自回報後秘書交叉比對。
 
 | 順序 | 部門 | 做什麼 | 可讀上游 | 產出寫入 |
 |---|---|---|---|---|
@@ -322,14 +345,14 @@ fi
 | 5 | QC | **親自啟動應用做穩健性攻擊**：對照 QA 原始品保條件做破壞性測試，挖掘 BUG、邊緣案例、業務邏輯斷裂 + 紅藍隊攻防（不重複跑自動化綠燈，指標是抓出多少問題） | QA + SEC + PRD + DEV | `~/.shiftblame/<repo>/QC/` |
 | 6 | MIS | 部署上線（最後一道防線，閱讀所有部門產出確認無誤後才執行） | QA + SEC + PRD + DEV + QC（全部） | `~/.shiftblame/<repo>/MIS/` |
 
-### 每個部門的雙 Agent 回報流程
+### 每個部門的雙巨頭回報流程
 
 ```
-秘書同步派出 Claude agent + CODEX agent
+秘書同步派出 Claude agent + 第二巨頭 agent（Codex 或 Gemini）
          │                    │
          ▼                    ▼
-   Claude 主管回報       CODEX 代理回報
-   （圖靈派產出）        （馮諾伊曼派產出）
+   Claude 主管回報       第二巨頭代理回報
+   （邏輯型產出）        （細節型 或 資訊型產出）
          │                    │
          └────────┬───────────┘
                   ▼

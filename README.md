@@ -8,7 +8,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#誰的鍋)
+[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#誰的鍋)
 [![Skills](https://img.shields.io/badge/skills-2-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
@@ -20,7 +20,7 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ---
 
-秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門預設**雙模式並行**：Claude（圖靈派）和 Codex（馮諾伊曼派）同步派工，同一問題不同方向發散。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。MIS 在部署階段完成專案內文件整理；部署完畢後，秘書負責常識提煉與物理清理。
+秘書動態掃描 agents 目錄，把正確的需求推給正確的部門。每個部門按**能力路由**派出雙巨頭：資訊型部門（QA/PRD/SEC）派 Claude + Gemini，實作型部門（DEV/QC/MIS）派 Claude + Codex。產出交叉比對後，分歧呈報老闆裁決。所有修改透過 worktree 隔離，不直推 main。MIS 在部署階段完成專案內文件整理；部署完畢後，秘書負責常識提煉與物理清理。
 
 還沒想清楚？秘書也能幫你**釐清方向**——用結構化問答收斂需求，確認後再推鍋。
 
@@ -28,15 +28,26 @@ _一套明確責任歸屬的 Agents 開發框架_
 
 ## 資源供給機制
 
-**雙體系發散派工（圖靈×馮諾伊曼）**：每個部門預設同步啟動 Claude（圖靈派）和 Codex（馮諾伊曼派），同一問題不同方向發散。
+**三巨頭能力路由派工**：三個 AI 巨頭各有強項，秘書根據部門任務的核心能力需求選擇組合。
 
-### 圖靈派 vs 馮諾伊曼派
+### 三巨頭能力定位
 
-| 維度 | Claude（圖靈派） | Codex（馮諾伊曼派） |
+| 巨頭 | 能力排序 | 強項 | 代理 agent |
+|---|---|---|---|
+| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `shiftblame:<DEPT>` |
+| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `shiftblame:CODEX` |
+| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合、即時資料 | `shiftblame:GEMINI` |
+
+### 各部門巨頭組合
+
+| 部門 | 組合 | 原因 |
 |---|---|---|
-| 核心思維 | 可計算性：問題本質是什麼？能不能形式化證明？ | 可建造性：系統怎麼組裝？架構怎麼支撐規模？ |
-| 推理風格 | 演繹——從公理推結論，追求邏輯完備 | 歸納——從經驗找規律，追求工程可行 |
-| 品質標準 | 正確性優先 | 穩健性優先 |
+| **QA** | Claude + Gemini | 斷言需要邏輯推理 + 市調需要外部資訊 |
+| **SEC** | Claude + Gemini | 安全架構需要邏輯 + 漏洞搜尋需要外部資訊 |
+| **PRD** | Claude + Gemini | 架構設計需要邏輯 + 技術調研需要外部資訊 |
+| **DEV** | Claude + Codex | TDD 實作需要邏輯引導 + 精確代碼需要細節實作 |
+| **QC** | Claude + Codex | 攻擊策略需要邏輯 + 實際操作驗證需要 GUI 能力 |
+| **MIS** | Claude + Codex | 部署流程需要邏輯 + 環境操作需要細節執行 |
 
 ### Claude model（按認知複雜度動態決定）
 
@@ -49,6 +60,10 @@ _一套明確責任歸屬的 Agents 開發框架_
 ### Codex model（動態偵測，不自訂）
 
 透過 `codex debug models` 即時查詢 API 模型目錄，按 `priority` 取最新可用模型。不硬編碼模型名稱，OpenAI 推新模型時自動獲益。
+
+### Gemini model（動態偵測，不自訂）
+
+從 `~/.gemini/settings.json` 讀取 `selected_model`，預設 `gemini-2.5-flash`。付費訂閱後自動升級為 `gemini-2.5-pro`。
 
 ---
 
@@ -63,9 +78,9 @@ _一套明確責任歸屬的 Agents 開發框架_
 | **路由判錯**：需求推給了錯誤的部門導致重工 | 秘書職責就是判斷該推給誰 |
 | **退回判錯**：老闆說不 OK 時推給了錯誤的部門 | 秘書職責就是判斷根因在哪 |
 | **model 選錯**：高複雜度任務派了 haiku 導致品質低落 | 秘書職責就是評估認知複雜度 |
-| **派工單缺欄位**：WORKTREE_PATH 或 BRANCH 空白仍派出，導致 agent 在主 repo 工作 | 秘書是派工流程的閘門 |
-| **協議自行解讀**：對條文有疑慮卻不向老闆確認，直接把錯誤解讀塞進 prompt | 秘書是資訊中繼站，解讀偏差會放大 |
-| **回報後未驗證 git**：agent 回報完成後未檢查分支/路徑，讓主 repo 被污染漏網 | 秘書的事後驗證是最後防線 |
+| **巨頭組合選錯**：資訊型部門沒派 Gemini、實作型沒派 Codex | 秘書職責就是能力路由 |
+| **派工單缺欄位**：WORKTREE_PATH 或 BRANCH 空白仍派出 | 秘書是派工流程的閘門 |
+| **回報後未驗證 git**：agent 回報完成後未檢查分支/路徑 | 秘書的事後驗證是最後防線 |
 
 ### 各部門的鍋
 
@@ -149,30 +164,31 @@ _一套明確責任歸屬的 Agents 開發框架_
    │                      │
    │◄─────────────────────┘
    ▼
- ┌─────────────────────────────────────┐
- │ 評估認知複雜度 → 指派 Claude model │
- │ codex debug models → 取 Codex model │
- │ 按循環圓順序派工                    │
- └─────────┬───────────────────────────┘
+ ┌──────────────────────────────────────────┐
+ │ 評估認知複雜度 → 指派 Claude model      │
+ │ 能力路由 → 決定第二巨頭（Codex/Gemini） │
+ │ 按循環圓順序派工                         │
+ └─────────┬────────────────────────────────┘
            │
    ┌───────┴────────┐
    │                │
- 預審 OK          不 OK
+ QA/PRD/SEC       DEV/QC/MIS
    │                │
    ▼                ▼
- 雙模式同步派工  秘書判斷根因，
- ┌─────┬─────┐    推給正確的部門重做
- │     │     │
- ▼     ▼     │
-Claude Codex │
-(圖靈) (馮諾伊曼)
- │     │     │
- ▼     ▼     │
- 交叉比對    │
- │           │
- ▼           ▼
- 呈報老闆
+ Claude+Gemini    Claude+Codex
+ ┌───┬───┐        ┌───┬───┐
+ │   │   │        │   │   │
+ ▼   ▼   │        ▼   ▼   │
+CL  GM  │        CL  CX  │
+ │   │   │        │   │   │
+ ▼   ▼   │        ▼   ▼   │
+ 交叉比對│         交叉比對│
+ │       │         │      │
+ ▼       ▼         ▼      ▼
+ 呈報老闆           呈報老闆
 ```
+
+CL = Claude agent, GM = Gemini agent, CX = Codex agent
 
 ### 檔案結構
 
@@ -231,34 +247,34 @@ Claude Codex │
 ### 派工流程
 
 ```
-老闆 → 秘書（預審 + 選 model）→ QA→SEC→PRD→DEV→QC→MIS 完整循環 → 秘書（彙報）→ 老闆
+老闆 → 秘書（能力路由 + 選 model）→ QA→SEC→PRD→DEV→QC→MIS 完整循環 → 秘書（彙報）→ 老闆
 ```
 
 1. 秘書收到老闆原話，評估認知複雜度
 2. 所有需求一律從 QA 起步，走完整循環圓（QA→SEC→PRD→DEV→QC→MIS），不跳過任何節點
-3. 向老闆預審「做什麼、Claude model + Codex model」，預設雙模式並行，可選單模式跳過 Codex
+3. 能力路由決定每個部門的巨頭組合（資訊型: Claude+Gemini，實作型: Claude+Codex）
 4. 老闆 OK 後，按循環圓順序逐一部門派工
-5. 每個部門預設雙模式：`Agent()`（Claude）+ `Bash(codex exec)`（Codex）同一則訊息並行派出
+5. 每個部門預設雙巨頭：`Agent()`（Claude 部門主管）+ `Agent()`（CODEX 或 GEMINI 代理）同一則訊息並行派出
 6. 每個部門只能讀自己 + 所有上游的產出（金字塔累積制）
 7. 主管親自執行所有職能，完成後回報
-8. 秘書交叉比對 Claude 和 Codex 產出，分歧呈報老闆裁決
+8. 秘書交叉比對雙巨頭產出，分歧呈報老闆裁決
 9. 秘書在主管回報後執行 `git status && git branch --show-current` 驗證改動在 worktree、分支正確
 10. 秘書收齊所有主管回報後，向老闆做最終彙報
 
 ### 秘書接手後
 
-1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化（先讀現有內容，有就保留）
+1. 偵測 `.shiftblame/` 是否存在，不存在則自動初始化
 2. 掃描 agents 取得可用部門清單
 3. 保存你的**原話逐字稿**
-4. 評估認知複雜度，自動指派 Claude model；動態偵測 Codex 最新可用 model
-5. 每個部門啟動前先用人話告訴你「這輪到哪個部門、做什麼、Claude model、Codex model」，你回 OK 才繼續（預設雙模式並行，可選單模式）
-6. 建立 worktree 隔離環境（shiftblame 自定義 worktree，非 Claude 內建）
+4. 評估認知複雜度，自動指派 Claude model；能力路由決定第二巨頭
+5. 每個部門完成後用 AskUserQuestion 回報結果，等老闆判定才推進下一部門
+6. 建立 worktree 隔離環境
 7. 部門主管親自執行所有職能，產出寫入 `~/.shiftblame/<repo>/<DEPT>/<slug>.md`
 8. 主管回報「做了什麼 / 問題 / 解決方式 / 結果」
 9. 秘書收齊回報後對照原話，呈報「完全達成 X / 部分達成 Y / 未達成 Z」
 10. 秘書負責寫入犯錯紀錄
-11. MIS 在部署階段完成專案內文件整理：重寫 REPO.md（反映當前狀態，非追加）、同步 README
-12. MIS 回報 SUCCESS 後，秘書執行循環收尾：常識提煉（跨專案 blame 整理去重）+ 物理清理（刪除部門產出檔案、worktree）
+11. MIS 在部署階段完成專案內文件整理：重寫 REPO.md、同步 README
+12. MIS 回報 SUCCESS 後，秘書執行循環收尾：常識提煉 + 物理清理
 
 你在過程中只需要：
 
@@ -280,7 +296,8 @@ shiftblame/
 │   ├── DEV.md             # 開發主管
 │   ├── QC.md              # 品管主管
 │   ├── MIS.md             # MIS 主管
-│   └── CODEX.md           # Codex 代理（啟動 Codex CLI 並回報）
+│   ├── CODEX.md           # Codex 代理（啟動 Codex CLI 並回報）
+│   └── GEMINI.md          # Gemini 代理（啟動 Gemini CLI 並回報）
 ├── skills/
 │   └── secretary/
 │       └── SKILL.md       # 秘書 skill
