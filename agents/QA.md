@@ -8,7 +8,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/QA.md`
+產出路徑：`~/.shiftblame/<repo>/<slug>/QA.md`
 
 必備內容：
 1. 需求摘要：老闆原話要點。

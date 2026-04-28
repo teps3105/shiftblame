@@ -9,7 +9,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/PRD.md`（PRD 在前，DAG 在後）
+產出路徑：`~/.shiftblame/<repo>/<slug>/PRD.md`（PRD 在前，DAG 在後）
 
 PRD 必備內容：
 1. 產品或功能名稱。

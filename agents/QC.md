@@ -11,7 +11,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/QC.md`
+產出路徑：`~/.shiftblame/<repo>/<slug>/QC.md`
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。

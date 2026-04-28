@@ -26,7 +26,7 @@ _一套 PROXY 共議常識的 Agents 開發框架_
 
 秘書是純調度器——只設定邊界、下達任務、收齊回報，不干預巨頭內部協調。
 
-每個部門由三個 PROXY 同時派工，透過 `.proxy-sync/` 通訊目錄自組織：
+每個部門由三個 PROXY 同時派工，透過 `~/.shiftblame/<repo>/<slug>/<DEPT>/` 通訊目錄自組織：
 1. 各自提出分工提案
 2. 辯論收斂（最多 2 輪）
 3. 寫入共識後各自啟動外部 CLI 執行
@@ -80,17 +80,22 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 ### PROXY 共議通訊
 
 ```
-<WORKTREE>/.proxy-sync/
+~/.shiftblame/<repo>/<slug>/<DEPT>/
 ├── task.md              # 秘書下達的任務
 ├── dept.md              # 部門定義（廣義職責 + 產出規格）
-├── claude/proposal.md   # Claude 分工提案
-├── codex/proposal.md    # Codex 分工提案
-├── gemini/proposal.md   # Gemini 分工提案
 ├── consensus.md         # 三方共識
-├── claude/result.md     # Claude 執行結果
-├── codex/result.md      # Codex 執行結果
-└── gemini/result.md     # Gemini 執行結果
+├── claude/
+│   ├── proposal.md      # Claude 分工提案
+│   └── result.md        # Claude 執行結果
+├── codex/
+│   ├── proposal.md      # Codex 分工提案
+│   └── result.md        # Codex 執行結果
+└── gemini/
+    ├── proposal.md      # Gemini 分工提案
+    └── result.md        # Gemini 執行結果
 ```
+
+通訊目錄位於 slug 階層下，每輪迭代的討論產出永久保留。
 
 ### 秘書調度流程
 
@@ -101,7 +106,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
       → QA→SEC→PRD→DEV→QC→MIS 逐一部門派工
           → 每部門：三 PROXY 共議 → 執行 → 回報
           → 秘書交叉比對 → 呈報老闆
-      → MIS 回報 SUCCESS → 常識提煉 + 物理清理
+      → MIS 回報 SUCCESS → 常識提煉 + slug 歸檔 + 物理清理
 ```
 
 ---
@@ -112,12 +117,12 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 
 | 部門 | 職能 | 產出 |
 |---|---|---|
-| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z），不寫程式碼 | `~/.shiftblame/<repo>/QA.md` |
-| **SEC** | 資安稽核 + 工具篩選 + worktree 建置 + 隔離環境 | `~/.shiftblame/<repo>/SEC.md` |
-| **PRD** | 市調 + 架構設計 + 驗收條件 + 定義 QC 介面 + 實作計畫 | `~/.shiftblame/<repo>/PRD.md` |
-| **DEV** | TDD 開發直到全綠 + 親自啟動應用驗證 + 語法檢查 | `~/.shiftblame/<repo>/DEV.md` |
-| **QC** | 穩健性攻擊 + 邊緣案例挖掘 + 紅藍隊攻防 | `~/.shiftblame/<repo>/QC.md` |
-| **MIS** | 部署上線 + REPO.md 重寫 + README 同步 + worktree 清理 | `~/.shiftblame/<repo>/MIS.md` |
+| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z），不寫程式碼 | `~/.shiftblame/<repo>/<slug>/QA.md` |
+| **SEC** | 資安稽核 + 工具篩選 + worktree 建置 + 隔離環境 | `~/.shiftblame/<repo>/<slug>/SEC.md` |
+| **PRD** | 市調 + 架構設計 + 驗收條件 + 定義 QC 介面 + 實作計畫 | `~/.shiftblame/<repo>/<slug>/PRD.md` |
+| **DEV** | TDD 開發直到全綠 + 親自啟動應用驗證 + 語法檢查 | `~/.shiftblame/<repo>/<slug>/DEV.md` |
+| **QC** | 穩健性攻擊 + 邊緣案例挖掘 + 紅藍隊攻防 | `~/.shiftblame/<repo>/<slug>/QC.md` |
+| **MIS** | 部署上線 + 歸檔 + REPO.md 重寫 + README 同步 + worktree 清理 | `~/.shiftblame/<repo>/<slug>/MIS.md` |
 
 ### 部門常識
 
@@ -137,17 +142,43 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 │   ├── MIS.md
 │   ├── PRD.md
 │   └── SECRETARY.md
-└── <repo>/                  # 各 repo 產出（flat 檔案）
-    ├── QA.md
-    ├── SEC.md
-    ├── PRD.md
-    ├── DEV.md
-    ├── QC.md
-    ├── MIS.md
-    └── REPO.md              # 專案知識（MIS 最終整理）
+└── <repo>/                  # 各 repo 產出（slug 階層）
+    ├── REPO.md              # 專案知識（MIS 最終整理，永遠在這）
+    ├── archive/             # 歸檔目錄（MIS 完成後 mv 進來）
+    │   └── <slug>/          # 已歸檔的 slug 快照
+    │       ├── QA.md
+    │       ├── SEC.md
+    │       ├── PRD.md
+    │       ├── DEV.md
+    │       ├── QC.md
+    │       ├── MIS.md
+    │       ├── QA/          # 永久討論目錄
+    │       ├── SEC/
+    │       ├── PRD/
+    │       ├── DEV/
+    │       ├── QC/
+    │       └── MIS/
+    └── <slug>/              # 當前迭代的 slug 目錄
+        ├── QA.md            # 部門結論檔
+        ├── SEC.md
+        ├── PRD.md
+        ├── DEV.md
+        ├── QC.md
+        ├── MIS.md
+        ├── QA/              # 永久討論目錄（PROXY 產出）
+        │   ├── task.md
+        │   ├── dept.md
+        │   ├── consensus.md
+        │   ├── claude/
+        │   ├── codex/
+        │   └── gemini/
+        ├── SEC/
+        ├── PRD/
+        ├── DEV/
+        ├── QC/
+        └── MIS/
 
 ~/.worktree/<repo>/<slug>/   # worktree（agents 工作空間）
-    └── .proxy-sync/         # PROXY 協調通訊
 
 <repo>/                      # 專案根目錄（老闆 IDE 看到）
 ├── .shiftblame/             # symlink → ~/.shiftblame/<repo>/
@@ -155,7 +186,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 └── .worktree/               # symlink → ~/.worktree/<repo>/
 ```
 
-> **注意**：`.shiftblame/` 和 `.worktree/` symlink 建在**專案根目錄**，是給老闆在 IDE 瀏覽用的。agents 直接用絕對路徑操作，不依賴這些 symlink。
+> **注意**：`.shiftblame/` 和 `.worktree/` symlink 建在**專案根目錄**，是給老闆在 IDE 瀏覽用的。agents 直接用絕對路徑操作，不依賴這些 symlink。PROXY 通訊目錄已從 worktree 內的 `.proxy-sync/` 移到 `~/.shiftblame/<repo>/<slug>/<DEPT>/`（永久保存）。
 
 ---
 
