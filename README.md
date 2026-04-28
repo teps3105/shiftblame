@@ -22,12 +22,14 @@ _一套 PROXY 共議常識的 Agents 開發框架_
 
 ## 核心概念
 
-三個 AI CLI（Claude / Codex / Gemini）作為 **PROXY agent** 在同一 worktree 上共議分工、自主執行、互相辯論。秘書是純調度器——只設定邊界、下達任務、收齊回報，不干預巨頭內部協調。
+三個 AI CLI（Claude / Codex / Gemini）作為 **PROXY agent** 在同一 worktree 上共議分工、自主執行、互相辯論。每個 PROXY 都是**外殼代理**——透過 Agent() 讓老闆在 Claude Code UI 看到進度，但內部透過 Bash 啟動各自的外部 CLI 進程（`claude -p` / `codex exec` / `gemini -p`），確保三個 CLI 上下文獨立、不被 Claude Code 污染、完全對等。
+
+秘書是純調度器——只設定邊界、下達任務、收齊回報，不干預巨頭內部協調。
 
 每個部門由三個 PROXY 同時派工，透過 `.proxy-sync/` 通訊目錄自組織：
 1. 各自提出分工提案
 2. 辯論收斂（最多 2 輪）
-3. 寫入共識後各自執行
+3. 寫入共識後各自啟動外部 CLI 執行
 4. 回報結果，由秘書彙整呈報老闆
 
 單點失效時自動降級：其他 PROXY 吸收失敗者的份額。

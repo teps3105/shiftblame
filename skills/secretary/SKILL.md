@@ -193,21 +193,21 @@ PROXY 自行處理：
 
 ### 派工時的同步 PROXY 呼叫
 
-秘書同時發出所有可用 PROXY 的 Agent() 呼叫（同一則訊息）：
+秘書同時發出所有可用 PROXY 的 Agent() 呼叫（同一則訊息）。三個 PROXY 都是 Agent() 包一層（老闆可在 Claude Code UI 看到進度），但各自透過 Bash 啟動外部 CLI 進程，確保上下文獨立、不被 Claude Code 污染。
 
 ```python
-# 秘書不決定分工，只提供邊界條件
+# 三個 PROXY 對等派工，每個內部啟動各自的外部 CLI
 Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-claude")
 Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-codex")
 Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, model="haiku", name="<slug>-gemini")
 
-# 其中 proxy_prompt 包含：
-# - WORKTREE 路徑
+# proxy_prompt 包含：
+# - WORKTREE 路徑（絕對路徑）
 # - .proxy-sync/ 位置
 # - CLAUDE_PROXY 專用的 model（haiku/sonnet/opus，按認知複雜度）
 ```
 
-PROXY agent 的 model 固定用 haiku（代理只負責組裝指令 + 協調 + 執行 + 回報）。CLAUDE_PROXY 傳給 `claude -p` 的 model 由秘書依認知複雜度決定。
+**關鍵約束**：PROXY agent 的 model 固定用 haiku（代理外殼只負責組裝指令 + 啟動 CLI + 回報）。CLAUDE_PROXY 傳給 `claude -p` 的 model 由秘書依認知複雜度決定。三個 PROXY 各自啟動外部 CLI（`claude -p` / `codex exec` / `gemini -p`），不直接做事——確保上下文乾淨、三 CLI 對等。
 
 ### Claude model 路由（認知複雜度）
 
