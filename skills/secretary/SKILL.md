@@ -12,7 +12,7 @@ description: >-
 ## 載入流程
 
 1. 檢查 `~/.shiftblame/` 目錄結構（`common/` + 各 repo slug 階層 + `archive/`）
-2. 建立 repo 內 symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
+2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
 3. 檢查 `.gitignore` 含 `.shiftblame/` 和 `.worktree/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
 5. 讀取 SRE 產出（`~/.shiftblame/<repo>/sre/`，如有問題請示老闆）
@@ -25,20 +25,19 @@ mkdir -p ~/.shiftblame/common ~/.shiftblame/"$REPO_NAME"/archive
 mkdir -p "$REPO_ROOT/.shiftblame"
 ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
-# Protocol files: stable symlink → installed plugin（框架協議，非私人常識）
-PLUGIN_SKILLS=$(find ~/.claude/plugins/cache/shiftblame/shiftblame -maxdepth 1 -type d | sort -V | tail -1)/skills/secretary
-ln -sfn "$PLUGIN_SKILLS" ~/.shiftblame/protocols
 ```
+
+框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）存於 plugin 安裝路徑 `~/.claude/plugins/cache/shiftblame/shiftblame/<version>/skills/secretary/`，直接用絕對路徑 Read，不 symlink。
 
 ## 派工流程
 
-每次派工前 **必須** `Read ~/.shiftblame/protocols/DISPATCH_CHECKLIST.md` 並逐條完成。
+每次派工前 **必須** Read `~/.claude/plugins/cache/shiftblame/shiftblame/*/skills/secretary/DISPATCH_CHECKLIST.md` 並逐條完成。
 
 核心步驟：
 1. Read DISPATCH_CHECKLIST.md → 逐條完成 checklist
 2. Read `~/.shiftblame/common/<DEPT>.md`（部門常識注入 prompt）
 3. 填寫派工單（SLUG/DEPT/WORKTREE_PATH/BRANCH/UPSTREAM/OUTPUT/DISCUSSION）
-4. `Read ~/.shiftblame/protocols/PROXY_PROTOCOL.md` → 建通訊目錄 → 同步派三方 PROXY
+4. Read `~/.claude/plugins/cache/shiftblame/shiftblame/*/skills/secretary/PROXY_PROTOCOL.md` → 建通訊目錄 → 同步派三方 PROXY
 5. 等待 PROXY 回報
 
 派工規則速記：
@@ -50,15 +49,15 @@ ln -sfn "$PLUGIN_SKILLS" ~/.shiftblame/protocols
 
 ## 閘門流程
 
-每個部門完成後 **必須** `Read ~/.shiftblame/protocols/GATE_FLOW.md` 依格式回報。
+每個部門完成後 **必須** Read `~/.claude/plugins/cache/shiftblame/shiftblame/*/skills/secretary/GATE_FLOW.md` 依格式回報。
 
 核心：AskUserQuestion 回報 → 覆述老闆選擇 → **結束 turn** → 等老闆下一則訊息才推進。同一 turn 內不可派工下一部門。
 
 ## 收尾流程
 
 MIS 完成（最後節點，不可跳過）後：
-1. `Read ~/.shiftblame/protocols/LIFECYCLE.md` → 常識提煉 + 歸檔
-2. `Read ~/.shiftblame/protocols/WORKTREE_SOP.md` → 清理 worktree
+1. Read `~/.claude/plugins/cache/shiftblame/shiftblame/*/skills/secretary/LIFECYCLE.md` → 常識提煉 + 歸檔
+2. Read `~/.claude/plugins/cache/shiftblame/shiftblame/*/skills/secretary/WORKTREE_SOP.md` → 清理 worktree
 3. AskUserQuestion 問老闆 worktree 處置（刪除/保留迭代/保留待命）
 
 ## 循環圓
