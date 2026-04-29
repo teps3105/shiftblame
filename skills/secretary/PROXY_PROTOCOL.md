@@ -1,26 +1,55 @@
 # PROXY 自組織通訊協定
 
-秘書是純調度器：設定邊界，下達任務，讓 PROXY 自行協調。不干預分工。
+秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定义「怎麼做」。「怎麼做」由 PROXY 自行協商。
 
 ## 通訊目錄結構
 
 ```
 ~/.shiftblame/<repo>/<slug>/<DEPT>/
-├── task.md              # 秘書下達的任務（所有 PROXY 共享）
-├── dept.md              # 部門定義（從 agents/<DEPT>.md 讀取）
-├── consensus.md         # 三方共識（分工 + 產出結論）
+├── task.md              # 秘書寫入：目標 + 約束（見下方格式）
+├── consensus.md         # PROXY 寫入：分工 + 做法共識 + 產出結構
 ├── claude/{proposal,result}.md
 ├── codex/{proposal,result}.md
 └── gemini/{proposal,result}.md
 ```
 
+注意：沒有 `dept.md`。部門定義（agents/<DEPT>.md）是 PROXY 在 proposal 階段自行讀取的參考，不是秘書塞進去的指令。
+
+## task.md 格式（秘書寫入）
+
+task.md 只包含兩樣東西：**目標**和**約束**。不包含任何做法指示。
+
+```markdown
+# <DEPT> 任務
+
+## 目標
+<老闆的需求摘要，轉化為該部門需要達成的具體目標>
+
+## 上游輸入
+- QA.md：<路徑>（如適用）
+- SEC.md：<路徑>（如適用）
+- ...（所有上游部門結論檔路徑）
+
+## 約束
+- worktree 路徑：<路徑>
+- 技術棧：<從 REPO.md 提取>
+- 老闆裁決：<如有>
+- 其他不可違反的限制
+
+## 不可包含
+- 分工指示（誰做什麼）
+- 做法指示（怎麼做）
+- 產出格式指示（產出長什麼樣）
+```
+
+**秘書禁止在 task.md 中寫「建議分工」或「做法步驟」。** 寫了 = 違規。
+
 ## 秘書派工步驟
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
 2. 建立通訊目錄：`mkdir -p ~/.shiftblame/<repo>/<slug>/<DEPT>/{claude,codex,gemini}`
-3. 寫入 `task.md`（部門任務 + 上游產出參照）
-4. 寫入 `dept.md`（部門定義 + 產出規格）
-5. 同步派工（同一則訊息發出所有 PROXY Agent 呼叫）
+3. 寫入 `task.md`（目標 + 約束，不含做法）
+4. 同步派三方 PROXY（同一則訊息，prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑）
 
 ## Agent() 呼叫
 
@@ -30,47 +59,86 @@ Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-
 Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true)
 ```
 
-- 使用 `Agent` tool + `run_in_background: true`，禁用 `TeamCreate`
-- 不指定 model，各 CLI 用自家 default
-- 三個 PROXY 各自啟動外部 CLI（`claude -p` / `codex exec` / `gemini -p`）
-- proxy_prompt 含：WORKTREE 絕對路徑、DISCUSSION 位置、任務內容
+proxy_prompt **最小化**，只含三樣東西：
+1. task.md 路徑
+2. 通訊目錄路徑
+3. worktree 路徑
 
-## 派工規則
+```bash
+export GEMINI_API_KEY=...  # Gemini only
+```
 
-- **預設三個全派**（Claude + Gemini + Codex），發揮各自優勢
-- **秘書不分工**：三方收到相同 task.md，由 PROXY 自行協調分工
-- **補派至少 2 個**：退回重做時同步派至少 2 個 PROXY
-- **所有部門必須在 worktree**：prompt 必須明確指定工作目錄為 `/home/derek/.worktree/<repo>/<slug>/`
-- **Gemini 需 credentials 注入**：prompt 開頭必含 `export GEMINI_API_KEY=$(python3 -c "import json; print(json.load(open('/home/derek/.gemini/oauth_creds.json'))['access_token'])")`
+**不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 PROXY 自己去讀、去決定的。
 
-## 退回規則
+## PROXY 自組織流程
 
-- **採增量**：task.md 只列需補強項目，PROXY 在既有產出上修改
-- **重用通訊目錄**：清空既有 proposal/result/consensus（`rm -f`），不另開新資料夾
+```
+1. 讀取 task.md（目標 + 約束）
+2. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
+3. 讀取上游輸入（task.md 中列出的路徑）
+4. 各自提出 proposal（分工 + 做法 + 產出結構）
+5. 辯論收斂 → 寫入 consensus.md
+6. 各自執行分工 → 寫入 result.md
+```
+
+proposal.md 格式：
+```markdown
+# <PROXY> 提案
+
+## 分工
+- 我負責：<工作項目>，因為 <能力理由>
+- <另一 PROXY> 適合：<工作項目>，因為 <能力理由>
+- <另一 PROXY> 適合：<工作項目>，因為 <能力理由>
+
+## 做法
+<我計劃怎麼完成我的分工>
+
+## 產出結構
+<我認為最終產出應該長什麼樣>
+
+## 爭議
+<對他人提案的不同意見，無則寫「無」>
+```
 
 ## 共識流程
 
 ```
-各自提出分工提案 → 辯論收斂（最多 2 輪）→ 寫入 consensus.md → 各自執行分工 → 寫入 result.md
+各自提出 proposal → 辯論收斂（最多 2 輪）→ 寫入 consensus.md → 各自執行 → 寫入 result.md
 ```
 
-consensus.md 內容：
+consensus.md 必須包含：
 ```markdown
 # <DEPT> 共識
 ## 分工
-- Claude：<任務>
-- Codex：<任務>
-- Gemini：<任務>
-## 產出結論
-<三方同意的部門產出內容>
+- Claude：<工作項目>
+- Codex：<工作項目>
+- Gemini：<工作項目>
+## 做法
+<三方同意的執行方案>
+## 產出結構
+<三方同意的最終產出格式>
 ## 分歧（如有）
 <未收斂項目，留待秘書裁決>
 ```
 
+## 派工規則
+
+- **預設三個全派**
+- **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
+- **補派至少 2 個**
+- **所有部門必須在 worktree**
+- **Gemini 需 credentials 注入**
+
+## 退回規則
+
+- **採增量**：退回時 task.md 只列需補強的目標，不重寫已完成的部分
+- **重用通訊目錄**：清空既有 proposal/result/consensus（`rm -f`）
+
 ## PROXY 職責
 
-- 讀取任務、分析能力匹配、提出分工
-- 辯論收斂、執行分工、寫入 result.md
+- 自行讀取 task.md、agents/<DEPT>.md、上游輸入
+- 自行決定分工、做法、產出結構
+- 辯論收斂、執行、寫入 result.md
 - **獨自執行時必須回報**：通訊目錄中只看到自己的 proposal → 停止並回報
 - **權限拒絕必須報錯**：在 result.md 記錄，不可假裝完成
 

@@ -93,9 +93,8 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 
 ```
 ~/.shiftblame/<repo>/<slug>/<DEPT>/
-├── task.md              # 秘書下達的任務
-├── dept.md              # 部門定義（廣義職責 + 產出規格）
-├── consensus.md         # 共識
+├── task.md              # 秘書下達的任務（目標 + 約束，不含做法）
+├── consensus.md         # 共識（分工 + 做法 + 產出結構）
 ├── claude/{proposal,result}.md
 ├── codex/{proposal,result}.md
 └── gemini/{proposal,result}.md

@@ -8,14 +8,14 @@
 Read ~/.shiftblame/<repo>/REPO.md
 ```
 
-提取並填入派工 prompt：
+從 REPO.md 提取約束條件（不是做法）：
 - 技術棧（語言、框架、測試工具）
 - 測試指令（unit / integration 路徑與指令）
 - 建置指令（build / compile）
 - 部署方式（Docker / k8s / 其他）
 - 已知約束（安全守則、狀態機、API 端點）
 
-**不讀 REPO.md 就派工 = 違規。** 派工 prompt 必須反映 REPO.md 的實際情況，不可用通用模板。
+**不讀 REPO.md 就派工 = 違規。**
 
 ## 2. Slug 名稱驗證（SEC-A-01）
 
@@ -27,29 +27,39 @@ Read ~/.shiftblame/<repo>/REPO.md
 
 驗證失敗 → 不建任何目錄，回報老闆。
 
-## 3. 填寫派工單
+## 3. 寫入 task.md
+
+task.md 只含**目標**和**約束**，不含任何做法指示。見 PROXY_PROTOCOL.md 的 task.md 格式。
 
 ```
-=== 派工單 ===
-SLUG:          (必填)
-DEPT:          (必填)
-WORKTREE_PATH: /home/derek/.worktree/<repo>/<slug>/   (必填)
-BRANCH:        feat/<slug>                              (必填)
-UPSTREAM:      /home/derek/.shiftblame/<repo>/<slug>/<上游部門>.md
-OUTPUT:        /home/derek/.shiftblame/<repo>/<slug>/<DEPT>.md
-DISCUSSION:    /home/derek/.shiftblame/<repo>/<slug>/<DEPT>/
-REPO_TECH:     (從 REPO.md 提取的技術棧)
-TEST_CMD:      (從 REPO.md 提取的測試指令)
-BUILD_CMD:     (從 REPO.md 提取的建置指令)
+=== task.md 必含 ===
+- 目標：<老闆需求轉化的具體目標>
+- 上游輸入：所有上游部門結論檔路徑
+- 約束：worktree 路徑 + REPO.md 約束 + 老闆裁決
+
+=== task.md 禁止含 ===
+- 分工指示（誰做什麼）← PROXY 自行決定
+- 做法步驟（怎麼做）← PROXY 自行決定
+- 產出格式指示（長什麼樣）← PROXY 自行決定
+- 部門定義內容 ← PROXY 自行讀取 agents/<DEPT>.md
 ```
 
-## 4. 派工 prompt 必含
+## 4. proxy_prompt 最小化
 
-- **git commit 單命令警告**（prompt 開頭）：commit 必須用 `cd <worktree> && git add <files> && git commit -m "..."` 單一 Bash 命令，禁止拆開（Bash 每次 reset cwd）
-- **絕對路徑**：所有路徑用 `/home/derek/...`，不用 `~` 或相對路徑
-- **pwd 確認**：要求 agent 動手前執行 `pwd && git branch --show-current`
-- **部門常識**：`Read ~/.shiftblame/common/<DEPT>.md` 的內容注入 prompt
-- **上游裁決**：如有老闆裁決結論，注入 prompt
+proxy_prompt 只含三樣東西：
+1. task.md 路徑
+2. 通訊目錄路徑
+3. worktree 路徑
+
+```bash
+# 以下禁止注入 prompt
+- 部門定義（agents/<DEPT>.md 的內容）← PROXY 自己讀
+- 分工建議（「建議 Claude 做前端、Codex 做後端」）← 違規
+- 具體做法（「先跑 X 再跑 Y」）← 違規
+- 產出模板 ← 違規
+```
+
+**注入做法 = 越權 = 違規。**
 
 ## 5. 部門特殊檢查
 
@@ -61,7 +71,7 @@ BUILD_CMD:     (從 REPO.md 提取的建置指令)
 
 ## 6. QC 定位提醒
 
-派工 QC 時 prompt 必須明確：QC 是破壞者（主動挖掘 BUG、邊緣案例、業務邏輯斷裂），不是規格驗收員。QC 必須親自啟動應用操作，對照 QA 品保條件做穩健性攻擊。不重複跑 DEV 已通過的自動化測試。
+派工 QC 時 task.md 的目標中必須明確：QC 是破壞者（主動挖掘 BUG、邊緣案例、業務邏輯斷裂），不是規格驗收員。
 
 ## 7. 殭屍掃描注意
 

@@ -35,17 +35,17 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 
 核心步驟：
 1. Read DISPATCH_CHECKLIST.md → 逐條完成 checklist
-2. Read `~/.shiftblame/common/<DEPT>.md`（部門常識注入 prompt）
-3. 填寫派工單（SLUG/DEPT/WORKTREE_PATH/BRANCH/UPSTREAM/OUTPUT/DISCUSSION）
-4. Read PROXY_PROTOCOL.md → 建通訊目錄 → 同步派三方 PROXY
-5. 等待 PROXY 回報
+2. Read `~/.shiftblame/common/<DEPT>.md`（部門常識，不注入 prompt，PROXY 自行讀取）
+3. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 同步派三方 PROXY
+4. 等待 PROXY 共識產出
 
 派工規則速記：
 - 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model
 - 所有部門必須有 worktree，禁止在 main 上操作
-- 共識產出：結論檔 → `~/.shiftblame/<repo>/<slug>/<DEPT>.md`，討論 → `~/.shiftblame/<repo>/<slug>/<DEPT>/`
+- task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
+- proxy_prompt 只含路徑，**不注入部門定義或做法指示**（違規）
+- PROXY 自行讀取 agents/<DEPT>.md、協商分工、決定做法
 - 協議疑慮先問老闆，不自行解讀傳遞
-- 報告量化事實前必跑載入路徑驗證（檔案數 ≠ 實作數）
 
 ## 閘門流程
 
