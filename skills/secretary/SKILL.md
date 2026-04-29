@@ -25,6 +25,11 @@ mkdir -p ~/.shiftblame/common ~/.shiftblame/"$REPO_NAME"/archive
 mkdir -p "$REPO_ROOT/.shiftblame"
 ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
+# Symlink protocol files from installed plugin → common/（私人常識）
+PLUGIN_PATH=$(find ~/.claude/plugins/cache/shiftblame/shiftblame -maxdepth 1 -type d | sort -V | tail -1)/skills/secretary
+for f in DISPATCH_CHECKLIST GATE_FLOW PROXY_PROTOCOL WORKTREE_SOP LIFECYCLE; do
+  [ -f "$PLUGIN_PATH/$f.md" ] && ln -sfn "$PLUGIN_PATH/$f.md" ~/.shiftblame/common/$f.md
+done
 ```
 
 ## 派工流程

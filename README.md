@@ -4,35 +4,63 @@
 
 ### 推鍋
 
-_一套 PROXY 共議常識的 Agents 開發框架_
+_去中心化多端點 AI 調度框架_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
 [![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#部門職能)
-[![Skills](https://img.shields.io/badge/skills-1-9cf.svg)](#使用)
+[![Skills](https://img.shields.io/badge/skills-6-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
-> _「這不是我的鍋。」_
+> _「專案發出來了，接下來你要怎麼用就不是我的鍋了。」_
 
-**[架構](#架構)** · **[部門職能](#部門職能)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
+**[核心機制](#核心機制)** · **[架構](#架構)** · **[部門職能](#部門職能)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
 </div>
 
 ---
 
-## 核心概念
+## 核心機制
 
-三個 AI CLI（Claude / Codex / Gemini）作為 **PROXY agent** 在同一 worktree 上共議分工、自主執行、互相辯論。每個 PROXY 都是**外殼代理**——透過 Agent() 讓老闆在 Claude Code UI 看到進度，但內部透過 Bash 啟動各自的外部 CLI 進程（`claude -p` / `codex exec` / `gemini -p`），確保三個 CLI 上下文獨立、不被 Claude Code 污染、完全對等。
+### 單一引擎，多 CLI 介面整合
 
-秘書是純調度器——只設定邊界、下達任務、收齊回報，不干預巨頭內部協調。
+shiftblame 的本質是一個**自建框架引擎**——Claude Code 的 Agent SDK、工具鏈、worktree 管理、閘門機制——搭配 **PROXY 代理工具**，將任意 CLI 統為統一介面接入。框架本身不生成代碼、不做決策，只負責調度與流程控制。
 
-每個部門由三個 PROXY 同時派工，透過 `~/.shiftblame/<repo>/<slug>/<DEPT>/` 通訊目錄自組織：
-1. 各自提出分工提案
-2. 辯論收斂（最多 2 輪）
-3. 寫入共識後各自啟動外部 CLI 執行
-4. 回報結果，由秘書彙整呈報老闆
+```
+shiftblame 框架引擎（Claude Code）
+├── Agent SDK ─── 派發 PROXY，隔離 context
+├── 工具鏈 ─── Read/Edit/Bash/MCP（實際操作能力）
+├── worktree ── git 隔離，並行安全
+└── 閘門機制 ── AskUserQuestion + turn boundary
 
-單點失效時自動降級：其他 PROXY 吸收失敗者的份額。
+PROXY 代理工具（外殼）
+├── bash → claude -p ──→ 任意 LLM 端點
+├── bash → codex exec → 任意 LLM 端點
+├── bash → gemini -p ─→ 任意 LLM 端點
+└── bash → curl/openai → 任意 API 端點
+```
+
+各家 CLI 的外部工具整合與生成品質決定了它適合被派去什麼任務：
+
+| CLI | 外部工具整合 | 生成品質 |
+|---|---|---|
+| **Anthropic Claude** | MCP 生態最廣（Chrome DevTools、HF Hub、web reader、SearXNG 等）、可驅動瀏覽器自動化、auto-memory 跨 session 記憶 | 多步驟推理、複雜架構設計、長上下文精確遵循指令 |
+| **OpenAI Codex** | MCP 整合、live web search（Responses API）、open-source provider 支援（Ollama / LMStudio / 任意 OpenAI 相容端點）、code review 模式 | 精確代碼生成、code review 品質、diff 應用 |
+| **Google Gemini** | MCP 整合、Google Search grounding（原生）、extension system（git 安裝擴充能力）、ACP mode | 搜索 grounding 生成、多模態理解（圖片/音訊/影片）、長文件摘要與分析 |
+
+共通能力：MCP server 整合、非互動模式（headless exec）、web search。
+
+**關鍵**：同一個 PROXY 可以指向不同的端點。今天用 Claude，明天換 GLM Coding Plan，後天用 Minimax——框架不關心模型是誰，只關心「這個端點的外部工具覆蓋範圍和生成品質能否勝任任務」。
+
+### 為什麼是去中心化
+
+傳統做法：一個 AI 從頭包到底，context 膨脹、注意力稀釋、單點失敗。
+
+shiftblame 做法：
+- **每個 PROXY 獨立啟動外部 CLI**，context 完全隔離，不被 Claude Code 污染
+- **三方共議**：PROXY 透過通訊目錄互相讀取提案、辯論、收斂、分工
+- **單點失效自動吸收**：一個 PROXY 掛了，其他自動接手
+- **端點熱替換**：換模型不需要改框架，改 PROXY 的 CLI 指令即可
 
 ---
 
@@ -45,6 +73,8 @@ _一套 PROXY 共議常識的 Agents 開發框架_
 ```
 QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 ```
+
+秘書依據 REPO.md 現狀分析，從任意節點開始（不固定從 QA）。
 
 ### 資料存取（金字塔累積制）
 
@@ -59,172 +89,55 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 | QC | 自己 + QA + SEC + PRD + DEV |
 | MIS | 全部 |
 
-### 三巨頭能力定位
-
-| 巨頭 | 能力排序 | 強項 | PROXY agent |
-|---|---|---|---|
-| **Claude** | 邏輯 > 細節 > 資訊 | 深度推理、架構決策、代碼審查 | `CLAUDE_PROXY` |
-| **Codex** | 細節 > 資訊 > 邏輯 | 精確實作、GUI 操作、端到端測試 | `CODEX_PROXY` |
-| **Gemini** | 資訊 > 邏輯 > 細節 | 外部工具調用、Web search、API 整合 | `GEMINI_PROXY` |
-
-### Model 策略
-
-各 CLI 用自家 default 模型，不從外部指定。廠商最清楚哪個模型最有效率。
-
-| CLI | 策略 |
-|---|---|
-| `claude -p` | 用 Claude Code default |
-| `codex exec` | 用 Codex default |
-| `gemini -p` | 用 Gemini default |
-
 ### PROXY 共議通訊
 
 ```
 ~/.shiftblame/<repo>/<slug>/<DEPT>/
 ├── task.md              # 秘書下達的任務
 ├── dept.md              # 部門定義（廣義職責 + 產出規格）
-├── consensus.md         # 三方共識
-├── claude/
-│   ├── proposal.md      # Claude 分工提案
-│   └── result.md        # Claude 執行結果
-├── codex/
-│   ├── proposal.md      # Codex 分工提案
-│   └── result.md        # Codex 執行結果
-└── gemini/
-    ├── proposal.md      # Gemini 分工提案
-    └── result.md        # Gemini 執行結果
+├── consensus.md         # 共識
+├── claude/{proposal,result}.md
+├── codex/{proposal,result}.md
+└── gemini/{proposal,result}.md
 ```
 
-通訊目錄位於 slug 階層下，每輪迭代的討論產出永久保留。
+共議流程：各自提出分工提案 → 辯論收斂 → 寫入共識 → 各自執行 → 回報秘書。
 
 ### 秘書調度流程
 
 ```
-老闆提需求 → 秘書判斷方向是否明確
+老闆提需求 → 秘書判斷方向
   ├─ 不明確：諮詢模式（結構化問答收斂）
-  └─ 明確：啟動循環圓（各 CLI 用自家 default 模型）
-      → QA→SEC→PRD→DEV→QC→MIS 逐一部門派工
-          → 每部門：三 PROXY 共議 → 執行 → 回報
-          → 秘書交叉比對 → 呈報老闆
-      → MIS 回報 SUCCESS → 常識提煉 + slug 歸檔 + 物理清理
+  └─ 明確：啟動循環圓
+      → 每部門：Read DISPATCH_CHECKLIST → 三 PROXY 共議 → 執行 → 回報
+      → Read GATE_FLOW → 呈報老闆 → 等裁定 → 推進
+      → MIS SUCCESS → 常識提煉 + slug 歸檔 + worktree 清理
 ```
+
+秘書的 SKILL.md 僅 82 行骨架，詳細 SOP 拆為 on-demand 檔案（派工前/閘門/PROXY/worktree/收尾），每次執行時 Read 刷新到 context，避免長 context 稀釋。
 
 ---
 
 ## 部門職能
 
-每個部門的定義檔只包含**廣義職責**和**產出規格**，權限由秘書在派工時動態注入。
-
 | 部門 | 職能 | 產出 |
 |---|---|---|
-| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z），不寫程式碼 | `~/.shiftblame/<repo>/<slug>/QA.md` |
-| **SEC** | 資安稽核 + 工具篩選 + worktree 建置 + 隔離環境 | `~/.shiftblame/<repo>/<slug>/SEC.md` |
-| **PRD** | 市調 + 架構設計 + 驗收條件 + 定義 QC 介面 + 實作計畫 | `~/.shiftblame/<repo>/<slug>/PRD.md` |
-| **DEV** | TDD 開發直到全綠 + 親自啟動應用驗證 + 語法檢查 | `~/.shiftblame/<repo>/<slug>/DEV.md` |
-| **QC** | 穩健性攻擊 + 邊緣案例挖掘 + 紅藍隊攻防 | `~/.shiftblame/<repo>/<slug>/QC.md` |
-| **MIS** | 部署上線 + 歸檔 + REPO.md 重寫 + README 同步 + worktree 清理 | `~/.shiftblame/<repo>/<slug>/MIS.md` |
+| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） | `QA.md` |
+| **SEC** | 資安稽核 + 工具篩選 + worktree 隔離環境 | `SEC.md` |
+| **PRD** | 架構設計 + 驗收條件 + 測試區分 + 實作計畫 | `PRD.md` |
+| **DEV** | TDD 開發 → 全綠 + 親自啟動應用驗證 | `DEV.md` + worktree |
+| **QC** | 穩健性攻擊 + 邊緣案例挖掘 + 紅藍隊 | `QC.md` |
+| **MIS** | 部署上線 + 歸檔 + REPO.md 整理 | `MIS.md` |
 
 ### 部門常識
 
-每個部門的跨專案通用常識存放在 `~/.shiftblame/common/<DEPT>.md`，由 PROXY 共議產出、秘書提煉。包含規則（做什麼）和認知（為什麼有效）。
+跨專案通用常識存放在 `~/.shiftblame/common/<DEPT>.md`，由 PROXY 共議產出、秘書提煉。專案層級紀錄存放在 `~/.shiftblame/<repo>/REPO.md`。
 
 ---
 
 ## 檔案結構
 
-```
-~/.shiftblame/
-├── common/                  # 跨 repo 部門常識 + 秘書 on-demand SOP
-│   ├── DEV.md
-│   ├── QA.md
-│   ├── QC.md
-│   ├── SEC.md
-│   ├── MIS.md
-│   ├── PRD.md
-│   ├── SECRETARY.md
-│   ├── DISPATCH_CHECKLIST.md   # 派工前必讀
-│   ├── GATE_FLOW.md           # 閘門時必讀
-│   ├── PROXY_PROTOCOL.md      # 派 PROXY 時讀
-│   ├── WORKTREE_SOP.md        # worktree 操作時讀
-│   └── LIFECYCLE.md           # MIS 完成後收尾時讀
-└── <repo>/                  # 各 repo 產出（slug 階層）
-    ├── REPO.md              # 專案知識（MIS 最終整理，永遠在這）
-    ├── archive/             # 歸檔目錄（MIS 完成後 mv 進來）
-    │   └── <slug>/          # 已歸檔的 slug 快照
-    │       ├── QA.md
-    │       ├── SEC.md
-    │       ├── PRD.md
-    │       ├── DEV.md
-    │       ├── QC.md
-    │       ├── MIS.md
-    │       ├── QA/          # 永久討論目錄
-    │       ├── SEC/
-    │       ├── PRD/
-    │       ├── DEV/
-    │       ├── QC/
-    │       └── MIS/
-    └── <slug>/              # 當前迭代的 slug 目錄
-        ├── QA.md            # 部門結論檔
-        ├── SEC.md
-        ├── PRD.md
-        ├── DEV.md
-        ├── QC.md
-        ├── MIS.md
-        ├── QA/              # 永久討論目錄（PROXY 產出）
-        │   ├── task.md
-        │   ├── dept.md
-        │   ├── consensus.md
-        │   ├── claude/
-        │   ├── codex/
-        │   └── gemini/
-        ├── SEC/
-        ├── PRD/
-        ├── DEV/
-        ├── QC/
-        └── MIS/
-
-~/.worktree/<repo>/<slug>/   # worktree（agents 工作空間）
-
-<repo>/                      # 專案根目錄（老闆 IDE 看到）
-├── .shiftblame/             # symlink → ~/.shiftblame/<repo>/
-│   └── common → ~/.shiftblame/common/
-└── .worktree/               # symlink → ~/.worktree/<repo>/
-```
-
-> **注意**：`.shiftblame/` 和 `.worktree/` symlink 建在**專案根目錄**，是給老闆在 IDE 瀏覽用的。agents 直接用絕對路徑操作，不依賴這些 symlink。PROXY 通訊目錄已從 worktree 內的 `.proxy-sync/` 移到 `~/.shiftblame/<repo>/<slug>/<DEPT>/`（永久保存）。
-
----
-
-## 安裝
-
-```bash
-# 透過 Claude Code Marketplace Plugin
-/plugin marketplace add teps3105/shiftblame
-/plugin install shiftblame
-```
-
-首次執行 `/secretary` 時自動初始化 `~/.shiftblame/`、專案根目錄 symlink、`.gitignore`。
-
----
-
-## 使用
-
-輸入 `/secretary` 啟用秘書模式，再輸入需求。還沒想清楚也可以先啟用再諮詢。
-
-```
-老闆 → /secretary → 秘書（路由 + 派工）
-  → QA→SEC→PRD→DEV→QC→MIS 完整循環
-  → 秘書（彙報）→ 老闆
-```
-
-老闆在過程中只需：
-
-- **OK**：繼續
-- **不 OK + 原因**：秘書判斷推給哪個部門重做
-
----
-
-## Plugin 結構
+### Plugin 結構（repo 內）
 
 ```
 shiftblame/
@@ -232,21 +145,84 @@ shiftblame/
 │   ├── plugin.json
 │   └── marketplace.json
 ├── agents/
-│   ├── QA.md              # 品保主管
-│   ├── SEC.md             # 資安主管
-│   ├── PRD.md             # 企劃主管
-│   ├── DEV.md             # 開發主管
-│   ├── QC.md              # 品管主管
-│   ├── MIS.md             # MIS 主管
-│   ├── CLAUDE_PROXY.md    # Claude CLI 代理
-│   ├── CODEX_PROXY.md     # Codex CLI 代理
-│   └── GEMINI_PROXY.md    # Gemini CLI 代理
+│   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md
+│   ├── CLAUDE_PROXY.md
+│   ├── CODEX_PROXY.md
+│   └── GEMINI_PROXY.md
 ├── skills/
 │   └── secretary/
-│       └── SKILL.md       # 秘書 skill
+│       ├── SKILL.md           # 82 行骨架
+│       ├── DISPATCH_CHECKLIST.md
+│       ├── GATE_FLOW.md
+│       ├── PROXY_PROTOCOL.md
+│       ├── WORKTREE_SOP.md
+│       └── LIFECYCLE.md
 ├── LICENSE
 └── README.md
 ```
+
+### 運行時結構
+
+```
+~/.shiftblame/
+├── common/                        # 跨 repo 共用（私人常識 + protocol symlink）
+│   ├── <DEPT>.md                  # 部門常識（QA/SEC/PRD/DEV/QC/MIS/SECRETARY）
+│   ├── DISPATCH_CHECKLIST.md      # → plugin symlink（派工前必讀）
+│   ├── GATE_FLOW.md              # → plugin symlink（閘門時必讀）
+│   ├── PROXY_PROTOCOL.md         # → plugin symlink（派 PROXY 時讀）
+│   ├── WORKTREE_SOP.md           # → plugin symlink（worktree 操作時讀）
+│   └── LIFECYCLE.md              # → plugin symlink（MIS 完成後收尾時讀）
+└── <repo>/
+    ├── REPO.md                    # 專案知識（永遠在這，不隨歸檔移動）
+    ├── archive/<slug>/            # 已歸檔的 slug 快照
+    └── <slug>/                    # 當前迭代
+        ├── <DEPT>.md              # 部門結論檔
+        └── <DEPT>/                # PROXY 討論目錄
+
+~/.worktree/<repo>/<slug>/        # worktree（隔離工作空間）
+```
+
+---
+
+## 安裝
+
+```bash
+# 1. 註冊 Marketplace（GitHub repo 即為 marketplace）
+claude plugin marketplace add teps3105/shiftblame
+
+# 2. 安裝 Plugin
+claude plugin install shiftblame
+```
+
+更新版本：
+```bash
+rm -rf ~/.claude/plugins/marketplaces/shiftblame ~/.claude/plugins/cache/shiftblame
+claude plugin marketplace add teps3105/shiftblame
+claude plugin install shiftblame
+```
+
+首次執行 `/secretary` 時自動初始化目錄結構、symlink、`.gitignore`。
+
+全域 CLAUDE.md 載入指令（含版本檢測）：
+```
+load shiftblame: secretary
+載入時執行 `grep '"version"' ~/.claude/plugins/cache/shiftblame/shiftblame/*/plugin.json`
+確認版本為最新。版本不符 → 提醒老闆執行
+`rm -rf ~/.claude/plugins/marketplaces/shiftblame ~/.claude/plugins/cache/shiftblame && claude plugin install shiftblame`
+```
+
+---
+
+## 使用
+
+```
+/secretary → 輸入需求 → 秘書調度 → QA→SEC→PRD→DEV→QC→MIS
+```
+
+老闆在過程中只需回應秘書的 AskUserQuestion：
+- **繼續**：推進下一部門
+- **重做**：退回重派
+- **暫停**：討論或調整
 
 ---
 
