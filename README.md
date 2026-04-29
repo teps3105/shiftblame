@@ -134,14 +134,19 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 
 ```
 ~/.shiftblame/
-├── common/                  # 跨 repo 部門常識
+├── common/                  # 跨 repo 部門常識 + 秘書 on-demand SOP
 │   ├── DEV.md
 │   ├── QA.md
 │   ├── QC.md
 │   ├── SEC.md
 │   ├── MIS.md
 │   ├── PRD.md
-│   └── SECRETARY.md
+│   ├── SECRETARY.md
+│   ├── DISPATCH_CHECKLIST.md   # 派工前必讀
+│   ├── GATE_FLOW.md           # 閘門時必讀
+│   ├── PROXY_PROTOCOL.md      # 派 PROXY 時讀
+│   ├── WORKTREE_SOP.md        # worktree 操作時讀
+│   └── LIFECYCLE.md           # MIS 完成後收尾時讀
 └── <repo>/                  # 各 repo 產出（slug 階層）
     ├── REPO.md              # 專案知識（MIS 最終整理，永遠在這）
     ├── archive/             # 歸檔目錄（MIS 完成後 mv 進來）
@@ -247,6 +252,6 @@ shiftblame/
 
 ## 授權
 
-> _「倉庫已經發出來了，接下來的常識就是你們自己的了。」_
+> _「專案發出來了，接下來你要怎麼用就不是我的鍋了。」_
 
 MIT
