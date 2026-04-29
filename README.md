@@ -165,13 +165,10 @@ shiftblame/
 
 ```
 ~/.shiftblame/
-├── common/                        # 跨 repo 共用（私人常識 + protocol symlink）
-│   ├── <DEPT>.md                  # 部門常識（QA/SEC/PRD/DEV/QC/MIS/SECRETARY）
-│   ├── DISPATCH_CHECKLIST.md      # → plugin symlink（派工前必讀）
-│   ├── GATE_FLOW.md              # → plugin symlink（閘門時必讀）
-│   ├── PROXY_PROTOCOL.md         # → plugin symlink（派 PROXY 時讀）
-│   ├── WORKTREE_SOP.md           # → plugin symlink（worktree 操作時讀）
-│   └── LIFECYCLE.md              # → plugin symlink（MIS 完成後收尾時讀）
+├── common/                        # 跨 repo 私人常識（PROXY 共議提煉）
+│   └── <DEPT>.md                  # 部門常識（QA/SEC/PRD/DEV/QC/MIS/SECRETARY）
+├── protocols → plugin cache/      # 框架協議（DISPATCH_CHECKLIST/GATE_FLOW/...）
+└── <repo>/
 └── <repo>/
     ├── REPO.md                    # 專案知識（永遠在這，不隨歸檔移動）
     ├── archive/<slug>/            # 已歸檔的 slug 快照
@@ -201,7 +198,7 @@ claude plugin marketplace add teps3105/shiftblame
 claude plugin install shiftblame
 ```
 
-首次執行 `/secretary` 時自動初始化目錄結構、symlink、`.gitignore`。
+首次執行 `/secretary` 時自動初始化目錄結構、symlink（common/ + protocols → plugin cache）、`.gitignore`。
 
 全域 CLAUDE.md 載入指令（含版本檢測）：
 ```

@@ -25,22 +25,20 @@ mkdir -p ~/.shiftblame/common ~/.shiftblame/"$REPO_NAME"/archive
 mkdir -p "$REPO_ROOT/.shiftblame"
 ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
-# Symlink protocol files from installed plugin → common/（私人常識）
-PLUGIN_PATH=$(find ~/.claude/plugins/cache/shiftblame/shiftblame -maxdepth 1 -type d | sort -V | tail -1)/skills/secretary
-for f in DISPATCH_CHECKLIST GATE_FLOW PROXY_PROTOCOL WORKTREE_SOP LIFECYCLE; do
-  [ -f "$PLUGIN_PATH/$f.md" ] && ln -sfn "$PLUGIN_PATH/$f.md" ~/.shiftblame/common/$f.md
-done
+# Protocol files: stable symlink → installed plugin（框架協議，非私人常識）
+PLUGIN_SKILLS=$(find ~/.claude/plugins/cache/shiftblame/shiftblame -maxdepth 1 -type d | sort -V | tail -1)/skills/secretary
+ln -sfn "$PLUGIN_SKILLS" ~/.shiftblame/protocols
 ```
 
 ## 派工流程
 
-每次派工前 **必須** `Read ~/.shiftblame/common/DISPATCH_CHECKLIST.md` 並逐條完成。
+每次派工前 **必須** `Read ~/.shiftblame/protocols/DISPATCH_CHECKLIST.md` 並逐條完成。
 
 核心步驟：
 1. Read DISPATCH_CHECKLIST.md → 逐條完成 checklist
 2. Read `~/.shiftblame/common/<DEPT>.md`（部門常識注入 prompt）
 3. 填寫派工單（SLUG/DEPT/WORKTREE_PATH/BRANCH/UPSTREAM/OUTPUT/DISCUSSION）
-4. `Read ~/.shiftblame/common/PROXY_PROTOCOL.md` → 建通訊目錄 → 同步派三方 PROXY
+4. `Read ~/.shiftblame/protocols/PROXY_PROTOCOL.md` → 建通訊目錄 → 同步派三方 PROXY
 5. 等待 PROXY 回報
 
 派工規則速記：
@@ -52,15 +50,15 @@ done
 
 ## 閘門流程
 
-每個部門完成後 **必須** `Read ~/.shiftblame/common/GATE_FLOW.md` 依格式回報。
+每個部門完成後 **必須** `Read ~/.shiftblame/protocols/GATE_FLOW.md` 依格式回報。
 
 核心：AskUserQuestion 回報 → 覆述老闆選擇 → **結束 turn** → 等老闆下一則訊息才推進。同一 turn 內不可派工下一部門。
 
 ## 收尾流程
 
 MIS 完成（最後節點，不可跳過）後：
-1. `Read ~/.shiftblame/common/LIFECYCLE.md` → 常識提煉 + 歸檔
-2. `Read ~/.shiftblame/common/WORKTREE_SOP.md` → 清理 worktree
+1. `Read ~/.shiftblame/protocols/LIFECYCLE.md` → 常識提煉 + 歸檔
+2. `Read ~/.shiftblame/protocols/WORKTREE_SOP.md` → 清理 worktree
 3. AskUserQuestion 問老闆 worktree 處置（刪除/保留迭代/保留待命）
 
 ## 循環圓
