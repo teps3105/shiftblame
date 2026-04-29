@@ -114,7 +114,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
       → MIS SUCCESS → 常識提煉 + slug 歸檔 + worktree 清理
 ```
 
-秘書的 SKILL.md 僅 82 行骨架，詳細 SOP 拆為 on-demand 檔案（派工前/閘門/PROXY/worktree/收尾），每次執行時 Read 刷新到 context，避免長 context 稀釋。
+秘書的 SKILL.md 僅骨架，詳細 SOP 拆為 on-demand 檔案（派工前/閘門/PROXY/worktree/收尾），每次執行時 Read 刷新到 context，避免長 context 稀釋。
 
 ---
 
@@ -168,14 +168,13 @@ shiftblame/
 ├── common/                        # 跨 repo 私人常識（PROXY 共議提煉）
 │   └── <DEPT>.md                  # 部門常識（QA/SEC/PRD/DEV/QC/MIS/SECRETARY）
 └── <repo>/
-└── <repo>/
     ├── REPO.md                    # 專案知識（永遠在這，不隨歸檔移動）
     ├── archive/<slug>/            # 已歸檔的 slug 快照
     └── <slug>/                    # 當前迭代
         ├── <DEPT>.md              # 部門結論檔
-        └── <DEPT>/                # PROXY 討論目錄
+        └── <DEPT>/                # PROXY 通訊目錄
 
-~/.worktree/<repo>/<slug>/        # worktree（隔離工作空間）
+~/.worktree/<repo>/<slug>/        # worktree（所有部門隔離工作空間）
 ```
 
 ---

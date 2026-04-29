@@ -1,6 +1,6 @@
 # Worktree SOP
 
-shiftblame 自定義 worktree（`~/.worktree/<repo>/<slug>/`），非 Claude 內建 worktree。
+shiftblame 自定義 worktree（`/home/derek/.worktree/<repo>/<slug>/`），非 Claude 內建 worktree。
 
 ## 建立
 

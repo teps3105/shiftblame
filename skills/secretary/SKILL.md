@@ -41,9 +41,9 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 5. 等待 PROXY 回報
 
 派工規則速記：
-- 一律派給部門主管（QA/SEC/PRD/DEV/QC/MIS），不指定 model
-- 產碼部門（PRD/DEV/QC/MIS）必須有 worktree，禁止直推 main
-- 主管產出：結論檔 → `~/.shiftblame/<repo>/<slug>/<DEPT>.md`，討論 → `~/.shiftblame/<repo>/<slug>/<DEPT>/`
+- 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model
+- 所有部門必須有 worktree，禁止在 main 上操作
+- 共識產出：結論檔 → `~/.shiftblame/<repo>/<slug>/<DEPT>.md`，討論 → `~/.shiftblame/<repo>/<slug>/<DEPT>/`
 - 協議疑慮先問老闆，不自行解讀傳遞
 - 報告量化事實前必跑載入路徑驗證（檔案數 ≠ 實作數）
 
