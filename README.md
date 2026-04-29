@@ -86,7 +86,7 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 | 面向 | Claude CLI | Codex CLI | Gemini CLI |
 |---|---|---|---|
 | 基本可用性 | `CLI_UNAVAILABLE`（`which claude` 失敗） | `CLI_UNAVAILABLE`（`which codex` 失敗） | `CLI_UNAVAILABLE`（`which gemini` 失敗） |
-| 認證 | `AUTH_FAILURE` | `AUTH_FAILURE` | `AUTH_FAILURE` + `NO_API_KEY`（需 `$GEMINI_API_KEY`） |
+| 認證 | `AUTH_FAILURE` | `AUTH_FAILURE` | `AUTH_FAILURE`（帳號登入） |
 | 速率/配額 | `RATE_LIMITED`、`QUOTA_EXCEEDED` | `RATE_LIMITED`、`QUOTA_EXCEEDED` | `RATE_LIMITED`、`QUOTA_EXCEEDED`、`RESOURCE_EXHAUSTED` |
 | sandbox/信任 | 無額外探測流程 | 有 `BWRAP_OK/BWRAP_FAIL` 探測，失敗時走高權限 bypass | 額外有 `TRUST_BLOCKED` 類型（信任機制阻擋） |
 | timeout/空輸出 | `TIMEOUT`、`EMPTY_OUTPUT` | `TIMEOUT`、`EMPTY_OUTPUT` | `TIMEOUT`、`EMPTY_OUTPUT` |
