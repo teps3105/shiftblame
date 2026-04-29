@@ -22,36 +22,6 @@ _去中心化多端點 AI 調度框架_
 
 ## 核心機制
 
-### 單一引擎，多 CLI 介面整合
-
-shiftblame 的本質是一個**自建框架引擎**——Claude Code 的 Agent SDK、工具鏈、worktree 管理、閘門機制——搭配 **PROXY 代理**。框架本身不生成代碼、不做決策，只負責調度與流程控制。
-
-```
-shiftblame 框架引擎（Claude Code）
-├── Agent SDK ─── 派發 PROXY，隔離 context
-├── 工具鏈 ─── Read/Edit/Bash/MCP（實際操作能力）
-├── worktree ── git 隔離，並行安全
-└── 閘門機制 ── AskUserQuestion + turn boundary
-
-PROXY 代理工具（外殼）
-├── bash → claude -p ──→ 任意 LLM 端點
-├── bash → codex exec → 任意 LLM 端點
-├── bash → gemini -p ─→ 任意 LLM 端點
-└── bash → curl/openai → 任意 API 端點
-```
-
-各家 CLI 的外部工具整合與生成品質決定了它適合被派去什麼任務：
-
-| CLI | 外部工具整合 | 生成品質 |
-|---|---|---|
-| **Anthropic Claude** | MCP 生態最廣（Chrome DevTools、HF Hub、web reader、SearXNG 等）、可驅動瀏覽器自動化 | 多步驟推理、複雜架構設計、長上下文精確遵循指令 |
-| **OpenAI Codex** | MCP 整合、live web search（Responses API）、open-source provider 支援（Ollama / LMStudio / 任意 OpenAI 相容端點）、code review 模式 | 精確代碼生成、code review 品質、diff 應用 |
-| **Google Gemini** | MCP 整合、Google Search grounding（原生）、extension system（git 安裝擴充能力）、ACP mode | 搜索 grounding 生成、多模態理解（圖片/音訊/影片）、長文件摘要與分析 |
-
-共通能力：MCP server 整合、非互動模式（headless exec）、web search。
-
-**關鍵**：同一個 PROXY 的 CLI 介面可以指向不同的 API 端點。今天用 Claude，明天換 GLM Coding Plan，後天用 Minimax——框架不關心模型是誰，換端點即可。
-
 ### 為什麼是去中心化
 
 傳統做法：一個 AI 從頭包到底，context 膨脹、注意力稀釋、單點失敗。
