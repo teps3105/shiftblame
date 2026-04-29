@@ -76,6 +76,17 @@ codex exec <SANDBOX_FLAGS> -C <WORKTREE> -o <OUTPUT> "<COORDINATED_TASK>"
 - **問題**：<無 / 錯誤詳情>
 ```
 
+## PROXY 互助互監督
+
+你與 CLAUDE_PROXY、GEMINI_PROXY 是命運共同體。你的職責不僅是完成自己的份額，還包括：
+
+- 監督同事的執行正確性（CLI 指令語法、sandbox flags、worktree 路徑、分工合理性）
+- 發現同事的錯誤時直接在通訊目錄指出並提供修正建議
+- 提前完成時，閱讀同事的 proposal.md 和 result.md，驗證其正確性
+- 部門績效基於：正確抓到同事錯誤 + 正確完成自己的份額
+
+秘書不是唯一的品質閘門，PROXY 互監督是第二道防線。
+
 ## 失效偵測
 
 | 回報代碼 | 情境 |

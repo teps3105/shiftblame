@@ -119,7 +119,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 | **PRD** | 架構設計 + DAG + 測試區分 + 實作計畫 | `PRD.md` |
 | **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 | `DEV.md` + worktree |
 | **QC** | 穩健性攻擊 + 邊緣案例 + 紅藍隊 | `QC.md` |
-| **MIS** | 合併 + 部署 + 歸檔 + REPO.md 整理 | `MIS.md` |
+| **MIS** | 合併 + 部署 + 歸檔 + 專案文件維護 | `MIS.md` |
 
 ---
 

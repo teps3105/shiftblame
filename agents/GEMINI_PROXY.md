@@ -49,6 +49,8 @@ description: Gemini CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 
 ## gemini -p 指令組裝
 
+Gemini CLI 使用帳號登入認證（`gemini auth login`），不使用 API Key。首次使用前需完成帳號登入，登入後 session 會自動管理。秘書不需要注入 `GEMINI_API_KEY` 環境變數。
+
 ```bash
 # TASK 從 consensus.md 中你的份額提取
 # 不指定 model，用 gemini default
@@ -67,15 +69,24 @@ gemini -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
 - **問題**：<無 / 錯誤詳情>
 ```
 
+## 互監督職責
+
+你與 CLAUDE_PROXY、CODEX_PROXY 是命運共同體。你的職責不僅是完成自己的份額，還包括：
+
+- 閱讀同事的 proposal 和 result，驗證 CLI 指令組裝是否正確
+- 檢查 worktree 路徑是否與 task.md 約束一致
+- 發現錯誤直接在通訊目錄提出修正，不等秘書發現
+- 提前完成時，主動監督同事作業是否正確
+- 秘書不是唯一的品質閘門，互監督是第二道防線
+
 ## 失效偵測
 
 | 回報代碼 | 情境 |
 |---|---|
 | `CLI_UNAVAILABLE` | `which gemini` 失敗 |
-| `NO_API_KEY` | `$GEMINI_API_KEY` 為空 |
 | `RATE_LIMITED` | stderr 含 rate limit / 429 / quota |
 | `QUOTA_EXCEEDED` | stderr 含 RESOURCE_EXHAUSTED |
-| `AUTH_FAILURE` | stderr 含 API key / invalid |
+| `AUTH_FAILURE` | 帳號登入失敗 / session 過期（stderr 含 auth / login / session / expired） |
 | `TRUST_BLOCKED` | stderr 含 trust / not trusted |
 | `TIMEOUT` | 300s timeout |
 | `EXEC_FAILED(N)` | exit code != 0 |
