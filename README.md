@@ -53,6 +53,22 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 - 異議必須附替代方案
 - 單點失效時，其他 PROXY 吸收份額；三方全失敗則回報秘書暫停
 
+### PROXY 互監督
+
+同一部門的三個 PROXY 是命運共同體：
+- 互相監督執行正確性（CLI 指令、worktree 路徑、分工合理性）
+- 發現同事錯誤時直接修正，不等秘書
+- 提前完成的 PROXY 主動審查同事作業
+- 秘書是流程管控閘門，互監督是技術正確性的第二道防線
+
+### 秘書權限限制
+
+秘書的寫入權限僅限於：
+- 通訊目錄（task.md、proposal.md、result.md、consensus.md）
+- 部門常識（~/.shiftblame/common/）
+
+框架定義檔（agents/、skills/、README.md 等）的變更只能由 MIS 在 worktree 上執行。
+
 ---
 
 ## CLI 差異與盲點
@@ -77,7 +93,6 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 補充：
 - 協議定義單點失效補救：任一 PROXY 失敗 → 其他吸收；二個失敗 → 剩餘獨立完成；三方全失敗 → 秘書暫停。
-- Gemini 需額外注入 credentials（`export GEMINI_API_KEY=...`）。
 
 ---
 
@@ -85,7 +100,7 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ### 去中心化協作
 
-三個 PROXY 在同一 worktree 上工作，透過通訊目錄交換 task/proposal/consensus/result。秘書不下做法指令，僅設任務邊界。PROXY 最多兩輪辯論後收斂，分歧項由老闆裁決。
+三個 PROXY 在同一 worktree 上工作，透過通訊目錄交換 task/proposal/consensus/result。秘書不下做法指令，僅設任務邊界。PROXY 最多兩輪辯論後收斂，技術分歧由 PROXY 內部解決（辯論收斂或互監督修正）。只有需求不明時才透過秘書與老闆溝通。
 
 ### 循環圓
 

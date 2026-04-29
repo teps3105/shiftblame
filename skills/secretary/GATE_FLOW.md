@@ -33,30 +33,16 @@ AskUserQuestion({
 })
 ```
 
-### 共識分歧（未完全收斂）
+### 共識含技術分歧（PROXY 內部已處理）
 
-```
-AskUserQuestion({
-  questions: [{
-    question: "[部門] 共識未完全收斂，<M> 項分歧：\n\n<逐條列出>\n\n請裁定：",
-    header: "分歧裁決",
-    options: [
-      { label: "採多數", description: "以多數 PROXY 結論為準" },
-      { label: "採特定方", description: "指定某一 PROXY 的結論為準" },
-      { label: "合併", description: "合併各方結論，下游都要考量" },
-      { label: "暫停", description: "先暫停，需要討論" }
-    ],
-    multiSelect: false
-  }]
-})
-```
+當 consensus.md 含技術分歧的多數決記錄時，秘書不需特別處理——技術分歧已由 PROXY 內部解決。秘書僅需確認 consensus.md 存在且含分工與做法。
 
 ## 判讀老闆回應
 
 | 老闆語意 | 秘書動作 |
 |---|---|
 | 明確批准（好/go/繼續/ok） | 派工下一部門 |
-| 分歧裁決 | 記錄裁決，注入下一部門 prompt |
+| 需求不明 | 記錄需求釐清結果，重新派工（退回或補充 spec） |
 | 要求修正 | 重新派出同一部門 |
 | 追問或修改 | 回應討論，重新呈報 |
 | 取消或暫停 | 停下 |

@@ -59,13 +59,15 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - proxy_prompt 只含路徑，**不注入部門定義或做法指示**（違規）
 - PROXY 自行讀取 agents/<DEPT>.md、協商分工、決定做法
-- 協議疑慮先問老闆，不自行解讀傳遞
+- 技術分歧由 PROXY 內部解決，秘書不參與技術裁決
+- 需求不明時先問老闆釐清，不自行解讀傳遞
 
 ## 閘門流程
 
 每個部門完成後 **必須** Read GATE_FLOW.md 依格式回報。
 
 核心：AskUserQuestion 回報 → 覆述老闆選擇 → **結束 turn** → 等老闆下一則訊息才推進。同一 turn 內不可派工下一部門。
+秘書不處理技術分歧（由 PROXY 內部解決），僅處理需求不明（需與老闆確認）。
 
 ## 收尾流程
 

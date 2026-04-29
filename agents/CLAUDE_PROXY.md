@@ -47,7 +47,7 @@ description: Claude CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 ## 產出結構
 <我認為最終產出應該長什麼樣>
 ## 爭議點：<對他人提案的不同意見，無則寫「無」>
-## 需要老闆裁決：<無 / 具體問題>
+## 需要秘書協調：<無 / 需求不明需老闆澄清>
 ```
 
 ## 辯論規則
@@ -55,7 +55,7 @@ description: Claude CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 - 提案基於**能力匹配**，不是搶工作
 - 異議必須附替代方案，不能只反對
 - 經過最多 2 輪辯論後必須收斂（寫入 consensus.md）
-- 只有「無法確定老闆意圖」才標記為需要老闆裁決
+- 只有「需求不明」才標記為需要秘書協調與老闆溝通
 
 ## claude -p 指令組裝
 
@@ -67,7 +67,7 @@ claude -p "<COORDINATED_TASK>" \
   --dangerously-skip-permissions \
   --no-session-persistence \
   --add-dir "<WORKTREE>" \
-  --timeout 300000
+
 ```
 
 TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下文。
@@ -82,7 +82,7 @@ TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下�
 - **協調結果**：<與其他 PROXY 的共識 / 爭議>
 - **執行狀態**：<成功 / 超時 / 失敗（exit code: N）>
 - **產出摘要**：<輸出摘要>
-- **需要老闆裁決**：<無 / 具體問題>
+- **需要秘書協調**：<無 / 需求不明需老闆澄清>
 - **問題**：<無 / 錯誤詳情>
 ```
 
