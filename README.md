@@ -24,7 +24,7 @@ _去中心化多端點 AI 調度框架_
 
 ### 單一引擎，多 CLI 介面整合
 
-shiftblame 的本質是一個**自建框架引擎**——Claude Code 的 Agent SDK、工具鏈、worktree 管理、閘門機制——搭配 **PROXY 代理工具**，將任意 CLI 統為統一介面接入。框架本身不生成代碼、不做決策，只負責調度與流程控制。
+shiftblame 的本質是一個**自建框架引擎**——Claude Code 的 Agent SDK、工具鏈、worktree 管理、閘門機制——搭配 **PROXY 代理**。框架本身不生成代碼、不做決策，只負責調度與流程控制。
 
 ```
 shiftblame 框架引擎（Claude Code）
