@@ -179,32 +179,30 @@ shiftblame/
 
 ---
 
-## 安裝
+## 安裝與更新
+
+shiftblame 透過 Claude Code 的 Marketplace 機制安裝。Marketplace 是一個 GitHub repo（`teps3105/shiftblame`），內含 `marketplace.json` 定義可安裝的 plugin。`claude plugin install` 會從 marketplace 下載 plugin 到本地快取（`~/.claude/plugins/cache/`），skills 和 agents 隨即生效。
 
 ```bash
-# 1. 註冊 Marketplace（GitHub repo 即為 marketplace）
+# 安裝
 claude plugin marketplace add teps3105/shiftblame
-
-# 2. 安裝 Plugin
 claude plugin install shiftblame
 ```
 
-更新版本：
+Plugin 有兩層快取，push 新版後不會自動更新，需手動清除後重新安裝：
 ```bash
 rm -rf ~/.claude/plugins/marketplaces/shiftblame ~/.claude/plugins/cache/shiftblame
 claude plugin marketplace add teps3105/shiftblame
 claude plugin install shiftblame
 ```
 
-首次執行 `/secretary` 時自動初始化目錄結構、IDE symlink（`.shiftblame/` → `~/.shiftblame/`）、`.gitignore`。
-
-全域 CLAUDE.md 載入指令（含版本檢測）：
+全域 CLAUDE.md 載入秘書 skill 並自動檢測版本：
 ```
 load shiftblame: secretary
-載入時執行 `grep '"version"' ~/.claude/plugins/cache/shiftblame/shiftblame/*/plugin.json`
-確認版本為最新。版本不符 → 提醒老闆執行
-`rm -rf ~/.claude/plugins/marketplaces/shiftblame ~/.claude/plugins/cache/shiftblame && claude plugin install shiftblame`
 ```
+載入時比對本地快取版本與 marketplace 最新版本，不符則提醒執行上述更新流程。
+
+首次執行 `/secretary` 時自動初始化 `~/.shiftblame/` 目錄結構、repo 內 IDE symlink、`.gitignore`。
 
 ---
 
