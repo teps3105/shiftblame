@@ -44,7 +44,7 @@ PROXY 代理工具（外殼）
 
 | CLI | 外部工具整合 | 生成品質 |
 |---|---|---|
-| **Anthropic Claude** | MCP 生態最廣（Chrome DevTools、HF Hub、web reader、SearXNG 等）、可驅動瀏覽器自動化、auto-memory 跨 session 記憶 | 多步驟推理、複雜架構設計、長上下文精確遵循指令 |
+| **Anthropic Claude** | MCP 生態最廣（Chrome DevTools、HF Hub、web reader、SearXNG 等）、可驅動瀏覽器自動化 | 多步驟推理、複雜架構設計、長上下文精確遵循指令 |
 | **OpenAI Codex** | MCP 整合、live web search（Responses API）、open-source provider 支援（Ollama / LMStudio / 任意 OpenAI 相容端點）、code review 模式 | 精確代碼生成、code review 品質、diff 應用 |
 | **Google Gemini** | MCP 整合、Google Search grounding（原生）、extension system（git 安裝擴充能力）、ACP mode | 搜索 grounding 生成、多模態理解（圖片/音訊/影片）、長文件摘要與分析 |
 
