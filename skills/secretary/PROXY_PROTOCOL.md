@@ -13,8 +13,6 @@
 └── gemini/{proposal,result}.md
 ```
 
-注意：沒有 `dept.md`。部門定義（agents/<DEPT>.md）是 PROXY 在 proposal 階段自行讀取的參考，不是秘書塞進去的指令。
-
 ## task.md 格式（秘書寫入）
 
 task.md 只包含兩樣東西：**目標**和**約束**。不包含任何做法指示。
