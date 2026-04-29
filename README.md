@@ -50,7 +50,7 @@ PROXY 代理工具（外殼）
 
 共通能力：MCP server 整合、非互動模式（headless exec）、web search。
 
-**關鍵**：同一個 PROXY 可以指向不同的端點。今天用 Claude，明天換 GLM Coding Plan，後天用 Minimax——框架不關心模型是誰，只關心「這個端點的外部工具覆蓋範圍和生成品質能否勝任任務」。
+**關鍵**：同一個 PROXY 的 CLI 介面可以指向不同的 API 端點。今天用 Claude，明天換 GLM Coding Plan，後天用 Minimax——框架不關心模型是誰，換端點即可。
 
 ### 為什麼是去中心化
 
