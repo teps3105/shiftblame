@@ -182,16 +182,14 @@ shiftblame/
 ## 安裝與更新
 
 ```bash
-# 註冊 Marketplace
+# 註冊 Marketplace（寫入 settings.json extraKnownMarketplaces）
 claude plugin marketplace add teps3105/shiftblame
 
-# 安裝
-claude plugin install shiftblame
-
-# 更新（重啟後生效）
-claude plugin marketplace update
-claude plugin update shiftblame
+# 安裝 Plugin
+claude plugin install shiftblame@shiftblame
 ```
+
+更新：`claude plugin marketplace update` + `claude plugin update shiftblame`（重啟生效）。
 
 全域 CLAUDE.md 載入秘書 skill：
 ```
