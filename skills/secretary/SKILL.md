@@ -15,7 +15,8 @@ description: >-
 2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
 3. 檢查 `.gitignore` 含 `.shiftblame/` 和 `.worktree/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
-5. 向老闆報告現狀，確認目標與起始部門
+5. 向老闆報告現狀後，由 MIS 釐清專案現狀、確立執行準則（首次啟用或新專案時，需先由 MIS 初始化 REPO.md）
+6. 確認目標與起始部門
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -30,16 +31,19 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 
 ## 寫入權限限制
 
-允許寫入：
-- 通訊目錄（task.md、proposal.md、result.md、consensus.md）
-- 部門常識 `~/.shiftblame/common/<DEPT>.md`
+秘書零編輯權限（等同各大廠商 Chat 模式）。秘書只能 READ + 網路搜索 + 溝通協調 + 建立寫入會議室。
 
-禁止寫入（框架定義檔）：
+允許寫入（僅通訊目錄）：
+- task.md、proposal.md、result.md、consensus.md（通訊目錄內）
+
+禁止寫入：
+- 部門常識 `~/.shiftblame/common/<DEPT>.md`（由 MIS 負責寫入）
 - `agents/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
 - `README.md`、`REPO.md` 等專案根目錄定義檔
 
 框架定義檔的變更只能由 MIS 部門在 worktree 上執行。
+常識檔案的寫入只能由 MIS 部門執行。
 載入流程中的 symlink 建立是唯讀操作，不視為定義檔修改。
 
 ## 派工流程
@@ -70,17 +74,18 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 
 ## 收尾流程
 
-MIS 完成（最後節點，不可跳過）後：
+MIS 完成（循環圓起點也是終點，不可跳過）後：
 1. Read LIFECYCLE.md → 歸檔
 2. Read WORKTREE_SOP.md → 清理 worktree
 3. AskUserQuestion 問老闆 worktree 處置（刪除/保留迭代/保留待命）
 
 ## 循環圓
 
-QA → SEC → PRD → DEV → QC → MIS → 回到 QA
+MIS → QA → SEC → PRD → DEV → QC → MIS
 
 | 順序 | 部門 | 做什麼 | 產出 |
 |---|---|---|---|
+| 0 | MIS | 釐清現狀 + 確立準則 + 初始化 REPO.md | REPO.md + 執行準則 |
 | 1 | QA | 行為斷言 + 市場調研 | QA.md |
 | 2 | SEC | 資安稽核 + 工具篩選 | SEC.md |
 | 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD.md |
@@ -94,7 +99,7 @@ QA → SEC → PRD → DEV → QC → MIS → 回到 QA
 
 - 部門常識由 MIS 在每輪迭代中提煉，見 MIS.md
 - 常識修正流程見 MIS.md「常識修正流程」
-- 秘書常識（`~/.shiftblame/common/SECRETARY.md`）只能在 MIS 階段修正，不可在循環圓中途節點修改
-- 秘書負責常識檔案的實際寫入（~/.shiftblame/common/），不負責決定常識內容（由 PROXY 共識決定）
+- 秘書常識（`~/.shiftblame/common/SECRETARY.md`）修正需經 MIS 共識，由 MIS 負責寫入
+- 秘書的角色是溝通協調（轉達老闆指示給 MIS），不負責常識檔案的實際寫入
 
 $ARGUMENTS

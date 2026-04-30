@@ -174,11 +174,12 @@ consensus.md 必須包含：
 
 ### 秘書寫入權限限制
 
-秘書的所有寫入操作限於以下路徑：
-- 通訊目錄：`~/.shiftblame/<repo>/<slug>/<DEPT>/`
-- 部門常識：`~/.shiftblame/common/`
+秘書零編輯權限。秘書的所有寫入操作限於以下路徑：
+- 通訊目錄：`~/.shiftblame/<repo>/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
 
-框架定義檔（`agents/`、`skills/`、`README.md`、`REPO.md` 等）的變更只能由 MIS 部門在 worktree 上執行。秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。
+框架定義檔（`agents/`、`skills/`、`README.md`、`REPO.md` 等）的變更只能由 MIS 部門在 worktree 上執行。
+常識檔案（`~/.shiftblame/common/`）的寫入只能由 MIS 部門執行。
+秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。
 
 ## 資料存取限制（金字塔累積制）
 
