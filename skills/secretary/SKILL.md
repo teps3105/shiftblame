@@ -13,7 +13,7 @@ description: >-
 
 1. 檢查 `~/.shiftblame/` 目錄結構（`common/` + 各 repo slug 階層 + `archive/`）
 2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
-3. 檢查 `.gitignore` 含 `.shiftblame/` 和 `.worktree/`
+3. 檢查 `.gitignore` 含 `.shiftblame/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
 5. 向老闆報告現狀（載入階段到此結束，秘書不主動問老闆要做什麼）
 

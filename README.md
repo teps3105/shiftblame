@@ -157,6 +157,9 @@ shiftblame/
 │       ├── PROXY_PROTOCOL.md
 │       ├── WORKTREE_SOP.md
 │       └── LIFECYCLE.md
+├── hooks/
+│   ├── hooks.json
+│   └── inject-claudemd.sh
 ├── LICENSE
 └── README.md
 ```
@@ -171,10 +174,9 @@ shiftblame/
     ├── REPO.md
     ├── archive/<slug>/
     └── <slug>/
+        ├── worktree/            # git worktree 實體
         ├── <DEPT>.md
         └── <DEPT>/          # PROXY 通訊目錄
-
-~/.worktree/<repo>/<slug>/  # git worktree
 ```
 
 ### 框架使用的工具
@@ -214,9 +216,9 @@ claude plugin marketplace update
 claude plugin update shiftblame
 ```
 
-全域 `CLAUDE.md` 設定版本檢查。使用時每個 session 開始執行 `/secretary` 啟動秘書調度。
+安裝後首次啟動 Claude Code 時，plugin 透過 SessionStart hook 自動將秘書提示詞注入 `~/.claude/CLAUDE.md`（若已有 `/secretary` 相關提示則不重複注入）。使用者無需手動設定。
 
-首次執行 `/secretary` 時會初始化 `~/.shiftblame/`、建立 repo 內 symlink、檢查 `.gitignore` 是否含 `.shiftblame/` 與 `.worktree/`。
+首次執行 `/secretary` 時會初始化 `~/.shiftblame/`、建立 repo 內 symlink、檢查 `.gitignore` 是否含 `.shiftblame/`。
 
 ---
 
