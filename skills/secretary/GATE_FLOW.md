@@ -1,8 +1,39 @@
-# 部門完成閘門流程
+# 閘門流程
+
+## MIS 啟動閘門
+
+MIS 啟動後（循環圓起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
+
+### 確認步驟
+
+1. 讀取 `~/.shiftblame/<repo>/REPO.md`，確認內容完整：
+   - 專案定位
+   - 方向
+   - 實作程度
+   - 待辦
+2. 若 REPO.md 不存在或內容不完整 → 退回 MIS 補齊
+3. AskUserQuestion 呈報 MIS 啟動結果：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "MIS 啟動完成。專案現狀已釐清，REPO.md 已初始化/更新。",
+    header: "MIS 啟動",
+    options: [
+      { label: "確認派工 QA", description: "專案現狀與準則 OK，開始循環圓" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+## 部門完成閘門流程
 
 每個部門完成後，秘書讀取 PROXY 共識產出，驗證品質門檻，用 AskUserQuestion 回報老闆。
 
-## 步驟
+### 步驟
 
 ```
 1. 部門完成 → 秘書讀取 consensus.md + 各 PROXY result.md

@@ -9,11 +9,14 @@ Read ~/.shiftblame/<repo>/REPO.md
 ```
 
 從 REPO.md 提取約束條件（不是做法）：
+- REPO.md 由 MIS 初始化與維護（專案定位、方向、實作程度、待辦）
 - 技術棧（語言、框架、測試工具）
 - 測試指令（unit / integration 路徑與指令）
 - 建置指令（build / compile）
 - 部署方式（Docker / k8s / 其他）
 - 已知約束（安全守則、狀態機、API 端點）
+
+**REPO.md 不存在 = MIS 尚未啟動。** 須先派工 MIS 進行專案現狀釐清，完成後 REPO.md 才會建立。
 
 **不讀 REPO.md 就派工 = 違規。**
 

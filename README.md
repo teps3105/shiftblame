@@ -63,11 +63,9 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ### 秘書權限限制
 
-秘書的寫入權限僅限於：
-- 通訊目錄（task.md、proposal.md、result.md、consensus.md）
-- 部門常識（~/.shiftblame/common/）
+秘書零編輯權限（等同各大廠商 Chat 模式）。秘書的寫入權限僅限於通訊目錄（task.md、proposal.md、result.md、consensus.md）。嚴禁修改 `agents/`、`skills/`、`README.md`、`REPO.md` 及 `~/.shiftblame/common/` 下的任何檔案。
 
-框架定義檔（agents/、skills/、README.md 等）的變更只能由 MIS 在 worktree 上執行。
+框架定義檔與常識檔案的變更只能由 MIS 在 worktree 上執行。
 
 ---
 
@@ -107,7 +105,7 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 六部門順序固定：
 
 ```
-QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
+MIS → QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 MIS）
 ```
 
 ### 資料存取（金字塔累積制）
@@ -134,7 +132,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 | **PRD** | 架構設計 + DAG + 測試區分 + 實作計畫 | `PRD.md` |
 | **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 | `DEV.md` + worktree |
 | **QC** | 穩健性攻擊 + 邊緣案例 + 紅藍隊 | `QC.md` |
-| **MIS** | 合併 + 部署 + 生產環境驗證 + 歸檔 + 專案文件維護 | `MIS.md` |
+| **MIS** | 專案現狀釐清 + 執行準則確立 + 合併 + 部署 + 生產環境驗證 + 歸檔 + 專案文件維護 + 常識寫入 | `MIS.md` |
 
 ---
 
@@ -225,7 +223,7 @@ claude plugin update shiftblame
 ## 使用
 
 ```
-/secretary → 輸入需求 → 秘書調度 → QA→SEC→PRD→DEV→QC→MIS
+/secretary → 輸入需求 → 秘書調度 → MIS→QA→SEC→PRD→DEV→QC→MIS
 ```
 
 互動節點由秘書用 AskUserQuestion 回報：
