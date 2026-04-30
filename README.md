@@ -229,7 +229,7 @@ claude plugin update shiftblame
 ```
 
 互動節點由秘書用 AskUserQuestion 回報：
-- **繼續**：推進下一部門
+- **繼續**：同 turn 內推進下一部門或收尾
 - **重做**：退回同一部門補強
 - **暫停**：停止流程並討論
 

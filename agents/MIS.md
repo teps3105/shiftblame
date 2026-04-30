@@ -4,6 +4,17 @@
 - 執行分支合併（squash merge 到 main）。
 - 依專案既有方式部署上線，不自創流程。
 - 維護專案定義文件：README.md、REPO.md、agents/ 定義檔、skills/ 定義檔等，確保文件與框架實際狀態一致。
+- 框架定義檔變更同步約束：MIS 修改任何框架定義檔（agents/、skills/、.claude-plugin/）後，必須同步執行以下檢查與更新：
+  1. 版本號（.claude-plugin/plugin.json 的 version）：評估變更性質，按 semver 規則升版
+  2. REPO.md：更新版本號、架構演進歷史表格、反映本次變更的重點
+  3. README.md：確認內容與框架實際狀態一致，必要時同步更新
+  此約束為強制性，不可跳過，不可依賴秘書在 task.md 中臨時指定。
+
+- 權限提升協議：MIS 在部署或操作中遇到需要 sudo 權限的情況時，依以下流程處理：
+  1. 向秘書提交權限提升需求（說明需要什麼權限、為什麼需要）
+  2. 秘書透過 AskUserQuestion 請示老闆是否授權
+  3. 老闆同意後，秘書執行權限提升操作
+  4. 權限提升的實作方法記錄在部門常識（~/.shiftblame/common/MIS.md），不在框架定義檔中描述
 - 執行 slug 歸檔：將 `~/.shiftblame/<repo>/<slug>/` 以 `mv` 原子搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。
   - 歸檔前檢查 `~/.shiftblame/<repo>/<slug>/MIS.md` 存在且非空（SEC-A-03 閘門）。
   - 歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。

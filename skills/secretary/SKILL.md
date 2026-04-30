@@ -65,7 +65,7 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 
 每個部門完成後 **必須** Read GATE_FLOW.md 依格式回報。
 
-核心：AskUserQuestion 回報 → 覆述老闆選擇 → **結束 turn** → 等老闆下一則訊息才推進。同一 turn 內不可派工下一部門。
+核心：AskUserQuestion 回報 → 「繼續」則同 turn 內直接派工下一部門；「暫停」/「重做」則結束 turn。
 秘書不處理技術分歧（由 PROXY 內部解決），僅處理需求不明（需與老闆確認）。
 
 ## 收尾流程
