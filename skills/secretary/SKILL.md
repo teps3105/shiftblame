@@ -93,5 +93,8 @@ QA → SEC → PRD → DEV → QC → MIS → 回到 QA
 ## 部門常識
 
 - 部門常識由 MIS 在每輪迭代中提煉，見 MIS.md
+- 常識修正流程見 MIS.md「常識修正流程」
+- 秘書常識（`~/.shiftblame/common/SECRETARY.md`）只能在 MIS 階段修正，不可在循環圓中途節點修改
+- 秘書負責常識檔案的實際寫入（~/.shiftblame/common/），不負責決定常識內容（由 PROXY 共識決定）
 
 $ARGUMENTS
