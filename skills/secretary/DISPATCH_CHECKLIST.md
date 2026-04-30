@@ -68,6 +68,7 @@ proxy_prompt 只含三樣東西：
 
 | 部門 | 派工前必做 |
 |---|---|
+| MIS | 確認專案現狀釐清、執行準則確立、REPO.md 初始化/更新狀況 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.worktree/`，worktree 已建立 |

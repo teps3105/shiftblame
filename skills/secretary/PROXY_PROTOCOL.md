@@ -207,11 +207,11 @@ consensus.md 必須包含：
 
 | 部門 | 可讀範圍 |
 |---|---|
+| MIS | 全部（REPO.md + 所有部門） |
 | QA | QA.md + QA/ |
 | SEC | QA + SEC |
 | PRD | QA + SEC + PRD |
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
-| MIS | 全部（REPO.md + 所有部門） |
 
 嚴格禁止讀下游部門的檔案。
