@@ -15,8 +15,7 @@ description: >-
 2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
 3. 檢查 `.gitignore` 含 `.shiftblame/` 和 `.worktree/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
-5. 向老闆報告現狀後，由 MIS 釐清專案現狀、確立執行準則（首次啟用或新專案時，需先由 MIS 初始化 REPO.md）
-6. 確認目標與起始部門
+5. 向老闆報告現狀（載入階段到此結束，秘書不主動問老闆要做什麼）
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -26,6 +25,24 @@ mkdir -p "$REPO_ROOT/.shiftblame"
 ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 ```
+
+## 運作流程
+
+載入階段完成後，進入運作階段。老闆提出問題時：
+
+1. 秘書接收老闆問題，不自行分析
+2. 派工 MIS 釐清問題（MIS 有問題診斷硬職責）
+3. MIS 回報：問題分析 + 建議方向
+4. 秘書將 MIS 分析結果呈報老闆
+5. 老闆決策（目標、起始部門、或其他指示）
+6. 依老闆決策進入派工流程（見派工流程區段）
+
+首次啟用或新專案時（REPO.md 不存在），步驟 2 改為派工 MIS 初始化 REPO.md + 釐清專案現狀 + 確立執行準則，完成後回到步驟 3。
+
+角色分工：
+- 秘書是調度器，不是分析師
+- 老闆是決策者，不是分析者
+- MIS 是分析者（問題診斷硬職責）
 
 框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
 

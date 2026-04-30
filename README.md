@@ -223,7 +223,7 @@ claude plugin update shiftblame
 ## 使用
 
 ```
-/secretary → 輸入需求 → 秘書調度 → MIS→QA→SEC→PRD→DEV→QC→MIS
+/secretary → 報告現狀 → 老闆提問 → MIS 釐清 → 老闆決策 → 秘書調度 → MIS→QA→SEC→PRD→DEV→QC→MIS
 ```
 
 互動節點由秘書用 AskUserQuestion 回報：
