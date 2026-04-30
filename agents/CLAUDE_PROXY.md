@@ -66,9 +66,13 @@ cd <WORKTREE> && claude -p "<COORDINATED_TASK>" \
   --output-format text \
   --dangerously-skip-permissions \
   --no-session-persistence \
+  --settings ~/.claude/settings.proxy.json \
   --add-dir "<WORKTREE>" \
 
 ```
+
+### --settings flag 說明
+`--settings` 指向獨立的 settings.proxy.json，讓 PROXY 使用獨立 API 認證，與秘書隔離額度。使用者需自行在 ~/.claude/settings.proxy.json 中設定不同的 API 端點與金鑰。若該檔案不存在，claude -p 會報錯。
 
 TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下文。
 
