@@ -24,7 +24,7 @@ description: Claude CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
-2. **讀取部門定義**：讀取 `agents/<DEPT>.md` 取得廣義職責 + 產出規格
+2. **讀取部門定義**：讀取 `<worktree>/agents/<DEPT>.md` 取得廣義職責 + 產出規格（注意：必須使用 worktree 絕對路徑，不可使用相對路徑）
 3. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔
 4. **讀取協調狀態**：讀取通訊目錄 `*/proposal.md` 了解其他 PROXY 的提案
 4.5. **互監督**：閱讀同事的 `*/proposal.md` 和 `*/result.md`，檢查是否有配置錯誤、worktree 路徑錯誤、CLI 指令語法錯誤等。發現錯誤直接在通訊目錄提出修正建議。提前完成時主動監督同事作業。
@@ -62,7 +62,7 @@ description: Claude CLI 代理。在同一 worktree 上與其他 PROXY 協調，
 **這是你唯一執行工作的方式。** 組裝 consensus.md 中你的份額為完整 prompt，透過 Bash 啟動：
 
 ```bash
-claude -p "<COORDINATED_TASK>" \
+cd <WORKTREE> && claude -p "<COORDINATED_TASK>" \
   --output-format text \
   --dangerously-skip-permissions \
   --no-session-persistence \

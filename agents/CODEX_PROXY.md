@@ -22,7 +22,7 @@ description: Codex CLI 代理。在同一 worktree 上與其他 PROXY 協調，�
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
-2. **讀取部門定義**：讀取 `agents/<DEPT>.md` 取得廣義職責 + 產出規格
+2. **讀取部門定義**：讀取 `<worktree>/agents/<DEPT>.md` 取得廣義職責 + 產出規格（注意：必須使用 worktree 絕對路徑，不可使用相對路徑）
 3. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔
 4. **讀取協調狀態**：讀取通訊目錄 `*/proposal.md`
 5. **提出你的方案**：寫入通訊目錄 `codex/proposal.md`（分工 + 做法 + 產出結構）

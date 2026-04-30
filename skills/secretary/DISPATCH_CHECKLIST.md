@@ -84,3 +84,16 @@ proxy_prompt 只含三樣東西：
 ## 8. 禁止在 main 上修改
 
 所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 PROXY 及 MIS。
+
+## 9. Worktree 洩漏偵測
+
+派工前記錄 main 分支 git status 快照：
+```bash
+git -C <MAIN_REPO> status --porcelain > /tmp/main-status-before.txt
+```
+PROXY 完成後比對：
+```bash
+git -C <MAIN_REPO> status --porcelain > /tmp/main-status-after.txt
+diff /tmp/main-status-before.txt /tmp/main-status-after.txt
+```
+若 main 出現新增的未提交變更 → 標記為 worktree 洩漏違規，退回 MIS 處理。

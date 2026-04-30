@@ -52,9 +52,9 @@ task.md 只包含兩樣東西：**目標**和**約束**。不包含任何做法�
 ## Agent() 呼叫
 
 ```
-Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true)
-Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true)
-Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true)
+Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, isolation="worktree")
+Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, isolation="worktree")
+Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, isolation="worktree")
 ```
 
 proxy_prompt **最小化**，只含三樣東西：
