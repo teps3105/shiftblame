@@ -25,7 +25,7 @@ shiftblame（推鍋）是一套 AI agents 開發框架，核心機制是讓三�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v5.1.1
+│   ├── plugin.json          # v5.1.2
 │   └── marketplace.json
 ├── agents/
 │   ├── QA.md                # 品保主管
@@ -49,7 +49,7 @@ shiftblame/
 └── README.md
 ```
 
-## 資料存儲架構（v5.1.1 slug 階層）
+## 資料存儲架構（v5.1.2 slug 階層）
 
 ```
 ~/.shiftblame/
@@ -85,9 +85,9 @@ shiftblame/
 
 ## 當前狀態
 
-### 版本：5.1.1
+### 版本：5.1.2
 
-最新架構變更：退回規則改為增量重寫（通訊文件與部門產出不再刪除重建），PROXY 互監督機制、秘書寫入權限限制。
+最新架構變更：移除 CLAUDE.md 中不生效的 `load shiftblame: secretary` 指令，改為明確的 `/secretary` 使用指示；MIS 新增生產環境驗證職能；修正 REPO.md SRE 相關待辦描述。
 
 ### 架構演進歷史
 
@@ -103,13 +103,14 @@ shiftblame/
 | v5.0.1 | 定義文件清理：統一用詞、更新檔案結構描述 |
 | v5.1.0 | PROXY 互監督機制、秘書寫入權限限制、README 全面重寫、定義文件清理 |
 | v5.1.1 | 退回規則改為增量重寫（通訊文件與部門產出不再刪除重建） |
+| v5.1.2 | 移除 SRE 載入步驟、修正 CLAUDE.md 提示詞、MIS 新增生產環境驗證職能 |
 
 ### 已知待辦
 
 1. **部門常識為空**：`~/.shiftblame/common/` 的各部門 `.md` 尚未建立內容，等第一輪實戰後由 MIS 提煉
 2. **Codex / Gemini CLI 可用性未確認**：PROXY 設計了失效偵測機制（`CLI_UNAVAILABLE` 等），但三 CLI 同時可用的環境尚未驗證
 3. **PROXY 自組織完整流程未實戰驗證**：三方 PROXY 在 slug 階層共議的完整流程還沒跑過一輪
-4. **SRE 部門設計（效益分析師）**：新增獨立背景部門，巡檢所有 repo 的 archive + 部門常識，分析三巨頭（Claude/Codex/Gemini）在各部門的效益、token 消耗、rate limit、產出品質。產出寫入 `~/.shiftblame/<repo>/sre/report.md`，秘書載入時讀取作為派工參考。不主動觸發循環圓，由秘書請示老闆後才決定是否啟動處理。**前置依賴**：PROXY result.md 需加入結構化 token 回報機制（input/output token、執行時間、結論摘要），目前 PROXY 產出為自由文本無此數據
+4. **SRE 部門設計（效益分析師）**：新增獨立背景部門，巡檢所有 repo 的 archive + 部門常識，分析三巨頭（Claude/Codex/Gemini）在各部門的效益、token 消耗、rate limit、產出品質。產出寫入 `~/.shiftblame/<repo>/sre/report.md`。不主動觸發循環圓，由秘書請示老闆後才決定是否啟動處理。**前置依賴**：PROXY result.md 需加入結構化 token 回報機制（input/output token、執行時間、結論摘要），目前 PROXY 產出為自由文本無此數據
 5. **SRE Web Dashboard（WebSocket 即時監控）**：Web 介面透過 WebSocket 即時顯示三巨頭在各 repo、各部門的工作狀態（當前任務、token 消耗、進度、共識狀態）。資料來源為 PROXY 寫入的結構化 result.md，後端 watch `~/.shiftblame/` 目錄變更並推送。**與待辦 4 同一前置依賴**（需結構化 token 回報）
 
 ### 無外部依賴

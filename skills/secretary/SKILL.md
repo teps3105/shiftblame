@@ -15,8 +15,7 @@ description: >-
 2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
 3. 檢查 `.gitignore` 含 `.shiftblame/` 和 `.worktree/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
-5. 讀取 SRE 產出（`~/.shiftblame/<repo>/sre/`，如有問題請示老闆）
-6. 向老闆報告現狀，確認目標與起始部門
+5. 向老闆報告現狀，確認目標與起始部門
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)

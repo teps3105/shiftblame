@@ -134,7 +134,7 @@ QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 QA）
 | **PRD** | 架構設計 + DAG + 測試區分 + 實作計畫 | `PRD.md` |
 | **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 | `DEV.md` + worktree |
 | **QC** | 穩健性攻擊 + 邊緣案例 + 紅藍隊 | `QC.md` |
-| **MIS** | 合併 + 部署 + 歸檔 + 專案文件維護 | `MIS.md` |
+| **MIS** | 合併 + 部署 + 生產環境驗證 + 歸檔 + 專案文件維護 | `MIS.md` |
 
 ---
 
@@ -216,11 +216,7 @@ claude plugin marketplace update
 claude plugin update shiftblame
 ```
 
-全域 `CLAUDE.md` 載入秘書 skill：
-
-```
-load shiftblame: secretary
-```
+全域 `CLAUDE.md` 設定版本檢查。使用時每個 session 開始執行 `/secretary` 啟動秘書調度。
 
 首次執行 `/secretary` 時會初始化 `~/.shiftblame/`、建立 repo 內 symlink、檢查 `.gitignore` 是否含 `.shiftblame/` 與 `.worktree/`。
 
