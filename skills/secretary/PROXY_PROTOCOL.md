@@ -2,6 +2,10 @@
 
 秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定义「怎麼做」。「怎麼做」由 PROXY 自行協商。
 
+## 去識別化
+
+CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時不可指定具體 AI 模型或暗示 CLI 能力差異。
+
 ## 通訊目錄結構
 
 ```
@@ -45,19 +49,15 @@ task.md 只包含兩樣東西：**目標**和**約束**。不包含任何做法�
 ## 秘書派工步驟
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
-2. Quota 偵測（DISPATCH_CHECKLIST 第 10 條）：確認各 CLI 可用性
-3. 複雜度評估：依任務特性決定派工數量
-4. 建立通訊目錄：`mkdir -p ~/.shiftblame/<repo>/<slug>/<DEPT>/{可用 PROXY 子目錄}`
-5. 寫入 `task.md`（目標 + 約束，不含做法；降級時記錄降級原因）
-6. 依複雜度與 Quota 偵測結果派工 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑）
+2. 建立通訊目錄：`mkdir -p ~/.shiftblame/<repo>/<slug>/<DEPT>/{三個 PROXY 子目錄}`
+3. 寫入 `task.md`（目標 + 約束，不含做法）
+4. 派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑）
 
 ## Agent() 呼叫
 
+永遠派三個 PROXY：
+
 ```
-# 依複雜度評估與 Quota 偵測結果，動態決定派工數量
-# 簡單：派 1 個（能力最匹配的）
-# 中等：派 2 個（能力互補的）
-# 複雜：派 3 個（全派）
 Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, isolation="worktree")
 Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, isolation="worktree")
 Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, isolation="worktree")
@@ -131,10 +131,8 @@ consensus.md 必須包含：
 
 ## 派工規則
 
-- **動態派工數量**：秘書依任務複雜度評估決定派 1/2/3 個 PROXY（見 SKILL.md「複雜度評估」）
-- **Quota 偵測前置**：派工前執行 Quota 偵測（DISPATCH_CHECKLIST 第 10 條），可用數量不足時觸發降級
+- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一）
 - **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
-- **補派至少 2 個**
 - **所有部門必須在 worktree**
 - **Gemini 使用帳號登入認證（`gemini auth login`），不需環境變數注入**
 
@@ -145,49 +143,15 @@ consensus.md 必須包含：
 - **輸出文件增量重寫**：部門產出（如 QA.md、SEC.md 等）同樣以增量方式修正，不刪除重建
 - **文件結構不變**：退回前後的通訊目錄與產出文件結構完全一致，不得新增或移除任何文件
 
-## 降級模式
+## 執行期限額偵測
 
-當 Quota 偵測結果導致可用 PROXY 數量低於複雜度評估所需時，觸發降級模式。
+PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下 HTTP status code，自動在 result.md 記錄並觸發職務代理人機制：
 
-### 降級觸發條件
-
-1. **Quota 不足**：可用 PROXY 數量低於複雜度評估所需
-2. **CLI 未安裝**：某個 CLI 未安裝（UNAVAILABLE）
-3. **認證失敗**：某個 CLI 認證過期或失敗（AUTH_FAILURE）
-
-### 降級矩陣
-
-| 複雜度評估 | 需要 | Quota 可用 | 實際派工 | 處理方式 |
-|---|---|---|---|---|
-| 簡單 | 1 | 1+ | 1 | 正常派工 |
-| 簡單 | 1 | 0 | 不派工 | 回報老闆，等待額度恢復 |
-| 中等 | 2 | 2 | 2 | 正常派工 |
-| 中等 | 2 | 1 | 1 | 降級為簡單模式（單體執行） |
-| 中等 | 2 | 0 | 不派工 | 回報老闆，等待額度恢復 |
-| 複雜 | 3 | 3 | 3 | 正常派工 |
-| 複雜 | 3 | 2 | 2 | 降級為中等模式（雙方辯論） |
-| 複雜 | 3 | 1 | 1 | 降級為簡單模式（單體執行） |
-| 複雜 | 3 | 0 | 不派工 | 回報老闆，等待額度恢復 |
-
-### 降級模式下的通訊目錄
-
-- 僅建立可用 PROXY 的子目錄（不可用的不建立）
-- task.md 記錄降級原因與原始複雜度評估
-- consensus.md 記錄降級模式與實際分工
-
-### 降級模式下的共識
-
-| 可用 PROXY 數 | 共識方式 | consensus.md 內容 |
+| HTTP Status | 含義 | 處理 |
 |---|---|---|
-| 1 | 單體共識 | 記錄「降級模式：單體執行」，分工為該 PROXY 全包 |
-| 2 | 雙方共識 | 正常辯論收斂，分工記錄兩方 |
-| 3 | 三方共識 | 正常流程（無降級） |
-
-### 降級模式下的品質保證
-
-- 降級不影響部門閘門流程（GATE_FLOW.md 的驗證 SOP 不變）
-- 降級不影響退回規則
-- 降級模式下秘書在 AskUserQuestion 回報時須標注「降級模式執行」
+| 429 | Rate Limited | 在 result.md 記錄 rate_limit_remaining（若有），觸發職務代理人 |
+| 503 | Service Unavailable | 在 result.md 記錄 retry_after（若有），觸發職務代理人 |
+| 529 | Site Overloaded | 在 result.md 記錄 retry_after（若有），觸發職務代理人 |
 
 ## PROXY 職責
 
@@ -203,11 +167,29 @@ consensus.md 必須包含：
 | 情境 | 處理 |
 |---|---|
 | 單一 PROXY 失敗 | 其他自行吸收 |
+| 單一 PROXY 達到限額（執行期偵測到 429/503/529） | 觸發職務代理人機制（見規範二），其餘 PROXY 非同步接管其職責 |
 | 二個 PROXY 失敗 | 剩餘獨立完成，共識降級為單體 |
 | 全部失敗 | 回報秘書暫停 |
 | 共識含技術分歧 | PROXY 互監督修正或重新辯論（最多 1 輪補充）；仍無法收斂時採多數決，在 consensus.md 記錄少數意見 |
 | result 含 permission error | 標注「執行不完整」，秘書重新派工 |
-| 降級模式中全部失效 | 回報秘書暫停，等待額度恢復 |
+
+## 部門執行模型
+
+不同部門依職責性質採不同執行模型：
+
+### 非實作部門（QA/SEC/PRD）
+
+職責不變更 worktree（權限也不可變更 worktree）。執行模式：
+- 三人各自從不同面向收集數據與分析
+- 統一由一人寫入報告
+- 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
+
+### 實作部門（DEV/QC/MIS）
+
+三人協調執行。執行模式：
+- 三人協調分工
+- 統一由一人實作/執行/測試並寫入實作報告
+- 其餘兩人同時檢視實作品質/規範與報告成色
 
 ## PROXY 互助互監督機制
 
@@ -229,14 +211,13 @@ consensus.md 必須包含：
 
 利益衝突不等同於不當行為。框架本身要求某些角色承擔多重職責，此為設計意圖，非利益衝突。
 
-### 規範二：API 限制代償
+### 規範二：職務代理人機制（API 限制代償）
 
-當一方 PROXY 因 API 限制（rate limit、quota 耗盡等）未能完成工作時：
-1. 自動吸收：其餘 PROXY 應立即代為完成，不因等待而阻塞整體流程
+當一方 PROXY 因 API 限制（執行期偵測到 429/503/529）未能完成工作時：
+1. 非同步吸收：其餘 PROXY 先完成自己的職責，再以職務代理人身份執行受限 PROXY 的份額
 2. 失效回報：受限 PROXY 仍須在 result.md 回報失效原因
-3. 非懲罰性：API 限制代償不影響受限 PROXY 的部門績效評估——這是基礎設施問題，非能力問題
-
-此為現有「單點失效補救」機制的強化。
+3. 代理記錄：代為執行的 PROXY 在自己的 result.md 中記錄代理執行內容
+4. 非懲罰性：API 限制代償不影響受限 PROXY 的部門績效評估——這是基礎設施問題，非能力問題
 
 ### 與秘書品質閘門的關係
 

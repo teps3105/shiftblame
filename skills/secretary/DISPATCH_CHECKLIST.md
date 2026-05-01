@@ -98,55 +98,7 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 ```
 若 main 出現新增的未提交變更 → 標記為 worktree 洩漏違規，退回 MIS 處理。
 
-## 10. Quota 偵測（方案 A+C 混合策略）
-
-派工前對三個 CLI 執行增強型探針偵測（方案 A），確認可用額度。執行期透過 response header 偵測（方案 C）自動降級。
-
-### 偵測指令（增強型探針 — 方案 A）
-
-```bash
-# Claude — 增強型探針（解析 stderr 結構化錯誤）
-claude -p "echo ok" --output-format text --no-session-persistence --settings ~/.claude/settings.proxy.json 2>&1 | head -5
-
-# Codex
-timeout 10 codex exec -s read-only --full-auto --ephemeral -C /tmp "echo ok" 2>&1 | head -5
-
-# Gemini
-timeout 10 gemini -p "echo ok" --yolo --skip-trust -o text 2>&1 | head -5
-```
-
-### 判定邏輯（增強型 — 解析 stdout + stderr）
-
-**認證方式說明**：CLI 支援兩種認證方式 — (1) API Key 認證（如 `settings.proxy.json` 中的金鑰、環境變數），(2) 帳號登入認證（如 `claude login`、`gemini auth login`）。判定邏輯對兩種認證方式同等適用：只要 stdout 含預期輸出即為 AVAILABLE，不要求特定認證方式。
-
-| 偵測結果 | 判定條件 | 可否派工 |
-|---|---|---|
-| `AVAILABLE` | stdout 含 'ok'（API Key 或帳號登入認證成功均可） | 可派工 |
-| `RATE_LIMITED` | stderr 含 '429' 或 'rate' 或 'rate_limit' | 降級模式 |
-| `QUOTA_EXCEEDED` | stderr 含 'quota' 或 'billing' | 不可派工，回報老闆 |
-| `AUTH_FAILURE` | stderr 含 'API key' 或 '401' 或 '403'（不含帳號登入的正常 info 訊息） | 不可派工，回報老闆 |
-| `SERVICE_OVERLOADED` | stderr 含 '503' 或 '529' 或 'overloaded' | 不可派工，稍後重試 |
-| `UNAVAILABLE` | 指令不存在或 timeout | 不可派工，跳過此 PROXY |
-
-### 執行期偵測（方案 C — response header 偵測）
-
-PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下 HTTP status code，自動在 result.md 記錄並標記需要降級：
-
-| HTTP Status | 含義 | 處理 |
-|---|---|---|
-| 429 | Rate Limited | 自動降級，記錄 rate_limit_remaining（若有） |
-| 503 | Service Unavailable | 自動降級，記錄 retry_after（若有） |
-| 529 | Site Overloaded | 自動降級，記錄 retry_after（若有） |
-
-各 PROXY 定義檔的失效偵測表已同步更新這些 pattern。
-
-### 複雜度評估與派工數量
-
-依任務複雜度評估所需 PROXY 數量，與 Quota 可用數量取 min。不足時依降級策略處理（見 PROXY_PROTOCOL.md）。
-
-同一 session 內對同一 CLI 最多每 15 分鐘偵測一次，避免重複偵測消耗額度。
-
-## 10.1 MIS 起點產出驗證
+## 10. MIS 起點產出驗證
 
 MIS_ALL_RESULT 後（載入恢復場景），秘書確認上游產出已落袋：
 

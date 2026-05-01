@@ -14,7 +14,7 @@ _去中心化多端點 AI 調度框架_
 [![Skills](https://img.shields.io/badge/skills-6-9cf.svg)](#使用)
 [![Language](https://img.shields.io/badge/lang-繁體中文-red.svg)](#)
 
-**[核心機制](#核心機制)** · **[CLI-差異與盲點](#cli-差異與盲點)** · **[架構](#架構)** · **[部門職能](#部門職能)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
+**[核心機制](#核心機制)** · **[CLI-去識別化與盲點](#cli-去識別化與盲點)** · **[架構](#架構)** · **[部門職能](#部門職能)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
 </div>
 
@@ -46,10 +46,11 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 秘書只定義「目標 + 約束」（task.md），不指定分工與做法。分工、辯論、收斂由 PROXY 自行完成：
 
 ```
-讀取 task.md → 各自提出 proposal → 辯論收斂（最多 2 輪）→ consensus.md → 各自執行 → result.md
+讀取 task.md → 三個 PROXY 各自提出 proposal → 辯論收斂 → consensus.md → 各自執行 → result.md
 ```
 
-- 提案基於能力匹配，不是搶工作
+- 固定派出三個 PROXY，不再依複雜度動態調整數量
+- 提案基於任務需求匹配，不是搶工作
 - 異議必須附替代方案
 - 單點失效時，其他 PROXY 吸收份額；三方全失敗則回報秘書暫停
 
@@ -67,15 +68,9 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ---
 
-## CLI 差異與盲點
+## CLI 去識別化與盲點
 
-### 三個 CLI 各自優點（來自各 PROXY 定義檔）
-
-| CLI | 定位 | 可驗證的實際優勢 |
-|---|---|---|
-| `claude -p` | 邏輯推理 | 指令含 `--add-dir <WORKTREE>`、`--timeout 300000`，可直接把 worktree 納入執行上下文。提案模板明確定位在「邏輯推理」型任務。 |
-| `codex exec` | 精確實作/GUI 操作 | 具備 sandbox 探測（`BWRAP_OK/BWRAP_FAIL`）與雙路徑降級（read-only 失敗時改 `--dangerously-bypass-approvals-and-sandbox`）。提案模板定位在精確實作。 |
-| `gemini -p` | 外部資訊/Web search | 命令固定 `--yolo --skip-trust -o text`，偏向快速外部查詢與文字輸出。提案模板定位在「外部資訊 / Web search」。 |
+CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 
 ### 各家問題與盲點（來自各 PROXY 失效偵測表）
 
@@ -111,6 +106,24 @@ Quota 偵測升級為方案 A+C 混合策略：
 
 `inject-claudemd.sh` 加入版本標記機制（`shiftblame-inject:begin` / `shiftblame-inject:end`），支援 plugin 升級後自動更新已注入的提示詞，不再因舊注入存在而跳過更新。同時清理 pre-v7.2.2 的 legacy 注入格式。
 
+## v7.3.x 新功能
+
+### v7.3.0 PROXY 架構重構（基礎變更）
+
+六項基礎架構變更：
+- **永遠派出三個 PROXY**：移除動態 CLI 數量機制（不再依複雜度評估派 1~3 個），所有部門固定派三個 PROXY
+- **移除預先 Quota 偵測**：移除派工前的增強型探針偵測（方案 A），僅保留執行期 response header 偵測（方案 C）
+- **職務代理人機制**：任一 CLI 達到限額時，其他 PROXY 自動吸收份額（先完成自身職責，再非同步執行代理職責）
+- **移除 CLI 刻板印象標籤**：移除提案格式中的能力評估行與各處的 CLI 定位標籤（邏輯推理、精確實作、外部資訊等）
+- **去識別化**：CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型
+- **版本統一**：版本號統一為 7.3.1
+
+### v7.3.1 部門執行模型區分
+
+根據部門性質區分 PROXY 協作方式：
+- **非實作部門（QA/SEC/PRD）**：職責不變更 worktree，三人各自收集數據，統一由一人寫入報告，另外兩人檢視報告成色
+- **實作部門（DEV/QC/MIS）**：三人協調，統一由一人實作/執行/測試，其餘兩人同時檢視實作品質與報告成色
+
 ---
 
 ## v7.0.0 新功能
@@ -125,6 +138,8 @@ Quota 偵測升級為方案 A+C 混合策略：
 
 ### 動態 CLI 數量
 
+> 此功能已在 v7.3.0 中移除。
+
 秘書依任務複雜度評估，決定派 1/2/3 個 PROXY。不再固定三方全派，降低小任務的資源消耗。
 
 | 複雜度 | PROXY 數量 | 辯論 | 適用情境 |
@@ -134,6 +149,8 @@ Quota 偵測升級為方案 A+C 混合策略：
 | 複雜 | 3 | 有 | 大型功能、架構重構、首次 MIS、框架修改 |
 
 ### Quota 偵測
+
+> 此功能已在 v7.3.0 中移除（僅保留執行期 response header 偵測）。
 
 派工前偵測各 CLI（claude/codex/gemini）的可用額度，額度不足時觸發降級模式，避免派工後因 quota 耗盡導致全軍覆沒。
 

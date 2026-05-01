@@ -158,7 +158,7 @@ AskUserQuestion({
 
 | AskUserQuestion 回傳 | 秘書動作 |
 |---|---|
-| label: 「繼續恢復」 | 依狀態碼恢復策略派工（含 Quota 偵測），完成後進入載入步驟 8 |
+| label: 「繼續恢復」 | 依狀態碼恢復策略派工，完成後進入載入步驟 8 |
 | label: 「歸檔」 | Read LIFECYCLE.md → 歸檔到 archive（僅 READY_ARCHIVE 可選） |
 | label: 「清理」 | 刪除 slug 目錄，回報老闆確認 |
 | label: 「暫停」 | 結束 turn，等老闆下一則訊息討論 |

@@ -33,11 +33,11 @@ description: >-
 6. 第二層精確判定（僅 IN_PROGRESS 的 slug）：
    - 對每個 IN_PROGRESS slug 執行第二層偵測（14 種狀態碼，見判定優先序）
    - 產出恢復報告（含第一層分類、第二層狀態碼、最高完成部門、當前卡點、恢復策略）
-   - 附帶驗證：MIS_ALL_RESULT 需額外執行上游產出驗證（DISPATCH_CHECKLIST 10.1）
+   - 附帶驗證：MIS_ALL_RESULT 需額外執行上游產出驗證（DISPATCH_CHECKLIST 第 10 條）
 7. 向老闆報告恢復選項：
    - 呈報未完成 slug 清單（含狀態碼與恢復策略）
    - 透過 AskUserQuestion 讓老闆選擇每個 slug 的處置：
-     - 繼續恢復：從斷點部門重新派工（含 Quota 偵測）
+     - 繼續恢復：從斷點部門重新派工
      - 歸檔：歸檔到 archive（需 MIS.md 存在，僅 READY_ARCHIVE）
      - 清理：刪除 slug 目錄
      - 暫停：先討論再決定
@@ -94,32 +94,25 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 
 核心步驟：
 1. Read DISPATCH_CHECKLIST.md → 逐條完成 checklist
-2. Quota 偵測（DISPATCH_CHECKLIST 第 10 條）：
-   - 對三個 CLI（claude / codex / gemini）執行探針偵測
-   - 記錄各 CLI 狀態（AVAILABLE / RATE_LIMITED / AUTH_FAILURE / UNAVAILABLE）
-   - 依偵測結果 + 複雜度評估（見下方「複雜度評估」子區段）決定實際派工數量
-   - 降級模式時在 task.md 約束區段標注降級原因與原始評估
-   - 全部不可用 → 回報老闆等待額度恢復，不派工
-3. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 依複雜度與 Quota 偵測結果派工 PROXY
+2. 永遠派三個 PROXY（三種 CLI 框架各一）
+3. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 派工三個 PROXY
 4. 等待 PROXY 共識產出
 
-### 複雜度評估
+### 職務代理人機制
 
-秘書在派工前依任務特性評估複雜度，決定派多少個 PROXY。評估依據為任務本身，非 CLI 的可用性（可用性由步驟 2 Quota 偵測處理）。
+秘書在讀取 result.md 時，若發現某 PROXY 標記了限額（429/503/529），其他 PROXY 的 result.md 中應顯示已吸收其份額。職務代理人機制詳見 PROXY_PROTOCOL.md「單點失效補救」與「規範二」。
 
-| 等級 | PROXY 數量 | 判定條件（滿足任一） | 適用情境範例 |
-|---|---|---|---|
-| 簡單 | 1 | 單一檔案修正、明確做法的機械性任務、退回補齊且範圍已收窄 | typo 修正、版本號更新、單檔 bug fix |
-| 中等 | 2 | 涉及 2~4 個檔案修改、需要兩種互補能力、有一定架構決策但範圍可控 | 多檔重構、功能擴展、常規 MIS 初始化 |
-| 複雜 | 3 | 涉及 5+ 檔案修改、跨多子系統變更、需要三種互補能力、重大架構決策、首次 MIS（REPO.md 不存在）、部門定義檔修改 | 大型功能、架構重構、首次 MIS、框架修改 |
+### 部門執行模型
 
-派工數量最終為 `min(複雜度評估數量, Quota 可用數量)`。不足時依降級策略處理（見 PROXY_PROTOCOL.md）。
+不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
+- **非實作部門**（QA/SEC/PRD）：職責不變更 worktree。三人各自收集三個面向的數據，統一由一人寫入報告，另外兩人從不同角度檢視報告成色。
+- **實作部門**（DEV/QC/MIS）：三人協調，統一由一人實作/執行/測試並寫入實作報告，其餘兩人同時檢視實作品質/規範與報告成色。
 
 派工規則速記：
-- 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model
+- 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model 或 CLI
 - 所有部門必須有 worktree，禁止在 main 上操作
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
-- proxy_prompt 只含路徑，**不注入部門定義或做法指示**（違規）
+- proxy_prompt 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
 - PROXY 自行讀取 agents/<DEPT>.md、協商分工、決定做法
 - 技術分歧由 PROXY 內部解決，秘書不參與技術裁決
 - 需求不明時先問老闆釐清，不自行解讀傳遞
@@ -160,7 +153,7 @@ MIS → QA → SEC → PRD → DEV → QC → MIS
 
 - 派工最小化原則：task.md 只含目標與約束，不含分工指示、做法步驟或產出格式。proxy_prompt 只含三樣：task.md 路徑、通訊目錄路徑、worktree 路徑。嚴禁注入具體實作方法或預設部門定義。
 - SKILL 組件文件名禁止暴露：DISPATCH_CHECKLIST.md、PROXY_PROTOCOL.md、GATE_FLOW.md、LIFECYCLE.md、WORKTREE_SOP.md 是秘書內部零件，嚴禁在 task.md、proxy_prompt 或任何派工內容中提及。
-- 派工中立與去模型化：task.md 僅指定職能部門（如 PRD、DEV），不可指定具體 AI 模型。
+- 派工中立與去模型化：task.md 僅指定職能部門（如 PRD、DEV），不可指定具體 AI 模型或 CLI 框架。PROXY 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 - 無過濾二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
 - 分歧項不上報，僅轉呈需求不明：技術實作分歧由 PROXY 內部辯論收斂，秘書不介入。僅在共識中出現 TBD 標記時透過 AskUserQuestion 請示老闆。
 - 循環圓強制性輸入鏈：循環圓的每個節點必須讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。

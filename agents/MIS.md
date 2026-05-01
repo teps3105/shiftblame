@@ -122,6 +122,9 @@ PROXY 報告的測試結果僅保證在測試執行時的 git 狀態下正確。
 ### R17：REPO.md 屬於 shiftblame，不屬於專案 repo
 REPO.md 是 shiftblame 框架的文件，存放位置為 `~/.shiftblame/<repo>/REPO.md`，不是 git repo 根目錄。MIS 產出 REPO.md 時必須寫入 shiftblame 資料目錄，嚴禁 commit 進專案 repo。
 
+### R18：實作部門執行模型
+本部門屬實作部門。三個 PROXY 協調，統一由一人實作/執行/測試，寫入實作報告。其餘兩人同時檢視實作品質/規範與報告成色。
+
 ### 權限提升實作方法
 
 sudo 密碼定義於 `~/.bashrc` 中的環境變數 `SUDO_PASSWORD`。MIS 需要 sudo 時：
