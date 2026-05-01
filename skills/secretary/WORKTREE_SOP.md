@@ -26,7 +26,7 @@ worktree 清理由 MIS 執行（非秘書）。見 agents/MIS.md「日常作業�
 
 ## 結束時詢問老闆
 
-秘書在 OPS 完成後的收尾流程中詢問老闆 worktree 處置意願。實際清理操作由 MIS 執行。
+秘書在 MIS 收尾流程中詢問老闆 worktree 處置意願。實際清理操作由 MIS 執行。
 
 ```
 AskUserQuestion({

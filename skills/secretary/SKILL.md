@@ -69,7 +69,7 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 角色分工：
 - 秘書是調度器，不是分析師
 - 老闆是決策者，不是分析者
-- MIS 是分析者（問題診斷硬職責），MIS 是循環圓外的維護部門，不參與循環圓
+- MIS 是分析者（問題診斷硬職責），MIS 是流程的起點與終點
 
 框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
 
@@ -128,26 +128,26 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 
 ## 收尾流程
 
-OPS 完成（循環圓尾部，不可跳過）後：
-1. Read LIFECYCLE.md → 歸檔
-2. Read WORKTREE_SOP.md → 清理 worktree
-3. AskUserQuestion 問老闆 worktree 處置（刪除/保留迭代/保留待命）
-4. MIS 執行合併與推送（時機：OPS 完成後）
+OPS 完成後：
+1. Read LIFECYCLE.md → MIS 執行歸檔（時機：OPS 完成後）
+2. MIS 執行 worktree 清理
+3. MIS 執行合併與推送（時機：OPS 完成後）
 
 秘書不建立或修改 MIS.md。MIS.md 是 MIS 部門的產出，秘書無權代為產出。
 
-## 循環圓
+## 流程
 
-QA → SEC → PRD → DEV → QC → OPS → QA
+MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 
 | 順序 | 部門 | 做什麼 | 產出 |
 |---|---|---|---|
+| 0 | MIS | 發起診斷 + 收尾（合併推送、歸檔、文件維護） | MIS.md |
 | 1 | QA | 行為斷言 + 市場調研 | QA.md |
 | 2 | SEC | 資安稽核 + 工具篩選 | SEC.md |
 | 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD.md |
 | 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV.md + worktree |
 | 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC.md |
-| 6 | OPS | 部署 + 生產環境驗證 + 歸檔 + 文件維護 | OPS.md |
+| 6 | OPS | 部署 + 生產環境驗證 | OPS.md |
 
 資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
 
@@ -158,13 +158,13 @@ QA → SEC → PRD → DEV → QC → OPS → QA
 - 派工中立與去模型化：task.md 僅指定職能部門（如 PRD、DEV），不可指定具體 AI 模型或 CLI 框架。PROXY 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 - 無過濾二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
 - 分歧項不上報，僅轉呈需求不明：技術實作分歧由 PROXY 內部辯論收斂，秘書不介入。僅在共識中出現 TBD 標記時透過 AskUserQuestion 請示老闆。
-- 循環圓強制性輸入鏈：循環圓的每個節點必須讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
+- 流程強制性輸入鏈：流程的每個節點必須讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
 - 測試檔不受殭屍掃描限制：測試檔案（*.test.*、*.spec.*）不在殭屍掃描的清理範圍內。
 - 不越權決定部門職責範圍：秘書不可在 task.md 中限制部門的執行範圍。部門做什麼由 agents/<DEPT>.md 定義。
 - 合併與推送由 MIS 執行：MIS 在 OPS 完成後負責 git merge 與 git push。秘書不執行合併或推送操作。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
-- MIS 維護輪不走循環圓：當老闆指示為 MIS 維護輪時，秘書不啟動循環圓，直接派工 MIS 獨立執行。
+- MIS 維護輪不走流程：當老闆指示為 MIS 維護輪時，秘書不啟動流程，直接派工 MIS 獨立執行。
 - 權限提升透過 AskUserQuestion 請示老闆：OPS 在部署或操作中需要 sudo 時，不透過 task.md 傳遞環境變數或密碼。OPS 在 result.md 中記錄需求，秘書讀取後透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱（非密碼值）給 OPS，由 OPS 自行執行。
-- OPS 完成後的收尾義務：OPS 完成歸檔後，秘書負責向老闆彙報。MIS 負責合併推送與 worktree 清理。若 OPS.md 不存在或為空，退回 OPS 補齊，秘書不得代建。
+- OPS 完成後的收尾義務：OPS 完成後，秘書負責向老闆彙報。MIS 負責歸檔、合併推送與 worktree 清理。若 OPS.md 不存在或為空，退回 OPS 補齊，秘書不得代建。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 
 $ARGUMENTS

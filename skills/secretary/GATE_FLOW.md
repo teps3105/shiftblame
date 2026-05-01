@@ -1,8 +1,8 @@
 # 閘門流程
 
-## MIS 啟動閘門
+## MIS 啟動閘門（流程起點）
 
-MIS 啟動後（循環圓外前置診斷），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
+MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
 
 ### 確認步驟
 
@@ -26,7 +26,7 @@ AskUserQuestion({
     question: "MIS 啟動完成。專案現狀已釐清，REPO.md 已初始化/更新。",
     header: "MIS 啟動",
     options: [
-      { label: "確認派工 QA", description: "專案現狀與準則 OK，開始循環圓" },
+      { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
       { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
@@ -52,10 +52,10 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "偵測到未完成 slug：<slug>。狀態：IN_PROGRESS/MIS_ALL_RESULT。最高完成部門：MIS（起點）。當前卡點：等待整合進入 QA。\n\n上游產出驗證：REPO.md [已更新/未更新]，執行準則 [已落袋/缺失]，mtime [通過/不通過-警告]。",
+    question: "偵測到未完成 slug：<slug>。狀態：IN_PROGRESS/MIS_ALL_RESULT。最高完成部門：MIS（起點）。當前卡點：等待進入 QA。\n\n上游產出驗證：REPO.md [已更新/未更新]，執行準則 [已落袋/缺失]，mtime [通過/不通過-警告]。",
     header: "載入恢復",
     options: [
-      { label: "繼續恢復", description: "確認產出可接受，派工 QA 繼續循環圓" },
+      { label: "繼續恢復", description: "確認產出可接受，派工 QA 繼續流程" },
       { label: "退回 MIS", description: "上游產出驗證不通過，退回 MIS 補齊" },
       { label: "暫停", description: "先討論再決定" }
     ],
@@ -136,7 +136,7 @@ AskUserQuestion({
 | SEC_DONE | IN_PROGRESS/SEC_DONE | SEC | PRD 未執行 |
 | QA_DONE | IN_PROGRESS/QA_DONE | QA | SEC 未執行 |
 | ABORTED_MID | IN_PROGRESS/ABORTED_MID | <部門>（共識階段） | 執行階段中斷 |
-| MIS_ALL_RESULT | IN_PROGRESS/MIS_ALL_RESULT | MIS（起點） | 等待整合進入 QA |
+| MIS_ALL_RESULT | IN_PROGRESS/MIS_ALL_RESULT | MIS（起點） | 等待進入 QA |
 | MIS_PARTIAL_RESULT | IN_PROGRESS/MIS_PARTIAL_RESULT | MIS（起點） | 部分 PROXY 未完成 |
 | MIS_CONSENSUS_NO_RESULT | IN_PROGRESS/MIS_CONSENSUS_NO_RESULT | MIS（起點） | PROXY 未執行 |
 | MIS_DEBATING | IN_PROGRESS/MIS_DEBATING | MIS（起點） | 辯論未收斂 |
