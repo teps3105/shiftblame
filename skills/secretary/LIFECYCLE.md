@@ -2,19 +2,19 @@
 
 MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。終點階段不可跳過）。
 
-## 雙模式歸檔邏輯
+## 三級歸檔邏輯
 
-### 維護模式
-- MIS 完成 → 秘書復判 → 復判通過 → 歸檔
-- 歸檔前提：秘書確認 MIS 確實收尾且系統正確運作
-- 歸檔閘門（SEC-A-03）：確認 MIS.md 存在且非空
-- 執行歸檔 → Worktree 清理 → 合併推送
+### 初等（basic）
+- MIS(獨立執行) → 秘書復判 → 歸檔
+- 適用於框架定義檔維護、文件更新等小規模工作
 
-### 開發模式
-- QC 完成 → MIS 收尾 → 秘書復判 → 復判通過 → 歸檔
-- 歸檔前提：秘書確認 MIS 確實收尾且系統正確運作
-- 歸檔閘門（SEC-A-03）：確認 MIS.md 存在且非空
-- 執行歸檔 → Worktree 清理 → 合併推送
+### 中等（medium）
+- MIS(起) → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
+- 功能開發、bug 修復等中等規模工作
+
+### 高等（full）
+- MIS(起) → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
+- 大型功能、架構重構等大規模工作
 
 ## 0. 秘書復判
 
@@ -29,9 +29,9 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 
 ```bash
 # 歸檔閘門（SEC-A-03）
-# MIS.md 由 MIS 部門產出，秘書不得代建。若不存在或為空，應退回 MIS 補齊。
-if [[ ! -s ~/.shiftblame/<repo>/<slug>/MIS.md ]]; then
-  echo "ERROR: MIS.md 不存在或為空，拒絕歸檔。應退回 MIS 補齊，秘書不得代建。" >&2
+# MIS 部門報告（consensus.md + 各 PROXY result.md）由 MIS 部門產出，秘書不得代建。若 consensus.md 不存在或為空，應退回 MIS 補齊。
+if [[ ! -s ~/.shiftblame/<repo>/<slug>/MIS/consensus.md ]]; then
+  echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。應退回 MIS 補齊，秘書不得代建。" >&2
   exit 1
 fi
 

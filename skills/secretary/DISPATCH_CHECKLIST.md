@@ -4,12 +4,13 @@
 
 ## 0. 模式確認
 
-派工前確認本次 slug 的模式（維護模式 / 開發模式）。模式已在 SKILL.md 運作流程步驟 5 確認，此處為覆核：
+派工前確認本次 slug 的模式（初等 / 中等 / 高等）。模式已在 SKILL.md 運作流程步驟 6 確認，此處為覆核：
 
-- **維護模式**：僅派工 MIS，不走 QA → SEC → PRD → DEV → QC 流程
-- **開發模式**：依完整流程依序派工
+- **初等（basic）**：僅派工 MIS，不走 QA → SEC → PRD → DEV → QC 流程
+- **中等（medium）**：MIS → DEV（可多輪）→ QC → MIS(尾)
+- **高等（full）**：依完整流程依序派工
 
-模式確認後不可中途切換。若模式未確認，退回 SKILL.md 運作流程步驟 5 完成確認。
+模式可升級也可降級（縮小範圍），降級不可逆轉。若模式未確認，退回 SKILL.md 運作流程步驟 6 完成確認。
 
 ## 1. 讀取專案資訊
 
@@ -41,7 +42,16 @@ Read ~/.shiftblame/<repo>/REPO.md
 
 ## 3. 寫入 task.md
 
-task.md 只含**目標**和**約束**，不含任何做法指示。見 PROXY_PROTOCOL.md 的 task.md 格式。
+task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始（高等模式 DEV 首次進入時，改由秘書依任務適性指名），並寫入 YAML frontmatter。
+
+```yaml
+---
+lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（高等模式 DEV 首次進入時，改由秘書依任務適性指名））>
+observers: [<其他兩個 PROXY 名稱>]
+current_mode: <basic / medium / full>
+worktree_path: <~/.shiftblame/<repo>/<slug>/worktree/>
+---
+```
 
 ```
 === task.md 必含 ===
@@ -56,12 +66,14 @@ task.md 只含**目標**和**約束**，不含任何做法指示。見 PROXY_PRO
 - 部門定義內容 ← PROXY 自行讀取 agents/<DEPT>.md
 ```
 
+
 ## 4. proxy_prompt 最小化
 
-proxy_prompt 只含三樣東西：
+proxy_prompt 只含四樣東西：
 1. task.md 路徑
 2. 通訊目錄路徑
 3. worktree 路徑
+4. current_mode
 
 ```bash
 # 以下禁止注入 prompt
@@ -77,12 +89,14 @@ proxy_prompt 只含三樣東西：
 
 | 部門 | 派工前必做 |
 |---|---|
-| MIS（維護模式） | 確認模式為維護模式、MIS 維護輪不走流程、MIS 獨立執行（不派工其他部門） |
-| MIS（開發模式） | 確認問題診斷完成、執行準則確立、REPO.md 更新狀況（MIS 為流程起點角色） |
-| MIS（尾，復判前） | 確認 MIS.md 已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
+| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、MIS 獨立執行 |
+| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立、問題診斷完成、REPO.md 更新狀況 |
+| MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
-| 所有部門 | 確認 `.gitignore` 含 `.shiftblame/`，worktree 已建立 |
+| 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
+| 實作部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
+| 研究部門（MIS 啟動/QA/SEC/PRD） | 確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
 
 ## 6. QC 定位提醒
 
@@ -109,7 +123,17 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 ```
 若 main 出現新增的未提交變更 → 標記為 worktree 洩漏違規，退回 MIS 處理。
 
-## 10. MIS 起點產出驗證
+## 10. 兩階段派工確認（實作部門）
+
+派工實作部門（DEV/QC/MIS）時，確認派工方式為兩階段：
+
+- **第一階段**：僅派工主執行者（`run_in_background=true`），不派工觀測者
+- **等待 commit**：主執行者完成後，驗證 worktree 中有對應 commit
+- **第二階段**：確認 commit 後，同時派工兩位觀測者（`run_in_background=true`）
+
+研究部門（MIS 啟動階段/QA/SEC/PRD）不走兩階段，維持同時派工三個 PROXY。
+
+## 11. MIS 起點產出驗證
 
 MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 
@@ -118,16 +142,3 @@ MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
 
 驗證不通過 → 退回 MIS 補齊（不進入 QA）。
-
-## 11. Worktree 一致性檢查
-
-所有部門完成後（每個部門閘門通過時），執行三個 PROXY worktree 內容一致性驗證：
-
-```bash
-diff -r <claude-worktree> <codex-worktree>
-diff -r <claude-worktree> <gemini-worktree>
-```
-
-- 三個 worktree 內容必須完全相同（diff -r 無差異）
-- 不一致 → 直接退回，不進入下一階段
-- 秘書復判時亦須執行此檢查，不一致直接退回

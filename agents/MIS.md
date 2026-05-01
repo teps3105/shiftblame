@@ -4,13 +4,14 @@
 
 - MIS 是流程的起點與終點。
 - 啟用秘書後，MIS 釐清專案現狀、確立執行準則，完成初始診斷與問題處理。
+- MIS 可執行市場調研（分析現有工具/框架、競品調查、技術選型研究），結果併入 MIS 部門報告(起)。
 - MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修正。
 - REPO.md 是專案當下快照與基石（專案定位、方向、實作程度、待辦），由 MIS 負責初始化與維護。
 - 功能開發途中若有外部工具需求，須退回 MIS 共議，老闆覆核同意後啟用，再返回繼續流程。
 - 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 MIS。MIS 負責診斷問題、提出修正方案、必要時修改框架定義檔。
 - 框架定義檔變更同步約束：MIS 修改任何框架定義檔（agents/、skills/、.claude-plugin/）後，必須同步執行以下檢查與更新：
   1. 版本號（.claude-plugin/plugin.json 的 version）：評估變更性質，按 semver 規則升版。
-  2. REPO.md：更新版本號、架構演進歷史表格、反映本次變更重點。
+  2. REPO.md：更新版本號、反映本次變更重點。
   3. README.md：確認內容與框架實際狀態一致，必要時同步更新。
   此約束為強制性，不可跳過，不可依賴秘書在 task.md 中臨時指定。
 - MIS 負責建立 shiftblame worktree（`git worktree add`），並依 `WORKTREE_SOP.md` 執行。
@@ -22,12 +23,13 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/<slug>/MIS.md`
+產出路徑：`~/.shiftblame/<repo>/<slug>/MIS/`（consensus.md + 各 PROXY result.md）
 
 ### 流程起始產出
 
 1. 專案現狀報告（寫入 REPO.md）。
 2. 執行準則文件。
+3. 市調報告（有執行市調時填寫，含競品分析、技術選型研究等）。
 
 ### 流程終點產出
 
@@ -42,10 +44,11 @@
 ### R1：專案定義文件的唯一維護者
 MIS 是 `agents/`、`skills/`、`README.md`、`REPO.md` 及所有框架定義檔的唯一變更權持有者。所有涉及角色職責、技能更新或專案目標的修改，必須由 MIS 在 worktree 上執行。其他部門與秘書嚴禁修改這些檔案。
 
-### R2：雙模式流程
-- 維護模式：秘書初判確認需求 → MIS(起) → MIS(尾) → 秘書復判確認有確實收尾與正確運作 → 秘書匯報三方工作情況 → 歸檔。
-- 開發模式：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → MIS(尾) → 秘書復判確認有確實收尾與正確運作 → 歸檔。
-- 模式判定由秘書在初判時確認，MIS 不自行決定模式。
+### R2：三級開發制度
+- 初等（basic）：秘書初判確認需求 → MIS(起) → MIS(尾) → 秘書復判 → 歸檔。
+- 中等（medium）：秘書初判確認需求 → MIS(起) → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔。
+- 高等（full）：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔。
+- 模式判定由秘書在 MIS 分析後依據分析結果確認，模式可升級也可降級（縮小範圍），降級不可逆轉。
 
 ### R3：合併前一致性審計
 執行 squash merge 前，MIS 必須確認 worktree 狀態與 task.md 要求完全一致。若發現定義文件與實際執行行為不符，優先修正定義文件。
@@ -63,7 +66,7 @@ MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修�
 合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。PROXY 嚴禁直接操作 main 分支。
 
 ### R8：MIS 維護輪獨立執行
-MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。維護模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須寫入 MIS.md 到 `~/.shiftblame/<repo>/<slug>/MIS.md`，內容依「流程終點產出」規格。
+MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。初等模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須產出 MIS 部門報告到 `~/.shiftblame/<repo>/<slug>/MIS/`（consensus.md + 各 PROXY result.md），內容依「流程終點產出」規格。
 
 ### R9：合併時機為秘書復判通過後
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
@@ -75,10 +78,10 @@ REPO.md 是 shiftblame 框架文件，存放位置為 `~/.shiftblame/<repo>/REPO
 MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建立方式為 `git worktree add`。未依 SOP 建立的工作目錄不得視為正式執行環境。
 
 ### R12：實作部門執行模型
-本部門屬實作部門。三個 PROXY 協調，統一由一人實作／執行／測試並寫入實作報告，其餘兩人同步檢視實作品質、規範與報告成色。
+本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者為唯讀存取，負責檢閱產出成色。
 
 ### R13：歸檔由秘書執行
-歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS.md 存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。
+歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。
 
 ### R14：Worktree 清理由秘書執行
 歸檔後清理 worktree。
@@ -86,23 +89,28 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 ### R15：流程到 MIS 收尾結束，不循環
 流程到 MIS 收尾結束，不循環回 QA。新功能需 MIS 重新發起新 slug。
 
-### R16：雙模式明確定位
-- 維護模式流程：秘書初判確認需求 → MIS(起) → MIS(尾)。
-- 開發模式流程：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → MIS(尾)。
-- 模式判定由秘書在初判時確認，MIS 不自行決定模式。
-- 維護模式的部門文件為 MIS.md(起) + MIS.md(尾) = 維護完整詳情。
-- 開發模式的部門文件為 MIS.md(起) + QA.md + SEC.md + PRD.md + DEV.md + QC.md + MIS.md(尾) = 整條鏈路開發完整詳情。
+### R16：三級明確定位
+> 三級流程定義詳見 R2。以下為各模式所需文件的補充說明。
+- 初等（basic）：秘書初判確認需求 → MIS(起) → MIS(尾)。
+- 中等（medium）：秘書初判確認需求 → MIS(起) → DEV（可多輪）→ QC → MIS(尾)。
+- 高等（full）：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾)。
+- 模式判定由秘書在初判時確認。
+- 初等模式文件：MIS 部門報告(起) + MIS 部門報告(尾)。
+- 中等模式文件：MIS 部門報告(起) + DEV 部門報告 + QC 部門報告 + MIS 部門報告(尾)。
+- 高等模式文件：MIS 部門報告(起) + QA 部門報告 + SEC 部門報告 + PRD 部門報告 + DEV 部門報告 + QC 部門報告 + MIS 部門報告(尾)。
 
 ### R17：退回增量記錄
-- 開發模式中，退回任意部門時，其部門文件應增量填寫（不替換），確保退回有紀錄。
+- 中等/高等模式中，退回任意部門時，其部門文件應增量填寫（不替換），確保退回有紀錄。
+- 退回後重新派工時，繼續輪換順序選定主執行者（不重新從頭開始）。
 - 退回紀錄格式：
   ```
   ## 退回紀錄
   - 退回來源：<部門名稱>
   - 退回原因：<簡述原因>
   - 退回時間：<ISO 8601 timestamp>
+  - 退回輪次：Round N
   ```
-- 退回只在開發模式下發生（維護模式只有 MIS 一個部門，無退回）。
+- 退回只針對中等/高等模式發生（初等模式只有 MIS 一個部門，無退回）。
 
 ### R18：README.md 維護職責
 - MIS 負責維護 REPO.md 及 README.md，確保兩者反映框架實際狀態。
@@ -111,7 +119,7 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 ### R19：秘書復判規則
 - MIS(尾)完成後，秘書須執行復判：確認有確實收尾與正確運作。
 - 復判確認項目：
-  1. MIS.md 存在且非空（SEC-A-03 閘門）
+  1. MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）
   2. 合併紀錄完整（commit SHA、squash merge 記錄）
   3. 修正的定義檔清單與 task.md 要求一致
   4. 版本號升級合理（semver）
@@ -125,6 +133,12 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 - 通訊目錄的 failure-notice.md 為 PROXY 間的標準失敗通知機制
 - PROXY 間的失敗通知以 failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
 - 吸收確認以 result.md 中的「代理執行」記錄為準
+
+### R21：主執行者選定
+主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。高等模式 DEV 首次進入時例外：秘書依任務適性指名起始 PROXY（見 SKILL.md 指名機制），之後按輪換順序遞進。指名僅限首次進入，後續原子任務正常輪換。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者與輪換順序。
+
+### R22：單一 worktree
+MIS 負責在 slug 初始化時，於 slug 層級建立單一共用 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`）。所有實作變更必須在此 worktree 上執行。
 
 ## 認知模型
 

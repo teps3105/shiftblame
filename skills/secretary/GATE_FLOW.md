@@ -2,27 +2,57 @@
 
 ## MIS 啟動閘門（流程起點）
 
-MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
+MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（高等模式 DEV 首次進入時，改由秘書依任務適性指名）、單一 worktree 已建立。
 
 ### 確認步驟
 
-1. 讀取 `~/.shiftblame/<repo>/REPO.md`，確認內容完整：
-   - 專案定位
-   - 方向
-   - 實作程度
-   - 待辦
-2. 若 REPO.md 不存在或內容不完整 → 退回 MIS 補齊
-2.1 上游產出驗證（DISPATCH_CHECKLIST 10）：
-   - 讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果（專案定位、方向、實作程度、待辦均已更新）
-   - 確認執行準則已落袋：MIS result.md 中含明確的執行準則
-2.2 驗證不通過 → 退回 MIS 補齊（不進入 QA）
-2.3 透過 AskUserQuestion 確認 MIS 起點產出可接受（見下方格式）
-3. AskUserQuestion 呈報 MIS 啟動結果：
+1. 讀取 `~/.shiftblame/<repo>/REPO.md`，確認內容完整。
+2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（高等模式 DEV 首次進入時，改由秘書依任務適性指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
+3. 確認單一共用 worktree 已建立於 slug 層級。
+4. 若以上任一項不滿足 → 退回 MIS 補齊。
+5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
+   - 讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果。
+   - 確認執行準則已落袋：MIS result.md 中含明確的執行準則。
+6. 驗證不通過 → 退回 MIS 補齊（不進入 QA）。
+7. 透過 AskUserQuestion 確認 MIS 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：
 
+**初等模式（basic）：**
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 啟動完成。專案現狀已釐清，REPO.md 已初始化/更新。",
+    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；初等模式無指名例外），單一 worktree 已建立，專案現狀已釐清。",
+    header: "MIS 啟動",
+    options: [
+      { label: "確認復判", description: "專案現狀與準則 OK，進入秘書復判" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+**中等模式（medium）：**
+```
+AskUserQuestion({
+  questions: [{
+    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；中等模式無指名例外），單一 worktree 已建立，專案現狀已釐清。",
+    header: "MIS 啟動",
+    options: [
+      { label: "確認派工 DEV", description: "專案現狀與準則 OK，啟動單向流程" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+**高等模式（full）：**
+```
+AskUserQuestion({
+  questions: [{
+    question: "MIS 啟動完成。主執行者已依輪換制選定（高等模式 DEV 首次進入時由秘書依任務適性指名起始 PROXY，之後按順序輪換），單一 worktree 已建立，專案現狀已釐清。",
     header: "MIS 啟動",
     options: [
       { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -34,19 +64,35 @@ AskUserQuestion({
 })
 ```
 
-## 維護模式閘門
+## 模式升級/降級閘門
 
-維護模式下，MIS 完成後的閘門簡化為直接進入收尾：
+當前 slug 模式可升級也可降級（縮小範圍）。流程如下：
+
+1. **升級請求**：主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`（例如：中等模式發現需進入高等模式，提議升級）。
+2. **瓶頸升級**：PROXY 發現範圍過大 → 秘書確認。
+3. **秘書確認**：秘書在部門閘門開啟時偵測到升級請求，透過 AskUserQuestion 請老闆複核升級。
+4. **降級處理**：老闆透過 AskUserQuestion 縮小範圍 → 秘書更新 meta.md 和 task.md。
+5. **降級不可逆轉**：縮小範圍降級後不可再升級回原等級。
+6. **執行更新**：
+   - 更新 `meta.md` 中的 `current_mode`。
+   - 更新後續部門 `task.md` 的 YAML frontmatter 元數據。
+   - 繼續後續流程。
+
+---
+
+## 初等模式閘門
+
+初等模式下，MIS 完成後的閘門簡化為直接進入收尾：
 
 1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
-2. 確認 MIS.md 已產出
+2. 確認 MIS 部門報告完整性（consensus.md + 各 PROXY result.md）
 3. AskUserQuestion 呈報 MIS 完成結果：
 
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 維護完成。是否確認進入秘書復判？\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
-    header: "維護模式",
+    question: "MIS 任務完成。是否確認進入秘書復判？\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
+    header: "初等模式",
     options: [
       { label: "確認復判", description: "確認進入秘書復判" },
       { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
@@ -57,22 +103,22 @@ AskUserQuestion({
 })
 ```
 
-4. 「確認復判」→ 秘書執行復判確認有確實收尾與正確運作 → 復判通過 → 進入維護模式收尾流程
-4.1 維護模式下 MIS 只需執行一次。MIS 完成所有框架變更後直接進入秘書復判，不重複派工。
-5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
-6. 「暫停」→ 結束 turn，等老闆討論
+4. 「確認復判」→ 秘書執行復判確認有確實收尾與正確運作 → 復判通過 → 進入初等模式收尾流程
+5. 初等模式下 MIS 只需執行一次。MIS 完成所有框架變更後直接進入秘書復判，不重複派工。
+6. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
+7. 「暫停」→ 結束 turn，等老闆討論
 
-維護模式不經過部門完成閘門流程（無 QA/SEC/PRD/DEV/QC 閘門），也不會發生退回其他部門的情況。
+初等模式不經過部門完成閘門流程（無 QA/SEC/PRD/DEV/QC 閘門），也不會發生退回其他部門的情況。
 
 ## 秘書復判閘門
 
 MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作，復判通過後才進入歸檔流程。
 
-### 維護模式復判
+### 初等模式復判
 
 1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
 2. 復判確認項目：
-   - MIS.md 產出完整性（含歸檔紀錄、合併紀錄、變更摘要、semver 評估、結論）
+   - MIS 部門報告完整性（consensus.md + 各 PROXY result.md，含歸檔紀錄、合併紀錄、變更摘要、semver 評估、結論）
    - 定義檔變更與 task.md 要求一致
    - 三方 PROXY 均有完成回報（或已有降級/吸收記錄）
 3. AskUserQuestion 呈報復判結果：
@@ -80,7 +126,7 @@ MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作，
 ```
 AskUserQuestion({
   questions: [{
-    question: "秘書復判完成。MIS 維護工作已確認收尾與正確運作。\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
+    question: "秘書復判完成。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
     header: "秘書復判",
     options: [
       { label: "確認歸檔", description: "復判通過，執行歸檔" },
@@ -96,11 +142,11 @@ AskUserQuestion({
 5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
 6. 「暫停」→ 結束 turn，等老闆討論
 
-### 開發模式復判
+### 中等/高等模式復判
 
 1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
 2. 復判確認項目：
-   - MIS.md 產出完整性
+   - MIS 部門報告完整性（consensus.md + 各 PROXY result.md）
    - 合併紀錄（commit SHA、squash merge 記錄）
    - 定義檔變更與 task.md 要求一致
    - worktree 狀態乾淨（無未提交變更）
@@ -110,7 +156,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "秘書復判完成。MIS 收尾工作已確認收尾與正確運作。\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
+    question: "秘書復判完成。MIS 收尾工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
     header: "秘書復判",
     options: [
       { label: "確認歸檔", description: "復判通過，執行歸檔" },
@@ -126,19 +172,51 @@ AskUserQuestion({
 5. 「退回 MIS」→ 結束 turn
 6. 「暫停」→ 結束 turn
 
+## 中等模式 DEV/QC 多輪閘門
+
+秘書在每輪 DEV 或 QC 完成後的閘門決定：
+
+1. **繼續 DEV**：需更多開發。
+2. **進入 QC**：開發完成，進入驗證。
+3. **退回 DEV**：QC 發現問題，退回修正。
+4. **暫停**：有問題待討論。
+
+task.md 需支援 round 標記（Round 2、Round 3...）。
+AskUserQuestion 格式包含 Round N 標題與選項。
+
 ## 部門完成閘門流程
 
 每個部門完成後，秘書讀取 PROXY 共識產出，驗證品質門檻，用 AskUserQuestion 回報老闆。
+
+### 實作部門閘門（兩階段派工）
+
+實作部門（DEV/QC/MIS）因採兩階段派工，閘門流程分為兩個檢查點：
+
+**檢查點 1：主執行者完成**
+1. 讀取主執行者 result.md，確認執行完成
+2. 驗證 worktree 中有對應 commit（`git -C <worktree> log --oneline -1`）
+3. 若無 commit → 退回主執行者補齊
+4. 若有 commit → 進入第二階段派工觀測者
+
+**檢查點 2：觀測者完成（閘門）**
+1. 讀取兩位觀測者 result.md，確認檢閱完成
+2. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
+3. 執行部門驗證 SOP（見下方）
+4. AskUserQuestion 呈報共識結果 → 等老闆判定
+
+### 研究部門閘門（同時派工）
+
+研究部門（MIS 啟動階段/QA/SEC/PRD）維持現有閘門流程（同時派工，一次性閘門）。
 
 ### 步驟
 
 ```
 1. 部門完成 → 秘書讀取 consensus.md + 各 PROXY result.md
-1.5. 讀取三方 PROXY result.md，整理三方工作情況
-1.5.1. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
-2. 執行部門驗證 SOP（見下方）
-3. AskUserQuestion 呈報共識結果 → 等老闆判定
-4. 工具回傳 → 依老闆選擇分支：
+2. 讀取三方 PROXY result.md，整理三方工作情況
+3. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
+4. 執行部門驗證 SOP（見下方）
+5. AskUserQuestion 呈報共識結果 → 等老闆判定
+6. 工具回傳 → 依老闆選擇分支：
    - 「繼續」→ 同一 turn 內直接推進（派下一部門或進入收尾流程）
    - 「重做」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容
    - 「暫停」→ 覆述選擇 → 結束 turn，等老闆下一則訊息討論
@@ -148,15 +226,16 @@ AskUserQuestion({
 
 ### 退回增量記錄
 
-秘書退回某部門時，須執行以下增量記錄（僅開發模式，維護模式無退回）：
+秘書退回某部門時，須執行以下增量記錄（僅中等/高等模式，初等模式無退回）：
 
-1. **task.md 退回指示**：秘書在退回部門時，須在 task.md 明確記錄退回來源部門與退回原因（增量追加，不替換原有目標與約束）。
+1. **task.md 退回指示**：秘書在退回部門時，須在 task.md 明確記錄退回來源部門、退回原因與退回輪次（增量追加，不替換原有目標與約束）。
 2. **部門產出檔增量追加**：被退回部門完成補強後，須在其產出文件末尾追加退回紀錄（每次退回追加一組，不覆蓋既有紀錄）：
    ```markdown
    ## 退回紀錄
    - 退回來源：<部門名稱>
    - 退回原因：<簡述原因>
    - 退回時間：<ISO 8601 timestamp>
+   - 退回輪次：Round N
    ```
 
 ## AskUserQuestion 格式
@@ -166,7 +245,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "[部門] 完成。共識結果：<摘要>。\n\n三方工作情況：\n- Claude：<完成項目/吸收份額/降級狀態>\n- Codex：<完成項目/吸收份額/降級狀態>\n- Gemini：<完成項目/吸收份額/降級狀態>",
+    question: "[部門] 完成。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>",
     header: "部門回報",
     options: [
       { label: "繼續", description: "共識 OK，推進下一部門" },
@@ -217,6 +296,13 @@ DEV 共識到達後，秘書必執行：
 
 PRD 共識到達後，秘書必驗證前端+後端測試數量（依 REPO.md 的專案結構調整路徑），任一為 0 → 退 PRD 補寫。
 
+### QC 報告後：README.md / REPO.md 品質確認
+
+QC 共識到達後，秘書必執行：
+1. 確認 QC 報告中是否含 README.md / REPO.md 品質問題
+2. 若有問題 → 退回 MIS 修正（非 DEV）
+3. 若無問題 → 繼續後續流程
+
 ### 所有部門回報後：worktree 確認
 
-PRD/DEV/QC/MIS 共識到達後，執行 `cd <worktree> && git status && git branch --show-current` 確認改動在 worktree 內、分支正確。主 repo 絕不可切離 main。
+PRD/DEV/QC/MIS 共識到達後，執行 `cd <worktree> && git status && git branch --show-current` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。

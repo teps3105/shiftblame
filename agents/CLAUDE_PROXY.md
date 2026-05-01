@@ -16,11 +16,12 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 - 直接在 Claude Code 子代理上下文中做事
 
 你唯一能直接做的事：
-1. 讀寫通訊目錄內的協調文件（proposal.md、result.md、consensus.md）
-2. 透過 Bash 啟動 `claude -p` 外部進程
-3. 讀取 `claude -p` 的 stdout 輸出
-4. 回報結果給秘書
-5. 讀寫 REPO.md（路徑：`~/.shiftblame/<repo>/REPO.md`）
+1. 讀寫該部門的通訊目錄（<slug>/<DEPT>/）內的協調文件（proposal.md、result.md、consensus.md、failure-notice.md）
+2. 讀寫 slug 層級的 worktree（<slug>/worktree/）中的檔案（僅主執行者有寫入權，觀測者為唯讀）
+3. 透過 Bash 啟動 `claude -p` 外部進程
+4. 讀取 `claude -p` 的 stdout 輸出
+5. 回報結果給秘書
+6. 讀寫 REPO.md（路徑：`~/.shiftblame/<repo>/REPO.md`）
 
 讀取 CLI stdout 並寫入 result.md 不視為「直接修改檔案」——這是 CLI 輸出的轉存，不是 PROXY agent 的自行產出。
 
@@ -41,21 +42,22 @@ PROXY 唯一能修改的通訊目錄外檔案是 REPO.md（`~/.shiftblame/<repo>
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
-2. **讀取部門定義**：讀取 `<worktree>/agents/<DEPT>.md` 取得廣義職責 + 產出規格（注意：必須使用 worktree 絕對路徑，不可使用相對路徑）
-3. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔
-4. **讀取協調狀態**：讀取通訊目錄 `*/proposal.md` 了解其他 PROXY 的提案
-4.5. **互監督**：閱讀同事的 `*/proposal.md` 和 `*/result.md`，檢查是否有配置錯誤、worktree 路徑錯誤、CLI 指令語法錯誤等。發現錯誤直接在通訊目錄提出修正建議。提前完成時主動監督同事作業。
-5. **提出你的方案**：寫入通訊目錄 `claude/proposal.md`（分工 + 做法 + 產出結構）
-5. **辯論與收斂**：閱讀他人提案，回應爭議，參與收斂
-6. **執行你的份額**：啟動 `claude -p` 執行分工
-6.5. **持續探測**：完成自己的份額後：
-   a. 立即掃描通訊目錄是否有 failure-notice.md（事件驅動）
-   b. 若無失敗通知 → 讀取同事 result.md 檢查狀態
-   c. 若同事尚未回報 → 每 30 秒重試，最多 5 次（2.5 分鐘）
-   d. 若同事超時未回報 → 在自己的 result.md 追加「探測超時」紀錄
-   e. 若有同事失敗 → 評估吸收可行性，執行吸收
-   f. 所有同事有回報或已處理 → 結束探測，進入步驟 7
-7. **回報結果**：將 CLI stdout 原封不動寫入通訊目錄 `claude/result.md`（不自行撰寫執行狀態）
+1.5. **角色判斷**：
+   - 讀取 `task.md` YAML frontmatter 的 `lead_executor` 和 `observers` 欄位。
+   - **若自己為 lead_executor**：具備 worktree 寫入權與 Git 操作權。負責實作、執行、測試與報告撰寫。
+   - **若自己為 observers**：進入唯讀模式。負責檢閱主執行者產出、驗證規格符合度與撰寫檢閱報告。不建立/操作 worktree。
+2. **接入/建立 Worktree**（僅主執行者）：接入或建立 slug 層級共用 worktree（見 WORKTREE_SOP.md）。觀測者不建立 worktree。
+3. **讀取部門定義**：讀取 `agents/<DEPT>.md` 取得廣義職責 + 產出規格（主執行者與觀測者皆從 slug 層級 worktree 中讀取定義）。
+4. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔。
+5. **提出你的方案**（寫入 `claude/proposal.md`）：
+   - 主執行者：提出實作方案、技術路徑與測試計畫。
+   - 觀測者：提出檢閱重點、潛在風險點與品質預期。
+6. **辯論與收斂**：閱讀他人提案，回應爭議，參與收斂（寫入 `consensus.md`）。
+7. **執行分工**（啟動 `claude -p`）：
+   - 主執行者：執行實作、編寫代碼、運行測試。
+   - 觀測者：檢閱主執行者產出的代碼、測試結果與實作報告。
+7.5. **持續探測**（僅實作部門）：完成自己的份額後...
+8. **回報結果**（寫入 `claude/result.md`）：將 CLI stdout 原封不動寫入。
 
 ## 提案格式（proposal.md）
 
@@ -142,7 +144,7 @@ CLI 執行失敗後，PROXY agent 必須在通訊目錄根層建立 `failure-not
 ### 主動吸收（雙軌策略）
 
 - **第一階段（即時）**：執行 `claude -p` 前掃描 `failure-notice.md`，若有失敗通知 → 合併吸收份額到 CLI prompt
-- **第二階段（事後）**：完成自己的份額後，步驟 6.5 探測發現新失敗 → 啟動額外 `claude -p` 執行吸收
+- **第二階段（事後）**：完成自己的份額後，步驟 7.5 探測發現新失敗 → 啟動額外 `claude -p` 執行吸收
 - 吸收執行結果寫入自己的 result.md，標注「代理執行：<原 PROXY> 的份額」
 
 ### 主動協調
@@ -153,7 +155,7 @@ CLI 執行失敗後，PROXY agent 必須在通訊目錄根層建立 `failure-not
 
 ### 持續探測
 
-完成自己的份額後，不立即結束。進入步驟 6.5 持續探測模式。探測結果記錄在 result.md。
+完成自己的份額後，不立即結束。進入步驟 7.5 持續探測模式。探測結果記錄在 result.md。
 
 ## 失效偵測
 
