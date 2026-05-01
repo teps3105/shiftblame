@@ -305,3 +305,41 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 | OPS | QA + SEC + PRD + DEV + QC + OPS |
 
 嚴格禁止讀下游部門的檔案。
+
+## 收尾規範
+
+### 版本號制度（Semantic Versioning）
+
+- 格式：major.minor.build
+- 預設每次升級 build（第三段）
+- 不主動升級 minor 或 major，除非老闆明確指示
+- 版本重置為 major 版本時（如 8.4.0 → 1.0.0），需老闆明確指示
+
+### REPO.md 重寫規範
+
+REPO.md 必須包含以下區段：
+- 技術棧
+- 開發策略
+- 測試流程
+- 部署流程
+- 安全規範
+- 待辦事項
+
+規則：
+- 已完成的代辦項目直接刪除，不保留「已完成」狀態
+- 不保留歷史版本演進表格（屬 git 歷史，非 REPO.md 內容）
+
+### README.md 重寫規範
+
+- 以符合當前真實實作為準
+- 不保留過往架構的字眼
+- 格式模板可保留（badge header 等）
+- 版本號與 plugin.json 保持一致
+
+### 版本重置流程
+
+當老闆指示版本重置時，MIS 須執行：
+1. .claude-plugin/plugin.json 版本更新
+2. README.md 版本更新
+3. REPO.md 版本更新（若 REPO.md 含版本號）
+4. 確保三處版本號一致

@@ -10,7 +10,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-9-blue.svg)](#七部門職能)
+[![Agents](https://img.shields.io/badge/agents-7-blue.svg)](#七部門職能)
 
 **[核心機制](#核心機制)** · **[架構概覽](#架構概覽)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
@@ -20,9 +20,11 @@ _AI agents 開發框架——流程協議與定義檔_
 
 ## 簡介
 
-shiftblame 是一套通用 AI agents 流程定義框架，專注於維護跨專案適用的流程協議。定義多個 AI CLI（Claude / Codex / Gemini）在同一個 worktree 上共議分工、自主執行、互相辯論的流程。框架本身是純 Markdown 定義檔，以 Claude Code Plugin 形式發布，透過 /secretary 啟動七部門單向流程，協調從需求釐清到部署驗證的完整開發流程。
+shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨 CLI 框架的協作流程。三個 PROXY（Claude / Codex / Gemini）在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
-當前版本：v8.3.0
+框架以 Claude Code Plugin 形式發布，透過 `/secretary` 啟動七部門單向流程，協調從需求釐清到部署驗證的完整開發流程。
+
+當前版本：v1.0.0
 
 ---
 
@@ -43,6 +45,12 @@ shiftblame 是一套通用 AI agents 流程定義框架，專注於維護跨專�
 - 異議必須附替代方案
 - 同一部門的三個 PROXY 互相監督執行正確性
 - 任一 CLI 失敗時透過 failure-notice.md 通知，其他 PROXY 主動探測並吸收份額；三方全失敗則通知秘書暫停流程
+
+### 合作式失敗處理
+
+- **failure-notice.md**：失敗的 PROXY 建立標準化失敗通知，優先級高於 result.md
+- **持續探測**：完成份額後進入探測模式，掃描同事狀態，超時未回報則記錄
+- **雙軌吸收**：執行前即時掃描吸收 + 完成後事後探測吸收，吸收結果標注於 result.md
 
 ### 常識政策
 
@@ -112,7 +120,7 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v8.3.0
+│   ├── plugin.json          # v1.0.0
 │   └── marketplace.json
 ├── agents/
 │   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md / OPS.md   # 七部門主管
@@ -147,6 +155,7 @@ shiftblame/
         └── <DEPT>/          # 部門討論目錄
             ├── task.md
             ├── consensus.md
+            ├── failure-notice.md
             ├── claude/{proposal,result}.md
             ├── codex/{proposal,result}.md
             └── gemini/{proposal,result}.md
