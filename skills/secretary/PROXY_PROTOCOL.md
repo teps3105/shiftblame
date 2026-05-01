@@ -62,15 +62,42 @@ task.md 只包含兩樣東西：**目標**和**約束**。不包含任何做法�
 - **降級紀錄**：是否有發生降級為單體執行或技術分歧多數決的情形。
 - **互助紀錄**：是否有 PROXY 抓到並修正同事錯誤。
 
+## Worktree 一致性規範
+
+三個 PROXY 完成各自份額後，必須確保三個 worktree 內容完全相同。此規範適用於所有部門。
+
+- PROXY 在寫入 result.md 前，須確認自己 worktree 的變更已完整同步
+- 秘書復判時執行 `diff -r` 檢查三個 worktree 一致性
+- 不一致 → 直接退回，不進入下一階段
+
+## Worktree 一致性規範
+
+三個 PROXY 完成各自份額後，必須確保三個 worktree 內容完全相同。此規範適用於所有部門。
+
+- PROXY 在寫入 result.md 前，須確認自己 worktree 的變更已完整同步
+- 秘書復判時執行 `diff -r` 檢查三個 worktree 一致性
+- 不一致 → 直接退回，不進入下一階段
+
 ## Agent() 呼叫
 
 永遠派三個 PROXY：
 
 ```
-Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, isolation="worktree")
-Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, isolation="worktree")
-Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, isolation="worktree")
+# Claude CLI bypass：--dangerously-skip-permissions（跳過權限確認）
+Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, isolation="worktree", bypass_permissions_flag="--dangerously-skip-permissions")
+# Codex CLI bypass：--dangerously-bypass-approvals-and-sandbox --ephemeral（繞過 sandbox + 不保留 session）
+Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, isolation="worktree", bypass_permissions_flag="--dangerously-bypass-approvals-and-sandbox --ephemeral")
+# Gemini CLI bypass：--yolo --skip-trust（自動確認 + 跳過信任檢查）
+Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, isolation="worktree", bypass_permissions_flag="--yolo --skip-trust")
 ```
+
+### CLI Bypass Flags 對照表
+
+| CLI | Bypass Flags | 說明 |
+|---|---|---|
+| claude -p | --dangerously-skip-permissions | 跳過權限確認 |
+| codex exec | --dangerously-bypass-approvals-and-sandbox --ephemeral | 繞過 sandbox + 不保留 session |
+| gemini -p | --yolo --skip-trust | 自動確認 + 跳過信任檢查 |
 
 proxy_prompt **最小化**，只含三樣東西：
 1. task.md 路徑
@@ -83,11 +110,12 @@ proxy_prompt **最小化**，只含三樣東西：
 
 ```
 1. 讀取 task.md（目標 + 約束）
-2. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
-3. 讀取上游輸入（task.md 中列出的路徑）
-4. 各自提出 proposal（分工 + 做法 + 產出結構）
-5. 辯論收斂 → 寫入 consensus.md
-6. 各自執行分工 → 寫入 result.md
+2. 建立獨立 worktree（由 PROXY 在部門執行上下文中自行負責，見 WORKTREE_SOP.md）
+3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
+4. 讀取上游輸入（task.md 中列出的路徑）
+5. 各自提出 proposal（分工 + 做法 + 產出結構）
+6. 辯論收斂 → 寫入 consensus.md
+7. 各自執行分工 → 寫入 result.md
 ```
 
 proposal.md 格式：
@@ -202,7 +230,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 統一由一人寫入報告
 - 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
 
-### 實作部門（DEV/QC/OPS）
+### 實作部門（DEV/QC）
 
 三人協調執行。採單向流程執行模式：
 - 三人協調分工
@@ -302,7 +330,6 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 | PRD | QA + SEC + PRD |
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
-| OPS | QA + SEC + PRD + DEV + QC + OPS |
 
 嚴格禁止讀下游部門的檔案。
 

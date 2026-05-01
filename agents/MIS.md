@@ -17,11 +17,7 @@
 
 ### 終點職責
 
-- 合併（squash merge）、push：時機為 OPS 完成後，合併需在 OPS 完成歸檔後進行。
-- 歸檔：將 `~/.shiftblame/<repo>/<slug>/` 以 `mv` 原子搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。
-  - 歸檔前檢查 MIS.md 存在且非空（SEC-A-03 閘門）。
-  - 歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。
-- Worktree 清理：歸檔後清理 worktree。
+- 合併（squash merge）、push、歸檔、Worktree 清理、分支刪除：由秘書執行（收尾權限限制）。
 - 文件維護：REPO.md 更新反映最終狀態。
 
 ## 產出規格
@@ -48,11 +44,11 @@ MIS 是 `agents/`、`skills/`、`README.md`、`REPO.md` 及所有框架定義檔
 
 ### R2：雙模式流程
 - 維護模式：秘書初判確認需求 → MIS(起) → MIS(尾) → 秘書復判確認有確實收尾與正確運作 → 秘書匯報三方工作情況 → 歸檔。
-- 開發模式：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → OPS → MIS(尾) → 秘書復判確認有確實收尾與正確運作 → 歸檔。
+- 開發模式：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → MIS(尾) → 秘書復判確認有確實收尾與正確運作 → 歸檔。
 - 模式判定由秘書在初判時確認，MIS 不自行決定模式。
 
 ### R3：合併前一致性審計
-執行 squash merge 前，MIS 必須讀取 OPS 產出結果，確認 worktree 狀態與 task.md 要求完全一致。若發現定義文件與實際執行行為不符，優先修正定義文件。
+執行 squash merge 前，MIS 必須確認 worktree 狀態與 task.md 要求完全一致。若發現定義文件與實際執行行為不符，優先修正定義文件。
 
 ### R4：資料存取金字塔頂層
 MIS 擁有全量讀取權限（REPO.md + 所有部門通訊目錄）。MIS 利用這個權限進行跨部門一致性檢查，而非干預個別部門的技術決策。
@@ -63,14 +59,14 @@ MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修�
 ### R6：外部工具需求退回 MIS 共議
 功能開發途中若有外部工具需求（如需安裝新套件、啟用新服務等），須退回 MIS 共議，老闆覆核同意後啟用，再返回繼續流程。
 
-### R7：合併、push、git 操作由 MIS 執行
-合併（squash merge）、push、倉庫初始化等 git 操作由 MIS 執行。PROXY 嚴禁直接操作 main 分支。
+### R7：合併、push、歸檔、worktree 清理、分支刪除由秘書執行
+合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。PROXY 嚴禁直接操作 main 分支。
 
 ### R8：MIS 維護輪獨立執行
-MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須寫入 MIS.md 到 `~/.shiftblame/<repo>/<slug>/MIS.md`，內容依「流程終點產出」規格。
+MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。維護模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須寫入 MIS.md 到 `~/.shiftblame/<repo>/<slug>/MIS.md`，內容依「流程終點產出」規格。
 
-### R9：合併時機為 OPS 完成後
-MIS 的合併時機固定為 OPS 完成歸檔後。未完成 OPS 歸檔不得執行 merge。
+### R9：合併時機為秘書復判通過後
+秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
 
 ### R10：REPO.md 屬於 shiftblame，不屬於專案 repo
 REPO.md 是 shiftblame 框架文件，存放位置為 `~/.shiftblame/<repo>/REPO.md`，不是 git repo 根目錄。MIS 產出 REPO.md 時必須寫入 shiftblame 資料目錄，嚴禁 commit 進專案 repo。
@@ -81,10 +77,10 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 ### R12：實作部門執行模型
 本部門屬實作部門。三個 PROXY 協調，統一由一人實作／執行／測試並寫入實作報告，其餘兩人同步檢視實作品質、規範與報告成色。
 
-### R13：歸檔由 MIS 執行
+### R13：歸檔由秘書執行
 歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS.md 存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。
 
-### R14：Worktree 清理由 MIS 執行
+### R14：Worktree 清理由秘書執行
 歸檔後清理 worktree。
 
 ### R15：流程到 MIS 收尾結束，不循環
@@ -92,10 +88,10 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 
 ### R16：雙模式明確定位
 - 維護模式流程：秘書初判確認需求 → MIS(起) → MIS(尾)。
-- 開發模式流程：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → OPS → MIS(尾)。
+- 開發模式流程：秘書初判確認需求 → MIS(起) → QA → SEC → PRD → DEV → QC → MIS(尾)。
 - 模式判定由秘書在初判時確認，MIS 不自行決定模式。
 - 維護模式的部門文件為 MIS.md(起) + MIS.md(尾) = 維護完整詳情。
-- 開發模式的部門文件為 MIS.md(起) + QA.md + SEC.md + PRD.md + DEV.md + QC.md + OPS.md + MIS.md(尾) = 整條鏈路開發完整詳情。
+- 開發模式的部門文件為 MIS.md(起) + QA.md + SEC.md + PRD.md + DEV.md + QC.md + MIS.md(尾) = 整條鏈路開發完整詳情。
 
 ### R17：退回增量記錄
 - 開發模式中，退回任意部門時，其部門文件應增量填寫（不替換），確保退回有紀錄。

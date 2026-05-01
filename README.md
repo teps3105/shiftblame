@@ -10,7 +10,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-7-blue.svg)](#七部門職能)
+[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#六部門職能)
 
 **[核心機制](#核心機制)** · **[架構概覽](#架構概覽)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
@@ -22,9 +22,9 @@ _AI agents 開發框架——流程協議與定義檔_
 
 shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨 CLI 框架的協作流程。三個 PROXY（Claude / Codex / Gemini）在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
-框架以 Claude Code Plugin 形式發布，透過 `/secretary` 啟動七部門單向流程，協調從需求釐清到部署驗證的完整開發流程。
+框架以 Claude Code Plugin 形式發布，透過 `/secretary` 啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
 
-當前版本：v1.0.0
+當前版本：v1.0.2
 
 ---
 
@@ -66,13 +66,13 @@ CLI 彼此僅知使用三種不同的 CLI 框架，不知底層模型細節，�
 
 ### 單向流程
 
-七部門依序執行，一次性的單向流程：
+六部門依序執行，一次性的單向流程：
 
 ```
-MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
+MIS → QA → SEC → PRD → DEV → QC → MIS
 ```
 
-MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護、合併與推送。
+MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
 
 ### 雙模式
 
@@ -80,22 +80,21 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 
 | 模式 | 流程 | 適用情境 |
 |---|---|---|
-| **維護模式** | MIS 獨立執行 → 秘書復判 → 歸檔 | 框架定義檔維護、文件更新、版本升級等 |
-| **開發模式** | MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判 → 收尾 | 新功能開發、重大重構等 |
+| **維護模式** | MIS 獨立執行 → 秘書復判 → 收尾（歸檔） | 框架定義檔維護、文件更新、版本升級等 |
+| **開發模式** | MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判 → 收尾（歸檔） | 新功能開發、重大重構等 |
 
-模式確認後不可中途切換。維護模式不走完整流程，MIS 完成後經秘書復判確認收尾品質，再進入歸檔收尾。秘書復判確認有確實收尾與正確運作，並匯報三方工作情況。
+模式確認後不可中途切換。維護模式不走完整流程，MIS 完成後經秘書復判確認收尾品質，再進入歸檔收尾。秘書復判確認有確實收尾與正確運作，並匯報三方工作情況。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
 
-### 七部門職能
+### 六部門職能
 
 | 部門 | 職能 |
 |---|---|
-| **MIS** | 維護部門（流程起點與終點）：專案現狀釐清、執行準則確立、合併、推送、文件維護、問題診斷、worktree 建立/清理 |
+| **MIS** | 維護部門（流程起點與終點）：專案現狀釐清、執行準則確立、文件維護、問題診斷、worktree 建立 |
 | **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z）、市調 |
 | **SEC** | 資安稽核、CVE 搜尋、工具篩選、環境規範 |
 | **PRD** | 架構設計、DAG、測試區分、實作計畫 |
 | **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 |
 | **QC** | 穩健性攻擊、邊緣案例、紅藍隊 |
-| **OPS** | 單向流程最後實作階段：部署、生產環境驗證、權限提升（sudo 部署專用） |
 
 ### 資料存取（金字塔累積制）
 
@@ -109,7 +108,6 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 | PRD | QA + SEC + PRD |
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
-| OPS | QA + SEC + PRD + DEV + QC + OPS |
 
 ---
 
@@ -120,10 +118,10 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v1.0.0
+│   ├── plugin.json          # v1.0.2
 │   └── marketplace.json
 ├── agents/
-│   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md / OPS.md   # 七部門主管
+│   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md           # 六部門主管
 │   ├── CLAUDE_PROXY.md                                       # Claude 外殼代理
 │   ├── CODEX_PROXY.md                                       # Codex 外殼代理
 │   └── GEMINI_PROXY.md                                      # Gemini 外殼代理
@@ -194,8 +192,8 @@ claude plugin update shiftblame
 /secretary → 報告現狀 → 老闆提問 → MIS 釐清 → 模式確認 → 老闆決策 → 秘書調度
 ```
 
-- **維護模式**：MIS 釐清 → 模式確認（維護）→ MIS 獨立執行 → 秘書復判 → 歸檔
-- **開發模式**：MIS 釐清 → 模式確認（開發）→ 老闆決策 → MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判 → 收尾
+- **維護模式**：MIS 釐清 → 模式確認（維護）→ MIS 獨立執行 → 秘書復判 → 收尾（歸檔）
+- **開發模式**：MIS 釐清 → 模式確認（開發）→ 老闆決策 → MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判 → 收尾（歸檔）
 
 秘書在每個關鍵節點透過 AskUserQuestion 回報，提供三個選項：
 

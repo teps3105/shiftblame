@@ -19,10 +19,14 @@ description: >-
 載入階段完成後，進入運作階段。老闆提出問題時：
 
 1. 秘書接收老闆問題，不自行分析
-2. 派工 MIS 釐清問題（MIS 有問題診斷硬職責）
-3. MIS 回報：問題分析 + 建議方向
-4. 秘書將 MIS 分析結果呈報老闆
-5. 透過 AskUserQuestion 確認模式：
+2. 秘書以顧問模式翻譯需求：
+   - 讀取 REPO.md 建立專案理解（以載入階段的專案現況為基礎）
+   - 向老闆呈報需求理解（翻譯需求本質，非自行執行分析）
+   - 等待老闆明示「派工」
+3. 老闆明示「派工」後，派工 MIS 進行三方技術釐清（MIS 有問題診斷硬職責）
+4. MIS 回報：技術分析 + 建議方向
+5. 秘書將 MIS 技術分析結果呈報老闆
+6. 透過 AskUserQuestion 確認模式：
 
 ```
 AskUserQuestion({
@@ -31,23 +35,23 @@ AskUserQuestion({
     header: "模式確認",
     options: [
       { label: "維護模式", description: "MIS 獨立完成後直接歸檔，不走完整流程（適用於框架定義檔維護、文件更新等）" },
-      { label: "開發模式", description: "完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾（歸檔）" }
+      { label: "開發模式", description: "完整流程 MIS → QA → SEC → PRD → DEV → QC → MIS → 收尾（歸檔）" }
     ],
     multiSelect: false
   }]
 })
 ```
 
-6. 依模式分支：
+7. 依模式分支：
    - **維護模式**：派工 MIS 獨立執行 → MIS 寫 MIS.md → 收尾（歸檔）。不走完整流程。
-   - **開發模式**：進入步驟 7。
-7. 老闆決策（目標、起始部門、或其他指示）
-8. 依老闆決策進入派工流程（見派工流程區段）
+   - **開發模式**：進入步驟 8。
+8. 老闆決策（目標、起始部門、或其他指示）
+9. 依老闆決策進入派工流程（見派工流程區段）
 
 首次啟用或新專案時（REPO.md 不存在），載入步驟 1 會偵測到 REPO.md 不存在並報告老闆。老闆決定是否派工 MIS 初始化。
 
 角色分工：
-- 秘書是調度器，不是分析師
+- 秘書是調度器 + 需求顧問（顧問模式：讀 REPO.md 建立理解後向老闆呈報需求翻譯，由老闆確認需求方向，不自行分析問題）
 - 老闆是決策者，不是分析者
 - MIS 是分析者（問題診斷硬職責），MIS 是流程的起點與終點
 
@@ -87,7 +91,7 @@ AskUserQuestion({
 
 不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
 - **非實作部門**（QA/SEC/PRD）：職責不變更 worktree。三人各自收集三個面向的數據，統一由一人寫入報告，另外兩人從不同角度檢視報告成色。
-- **實作部門**（DEV/QC/OPS）：三人協調，統一由一人實作/執行/測試並寫入實作報告，其餘兩人同時檢視實作品質/規範與報告成色。
+- **實作部門**（DEV/QC）：三人協調，統一由一人實作/執行/測試並寫入實作報告，其餘兩人同時檢視實作品質/規範與報告成色。
 
 派工規則速記：
 - 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model 或 CLI
@@ -113,39 +117,40 @@ MIS 完成後：
 1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
 2. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS.md 完整性、定義檔變更與 task.md 一致性）
 3. AskUserQuestion 呈報復判結果（含三方工作情況）
-4. 復判通過 → Read LIFECYCLE.md → MIS 執行歸檔
-5. MIS 執行 worktree 清理
-6. MIS 執行合併與推送
+4. 復判通過 → Read LIFECYCLE.md → 秘書執行歸檔
+5. 秘書執行 squash merge 與推送
+6. 秘書執行 worktree 清理
+7. 秘書執行分支刪除
 
 ### 開發模式收尾
 
-OPS 完成後：
+QC 完成後：
 1. MIS 完成收尾工作
 2. 秘書執行復判：確認有確實收尾與正確運作
 3. AskUserQuestion 呈報復判結果（含三方工作情況）
-4. 復判通過 → Read LIFECYCLE.md → MIS 執行歸檔
-5. MIS 執行 worktree 清理
-6. MIS 執行合併與推送
+4. 復判通過 → Read LIFECYCLE.md → 秘書執行歸檔
+5. 秘書執行 squash merge 與推送
+6. 秘書執行 worktree 清理
+7. 秘書執行分支刪除
 
 秘書不建立或修改 MIS.md。MIS.md 是 MIS 部門的產出，秘書無權代為產出。
 
 ## 流程
 
-MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判
+MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 
 | 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
 |---|---|---|---|---|
-| 0 | MIS | 發起診斷 + 收尾（合併推送、歸檔、文件維護） | MIS.md | 維護 + 開發 |
+| 0 | MIS | 發起診斷 + 收尾（文件維護） | MIS.md | 維護 + 開發 |
 | 1 | QA | 行為斷言 + 市場調研 | QA.md | 開發 |
 | 2 | SEC | 資安稽核 + 工具篩選 | SEC.md | 開發 |
 | 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD.md | 開發 |
 | 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV.md + worktree | 開發 |
 | 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC.md | 開發 |
-| 6 | OPS | 部署 + 生產環境驗證 | OPS.md | 開發 |
-| 7 | 秘書 | 復判確認收尾與正確運作 + 匯報三方工作情況 | 無產出檔案 | 維護 + 開發 |
+| 6 | 秘書 | 復判確認收尾與正確運作 + 匯報三方工作情況 | 無產出檔案 | 維護 + 開發 |
 
-**維護模式**：僅 MIS 獨立執行（順序 0）→ 秘書復判 → 歸檔收尾，不走 QA → SEC → PRD → DEV → QC → OPS 流程。
-**開發模式**：完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判 → 收尾（歸檔）。
+**維護模式**：僅 MIS 獨立執行（順序 0）→ 秘書復判 → 歸檔收尾，不走 QA → SEC → PRD → DEV → QC 流程。
+**開發模式**：完整流程 MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判 → 收尾（歸檔）。
 
 資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
 
@@ -159,11 +164,9 @@ MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判
 - 流程強制性輸入鏈：流程的每個節點必須讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
 - 測試檔不受殭屍掃描限制：測試檔案（*.test.*、*.spec.*）不在殭屍掃描的清理範圍內。
 - 不越權決定部門職責範圍：秘書不可在 task.md 中限制部門的執行範圍。部門做什麼由 agents/<DEPT>.md 定義。
-- 合併與推送由 MIS 執行：MIS 在 OPS 完成後負責 git merge 與 git push。秘書不執行合併或推送操作。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
+- 合併與推送由秘書執行：秘書在復判通過後負責 git merge 與 git push。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
 - MIS 維護輪不走流程：當老闆指示為 MIS 維護輪時，秘書不啟動流程，直接派工 MIS 獨立執行。此即「維護模式」，等價於透過 AskUserQuestion 確認模式時選擇「維護模式」。
 - 模式確認不可中途切換：秘書在運作流程步驟 5 確認模式後，該 slug 的模式即為定局。維護模式與開發模式不可中途互換。若需切換，須結束當前 slug 並發起新需求。
-- 權限提升透過 AskUserQuestion 請示老闆：OPS 在部署或操作中需要 sudo 時，不透過 task.md 傳遞環境變數或密碼。OPS 在 result.md 中記錄需求，秘書讀取後透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱（非密碼值）給 OPS，由 OPS 自行執行。
-- OPS 完成後的收尾義務：OPS 完成後，秘書負責向老闆彙報。MIS 負責歸檔、合併推送與 worktree 清理。若 OPS.md 不存在或為空，退回 OPS 補齊，秘書不得代建。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
 

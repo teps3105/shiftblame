@@ -11,7 +11,7 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - 執行歸檔 → Worktree 清理 → 合併推送
 
 ### 開發模式
-- OPS 完成 → MIS 收尾 → 秘書復判 → 復判通過 → 歸檔
+- QC 完成 → MIS 收尾 → 秘書復判 → 復判通過 → 歸檔
 - 歸檔前提：秘書確認 MIS 確實收尾且系統正確運作
 - 歸檔閘門（SEC-A-03）：確認 MIS.md 存在且非空
 - 執行歸檔 → Worktree 清理 → 合併推送
@@ -25,7 +25,7 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 
 ## 1. 歸檔
 
-歸檔操作由 MIS 在收尾階段執行（非秘書）。秘書在 MIS 回報收尾完成後確認歸檔結果。
+歸檔操作由秘書執行。秘書在復判通過後確認歸檔結果。
 
 ```bash
 # 歸檔閘門（SEC-A-03）
@@ -47,4 +47,4 @@ test -f ~/.shiftblame/<repo>/REPO.md || echo "WARN: REPO.md 不在原位"
 
 ## 2. Worktree 清理
 
-見 `WORKTREE_SOP.md`。Worktree 清理由 MIS 在收尾階段執行。
+見 `WORKTREE_SOP.md`。Worktree 清理由秘書執行。

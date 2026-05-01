@@ -6,7 +6,7 @@
 
 派工前確認本次 slug 的模式（維護模式 / 開發模式）。模式已在 SKILL.md 運作流程步驟 5 確認，此處為覆核：
 
-- **維護模式**：僅派工 MIS，不走 QA → SEC → PRD → DEV → QC → OPS 流程
+- **維護模式**：僅派工 MIS，不走 QA → SEC → PRD → DEV → QC 流程
 - **開發模式**：依完整流程依序派工
 
 模式確認後不可中途切換。若模式未確認，退回 SKILL.md 運作流程步驟 5 完成確認。
@@ -82,7 +82,6 @@ proxy_prompt 只含三樣東西：
 | MIS（尾，復判前） | 確認 MIS.md 已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
-| OPS | 確認部署工具可用性、生產環境驗證工具就緒、權限提升環境變數可讀取 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/`，worktree 已建立 |
 
 ## 6. QC 定位提醒
@@ -119,3 +118,16 @@ MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
 
 驗證不通過 → 退回 MIS 補齊（不進入 QA）。
+
+## 11. Worktree 一致性檢查
+
+所有部門完成後（每個部門閘門通過時），執行三個 PROXY worktree 內容一致性驗證：
+
+```bash
+diff -r <claude-worktree> <codex-worktree>
+diff -r <claude-worktree> <gemini-worktree>
+```
+
+- 三個 worktree 內容必須完全相同（diff -r 無差異）
+- 不一致 → 直接退回，不進入下一階段
+- 秘書復判時亦須執行此檢查，不一致直接退回
