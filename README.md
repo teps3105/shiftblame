@@ -92,6 +92,27 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ---
 
+## v7.2.x 新功能
+
+### v7.2.0 帳號層級 Quota 偵測
+
+Quota 偵測升級為方案 A+C 混合策略：
+
+- **方案 A（增強型探針）**：派工前探針指令輸出解析，同時解析 stdout 與 stderr，提取 rate_limit_remaining、retry_after 等結構化欄位，支援更多失效類型判定（SERVICE_OVERLOADED 等）
+- **方案 C（執行期 response header 偵測）**：PROXY 執行 CLI 指令後，若 stderr 含 HTTP status 429/503/529，自動在 result.md 記錄並標記需要降級
+
+新增失效類型 `SERVICE_OVERLOADED`（stderr 含 '503' / '529' / 'overloaded'），三個 PROXY 定義檔均已同步更新。
+
+### v7.2.1 啟動方式簡化
+
+秘書模式啟動方式擴充，除 `/secretary` 指令外，使用者輸入開始語句（「開始」、「start」、「開工」、「let's go」等）即可自動觸發秘書模式，無需記住指令。
+
+### v7.2.2 注入機制版本標記
+
+`inject-claudemd.sh` 加入版本標記機制（`shiftblame-inject:begin` / `shiftblame-inject:end`），支援 plugin 升級後自動更新已注入的提示詞，不再因舊注入存在而跳過更新。同時清理 pre-v7.2.2 的 legacy 注入格式。
+
+---
+
 ## v7.0.0 新功能
 
 ### 載入恢復

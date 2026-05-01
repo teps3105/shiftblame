@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/derek/.claude/hooks/block_memory_writes.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'HB=\"$HOME/.shiftblame\"; [ ! -d \"$HB\" ] && exit 0; cm() { local r=\"$1\"; git -C \"$r\" rev-parse --git-dir >/dev/null 2>&1 || return 0; git -C \"$r\" add -A 2>/dev/null; git -C \"$r\" diff --cached --quiet 2>/dev/null && return 0; git -C \"$r\" commit -m \"auto: $(date +%Y-%m-%d_%H%M%S)\" >/dev/null 2>&1 || true; }; shopt -s nullglob; for d in \"$HB\"/*/; do cm \"$d\"; done; cm \"$HB\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -106,24 +106,36 @@ TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下�
 | `CLI_UNAVAILABLE` | `which claude` 失敗 |
 | `RATE_LIMITED` | stderr 含 "rate limit" / "429" |
 | `QUOTA_EXCEEDED` | stderr 含 "quota" / "billing" |
-| `AUTH_FAILURE` | stderr 含 "auth" / "API key" |
+| `AUTH_FAILURE` | stderr 含 "auth" / "API key" / "401" / "403" |
+| `SERVICE_OVERLOADED` | stderr 含 "503" / "529" / "overloaded" |
 | `TIMEOUT` | 300s timeout 觸發 |
 | `EXEC_FAILED(N)` | exit code != 0 |
 | `EMPTY_OUTPUT` | stdout 為空 |
 
 錯誤回報後，其他 PROXY 會在協調中吸收你的份額。你不需要自行重試。
 
-## Quota 偵測探針
+### 執行期 response header 偵測
 
-派工前秘書會執行 Quota 偵測，以下是本 CLI 的探針指令：
+執行 `claude -p` 後，若 stderr 含以下 HTTP status code，自動在 result.md 記錄並標記需要降級：
+
+| HTTP Status | 含義 | 處理 |
+|---|---|---|
+| 429 | Rate Limited | 記錄 rate_limit_remaining（若有），標記降級 |
+| 503 | Service Unavailable | 記錄 retry_after（若有），標記降級 |
+| 529 | Site Overloaded | 記錄 retry_after（若有），標記降級 |
+
+## Quota 偵測探針（增強型）
+
+派工前秘書會執行增強型探針偵測（方案 A+C 混合策略），以下是本 CLI 的探針指令：
 
 ```bash
 claude -p "echo ok" --output-format text --no-session-persistence --settings ~/.claude/settings.proxy.json 2>&1 | head -5
 ```
 
-偵測結果判定：
+偵測結果判定（解析 stdout + stderr）：
 - stdout 含 "ok" → `AVAILABLE`
-- stderr 含 "rate limit" / "429" → `RATE_LIMITED`
+- stderr 含 "429" / "rate" / "rate_limit" → `RATE_LIMITED`
 - stderr 含 "quota" / "billing" → `QUOTA_EXCEEDED`
-- stderr 含 "auth" / "API key" → `AUTH_FAILURE`
+- stderr 含 "auth" / "API key" / "401" / "403" → `AUTH_FAILURE`
+- stderr 含 "503" / "529" / "overloaded" → `SERVICE_OVERLOADED`
 - 指令不存在或超時 → `UNAVAILABLE`
