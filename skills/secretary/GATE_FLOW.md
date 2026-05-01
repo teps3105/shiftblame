@@ -164,6 +164,7 @@ AskUserQuestion({
 ```
 1. 部門完成 → 秘書讀取 consensus.md + 各 PROXY result.md
 1.5. 讀取三方 PROXY result.md，整理三方工作情況
+1.5.1. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
 2. 執行部門驗證 SOP（見下方）
 3. AskUserQuestion 呈報共識結果 → 等老闆判定
 4. 工具回傳 → 依老闆選擇分支：

@@ -12,6 +12,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ~/.shiftblame/<repo>/<slug>/<DEPT>/
 ├── task.md              # 秘書寫入：目標 + 約束（見下方格式）
 ├── consensus.md         # PROXY 寫入：分工 + 做法共識 + 產出結構
+├── failure-notice.md   # PROXY 寫入：失敗通知（按需建立，見規範二）
 ├── claude/{proposal,result}.md
 ├── codex/{proposal,result}.md
 └── gemini/{proposal,result}.md
@@ -161,13 +162,13 @@ consensus.md 必須包含：
 
 ## 執行期限額偵測
 
-PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下 HTTP status code，自動在 result.md 記錄並觸發職務代理人機制：
+PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下 HTTP status code，自動寫入 failure-notice.md 並在 result.md 記錄詳情：
 
 | HTTP Status | 含義 | 處理 |
 |---|---|---|
-| 429 | Rate Limited | 在 result.md 記錄 rate_limit_remaining（若有），觸發職務代理人 |
-| 503 | Service Unavailable | 在 result.md 記錄 retry_after（若有），觸發職務代理人 |
-| 529 | Site Overloaded | 在 result.md 記錄 retry_after（若有），觸發職務代理人 |
+| 429 | Rate Limited | 在 failure-notice.md 記錄 rate_limit_remaining（若有），觸發合作式失敗處理機制（規範二） |
+| 503 | Service Unavailable | 在 failure-notice.md 記錄 retry_after（若有），觸發合作式失敗處理機制（規範二） |
+| 529 | Site Overloaded | 在 failure-notice.md 記錄 retry_after（若有），觸發合作式失敗處理機制（規範二） |
 
 ## PROXY 職責
 
@@ -182,12 +183,13 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 | 情境 | 處理 |
 |---|---|
-| 單一 PROXY 失敗 | 其他自行吸收 |
-| 單一 PROXY 達到限額（執行期偵測到 429/503/529） | 觸發職務代理人機制（見規範二），其餘 PROXY 非同步接管其職責 |
-| 二個 PROXY 失敗 | 剩餘獨立完成，共識降級為單體 |
+| 單一 PROXY 失敗（寫入 failure-notice.md） | 其他 PROXY 讀取 failure-notice.md，依合作式失敗處理機制（規範二）吸收其份額 |
+| 單一 PROXY 達到限額（執行期偵測到 429/503/529） | 寫入 failure-notice.md + result.md 記錄詳情，觸發合作式失敗處理機制（規範二） |
+| 二個 PROXY 失敗 | 剩餘獨立完成，共識降級為單體，在 result.md 記錄降級原因 |
 | 全部失敗 | 回報秘書暫停 |
 | 共識含技術分歧 | PROXY 互監督修正或重新辯論（最多 1 輪補充）；仍無法收斂時採多數決，在 consensus.md 記錄少數意見 |
 | result 含 permission error | 標注「執行不完整」，秘書重新派工 |
+| PROXY 超時未回報（持續探測超過 5 次） | 其他 PROXY 在 result.md 追加「探測超時」紀錄，評估是否需吸收 |
 
 ## 部門執行模型
 
@@ -227,13 +229,50 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 利益衝突不等同於不當行為。框架本身要求某些角色承擔多重職責，此為設計意圖，非利益衝突。
 
-### 規範二：職務代理人機制（API 限制代償）
+### 規範二：合作式失敗處理機制（原職務代理人機制）
 
-當一方 PROXY 因 API 限制（執行期偵測到 429/503/529）未能完成工作時：
-1. 非同步吸收：其餘 PROXY 先完成自己的職責，再以職務代理人身份執行受限 PROXY 的份額
-2. 失效回報：受限 PROXY 仍須在 result.md 回報失效原因
-3. 代理記錄：代為執行的 PROXY 在自己的 result.md 中記錄代理執行內容
-4. 非懲罰性：API 限制代償不影響受限 PROXY 的部門績效評估——這是基礎設施問題，非能力問題
+當任一 PROXY 執行失敗（任何失效偵測代碼觸發）時，採以下機制處理：
+
+#### 失敗通知（failure-notice.md）
+
+失敗的 PROXY 必須立即在通訊目錄根層建立 failure-notice.md（按需建立，不需秘書初始化）：
+
+```markdown
+# 失敗通知
+- **PROXY**：<CLAUDE/CODEX/GEMINI>
+- **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED(N)/EMPTY_OUTPUT>
+- **已完成**：<已完成的分工項目清單>
+- **未完成**：<未完成的分工項目清單>
+- **時間**：<ISO 8601 timestamp>
+```
+
+通知優先級：failure-notice.md 高於 result.md。PROXY 應先寫入 failure-notice.md，再處理 result.md 詳細記錄。
+
+#### 持續探測
+
+完成自己的份額後，PROXY 進入持續探測模式（自組織工作流程步驟 7.5）：
+1. 立即掃描通訊目錄是否有 failure-notice.md
+2. 若無失敗通知 → 讀取同事 result.md 檢查狀態
+3. 若同事尚未回報 → 每 30 秒重試，最多 5 次（2.5 分鐘）
+4. 若同事超時未回報 → 在自己的 result.md 追加「探測超時」紀錄
+5. 若有同事失敗 → 評估吸收可行性，執行吸收
+6. 所有同事有回報或已處理 → 結束探測
+
+#### 主動吸收（雙軌策略）
+
+- **第一階段（即時）**：執行 CLI 前掃描 failure-notice.md，若有失敗通知 → 在 CLI prompt 中合併自己的份額 + 失敗者的份額
+- **第二階段（事後）**：完成自己的份額後，持續探測（步驟 7.5）發現新失敗 → 啟動額外 CLI 執行吸收
+- 吸收執行結果寫入自己的 result.md，標注「代理執行：<原 PROXY> 的份額」
+
+#### 協調分攤
+
+- 發現同事失敗且自己的份額已過重 → 在通訊目錄發起協調請求（寫入自己的 proposal.md 更新）
+- 若三方中有兩方失敗 → 剩餘一方獨立完成，不需等待協調
+- 吸收份額後明確記錄：原分配者、吸收原因、吸收內容
+
+#### 非懲罰性
+
+失敗不影響受限 PROXY 的部門績效評估——這是基礎設施問題，非能力問題。
 
 ### 與秘書品質閘門的關係
 

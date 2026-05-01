@@ -125,6 +125,11 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 - 復判不通過 → 退回 MIS 補齊。
 - 秘書在每個部門完成閘門時，須匯報三方 PROXY 各自的工作情況（誰完成什麼、誰吸收誰的份額、是否有降級等）。
 
+### R20：合作式失敗處理
+- 通訊目錄的 failure-notice.md 為 PROXY 間的標準失敗通知機制
+- PROXY 間的失敗通知以 failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
+- 吸收確認以 result.md 中的「代理執行」記錄為準
+
 ## 認知模型
 
 ### M1：專案定義即「憲法」
