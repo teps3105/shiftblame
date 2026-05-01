@@ -13,7 +13,7 @@ touch "$CLAUDE_MD"
 # If version markers exist, remove old injected content
 if grep -q "$INJECT_BEGIN" "$CLAUDE_MD" 2>/dev/null; then
   # Remove everything between markers (inclusive)
-  sed -i "/$INJECT_BEGIN/,/\$INJECT_END/d" "$CLAUDE_MD"
+  sed -i "/$INJECT_BEGIN/,/$INJECT_END/d" "$CLAUDE_MD"
 fi
 
 # Remove any legacy injection (without markers) that mentions /secretary or 開始
