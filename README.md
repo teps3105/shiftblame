@@ -63,9 +63,7 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ### 秘書權限限制
 
-秘書零編輯權限（等同各大廠商 Chat 模式）。秘書的寫入權限僅限於通訊目錄（task.md、proposal.md、result.md、consensus.md）。嚴禁修改 `agents/`、`skills/`、`README.md`、`REPO.md` 及 `~/.shiftblame/common/` 下的任何檔案。
-
-框架定義檔與常識檔案的變更只能由 MIS 在 worktree 上執行。
+秘書零編輯權限（等同各大廠商 Chat 模式）。秘書的寫入權限僅限於通訊目錄（task.md、proposal.md、result.md、consensus.md）。嚴禁修改 `agents/`、`skills/`、`README.md`、`REPO.md`。
 
 ---
 
@@ -157,7 +155,7 @@ MIS → QA → SEC → PRD → DEV → QC → MIS →（下一輪回到 MIS）
 
 | 部門 | 職能 | 產出 |
 |---|---|---|
-| **MIS** | 專案現狀釐清 + 執行準則確立 + 合併 + 部署 + 生產環境驗證 + 歸檔 + 專案文件維護 + 常識寫入 + 問題診斷 | `MIS.md` |
+| **MIS** | 專案現狀釐清 + 執行準則確立 + 合併 + 部署 + 生產環境驗證 + 歸檔 + 專案文件維護 + 問題診斷 | `MIS.md` |
 | **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z）、市調 | `QA.md` |
 | **SEC** | 資安稽核 + CVE 搜尋 + 工具篩選 + 環境規範 | `SEC.md` |
 | **PRD** | 架構設計 + DAG + 測試區分 + 實作計畫 | `PRD.md` |
@@ -198,15 +196,13 @@ shiftblame/
 
 ```
 ~/.shiftblame/
-├── common/
-│   └── <DEPT>.md
 └── <repo>/
     ├── REPO.md
     ├── archive/<slug>/
     └── <slug>/
-        ├── worktree/            # git worktree 實體
+        ├── worktree/
         ├── <DEPT>.md
-        └── <DEPT>/          # PROXY 通訊目錄
+        └── <DEPT>/
 ```
 
 ### 框架使用的工具
@@ -262,6 +258,60 @@ claude plugin update shiftblame
 - **繼續**：同 turn 內推進下一部門或收尾
 - **重做**：退回同一部門補強
 - **暫停**：停止流程並討論
+
+---
+
+## 秘書設定
+
+### 啟動流程
+
+每個 session 開始時執行 `/secretary` 進入秘書模式。秘書會自動完成以下初始化：
+
+1. 建立 `~/.shiftblame/` 目錄結構
+2. 建立 repo 內 symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`）
+3. 檢查 `.gitignore` 含 `.shiftblame/`
+4. 讀取 `REPO.md` 釐清專案現狀
+5. 偵測未完成的 slug（載入恢復）
+
+### SessionStart Hook
+
+安裝 plugin 後，SessionStart hook 會自動將秘書提示詞注入 `~/.claude/CLAUDE.md`。使用者無需手動設定，首次啟動 Claude Code 時即自動完成。
+
+---
+
+## Claude CLI Proxy 設定檔分割
+
+CLAUDE_PROXY 使用獨立的 `settings.proxy.json` 進行 API 認證，與秘書的設定檔隔離額度。
+
+### 配置方式
+
+```bash
+# 在 ~/.claude/settings.proxy.json 中設定
+{
+  "apiKeyHelper": "...",   # 獨立的 API 認證
+  "apiEndpoint": "..."     # 獨立的 API 端點（可選）
+}
+```
+
+### --settings flag
+
+CLAUDE_PROXY 啟動時透過 `--settings ~/.claude/settings.proxy.json` 指向獨立設定檔。若該檔案不存在，`claude -p` 會報錯。使用者需自行建立此檔案並配置不同的 API 端點與金鑰，確保 PROXY 不消耗秘書的 API 額度。
+
+---
+
+## SUDO 權限說明
+
+### 框架定義檔修改權限（MIS 獨佔）
+
+`agents/`、`skills/`、`README.md`、`REPO.md` 及 `.claude-plugin/` 的修改權限僅限 MIS 部門。所有框架定義檔的變更必須由 MIS 在 worktree 分支上執行，嚴禁直接修改 main 分支。
+
+### 秘書零編輯權限
+
+秘書的寫入權限僅限於通訊目錄（task.md、proposal.md、result.md、consensus.md）。秘書嚴禁修改任何框架定義檔，等同各大廠商 Chat 模式的權限設計。
+
+### Worktree 保護機制
+
+所有 PROXY 必須在 worktree 上操作，嚴禁直接修改 main 分支。秘書在派工前記錄 main 分支 git status 快照，PROXY 完成後比對。若 main 出現新增的未提交變更，標記為 worktree 洩漏違規。
 
 ---
 

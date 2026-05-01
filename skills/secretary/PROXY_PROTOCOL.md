@@ -248,7 +248,6 @@ consensus.md 必須包含：
 - 通訊目錄：`~/.shiftblame/<repo>/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
 
 框架定義檔（`agents/`、`skills/`、`README.md`、`REPO.md` 等）的變更只能由 MIS 部門在 worktree 上執行。
-常識檔案（`~/.shiftblame/common/`）的寫入只能由 MIS 部門執行。
 秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。
 
 ### 規範三：禁止在 main 上修改（嚴重違規）
