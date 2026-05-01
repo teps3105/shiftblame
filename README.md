@@ -22,7 +22,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 shiftblame 是一套通用 AI agents 流程定義框架，專注於維護跨專案適用的流程協議。定義多個 AI CLI（Claude / Codex / Gemini）在同一個 worktree 上共議分工、自主執行、互相辯論的流程。框架本身是純 Markdown 定義檔，以 Claude Code Plugin 形式發布，透過 /secretary 啟動七部門單向流程，協調從需求釐清到部署驗證的完整開發流程。
 
-當前版本：v8.0.0
+當前版本：v8.1.0
 
 ---
 
@@ -66,6 +66,17 @@ MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 
 MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護、合併與推送。
 
+### 雙模式
+
+每次執行時，秘書透過 AskUserQuestion 確認模式：
+
+| 模式 | 流程 | 適用情境 |
+|---|---|---|
+| **維護模式** | MIS 獨立執行 → 歸檔 | 框架定義檔維護、文件更新、版本升級等 |
+| **開發模式** | MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾 | 新功能開發、重大重構等 |
+
+模式確認後不可中途切換。維護模式不走完整流程，MIS 完成後直接進入歸檔收尾。
+
 ### 七部門職能
 
 | 部門 | 職能 |
@@ -101,7 +112,7 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v8.0.0
+│   ├── plugin.json          # v8.1.0
 │   └── marketplace.json
 ├── agents/
 │   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md / OPS.md   # 七部門主管
@@ -171,8 +182,11 @@ claude plugin update shiftblame
 在 Claude Code 中輸入 `/secretary` 或「開始」進入秘書模式：
 
 ```
-/secretary → 報告現狀 → 老闆提問 → MIS 釐清 → 老闆決策 → 秘書調度 → MIS→QA→SEC→PRD→DEV→QC→OPS→MIS
+/secretary → 報告現狀 → 老闆提問 → MIS 釐清 → 模式確認 → 老闆決策 → 秘書調度
 ```
+
+- **維護模式**：MIS 釐清 → 模式確認（維護）→ MIS 獨立執行 → 歸檔
+- **開發模式**：MIS 釐清 → 模式確認（開發）→ 老闆決策 → MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾
 
 秘書在每個關鍵節點透過 AskUserQuestion 回報，提供三個選項：
 

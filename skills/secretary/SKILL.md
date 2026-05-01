@@ -61,8 +61,27 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 2. 派工 MIS 釐清問題（MIS 有問題診斷硬職責）
 3. MIS 回報：問題分析 + 建議方向
 4. 秘書將 MIS 分析結果呈報老闆
-5. 老闆決策（目標、起始部門、或其他指示）
-6. 依老闆決策進入派工流程（見派工流程區段）
+5. 透過 AskUserQuestion 確認模式：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "請確認本次執行模式：",
+    header: "模式確認",
+    options: [
+      { label: "維護模式", description: "MIS 獨立完成後直接歸檔，不走完整流程（適用於框架定義檔維護、文件更新等）" },
+      { label: "開發模式", description: "完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾（歸檔）" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+6. 依模式分支：
+   - **維護模式**：派工 MIS 獨立執行 → MIS 寫 MIS.md → 收尾（歸檔）。不走完整流程。
+   - **開發模式**：進入步驟 7。
+7. 老闆決策（目標、起始部門、或其他指示）
+8. 依老闆決策進入派工流程（見派工流程區段）
 
 首次啟用或新專案時（REPO.md 不存在），步驟 2 改為派工 MIS 初始化 REPO.md + 釐清專案現狀 + 確立執行準則，完成後回到步驟 3。
 
@@ -128,6 +147,15 @@ ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
 
 ## 收尾流程
 
+### 維護模式收尾
+
+MIS 完成後：
+1. Read LIFECYCLE.md → MIS 執行歸檔（時機：MIS 完成後）
+2. MIS 執行 worktree 清理
+3. MIS 執行合併與推送（時機：MIS 完成後）
+
+### 開發模式收尾
+
 OPS 完成後：
 1. Read LIFECYCLE.md → MIS 執行歸檔（時機：OPS 完成後）
 2. MIS 執行 worktree 清理
@@ -139,15 +167,18 @@ OPS 完成後：
 
 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 
-| 順序 | 部門 | 做什麼 | 產出 |
-|---|---|---|---|
-| 0 | MIS | 發起診斷 + 收尾（合併推送、歸檔、文件維護） | MIS.md |
-| 1 | QA | 行為斷言 + 市場調研 | QA.md |
-| 2 | SEC | 資安稽核 + 工具篩選 | SEC.md |
-| 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD.md |
-| 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV.md + worktree |
-| 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC.md |
-| 6 | OPS | 部署 + 生產環境驗證 | OPS.md |
+| 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
+|---|---|---|---|---|
+| 0 | MIS | 發起診斷 + 收尾（合併推送、歸檔、文件維護） | MIS.md | 維護 + 開發 |
+| 1 | QA | 行為斷言 + 市場調研 | QA.md | 開發 |
+| 2 | SEC | 資安稽核 + 工具篩選 | SEC.md | 開發 |
+| 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD.md | 開發 |
+| 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV.md + worktree | 開發 |
+| 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC.md | 開發 |
+| 6 | OPS | 部署 + 生產環境驗證 | OPS.md | 開發 |
+
+**維護模式**：僅 MIS 獨立執行（順序 0），完成後直接進入歸檔收尾，不走 QA → SEC → PRD → DEV → QC → OPS 流程。
+**開發模式**：完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾（歸檔）。
 
 資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
 
@@ -162,7 +193,8 @@ MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 - 測試檔不受殭屍掃描限制：測試檔案（*.test.*、*.spec.*）不在殭屍掃描的清理範圍內。
 - 不越權決定部門職責範圍：秘書不可在 task.md 中限制部門的執行範圍。部門做什麼由 agents/<DEPT>.md 定義。
 - 合併與推送由 MIS 執行：MIS 在 OPS 完成後負責 git merge 與 git push。秘書不執行合併或推送操作。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
-- MIS 維護輪不走流程：當老闆指示為 MIS 維護輪時，秘書不啟動流程，直接派工 MIS 獨立執行。
+- MIS 維護輪不走流程：當老闆指示為 MIS 維護輪時，秘書不啟動流程，直接派工 MIS 獨立執行。此即「維護模式」，等價於透過 AskUserQuestion 確認模式時選擇「維護模式」。
+- 模式確認不可中途切換：秘書在運作流程步驟 5 確認模式後，該 slug 的模式即為定局。維護模式與開發模式不可中途互換。若需切換，須結束當前 slug 並發起新需求。
 - 權限提升透過 AskUserQuestion 請示老闆：OPS 在部署或操作中需要 sudo 時，不透過 task.md 傳遞環境變數或密碼。OPS 在 result.md 中記錄需求，秘書讀取後透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱（非密碼值）給 OPS，由 OPS 自行執行。
 - OPS 完成後的收尾義務：OPS 完成後，秘書負責向老闆彙報。MIS 負責歸檔、合併推送與 worktree 清理。若 OPS.md 不存在或為空，退回 OPS 補齊，秘書不得代建。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。

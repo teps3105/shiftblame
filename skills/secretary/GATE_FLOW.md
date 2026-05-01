@@ -47,6 +47,35 @@ AskUserQuestion({
 
 驗證不通過 → 退回 MIS 補齊（重新派工 MIS，保留既有 result）。
 
+## 維護模式閘門
+
+維護模式下，MIS 完成後的閘門簡化為直接進入收尾：
+
+1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+2. 確認 MIS.md 已產出
+3. AskUserQuestion 呈報 MIS 完成結果：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "MIS 維護完成。是否確認歸檔？",
+    header: "維護模式",
+    options: [
+      { label: "確認歸檔", description: "維護工作完成，執行歸檔" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+4. 「確認歸檔」→ 進入維護模式收尾流程（SKILL.md 收尾流程區段）
+5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
+6. 「暫停」→ 結束 turn，等老闆討論
+
+維護模式不經過部門完成閘門流程（無 QA/SEC/PRD/DEV/QC/OPS 閘門），也不會發生退回其他部門的情況。
+
 #### 恢復場景的 AskUserQuestion 格式
 
 ```
@@ -81,6 +110,19 @@ AskUserQuestion({
 ```
 
 **關鍵**：只有「重做」和「暫停」才結束 turn。「繼續」必須在同一 turn 內完成推進。
+
+### 退回增量記錄
+
+秘書退回某部門時，須執行以下增量記錄（僅開發模式，維護模式無退回）：
+
+1. **task.md 退回指示**：秘書在退回部門時，須在 task.md 明確記錄退回來源部門與退回原因（增量追加，不替換原有目標與約束）。
+2. **部門產出檔增量追加**：被退回部門完成補強後，須在其產出文件末尾追加退回紀錄（每次退回追加一組，不覆蓋既有紀錄）：
+   ```markdown
+   ## 退回紀錄
+   - 退回來源：<部門名稱>
+   - 退回原因：<簡述原因>
+   - 退回時間：<ISO 8601 timestamp>
+   ```
 
 ## AskUserQuestion 格式
 

@@ -21,6 +21,8 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 3. 讀取 `claude -p` 的 stdout 輸出
 4. 回報結果給秘書
 
+讀取 CLI stdout 並寫入 result.md 不視為「直接修改檔案」——這是 CLI 輸出的轉存，不是 PROXY agent 的自行產出。
+
 這個約束確保你和 CODEX_PROXY、GEMINI_PROXY 完全對等——都是啟動外部 CLI 進程，上下文不被 Claude Code 污染。
 
 ## 自組織工作流程
@@ -33,7 +35,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 5. **提出你的方案**：寫入通訊目錄 `claude/proposal.md`（分工 + 做法 + 產出結構）
 5. **辯論與收斂**：閱讀他人提案，回應爭議，參與收斂
 6. **執行你的份額**：啟動 `claude -p` 執行分工
-7. **回報結果**：寫入通訊目錄 `claude/result.md`
+7. **回報結果**：將 CLI stdout 原封不動寫入通訊目錄 `claude/result.md`（不自行撰寫執行狀態）
 
 ## 提案格式（proposal.md）
 
@@ -74,11 +76,13 @@ cd <WORKTREE> && claude -p "<COORDINATED_TASK>" \
 ### --settings flag 說明
 `--settings` 指向獨立的 settings.proxy.json，讓 PROXY 使用獨立 API 認證，與秘書隔離額度。使用者需自行在 ~/.claude/settings.proxy.json 中設定不同的 API 端點與金鑰。若該檔案不存在，claude -p 會報錯。
 
-TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下文。
+TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下文。CLI prompt 末尾應附加以下回報格式要求，讓 `claude -p` 在完成分工任務後以指定格式輸出回報。
 
-`claude -p` 的 stdout 就是你的執行結果。讀取後整理寫入 `claude/result.md`。
+`claude -p` 的 stdout 就是你的執行結果。
 
-## 回報格式
+## 回報格式（CLI stdout 產出）
+
+> result.md 應為 CLI stdout 的直接寫入（PROXY agent 不自行撰寫執行狀態）。PROXY agent 讀取 CLI stdout 後，原封不動寫入 result.md。僅在 stdout 為空或 CLI 執行失敗時，PROXY agent 自行補充錯誤資訊。
 
 ```
 ## CLAUDE_PROXY 回報

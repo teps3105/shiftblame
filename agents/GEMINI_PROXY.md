@@ -21,6 +21,8 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 3. 讀取 `gemini -p` 的 stdout 輸出
 4. 回報結果給秘書
 
+讀取 CLI stdout 並寫入 result.md 不視為「直接修改檔案」——這是 CLI 輸出的轉存，不是 PROXY agent 的自行產出。
+
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
@@ -30,7 +32,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 5. **提出你的方案**：寫入通訊目錄 `gemini/proposal.md`（分工 + 做法 + 產出結構）
 6. **辯論與收斂**：閱讀他人提案，參與收斂
 7. **執行你的份額**：啟動 `gemini -p` 執行分配到的工作
-8. **回報結果**：寫入通訊目錄 `gemini/result.md`
+8. **回報結果**：將 CLI stdout 原封不動寫入通訊目錄 `gemini/result.md`（不自行撰寫執行狀態）
 
 ## 提案格式
 
@@ -58,7 +60,11 @@ Gemini CLI 使用帳號登入認證（`gemini auth login`），不使用 API Key
 cd <WORKTREE> && gemini -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
 ```
 
-## 回報格式
+COORDINATED_TASK 的內容從 consensus.md 中你的份額提取，加上完整的部門上下文。CLI prompt 末尾應附加回報格式要求，讓 `gemini -p` 在完成分工任務後以指定格式輸出回報。
+
+## 回報格式（CLI stdout 產出）
+
+> result.md 應為 CLI stdout 的直接寫入（PROXY agent 不自行撰寫執行狀態）。PROXY agent 讀取 CLI stdout 後，原封不動寫入 result.md。僅在 stdout 為空或 CLI 執行失敗時，PROXY agent 自行補充錯誤資訊。
 
 ```
 ## GEMINI_PROXY 回報

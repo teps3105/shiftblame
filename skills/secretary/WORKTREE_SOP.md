@@ -6,6 +6,9 @@ shiftblame 自定義 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`），非
 
 **注意**：worktree 的建立與清理由 MIS 執行，非秘書。秘書僅負責在收尾流程中詢問老闆 worktree 處置意願。
 
+### 維護模式
+維護模式（MIS 獨立執行）也需建立 worktree。所有框架定義檔修改必須在 worktree 上執行，維護模式也不例外。
+
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=$(basename "$REPO_ROOT")
