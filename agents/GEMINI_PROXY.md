@@ -93,3 +93,19 @@ cd <WORKTREE> && gemini -p "<COORDINATED_TASK>" --yolo --skip-trust -o text
 | `EMPTY_OUTPUT` | 輸出為空 |
 
 錯誤回報後，其他 PROXY 在協調中吸收你的份額。
+
+## Quota 偵測探針
+
+派工前秘書會執行 Quota 偵測，以下是本 CLI 的探針指令：
+
+```bash
+timeout 10 gemini -p "echo ok" --yolo --skip-trust -o text 2>&1 | head -5
+```
+
+偵測結果判定：
+- stdout 含 "ok" → `AVAILABLE`
+- stderr 含 "rate limit" / "429" / "quota" → `RATE_LIMITED`
+- stderr 含 "RESOURCE_EXHAUSTED" → `QUOTA_EXCEEDED`
+- stderr 含 "auth" / "login" / "session" / "expired" → `AUTH_FAILURE`
+- stderr 含 "trust" / "not trusted" → `TRUST_BLOCKED`
+- 指令不存在或超時 → `UNAVAILABLE`

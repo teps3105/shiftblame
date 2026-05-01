@@ -100,3 +100,18 @@ codex exec <SANDBOX_FLAGS> -C <WORKTREE> -o <OUTPUT> "<COORDINATED_TASK>"
 | `EMPTY_OUTPUT` | 輸出為空 |
 
 錯誤回報後，其他 PROXY 在協調中吸收你的份額。
+
+## Quota 偵測探針
+
+派工前秘書會執行 Quota 偵測，以下是本 CLI 的探針指令：
+
+```bash
+timeout 10 codex exec -s read-only --full-auto --ephemeral -C /tmp "echo ok" 2>&1 | head -5
+```
+
+偵測結果判定：
+- stdout 含 "ok" → `AVAILABLE`
+- stderr 含 "rate limit" / "429" → `RATE_LIMITED`
+- stderr 含 "quota" / "billing" → `QUOTA_EXCEEDED`
+- stderr 含 "auth" / "API key" → `AUTH_FAILURE`
+- 指令不存在或超時 → `UNAVAILABLE`

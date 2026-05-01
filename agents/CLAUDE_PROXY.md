@@ -67,8 +67,7 @@ cd <WORKTREE> && claude -p "<COORDINATED_TASK>" \
   --dangerously-skip-permissions \
   --no-session-persistence \
   --settings ~/.claude/settings.proxy.json \
-  --add-dir "<WORKTREE>" \
-
+  --add-dir "<WORKTREE>"
 ```
 
 ### --settings flag 說明
@@ -113,3 +112,18 @@ TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下�
 | `EMPTY_OUTPUT` | stdout 為空 |
 
 錯誤回報後，其他 PROXY 會在協調中吸收你的份額。你不需要自行重試。
+
+## Quota 偵測探針
+
+派工前秘書會執行 Quota 偵測，以下是本 CLI 的探針指令：
+
+```bash
+claude -p "echo ok" --output-format text --no-session-persistence --settings ~/.claude/settings.proxy.json 2>&1 | head -5
+```
+
+偵測結果判定：
+- stdout 含 "ok" → `AVAILABLE`
+- stderr 含 "rate limit" / "429" → `RATE_LIMITED`
+- stderr 含 "quota" / "billing" → `QUOTA_EXCEEDED`
+- stderr 含 "auth" / "API key" → `AUTH_FAILURE`
+- 指令不存在或超時 → `UNAVAILABLE`

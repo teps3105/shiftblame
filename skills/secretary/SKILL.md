@@ -15,7 +15,25 @@ description: >-
 2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`，`.shiftblame/common` → `~/.shiftblame/common`）
 3. 檢查 `.gitignore` 含 `.shiftblame/`
 4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
-5. 向老闆報告現狀（載入階段到此結束，秘書不主動問老闆要做什麼）
+5. 未完成 slug 偵測（第一層）：
+   - 掃描 `~/.shiftblame/<repo>/` 根層（排除 `archive/`）
+   - 對每個未完成 slug 執行第一層偵測（4 種粗分類：READY_ARCHIVE / IN_PROGRESS / EMPTY / CORRUPTED）
+   - 若無未完成 slug → 跳至步驟 8
+   - 若有 IN_PROGRESS 或 READY_ARCHIVE 的 slug → 進入步驟 6
+6. 第二層精確判定（僅 IN_PROGRESS 的 slug）：
+   - 對每個 IN_PROGRESS slug 執行第二層偵測（14 種狀態碼，見判定優先序）
+   - 產出恢復報告（含第一層分類、第二層狀態碼、最高完成部門、當前卡點、恢復策略）
+   - 附帶驗證：MIS_ALL_RESULT 需額外執行上游產出驗證（DISPATCH_CHECKLIST 10.1）
+7. 向老闆報告恢復選項：
+   - 呈報未完成 slug 清單（含狀態碼與恢復策略）
+   - 透過 AskUserQuestion 讓老闆選擇每個 slug 的處置：
+     - 繼續恢復：從斷點部門重新派工（含 Quota 偵測）
+     - 歸檔：歸檔到 archive（需 MIS.md 存在，僅 READY_ARCHIVE）
+     - 清理：刪除 slug 目錄
+     - 暫停：先討論再決定
+   - 老闆選擇「繼續恢復」→ 依狀態碼恢復策略派工，完成後進入步驟 8
+   - 老闆選擇「暫停」→ 結束 turn，等待老闆指示
+8. 向老闆報告現狀（載入階段到此結束，秘書不主動問老闆要做什麼）
 
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -69,9 +87,27 @@ ln -sfn ~/.shiftblame/common "$REPO_ROOT/.shiftblame/common"
 
 核心步驟：
 1. Read DISPATCH_CHECKLIST.md → 逐條完成 checklist
-2. Read `~/.shiftblame/common/<DEPT>.md`（部門常識，不注入 prompt，PROXY 自行讀取）
-3. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 同步派三方 PROXY
-4. 等待 PROXY 共識產出
+2. Quota 偵測（DISPATCH_CHECKLIST 第 10 條）：
+   - 對三個 CLI（claude / codex / gemini）執行探針偵測
+   - 記錄各 CLI 狀態（AVAILABLE / RATE_LIMITED / AUTH_FAILURE / UNAVAILABLE）
+   - 依偵測結果 + 複雜度評估（見下方「複雜度評估」子區段）決定實際派工數量
+   - 降級模式時在 task.md 約束區段標注降級原因與原始評估
+   - 全部不可用 → 回報老闆等待額度恢復，不派工
+3. Read `~/.shiftblame/common/<DEPT>.md`（部門常識，不注入 prompt，PROXY 自行讀取）
+4. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 依複雜度與 Quota 偵測結果派工 PROXY
+5. 等待 PROXY 共識產出
+
+### 複雜度評估
+
+秘書在派工前依任務特性評估複雜度，決定派多少個 PROXY。評估依據為任務本身，非 CLI 的可用性（可用性由步驟 2 Quota 偵測處理）。
+
+| 等級 | PROXY 數量 | 判定條件（滿足任一） | 適用情境範例 |
+|---|---|---|---|
+| 簡單 | 1 | 單一檔案修正、明確做法的機械性任務、退回補齊且範圍已收窄 | typo 修正、版本號更新、單檔 bug fix |
+| 中等 | 2 | 涉及 2~4 個檔案修改、需要兩種互補能力、有一定架構決策但範圍可控 | 多檔重構、功能擴展、常規 MIS 初始化 |
+| 複雜 | 3 | 涉及 5+ 檔案修改、跨多子系統變更、需要三種互補能力、重大架構決策、首次 MIS（REPO.md 不存在）、部門定義檔修改 | 大型功能、架構重構、首次 MIS、框架修改 |
+
+派工數量最終為 `min(複雜度評估數量, Quota 可用數量)`。不足時依降級策略處理（見 PROXY_PROTOCOL.md）。
 
 派工規則速記：
 - 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model

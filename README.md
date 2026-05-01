@@ -94,6 +94,36 @@ shiftblame 透過三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`�
 
 ---
 
+## v7.0.0 新功能
+
+### 載入恢復
+
+秘書載入時自動偵測未完成的 slug，判定進度（14 種狀態碼），恢復執行。解決 session 中斷後需人工判斷進度、手動指定恢復起點的問題。
+
+- **兩層偵測體系**：第一層（4 種粗分類）由秘書使用，第二層（14 種精確狀態碼）決定恢復策略
+- **自動恢復報告**：向老闆呈報偵測結果與恢復策略，透過 AskUserQuestion 確認處置
+- **MIS 子狀態細分**：MIS 起點從 2 種狀態擴展為 7 種（MIS_ALL_RESULT、MIS_PARTIAL_RESULT、MIS_CONSENSUS_NO_RESULT、MIS_DEBATING、MIS_DISPATCHED、MIS_NOT_STARTED + ABORTED_MID/ABORTED_SETUP）
+
+### 動態 CLI 數量
+
+秘書依任務複雜度評估，決定派 1/2/3 個 PROXY。不再固定三方全派，降低小任務的資源消耗。
+
+| 複雜度 | PROXY 數量 | 辯論 | 適用情境 |
+|---|---|---|---|
+| 簡單 | 1 | 無 | typo 修正、版本號更新、單檔 bug fix |
+| 中等 | 2 | 有 | 多檔重構、功能擴展、常規 MIS 初始化 |
+| 複雜 | 3 | 有 | 大型功能、架構重構、首次 MIS、框架修改 |
+
+### Quota 偵測
+
+派工前偵測各 CLI（claude/codex/gemini）的可用額度，額度不足時觸發降級模式，避免派工後因 quota 耗盡導致全軍覆沒。
+
+- **三種偵測結果**：AVAILABLE（可派工）、RATE_LIMITED（降級模式）、AUTH_FAILURE（不可派工）
+- **降級策略**：可用 PROXY 不足時自動降級（複雜→中等→簡單）
+- **恢復機制**：額度恢復後自動回復正常模式
+
+---
+
 ## 架構
 
 ### 去中心化協作

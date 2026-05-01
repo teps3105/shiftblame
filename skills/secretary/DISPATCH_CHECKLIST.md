@@ -97,3 +97,46 @@ git -C <MAIN_REPO> status --porcelain > /tmp/main-status-after.txt
 diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 ```
 若 main 出現新增的未提交變更 → 標記為 worktree 洩漏違規，退回 MIS 處理。
+
+## 10. Quota 偵測
+
+派工前對三個 CLI 執行探針偵測，確認可用額度。
+
+### 偵測指令
+
+```bash
+# Claude
+claude -p "echo ok" --output-format text --no-session-persistence --settings ~/.claude/settings.proxy.json 2>&1 | head -5
+
+# Codex
+timeout 10 codex exec -s read-only --full-auto --ephemeral -C /tmp "echo ok" 2>&1 | head -5
+
+# Gemini
+timeout 10 gemini -p "echo ok" --yolo --skip-trust -o text 2>&1 | head -5
+```
+
+### 判定邏輯
+
+| 偵測結果 | 含義 | 可否派工 |
+|---|---|---|
+| `AVAILABLE` | CLI 可正常使用 | 可派工 |
+| `RATE_LIMITED` | CLI 可用但額度不足/限速 | 降級模式 |
+| `AUTH_FAILURE` | 認證失敗 | 不可派工，回報老闆 |
+| `UNAVAILABLE` | CLI 未安裝 | 不可派工，跳過此 PROXY |
+
+### 複雜度評估與派工數量
+
+依任務複雜度評估所需 PROXY 數量，與 Quota 可用數量取 min。不足時依降級策略處理（見 PROXY_PROTOCOL.md）。
+
+同一 session 內對同一 CLI 最多每 15 分鐘偵測一次，避免重複偵測消耗額度。
+
+## 10.1 MIS 起點產出驗證
+
+MIS_ALL_RESULT 後（載入恢復場景），秘書確認上游產出已落袋：
+
+1. **REPO.md 更新確認**：讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果（專案定位、方向、實作程度、待辦均已更新）
+2. **執行準則確認**：確認 MIS result 中含明確的執行準則
+3. **mtime 附帶驗證**（非阻塞性）：`stat -c %Y ~/.shiftblame/<repo>/REPO.md` > `stat -c %Y ~/.shiftblame/<repo>/<slug>/MIS/task.md`。不通過 → 在報告中標注警告，不阻止派工
+4. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
+
+驗證不通過 → 退回 MIS 補齊（不進入 QA）。
