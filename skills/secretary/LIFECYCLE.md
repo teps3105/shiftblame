@@ -6,8 +6,9 @@ MIS 回報 SUCCESS 後執行（MIS 為循環圓起點也是終點。終點階段
 
 ```bash
 # 歸檔閘門（SEC-A-03）
+# MIS.md 由 MIS 部門產出，秘書不得代建。若不存在或為空，應退回 MIS 補齊。
 if [[ ! -s ~/.shiftblame/<repo>/<slug>/MIS.md ]]; then
-  echo "ERROR: MIS.md 不存在或為空，拒絕歸檔" >&2
+  echo "ERROR: MIS.md 不存在或為空，拒絕歸檔。應退回 MIS 補齊，秘書不得代建。" >&2
   exit 1
 fi
 

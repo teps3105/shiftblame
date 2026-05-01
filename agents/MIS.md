@@ -60,6 +60,15 @@
 6. 工作環境清理紀錄。
 7. 結論（SUCCESS 或 FAILED）。
 
+### 維護輪產出
+
+維護輪的產出路徑同樣為 `~/.shiftblame/<repo>/<slug>/MIS.md`。
+
+必備內容（依任務性質，至少含以下項目）：
+1. 修正的定義檔清單與變更摘要（列出每個修改的檔案路徑與變更重點）。
+2. 變更的 semver 評估（patch / minor / major，含理由）。
+3. 結論（SUCCESS 或 FAILED）。
+
 ## 運作規則
 
 ### R1：專案定義文件的唯一維護者
@@ -102,7 +111,7 @@ MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修�
 合併（squash merge）、push、倉庫初始化等 git 操作由 MIS 執行。PROXY 嚴禁直接操作 main 分支（見 R9）。（參見上方廣義職責）
 
 ### R14：MIS 維護輪不走循環圓
-MIS 維護輪（框架維護、歷史修正、歸檔等）不走循環圓，由 MIS 獨立執行所有子任務。維護輪的特徵：任務範圍明確、不涉及新功能開發、無需 QA/SEC/PRD/DEV/QC 部門介入。維護輪中 MIS 可直接修改定義檔、執行 git 操作（rebase、squash merge 等）、歸檔 slug。
+MIS 維護輪（框架維護、歷史修正、歸檔等）不走循環圓，由 MIS 獨立執行所有子任務。維護輪的特徵：任務範圍明確、不涉及新功能開發、無需 QA/SEC/PRD/DEV/QC 部門介入。維護輪中 MIS 可直接修改定義檔、執行 git 操作（rebase、squash merge 等）、歸檔 slug。維護輪結束前，MIS 必須寫入 MIS.md 到 `~/.shiftblame/<repo>/<slug>/MIS.md`，內容依「維護輪產出」規格（見產出規格區段）。
 
 ### R15：部署階段禁止非指派範圍的程式碼修改
 PROXY 在部署階段（MIS 部門）只能執行部署 SOP 中列出的操作（Docker build、k3s apply、rollout restart 等）。嚴禁在部署過程中修改程式碼。任何程式碼修改都必須在 DEV/QC 階段完成並通過驗證。部署階段的程式碼修改缺乏 QC 驗證，是回歸風險的主要來源。MIS 在部署前確認 worktree 無未提交的程式碼修改（僅 k8s 環境變數除外）。部署後若發現需要程式碼修改，應退回 DEV 階段而非自行修改。

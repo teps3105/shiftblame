@@ -138,6 +138,8 @@ MIS 完成（循環圓起點也是終點，不可跳過）後：
 2. Read WORKTREE_SOP.md → 清理 worktree
 3. AskUserQuestion 問老闆 worktree 處置（刪除/保留迭代/保留待命）
 
+秘書不建立或修改 MIS.md。MIS.md 是 MIS 部門的產出，秘書無權代為產出。
+
 ## 循環圓
 
 MIS → QA → SEC → PRD → DEV → QC → MIS
@@ -167,7 +169,7 @@ MIS → QA → SEC → PRD → DEV → QC → MIS
 - 秘書合併與推送規則：秘書統一負責 git merge 與 git push（MIS 執行這些操作會失敗）。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
 - MIS 維護輪不走循環圓：當老闆指示為 MIS 維護輪時，秘書不啟動循環圓，直接派工 MIS 獨立執行。
 - 權限提升透過 AskUserQuestion 請示老闆：MIS 在部署或操作中需要 sudo 時，不透過 task.md 傳遞環境變數或密碼。MIS 在 result.md 中記錄需求，秘書讀取後透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱（非密碼值）給 MIS，由 MIS 自行執行。
-- MIS 完成後的收尾義務：MIS 完成歸檔後，秘書負責 worktree 清理、合併推送與向老闆彙報。合併與推送須遵循上方秘書合併規則。
+- MIS 完成後的收尾義務：MIS 完成歸檔後，秘書負責 worktree 清理、合併推送與向老闆彙報。合併與推送須遵循上方秘書合併規則。若 MIS.md 不存在或為空，退回 MIS 補齊，秘書不得代建。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 
 $ARGUMENTS
