@@ -1,7 +1,7 @@
 {
   "name": "shiftblame",
   "description": "推鍋 — PROXY 共議分工的七部門單向流程開發框架：MIS→QA→SEC→PRD→DEV→QC→OPS→MIS，搭配秘書 skill 統籌派工",
-  "version": "8.1.0",
+  "version": "8.2.0",
   "author": {
     "name": "teps3105"
   },

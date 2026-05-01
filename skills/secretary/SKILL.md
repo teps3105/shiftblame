@@ -150,22 +150,28 @@ AskUserQuestion({
 ### 維護模式收尾
 
 MIS 完成後：
-1. Read LIFECYCLE.md → MIS 執行歸檔（時機：MIS 完成後）
-2. MIS 執行 worktree 清理
-3. MIS 執行合併與推送（時機：MIS 完成後）
+1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+2. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS.md 完整性、定義檔變更與 task.md 一致性）
+3. AskUserQuestion 呈報復判結果（含三方工作情況）
+4. 復判通過 → Read LIFECYCLE.md → MIS 執行歸檔
+5. MIS 執行 worktree 清理
+6. MIS 執行合併與推送
 
 ### 開發模式收尾
 
 OPS 完成後：
-1. Read LIFECYCLE.md → MIS 執行歸檔（時機：OPS 完成後）
-2. MIS 執行 worktree 清理
-3. MIS 執行合併與推送（時機：OPS 完成後）
+1. MIS 完成收尾工作
+2. 秘書執行復判：確認有確實收尾與正確運作
+3. AskUserQuestion 呈報復判結果（含三方工作情況）
+4. 復判通過 → Read LIFECYCLE.md → MIS 執行歸檔
+5. MIS 執行 worktree 清理
+6. MIS 執行合併與推送
 
 秘書不建立或修改 MIS.md。MIS.md 是 MIS 部門的產出，秘書無權代為產出。
 
 ## 流程
 
-MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
+MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判
 
 | 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
 |---|---|---|---|---|
@@ -176,9 +182,10 @@ MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 | 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV.md + worktree | 開發 |
 | 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC.md | 開發 |
 | 6 | OPS | 部署 + 生產環境驗證 | OPS.md | 開發 |
+| 7 | 秘書 | 復判確認收尾與正確運作 + 匯報三方工作情況 | 無產出檔案 | 維護 + 開發 |
 
-**維護模式**：僅 MIS 獨立執行（順序 0），完成後直接進入歸檔收尾，不走 QA → SEC → PRD → DEV → QC → OPS 流程。
-**開發模式**：完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 收尾（歸檔）。
+**維護模式**：僅 MIS 獨立執行（順序 0）→ 秘書復判 → 歸檔收尾，不走 QA → SEC → PRD → DEV → QC → OPS 流程。
+**開發模式**：完整流程 MIS → QA → SEC → PRD → DEV → QC → OPS → MIS → 秘書復判 → 收尾（歸檔）。
 
 資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
 
@@ -198,5 +205,6 @@ MIS → QA → SEC → PRD → DEV → QC → OPS → MIS
 - 權限提升透過 AskUserQuestion 請示老闆：OPS 在部署或操作中需要 sudo 時，不透過 task.md 傳遞環境變數或密碼。OPS 在 result.md 中記錄需求，秘書讀取後透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱（非密碼值）給 OPS，由 OPS 自行執行。
 - OPS 完成後的收尾義務：OPS 完成後，秘書負責向老闆彙報。MIS 負責歸檔、合併推送與 worktree 清理。若 OPS.md 不存在或為空，退回 OPS 補齊，秘書不得代建。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
+- 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
 
 $ARGUMENTS

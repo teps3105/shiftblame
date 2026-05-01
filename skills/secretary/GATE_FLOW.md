@@ -58,10 +58,10 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 維護完成。是否確認歸檔？",
+    question: "MIS 維護完成。是否確認進入秘書復判？\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
     header: "維護模式",
     options: [
-      { label: "確認歸檔", description: "維護工作完成，執行歸檔" },
+      { label: "確認復判", description: "確認進入秘書復判" },
       { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
@@ -70,7 +70,7 @@ AskUserQuestion({
 })
 ```
 
-4. 「確認歸檔」→ 進入維護模式收尾流程（SKILL.md 收尾流程區段）
+4. 「確認復判」→ 秘書執行復判確認有確實收尾與正確運作 → 復判通過 → 進入維護模式收尾流程
 5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
 6. 「暫停」→ 結束 turn，等老闆討論
 
@@ -93,6 +93,68 @@ AskUserQuestion({
 })
 ```
 
+## 秘書復判閘門
+
+MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作，復判通過後才進入歸檔流程。
+
+### 維護模式復判
+
+1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+2. 復判確認項目：
+   - MIS.md 產出完整性（含歸檔紀錄、合併紀錄、變更摘要、semver 評估、結論）
+   - 定義檔變更與 task.md 要求一致
+   - 三方 PROXY 均有完成回報（或已有降級/吸收記錄）
+3. AskUserQuestion 呈報復判結果：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "秘書復判完成。MIS 維護工作已確認收尾與正確運作。\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
+    header: "秘書復判",
+    options: [
+      { label: "確認歸檔", description: "復判通過，執行歸檔" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+4. 「確認歸檔」→ 進入收尾流程（SKILL.md 收尾流程區段）
+5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
+6. 「暫停」→ 結束 turn，等老闆討論
+
+### 開發模式復判
+
+1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+2. 復判確認項目：
+   - MIS.md 產出完整性
+   - 合併紀錄（commit SHA、squash merge 記錄）
+   - 定義檔變更與 task.md 要求一致
+   - worktree 狀態乾淨（無未提交變更）
+   - 三方 PROXY 均有完成回報（或已有降級/吸收記錄）
+3. AskUserQuestion 呈報復判結果：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "秘書復判完成。MIS 收尾工作已確認收尾與正確運作。\n\n三方工作情況：\n- Claude：<完成項目>\n- Codex：<完成項目>\n- Gemini：<完成項目>",
+    header: "秘書復判",
+    options: [
+      { label: "確認歸檔", description: "復判通過，執行歸檔" },
+      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+4. 「確認歸檔」→ 進入收尾流程
+5. 「退回 MIS」→ 結束 turn
+6. 「暫停」→ 結束 turn
+
 ## 部門完成閘門流程
 
 每個部門完成後，秘書讀取 PROXY 共識產出，驗證品質門檻，用 AskUserQuestion 回報老闆。
@@ -101,6 +163,7 @@ AskUserQuestion({
 
 ```
 1. 部門完成 → 秘書讀取 consensus.md + 各 PROXY result.md
+1.5. 讀取三方 PROXY result.md，整理三方工作情況
 2. 執行部門驗證 SOP（見下方）
 3. AskUserQuestion 呈報共識結果 → 等老闆判定
 4. 工具回傳 → 依老闆選擇分支：
@@ -131,7 +194,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "[部門] 完成。共識結果：<摘要>。",
+    question: "[部門] 完成。共識結果：<摘要>。\n\n三方工作情況：\n- Claude：<完成項目/吸收份額/降級狀態>\n- Codex：<完成項目/吸收份額/降級狀態>\n- Gemini：<完成項目/吸收份額/降級狀態>",
     header: "部門回報",
     options: [
       { label: "繼續", description: "共識 OK，推進下一部門" },

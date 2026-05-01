@@ -79,6 +79,7 @@ proxy_prompt 只含三樣東西：
 |---|---|
 | MIS（維護模式） | 確認模式為維護模式、MIS 維護輪不走流程、MIS 獨立執行（不派工其他部門） |
 | MIS（開發模式） | 確認問題診斷完成、執行準則確立、REPO.md 更新狀況（MIS 為流程起點角色） |
+| MIS（尾，復判前） | 確認 MIS.md 已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | OPS | 確認部署工具可用性、生產環境驗證工具就緒、權限提升環境變數可讀取 |
