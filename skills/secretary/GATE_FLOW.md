@@ -2,7 +2,7 @@
 
 ## MIS 啟動閘門
 
-MIS 啟動後（循環圓起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
+MIS 啟動後（循環圓外前置診斷），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新。
 
 ### 確認步驟
 
@@ -116,7 +116,7 @@ AskUserQuestion({
     header: "載入恢復",
     options: [
       { label: "繼續恢復", description: "從斷點部門重新派工" },
-      { label: "歸檔", description: "歸檔到 archive（需 MIS.md 存在）" },
+      { label: "歸檔", description: "歸檔到 archive（需 OPS.md 存在）" },
       { label: "清理", description: "刪除 slug 目錄" },
       { label: "暫停", description: "先討論再決定" }
     ],
@@ -130,7 +130,7 @@ AskUserQuestion({
 | 第二層狀態碼 | 「狀態」欄位 | 「最高完成部門」欄位 | 「當前卡點」欄位 |
 |---|---|---|---|
 | READY_ARCHIVE | READY_ARCHIVE | 全部完成 | 無 |
-| QC_DONE | IN_PROGRESS/QC_DONE | QC | MIS 終點未執行 |
+| QC_DONE | IN_PROGRESS/QC_DONE | QC | OPS 終點未執行 |
 | DEV_DONE | IN_PROGRESS/DEV_DONE | DEV | QC 未執行 |
 | PRD_DONE | IN_PROGRESS/PRD_DONE | PRD | DEV 未執行 |
 | SEC_DONE | IN_PROGRESS/SEC_DONE | SEC | PRD 未執行 |

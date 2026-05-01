@@ -184,7 +184,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 統一由一人寫入報告
 - 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
 
-### 實作部門（DEV/QC/MIS）
+### 實作部門（DEV/QC/OPS）
 
 三人協調執行。執行模式：
 - 三人協調分工
@@ -245,5 +245,6 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 | PRD | QA + SEC + PRD |
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
+| OPS | QA + SEC + PRD + DEV + QC + OPS |
 
 嚴格禁止讀下游部門的檔案。

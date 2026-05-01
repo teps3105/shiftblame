@@ -4,6 +4,8 @@ shiftblame 自定義 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`），非
 
 ## 建立
 
+**注意**：worktree 的建立與清理由 MIS 執行，非秘書。秘書僅負責在收尾流程中詢問老闆 worktree 處置意願。
+
 ```bash
 REPO_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=$(basename "$REPO_ROOT")
@@ -16,11 +18,15 @@ git worktree add ~/.shiftblame/"$REPO_NAME"/"$SLUG"/worktree -b feat/"$SLUG"
 
 ## 清理
 
+worktree 清理由 MIS 執行（非秘書）。見 agents/MIS.md「日常作業」職責。
+
 刪除 worktree 時：
 1. `git worktree remove ~/.shiftblame/<repo>/<slug>/worktree`
 2. 若整個 slug 目錄已無其他用途，可一併移除
 
 ## 結束時詢問老闆
+
+秘書在 OPS 完成後的收尾流程中詢問老闆 worktree 處置意願。實際清理操作由 MIS 執行。
 
 ```
 AskUserQuestion({
