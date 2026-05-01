@@ -135,6 +135,19 @@ QC 完成後：
 
 秘書不建立或修改 MIS.md。MIS.md 是 MIS 部門的產出，秘書無權代為產出。
 
+### 部署權限
+
+秘書具備部署權限，用於收尾階段的系統層操作（如 worktree 清理）。此權限由定義檔框架賦予，源自原 OPS 部門的 sudo 機制（v1.0.2 遷移至秘書）。
+
+取得 sudo 密碼的方式：
+
+```bash
+sudo -S <command> < <(secret-tool lookup service sudo-pwd)
+```
+
+- `secret-tool` 透過系統 Keyring（libsecret）存取已預存的 sudo 密碼
+- 此權限僅限收尾流程使用，嚴禁用於其他用途
+
 ## 流程
 
 MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判

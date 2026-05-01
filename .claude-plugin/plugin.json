@@ -12,7 +12,7 @@
     "workflow",
     "tdd",
     "development-framework",
-    "seven-department"
+    "six-department"
   ],
   "hooks": "./hooks/hooks.json"
 }

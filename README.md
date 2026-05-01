@@ -22,7 +22,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨 CLI 框架的協作流程。三個 PROXY（Claude / Codex / Gemini）在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
-框架以 Claude Code Plugin 形式發布，透過 `/secretary` 啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
+框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
 
 當前版本：v1.0.2
 
@@ -178,7 +178,12 @@ claude plugin marketplace update
 claude plugin update shiftblame
 ```
 
-安裝後首次啟動 Claude Code 時，Plugin 透過 SessionStart hook 自動將秘書提示詞注入 `~/.claude/CLAUDE.md`（若已有相關提示則不重複注入），無需手動設定。首次執行 `/secretary` 時會自動初始化 `~/.shiftblame/` 目錄結構、建立 repo 內 symlink、檢查 `.gitignore` 是否包含 `.shiftblame/`。
+安裝後首次啟動 Claude Code 時，Plugin 透過 SessionStart hook 自動完成以下初始化：
+
+1. 將秘書提示詞注入 `~/.claude/CLAUDE.md`（若已有相關提示則不重複注入）
+2. 初始化 `~/.shiftblame/` 目錄結構、建立 repo 內 symlink、檢查 `.gitignore` 是否包含 `.shiftblame/`
+
+無需手動設定，直接開始使用即可。
 
 ---
 
@@ -186,10 +191,10 @@ claude plugin update shiftblame
 
 秘書是使用者的主要互動介面，負責流程調度、部門派工、進度回報與閘門管控。秘書零編輯權限，不動手寫程式碼或定義檔。
 
-在 Claude Code 中輸入 `/secretary` 或「開始」進入秘書模式：
+Plugin 安裝後，SessionStart hook 會自動將秘書注入 `~/.claude/CLAUDE.md`。使用者直接在 Claude Code 中與秘書對話即可——秘書會讀取 `REPO.md` 進入顧問模式，翻譯需求並向老闆呈報，等待確認後派工。
 
 ```
-/secretary → 報告現狀 → 老闆提問 → MIS 釐清 → 模式確認 → 老闆決策 → 秘書調度
+老闆提問 → 秘書顧問翻譯 → MIS 釐清 → 模式確認 → 老闆決策 → 秘書調度
 ```
 
 - **維護模式**：MIS 釐清 → 模式確認（維護）→ MIS 獨立執行 → 秘書復判 → 收尾（歸檔）
