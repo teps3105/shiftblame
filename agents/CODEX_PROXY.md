@@ -121,9 +121,9 @@ timeout 10 codex exec -s read-only --full-auto --ephemeral -C /tmp "echo ok" 2>&
 ```
 
 偵測結果判定（解析 stdout + stderr）：
-- stdout 含 "ok" → `AVAILABLE`
+- stdout 含 "ok" → `AVAILABLE`（API Key 或帳號登入認證成功均可）
 - stderr 含 "rate limit" / "429" / "rate_limit" → `RATE_LIMITED`
 - stderr 含 "quota" / "billing" → `QUOTA_EXCEEDED`
-- stderr 含 "auth" / "API key" / "401" / "403" → `AUTH_FAILURE`
+- stderr 含 "API key" / "401" / "403" → `AUTH_FAILURE`（不含帳號登入的正常 info 訊息）
 - stderr 含 "503" / "529" / "overloaded" → `SERVICE_OVERLOADED`
 - 指令不存在或超時 → `UNAVAILABLE`

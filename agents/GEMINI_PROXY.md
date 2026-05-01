@@ -114,10 +114,10 @@ timeout 10 gemini -p "echo ok" --yolo --skip-trust -o text 2>&1 | head -5
 ```
 
 偵測結果判定（解析 stdout + stderr）：
-- stdout 含 "ok" → `AVAILABLE`
+- stdout 含 "ok" → `AVAILABLE`（帳號登入認證成功即可）
 - stderr 含 "rate limit" / "429" / "rate_limit" → `RATE_LIMITED`
 - stderr 含 "quota" / "billing" / "RESOURCE_EXHAUSTED" → `QUOTA_EXCEEDED`
-- stderr 含 "auth" / "login" / "session" / "expired" / "401" / "403" → `AUTH_FAILURE`
+- stderr 含 "401" / "403" → `AUTH_FAILURE`（不含帳號登入的正常 info 訊息）
 - stderr 含 "503" / "529" / "overloaded" → `SERVICE_OVERLOADED`
 - stderr 含 "trust" / "not trusted" → `TRUST_BLOCKED`
 - 指令不存在或超時 → `UNAVAILABLE`

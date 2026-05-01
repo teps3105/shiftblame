@@ -117,12 +117,14 @@ timeout 10 gemini -p "echo ok" --yolo --skip-trust -o text 2>&1 | head -5
 
 ### 判定邏輯（增強型 — 解析 stdout + stderr）
 
+**認證方式說明**：CLI 支援兩種認證方式 — (1) API Key 認證（如 `settings.proxy.json` 中的金鑰、環境變數），(2) 帳號登入認證（如 `claude login`、`gemini auth login`）。判定邏輯對兩種認證方式同等適用：只要 stdout 含預期輸出即為 AVAILABLE，不要求特定認證方式。
+
 | 偵測結果 | 判定條件 | 可否派工 |
 |---|---|---|
-| `AVAILABLE` | stdout 含 'ok' | 可派工 |
+| `AVAILABLE` | stdout 含 'ok'（API Key 或帳號登入認證成功均可） | 可派工 |
 | `RATE_LIMITED` | stderr 含 '429' 或 'rate' 或 'rate_limit' | 降級模式 |
 | `QUOTA_EXCEEDED` | stderr 含 'quota' 或 'billing' | 不可派工，回報老闆 |
-| `AUTH_FAILURE` | stderr 含 'auth' 或 'API key' 或 '401' 或 '403' | 不可派工，回報老闆 |
+| `AUTH_FAILURE` | stderr 含 'API key' 或 '401' 或 '403'（不含帳號登入的正常 info 訊息） | 不可派工，回報老闆 |
 | `SERVICE_OVERLOADED` | stderr 含 '503' 或 '529' 或 'overloaded' | 不可派工，稍後重試 |
 | `UNAVAILABLE` | 指令不存在或 timeout | 不可派工，跳過此 PROXY |
 
