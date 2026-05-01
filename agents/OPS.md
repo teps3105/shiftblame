@@ -8,9 +8,9 @@
 - **權限提升協議（sudo，部署專用）**：OPS 在部署或操作中遇到需要 sudo 權限的情況時，依以下流程處理：
   1. 向秘書提交權限提升需求（說明需要什麼權限、為什麼需要）
   2. 秘書透過 AskUserQuestion 請示老闆是否授權
-  3. 老闆同意後，OPS 自行透過環境變數執行 sudo
+  3. 老闆同意後，OPS 自行透過系統 Keyring 取得密碼並執行 sudo
   4. 嚴禁在任何產出檔案中記錄密碼值
-  實作方法：sudo 密碼定義於 `~/.bashrc` 中的環境變數 `SUDO_PASSWORD`。指令格式：`source ~/.bashrc && echo "$SUDO_PASSWORD" | sudo -S <command>`
+  實作方法：sudo 密碼存放於系統 Keyring（libsecret）。指令格式：`sudo -S <command> < <(secret-tool lookup service sudo-pwd)`
 - **QC 測試檔清理**：QC 階段 PROXY 為驗證發現而建立的測試檔（如競態條件再現、冪等性驗證等），屬驗證工具而非正式測試。OPS 在提交前必須識別並刪除這些檔案。判斷準則：task.md 中未列入的測試檔、且未出現在 QA consensus 的產出清單中。
 - **pre-commit 測試結果僅對已提交狀態有效**：PROXY 報告的測試結果僅保證在測試執行時的 git 狀態下正確。若測試後有任何未提交的程式碼修改，該結果即失效。OPS 在最終驗證時必須獨立重跑測試，確認當前工作區狀態下所有測試通過。OPS result.md 中的測試結果必須標註測試時的 git commit SHA。
 
@@ -38,7 +38,7 @@
 識別並刪除 QC 階段建立的驗證用測試檔。判斷準則：task.md 中未列入、且未出現在 QA consensus 的產出清單中。
 
 ### R5：權限提升透過秘書請示
-OPS 在部署或操作中遇到需要 sudo 權限時，向秘書提交需求，由秘書透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書提供環境變數名稱，OPS 自行執行。
+OPS 在部署或操作中遇到需要 sudo 權限時，向秘書提交需求，由秘書透過 AskUserQuestion 請示老闆是否授權。老闆同意後，秘書通知 OPS，OPS 透過系統 Keyring 取得密碼並自行執行。
 
 ### R6：PROXY 禁止直接操作 main 分支
 所有 PROXY 必須在 worktree 上操作，嚴禁直接修改 main 分支。
@@ -57,18 +57,18 @@ OPS 位於單向流程最後實作階段，可讀取 QA + SEC + PRD + DEV + QC �
 
 ## 權限提升實作方法
 
-sudo 密碼定義於 `~/.bashrc` 中的環境變數 `SUDO_PASSWORD`。OPS 需要 sudo時：
+sudo 密碼存放於系統 Keyring（libsecret），透過 `secret-tool lookup service sudo-pwd` 取得。OPS 需要 sudo 時：
 1. OPS 在 result.md 中記錄「需要 sudo：[原因]」
 2. 秘書讀取後透過 AskUserQuestion 請示老闆
-3. 老闆同意 → 秘書提供環境變數名稱（非密碼值）給 OPS → OPS 自行執行
+3. 老闆同意 → 秘書通知 OPS → OPS 透過 Keyring 取得密碼並自行執行
 4. 老闆拒絕 → 記錄於通訊目錄，OPS 跳過該步驟或尋找替代方案
 
 實作指令格式：
 ```bash
-source ~/.bashrc && echo "$SUDO_PASSWORD" | sudo -S <command>
+sudo -S <command> < <(secret-tool lookup service sudo-pwd)
 ```
 
-注意：非互動式 shell 中 `$SUDO_PASSWORD` 預設不可用，必須先 `source ~/.bashrc`。
+注意：系統 Keyring 需保持解鎖狀態。若 Keyring 未解鎖，`secret-tool` 將無法取得密碼，需由老闆協助處理。
 
 ## 認知模型
 
