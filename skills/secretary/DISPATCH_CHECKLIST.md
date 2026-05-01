@@ -112,11 +112,10 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 ## 10. MIS 起點產出驗證
 
-MIS_ALL_RESULT 後（載入恢復場景），秘書確認上游產出已落袋：
+MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 
 1. **REPO.md 更新確認**：讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果（專案定位、方向、實作程度、待辦均已更新）
 2. **執行準則確認**：確認 MIS result 中含明確的執行準則
-3. **mtime 附帶驗證**（非阻塞性）：`stat -c %Y ~/.shiftblame/<repo>/REPO.md` > `stat -c %Y ~/.shiftblame/<repo>/<slug>/MIS/task.md`。不通過 → 在報告中標注警告，不阻止派工
-4. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
+3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
 
 驗證不通過 → 退回 MIS 補齊（不進入 QA）。

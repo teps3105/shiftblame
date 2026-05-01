@@ -9,49 +9,10 @@ description: >-
 
 ## 載入流程
 
-1. 檢查 `~/.shiftblame/` 目錄結構（各 repo slug 階層 + `archive/`）
-2. 建立 repo 內 IDE symlink（`.shiftblame/<repo>` → `~/.shiftblame/<repo>`）
-3. 檢查 `.gitignore` 含 `.shiftblame/`
-4. `Read ~/.shiftblame/<repo>/REPO.md` 釐清專案現狀
-4.1. 版本差距檢測（以 git 歷史為基準）：
-    ```bash
-    MAIN_VERSION=$(git log main --oneline -1 --grep='feat: v' --format='%s' | grep -oP 'v\d+\.\d+\.\d+')
-    PLUGIN_VERSION=$(cat .claude-plugin/plugin.json | jq -r .version)
-    REPO_VERSION=$(grep -oP '版本[：:]\s*\K\d+\.\d+\.\d+' ~/.shiftblame/"$REPO_NAME"/REPO.md)
-    UNPUSHED=$(git log origin/main..main --oneline 2>/dev/null | wc -l)
-    UNMERGED=$(git log main..origin/main --oneline 2>/dev/null | wc -l)
-    ```
-    - MAIN_VERSION vs PLUGIN_VERSION：plugin 超前 → 標注「plugin 已升級但尚未合併到 main」
-    - MAIN_VERSION vs REPO_VERSION：REPO 超前 → 標注「REPO.md 記載版本超前於 main 實作」
-    - UNPUSHED > 0 → 標注「本地 main 有 N 個未 push 的 commit」
-    - UNMERGED > 0 → 標注「遠端 main 有 N 個未 pull 的 commit，建議 git pull」
-5. 未完成 slug 偵測（第一層）：
-   - 掃描 `~/.shiftblame/<repo>/` 根層（排除 `archive/`）
-   - 對每個未完成 slug 執行第一層偵測（4 種粗分類：READY_ARCHIVE / IN_PROGRESS / EMPTY / CORRUPTED）
-   - 若無未完成 slug → 跳至步驟 8
-   - 若有 IN_PROGRESS 或 READY_ARCHIVE 的 slug → 進入步驟 6
-6. 第二層精確判定（僅 IN_PROGRESS 的 slug）：
-   - 對每個 IN_PROGRESS slug 執行第二層偵測（14 種狀態碼，見判定優先序）
-   - 產出恢復報告（含第一層分類、第二層狀態碼、最高完成部門、當前卡點、恢復策略）
-   - 附帶驗證：MIS_ALL_RESULT 需額外執行上游產出驗證（DISPATCH_CHECKLIST 第 10 條）
-7. 向老闆報告恢復選項：
-   - 呈報未完成 slug 清單（含狀態碼與恢復策略）
-   - 透過 AskUserQuestion 讓老闆選擇每個 slug 的處置：
-     - 繼續恢復：從斷點部門重新派工
-     - 歸檔：歸檔到 archive（需 MIS.md 存在，僅 READY_ARCHIVE）
-     - 清理：刪除 slug 目錄
-     - 暫停：先討論再決定
-   - 老闆選擇「繼續恢復」→ 依狀態碼恢復策略派工，完成後進入步驟 8
-   - 老闆選擇「暫停」→ 結束 turn，等待老闆指示
-8. 向老闆報告現狀（載入階段到此結束，秘書不主動問老闆要做什麼）
-
-```bash
-REPO_ROOT=$(git rev-parse --show-toplevel)
-REPO_NAME=$(basename "$REPO_ROOT")
-mkdir -p ~/.shiftblame/"$REPO_NAME"/archive
-mkdir -p "$REPO_ROOT/.shiftblame"
-ln -sfn ~/.shiftblame/"$REPO_NAME" "$REPO_ROOT/.shiftblame/$REPO_NAME"
-```
+1. 讀取 `~/.shiftblame/<repo>/REPO.md`
+   - 若 REPO.md 不存在 → 向老闆報告「專案尚未初始化」，等待指示
+2. 分析 REPO.md 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
+3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
 
 ## 運作流程
 
@@ -83,7 +44,7 @@ AskUserQuestion({
 7. 老闆決策（目標、起始部門、或其他指示）
 8. 依老闆決策進入派工流程（見派工流程區段）
 
-首次啟用或新專案時（REPO.md 不存在），步驟 2 改為派工 MIS 初始化 REPO.md + 釐清專案現狀 + 確立執行準則，完成後回到步驟 3。
+首次啟用或新專案時（REPO.md 不存在），載入步驟 1 會偵測到 REPO.md 不存在並報告老闆。老闆決定是否派工 MIS 初始化。
 
 角色分工：
 - 秘書是調度器，不是分析師
@@ -106,7 +67,6 @@ AskUserQuestion({
 - worktree 建立/清理（歸 MIS）
 
 框架定義檔的變更只能由 MIS 部門在 worktree 上執行。
-載入流程中的 symlink 建立是唯讀操作，不視為定義檔修改。
 
 ## 派工流程
 
