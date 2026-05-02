@@ -170,10 +170,12 @@ MIS 完成後：
 2. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS 部門報告完整性、定義檔變更與 task.md 一致性）
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-5. 復判通過且老闆選擇「確認歸檔」→ 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）→ Read LIFECYCLE.md → 秘書執行歸檔
-6. 秘書執行 squash merge 與推送
-7. 秘書執行 worktree 清理
-8. 秘書執行分支刪除
+5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
+5.5. 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）（見 LIFECYCLE.md 步驟 0.5）
+6. 秘書執行歸檔
+7. 秘書執行 squash merge 與推送
+8. 秘書執行 worktree 清理
+9. 秘書執行分支刪除
 
 ### 中等/高等模式收尾
 
@@ -182,10 +184,12 @@ QC 完成後：
 2. 秘書執行復判：確認有確實收尾與正確運作
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-5. 復判通過且老闆選擇「確認歸檔」→ 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）→ Read LIFECYCLE.md → 秘書執行歸檔
-6. 秘書執行 squash merge 與推送
-7. 秘書執行 worktree 清理
-8. 秘書執行分支刪除
+5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
+5.5. 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）（見 LIFECYCLE.md 步驟 0.5）
+6. 秘書執行歸檔
+7. 秘書執行 squash merge 與推送
+8. 秘書執行 worktree 清理
+9. 秘書執行分支刪除
 
 秘書不建立或修改 MIS 部門報告。MIS 部門報告是 MIS 部門的產出，秘書無權代為產出。
 

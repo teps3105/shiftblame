@@ -24,7 +24,7 @@ Read REPO.md（~/.shiftblame/shiftblame/REPO.md）
 ```
 
 從 REPO.md 提取約束條件（不是做法）：
-- REPO.md 由 MIS 初始化與維護（專案定位、方向、實作程度、待辦）
+- REPO.md 由 MIS 初始化（專案定位、方向、實作程度、待辦），由秘書在歸檔時更新
 - 技術棧（語言、框架、測試工具）
 - 測試指令（unit / integration 路徑與指令）
 - 建置指令（build / compile）

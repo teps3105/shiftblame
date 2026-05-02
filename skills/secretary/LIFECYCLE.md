@@ -52,9 +52,9 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 
 歸檔操作由秘書執行。秘書在復判通過後確認歸檔結果。
 
-### 0.5 REPO.md 更新（歸檔前）
+### 0.5 REPO.md 更新（歸檔前，必須執行）
 
-秘書在復判通過後、執行歸檔前，依據 MIS 收尾產出的 REPO.md 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md），確保反映最終共識狀態。
+秘書在復判通過後、執行歸檔前，必須依據 MIS 收尾產出的 REPO.md 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md），確保反映最終共識狀態。
 
 REPO.md 更新原則：
 - 版本號：反映本次變更後的版本號
