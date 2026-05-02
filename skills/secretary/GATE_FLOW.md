@@ -2,16 +2,16 @@
 
 ## MIS 啟動閘門（流程起點）
 
-MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名）、單一 worktree 已建立。
+MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名）、單一 worktree 已建立。
 
 ### 確認步驟
 
-1. 讀取 `~/.shiftblame/<repo>/REPO.md`，確認內容完整。
+1. 讀取 `~/.shiftblame/<repo>/REPO.md` 作為專案現狀參考。
 2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
 3. 確認單一共用 worktree 已建立於 slug 層級。
 4. 若以上任一項不滿足 → 退回 MIS 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
-   - 讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果。
+   - 讀取 REPO.md 作為專案現狀參考（MIS 不再在啟動階段更新 REPO.md）。
    - 確認執行準則已落袋：MIS result.md 中含明確的執行準則。
 6. 驗證不通過 → 退回 MIS 補齊（不進入 QA）。
 7. 透過 AskUserQuestion 確認 MIS 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：
@@ -208,6 +208,9 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 
 **檢查點 2：觀測者完成（閘門）**
 1. 讀取兩位觀測者 result.md，確認檢閱完成
+1.5. 檢查觀測者 result.md 是否含「觀測者主動修正紀錄」表格
+     - 若有修正紀錄 → 驗證 worktree 無未提交的觀測者修正（`git -C <worktree> diff HEAD` 確認）
+     - 若有未提交修正 → 退回主執行者補 commit
 2. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
 3. 執行部門驗證 SOP（見下方）
 4. AskUserQuestion 呈報共識結果 → 等老闆判定（含「退回修正」選項，僅實作部門適用）

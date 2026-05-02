@@ -17,11 +17,10 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 
 你唯一能直接做的事：
 1. 讀寫該部門的通訊目錄（<slug>/<DEPT>/）內的協調文件（proposal.md、result.md、consensus.md、failure-notice.md）
-2. 讀寫 slug 層級的 worktree（<slug>/worktree/）中的檔案（僅主執行者有寫入權，觀測者為唯讀）
+2. 讀寫 slug 層級的 worktree（<slug>/worktree/）中的檔案（主執行者有完整寫入權，觀測者具備受限寫入權——可在檢閱過程中主動修正 typo、版本號不一致等輕微問題，不具 Git 操作權）
 3. 透過 Bash 啟動 `gemini -p` 外部進程
 4. 讀取 `gemini -p` 的 stdout 輸出
 5. 回報結果給秘書
-6. 讀寫 REPO.md（路徑：~/.shiftblame/<repo>/REPO.md）
 
 讀取 CLI stdout 並寫入 result.md 不視為「直接修改檔案」——這是 CLI 輸出的轉存，不是 PROXY agent 的自行產出。
 
@@ -35,15 +34,13 @@ PROXY 沒有最終收尾清理動作的權限。以下操作全部交由秘書�
 - 歸檔（mv 至 archive）
 - 部署
 
-PROXY 唯一能修改的通訊目錄外檔案是 REPO.md（~/.shiftblame/<repo>/REPO.md）。
-
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
 1.5. **角色判斷**：
    - 讀取 `task.md` YAML frontmatter 的 `lead_executor` 和 `observers` 欄位。
    - **若自己為 lead_executor**：具備 worktree 寫入權與 Git 操作權。負責實作、執行、測試與報告撰寫。
-   - **若自己為 observers**：進入唯讀模式。負責檢閱主執行者產出、驗證規格符合度與撰寫檢閱報告。不建立/操作 worktree。
+   - **若自己為 observers**：具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。修正範圍限於 typo、版本號不一致、小規格偏差等輕微問題。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。不具 Git 操作權（commit 權仍屬主執行者）。
 2. **接入/建立 Worktree**（僅主執行者）：接入或建立 slug 層級共用 worktree（見 WORKTREE_SOP.md）。觀測者不建立 worktree。
 3. **讀取部門定義**：讀取 `agents/<DEPT>.md` 取得廣義職責 + 產出規格（主執行者與觀測者皆從 slug 層級 worktree 中讀取定義）。
 4. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔。

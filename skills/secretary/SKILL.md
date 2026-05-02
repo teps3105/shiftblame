@@ -90,7 +90,7 @@ AskUserQuestion({
 禁止寫入：
 - `agents/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
-- `README.md`、`REPO.md` 等專案根目錄定義檔
+- `README.md` 等專案根目錄定義檔（REPO.md 除外，秘書在歸檔時可更新 REPO.md）
 - worktree 建立（歸 MIS）
 
 框架定義檔的變更只能由 MIS 部門在 worktree 上執行。
@@ -130,7 +130,7 @@ AskUserQuestion({
 不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
 - **主執行者/觀測者模型**：主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 隨時覆蓋指名（見下方老闆指名機制），不限模式或部門。不同部門可以有不同的主執行者。
 - **非實作部門**（QA/SEC/PRD）：維持三人各自分析的現有模型。主執行者身份已選定，但研究階段不產生排他性編輯權。
-- **實作部門**（DEV/QC/MIS）：主執行者獨佔 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者為唯讀存取，負責檢閱產出成色。採用兩階段派工：先派工主執行者等待其完成並 commit，再同時派工觀測者檢閱已提交的內容。
+- **實作部門**（DEV/QC/MIS）：主執行者獨佔 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。所有修正必須在 result.md 中明確紀錄。觀測者不具 Git 操作權。採用兩階段派工：先派工主執行者等待其完成並 commit，再同時派工觀測者檢閱已提交的內容。
 
 派工規則速記：
 - 指定部門（QA/SEC/PRD/DEV/QC/MIS），不指定 model 或 CLI
@@ -170,7 +170,7 @@ MIS 完成後：
 2. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS 部門報告完整性、定義檔變更與 task.md 一致性）
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md → 秘書執行歸檔
+5. 復判通過且老闆選擇「確認歸檔」→ 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/<repo>/REPO.md）→ Read LIFECYCLE.md → 秘書執行歸檔
 6. 秘書執行 squash merge 與推送
 7. 秘書執行 worktree 清理
 8. 秘書執行分支刪除
@@ -182,7 +182,7 @@ QC 完成後：
 2. 秘書執行復判：確認有確實收尾與正確運作
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md → 秘書執行歸檔
+5. 復判通過且老闆選擇「確認歸檔」→ 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/<repo>/REPO.md）→ Read LIFECYCLE.md → 秘書執行歸檔
 6. 秘書執行 squash merge 與推送
 7. 秘書執行 worktree 清理
 8. 秘書執行分支刪除

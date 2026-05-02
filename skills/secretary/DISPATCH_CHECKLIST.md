@@ -95,7 +95,7 @@ proxy_prompt 只含四樣東西：
 | 部門 | 派工前必做 |
 |---|---|
 | MIS（初等模式） | 確認模式為初等模式、確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、MIS 獨立執行 |
-| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立、問題診斷完成、REPO.md 更新狀況 |
+| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立、問題診斷完成 |
 | MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
@@ -142,7 +142,7 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 
-1. **REPO.md 更新確認**：讀取 REPO.md，確認內容反映本次 MIS 起點的釐清結果（專案定位、方向、實作程度、待辦均已更新）
+1. **REPO.md 讀取確認**：讀取 REPO.md 作為專案現狀參考。
 2. **執行準則確認**：確認 MIS result 中含明確的執行準則
 3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
 
