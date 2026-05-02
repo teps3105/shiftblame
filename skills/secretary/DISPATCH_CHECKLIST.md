@@ -20,7 +20,7 @@
 ## 1. 讀取專案資訊
 
 ```
-Read REPO.md
+Read .shiftblame/REPO.md
 ```
 
 從 REPO.md 提取約束條件（不是做法）：

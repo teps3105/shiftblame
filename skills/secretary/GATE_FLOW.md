@@ -6,12 +6,12 @@ MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清�
 
 ### 確認步驟
 
-1. 讀取 `REPO.md` 作為專案現狀參考。
+1. 讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
 2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
 3. 確認單一共用 worktree 已建立於 slug 層級。
 4. 若以上任一項不滿足 → 退回 MIS 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
-   - 讀取 REPO.md 作為專案現狀參考（MIS 不再在啟動階段更新 REPO.md）。
+   - 讀取 `.shiftblame/REPO.md` 作為專案現狀參考（MIS 不再在啟動階段更新 REPO.md）。
    - 確認執行準則已落袋：MIS result.md 中含明確的執行準則。
 6. 驗證不通過 → 退回 MIS 補齊（不進入 QA）。
 7. 透過 AskUserQuestion 確認 MIS 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：

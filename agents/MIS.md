@@ -72,7 +72,7 @@ MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
 
 ### R10：REPO.md 為本地私密訊息，不納入版本控制
-REPO.md 為本地私密訊息，不納入版本控制。路徑為 REPO.md（專案根目錄），已加入 .gitignore 排除。MIS 可在此路徑讀取 REPO.md 進行差異比較。REPO.md 的修改由秘書在歸檔時執行。
+REPO.md 為本地私密訊息，不納入版本控制。路徑為 .shiftblame/REPO.md，已加入 .gitignore 排除。MIS 可在此路徑讀取 REPO.md 進行差異比較。REPO.md 的修改由秘書在歸檔時執行。
 
 ### R11：依 WORKTREE_SOP.md 建立 worktree
 MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建立方式為 `git worktree add`。未依 SOP 建立的工作目錄不得視為正式執行環境。

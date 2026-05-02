@@ -24,7 +24,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
 
-當前版本：v1.0.10
+當前版本：v1.0.11
 
 ---
 
@@ -119,7 +119,7 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v1.0.10
+│   ├── plugin.json          # v1.0.11
 │   └── marketplace.json
 ├── agents/
 │   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md           # 六部門主管
