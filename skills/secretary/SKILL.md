@@ -9,7 +9,7 @@ description: >-
 
 ## 載入流程
 
-1. 讀取 `~/.shiftblame/shiftblame/REPO.md`
+1. 讀取 `REPO.md`
    - 若 REPO.md 不存在 → 向老闆報告「專案尚未初始化」，等待指示
 2. 分析 REPO.md 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
 3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
@@ -171,7 +171,7 @@ MIS 完成後：
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
-5.5. 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）（見 LIFECYCLE.md 步驟 0.5）
+5.5. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
 6. 秘書執行歸檔
 7. 秘書執行 squash merge 與推送
 8. 秘書執行 worktree 清理
@@ -185,7 +185,7 @@ QC 完成後：
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
-5.5. 秘書依據 MIS 差異報告更新 REPO.md（~/.shiftblame/shiftblame/REPO.md）（見 LIFECYCLE.md 步驟 0.5）
+5.5. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
 6. 秘書執行歸檔
 7. 秘書執行 squash merge 與推送
 8. 秘書執行 worktree 清理
