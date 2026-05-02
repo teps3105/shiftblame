@@ -65,17 +65,17 @@ REPO.md 更新原則：
 ```bash
 # 歸檔閘門（SEC-A-03）
 # MIS 部門報告（consensus.md + 各 PROXY result.md）由 MIS 部門產出，秘書不得代建。若 consensus.md 不存在或為空，應退回 MIS 補齊。
-if [[ ! -s ~/.shiftblame/<repo>/<slug>/MIS/consensus.md ]]; then
+if [[ ! -s ~/.shiftblame/shiftblame/<slug>/MIS/consensus.md ]]; then
   echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。應退回 MIS 補齊，秘書不得代建。" >&2
   exit 1
 fi
 
 # 原子歸檔（SEC-A-02）
-mkdir -p ~/.shiftblame/<repo>/archive
-mv ~/.shiftblame/<repo>/<slug> ~/.shiftblame/<repo>/archive/<slug>
+mkdir -p ~/.shiftblame/shiftblame/archive
+mv ~/.shiftblame/shiftblame/<slug> ~/.shiftblame/shiftblame/archive/<slug>
 
 # 驗證
-test ! -e ~/.shiftblame/<repo>/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
+test ! -e ~/.shiftblame/shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 # REPO.md 為本地檔案（~/.shiftblame/shiftblame/REPO.md），不受歸檔影響（無需驗證）
 ```
 

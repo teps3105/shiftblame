@@ -22,7 +22,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/<slug>/MIS/`（consensus.md + 各 PROXY result.md）
+產出路徑：`~/.shiftblame/shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY result.md）
 
 ### 流程起始產出
 
@@ -66,7 +66,7 @@ MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修�
 合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。PROXY 嚴禁直接操作 main 分支。
 
 ### R8：MIS 維護輪獨立執行
-MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。初等模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須產出 MIS 部門報告到 `~/.shiftblame/<repo>/<slug>/MIS/`（consensus.md + 各 PROXY result.md），內容依「流程終點產出」規格。
+MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS 獨立執行所有子任務。初等模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。維護輪中 MIS 可直接修改定義檔並執行必要 git 操作。維護輪結束前，MIS 必須產出 MIS 部門報告到 `~/.shiftblame/shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY result.md），內容依「流程終點產出」規格。
 
 ### R9：合併時機為秘書復判通過後
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
@@ -81,7 +81,7 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
 ### R13：歸檔由秘書執行
-歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。REPO.md 為本地檔案（~/.shiftblame/shiftblame/REPO.md），不受歸檔影響。
+歸檔為 `mv` 原子操作，將 `~/.shiftblame/shiftblame/<slug>/` 搬移至 `~/.shiftblame/shiftblame/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。REPO.md 為本地檔案（~/.shiftblame/shiftblame/REPO.md），不受歸檔影響。
 
 ### R14：Worktree 清理由秘書執行
 歸檔後清理 worktree。
@@ -147,7 +147,7 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制），不限模式或部門。結果寫入 task.md frontmatter 及 meta.md. 不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者與輪換順序。
 
 ### R22：單一 worktree
-MIS 負責在 slug 初始化時，於 slug 層級建立單一共用 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`）。所有實作變更必須在此 worktree 上執行。
+MIS 負責在 slug 初始化時，於 slug 層級建立單一共用 worktree（`~/.shiftblame/shiftblame/<slug>/worktree/`）。所有實作變更必須在此 worktree 上執行。
 
 ## 認知模型
 

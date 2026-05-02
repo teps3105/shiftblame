@@ -1,13 +1,13 @@
 # Worktree SOP
 
-shiftblame 自定義 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`），非 Claude 內建 worktree。Worktree 位於 slug 層級目錄內。
+shiftblame 自定義 worktree（`~/.shiftblame/shiftblame/<slug>/worktree/`），非 Claude 內建 worktree。Worktree 位於 slug 層級目錄內。
 
 ## 建立
 
 **注意**：worktree 的建立由 MIS 執行，清理由秘書執行（收尾流程）。MIS 在 slug 初始化時建立單一共用 worktree。僅主執行者（lead_executor）擁有 worktree 的寫入權，觀測者（observers）不需要建立獨立 worktree。
 
 ### 路徑規範
-建立在 `~/.shiftblame/<repo>/<slug>/worktree/`。
+建立在 `~/.shiftblame/shiftblame/<slug>/worktree/`。
 
 ### 隔離規範
 1. **單一共用**：所有部門共用同一個位於 slug 層級的 worktree。
@@ -30,7 +30,7 @@ git worktree add ~/.shiftblame/"$REPO_NAME"/"$SLUG"/worktree -b feat/"$SLUG"
 worktree 清理由秘書執行（見 SKILL.md 收尾流程）。單一共用 worktree 的清理指令：
 
 ```bash
-git worktree remove ~/.shiftblame/<repo>/<slug>/worktree
+git worktree remove ~/.shiftblame/shiftblame/<slug>/worktree
 ```
 
 若整個 slug 目錄已無其他用途，可一併移除。

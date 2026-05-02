@@ -244,7 +244,7 @@ MIS → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 - 合併與推送由秘書執行：秘書在復判通過後負責 git merge 與 git push。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
 - MIS 維護輪不走流程：當老闆指示為 MIS 維護輪時，秘書不啟動流程，直接派工 MIS 獨立執行。此即「初等模式」。
 - 模式可升級也可降級：模式可升級（秘書提議 + 老闆複核）也可降級（老闆縮小範圍）。降級不可逆轉——降級後不可再升回原等級。升級由主執行者在 result.md 中寫入 [MODE_UPGRADE_REQUEST: <target_mode>]，秘書確認後更新 task.md 與 meta.md。
-- 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/<repo>/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
+- 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`~/.shiftblame/shiftblame/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
 
 $ARGUMENTS

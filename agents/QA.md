@@ -7,7 +7,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/<repo>/<slug>/QA/`（consensus.md + 各 PROXY result.md）
+產出路徑：`~/.shiftblame/shiftblame/<slug>/QA/`（consensus.md + 各 PROXY result.md）
 
 必備內容：
 1. 需求摘要：老闆原話要點。
