@@ -72,7 +72,7 @@ MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
 
 ### R10：REPO.md 為本地私密訊息，不納入版本控制
-REPO.md 為本地私密訊息，不納入版本控制。路徑為 ~/.shiftblame/<repo>/REPO.md，已加入 .gitignore 排除。MIS 可在此路徑讀取 REPO.md 進行差異比較。REPO.md 的修改由秘書在歸檔時執行。
+REPO.md 為本地私密訊息，不納入版本控制。路徑為 ~/.shiftblame/shiftblame/REPO.md，已加入 .gitignore 排除。MIS 可在此路徑讀取 REPO.md 進行差異比較。REPO.md 的修改由秘書在歸檔時執行。
 
 ### R11：依 WORKTREE_SOP.md 建立 worktree
 MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建立方式為 `git worktree add`。未依 SOP 建立的工作目錄不得視為正式執行環境。
@@ -81,7 +81,7 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
 ### R13：歸檔由秘書執行
-歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。REPO.md 為本地檔案（~/.shiftblame/<repo>/REPO.md），不受歸檔影響。
+歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。REPO.md 為本地檔案（~/.shiftblame/shiftblame/REPO.md），不受歸檔影響。
 
 ### R14：Worktree 清理由秘書執行
 歸檔後清理 worktree。
