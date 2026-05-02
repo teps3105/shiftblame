@@ -54,7 +54,7 @@ task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 
 lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名））>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
-worktree_path: <~/.shiftblame/shiftblame/<slug>/worktree/>
+worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```
 

@@ -9,7 +9,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ## 通訊目錄結構
 
 ```
-~/.shiftblame/shiftblame/<slug>/
+.shiftblame/<slug>/
 ├── meta.md              # 秘書寫入：記錄每輪派工的主執行者、輪換順序、當前模式等狀態
 ├── worktree/            # 實作部門主執行者使用的單一共用 worktree
 └── <DEPT>/
@@ -26,7 +26,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 當 MIS 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `cycle-N` 子目錄區分：
 
 ```
-~/.shiftblame/shiftblame/<slug>/
+.shiftblame/<slug>/
 ├── meta.md              # slug 級別狀態（含子循環紀錄）
 ├── worktree/            # 所有子循環共用同一 worktree
 ├── MIS/
@@ -51,7 +51,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 ## meta.md 格式（秘書寫入）
 
-meta.md 位於通訊目錄根層（`~/.shiftblame/shiftblame/<slug>/meta.md`），由秘書在每輪派工時維護。記錄 slug 級別的跨部門狀態。
+meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書在每輪派工時維護。記錄 slug 級別的跨部門狀態。
 
 ```markdown
 # <slug> 狀態
@@ -96,7 +96,7 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名，見 SKILL.md 老闆指名機制））>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
-worktree_path: <~/.shiftblame/shiftblame/<slug>/worktree/>
+worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 
 # <DEPT> 任務
@@ -127,7 +127,7 @@ worktree_path: <~/.shiftblame/shiftblame/<slug>/worktree/>
 ## 秘書派工步驟
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
-2. 建立通訊目錄：`mkdir -p ~/.shiftblame/shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
+2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
 3. 按輪換順序（Claude → Codex → Gemini → Claude...）遞進選定主執行者，每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制）。透過 AskUserQuestion 詢問老闆是否需要指定主執行者，並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
    - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
@@ -464,7 +464,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 ### 秘書寫入權限限制
 
 秘書零編輯權限。秘書的所有寫入操作限於以下路徑：
-- 通訊目錄：`~/.shiftblame/shiftblame/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
+- 通訊目錄：`.shiftblame/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
 
 框架定義檔（`agents/`、`skills/`、`README.md` 等）的變更只能由 MIS 部門在 worktree 上執行。REPO.md 的更新由秘書在歸檔時負責。
 秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。

@@ -8,7 +8,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY result.md）
 
 必備內容：
 1. Part A 資安稽核：安全相關斷言清單與安全基線。

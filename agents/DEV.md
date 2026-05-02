@@ -10,7 +10,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/shiftblame/<slug>/DEV/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/DEV/`（consensus.md + 各 PROXY result.md）
 
 devlog 必備內容：
 1. 實作檔案清單與路徑（按職能分組）。

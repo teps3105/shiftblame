@@ -343,7 +343,7 @@ QC 共識到達後，秘書必執行：
 ### DEV 報告後：無過濋 pytest + 業務 sanity check
 
 DEV 共識到達後，秘書必執行：
-1. 無過濋 pytest：`cd ~/.shiftblame/shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20`，比對共識報告數字
+1. 無過濋 pytest：`cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20`，比對共識報告數字
 2. 業務 sanity check（read-only）：跑專案的 quality_check CLI、manifest schema 驗證、grep PRD 閾值關鍵字 vs 實作確認未暗改
 
 派工 DEV 時 prompt 禁含 `tests/e2e/`（DEV 不跑 e2e，測試指令只含 unit + integration）。

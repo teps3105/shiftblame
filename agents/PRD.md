@@ -9,7 +9,7 @@
 
 ## 產出規格
 
-產出路徑：`~/.shiftblame/shiftblame/<slug>/PRD/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/PRD/`（consensus.md + 各 PROXY result.md）
 
 PRD 必備內容：
 1. 產品或功能名稱。

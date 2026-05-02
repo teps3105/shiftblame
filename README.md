@@ -24,7 +24,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
 
-當前版本：v1.0.7
+當前版本：v1.0.10
 
 ---
 
@@ -119,7 +119,7 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v1.0.7
+│   ├── plugin.json          # v1.0.10
 │   └── marketplace.json
 ├── agents/
 │   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md           # 六部門主管
@@ -144,19 +144,18 @@ shiftblame/
 ### 運行時結構
 
 ```
-~/.shiftblame/
-└── <repo>/
-    ├── REPO.md
-    ├── archive/<slug>/      # 歸檔
-    └── <slug>/
-        ├── worktree/        # 隔離工作區
-        └── <DEPT>/          # 部門報告目錄
-            ├── task.md      # 任務目標與約束
-            ├── consensus.md # 部門共識報告
-            ├── failure-notice.md
-            ├── claude/{proposal,result}.md
-            ├── codex/{proposal,result}.md
-            └── gemini/{proposal,result}.md
+.shiftblame/
+├── REPO.md
+├── archive/<slug>/      # 歸檔
+└── <slug>/
+    ├── worktree/        # 隔離工作區
+    └── <DEPT>/          # 部門報告目錄
+        ├── task.md      # 任務目標與約束
+        ├── consensus.md # 部門共識報告
+        ├── failure-notice.md
+        ├── claude/{proposal,result}.md
+        ├── codex/{proposal,result}.md
+        └── gemini/{proposal,result}.md
 ```
 
 ---
@@ -181,7 +180,7 @@ claude plugin update shiftblame
 安裝後首次啟動 Claude Code 時，Plugin 透過 SessionStart hook 自動完成以下初始化：
 
 1. 將秘書提示詞注入 `~/.claude/CLAUDE.md`（若已有相關提示則不重複注入）
-2. 初始化 `~/.shiftblame/` 目錄結構、建立 repo 內 symlink、檢查 `.gitignore` 是否包含 `.shiftblame/`
+2. 確認 `.shiftblame/` 目錄存在、檢查 `.gitignore` 是否包含 `.shiftblame/`
 
 無需手動設定，直接開始使用即可。
 
