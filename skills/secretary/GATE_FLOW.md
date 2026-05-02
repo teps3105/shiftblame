@@ -2,12 +2,12 @@
 
 ## MIS 啟動閘門（流程起點）
 
-MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（高等模式 DEV 首次進入時，改由秘書依任務適性指名）、單一 worktree 已建立。
+MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清、執行準則確立、REPO.md 初始化/更新、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名）、單一 worktree 已建立。
 
 ### 確認步驟
 
 1. 讀取 `~/.shiftblame/<repo>/REPO.md`，確認內容完整。
-2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（高等模式 DEV 首次進入時，改由秘書依任務適性指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
+2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
 3. 確認單一共用 worktree 已建立於 slug 層級。
 4. 若以上任一項不滿足 → 退回 MIS 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
@@ -20,7 +20,7 @@ MIS 啟動後（流程起點），秘書確認 MIS 已完成專案現狀釐清�
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；初等模式無指名例外），單一 worktree 已建立，專案現狀已釐清。",
+    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），單一 worktree 已建立，專案現狀已釐清。",
     header: "MIS 啟動",
     options: [
       { label: "確認復判", description: "專案現狀與準則 OK，進入秘書復判" },
@@ -36,7 +36,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；中等模式無指名例外），單一 worktree 已建立，專案現狀已釐清。",
+    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），單一 worktree 已建立，專案現狀已釐清。",
     header: "MIS 啟動",
     options: [
       { label: "確認派工 DEV", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -52,7 +52,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "MIS 啟動完成。主執行者已依輪換制選定（高等模式 DEV 首次進入時由秘書依任務適性指名起始 PROXY，之後按順序輪換），單一 worktree 已建立，專案現狀已釐清。",
+    question: "MIS 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），單一 worktree 已建立，專案現狀已釐清。",
     header: "MIS 啟動",
     options: [
       { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -126,10 +126,12 @@ MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作，
 ```
 AskUserQuestion({
   questions: [{
-    question: "秘書復判完成。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
+    question: "秘書復判完成（第 N 次增量）。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
     header: "秘書復判",
     options: [
       { label: "確認歸檔", description: "復判通過，執行歸檔" },
+      { label: "繼續補強", description: "功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）" },
+      { label: "退回修正", description: "有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）" },
       { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
@@ -139,8 +141,10 @@ AskUserQuestion({
 ```
 
 4. 「確認歸檔」→ 進入收尾流程（SKILL.md 收尾流程區段）
-5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
-6. 「暫停」→ 結束 turn，等老闆討論
+5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 MIS 研究階段）
+6. 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（不重新派工觀測者）
+7. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
+8. 「暫停」→ 結束 turn，等老闆討論
 
 ### 中等/高等模式復判
 
@@ -156,10 +160,12 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "秘書復判完成。MIS 收尾工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
+    question: "秘書復判完成（第 N 次增量）。MIS 收尾工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
     header: "秘書復判",
     options: [
       { label: "確認歸檔", description: "復判通過，執行歸檔" },
+      { label: "繼續補強", description: "功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）" },
+      { label: "退回修正", description: "有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）" },
       { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
@@ -169,8 +175,10 @@ AskUserQuestion({
 ```
 
 4. 「確認歸檔」→ 進入收尾流程
-5. 「退回 MIS」→ 結束 turn
-6. 「暫停」→ 結束 turn
+5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 MIS 研究階段）
+6. 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（不重新派工觀測者）
+7. 「退回 MIS」→ 結束 turn
+8. 「暫停」→ 結束 turn
 
 ## 中等模式 DEV/QC 多輪閘門
 
@@ -202,11 +210,36 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 1. 讀取兩位觀測者 result.md，確認檢閱完成
 2. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
 3. 執行部門驗證 SOP（見下方）
-4. AskUserQuestion 呈報共識結果 → 等老闆判定
+4. AskUserQuestion 呈報共識結果 → 等老闆判定（含「退回修正」選項，僅實作部門適用）
+
+#### 退回修正流程
+
+適用情境：觀測者檢閱發現輕微問題（如命名不一致、缺一個測試、小 typo 等），不影響整體品質但需修正。
+
+流程：
+1. 秘書結束 turn，等老闆下一則訊息說明修正內容
+2. 主執行者收到修正指示後，進行針對性修正並 commit
+3. 秘書確認修正完成（讀取主執行者 result.md + 驗證 commit）
+4. 直接繼續流程（不重新派工觀測者）
+
+與「重做」的區別：
+- 「退回修正」：輕微問題，修正後不重新走兩階段派工，直接繼續
+- 「重做」：嚴重品質問題，修正後需重新走完整兩階段派工（重新派工觀測者檢閱）
+
+次數限制：同一部門最多 2 次「退回修正」，超過則自動升級為「重做」。
+
+退回修正紀錄格式（在部門目錄的 task.md 中增量追加）：
+```markdown
+## 退回修正紀錄
+- 退回來源：閘門檢查點 2（觀測者檢閱）
+- 修正內容：<簡述修正項目>
+- 修正時間：<ISO 8601 timestamp>
+- 退回修正次數：N / 2
+```
 
 ### 研究部門閘門（同時派工）
 
-研究部門（MIS 啟動階段/QA/SEC/PRD）維持現有閘門流程（同時派工，一次性閘門）。
+研究部門（MIS 啟動階段/QA/SEC/PRD）維持現有閘門流程（同時派工，一次性閘門）。研究部門不走兩階段派工，閘門選項維持「繼續」「重做」「暫停」三選項，無「退回修正」。
 
 ### 步驟
 
@@ -218,11 +251,12 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 5. AskUserQuestion 呈報共識結果 → 等老闆判定
 6. 工具回傳 → 依老闆選擇分支：
    - 「繼續」→ 同一 turn 內直接推進（派下一部門或進入收尾流程）
+   - 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（僅實作部門）
    - 「重做」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容
    - 「暫停」→ 覆述選擇 → 結束 turn，等老闆下一則訊息討論
 ```
 
-**關鍵**：只有「重做」和「暫停」才結束 turn。「繼續」必須在同一 turn 內完成推進。
+**關鍵**：只有「退回修正」、「重做」和「暫停」才結束 turn。「繼續」必須在同一 turn 內完成推進。「退回修正」僅適用於實作部門（DEV/QC/MIS）。
 
 ### 退回增量記錄
 
@@ -249,6 +283,7 @@ AskUserQuestion({
     header: "部門回報",
     options: [
       { label: "繼續", description: "共識 OK，推進下一部門" },
+      { label: "退回修正", description: "觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅實作部門）" },
       { label: "重做", description: "有問題，要求重新執行" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
@@ -257,7 +292,25 @@ AskUserQuestion({
 })
 ```
 
+> **註**：「退回修正」選項僅適用於實作部門（DEV/QC/MIS）。研究部門（QA/SEC/PRD）使用此模板時應移除「退回修正」選項。
+
 ### 共識含技術分歧（PROXY 內部已處理）
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "[部門] 完成。含技術分歧（已由 PROXY 內部多數決解決）。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>",
+    header: "部門回報",
+    options: [
+      { label: "繼續", description: "共識 OK，推進下一部門" },
+      { label: "退回修正", description: "觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅實作部門）" },
+      { label: "重做", description: "有問題，要求重新執行" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
 
 當 consensus.md 含技術分歧的多數決記錄時，秘書不需特別處理——技術分歧已由 PROXY 內部解決。秘書僅需確認 consensus.md 存在且含分工與做法。
 
@@ -266,10 +319,12 @@ AskUserQuestion({
 | AskUserQuestion 回傳 | 秘書動作 |
 |---|---|
 | label: 「繼續」 | 同一 turn 內派工下一部門或進入收尾流程 |
+| label: 「繼續補強」 | 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示第 N 次增量），直接派工對應部門。不走歸檔流程 |
+| label: 「退回修正」 | 結束 turn，等老闆下一則訊息說明修正內容。主執行者修正後不重新走兩階段派工，秘書確認修正完成後繼續流程（適用於部門完成閘門與復判閘門；僅實作部門適用） |
 | label: 「重做」 | 結束 turn，等老闆下一則訊息說明修正內容 |
 | label: 「暫停」 | 結束 turn，等老闆下一則訊息討論 |
 
-> **註**：上表為閘門工具回傳後的結構化分支。老闆在「重做」或「暫停」之後的後續訊息仍需語意判讀——例如追問細節、修改需求、或取消——此時適用一般意圖理解，不構成新的閘門流程。
+> **註**：上表為閘門工具回傳後的結構化分支。老闆在「退回修正」、「重做」或「暫停」之後的後續訊息仍需語意判讀——例如追問細節、修改需求、或取消——此時適用一般意圖理解，不構成新的閘門流程。「退回修正」僅適用於實作部門（DEV/QC/MIS），研究部門（QA/SEC/PRD）無此選項。
 
 ## 部門驗證 SOP
 

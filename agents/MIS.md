@@ -8,7 +8,7 @@
 - MIS 可單獨啟用、單獨收斂，適用於任何範圍明確的小範圍修正。
 - REPO.md 是專案當下快照與基石（專案定位、方向、實作程度、待辦），由 MIS 負責初始化與維護。
 - 功能開發途中若有外部工具需求，須退回 MIS 共議，老闆覆核同意後啟用，再返回繼續流程。
-- 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 MIS。MIS 負責診斷問題、提出修正方案、必要時修改框架定義檔。
+- 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 MIS. MIS 負責診斷問題、提出修正方案、必要時修改框架定義檔。
 - 框架定義檔變更同步約束：MIS 修改任何框架定義檔（agents/、skills/、.claude-plugin/）後，必須同步執行以下檢查與更新：
   1. 版本號（.claude-plugin/plugin.json 的 version）：評估變更性質，按 semver 規則升版。
   2. REPO.md：更新版本號、反映本次變更重點。
@@ -71,8 +71,8 @@ MIS 維護輪（框架維護、歷史修正、歸檔等）不走流程，由 MIS
 ### R9：合併時機為秘書復判通過後
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
 
-### R10：REPO.md 屬於 shiftblame，不屬於專案 repo
-REPO.md 是 shiftblame 框架文件，存放位置為 `~/.shiftblame/<repo>/REPO.md`，不是 git repo 根目錄。MIS 產出 REPO.md 時必須寫入 shiftblame 資料目錄，嚴禁 commit 進專案 repo。
+### R10：REPO.md 為本地私密訊息，不納入版本控制
+REPO.md 為本地私密訊息，不納入版本控制。路徑為 ~/.shiftblame/<repo>/REPO.md，已加入 .gitignore 排除。MIS 直接在此路徑讀寫 REPO.md，修改不需 commit。
 
 ### R11：依 WORKTREE_SOP.md 建立 worktree
 MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建立方式為 `git worktree add`。未依 SOP 建立的工作目錄不得視為正式執行環境。
@@ -81,13 +81,13 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者為唯讀存取，負責檢閱產出成色。
 
 ### R13：歸檔由秘書執行
-歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整、REPO.md 未被移動。
+歸檔為 `mv` 原子操作，將 `~/.shiftblame/<repo>/<slug>/` 搬移至 `~/.shiftblame/<repo>/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。REPO.md 為本地檔案（~/.shiftblame/<repo>/REPO.md），不受歸檔影響。
 
 ### R14：Worktree 清理由秘書執行
 歸檔後清理 worktree。
 
 ### R15：流程到 MIS 收尾結束，不循環
-流程到 MIS 收尾結束，不循環回 QA。新功能需 MIS 重新發起新 slug。
+流程到 MIS 收尾結束，不循環回 QA。秘書復判閘門可選擇「繼續補強」在同一 slug 上動態新增功能需求（見 GATE_FLOW.md 動態增量模式）。選擇「繼續補強」時，秘書透過 AskUserQuestion 確認新增需求與模式等級，直接派工對應部門，不需完整 MIS 研究階段。
 
 ### R16：三級明確定位
 > 三級流程定義詳見 R2。以下為各模式所需文件的補充說明。
@@ -110,6 +110,17 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
   - 退回時間：<ISO 8601 timestamp>
   - 退回輪次：Round N
   ```
+
+- 退回修正紀錄格式（「退回修正」為輕微問題的針對性修正，不重新走完整派工流程）：
+  ```
+  ## 退回修正紀錄
+  - 退回來源：閘門檢查點 2（觀測者檢閱）
+  - 修正內容：<簡述修正項目>
+  - 修正時間：<ISO 8601 timestamp>
+  - 退回修正次數：N / 2
+  ```
+- 「退回」與「退回修正」的區別：「退回」= 完整重做，需重新走完整派工流程；「退回修正」= 輕微修正，不重新派工觀測者。兩者紀錄格式不同，不可混用。
+- 退回修正次數限制：同一部門最多 2 次退回修正，超過自動升級為「退回」（完整重做）。
 - 退回只針對中等/高等模式發生（初等模式只有 MIS 一個部門，無退回）。
 
 ### R18：README.md 維護職責
@@ -135,7 +146,7 @@ MIS 必須依 `WORKTREE_SOP.md` 建立與管理 shiftblame worktree，標準建�
 - 吸收確認以 result.md 中的「代理執行」記錄為準
 
 ### R21：主執行者選定
-主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。高等模式 DEV 首次進入時例外：秘書依任務適性指名起始 PROXY（見 SKILL.md 指名機制），之後按輪換順序遞進。指名僅限首次進入，後續原子任務正常輪換。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者與輪換順序。
+主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制），不限模式或部門。結果寫入 task.md frontmatter 及 meta.md. 不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者與輪換順序。
 
 ### R22：單一 worktree
 MIS 負責在 slug 初始化時，於 slug 層級建立單一共用 worktree（`~/.shiftblame/<repo>/<slug>/worktree/`）。所有實作變更必須在此 worktree 上執行。

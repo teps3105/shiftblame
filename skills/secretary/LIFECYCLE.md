@@ -2,6 +2,31 @@
 
 MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。終點階段不可跳過）。
 
+## 動態增量模式
+
+任何循環（主循環或子循環）的秘書復判閘門可選擇「繼續補強」而非「確認歸檔」。
+
+- **觸發條件**：秘書復判閘門選擇「繼續補強」（所有模式通用）
+- **流程**：秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示第 N 次增量）→ 直接派工對應部門（不需完整 MIS 研究階段）
+- **模式判定**：獨立於先前輪次，不受「降級不可逆轉」限制
+- **增量次數**：不設硬性上限，秘書在 AskUserQuestion 中顯示當前增量次數供老闆參考
+- **歸檔時機**：最終閘門選擇「確認歸檔」時才執行歸檔
+- **待辦記錄**：未完成功能可記錄至 REPO.md 待辦事項供下次迭代
+- **通訊目錄**：在同一 slug 上增量追加，不建立新通訊目錄
+
+繼續補強時不走歸檔流程，不執行以下步驟（0. 秘書復判、1. 歸檔、2. Worktree 清理）。改為進入新的派工流程。
+
+## 子循環歸檔
+
+含子循環的 slug，歸檔邏輯如下：
+
+- **歸檔時機**：所有子循環完成後才執行歸檔，不可單獨歸檔個別子循環
+- **完整性確認**：歸檔前確認所有子循環的部門報告（consensus.md）完整
+- **整體歸檔**：歸檔時整個 slug 一起歸檔（含所有子循環目錄），操作同一般歸檔（`mv` 原子操作）
+- **meta.md 確認**：歸檔前確認 meta.md 的子循環紀錄表中所有子循環狀態均為「完成」
+
+無子循環的 slug 維持原有歸檔邏輯。
+
 ## 三級歸檔邏輯
 
 ### 初等（basic）
@@ -41,8 +66,7 @@ mv ~/.shiftblame/<repo>/<slug> ~/.shiftblame/<repo>/archive/<slug>
 
 # 驗證
 test ! -e ~/.shiftblame/<repo>/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
-test -f ~/.shiftblame/<repo>/REPO.md || echo "WARN: REPO.md 不在原位"
-! find ~/.shiftblame/<repo>/archive/<slug> -name "REPO.md" | grep -q . || echo "WARN: archive 含 REPO.md"
+# REPO.md 為本地檔案（~/.shiftblame/<repo>/REPO.md），不受歸檔影響（無需驗證）
 ```
 
 ## 2. Worktree 清理

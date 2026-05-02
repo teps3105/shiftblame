@@ -21,6 +21,34 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
     └── gemini/{proposal,result}.md
 ```
 
+### 子循環通訊目錄
+
+當 MIS 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `cycle-N` 子目錄區分：
+
+```
+~/.shiftblame/<repo>/<slug>/
+├── meta.md              # slug 級別狀態（含子循環紀錄）
+├── worktree/            # 所有子循環共用同一 worktree
+├── MIS/
+│   ├── cycle-1/
+│   │   ├── task.md
+│   │   ├── consensus.md
+│   │   └── ...
+│   └── cycle-2/
+│       ├── task.md
+│       ├── consensus.md
+│       └── ...
+└── DEV/
+    ├── cycle-1/
+    │   └── ...
+    └── cycle-2/
+        └── ...
+```
+
+- 各子循環可為不同模式等級
+- 子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`
+- 無子循環時維持原有結構（`<DEPT>/` 直接存放）
+
 ## meta.md 格式（秘書寫入）
 
 meta.md 位於通訊目錄根層（`~/.shiftblame/<repo>/<slug>/meta.md`），由秘書在每輪派工時維護。記錄 slug 級別的跨部門狀態。
@@ -41,7 +69,23 @@ meta.md 位於通訊目錄根層（`~/.shiftblame/<repo>/<slug>/meta.md`），�
 
 ## 模式變更紀錄
 - 2026-01-01T02:00:00Z：降級 medium（原因：範圍縮小，不可逆轉）
+
+## 子循環紀錄
+| 子循環 | 模式 | 部門 | 狀態 | 時間 |
+|--------|------|------|------|------|
+| cycle-1 | basic | MIS | 完成 | 2026-01-01T00:00:00Z |
+| cycle-2 | medium | MIS → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
 ```
+
+> **註**：子循環紀錄表僅在需求拆分為多個子循環時才存在。無子循環時省略此區段。
+
+## 動態增量紀錄
+
+| 增量輪次 | 新增需求 | 模式 | 派工部門 | 狀態 | 時間 |
+|----------|---------|------|---------|------|------|
+| 1 | <需求描述> | basic | MIS | 完成 | 2026-01-01T00:00:00Z |
+
+> **註**：動態增量紀錄表僅在使用「繼續補強」功能時才存在。無動態增量時省略此區段。
 
 ## task.md 格式（秘書寫入）
 
@@ -49,7 +93,7 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 
 ```markdown
 ---
-lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（高等模式 DEV 首次進入時，改由秘書依任務適性指名，見指名機制））>
+lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名，見 SKILL.md 老闆指名機制））>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
 worktree_path: <~/.shiftblame/<repo>/<slug>/worktree/>
@@ -84,7 +128,7 @@ worktree_path: <~/.shiftblame/<repo>/<slug>/worktree/>
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
 2. 建立通訊目錄：`mkdir -p ~/.shiftblame/<repo>/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
-3. 按輪換順序（Claude → Codex → Gemini → Claude...）遞進選定主執行者，每個 slug 的首次派工固定從 Claude 開始（高等模式 DEV 首次進入時例外：秘書依任務適性指名起始 PROXY（見 SKILL.md 指名機制），之後按輪換順序遞進），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
+3. 按輪換順序（Claude → Codex → Gemini → Claude...）遞進選定主執行者，每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制）。透過 AskUserQuestion 詢問老闆是否需要指定主執行者，並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
    - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
    - **研究部門（MIS 啟動階段/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑 + current_mode）
@@ -216,6 +260,17 @@ consensus.md 必須包含：
 需求不明（不清楚老闆要什麼、規格有歧義）才透過秘書協調與老闆溝通，重新派工。
 秘書不參與技術裁決。
 
+## 子循環機制
+
+當 MIS 研究後將需求拆分為多個子循環時，適用以下規則：
+
+- **觸發條件**：MIS 研究後，秘書判斷需求可拆分為多個獨立子任務
+- **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（basic/medium/full）
+- **共用 worktree**：同一 slug 下的所有子循環共用同一 worktree
+- **主執行者輪換**：輪換在 slug 級別延續，非子循環級別。即 cycle-1 的最後一位主執行者之後，cycle-2 由下一位 PROXY 接手
+- **通訊目錄**：各子循環的部門通訊目錄為 `<DEPT>/cycle-N/`（見通訊目錄結構）
+- **紀錄**：子循環拆分結果記錄於 meta.md 的子循環紀錄表
+
 ## 部門分類
 
 MIS 是唯一兼具研究部門與實作部門雙重身份的部門：
@@ -307,7 +362,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 統一由主執行者實作/執行/測試並寫入實作報告
 - 觀測者在主執行者 commit 後才開始檢閱，負責檢閱實作品質/規範與報告成色
 
-高等模式例外：DEV 依 PRD 的原子任務清單執行，每個原子任務為獨立派工單位，輪換主執行者執行（高等模式 DEV 首次進入時由秘書依任務適性指名起始 PROXY，之後按順序輪換）。中等模式不受影響。
+高等模式例外：DEV 依 PRD 的原子任務清單執行，每個原子任務為獨立派工單位，輪換主執行者執行（老闆可透過 AskUserQuestion 覆蓋指名）。中等模式不受影響。
 
 ## PROXY 互助互監督機制
 

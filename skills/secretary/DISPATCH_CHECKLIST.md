@@ -12,10 +12,15 @@
 
 模式可升級也可降級（縮小範圍），降級不可逆轉。若模式未確認，退回 SKILL.md 運作流程步驟 6 完成確認。
 
+若本次 slug 含子循環（MIS 研究結果拆分），確認以下事項：
+- 各子循環的模式等級已在 meta.md 子循環紀錄表中明確標記
+- 各子循環通訊目錄（`<DEPT>/cycle-N/`）已建立
+- 子循環執行順序與依賴關係已在 meta.md 中記錄
+
 ## 1. 讀取專案資訊
 
 ```
-Read ~/.shiftblame/<repo>/REPO.md
+Read REPO.md（~/.shiftblame/<repo>/REPO.md）
 ```
 
 從 REPO.md 提取約束條件（不是做法）：
@@ -42,11 +47,11 @@ Read ~/.shiftblame/<repo>/REPO.md
 
 ## 3. 寫入 task.md
 
-task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始（高等模式 DEV 首次進入時，改由秘書依任務適性指名），並寫入 YAML frontmatter。
+task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制），並寫入 YAML frontmatter。
 
 ```yaml
 ---
-lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（高等模式 DEV 首次進入時，改由秘書依任務適性指名））>
+lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名））>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
 worktree_path: <~/.shiftblame/<repo>/<slug>/worktree/>

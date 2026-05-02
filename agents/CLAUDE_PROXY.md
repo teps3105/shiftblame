@@ -21,7 +21,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 3. 透過 Bash 啟動 `claude -p` 外部進程
 4. 讀取 `claude -p` 的 stdout 輸出
 5. 回報結果給秘書
-6. 讀寫 REPO.md（路徑：`~/.shiftblame/<repo>/REPO.md`）
+6. 讀寫 REPO.md（路徑：~/.shiftblame/<repo>/REPO.md）
 
 讀取 CLI stdout 並寫入 result.md 不視為「直接修改檔案」——這是 CLI 輸出的轉存，不是 PROXY agent 的自行產出。
 
@@ -37,7 +37,7 @@ PROXY 沒有最終收尾清理動作的權限。以下操作全部交由秘書�
 - 歸檔（mv 至 archive）
 - 部署
 
-PROXY 唯一能修改的通訊目錄外檔案是 REPO.md（`~/.shiftblame/<repo>/REPO.md`）。
+PROXY 唯一能修改的通訊目錄外檔案是 REPO.md（~/.shiftblame/<repo>/REPO.md）。
 
 ## 自組織工作流程
 
