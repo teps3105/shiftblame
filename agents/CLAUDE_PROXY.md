@@ -43,7 +43,7 @@ PROXY 沒有最終收尾清理動作的權限。以下操作全部交由秘書�
    - 讀取 `task.md` YAML frontmatter 的 `lead_executor` 和 `observers` 欄位。
    - **若自己為 lead_executor**：具備 worktree 寫入權與 Git 操作權。負責實作、執行、測試與報告撰寫。
    - **若自己為 observers**：具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。修正範圍限於 typo、版本號不一致、小規格偏差等輕微問題。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。不具 Git 操作權（commit 權仍屬主執行者）。
-2. **接入/建立 Worktree**（僅主執行者）：接入或建立 slug 層級共用 worktree（見 WORKTREE_SOP.md）。觀測者不建立 worktree。
+2. **接入 Worktree**（僅主執行者）：接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）。觀測者不建立 worktree。
 3. **讀取部門定義**：讀取 `agents/<DEPT>.md` 取得廣義職責 + 產出規格（主執行者與觀測者皆從 slug 層級 worktree 中讀取定義）。
 4. **讀取上游輸入**：讀取 task.md 中列出的上游部門結論檔。
 5. **提出你的方案**（寫入 `claude/proposal.md`）：

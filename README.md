@@ -10,7 +10,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-6-blue.svg)](#六部門職能)
+[![Agents](https://img.shields.io/badge/agents-7-blue.svg)](#七部門職能)
 
 **[核心機制](#核心機制)** · **[架構概覽](#架構概覽)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
@@ -22,9 +22,9 @@ _AI agents 開發框架——流程協議與定義檔_
 
 shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨 CLI 框架的協作流程。三個 PROXY（Claude / Codex / Gemini）在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
-框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動六部門單向流程，協調從需求釐清到品質驗證的完整開發流程。
+框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動七部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
-當前版本：v1.0.11
+當前版本：v1.0.12
 
 ---
 
@@ -66,13 +66,13 @@ CLI 彼此僅知使用三種不同的 CLI 框架，不知底層模型細節，�
 
 ### 單向流程
 
-六部門依序執行，一次性的單向流程（中等/高等模式可包含 DEV/QC 多輪來回）：
+七部門依序執行，一次性的單向流程（中等/高等模式可包含 DEV/QC 多輪來回）：
 
 ```
-MIS → (QA → SEC → PRD) → DEV ↔ QC → MIS
+RES → QA → SEC → PRD → DEV ↔ QC → MIS
 ```
 
-MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
+RES 為流程起點，負責專案現狀釐清、執行準則確立、問題診斷。MIS 為流程終點，負責框架定義檔維護與收尾。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
 
 ### 三級開發制度
 
@@ -80,29 +80,31 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 
 | 模式 | 流程 | 適用情境 |
 |---|---|---|
-| **初等（basic）** | MIS 獨立執行 → 秘書復判 → 收尾（歸檔） | 框架定義檔維護、文件更新等小規模工作 |
-| **中等（medium）** | MIS(起) → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔） | 功能開發、bug 修復等中等規模工作 |
-| **高等（full）** | MIS(起) → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔） | 大型功能、架構重構等大規模工作 |
+| **初等（basic）** | RES 研究後 MIS 執行收尾 → 秘書復判 → 收尾（歸檔） | 框架定義檔維護、文件更新等小規模工作 |
+| **中等（medium）** | RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔） | 功能開發、bug 修復等中等規模工作 |
+| **高等（full）** | RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔） | 大型功能、架構重構等大規模工作 |
 
-模式由秘書在 MIS 分析後建議，老闆可升級（初等→中等→高等）或縮小範圍降級（高等→中等→初等）。降級不可逆轉。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
+模式由秘書在 RES 研究後建議，老闆可升級（初等→中等→高等）或縮小範圍降級（高等→中等→初等）。降級不可逆轉。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
 
-### 六部門職能
+### 七部門職能
 
 | 部門 | 職能 |
 |---|---|
-| **MIS** | 維護部門（流程起點與終點）：專案現狀釐清、執行準則確立、文件維護、問題診斷、worktree 建立 |
+| **RES** | 研究部門（流程起點）：專案現狀釐清、執行準則確立、問題診斷、市調、子循環拆分建議、REPO.md 初始化 |
 | **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | **SEC** | 資安稽核、CVE 搜尋、工具篩選、環境規範 |
 | **PRD** | 架構設計、DAG、測試區分、實作計畫 |
 | **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 |
 | **QC** | 穩健性攻擊、邊緣案例、紅藍隊 |
+| **MIS** | 維護部門（流程終點）：框架定義檔維護、文件維護、semver 同步、一致性審計、歸檔紀錄 |
 
 ### 資料存取（金字塔累積制）
 
-各部門僅能讀取自身及上游部門的產出，嚴格禁止讀取下游部門的檔案。
+各部門僅能讀取自身及上游部門的產出，嚴格禁止讀取下游部門的檔案。RES 和 MIS 作為頂層部門，不受「嚴格禁止讀下游」限制。
 
 | 部門 | 可讀範圍 |
 |---|---|
+| RES | 全部 |
 | MIS | 全部 |
 | QA | QA |
 | SEC | QA + SEC |
@@ -119,10 +121,10 @@ MIS 為流程起點與終點，負責專案現狀釐清、框架定義檔維護�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v1.0.11
+│   ├── plugin.json          # v1.0.12
 │   └── marketplace.json
 ├── agents/
-│   ├── QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md           # 六部門主管
+│   ├── RES.md / QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md  # 七部門主管
 │   ├── CLAUDE_PROXY.md                                       # Claude 外殼代理
 │   ├── CODEX_PROXY.md                                       # Codex 外殼代理
 │   └── GEMINI_PROXY.md                                      # Gemini 外殼代理
@@ -193,12 +195,12 @@ claude plugin update shiftblame
 Plugin 安裝後，SessionStart hook 會自動將秘書注入 `~/.claude/CLAUDE.md`。使用者直接在 Claude Code 中與秘書對話即可——秘書會讀取 `REPO.md` 進入顧問模式，翻譯需求並向老闆呈報，等待確認後派工。
 
 ```
-老闆提問 → 秘書顧問翻譯 → MIS 釐清 → 模式確認 → 老闆決策 → 秘書調度
+老闆提問 → 秘書顧問翻譯 → RES 研究 → 模式確認 → 老闆決策 → 秘書調度
 ```
 
-- **初等模式**：MIS 釐清 → 模式確認（初等）→ MIS 獨立執行 → 秘書復判 → 收尾（歸檔）
-- **中等模式**：MIS 釐清 → 模式確認（中等）→ 老闆決策 → MIS(起) → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
-- **高等模式**：MIS 釐清 → 模式確認（高等）→ 老闆決策 → MIS(起) → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
+- **初等模式**：RES 研究 → 模式確認（初等）→ MIS 執行收尾 → 秘書復判 → 收尾（歸檔）
+- **中等模式**：RES 研究 → 模式確認（中等）→ 老闆決策 → RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
+- **高等模式**：RES 研究 → 模式確認（高等）→ 老闆決策 → RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
 
 秘書在每個關鍵節點透過 AskUserQuestion 回報，提供三個選項：
 

@@ -23,13 +23,13 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 ### 子循環通訊目錄
 
-當 MIS 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `cycle-N` 子目錄區分：
+當 RES 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `cycle-N` 子目錄區分：
 
 ```
 .shiftblame/<slug>/
 ├── meta.md              # slug 級別狀態（含子循環紀錄）
 ├── worktree/            # 所有子循環共用同一 worktree
-├── MIS/
+├── RES/
 │   ├── cycle-1/
 │   │   ├── task.md
 │   │   ├── consensus.md
@@ -59,7 +59,7 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 派工紀錄
 | 部門 | 主執行者 | 觀測者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
-| MIS | Claude | Codex, Gemini | full | 1 | 2026-01-01T00:00:00Z |
+| RES | Claude | Codex, Gemini | full | 1 | 2026-01-01T00:00:00Z |
 | QA | Codex | Claude, Gemini | full | 1 | 2026-01-01T01:00:00Z |
 
 ## 當前狀態
@@ -73,8 +73,8 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 子循環紀錄
 | 子循環 | 模式 | 部門 | 狀態 | 時間 |
 |--------|------|------|------|------|
-| cycle-1 | basic | MIS | 完成 | 2026-01-01T00:00:00Z |
-| cycle-2 | medium | MIS → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
+| cycle-1 | basic | RES | 完成 | 2026-01-01T00:00:00Z |
+| cycle-2 | medium | RES → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
 ```
 
 > **註**：子循環紀錄表僅在需求拆分為多個子循環時才存在。無子循環時省略此區段。
@@ -83,7 +83,7 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 
 | 增量輪次 | 新增需求 | 模式 | 派工部門 | 狀態 | 時間 |
 |----------|---------|------|---------|------|------|
-| 1 | <需求描述> | basic | MIS | 完成 | 2026-01-01T00:00:00Z |
+| 1 | <需求描述> | basic | RES | 完成 | 2026-01-01T00:00:00Z |
 
 > **註**：動態增量紀錄表僅在使用「繼續補強」功能時才存在。無動態增量時省略此區段。
 
@@ -131,7 +131,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 3. 按輪換順序（Claude → Codex → Gemini → Claude...）遞進選定主執行者，每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制）。透過 AskUserQuestion 詢問老闆是否需要指定主執行者，並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
    - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
-   - **研究部門（MIS 啟動階段/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑 + current_mode）
+   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑 + current_mode）
 
 ### 實作部門兩階段派工步驟
 
@@ -153,7 +153,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 
 ## Agent() 呼叫
 
-### 研究部門（MIS 啟動階段/QA/SEC/PRD）— 同時派工
+### 研究部門（RES/QA/SEC/PRD）— 同時派工
 
 同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權）：
 
@@ -204,7 +204,7 @@ proxy_prompt **最小化**，只含四樣東西：
 
 ```
 1. 讀取 task.md（目標 + 約束，確認 lead_executor/observers 角色）
-2. 接入/建立 slug 層級共用 worktree（僅主執行者需要寫入權限，見 WORKTREE_SOP.md）
+2. 接入 slug 層級共用 worktree（由秘書建立，僅主執行者需要寫入權限，見 WORKTREE_SOP.md）
 3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
 4. 讀取上游輸入（task.md 中列出的路徑）
 5. 各自提出 proposal（分工 + 做法 + 產出結構）
@@ -262,9 +262,9 @@ consensus.md 必須包含：
 
 ## 子循環機制
 
-當 MIS 研究後將需求拆分為多個子循環時，適用以下規則：
+當 RES 研究後將需求拆分為多個子循環時，適用以下規則：
 
-- **觸發條件**：MIS 研究後，秘書判斷需求可拆分為多個獨立子任務
+- **觸發條件**：RES 研究後，秘書判斷需求可拆分為多個獨立子任務
 - **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（basic/medium/full）
 - **共用 worktree**：同一 slug 下的所有子循環共用同一 worktree
 - **主執行者輪換**：輪換在 slug 級別延續，非子循環級別。即 cycle-1 的最後一位主執行者之後，cycle-2 由下一位 PROXY 接手
@@ -273,17 +273,16 @@ consensus.md 必須包含：
 
 ## 部門分類
 
-MIS 是唯一兼具研究部門與實作部門雙重身份的部門：
-- **MIS 啟動階段（研究部門）**：MIS 作為流程起點，執行專案現狀釐清、執行準則確立。REPO.md 更新由秘書在歸檔時負責。此階段不涉及排他性編輯權，採同時派工。分界點為秘書通過 MIS 啟動閘門（GATE_FLOW.md）並派工下一部門時。
-- **MIS 收尾階段（實作部門）**：MIS 作為流程終點，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
+- **RES（純研究部門）**：RES 是流程的純研究起點，執行專案現狀釐清、執行準則確立、問題診斷、市調等研究工作。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。RES 可單獨啟用、單獨收斂。
+- **MIS（純實作部門，收尾階段）**：MIS 是流程的實作終點與審計者，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
 
 ## 派工規則
 
 - **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一）
 - **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
-- **實作部門主執行者必須在 worktree**：實作部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（QA/SEC/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立
+- **實作部門主執行者必須在 worktree**：實作部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立
 - **實作部門採兩階段派工**：先派工主執行者，等待 commit 後再同時派工兩位觀測者。確保觀測者檢閱對象為已提交的穩定狀態
-- **研究部門維持同時派工**：MIS 啟動階段、QA、SEC、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
+- **研究部門維持同時派工**：RES、QA、SEC、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
 - **Gemini 使用帳號登入認證（`gemini auth login`），不需環境變數注入**
 
 ## 退回規則
@@ -299,7 +298,7 @@ MIS 是唯一兼具研究部門與實作部門雙重身份的部門：
   - 退回時間：<ISO 8601 timestamp>
   - 退回輪次：Round N（僅中等/高等模式的 DEV/QC 多輪時標記）
   ```
-- **初等模式例外**：退回增量記錄規則僅適用中等/高等模式；初等模式只有 MIS，不存在跨部門退回
+- **初等模式例外**：退回增量記錄規則僅適用中等/高等模式；初等模式只有 RES 和 MIS，不存在跨部門退回（退回僅發生於 RES 與 MIS 之間）
 - **文件結構不變**：退回前後的通訊目錄與產出文件結構完全一致，不得新增或移除任何文件
 
 ## 執行期限額偵測
@@ -479,6 +478,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 | 部門 | 可讀範圍 |
 |---|---|
+| RES | 全部（REPO.md + 所有部門） |
 | MIS | 全部（REPO.md + 所有部門） |
 | QA | QA.md + QA/ |
 | SEC | QA + SEC |
@@ -486,7 +486,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
 
-嚴格禁止讀下游部門的檔案。
+嚴格禁止讀下游部門的檔案。RES 和 MIS 作為頂層部門，不受「嚴格禁止讀下游」限制。
 
 ## 收尾規範
 

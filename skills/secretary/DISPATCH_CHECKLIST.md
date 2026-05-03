@@ -6,13 +6,13 @@
 
 派工前確認本次 slug 的模式（初等 / 中等 / 高等）。模式已在 SKILL.md 運作流程步驟 6 確認，此處為覆核：
 
-- **初等（basic）**：僅派工 MIS，不走 QA → SEC → PRD → DEV → QC 流程
-- **中等（medium）**：MIS → DEV（可多輪）→ QC → MIS(尾)
+- **初等（basic）**：RES → MIS 收尾，不走 QA → SEC → PRD → DEV → QC 流程
+- **中等（medium）**：RES → DEV（可多輪）→ QC → MIS(尾)
 - **高等（full）**：依完整流程依序派工
 
 模式可升級也可降級（縮小範圍），降級不可逆轉。若模式未確認，退回 SKILL.md 運作流程步驟 6 完成確認。
 
-若本次 slug 含子循環（MIS 研究結果拆分），確認以下事項：
+若本次 slug 含子循環（RES 研究結果拆分），確認以下事項：
 - 各子循環的模式等級已在 meta.md 子循環紀錄表中明確標記
 - 各子循環通訊目錄（`<DEPT>/cycle-N/`）已建立
 - 子循環執行順序與依賴關係已在 meta.md 中記錄
@@ -24,14 +24,14 @@ Read .shiftblame/REPO.md
 ```
 
 從 REPO.md 提取約束條件（不是做法）：
-- REPO.md 由 MIS 初始化（專案定位、方向、實作程度、待辦），由秘書在歸檔時更新
+- REPO.md 由 RES 初始化（專案定位、方向、實作程度、待辦），由秘書在歸檔時更新
 - 技術棧（語言、框架、測試工具）
 - 測試指令（unit / integration 路徑與指令）
 - 建置指令（build / compile）
 - 部署方式（Docker / k8s / 其他）
 - 已知約束（安全守則、狀態機、API 端點）
 
-**REPO.md 不存在 = MIS 尚未啟動。** 須先派工 MIS 進行專案現狀釐清，完成後 REPO.md 才會建立。
+**REPO.md 不存在 = RES 尚未啟動。** 須先派工 RES 進行專案現狀釐清，完成後 REPO.md 才會建立。
 
 **不讀 REPO.md 就派工 = 違規。**
 
@@ -94,14 +94,15 @@ proxy_prompt 只含四樣東西：
 
 | 部門 | 派工前必做 |
 |---|---|
-| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、MIS 獨立執行 |
-| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立、問題診斷完成 |
+| RES | 確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、RES 獨立研究（不走兩階段派工） |
+| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、MIS 執行收尾 |
+| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立 |
 | MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
 | 實作部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
-| 研究部門（MIS 啟動/QA/SEC/PRD） | 確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
+| 研究部門（RES/QA/SEC/PRD） | 確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
 
 ## 6. QC 定位提醒
 
@@ -136,14 +137,14 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 - **等待 commit**：主執行者完成後，驗證 worktree 中有對應 commit
 - **第二階段**：確認 commit 後，同時派工兩位觀測者（`run_in_background=true`）
 
-研究部門（MIS 啟動階段/QA/SEC/PRD）不走兩階段，維持同時派工三個 PROXY。
+研究部門（RES/QA/SEC/PRD）不走兩階段，維持同時派工三個 PROXY。
 
-## 11. MIS 起點產出驗證
+## 11. RES 起點產出驗證
 
-MIS 啟動後（流程起點），秘書確認上游產出已落袋：
+RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 1. **REPO.md 讀取確認**：讀取 .shiftblame/REPO.md 作為專案現狀參考。
-2. **執行準則確認**：確認 MIS result 中含明確的執行準則
-3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
+2. **執行準則確認**：確認 RES result 中含明確的執行準則
+3. **老闆確認**：透過 AskUserQuestion 確認 RES 起點產出可接受
 
-驗證不通過 → 退回 MIS 補齊（不進入 QA）。
+驗證不通過 → 退回 RES 補齊（不進入 QA）。

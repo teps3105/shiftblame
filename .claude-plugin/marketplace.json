@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "shiftblame",
-      "description": "推鍋 — PROXY 共議分工的六部門單向流程開發框架：MIS→QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
+      "description": "推鍋 — PROXY 共議分工的七部門單向流程開發框架：RES→QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
       "category": "development",
       "version": "8.0.0",
       "author": { "name": "teps3105" },
