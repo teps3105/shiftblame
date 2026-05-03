@@ -142,7 +142,7 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 MIS 啟動後（流程起點），秘書確認上游產出已落袋：
 
-1. **REPO.md 讀取確認**：讀取 REPO.md 作為專案現狀參考。
+1. **REPO.md 讀取確認**：讀取 .shiftblame/REPO.md 作為專案現狀參考。
 2. **執行準則確認**：確認 MIS result 中含明確的執行準則
 3. **老闆確認**：透過 AskUserQuestion 確認 MIS 起點產出可接受
 
