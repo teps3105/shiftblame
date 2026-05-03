@@ -17,7 +17,7 @@ if grep -q "$INJECT_BEGIN" "$CLAUDE_MD" 2>/dev/null; then
 fi
 
 # Remove any legacy injection (without markers) that mentions /secretary or 開始
-# This handles upgrades from pre-v7.2.2
+# This handles upgrades from legacy versions
 if grep -q '/secretary\|開始.*啟動秘書' "$CLAUDE_MD" 2>/dev/null; then
   # Only remove lines that look like our injection (not user content)
   sed -i '/使用時.*secretary.*啟動秘書/d' "$CLAUDE_MD"

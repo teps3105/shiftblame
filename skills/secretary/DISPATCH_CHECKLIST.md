@@ -166,7 +166,7 @@ tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini po
 
 ```
 【Claude】<供應商 A> 額度：<供應商 A 指標>；<供應商 B> 額度：<供應商 B 指標>
-【Codex】five_hour utilization: <U1>%，seven_day utilization: <U2>%
+【Codex】five_hour remaining: <U1>%，seven_day remaining: <U2>%
 【Gemini】各模型 remaining：<M1>: <R1>%，<M2>: <R2>%
 【秘書模型】<供應商> tokens_percentage: <P>%
 ```
@@ -210,6 +210,8 @@ AskUserQuestion({
 
 此機制為秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案。
 
+此警告機制為預警性質（閾值 80% 已用額度），與步驟 13.2 的排除條件（剩餘額度 < 10%）為不同維度：前者提醒注意，後者硬性排除。
+
 ### 12.5 去識別化合規
 
 - 額度報告使用 CLI 框架名稱（Claude/Codex/Gemini），不使用底層供應商名稱
@@ -235,9 +237,11 @@ Claude 設定檔（settings.json、settings.proxy.json）鎖定不動。秘書�
 
 | CLI | 排除條件 | 備註 |
 |---|---|---|
-| Codex | `five_hour utilization >= 90%` AND `seven_day utilization >= 90%` | 雙重額度吃緊 |
+| Codex | `five_hour remaining <= 10%` AND `seven_day remaining <= 10%` | 雙重額度吃緊 |
 | Gemini | 所有模型的 `remaining < 10%` | 任一模型可用則不排除 |
 | Claude | Claude PROXY 對應供應商（從 settings.proxy.json env 判斷）的 `remain/total < 10%` | OR 條件：任一指標達限額即排除 |
+
+以上排除條件統一以「剩餘額度」為基準（剩餘 < 10% 即排除）。
 
 ### 13.3 動態調配演算法
 
@@ -247,7 +251,7 @@ Claude 設定檔（settings.json、settings.proxy.json）鎖定不動。秘書�
 3. 若無任何 CLI 可用 → AskUserQuestion 向老闆呈報「全部 CLI 額度吃緊」，等待指示
 4. 若只有一個 CLI 可用 → 該 CLI 為主執行者
 5. 若多個 CLI 可用：
-   a. 計算每個可用 CLI 的額度餘量分數
+   a. 計算每個可用 CLI 的額度餘量分數。額度餘量分數 = 剩餘額度百分比（0-100）。差異 = |CLI_A分數 - CLI_B分數|（絕對值差）
    b. 按分數排序（分數高者優先）
    c. 若前兩名分數差異 < 20% → fallback 到公平序列的下一個（維持公平性）
    d. 若前兩名分數差異 >= 20% → 選擇分數最高者

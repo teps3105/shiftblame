@@ -72,7 +72,7 @@ AskUserQuestion({
 2. **瓶頸升級**：PROXY 發現範圍過大 → 秘書確認。
 3. **秘書確認**：秘書在部門閘門開啟時偵測到升級請求，透過 AskUserQuestion 請老闆複核升級。
 4. **降級處理**：老闆透過 AskUserQuestion 縮小範圍 → 秘書更新 meta.md 和 task.md。
-5. **降級不可逆轉**：縮小範圍降級後不可再升級回原等級。
+5. **降級不可逆轉（同一輪次內有效）**：縮小範圍降級後不可再升回原等級。
 6. **執行更新**：
    - 更新 `meta.md` 中的 `current_mode`。
    - 更新後續部門 `task.md` 的 YAML frontmatter 元數據。
