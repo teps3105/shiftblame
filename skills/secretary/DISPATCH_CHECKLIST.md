@@ -148,3 +148,19 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 3. **老闆確認**：透過 AskUserQuestion 確認 RES 起點產出可接受
 
 驗證不通過 → 退回 RES 補齊（不進入 QA）。
+
+## 12. 模型額度檢視（僅 Codex + Gemini）
+
+派工前讀取 onwatch 日誌，擷取 Codex 和 Gemini 最新配額狀態：
+
+```bash
+# Codex 額度（five_hour + seven_day）
+grep 'Codex poll complete' ~/.onwatch/data/.onwatch.log | tail -2
+
+# Gemini 額度
+grep 'Gemini poll complete' ~/.onwatch/data/.onwatch.log | tail -5
+```
+
+將配額狀態透過 AskUserQuestion 呈報老闆。若老闆選擇調整，模型調整由老闆手動執行。**秘書不執行編輯**。
+
+Claude 設定檔（settings.json、settings.proxy.json）鎖定不動，不在檢視範圍內。

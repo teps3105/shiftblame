@@ -6,6 +6,28 @@
 
 CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時不可指定具體 AI 模型或暗示 CLI 能力差異。
 
+### 模型配置規範
+
+- 當前對話（秘書）：Z.ai 路由，透過預設 ~/.claude/settings.json，鎖死不動
+- claude -p PROXY：MiniMax 路由，透過 ~/.claude/settings.proxy.json，鎖死不動
+- Codex PROXY：透過 ~/.codex/config.toml 的 model 欄位，可切換
+- Gemini PROXY：透過 ~/.gemini/settings.json 的 selected_model 欄位，可切換
+
+**僅 Codex 和 Gemini 需要模型切換。Claude 相關設定檔（settings.json 和 settings.proxy.json）嚴禁修改。**
+
+### 去識別化範圍
+
+- task.md、consensus.md、result.md：不包含模型名稱
+- PROXY 可讀取的通訊檔案：不包含模型名稱
+- 模型使用資訊僅存在於「秘書→老闆」通訊層（AskUserQuestion 對話），不寫入任何 PROXY 可讀取的通訊檔案
+
+### 秘書權限
+
+- 秘書僅負責讀取 ~/.onwatch/data/.onwatch.log 取得配額狀態
+- 秘書透過 AskUserQuestion 向老闆呈報各 CLI 配額狀態
+- 秘書不執行任何 CLI 設定檔的編輯
+- 模型調整由老闆決定後手動執行
+
 ## 通訊目錄結構
 
 ```
