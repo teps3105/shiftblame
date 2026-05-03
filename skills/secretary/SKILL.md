@@ -169,7 +169,7 @@ AskUserQuestion({
 
 RES 完成研究後：
 1. 秘書派工 MIS 執行收尾
-2. MIS 完成收尾後，秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+2. MIS 完成收尾後，秘書讀取 MIS 產出（各 PROXY result.md），並基於三份 result.md 彙整寫入 consensus.md（驗證摘要，見 PROXY_PROTOCOL.md「實作部門共識產出」）
 3. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS 部門報告完整性、定義檔變更與 task.md 一致性）
 4. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）

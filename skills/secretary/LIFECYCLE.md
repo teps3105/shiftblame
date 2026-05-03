@@ -58,6 +58,10 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - 待辦事項：移除已完成項目、新增本次產出的待辦
 - 其他區段：依差異報告更新
 
+## 0.7 實作部門 consensus.md（歸檔前）
+
+實作部門（DEV/QC/MIS）的 consensus.md 為驗證摘要（非辯論共識），由秘書在觀測者全部完成後、歸檔前，基於三份 result.md 彙整寫入。格式見 PROXY_PROTOCOL.md「實作部門共識產出」。
+
 ## 1. Squash Merge + Push
 
 合併與推送由秘書執行（見 SKILL.md 秘書運作規則）。
@@ -76,9 +80,10 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 
 ```bash
 # 歸檔閘門（SEC-A-03）
-# MIS 部門報告（consensus.md + 各 PROXY result.md）由 MIS 部門產出，秘書不得代建。若 consensus.md 不存在或為空，應退回 MIS 補齊。
+# 研究部門：consensus.md 由部門產出（辯論共識），秘書不得代建。
+# 實作部門：consensus.md 由秘書基於三份 result.md 彙整寫入（驗證摘要），見步驟 0.7。
 if [[ ! -s .shiftblame/<slug>/MIS/consensus.md ]]; then
-  echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。應退回 MIS 補齊，秘書不得代建。" >&2
+  echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。" >&2
   exit 1
 fi
 

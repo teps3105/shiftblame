@@ -161,9 +161,34 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 2. **等待完成**：輪詢主執行者的 result.md，確認其完成回報
 3. **驗證 commit**：確認 worktree 中有主執行者產出的 commit（`git -C <worktree> log --oneline -1`）
 4. **第二階段**：確認 commit 後，同時派工兩位觀測者（observers），使用 `run_in_background=true`
-5. 等待觀測者共識產出
+5. 等待觀測者完成驗證
+6. 秘書基於三份 result.md 彙整寫入 consensus.md（驗證摘要，見下方）
 
 觀測者在主執行者 commit 後才開始檢閱，確保檢閱對象為已提交的穩定狀態。
+
+### 實作部門共識產出
+
+實作部門（DEV/QC/MIS）採兩階段派工，觀測者獨立驗證而非辯論收斂。consensus.md 產出方式與研究部門不同：
+
+- **研究部門**：consensus.md 由主執行者透過辯論收斂產出（部門產出）
+- **實作部門**：consensus.md 由秘書在觀測者全部完成後，基於三份 result.md 彙整寫入（驗證摘要）
+
+此為事實彙整（基於三份 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 PROXY 的 result.md 中。
+
+實作部門 consensus.md 格式：
+```markdown
+# <DEPT> 驗證摘要
+
+## 主執行者
+- <CLI>：<已完成的工作摘要>
+
+## 觀測者驗證結果
+- <CLI>：<通過 / 修正項目>
+- <CLI>：<通過 / 修正項目>
+
+## 結論
+- 狀態：SUCCESS / FAILED
+```
 
 ## 部門完成閘門匯報
 
