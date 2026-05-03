@@ -47,11 +47,11 @@ Read .shiftblame/REPO.md
 
 ## 3. 寫入 task.md
 
-task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制），並寫入 YAML frontmatter。
+task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定），並寫入 YAML frontmatter。
 
 ```yaml
 ---
-lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名））>
+lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
 worktree_path: <.shiftblame/<slug>/worktree/>
@@ -94,9 +94,9 @@ proxy_prompt 只含四樣東西：
 
 | 部門 | 派工前必做 |
 |---|---|
-| RES | 確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、RES 獨立研究（不走兩階段派工） |
-| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由輪換制選定（固定從 Claude 開始）並寫入 task.md frontmatter、MIS 執行收尾 |
-| MIS（中等/高等模式） | 確認主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）、單一 worktree 已建立 |
+| RES | 確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、RES 獨立研究（不走兩階段派工） |
+| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、MIS 執行收尾 |
+| MIS（中等/高等模式） | 確認主執行者已由步驟 13 動態調配選定、單一 worktree 已建立 |
 | MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
@@ -149,18 +149,122 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 驗證不通過 → 退回 RES 補齊（不進入 QA）。
 
-## 12. 模型額度檢視（僅 Codex + Gemini）
+## 12. 模型額度檢視（全 CLI）
 
-派工前讀取 onwatch 日誌，擷取 Codex 和 Gemini 最新配額狀態：
+每次派工前，秘書讀取 onwatch 日誌（`~/.onwatch/data/.onwatch.log`），執行五個 provider 的額度狀態查詢。秘書動態判斷自身及各 CLI 的當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱。
+
+### 12.1 額度查詢指令
 
 ```bash
-# Codex 額度（five_hour + seven_day）
-grep 'Codex poll complete' ~/.onwatch/data/.onwatch.log | tail -2
-
-# Gemini 額度
-grep 'Gemini poll complete' ~/.onwatch/data/.onwatch.log | tail -5
+# 讀取最近 onwatch 額度資料
+tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini poll complete|Anthropic poll complete|Z.ai poll complete|MiniMax poll complete)" | tail -30
 ```
 
-將配額狀態透過 AskUserQuestion 呈報老闆。若老闆選擇調整，模型調整由老闆手動執行。**秘書不執行編輯**。
+### 12.2 額度報告格式（使用 CLI 框架名稱，不硬編碼供應商名稱）
 
-Claude 設定檔（settings.json、settings.proxy.json）鎖定不動，不在檢視範圍內。
+額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。報告使用 CLI 框架名稱（Claude/Codex/Gemini），不使用底層供應商名稱。秘書根據當前 settings.json / settings.proxy.json 動態判斷供應商，對應 onwatch poll 資料。
+
+```
+【Claude】<供應商 A> 額度：<供應商 A 指標>；<供應商 B> 額度：<供應商 B 指標>
+【Codex】five_hour utilization: <U1>%，seven_day utilization: <U2>%
+【Gemini】各模型 remaining：<M1>: <R1>%，<M2>: <R2>%
+【秘書模型】<供應商> tokens_percentage: <P>%
+```
+
+### 12.3 額度呈報老闆
+
+秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 CLI 框架名稱，不提及底層供應商）：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "派工前額度呈報：\n\n【Claude】額度狀態摘要\n【Codex】額度狀態摘要\n【Gemini】額度狀態摘要\n\n是否繼續派工？",
+    header: "額度呈報",
+    options: [
+      { label: "繼續派工", description: "按當前額度狀態繼續派工流程" },
+      { label: "等待額度恢復", description: "暫停派工，等待額度恢復後再試" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+### 12.4 秘書模型額度警告
+
+讀取秘書當前供應商（從 settings.json env 設定判斷，不硬編碼供應商名稱）的 onwatch poll 資料。若供應商提供 tokens_percentage 指標且 tokens_percentage >= 80%，主動呈報老闆：
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "秘書模型額度警告（tokens_percentage: <P>%）。是否切換供應商或休息？",
+    header: "秘書模型額度警告",
+    options: [
+      { label: "切換供應商", description: "降載，改用其他供應商" },
+      { label: "休息片刻", description: "等待額度恢復後再繼續" },
+      { label: "繼續（無視警告）", description: "忽略警告，繼續當前操作" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+此機制為秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案。
+
+### 12.5 去識別化合規
+
+- 額度報告使用 CLI 框架名稱（Claude/Codex/Gemini），不使用底層供應商名稱
+- 秘書根據 settings.json 動態判斷供應商，不硬編碼對應關係
+- 額度資訊僅在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案
+- onwatch poll 資料中的供應商名稱僅在秘書層內部使用
+
+Claude 設定檔（settings.json、settings.proxy.json）鎖定不動。秘書不執行任何設定檔的編輯。
+
+## 13. 動態調配決策
+
+根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執行者機制。
+
+### 13.1 調配資料來源
+
+- onwatch 日誌（~/.onwatch/data/.onwatch.log）的 poll 資料
+- 秘書動態判斷各 CLI 當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱
+- 從對應供應商的 onwatch poll 取得額度資料
+
+### 13.2 排除條件
+
+以下 CLI 額度吃緊時，排除其作為主執行者的候選資格：
+
+| CLI | 排除條件 | 備註 |
+|---|---|---|
+| Codex | `five_hour utilization >= 90%` AND `seven_day utilization >= 90%` | 雙重額度吃緊 |
+| Gemini | 所有模型的 `remaining < 10%` | 任一模型可用則不排除 |
+| Claude | Claude PROXY 對應供應商（從 settings.proxy.json env 判斷）的 `remain/total < 10%` | OR 條件：任一指標達限額即排除 |
+
+### 13.3 動態調配演算法
+
+```
+1. 取得各 CLI 的當下額度狀態（來自步驟 12，透過動態供應商對應）
+2. 排除已達限額的 CLI（依排除條件）
+3. 若無任何 CLI 可用 → AskUserQuestion 向老闆呈報「全部 CLI 額度吃緊」，等待指示
+4. 若只有一個 CLI 可用 → 該 CLI 為主執行者
+5. 若多個 CLI 可用：
+   a. 計算每個可用 CLI 的額度餘量分數
+   b. 按分數排序（分數高者優先）
+   c. 若前兩名分數差異 < 20% → fallback 到公平序列的下一個（維持公平性）
+   d. 若前兩名分數差異 >= 20% → 選擇分數最高者
+6. 主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 CLI
+```
+
+### 13.4 調配結果輸出
+
+- **寫入 task.md frontmatter**：`lead_executor: <由步驟 13 動態調配選定的 CLI>`、`observers: [<其餘兩個 CLI>]`
+- **不輸出**：調配原因（不寫入 PROXY 可讀取的通訊檔案）
+
+### 13.5 Fallback 機制
+
+當 onwatch 日誌無法讀取或額度資料不完整時，降級為公平序列 fallback：
+- Fallback 順序：Claude → Codex → Gemini → Claude...
+- **降級時須透過 AskUserQuestion 告知老闆**：「onwatch 不可用，暫時使用公平序列 fallback」
+
+### 13.6 與步驟 3 的銜接
+
+步驟 3 的主執行者選定說明已更新為「由步驟 13 動態調配選定」，YAML 註解同步更新。

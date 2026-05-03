@@ -95,7 +95,7 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立�
 
 ### R17：退回增量記錄
 - 中等/高等模式中，退回任意部門時，其部門文件應增量填寫（不替換），確保退回有紀錄。
-- 退回後重新派工時，繼續輪換順序選定主執行者（不重新從頭開始）。
+- 退回後重新派工時，主執行者由步驟 13 動態調配重新選定。
 - 退回紀錄格式：
   ```
   ## 退回紀錄
@@ -138,7 +138,7 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立�
 - 吸收確認以 result.md 中的「代理執行」記錄為準
 
 ### R21：主執行者選定
-主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制），不限模式或部門。結果寫入 task.md frontmatter 及 meta.md. 不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者與輪換順序。
+主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定）。老闆可透過 AskUserQuestion 表達意見（通用溝通機制，不限模式或部門）。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者。
 
 ### R22：單一 worktree
 單一共用 worktree（`.shiftblame/<slug>/worktree/`）由秘書在 slug 初始化時建立（所有部門不負責建立 worktree 或通訊目錄）。所有實作變更必須在此 worktree 上執行。

@@ -8,8 +8,8 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 ### 模型配置規範
 
-- 當前對話（秘書）：Z.ai 路由，透過預設 ~/.claude/settings.json，鎖死不動
-- claude -p PROXY：MiniMax 路由，透過 ~/.claude/settings.proxy.json，鎖死不動
+- 當前對話（秘書）：透過預設 ~/.claude/settings.json 路由，鎖死不動。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
+- claude -p PROXY：透過 ~/.claude/settings.proxy.json 路由，鎖死不動。供應商由 settings.proxy.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
 - Codex PROXY：透過 ~/.codex/config.toml 的 model 欄位，可切換
 - Gemini PROXY：透過 ~/.gemini/settings.json 的 selected_model 欄位，可切換
 
@@ -32,7 +32,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 ```
 .shiftblame/<slug>/
-├── meta.md              # 秘書寫入：記錄每輪派工的主執行者、輪換順序、當前模式等狀態
+├── meta.md              # 秘書寫入：記錄每輪派工的主執行者、當前模式等狀態
 ├── worktree/            # 實作部門主執行者使用的單一共用 worktree
 └── <DEPT>/
     ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
@@ -87,7 +87,7 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 當前狀態
 - current_mode: full
 - 上次派工部門：QA
-- 下次輪換主執行者：Gemini（依 Claude → Codex → Gemini → Claude...）
+- 下次主執行者由步驟 13 動態調配決定
 
 ## 模式變更紀錄
 - 2026-01-01T02:00:00Z：降級 medium（原因：範圍縮小，不可逆轉）
@@ -115,7 +115,7 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 
 ```markdown
 ---
-lead_executor: <由秘書按輪換順序遞進選定的 PROXY 名稱（每個 slug 首次從 Claude 開始（老闆可透過 AskUserQuestion 覆蓋指名，見 SKILL.md 老闆指名機制））>
+lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
 worktree_path: <.shiftblame/<slug>/worktree/>
@@ -150,7 +150,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
 2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
-3. 按輪換順序（Claude → Codex → Gemini → Claude...）遞進選定主執行者，每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見 SKILL.md 老闆指名機制）。透過 AskUserQuestion 詢問老闆是否需要指定主執行者，並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
+3. 主執行者由步驟 13 動態調配選定（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
    - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
    - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑 + current_mode）
@@ -289,7 +289,7 @@ consensus.md 必須包含：
 - **觸發條件**：RES 研究後，秘書判斷需求可拆分為多個獨立子任務
 - **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（basic/medium/full）
 - **共用 worktree**：同一 slug 下的所有子循環共用同一 worktree
-- **主執行者輪換**：輪換在 slug 級別延續，非子循環級別。即 cycle-1 的最後一位主執行者之後，cycle-2 由下一位 PROXY 接手
+- **主執行者選定**：主執行者在 slug 級別由步驟 13 動態調配決定，非子循環級別
 - **通訊目錄**：各子循環的部門通訊目錄為 `<DEPT>/cycle-N/`（見通訊目錄結構）
 - **紀錄**：子循環拆分結果記錄於 meta.md 的子循環紀錄表
 
@@ -371,7 +371,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 ### 非實作部門（QA/SEC/PRD）
 
-維持現有模型，但主執行者身份已由輪換制選定並寫入 task.md frontmatter，研究階段不產生排他性編輯權。
+維持現有模型，但主執行者身份已由步驟 13 動態調配選定並寫入 task.md frontmatter，研究階段不產生排他性編輯權。
 - 三人各自從不同面向收集數據與分析
 - 統一由主執行者寫入報告
 - 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
@@ -411,7 +411,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
    - 由主執行者裁決最終內容
 4. **通訊目錄協調機制**：觀測者在開始修正前，可先在通訊目錄寫入修正意圖（檔案、行號），另一位觀測者讀取後可避開衝突
 
-高等模式例外：DEV 依 PRD 的原子任務清單執行，每個原子任務為獨立派工單位，輪換主執行者執行（老闆可透過 AskUserQuestion 覆蓋指名）。中等模式不受影響。
+高等模式例外：DEV 依 PRD 的原子任務清單執行，每個原子任務為獨立派工單位，主執行者由步驟 13 動態調配選定。中等模式不受影響。
 
 ## PROXY 互助互監督機制
 

@@ -26,12 +26,14 @@ description: >-
 
 ### 模型額度呈報（步驟 2.5）
 
-派工前，秘書須檢視各 CLI 底層模型配額狀態：
+派工前，秘書須檢視各 CLI 額度狀態：
 
 1. 讀取 onwatch 日誌（~/.onwatch/data/.onwatch.log）
-2. 整理配額狀態（僅 Codex 和 Gemini，Claude 鎖定不檢視），透過 AskUserQuestion 向老闆呈報
-3. 若老闆選擇調整，模型調整由老闆手動執行。秘書不執行任何 CLI 設定檔的編輯
-4. 呈報完成後，繼續進入步驟 3（派工）
+2. 秘書動態判斷各 CLI 的當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱
+3. 整理各 CLI 額度狀態，透過 AskUserQuestion 向老闆呈報（使用 CLI 框架名稱，不使用供應商名稱）
+4. 若老闆選擇調整，模型調整由老闆手動執行。秘書不執行任何 CLI 設定檔的編輯
+5. 秘書模型額度警告：當前供應商 tokens_percentage >= 80% 時呈報老闆
+6. 呈報完成後，繼續進入步驟 3（派工）
 
 3. 老闆明示「派工」後，派工 RES 進行三方技術釐清（RES 有問題診斷硬職責）
 4. RES 回報：技術分析 + 建議方向
@@ -75,7 +77,7 @@ AskUserQuestion({
 - **拆分方式**：在同一 slug 下建立 `cycle-N` 子目錄（N 從 1 開始遞增）
 - **模式獨立**：各子循環可為不同模式等級（如 cycle-1 為 basic、cycle-2 為 medium）
 - **紀錄**：拆分結果記錄於 meta.md 的子循環紀錄表（見 PROXY_PROTOCOL.md）
-- **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者輪換在 slug 級別延續
+- **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者選定在 slug 級別延續
 - **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理（見 LIFECYCLE.md）
 
 8. 老闆決策（目標、起始部門、或其他指示）
@@ -138,7 +140,7 @@ AskUserQuestion({
 ### 部門執行模型
 
 不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
-- **主執行者/觀測者模型**：主執行者由秘書按固定順序輪換選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 隨時覆蓋指名（見下方老闆指名機制），不限模式或部門。不同部門可以有不同的主執行者。
+- **主執行者/觀測者模型**：主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定）。老闆可透過 AskUserQuestion 隨時表達意見（通用溝通機制，不限模式或部門）。不同部門可以有不同的主執行者。
 - **非實作部門**（RES/QA/SEC/PRD）：維持三人各自分析的現有模型。主執行者身份已選定，但研究階段不產生排他性編輯權。
 - **實作部門**（DEV/QC/MIS）：主執行者獨佔 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。所有修正必須在 result.md 中明確紀錄。觀測者不具 Git 操作權。採用兩階段派工：先派工主執行者等待其完成並 commit，再同時派工觀測者檢閱已提交的內容。
 
@@ -147,22 +149,13 @@ AskUserQuestion({
 - 實作部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要 worktree
 - 實作部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
 - 研究部門（RES/QA/SEC/PRD）維持同時派工三個 PROXY
-- 秘書按固定順序輪換選定主執行者（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始。老闆可透過 AskUserQuestion 覆蓋指名（見下方老闆指名機制），並寫入 task.md 與 meta.md
-- 老闆可透過 AskUserQuestion 指名主執行者（覆蓋輪換順序），不限模式或部門。建議參考：架構設計重任務 → Claude、程式碼生成重任務 → Codex、研究/多模態重任務 → Gemini
+- 主執行者由步驟 13 動態調配選定，並寫入 task.md 與 meta.md
+- 老闆可透過 AskUserQuestion 表達意見（通用溝通機制），不限模式或部門
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - proxy_prompt 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
 - PROXY 自行讀取 agents/<DEPT>.md、確認主執行者身份、協商分工、決定做法
 - 技術分歧由 PROXY 內部解決，秘書不參與技術裁決
 - 需求不明時先問老闆釐清，不自行解讀傳遞
-
-### 老闆指名機制（通用）
-
-- 預設：主執行者由秘書按固定輪換順序選定（Claude → Codex → Gemini → Claude...），每個 slug 的首次派工固定從 Claude 開始
-- 老闆覆蓋：老闆在任何時刻均可透過 AskUserQuestion 明確指定使用某個 PROXY 作為主執行者（覆蓋輪換順序）
-- 指名範圍：不限模式（初等/中等/高等）或部門，為通用機制
-- 建議參考：架構設計重任務 → Claude、程式碼生成重任務 → Codex、研究/多模態重任務 → Gemini（僅供老闆決策參考，非強制）
-- 指名結果：寫入 task.md frontmatter 的 lead_executor 及 meta.md
-- 派工詢問：秘書在每次派工時透過 AskUserQuestion 詢問老闆是否需要指定主執行者（例如：「本次派工 [部門] 的主執行者是否需要指定？預設為 [輪換結果]」）
 
 ## 閘門流程
 
@@ -242,7 +235,7 @@ RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 **初等（basic）**：RES 研究後 MIS 執行收尾（順序 0 → 6）→ 秘書復判 → 歸檔收尾。
 **中等（medium）**：進入 RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔。
 **高等（full）**：完整流程 RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔）。
-高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，輪換主執行者執行。原子任務的派工依 PRD 定義的前置依賴順序進行。
+高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者由步驟 13 動態調配選定。原子任務的派工依 PRD 定義的前置依賴順序進行。
 
 資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
 

@@ -2,12 +2,12 @@
 
 ## RES 啟動閘門（流程起點）
 
-RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清、執行準則確立、主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名）。
+RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清、執行準則確立、主執行者已由步驟 13 動態調配選定。
 
 ### 確認步驟
 
 1. 讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
-2. 確認本次派工的主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換）（老闆可透過 AskUserQuestion 覆蓋指名），並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
+2. 確認本次派工的主執行者已由步驟 13 動態調配選定，並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
 3. 確認單一共用 worktree 已由秘書建立於 slug 層級（所有部門不負責建立 worktree 或通訊目錄）。
 4. 若以上任一項不滿足 → 退回 RES 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
@@ -20,7 +20,7 @@ RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清�
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 MIS", description: "專案現狀與準則 OK，派工 MIS 執行收尾" },
@@ -36,7 +36,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 DEV", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -52,7 +52,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已依輪換制選定（固定從 Claude 開始，按順序輪換；老闆可隨時透過 AskUserQuestion 覆蓋指名），專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
