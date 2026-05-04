@@ -10,7 +10,7 @@
 - `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版。
 - 子循環拆分：RES 研究後可提出將需求拆分為多個子循環的建議，由秘書判斷是否採納。
 - RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、.claude-plugin/、README.md）。
-- RES 不具備 worktree 寫入權（研究階段不涉及排他性編輯權）。
+- RES 不具備 worktree 寫入權（研究階段不涉及排他性編輯權，僅具備唯讀 worktree 存取權）。
 - 功能開發途中若有外部工具需求，須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ## Open Design (OD) 整合指引

@@ -9,11 +9,11 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ### 模型配置規範
 
 - 當前對話（秘書）：透過預設 ~/.claude/settings.json 路由，鎖死不動。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
-- claude -p PROXY：由秘書動態指定 CLI 配方檔（掃描 ~/.claude/cli-*.json 取得可用配方，根據供應商動態選擇），不靜態指向 settings.proxy.json。供應商由配方檔 env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
+- claude -p PROXY：強制與秘書共用 ~/.claude/settings.json，移除 cli-*.json 掃描與注入邏輯。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
 - Codex PROXY：透過 ~/.codex/config.toml 的 model 欄位，可切換
 - Gemini PROXY：透過 ~/.gemini/settings.json 的 selected_model 欄位，可切換
 
-**僅 Codex 和 Gemini 需要模型切換。Claude 相關設定檔（settings.json 和 settings.proxy.json）嚴禁修改。**
+**僅 Codex 和 Gemini 需要模型切換。Claude 相關設定檔（settings.json）嚴禁修改。cli-*.json 已廢棄 (Deprecated)。**
 
 ### 去識別化範圍
 
@@ -118,8 +118,10 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
 current_mode: <basic / medium / full>
-worktree_path: <.shiftblame/<slug>/worktree/>
+task_type: <research / implementation>  # 研究部門填 research，實作部門填 implementation
+worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 物理性移除此欄位
 ---
+task_type 欄位用於區分任務性質（研究提示 Exploratory vs 實作提示 Directive），防止語意洩漏：研究部門任務僅含現象/目標，實作部門任務才含具體做法/修正案。
 
 # <DEPT> 任務
 
@@ -132,10 +134,11 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 - ...（所有上游部門結論檔路徑）
 
 ## 約束
-- worktree 路徑：<路徑>
+- worktree 路徑：<路徑>（研究部門為「無（唯讀 worktree）」）
 - 技術棧：<從 .shiftblame/REPO.md 提取>
 - 需求釐清結果：<如有>
 - 其他不可違反的限制
+```
 
 ## 禁止含
 - 分工指示（誰做什麼）← PROXY 自行決定
@@ -153,7 +156,8 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 3. 主執行者由步驟 13 動態調配選定（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
    - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
-   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + worktree 路徑 + current_mode）
+   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路 徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
+
 
 ### 實作部門兩階段派工步驟
 
@@ -202,7 +206,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 
 ### 研究部門（RES/QA/SEC/PRD）— 同時派工
 
-同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權）：
+同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權，嚴禁 使用 isolation="worktree"）：
 
 ```
 # 主執行者（範例：Claude）
@@ -239,10 +243,10 @@ Agent(subagent_type="shiftblame:<OBSERVER_2_PROXY>", prompt=proxy_prompt, name="
 | codex exec | --dangerously-bypass-approvals-and-sandbox --ephemeral | 繞過 sandbox + 不保留 session |
 | gemini -p | --yolo --skip-trust | 自動確認 + 跳過信任檢查 |
 
-proxy_prompt **最小化**，只含四樣東西：
+proxy_prompt **最小化**，研究部門含 3 項，實作部門含 4 項：
 1. task.md 路徑
 2. 通訊目錄路徑
-3. worktree 路徑
+3. worktree 路徑（僅實作部門提供，研究部門物理性移除）
 4. current_mode
 
 **不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 PROXY 自己去讀、去決定的。

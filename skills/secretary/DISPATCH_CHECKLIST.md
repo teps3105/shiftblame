@@ -151,9 +151,9 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 ## 12. 模型額度檢視（全 CLI）
 
-每次派工前，秘書讀取 onwatch 日誌（`~/.onwatch/data/.onwatch.log`），執行五個 provider 的額度狀態查詢。秘書動態判斷自身及各 CLI 的當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱。
+每次派工前，秘書讀取 onwatch 日誌（`~/.onwatch/data/.onwatch.log`），執行五個 provider 的額度狀態查詢。秘書動態判斷自身及各 CLI 的當前供應商（讀取 ~/.claude/settings.json 的 env 設定），不硬編碼供應商名稱。
 
-供應商判斷規則（讀取各 CLI 的 settings.json / settings.proxy.json）：
+供應商判斷規則（讀取 ~/.claude/settings.json）：
 - 若含 `ANTHROPIC_BASE_URL` → 該 URL 對應的供應商（如 api.z.ai → Z.ai，api.minimax.io → MiniMax）
 - 若不含 `ANTHROPIC_BASE_URL` → Claude 官方訂閱（對應 onwatch `Anthropic poll complete` 資料）
 
@@ -166,7 +166,7 @@ tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini po
 
 ### 12.2 額度報告格式（長條圖 + 秘書/PROXY 分離）
 
-額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。秘書根據當前 settings.json / settings.proxy.json 動態判斷各 CLI 供應商與模型，對應 onwatch poll 資料。
+額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。秘書根據當前 ~/.claude/settings.json 動態判斷各 CLI 供應商與模型，對應 onwatch poll 資料。
 
 報告必須：
 1. 明確區分「秘書模型」與「三家 PROXY CLI」，標示各自使用的模型與供應商
@@ -240,40 +240,30 @@ AskUserQuestion({
 
 ### 12.5 去識別化合規
 
-- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案）
-- 秘書根據 settings.json / settings.proxy.json 動態判斷各 CLI 供應商與模型，不硬編碼對應關係
+- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取 的通訊檔案）
+- 秘書根據 settings.json 動態判斷各 CLI 供應商與模型，不硬編碼對應關係
 - 額度資訊僅在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案
 - onwatch poll 資料中的供應商名稱僅在秘書層內部使用
 
-Claude 設定檔（settings.json、settings.proxy.json）鎖定不動。秘書不執行任何設定檔的編輯。
+Claude 設定檔（settings.json）鎖定不動。秘書與 Claude PROXY 強制共用 ~/.claude/settings.json。
 
 ## 13. 動態調配決策
 
-根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執行者機制。
+根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執 行者機制。
 
 ### 13.1 調配資料來源
 
 - onwatch 日誌（~/.onwatch/data/.onwatch.log）的 poll 資料
-- 秘書動態判斷各 CLI 當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱
+- 秘書動態判斷各 CLI 當前供應商（讀取 settings.json 的 env 設定），不硬編碼供應商名稱
 - 從對應供應商的 onwatch poll 取得額度資料
 
-### 13.2 配方檔掃描與 CLI 指令動態組裝
+### 13.2 路由策略簡化
 
-派工前，秘書執行以下動作：
+1. **僅讀取 settings.json**：移除秘書對 `cli-*.json` 的掃描與注入邏輯。
+2. **額度共用**：秘書與 Claude PROXY 強制共用 `~/.claude/settings.json`。這能確 保 `onwatch` 監測與實際執行的一致性，並簡化認證流程。
+3. **移除動態配方**：廢除配方檔掃描機制，將路由決策權交還給穩定的系統層配置。
 
-1. **掃描配方檔列表**：讀取 `~/.claude/cli-*.json` 取得所有可用配方檔
-2. **動態選擇配方**：根據 task.md 中指定的供應商（不硬編碼供應商名稱），從配方檔中選擇對應該供應商的設定
-3. **注入 --settings 參數**：由秘書在派工時動態注入 `--settings` 參數，指向所選定的配方檔
-
-```
-# 配方檔掃描範例
-ls ~/.claude/cli-*.json  # 列出所有配方檔
-# 根據 task.md frontmatter 中的供應商資訊動態選擇
-```
-
-此機制取代靜態的 `~/.claude/settings.proxy.json` 指向，由共識機制（consensus.md）決定 CLI 指令組裝方式。
-
-### 13.2 排除條件
+### 13.3 排除條件
 
 以下 CLI 額度吃緊時，排除其作為主執行者的候選資格：
 
@@ -281,11 +271,11 @@ ls ~/.claude/cli-*.json  # 列出所有配方檔
 |---|---|---|
 | Codex | `five_hour remaining <= 10%` AND `seven_day remaining <= 10%` | 雙重額度吃緊 |
 | Gemini | 所有模型的 `remaining < 10%` | 任一模型可用則不排除 |
-| Claude | Claude PROXY 對應供應商（從 settings.proxy.json env 判斷）的 `remain/total < 10%` | OR 條件：任一指標達限額即排除 |
+| Claude | Claude PROXY 對應供應商（從 settings.json env 判斷）的 `remain/total < 10%` | OR 條件：任一指標達限額即排除 |
 
 以上排除條件統一以「剩餘額度」為基準（剩餘 < 10% 即排除）。
 
-### 13.3 動態調配演算法
+### 13.4 動態調配演算法
 
 ```
 1. 取得各 CLI 的當下額度狀態（來自步驟 12，透過動態供應商對應）
