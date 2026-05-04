@@ -24,7 +24,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動七部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
-當前版本：v1.1.0
+當前版本：v1.1.1
 
 ---
 
@@ -97,7 +97,7 @@ RES 為流程起點，負責專案現狀釐清、執行準則確立、問題診�
 
 | 部門 | 職能 |
 |---|---|
-| **RES** | 研究部門（流程起點）：專案現狀釐清、執行準則確立、問題診斷、市調、子循環拆分建議、REPO.md 初始化 |
+| **RES** | 研究部門（流程起點）：專案現狀釐清、執行準則確立、問題診斷、市調、子循環拆分建議、.shiftblame/REPO.md 初始化 |
 | **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | **SEC** | 資安稽核、CVE 搜尋、工具篩選、環境規範 |
 | **PRD** | 架構設計、DAG、測試區分、實作計畫 |
@@ -154,7 +154,7 @@ shiftblame/
 
 ```
 .shiftblame/
-├── REPO.md
+├── .shiftblame/REPO.md
 ├── archive/<slug>/      # 歸檔
 └── <slug>/
     ├── worktree/        # 隔離工作區
@@ -199,7 +199,7 @@ claude plugin update shiftblame
 
 秘書是使用者的主要互動介面，負責流程調度、部門派工、進度回報與閘門管控。秘書零編輯權限，不動手寫程式碼或定義檔。
 
-Plugin 安裝後，SessionStart hook 會自動將秘書注入 `~/.claude/CLAUDE.md`。使用者直接在 Claude Code 中與秘書對話即可——秘書會讀取 `REPO.md` 進入顧問模式，翻譯需求並向老闆呈報，等待確認後派工。
+Plugin 安裝後，SessionStart hook 會自動將秘書注入 `~/.claude/CLAUDE.md`。使用者直接在 Claude Code 中與秘書對話即可——秘書會讀取 `.shiftblame/REPO.md` 進入顧問模式，翻譯需求並向老闆呈報，等待確認後派工。
 
 ```
 老闆提問 → 秘書顧問翻譯 → RES 研究 → 模式確認 → 老闆決策 → 秘書調度
