@@ -43,6 +43,26 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
     └── gemini/{proposal,result}.md
 ```
 
+### 共識匯聚機制（研究 vs 實作部門差異）
+
+| 部門類型 | execution_model | 共識機制 | consensus.md 寫入職責 |
+|---|---|---|---|
+| 研究部門（RES/QA/SEC/PRD） | equal_consensus | 三方同時派工，各自產出分析，consensus.md 由三方協商寫入（最後完成者彙整） | 三方 PROXY 協商，最後完成者彙整 |
+| 實作部門（DEV/QC/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由主執行者撰寫 | 主執行者負責撰寫 |
+
+**研究部門（equal_consensus）共識流程：**
+1. 三方 PROXY 同時派工
+2. 各自提出 proposal
+3. 辯論收斂（最多 2 輪）
+4. 三方協商寫入 consensus.md（最後完成者負責彙整，或由第三方 PROXY 接手）
+5. 各自執行分工，寫入 result.md
+
+**實作部門（lead_executor）共識流程：**
+1. 主執行者派工（第一階段）
+2. 主執行者完成後 commit
+3. 觀測者派工檢閱（第二階段）
+4. consensus.md 由主執行者撰寫（驗證摘要）
+
 ### 子循環通訊目錄
 
 當 RES 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `cycle-N` 子目錄區分：

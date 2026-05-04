@@ -47,16 +47,30 @@ Read .shiftblame/REPO.md
 
 ## 3. 寫入 task.md
 
-task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定），並寫入 YAML frontmatter。
+task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。YAML 格式依 execution_model 動態決定：
 
+**研究部門（RES/QA/SEC/PRD）格式：**
+```yaml
+---
+execution_model: equal_consensus
+current_mode: <basic / medium / full>
+task_type: research
+worktree_path: none
+---
+```
+
+**實作部門（DEV/QC/MIS）格式：**
 ```yaml
 ---
 lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
+execution_model: lead_executor
 current_mode: <basic / medium / full>
 worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```
+
+主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定），並寫入 YAML frontmatter。
 
 ```
 === task.md 必含 ===
@@ -102,7 +116,7 @@ proxy_prompt 只含四樣東西：
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
 | 實作部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
-| 研究部門（RES/QA/SEC/PRD） | 確認 execution_model: equal_consensus、確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
+| 研究部門（RES/QA/SEC/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 PROXY 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
 
 ## 6. QC 定位提醒
 
