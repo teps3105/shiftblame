@@ -133,7 +133,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 
 ## 約束
 - worktree 路徑：<路徑>
-- 技術棧：<從 REPO.md 提取>
+- 技術棧：<從 .shiftblame/REPO.md 提取>
 - 需求釐清結果：<如有>
 - 其他不可違反的限制
 
@@ -512,7 +512,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 秘書零編輯權限。秘書的所有寫入操作限於以下路徑：
 - 通訊目錄：`.shiftblame/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
 
-框架定義檔（`agents/`、`skills/`、`README.md` 等）的變更只能由 MIS 部門在 worktree 上執行。REPO.md 的更新由秘書在歸檔時負責。
+框架定義檔（`agents/`、`skills/`、`README.md` 等）的變更只能由 MIS 部門在 worktree 上執行。.shiftblame/REPO.md 的更新由秘書在歸檔時負責。
 秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。
 
 ### 規範三：禁止在 main 上修改（嚴重違規）
@@ -525,8 +525,8 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 | 部門 | 可讀範圍 |
 |---|---|
-| RES | 全部（REPO.md + 所有部門） |
-| MIS | 全部（REPO.md + 所有部門） |
+| RES | 全部（.shiftblame/REPO.md + 所有部門） |
+| MIS | 全部（.shiftblame/REPO.md + 所有部門） |
 | QA | QA.md + QA/ |
 | SEC | QA + SEC |
 | PRD | QA + SEC + PRD |
@@ -545,11 +545,11 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 版本重置為 major 版本時（如 8.4.0 → 1.0.0），需老闆明確指示
 - 同一 slug 內版本號僅在首次實作輪升 build，後續退回修正/增量輪次不重複升版。版本號最終由秘書在 squash merge 前確認
 
-### REPO.md 重寫規範
+### .shiftblame/REPO.md 重寫規範
 
-REPO.md 的更新由秘書在 push 成功後負責。MIS 在收尾階段僅做唯讀差異比較並產出差異報告，秘書依據差異報告更新 REPO.md。
+.shiftblame/REPO.md 的更新由秘書在 push 成功後負責。MIS 在收尾階段僅做唯讀差異比較並產出差異報告，秘書依據差異報告更新 .shiftblame/REPO.md。
 
-REPO.md 必須包含以下區段：
+.shiftblame/REPO.md 必須包含以下區段：
 - 技術棧
 - 開發策略
 - 測試流程
@@ -559,7 +559,7 @@ REPO.md 必須包含以下區段：
 
 規則：
 - 已完成的代辦項目直接刪除，不保留「已完成」狀態
-- 不保留歷史版本演進表格（屬 git 歷史，非 REPO.md 內容）
+- 不保留歷史版本演進表格（屬 git 歷史，非 .shiftblame/REPO.md 內容）
 
 ### README.md 重寫規範
 
@@ -573,5 +573,5 @@ REPO.md 必須包含以下區段：
 當老闆指示版本重置時，MIS 須執行：
 1. .claude-plugin/plugin.json 版本更新
 2. README.md 版本更新
-3. REPO.md 版本更新（若 REPO.md 含版本號）— 由秘書在 push 成功後執行
+3. .shiftblame/REPO.md 版本更新（若 .shiftblame/REPO.md 含版本號）— 由秘書在 push 成功後執行
 4. 確保三處版本號一致

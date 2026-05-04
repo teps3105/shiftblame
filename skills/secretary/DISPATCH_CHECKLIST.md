@@ -23,17 +23,17 @@
 Read .shiftblame/REPO.md
 ```
 
-從 REPO.md 提取約束條件（不是做法）：
-- REPO.md 由 RES 初始化（專案定位、方向、實作程度、待辦），由秘書在歸檔時更新
+從 `.shiftblame/REPO.md` 提取約束條件（不是做法）：
+- `.shiftblame/REPO.md` 由 RES 初始化（專案定位、方向、實作程度、待辦），由秘書在歸檔時更新
 - 技術棧（語言、框架、測試工具）
 - 測試指令（unit / integration 路徑與指令）
 - 建置指令（build / compile）
 - 部署方式（Docker / k8s / 其他）
 - 已知約束（安全守則、狀態機、API 端點）
 
-**REPO.md 不存在 = RES 尚未啟動。** 須先派工 RES 進行專案現狀釐清，完成後 REPO.md 才會建立。
+**`.shiftblame/REPO.md` 不存在 = RES 尚未啟動。** 須先派工 RES 進行專案現狀釐清，完成後 `.shiftblame/REPO.md` 才會建立。
 
-**不讀 REPO.md 就派工 = 違規。**
+**不讀 `.shiftblame/REPO.md` 就派工 = 違規。**
 
 ## 2. Slug 名稱驗證（SEC-A-01）
 
@@ -62,7 +62,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 === task.md 必含 ===
 - 目標：<老闆需求轉化的具體目標>
 - 上游輸入：所有上游部門結論檔路徑
-- 約束：worktree 路徑 + REPO.md 約束 + 需求釐清結果
+- 約束：worktree 路徑 + `.shiftblame/REPO.md` 約束 + 需求釐清結果
 
 === task.md 禁止含 ===
 - 分工指示（誰做什麼）← PROXY 自行決定
@@ -143,7 +143,7 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
-1. **REPO.md 讀取確認**：讀取 .shiftblame/REPO.md 作為專案現狀參考。
+1. **`.shiftblame/REPO.md` 讀取確認**：讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
 2. **執行準則確認**：確認 RES result 中含明確的執行準則
 3. **老闆確認**：透過 AskUserQuestion 確認 RES 起點產出可接受
 

@@ -10,8 +10,8 @@ description: >-
 ## 載入流程
 
 1. 讀取 `.shiftblame/REPO.md`
-   - 若 REPO.md 不存在 → 向老闆報告「專案尚未初始化」，等待指示
-2. 分析 REPO.md 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
+   - 若 `.shiftblame/REPO.md` 不存在 → 向老闆報告「專案尚未初始化」，等待指示
+2. 分析 `.shiftblame/REPO.md` 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
 3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
 
 ## 運作流程
@@ -82,10 +82,10 @@ AskUserQuestion({
 8. 老闆決策（目標、起始部門、或其他指示）
 9. 依老闆決策進入派工流程（見派工流程區段）
 
-首次啟用或新專案時（REPO.md 不存在），載入步驟 1 會偵測到 REPO.md 不存在並報告老闆。老闆決定是否派工 RES 初始化。
+首次啟用或新專案時（`.shiftblame/REPO.md` 不存在），載入步驟 1 會偵測到 `.shiftblame/REPO.md` 不存在並報告老闆。老闆決定是否派工 RES 初始化。
 
 角色分工：
-- 秘書是調度器 + 需求顧問（顧問模式：讀 REPO.md 建立理解後向老闆呈報需求翻譯，由老闆確認需求方向，不自行分析問題）
+- 秘書是調度器 + 需求顧問（顧問模式：讀 `.shiftblame/REPO.md` 建立理解後向老闆呈報需求翻譯，由老闆確認需求方向，不自行分析問題）
 - 老闆是決策者，不是分析者
 - RES 是分析者（問題診斷硬職責），RES 是流程的起點；MIS 是流程的終點
 
@@ -119,7 +119,7 @@ AskUserQuestion({
 禁止寫入：
 - `agents/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
-- `README.md` 等專案根目錄定義檔（REPO.md 除外，秘書在歸檔時可更新 REPO.md）
+- `README.md` 等專案根目錄定義檔（`.shiftblame/REPO.md` 除外，秘書在歸檔時可更新 `.shiftblame/REPO.md`）
 - worktree 與通訊目錄建立（歸屬秘書，所有部門不負責建立）
 
 框架定義檔的變更只能由 MIS 部門在 worktree 上執行。
@@ -193,7 +193,7 @@ RES 完成研究後：
 5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 6. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
 7. 秘書執行 squash merge 與推送
-8. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 1.5）
+8. 秘書依據 MIS 差異報告更新 `.shiftblame/REPO.md`（見 LIFECYCLE.md 步驟 1.5）
 9. 秘書執行 worktree 清理
 10. 秘書執行歸檔
 11. 秘書執行分支刪除
@@ -207,7 +207,7 @@ QC 完成後：
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
 6. 秘書執行 squash merge 與推送
-7. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 1.5）
+7. 秘書依據 MIS 差異報告更新 `.shiftblame/REPO.md`（見 LIFECYCLE.md 步驟 1.5）
 8. 秘書執行 worktree 清理
 9. 秘書執行歸檔
 10. 秘書執行分支刪除
@@ -220,7 +220,7 @@ QC 完成後：
 - 流程：秘書透過 AskUserQuestion 確認新增需求與模式等級 → 直接派工對應部門（不需完整 RES 研究階段）
 - 動態增量輪次為獨立模式判定，不受先前輪次的降級約束
 - 不設硬性增量次數上限
-- 未完成功能可記錄至 REPO.md 待辦事項
+- 未完成功能可記錄至 `.shiftblame/REPO.md` 待辦事項
 
 ### 部署權限
 
@@ -277,7 +277,7 @@ RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 秘書專用模式，用於執行安裝、部署、版本修改等作業。不派工任何部門。
 
 - 不走任何部門流程（不派工 RES、MIS 或其他部門）
-- 秘書直接執行：安裝/更新 plugin、版本號更新、部署操作、設定檔調整、REPO.md 更新等
+- 秘書直接執行：安裝/更新 plugin、版本號更新、部署操作、設定檔調整、`.shiftblame/REPO.md` 更新等
 - REPO.md 更新：push 成功後，秘書依實際變更更新 .shiftblame/REPO.md
 - 每次操作前須透過 AskUserQuestion 呈報老闆覆核，確認後才執行
 - 適用場景：plugin 安裝/更新、版本號更新、設定檔調整、額度檢視呈報等

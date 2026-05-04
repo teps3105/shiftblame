@@ -11,10 +11,10 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - **模式判定**：動態增量輪次為獨立模式判定，不受先前輪次的降級約束
 - **增量次數**：不設硬性上限，秘書在 AskUserQuestion 中顯示當前增量次數供老闆參考
 - **歸檔時機**：最終閘門選擇「確認歸檔」時才執行歸檔
-- **待辦記錄**：未完成功能可記錄至 REPO.md 待辦事項供下次迭代
+- **待辦記錄**：未完成功能可記錄至 .shiftblame/REPO.md 待辦事項供下次迭代
 - **通訊目錄**：在同一 slug 上增量追加，不建立新通訊目錄
 
-繼續補強時不走歸檔流程，不執行以下步驟（0. 秘書復判、1. Squash Merge + Push、0.5 REPO.md 更新、2. Worktree 清理、3. 歸檔）。改為進入新的派工流程。
+繼續補強時不走歸檔流程，不執行以下步驟（0. 秘書復判、1. Squash Merge + Push、0.5 .shiftblame/REPO.md 更新、2. Worktree 清理、3. 歸檔）。改為進入新的派工流程。
 
 ## 子循環歸檔
 
@@ -60,9 +60,9 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - 使用 `git push origin main` 推送到遠端
 - 推送目標僅限 origin/main，禁止 force push
 
-## 1.5 REPO.md 更新（push 後，必須執行）
+## 1.5 .shiftblame/REPO.md 更新（push 後，必須執行）
 
-秘書在 push 成功後、執行 worktree 清理前，必須依據 MIS 收尾產出的 REPO.md 差異報告更新 .shiftblame/REPO.md，確保反映最終共識狀態。
+秘書在 push 成功後、執行 worktree 清理前，必須依據 MIS 收尾產出的 .shiftblame/REPO.md 差異報告更新 .shiftblame/REPO.md，確保反映最終共識狀態。
 
 .shiftblame/REPO.md 更新原則：
 - 版本號：反映本次變更後的版本號
@@ -93,5 +93,5 @@ mv .shiftblame/<slug> .shiftblame/archive/<slug>
 
 # 驗證
 test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
-# REPO.md 為本地檔案，不受歸檔影響（無需驗證）
+# .shiftblame/REPO.md 為本地檔案，不受歸檔影響（無需驗證）
 ```

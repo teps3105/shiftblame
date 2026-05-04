@@ -68,12 +68,12 @@ QC 的操作步驟必須可被其他 PROXY 在同一 worktree 上重現。任一
 ### R13：實作部門執行模型
 本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
-### R14：README.md / REPO.md 品質檢閱
-QC 在所有模式（初等/中等/高等）的驗證範圍應包含 README.md 與 REPO.md 的品質檢閱：
+### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
+QC 在所有模式（初等/中等/高等）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：
 - **README.md 品質檢閱**：版本號與 .claude-plugin/plugin.json 一致、架構描述與實作一致、格式正確
-- **REPO.md 品質檢閱**：技術棧描述與實作一致、待辦事項準確、各區段完整
+- **`.shiftblame/REPO.md` 品質檢閱**：技術棧描述與實作一致、待辦事項準確、各區段完整
 
-README.md 和 REPO.md 不在開發階段修改（由 MIS 在收尾階段維護），但 QC 必須檢閱其品質。發現問題時退回 MIS（非 DEV）修正。QC 報告中需明確列出 README.md / REPO.md 的品質問題（若有）。
+README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由 MIS 在收尾階段維護），但 QC 必須檢閱其品質。發現問題時退回 MIS（非 DEV）修正。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
 
 
 ## 認知模型

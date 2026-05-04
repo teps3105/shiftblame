@@ -11,7 +11,7 @@ RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清�
 3. 確認單一共用 worktree 已由秘書建立於 slug 層級（所有部門不負責建立 worktree 或通訊目錄）。
 4. 若以上任一項不滿足 → 退回 RES 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
-   - 讀取 `.shiftblame/REPO.md` 作為專案現狀參考（RES 負責初始化 REPO.md）。
+   - 讀取 `.shiftblame/REPO.md` 作為專案現狀參考（RES 負責初始化 .shiftblame/REPO.md）。
    - 確認執行準則已落袋：RES result.md 中含明確的執行準則。
 6. 驗證不通過 → 退回 RES 補齊（不進入 QA）。
 7. 透過 AskUserQuestion 確認 RES 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：
@@ -352,12 +352,12 @@ DEV 共識到達後，秘書必執行：
 
 ### PRD 報告後：測試數量驗證
 
-PRD 共識到達後，秘書必驗證前端+後端測試數量（依 REPO.md 的專案結構調整路徑），任一為 0 → 退 PRD 補寫。
+PRD 共識到達後，秘書必驗證前端+後端測試數量（依 .shiftblame/REPO.md 的專案結構調整路徑），任一為 0 → 退 PRD 補寫。
 
-### QC 報告後：README.md / REPO.md 品質確認
+### QC 報告後：README.md / .shiftblame/REPO.md 品質確認
 
 QC 共識到達後，秘書必執行：
-1. 確認 QC 報告中是否含 README.md / REPO.md 品質問題
+1. 確認 QC 報告中是否含 README.md / .shiftblame/REPO.md 品質問題
 2. 若有問題 → 退回 MIS 修正（非 DEV）
 3. 若無問題 → 繼續後續流程
 
