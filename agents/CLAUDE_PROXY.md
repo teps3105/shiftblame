@@ -88,12 +88,12 @@ cd <WORKTREE> && claude -p "<COORDINATED_TASK>" \
   --output-format text \
   --dangerously-skip-permissions \
   --no-session-persistence \
-  --settings ~/.claude/settings.proxy.json \
   --add-dir "<WORKTREE>"
 ```
 
-### --settings flag 說明
-`--settings` 指向獨立的 settings.proxy.json，讓 PROXY 使用獨立 API 認證，與秘書隔離額度。使用者需自行在 ~/.claude/settings.proxy.json 中設定不同的 API 端點與金鑰。若該檔案不存在，claude -p 會報錯。
+### CLI 指令動態組裝
+
+CLI 指令的 `--settings` 參數由秘书在派工時根據 task.md 中指定的供應商動態選擇配方檔（掃描 `~/.claude/cli-*.json`），不由 PROXY 自行指定。具體配方選擇機制見共識機制（consensus.md）中定義的 CLI 指令組裝方式。
 
 TASK 內容從 consensus.md 中你的份額提取，加上完整的部門上下文。CLI prompt 末尾應附加以下回報格式要求，讓 `claude -p` 在完成分工任務後以指定格式輸出回報。
 

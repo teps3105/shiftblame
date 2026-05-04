@@ -9,7 +9,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ### 模型配置規範
 
 - 當前對話（秘書）：透過預設 ~/.claude/settings.json 路由，鎖死不動。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
-- claude -p PROXY：透過 ~/.claude/settings.proxy.json 路由，鎖死不動。供應商由 settings.proxy.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
+- claude -p PROXY：由秘书動態指定 CLI 配方檔（掃描 ~/.claude/cli-*.json 取得可用配方，根據供應商動態選擇），不靜態指向 settings.proxy.json。供應商由配方檔 env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
 - Codex PROXY：透過 ~/.codex/config.toml 的 model 欄位，可切換
 - Gemini PROXY：透過 ~/.gemini/settings.json 的 selected_model 欄位，可切換
 

@@ -257,6 +257,22 @@ Claude 設定檔（settings.json、settings.proxy.json）鎖定不動。秘書�
 - 秘書動態判斷各 CLI 當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱
 - 從對應供應商的 onwatch poll 取得額度資料
 
+### 13.2 配方檔掃描與 CLI 指令動態組裝
+
+派工前，秘書執行以下動作：
+
+1. **掃描配方檔列表**：讀取 `~/.claude/cli-*.json` 取得所有可用配方檔
+2. **動態選擇配方**：根據 task.md 中指定的供應商（不硬編碼供應商名稱），從配方檔中選擇對應該供應商的設定
+3. **注入 --settings 參數**：由秘书在派工時動態注入 `--settings` 參數，指向所選定的配方檔
+
+```
+# 配方檔掃描範例
+ls ~/.claude/cli-*.json  # 列出所有配方檔
+# 根據 task.md frontmatter 中的供應商資訊動態選擇
+```
+
+此機制取代靜態的 `~/.claude/settings.proxy.json` 指向，由共識機制（consensus.md）決定 CLI 指令組裝方式。
+
 ### 13.2 排除條件
 
 以下 CLI 額度吃緊時，排除其作為主執行者的候選資格：
