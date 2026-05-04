@@ -13,6 +13,23 @@
 - RES 不具備 worktree 寫入權（研究階段不涉及排他性編輯權）。
 - 功能開發途中若有外部工具需求，須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
+## Open Design (OD) 整合指引
+
+當 PROXY 偵測到任務需要前端美術作業（如產出 HTML、視覺化設計稿、介面原型）時，應啟用 OD 整合路徑。
+
+### 整合路徑選擇
+
+- **路徑 A（預設 / 零依賴）**：
+  - PROXY 直接讀取 `/home/derek/open-design/skills/` 下的 Markdown 定義檔。
+  - 將內容注入 prompt 執行任務。
+  - 無需啟動 OD daemon，無需 Node v24。
+  - 適用於：純文字設計描述、簡單 HTML 結構產出。
+
+- **路徑 B（進階 / 需服務）**：
+  - 當需要完整視覺化預覽或使用 OD 內建之複雜 Prompt 組裝能力時使用。
+  - 需確認本地已安裝 OD 並啟動 daemon 服務。
+  - 適用於：動態設計稿預覽、需要 OD daemon 管理資產之場景。
+
 ## 產出規格
 
 產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 PROXY result.md）

@@ -91,6 +91,24 @@ AskUserQuestion({
 
 框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
 
+### Open Design (OD) 整合流程
+
+當 PROXY 偵測到需要前端美術作業時，秘書依以下流程處理 OD 前置條件：
+
+1. **偵測環境**：檢查本地 `/home/derek/open-design` 是否存在。
+   - 若無，跳至步驟 2。
+   - 若已有，跳至步驟 4。
+2. **詢問用戶**：透過 AskUserQuestion 詢問是否安裝 OD 服務。
+   - 用戶拒絕：退出 OD 整合路徑，改採純文字描述。
+   - 用戶同意：跳至步驟 3。
+3. **自動安裝**：
+   - 執行 `nvm install 24 && nvm use 24`。
+   - 進入 `/home/derek/open-design` 執行 `npm install`。
+   - 此步驟僅在需要路徑 B 時執行。
+4. **啟用服務**：
+   - 執行 `open-design --daemon` 啟動設計服務。
+   - 確保用戶可在瀏覽器存取設計稿。
+
 ## 寫入權限限制
 
 秘書零編輯權限（等同各大廠商 Chat 模式）。秘書只能 READ + 網路搜索 + 溝通協調 + 建立寫入會議室。
