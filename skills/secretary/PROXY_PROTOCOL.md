@@ -115,13 +115,13 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 
 ```markdown
 ---
-lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
-observers: [<其他兩個 PROXY 名稱>]
+# execution_model 取代 lead_executor/observers
+execution_model: <equal_consensus / lead_executor>  # equal_consensus: 研究部門(RES/QA/SEC/PRD)；lead_executor: 實作部門(DEV/QC/MIS)
 current_mode: <basic / medium / full>
 task_type: <research / implementation>  # 研究部門填 research，實作部門填 implementation
 worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 物理性移除此欄位
 ---
-task_type 欄位用於區分任務性質（研究提示 Exploratory vs 實作提示 Directive），防止語意洩漏：研究部門任務僅含現象/目標，實作部門任務才含具體做法/修正案。
+```
 
 # <DEPT> 任務
 
@@ -254,7 +254,7 @@ proxy_prompt **最小化**，研究部門含 3 項，實作部門含 4 項：
 ## PROXY 自組織流程
 
 ```
-1. 讀取 task.md（目標 + 約束，確認 lead_executor/observers 角色）
+1. 讀取 task.md（目標 + 約束，確認 execution_model：equal_consensus 為研究部門，lead_executor 為實作部門）
 2. 接入 slug 層級共用 worktree（由秘書建立，僅主執行者需要寫入權限，見 WORKTREE_SOP.md）
 3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
 4. 讀取上游輸入（task.md 中列出的路徑）
@@ -393,6 +393,14 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 4. **記錄**：在 consensus.md 追加接替紀錄（原主執行者、接替者、接替原因、時間）
 5. **接替範圍**：代理主執行者僅承接剩餘分工，不重做已完成的工作
 6. **通知**：接替後在通訊目錄更新 proposal.md，標注接替事件
+
+### 研究部門接替邏輯（equal_consensus）
+
+研究部門（RES/QA/SEC/PRD）採 equal_consensus 模型，失敗時接替邏輯如下：
+- 無固定主執行者，三方 PROXY 平等
+- 失敗時由其他兩方依可用性吸收份額
+- 接替者僅承接剩餘分工，不重做已完成的工作
+- 在 consensus.md 追加接替紀錄
 
 ## 部門執行模型
 

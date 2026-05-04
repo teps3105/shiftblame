@@ -102,7 +102,7 @@ proxy_prompt 只含四樣東西：
 | QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
 | 實作部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
-| 研究部門（RES/QA/SEC/PRD） | 確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
+| 研究部門（RES/QA/SEC/PRD） | 確認 execution_model: equal_consensus、確認採同時派工（三個 PROXY 同時派工，不走兩階段） |
 
 ## 6. QC 定位提醒
 
