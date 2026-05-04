@@ -10,7 +10,7 @@ _AI agents 開發框架——流程協議與定義檔_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
-[![Agents](https://img.shields.io/badge/agents-7-blue.svg)](#七部門職能)
+[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#八部門職能)
 
 **[核心機制](#核心機制)** · **[架構概覽](#架構概覽)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
 
@@ -73,37 +73,43 @@ CLI 彼此僅知使用三種不同的 CLI 框架，不知底層模型細節，�
 
 ### 單向流程
 
-七部門依序執行，一次性的單向流程（中等/高等模式可包含 DEV/QC 多輪來回）：
+八部門依序執行，一次性的單向流程（L4/L5 等級可包含 DEV/QC/EXP 多輪來回）：
 
 ```
-RES → QA → SEC → PRD → DEV ↔ QC → MIS
+RES → SEC → QA → PRD → DEV ↔ QC → EXP → MIS
 ```
 
 RES 為流程起點，負責專案現狀釐清、執行準則確立、問題診斷。MIS 為流程終點，負責框架定義檔維護與收尾。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
 
-### 三級開發制度
+### 五等級開發制度
 
-每次執行時，秘書透過 AskUserQuestion 確認模式：
+每次執行時，秘詩依需求複雜度判定模式：
 
-| 模式 | 流程 | 適用情境 |
-|---|---|---|
-| **初等（basic）** | RES 研究後 MIS 執行收尾 → 秘書復判 → 收尾（歸檔） | 框架定義檔維護、文件更新等小規模工作 |
-| **中等（medium）** | RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔） | 功能開發、bug 修復等中等規模工作 |
-| **高等（full）** | RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔） | 大型功能、架構重構等大規模工作 |
+| 等級 | 名稱 | 流程 | 適用情境 |
+|---|---|---|---|
+| **L1** | 日常維護 | 秘詩直接執行 | 安裝、部署、版本修改、日常運維 |
+| **L2** | 基本 | RES → MIS | 框架定義檔維護、文件更新、歷史修正 |
+| **L3** | 標準 | RES → PRD → DEV → MIS | 功能開發、bug 修復 |
+| **L4** | 完整 | RES → QA → PRD → DEV → QC → MIS | 需品質驗證的功能開發 |
+| **L5** | 高等 | RES → SEC → QA → PRD → DEV → QC → EXP → MIS | 資安+用戶體驗完整流程 |
 
-模式由秘書在 RES 研究後建議，老闆可升級（初等→中等→高等）或縮小範圍降級（高等→中等→初等）。降級不可逆轉。收尾操作（合併、推送、歸檔、worktree 清理）由秘書執行。
+模式由秘詩依需求複雜度判定，可升級也可降級（縮小範圍），降級不可逆轉。收尾操作（合併、推送、歸檔、worktree 清理）由秘詩執行。
 
-### 七部門職能
+### 八部門職能
+
+| 部門 | 職能 |
+|---|---|
 
 | 部門 | 職能 |
 |---|---|
 | **RES** | 研究部門（流程起點）：專案現狀釐清、執行準則確立、問題診斷、市調、子循環拆分建議、.shiftblame/REPO.md 初始化 |
-| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | **SEC** | 資安稽核、CVE 搜尋、工具篩選、環境規範 |
+| **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | **PRD** | 架構設計、DAG、測試區分、實作計畫 |
-| **DEV** | TDD 開發 → 全綠 + 啟動應用驗證 |
-| **QC** | 穩健性攻擊、邊緣案例、紅藍隊 |
-| **MIS** | 維護部門（流程終點）：框架定義檔維護、文件維護、semver 同步、一致性審計、歸檔紀錄 |
+| **DEV** | 開發實作：TDD 開發 → 全綠 + 啟動應用驗證 |
+| **QC** | 品質檢核：穩健性攻擊、邊緣案例、紅藍隊（無編輯權，單一執行者） |
+| **EXP** | 用戶體驗：用戶視角驗證，專注「用戶從哪個 view 點哪個按鈕觸發什麼行為」（無編輯權，單一執行者） |
+| **MIS** | 維護部門（流程終點）：框架定義檔維護、文件維護、semver 同步、一致性審計、歸檔紀錄、環境清理 |
 
 ### 資料存取（金字塔累積制）
 
@@ -118,6 +124,7 @@ RES 為流程起點，負責專案現狀釐清、執行準則確立、問題診�
 | PRD | QA + SEC + PRD |
 | DEV | QA + SEC + PRD + DEV |
 | QC | QA + SEC + PRD + DEV + QC |
+| EXP | QA + SEC + PRD + DEV + QC + EXP |
 
 ---
 
@@ -131,7 +138,7 @@ shiftblame/
 │   ├── plugin.json          # v1.0.20
 │   └── marketplace.json
 ├── agents/
-│   ├── RES.md / QA.md / SEC.md / PRD.md / DEV.md / QC.md / MIS.md  # 七部門主管
+│   ├── RES.md / SEC.md / QA.md / PRD.md / DEV.md / QC.md / EXP.md / MIS.md  # 八部門主管
 │   ├── CLAUDE_PROXY.md                                       # Claude 外殼代理
 │   ├── CODEX_PROXY.md                                       # Codex 外殼代理
 │   └── GEMINI_PROXY.md                                      # Gemini 外殼代理
@@ -205,9 +212,11 @@ Plugin 安裝後，SessionStart hook 會自動將秘書注入 `~/.claude/CLAUDE.
 老闆提問 → 秘書顧問翻譯 → RES 研究 → 模式確認 → 老闆決策 → 秘書調度
 ```
 
-- **初等模式**：RES 研究 → 模式確認（初等）→ MIS 執行收尾 → 秘書復判 → 收尾（歸檔）
-- **中等模式**：RES 研究 → 模式確認（中等）→ 老闆決策 → RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
-- **高等模式**：RES 研究 → 模式確認（高等）→ 老闆決策 → RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 收尾（歸檔）
+- **L1（日常維護）**：秘詩直接執行（不派工部門）
+- **L2（基本）**：RES 研究 → 模式確認（L2）→ MIS 執行收尾 → 秘詩復判 → 收尾（歸檔）
+- **L3（標準）**：RES 研究 → 模式確認（L3）→ 老闆決策 → RES → PRD → DEV（可多輪）→ MIS(尾) → 秘詩復判 → 收尾（歸檔）
+- **L4（完整）**：RES 研究 → 模式確認（L4）→ 老闆決策 → RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘詩復判 → 收尾（歸檔）
+- **L5（高等）**：RES 研究 → 模式確認（L5）→ 老闆決策 → RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾) → 秘詩復判 → 收尾（歸檔）
 
 秘書在每個關鍵節點透過 AskUserQuestion 回報，提供三個選項：
 

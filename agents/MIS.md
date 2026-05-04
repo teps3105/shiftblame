@@ -143,6 +143,13 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立�
 ### R22：單一 worktree
 單一共用 worktree（`.shiftblame/<slug>/worktree/`）由秘書在 slug 初始化時建立（所有部門不負責建立 worktree 或通訊目錄）。所有實作變更必須在此 worktree 上執行。
 
+### 環境清理職責
+MIS 在收尾階段負責清理開發環境：
+- 停止所有運行中的開發/測試進程
+- 清理未使用的 Docker images
+- 刪除未清理的測試檔案
+- 更新 README.md（如有變更）
+
 ## 認知模型
 
 ### M1：專案定義即「憲法」
