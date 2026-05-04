@@ -153,6 +153,10 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 每次派工前，秘書讀取 onwatch 日誌（`~/.onwatch/data/.onwatch.log`），執行五個 provider 的額度狀態查詢。秘書動態判斷自身及各 CLI 的當前供應商（讀取 settings.json / settings.proxy.json 的 env 設定），不硬編碼供應商名稱。
 
+供應商判斷規則（讀取各 CLI 的 settings.json / settings.proxy.json）：
+- 若含 `ANTHROPIC_BASE_URL` → 該 URL 對應的供應商（如 api.z.ai → Z.ai，api.minimax.io → MiniMax）
+- 若不含 `ANTHROPIC_BASE_URL` → Claude 官方訂閱（對應 onwatch `Anthropic poll complete` 資料）
+
 ### 12.1 額度查詢指令
 
 ```bash
@@ -160,25 +164,47 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini poll complete|Anthropic poll complete|Z.ai poll complete|MiniMax poll complete)" | tail -30
 ```
 
-### 12.2 額度報告格式（使用 CLI 框架名稱，不硬編碼供應商名稱）
+### 12.2 額度報告格式（長條圖 + 秘書/PROXY 分離）
 
-額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。報告使用 CLI 框架名稱（Claude/Codex/Gemini），不使用底層供應商名稱。秘書根據當前 settings.json / settings.proxy.json 動態判斷供應商，對應 onwatch poll 資料。
+額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。秘書根據當前 settings.json / settings.proxy.json 動態判斷各 CLI 供應商與模型，對應 onwatch poll 資料。
+
+報告必須：
+1. 明確區分「秘書模型」與「三家 PROXY CLI」，標示各自使用的模型與供應商
+2. 一律使用長條圖（█░）顯示各家 CLI 剩餘額度百分比
 
 ```
-【Claude】<供應商 A> 額度：<供應商 A 指標>；<供應商 B> 額度：<供應商 B 指標>
-【Codex】five_hour remaining: <U1>%，seven_day remaining: <U2>%
-【Gemini】各模型 remaining：<M1>: <R1>%，<M2>: <R2>%
-【秘書模型】<供應商> tokens_percentage: <P>%
+╔════════════════════════════════════════════════════╗
+║              額度狀態長條圖（剩餘 %）               ║
+╠════════════════════════════════════════════════════╣
+║ 【秘書】<模型名> / <供應商>                        ║
+║ ████████░░  <P>%                                   ║
+║                                                    ║
+║ 【Claude】<模型名> / <供應商>                       ║
+║ ██████████  <P>%                                   ║
+║                                                    ║
+║ 【Codex】<模型名> / <供應商>                        ║
+║ 5hr  ██████████  <P>%                              ║
+║ 7day ███████░░░  <P>%                              ║
+║                                                    ║
+║ 【Gemini】<模型名> / <供應商>                       ║
+║ pro  ██████████  <P>%                              ║
+║ flash█████████░  <P>%                              ║
+╚════════════════════════════════════════════════════╝
 ```
+
+長條圖規則：
+- 10 格寬度，每格代表 10%
+- █ 表示已用額度區間，░ 表示剩餘額度區間
+- 百分比為「剩餘額度」百分比
 
 ### 12.3 額度呈報老闆
 
-秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 CLI 框架名稱，不提及底層供應商）：
+秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 12.2 長條圖格式，含模型/供應商標示）：
 
 ```
 AskUserQuestion({
   questions: [{
-    question: "派工前額度呈報：\n\n【Claude】額度狀態摘要\n【Codex】額度狀態摘要\n【Gemini】額度狀態摘要\n\n是否繼續派工？",
+    question: "派工前額度呈報：\n\n╔════════════════════════════════════════════════════╗\n║              額度狀態長條圖（剩餘 %）               ║\n╠════════════════════════════════════════════════════╣\n║ （填入實際長條圖）                                  ║\n╚════════════════════════════════════════════════════╝\n\n是否繼續派工？",
     header: "額度呈報",
     options: [
       { label: "繼續派工", description: "按當前額度狀態繼續派工流程" },
@@ -214,8 +240,8 @@ AskUserQuestion({
 
 ### 12.5 去識別化合規
 
-- 額度報告使用 CLI 框架名稱（Claude/Codex/Gemini），不使用底層供應商名稱
-- 秘書根據 settings.json 動態判斷供應商，不硬編碼對應關係
+- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案）
+- 秘書根據 settings.json / settings.proxy.json 動態判斷各 CLI 供應商與模型，不硬編碼對應關係
 - 額度資訊僅在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案
 - onwatch poll 資料中的供應商名稱僅在秘書層內部使用
 
