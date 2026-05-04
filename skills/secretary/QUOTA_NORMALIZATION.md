@@ -25,7 +25,7 @@
 
 | Provider | 計算公式 | 說明 |
 |---|---|---|
-| Anthropic | 無法計算 | 若 API key invalid，標記為 unavailable |
+| Anthropic | `剩餘% = (remain / total) * 100` | 原始提供 `remain` 與 `total`，直接計算剩餘百分比 |
 | Z.ai | `剩餘% = 100 - tokens_percentage` | 原始提供 `tokens_percentage` (已用%) |
 | Codex | `剩餘% = 100 - utilization` | 原始提供 `utilization` (已用率) |
 | Gemini | `剩餘% = remaining` | 直接取 `remaining`，標記為 `remaining_direct` |

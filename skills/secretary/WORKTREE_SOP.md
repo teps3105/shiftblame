@@ -1,4 +1,4 @@
-# Worktree SOP
+# Worktree SOP v2.0.0
 
 shiftblame 自定義 worktree（`.shiftblame/<slug>/worktree/`），非 Claude 內建 worktree。Worktree 位於 slug 層級目錄內。
 

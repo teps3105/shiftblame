@@ -1,7 +1,7 @@
 {
   "name": "shiftblame",
-  "description": "推鍋 — PROXY 共議分工的七部門單向流程開發框架：RES→QA→SEC→PRD→DEV→QC→MIS，搭配秘書 skill 統籌派工",
-  "version": "1.2.0",
+  "description": "推鍋 — PROXY 共議分工的八部門五等級單向流程開發框架：L2:RES→MIS / L3:RES→PRD→DEV→MIS / L4:RES→QA→PRD→DEV→QC→MIS / L5:RES→SEC→QA→PRD→DEV→QC→EXP→MIS，搭配秘書 skill 統籌派工",
+  "version": "2.0.0",
   "author": {
     "name": "teps3105"
   },
@@ -12,6 +12,7 @@
     "workflow",
     "tdd",
     "development-framework",
-    "seven-department"
+    "eight-department",
+    "five-level"
   ]
 }

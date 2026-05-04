@@ -1,4 +1,4 @@
-# PROXY 自組織通訊協定
+# PROXY 自組織通訊協定 v2.0.0
 
 秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定義「怎麼做」。「怎麼做」由 PROXY 自行協商。
 
@@ -33,7 +33,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ```
 .shiftblame/<slug>/
 ├── meta.md              # 秘書寫入：記錄每輪派工的主執行者、當前模式等狀態
-├── worktree/            # 實作部門主執行者使用的單一共用 worktree
+├── worktree/            # 執行部門主執行者使用的單一共用 worktree
 └── <DEPT>/
     ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
     ├── consensus.md         # PROXY 寫入：分工 + 做法共識 + 產出結構
@@ -43,12 +43,13 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
     └── gemini/{proposal,result}.md
 ```
 
-### 共識匯聚機制（研究 vs 實作部門差異）
+### 共識匯聚機制（部門類型差異）
 
 | 部門類型 | execution_model | 共識機制 | consensus.md 寫入職責 |
 |---|---|---|---|
 | 研究部門（RES/QA/SEC/PRD） | equal_consensus | 三方同時派工，各自產出分析，consensus.md 由三方協商寫入（最後完成者彙整） | 三方 PROXY 協商，最後完成者彙整 |
-| 實作部門（DEV/QC/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由主執行者撰寫 | 主執行者負責撰寫 |
+| 執行部門（DEV/QC/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由主執行者撰寫 | 主執行者負責撰寫 |
+| EXP 部門 | single_executor | 單一執行者，無 worktree 編輯權，consensus.md 由執行者撰寫 | 單一執行者負責撰寫 |
 
 **研究部門（equal_consensus）共識流程：**
 1. 三方 PROXY 同時派工
@@ -57,11 +58,16 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 4. 三方協商寫入 consensus.md（最後完成者負責彙整，或由第三方 PROXY 接手）
 5. 各自執行分工，寫入 result.md
 
-**實作部門（lead_executor）共識流程：**
+**執行部門（lead_executor）共識流程：**
 1. 主執行者派工（第一階段）
 2. 主執行者完成後 commit
 3. 觀測者派工檢閱（第二階段）
 4. consensus.md 由主執行者撰寫（驗證摘要）
+
+**EXP 部門（single_executor）共識流程：**
+1. 單一執行者派工
+2. 執行者完成後寫入 result.md
+3. consensus.md 由執行者撰寫（驗證摘要）
 
 ### 子循環通訊目錄
 
@@ -101,22 +107,22 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 派工紀錄
 | 部門 | 主執行者 | 觀測者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
-| RES | Claude | Codex, Gemini | full | 1 | 2026-01-01T00:00:00Z |
-| QA | Codex | Claude, Gemini | full | 1 | 2026-01-01T01:00:00Z |
+| RES | Claude | Codex, Gemini | L5 | 1 | 2026-01-01T00:00:00Z |
+| QA | Codex | Claude, Gemini | L5 | 1 | 2026-01-01T01:00:00Z |
 
 ## 當前狀態
-- current_mode: full
+- current_mode: L5
 - 上次派工部門：QA
 - 下次主執行者由步驟 13 動態調配決定
 
 ## 模式變更紀錄
-- 2026-01-01T02:00:00Z：降級 medium（原因：範圍縮小，不可逆轉）
+- 2026-01-01T02:00:00Z：降級 L4（原因：範圍縮小，不可逆轉）
 
 ## 子循環紀錄
 | 子循環 | 模式 | 部門 | 狀態 | 時間 |
 |--------|------|------|------|------|
-| cycle-1 | basic | RES | 完成 | 2026-01-01T00:00:00Z |
-| cycle-2 | medium | RES → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
+| cycle-1 | L2 | RES | 完成 | 2026-01-01T00:00:00Z |
+| cycle-2 | L3 | RES → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
 ```
 
 > **註**：子循環紀錄表僅在需求拆分為多個子循環時才存在。無子循環時省略此區段。
@@ -125,7 +131,7 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 
 | 增量輪次 | 新增需求 | 模式 | 派工部門 | 狀態 | 時間 |
 |----------|---------|------|---------|------|------|
-| 1 | <需求描述> | basic | RES | 完成 | 2026-01-01T00:00:00Z |
+| 1 | <需求描述> | L3 | RES | 完成 | 2026-01-01T00:00:00Z |
 
 > **註**：動態增量紀錄表僅在使用「繼續補強」功能時才存在。無動態增量時省略此區段。
 
@@ -136,9 +142,12 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 ```markdown
 ---
 # execution_model 取代 lead_executor/observers
-execution_model: <equal_consensus / lead_executor>  # equal_consensus: 研究部門(RES/QA/SEC/PRD)；lead_executor: 實作部門(DEV/QC/MIS)
-current_mode: <basic / medium / full>
-task_type: <research / implementation>  # 研究部門填 research，實作部門填 implementation
+execution_model: <equal_consensus / lead_executor / single_executor>
+# equal_consensus: 研究部門(RES/QA/SEC/PRD)
+# lead_executor: 執行部門(DEV/QC/MIS)
+# single_executor: EXP 部門
+current_mode: <L2 / L3 / L4 / L5>
+task_type: <research / implementation / validation>  # research: 研究部門；implementation: 執行部門；validation: EXP
 worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 物理性移除此欄位
 ---
 ```
@@ -175,11 +184,11 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
 3. 主執行者由步驟 13 動態調配選定（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
-   - **實作部門（DEV/QC/MIS）**：兩階段派工（見下方）
-   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路 徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
+   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
+   - **執行部門（DEV/QC/MIS）**：兩階段派工（見下方）
+   - **EXP 部門**：單一執行者，不採兩階段派工
 
-
-### 實作部門兩階段派工步驟
+### 執行部門兩階段派工步驟
 
 1. **第一階段**：僅派工主執行者（lead_executor），使用 `run_in_background=true`
 2. **等待完成**：輪詢主執行者的 result.md，確認其完成回報
@@ -190,16 +199,23 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 
 觀測者在主執行者 commit 後才開始檢閱，確保檢閱對象為已提交的穩定狀態。
 
-### 實作部門共識產出
+### EXP 部門派工步驟
 
-實作部門（DEV/QC/MIS）採兩階段派工，觀測者獨立驗證而非辯論收斂。consensus.md 產出方式與研究部門不同：
+1. **單一執行者派工**：由步驟 13 動態調配選定的單一 PROXY 執行
+2. **執行完成**：確認執行者的 result.md 存在
+3. **產出共識**：consensus.md 由執行者撰寫（驗證摘要）
 
-- **研究部門**：consensus.md 由主執行者透過辯論收斂產出（部門產出）
-- **實作部門**：consensus.md 由秘書在觀測者全部完成後，基於三份 result.md 彙整寫入（驗證摘要）
+### 執行部門共識產出
 
-此為事實彙整（基於三份 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 PROXY 的 result.md 中。
+執行部門（DEV/QC/MIS）採兩階段派工，觀測者獨立驗證而非辯論收斂。consensus.md 產出方式與研究部門不同：
 
-實作部門 consensus.md 格式：
+- **研究部門**：consensus.md 由三方 PROXY 透過辯論收斂產出（部門產出）
+- **執行部門**：consensus.md 由秘書在觀測者全部完成後，基於三份 result.md 彙整寫入（驗證摘要）
+- **EXP 部門**：consensus.md 由單一執行者撰寫（驗證摘要）
+
+此為事實彙整（基於 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 PROXY 的 result.md 中。
+
+執行部門 consensus.md 格式：
 ```markdown
 # <DEPT> 驗證摘要
 
@@ -226,7 +242,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 
 ### 研究部門（RES/QA/SEC/PRD）— 同時派工
 
-同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權，嚴禁 使用 isolation="worktree"）：
+同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權，嚴禁使用 isolation="worktree"）：
 
 ```
 # 主執行者（範例：Claude）
@@ -237,7 +253,7 @@ Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-
 Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--yolo --skip-trust")
 ```
 
-### 實作部門（DEV/QC/MIS）— 兩階段派工
+### 執行部門（DEV/QC/MIS）— 兩階段派工
 
 **第一階段**：僅派工主執行者
 
@@ -254,6 +270,13 @@ Agent(subagent_type="shiftblame:<OBSERVER_1_PROXY>", prompt=proxy_prompt, name="
 Agent(subagent_type="shiftblame:<OBSERVER_2_PROXY>", prompt=proxy_prompt, name="<slug>-<observer2>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<observer2_bypass_flag>")
 ```
 
+### EXP 部門 — 單一執行者派工
+
+```
+# 單一執行者
+Agent(subagent_type="shiftblame:<PROXY>", prompt=proxy_prompt, name="<slug>-<executor>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<bypass_flag>")
+```
+
 ### CLI Bypass Flags 對照表
 
 | CLI | Bypass Flags | 說明 |
@@ -263,10 +286,10 @@ Agent(subagent_type="shiftblame:<OBSERVER_2_PROXY>", prompt=proxy_prompt, name="
 | codex exec | --dangerously-bypass-approvals-and-sandbox --ephemeral | 繞過 sandbox + 不保留 session |
 | gemini -p | --yolo --skip-trust | 自動確認 + 跳過信任檢查 |
 
-proxy_prompt **最小化**，研究部門含 3 項，實作部門含 4 項：
+proxy_prompt **最小化**，研究部門含 3 項，執行部門含 4 項：
 1. task.md 路徑
 2. 通訊目錄路徑
-3. worktree 路徑（僅實作部門提供，研究部門物理性移除）
+3. worktree 路徑（僅執行部門提供，研究部門物理性移除）
 4. current_mode
 
 **不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 PROXY 自己去讀、去決定的。
@@ -274,8 +297,8 @@ proxy_prompt **最小化**，研究部門含 3 項，實作部門含 4 項：
 ## PROXY 自組織流程
 
 ```
-1. 讀取 task.md（目標 + 約束，確認 execution_model：equal_consensus 為研究部門，lead_executor 為實作部門）
-2. 接入 slug 層級共用 worktree（由秘書建立，僅主執行者需要寫入權限，見 WORKTREE_SOP.md）
+1. 讀取 task.md（目標 + 約束，確認 execution_model：equal_consensus 為研究部門，lead_executor 為執行部門，single_executor 為 EXP）
+2. 接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）
 3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
 4. 讀取上游輸入（task.md 中列出的路徑）
 5. 各自提出 proposal（分工 + 做法 + 產出結構）
@@ -336,7 +359,7 @@ consensus.md 必須包含：
 當 RES 研究後將需求拆分為多個子循環時，適用以下規則：
 
 - **觸發條件**：RES 研究後，秘書判斷需求可拆分為多個獨立子任務
-- **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（basic/medium/full）
+- **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（L2/L3/L4/L5）
 - **共用 worktree**：同一 slug 下的所有子循環共用同一 worktree
 - **主執行者選定**：主執行者在每次派工時由步驟 13 動態調配決定（部門級別，非 slug 級別）
 - **通訊目錄**：各子循環的部門通訊目錄為 `<DEPT>/cycle-N/`（見通訊目錄結構）
@@ -345,15 +368,17 @@ consensus.md 必須包含：
 ## 部門分類
 
 - **RES（純研究部門）**：RES 是流程的純研究起點，執行專案現狀釐清、執行準則確立、問題診斷、市調等研究工作。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。RES 可單獨啟用、單獨收斂。
-- **MIS（純實作部門，收尾階段）**：MIS 是流程的實作終點與審計者，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
+- **EXP（單一執行部門）**：EXP 是用戶視角驗證部門，每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。不走兩階段派工。
+- **MIS（純執行部門，收尾階段）**：MIS 是流程的實作終點與審計者，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
 
 ## 派工規則
 
-- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一）
+- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一），除 EXP 部門（單一執行者）
 - **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
-- **實作部門主執行者必須在 worktree**：實作部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立
-- **實作部門採兩階段派工**：先派工主執行者，等待 commit 後再同時派工兩位觀測者。確保觀測者檢閱對象為已提交的穩定狀態
+- **執行部門主執行者必須在 worktree**：執行部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立
+- **執行部門採兩階段派工**：先派工主執行者，等待 commit 後再同時派工兩位觀測者。確保觀測者檢閱對象為已提交的穩定狀態
 - **研究部門維持同時派工**：RES、QA、SEC、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
+- **EXP 部門單一執行**：EXP 部門每次僅能有單一執行者，不採兩階段派工，無 worktree 編輯權
 - **Gemini 使用帳號登入認證（`gemini auth login`），不需環境變數注入**
 
 ## 退回規則
@@ -361,16 +386,16 @@ consensus.md 必須包含：
 - **採增量**：退回時 task.md 只列需補強的目標，不重寫已完成的部分
 - **通訊文件增量重寫**：退回時既有的 proposal/result/consensus 以增量方式重寫內容，不刪除文件（`rm -f`）；PROXY 重派後在原有文件上追加或修正，保留歷史決策脈絡
 - **輸出文件增量重寫**：部門目錄內的報告（consensus.md + 各 PROXY result.md）同樣以增量方式修正，不刪除重建
-- **部門產出增量記錄（僅中等/高等模式）**：中等/高等模式退回任意部門時，被退回部門在完成補強後，須於部門目錄內的報告文件（consensus.md）末尾增量追加退回紀錄，不得替換原有內容或覆蓋既有退回紀錄。每次退回都追加一組：
+- **部門產出增量記錄（僅 L3/L4/L5 模式）**：L3/L4/L5 模式退回任意部門時，被退回部門在完成補強後，須於部門目錄內的報告文件（consensus.md）末尾增量追加退回紀錄，不得替換原有內容或覆蓋既有退回紀錄。每次退回都追加一組：
   ```markdown
   ## 退回紀錄
   - 退回來源：<部門名稱>
   - 退回原因：<簡述原因>
   - 退回時間：<ISO 8601 timestamp>
-  - 退回輪次：Round N（僅中等/高等模式的 DEV/QC 多輪時標記）
+  - 退回輪次：Round N（僅 L3/L4/L5 模式的 DEV/QC 多輪時標記）
   ```
-- **初等模式例外**：退回增量記錄規則僅適用中等/高等模式；初等模式只有 RES 和 MIS，不存在跨部門退回（退回僅發生於 RES 與 MIS 之間）
-- **文件結構不變**：退回前後的通訊目錄與產出文件結構完全一致，不得新增或移除任何文件
+- **L2 模式例外**：退回增量記錄規則僅適用 L3/L4/L5 模式；L2 模式只有 RES 和 MIS，不存在跨部門退回（退回僅發生於 RES 與 MIS 之間）
+- **文件結構不變**：退回前後的通訊目錄與產出檔案結構完全一致，不得新增或移除任何檔案
 
 ## 執行期限額偵測
 
@@ -390,6 +415,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - **獨自執行時必須回報**：通訊目錄中只看到自己的 proposal → 停止並回報
 - **技術分歧不外溢**：PROXY 間的技術爭議必須在通訊目錄內解決，不透過秘書轉呈老闆。只有需求不明時才經秘書協調。
 - **權限拒絕必須報錯**：在 result.md 記錄，不可假裝完成
+- **EXP 部門**：無 worktree 編輯權（僅執行測試），發現問題僅記錄於報告，不直接修改
 
 ## 單點失效補救
 
@@ -426,23 +452,32 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 不同部門依職責性質採不同執行模型：
 
-### 非實作部門（QA/SEC/PRD）
+### 研究部門（RES/QA/SEC/PRD）
 
-維持現有模型，但主執行者身份已由步驟 13 動態調配選定並寫入 task.md frontmatter，研究階段不產生排他性編輯權。
+採 equal_consensus 模型，維持三人各自分析的現有模型：
 - 三人各自從不同面向收集數據與分析
-- 統一由主執行者寫入報告
+- 統一由主執行者寫入報告（最後完成者彙整）
 - 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
 
-### 實作部門（DEV/QC/MIS）
+### 執行部門（DEV/QC/MIS）
 
-改為主執行者獨佔單一 worktree 的編輯權與 Git 操作權，觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。採用兩階段派工：先派工主執行者，等待其完成並 commit 後，再同時派工觀測者檢閱已提交的內容。
+採 lead_executor 模型，主執行者獨佔單一 worktree 的編輯權與 Git 操作權：
 - 三人協調分工
-- 統一由主執行者實作/執行/測試並寫入實作報告
-- 觀測者在主執行者 commit 後才開始檢閱，負責檢閱實作品質/規範與報告成色
+- 主執行者負責實作/執行/測試並寫入實作報告
+- 觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤
+- 採用兩階段派工：先派工主執行者，等待其完成並 commit 後，再同時派工觀測者檢閱已提交的內容
+
+### EXP 部門
+
+採 single_executor 模型，單一執行者：
+- 每次僅能有單一執行者，避免測試衝突
+- 無 worktree 編輯權（僅執行測試）
+- 發現問題僅記錄於報告，不直接修改
+- 由步驟 13 動態調配選定
 
 ### 觀測者主動修正規範
 
-實作部門的觀測者在檢閱過程中可主動修正 worktree 上發現的錯誤：
+執行部門的觀測者在檢閱過程中可主動修正 worktree 上發現的錯誤：
 - 修正範圍：typo、版本號不一致、小規格偏差等輕微問題
 - 不應修正：架構重寫、新增大型功能、修改測試邏輯
 - 所有修正必須在 result.md 中以表格格式紀錄（檔案、行號、修改前後、原因）
@@ -467,8 +502,6 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
    - 透過通訊目錄協調（在 proposal.md 中發起協調請求）
    - 由主執行者裁決最終內容
 4. **通訊目錄協調機制**：觀測者在開始修正前，可先在通訊目錄寫入修正意圖（檔案、行號），另一位觀測者讀取後可避開衝突
-
-高等模式例外：DEV 依 PRD 的原子任務清單執行，每個原子任務為獨立派工單位，主執行者由步驟 13 動態調配選定。中等模式不受影響。
 
 ## PROXY 互助互監督機制
 
@@ -551,21 +584,9 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 PROXY 及 MIS。
 
-## 資料存取限制（金字塔累積制）
+## 資料存取限制
 
-資料存取採單向流程累積，僅能由上游逐層累積至當前部門。
-
-| 部門 | 可讀範圍 |
-|---|---|
-| RES | 全部（.shiftblame/REPO.md + 所有部門） |
-| MIS | 全部（.shiftblame/REPO.md + 所有部門） |
-| QA | QA.md + QA/ |
-| SEC | QA + SEC |
-| PRD | QA + SEC + PRD |
-| DEV | QA + SEC + PRD + DEV |
-| QC | QA + SEC + PRD + DEV + QC |
-
-嚴格禁止讀下游部門的檔案。RES 和 MIS 作為頂層部門，不受「嚴格禁止讀下游」限制。
+各部門僅能讀取自身及上游部門的產出，嚴格禁止讀取下游部門的檔案。
 
 ## 收尾規範
 
@@ -574,7 +595,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 格式：major.minor.build
 - 預設每次升級 build（第三段）
 - 不主動升級 minor 或 major，除非老闆明確指示
-- 版本重置為 major 版本時（如 8.4.0 → 1.0.0），需老闆明確指示
+- 版本重置為 major 版本時（如 2.0.0 → 1.0.0），需老闆明確指示
 - 同一 slug 內版本號僅在首次實作輪升 build，後續退回修正/增量輪次不重複升版。版本號最終由秘書在 squash merge 前確認
 
 ### .shiftblame/REPO.md 重寫規範

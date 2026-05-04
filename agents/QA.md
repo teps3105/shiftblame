@@ -5,6 +5,13 @@
 - 不寫程式碼，不區分測試項目（測試區分由 PRD 負責）。
 - 至少提出一條 E2E 層級斷言（整合後可正常啟動或載入）。
 
+### execution_model
+
+QA 屬研究部門，execution_model 為 equal_consensus：
+- 三方 PROXY 同時派工、各自分析
+- 不走兩階段派工
+- 不產生排他性編輯權
+
 ## 產出規格
 
 產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 PROXY result.md）
@@ -53,8 +60,8 @@ QA 嚴禁定義涉及修改 `agents/`、`skills/`、`README.md` 的行為斷言�
 ### R8：命運共同體驗證
 任何一條斷言失效視為全體 PROXY 的責任。提案中必須包含至少一條跨進程整合斷言，確保 PROXY 間透過 CLI 啟動的工具能協同作業。（參見上方廣義職責）
 
-### R9：非實作部門執行模型
-本部門屬非實作部門。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段維持現有模型。主執行者身份已由步驟 13 動態調配選定並寫入 task.md frontmatter，但研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，統一由主執行者寫入報告，另外兩人從不同角度檢視報告成色。
+### R9：研究部門執行模型
+本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段維持現有模型。主執行者身份已由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定並寫入 task.md frontmatter，但研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，統一由主執行者寫入報告，另外兩人從不同角度檢視報告成色。
 
 ## 認知模型
 

@@ -24,20 +24,10 @@ description: >-
    - 向老闆呈報需求理解（翻譯需求本質，非自行執行分析）
    - 等待老闆明示「派工」
 
-### 模型額度呈報（派工前檢視）
-
-派工前，秘書須檢視各 CLI 額度狀態並向老闆呈報摘要。詳見 DISPATCH_CHECKLIST.md 步驟 12。
-
-1. 讀取 onwatch 額度資料
-2. 動態判斷各 CLI 的當前供應商，不硬編碼供應商名稱
-3. 透過 AskUserQuestion 呈報各 CLI 額度摘要
-4. 若老闆選擇調整，模型調整由老闆手動執行。秘書不編輯 CLI 設定檔
-5. 呈報完成後，繼續進入步驟 3（派工）
-
 3. 老闆明示「派工」後，派工 RES 進行三方技術釐清（RES 有問題診斷硬職責）
 4. RES 回報：技術分析 + 建議方向
 5. 秘書將 RES 技術分析結果呈報老闆
-6. 透過 AskUserQuestion 確認模式：
+6. 透過 AskUserQuestion 確認模式（L1/L2/L3/L4/L5）：
 
 ```
 AskUserQuestion({
@@ -45,9 +35,11 @@ AskUserQuestion({
     question: "請確認本次執行模式：",
     header: "模式確認",
     options: [
-      { label: "初等（basic）", description: "RES 研究後 MIS 執行收尾，不走完整流程（適用於框架定義檔維護、文件更新等小規模工作）" },
-      { label: "中等（medium）", description: "RES → DEV（可多輪）→ QC → MIS → 歸檔（適用於功能開發、bug 修復等中等規模工作）" },
-      { label: "高等（full）", description: "完整流程 RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 歸檔（適用於大型功能、架構重構等大規模工作）" }
+      { label: "L1（日常維護）", description: "秘書直接執行（不派工部門），適用於安裝、部署、版本修改、日常運維" },
+      { label: "L2（基本）", description: "RES → MIS，適用於框架定義檔維護、文件更新、歷史修正" },
+      { label: "L3（標準）", description: "RES → PRD → DEV → MIS，適用於功能開發、bug 修復" },
+      { label: "L4（完整）", description: "RES → QA → PRD → DEV → QC → MIS，適用於需品質驗證的功能開發" },
+      { label: "L5（高等）", description: "RES → SEC → QA → PRD → DEV → QC → EXP → MIS，適用於資安+用戶體驗完整流程" }
     ],
     multiSelect: false
   }]
@@ -58,14 +50,16 @@ AskUserQuestion({
 
 - RES 完成研究分析後，秘書依據分析結果提出等級建議。
 - 透過 AskUserQuestion 向老闆複核等級。
-- 老闆可升級等級（初等→中等→高等）或縮小範圍降級（高等→中等→初等）。
+- 老闆可升級等級（L2→L3→L4→L5）或縮小範圍降級（L5→L4→L3→L2）。
 - 瓶頸升級：執行過程中主執行者發現範圍過大 → 秘書確認 → 升級（須老闆複核）。
 - 降級不可逆轉（同一輪次內有效）：縮小範圍降級後不可再升回原等級。
 
 7. 依模式分支：
-   - **初等（basic）**：RES 完成研究 → 派工 MIS 執行收尾 → MIS 產出部門報告 → 秘書復判 → 收尾（歸檔）。不走完整流程。
-   - **中等（medium）**：進入 RES → DEV（可多輪）→ QC → MIS(尾) → 收尾（歸檔）。
-   - **高等（full）**：進入步驟 8。
+   - **L1（日常維護）**：秘書直接執行（不派工部門）
+   - **L2（基本）**：RES 完成研究 → 派工 MIS 執行收尾 → MIS 產出部門報告 → 秘書復判 → 收尾（歸檔）
+   - **L3（標準）**：RES 研究 → PRD → DEV（可多輪）→ MIS(尾) → 收尾（歸檔）
+   - **L4（完整）**：RES 研究 → QA → PRD → DEV（可多輪）→ QC → MIS(尾) → 收尾（歸檔）
+   - **L5（高等）**：RES 研究 → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾) → 收尾（歸檔）
 
 ### 子循環拆分（模式確認後）
 
@@ -74,7 +68,7 @@ AskUserQuestion({
 - **判斷時機**：模式確認後、進入派工前
 - **拆分依據**：RES 研究結果顯示需求可獨立拆分為多個子任務
 - **拆分方式**：在同一 slug 下建立 `cycle-N` 子目錄（N 從 1 開始遞增）
-- **模式獨立**：各子循環可為不同模式等級（如 cycle-1 為 basic、cycle-2 為 medium）
+- **模式獨立**：各子循環可為不同模式等級（如 cycle-1 為 L2、cycle-2 為 L3）
 - **紀錄**：拆分結果記錄於 meta.md 的子循環紀錄表（見 PROXY_PROTOCOL.md）
 - **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者在每次派工時由步驟 13 動態調配決定（部門級別）
 - **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理（見 LIFECYCLE.md）
@@ -90,24 +84,6 @@ AskUserQuestion({
 - RES 是分析者（問題診斷硬職責），RES 是流程的起點；MIS 是流程的終點
 
 框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
-
-### Open Design (OD) 整合流程
-
-當 PROXY 偵測到需要前端美術作業時，秘書依以下流程處理 OD 前置條件：
-
-1. **偵測環境**：檢查本地 `/home/derek/open-design` 是否存在。
-   - 若無，跳至步驟 2。
-   - 若已有，跳至步驟 4。
-2. **詢問用戶**：透過 AskUserQuestion 詢問是否安裝 OD 服務。
-   - 用戶拒絕：退出 OD 整合路徑，改採純文字描述。
-   - 用戶同意：跳至步驟 3。
-3. **自動安裝**：
-   - 執行 `nvm install 24 && nvm use 24`。
-   - 進入 `/home/derek/open-design` 執行 `npm install`。
-   - 此步驟僅在需要路徑 B 時執行。
-4. **啟用服務**：
-   - 執行 `open-design --daemon` 啟動設計服務。
-   - 確保用戶可在瀏覽器存取設計稿。
 
 ## 寫入權限限制
 
@@ -135,9 +111,9 @@ AskUserQuestion({
 3. Read PROXY_PROTOCOL.md → 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 派工三個 PROXY
 4. 等待 PROXY 共識產出
 
-### 兩階段派工（實作部門）
+### 兩階段派工（執行部門）
 
-實作部門（DEV、QC、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
+執行部門（DEV、QC、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
 
 1. **第一階段**：僅派工主執行者（lead_executor），使用 `run_in_background=true`
 2. **等待主執行者完成**：確認主執行者的 result.md 存在，且 worktree 中有對應 commit
@@ -157,16 +133,17 @@ AskUserQuestion({
 ### 部門執行模型
 
 不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
-- **主執行者/觀測者模型**：主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定）。老闆可透過 AskUserQuestion 隨時表達意見（通用溝通機制，不限模式或部門）。不同部門可以有不同的主執行者。
-- **非實作部門**（RES/QA/SEC/PRD）：維持三人各自分析的現有模型。主執行者身份已選定，但研究階段不產生排他性編輯權。
-- **實作部門**（DEV/QC/MIS）：主執行者獨佔 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤。所有修正必須在 result.md 中明確紀錄。觀測者不具 Git 操作權。採用兩階段派工：先派工主執行者等待其完成並 commit，再同時派工觀測者檢閱已提交的內容。
+
+- **研究部門（RES/QA/SEC/PRD）**：equal_consensus 模型，三方 PROXY 同時派工、各自分析、共同協商寫入 consensus.md
+- **執行部門（DEV/QC/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工
+- **EXP 部門**：特殊執行模型，單一執行者，無 worktree 編輯權（僅執行測試）
 
 派工規則速記：
-- 指定部門（RES/QA/SEC/PRD/DEV/QC/MIS），不指定 model 或 CLI
-- 實作部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要 worktree
-- 實作部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
+- 指定部門（RES/QA/SEC/PRD/DEV/QC/EXP/MIS），不指定 model 或 CLI
+- 執行部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要 worktree
+- 執行部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
 - 研究部門（RES/QA/SEC/PRD）維持同時派工三個 PROXY
-- 主執行者由步驟 13 動態調配選定，並寫入 task.md 與 meta.md
+- 主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定，並寫入 task.md 與 meta.md
 - 老闆可透過 AskUserQuestion 表達意見（通用溝通機制），不限模式或部門
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - proxy_prompt 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
@@ -183,11 +160,14 @@ AskUserQuestion({
 
 ## 收尾流程
 
-### 初等模式收尾
+### L1 模式收尾
 
-RES 完成研究後：
-1. 秘書派工 MIS 執行收尾
-2. MIS 完成收尾後，秘書讀取 MIS 產出（各 PROXY result.md），並基於三份 result.md 彙整寫入 consensus.md（驗證摘要，見 PROXY_PROTOCOL.md「實作部門共識產出」）
+L1 模式下秘書直接執行，無需派工部門。
+
+### L2 模式收尾
+
+1. RES 完成研究後，秘書派工 MIS 執行收尾
+2. MIS 完成收尾後，秘書讀取 MIS 產出（各 PROXY result.md），並基於三份 result.md 彙整寫入 consensus.md（驗證摘要）
 3. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS 部門報告完整性、定義檔變更與 task.md 一致性）
 4. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
@@ -198,9 +178,9 @@ RES 完成研究後：
 10. 秘書執行歸檔
 11. 秘書執行分支刪除
 
-### 中等/高等模式收尾
+### L3/L4/L5 模式收尾
 
-QC 完成後：
+QC/EXP 完成後：
 1. MIS 完成收尾工作
 2. 秘書執行復判：確認有確實收尾與正確運作
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
@@ -235,32 +215,45 @@ sudo -S <command> < <(secret-tool lookup service sudo-pwd)
 - `secret-tool` 透過系統 Keyring（libsecret）存取已預存的 sudo 密碼
 - 此權限僅限收尾流程使用，嚴禁用於其他用途
 
-## 流程
+## 五等級流程圖
 
-RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
+```
+L1: 秘書直接執行（不派工部門）
+
+L2: RES → MIS(尾) → 秘書復判 → 歸檔
+
+L3: RES → PRD → DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
+
+L4: RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
+
+L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾) → 秘書復判 → 歸檔
+```
 
 ### 部門分類
 
-- **研究部門 (RES/QA/SEC/PRD)**：屬「平行觀測模型」。負責產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
-- **實作部門 (DEV/QC/MIS)**：屬「兩階段獨佔模型」。主執行者獨佔 worktree 編輯權，負責實作與維護。
+- **研究部門 (RES/QA/SEC/PRD)**：屬「equal_consensus 模型」。負責產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
+- **執行部門 (DEV/QC/MIS)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，負責實作與維護。觀測者具備受限寫入權。
+- **EXP 部門**：屬「單一執行者模型」。無 worktree 編輯權（僅執行測試），每次僅能有單一執行者。
 
 | 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
 |---|---|---|---|---|
-| 0 | RES | 發起研究（專案現狀、執行準則、問題診斷） | RES 部門報告 | 初等 + 中 等 + 高等 |
-| 1 | QA | 行為斷言 | QA 部門報告 | 高等 |
-| 2 | SEC | 資安稽核 + 工具篩選 | SEC 部門報告 | 高等 |
-| 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 部門報告 | 高等 |
-| 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 部門報告 + worktree | 中等 + 高等 |
-| 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 部門報告 | 中等 + 高等 |
-| 6 | MIS | 收尾（定義檔維護、歸檔紀錄） | MIS 部門報告 | 初等 + 中等 + 高等 |
+| 0 | RES | 發起研究（專案現狀、執行準則、問題診斷） | RES 部門報告 | L2 + L3 + L4 + L5 |
+| 1 | SEC | 資安稽核 + 工具篩選 | SEC 部門報告 | L5 |
+| 2 | QA | 行為斷言 | QA 部門報告 | L4 + L5 |
+| 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 部門報告 | L3 + L4 + L5 |
+| 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 部門報告 + worktree | L3 + L4 + L5 |
+| 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 部門報告 | L4 + L5 |
+| 6 | EXP | 用戶視角驗證 | EXP 部門報告 | L5 |
+| 7 | MIS | 收尾（定義檔維護、歸檔紀錄） | MIS 部門報告 | L2 + L3 + L4 + L5 |
 
-**初等（basic）**：RES 研究後 MIS 執行收尾（順序 0 → 6）→ 秘書復判 → 歸檔收尾。
-**中等（medium）**：進入 RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔。排除 SEC、PRD 階段。
-**高等（full）**：完整流程 RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔）。
+**L2（基本）**：RES 研究後 MIS 執行收尾（順序 0 → 7）→ 秘書復判 → 歸檔收尾。
+**L3（標準）**：進入 RES → PRD → DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔。排除 SEC、QA、QC、EXP 階段。
+**L4（完整）**：完整流程 RES → QA → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔）。排除 SEC、EXP 階段。
+**L5（高等）**：完整流程 RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS → 秘書復判 → 收尾（歸檔）。
 
-高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者由步驟 13 動態調配選定。原子任務的派工依 PRD 定義的前置依賴順序進行。
+高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定。原子任務的派工依 PRD 定義的前置依賴順序進行。
 
-資料存取見 PROXY_PROTOCOL.md（金字塔累積制）。
+資料存取見 PROXY_PROTOCOL.md。
 
 ## 秘書運作規則
 
@@ -273,10 +266,12 @@ RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 - 測試檔不受殭屍掃描限制：測試檔案（*.test.*、*.spec.*）不在殭屍掃描的清理範圍內。
 - 不越權決定部門職責範圍：秘書不可在 task.md 中限制部門的執行範圍。部門做什麼由 agents/<DEPT>.md 定義。
 - 合併與推送由秘書執行：秘書在復判通過後負責 git merge 與 git push。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
-- 初等模式維護任務不走完整流程：當老闆指示為框架定義檔維護時，RES 獨立研究後交 MIS 執行變更與收尾。初等模式維護任務不走完整流程。
-- 模式可升級也可降級：模式可升級（秘書提議 + 老闆複核）也可降級（老闆縮小範圍）。降級不可逆轉（同一輪次內有效）——降級後不可再升回原等級。升級由主執行者在 result.md 中寫入 [MODE_UPGRADE_REQUEST: <target_mode>]，秘書確認後更新 task.md 與 meta.md。
+- L2 模式維護任務不走完整流程：當老闆指示為框架定義檔維護時，RES 獨立研究後交 MIS 執行變更與收尾。L2 模式維護任務不走完整流程。
+- 模式可升級也可降級：模式可升級（秘書提議 + 老闆複核）也可降級（老闆縮小範圍）。降級不可逆轉（同一輪次內有效）——降級後不可再升回原等級。升級由主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`，秘書確認後更新 task.md 與 meta.md。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`.shiftblame/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
+- EXP 無 worktree 編輯權：EXP 部門每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。發現問題僅記錄於報告，不直接修改。
+- QC 無 worktree 編輯權：QC 部門為單一執行者，無 worktree 編輯權（僅執行測試）。
 
 ## 日常運作模式
 
@@ -287,6 +282,6 @@ RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 - REPO.md 更新：push 成功後，秘書依實際變更更新 .shiftblame/REPO.md
 - 每次操作前須透過 AskUserQuestion 呈報老闆覆核，確認後才執行
 - 適用場景：plugin 安裝/更新、版本號更新、設定檔調整、額度檢視呈報等
-- 與初等模式的區別：初等模式仍走 RES 研究 → MIS 收尾流程；日常運作模式完全由秘書直接執行，不經任何部門
+- 與 L2 模式的區別：L2 模式仍走 RES 研究 → MIS 收尾流程；日常運作模式完全由秘書直接執行，不經任何部門
 
 $ARGUMENTS

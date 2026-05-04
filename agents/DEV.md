@@ -8,6 +8,13 @@
 - Commit 前執行語法檢查（對應語言或框架 parse check）。
 - 撰寫 devlog。
 
+### execution_model
+
+DEV 屬執行部門，execution_model 為 lead_executor：
+- 主執行者獨佔 worktree 編輯權與 Git 操作權
+- 採用兩階段派工（先主執行者，commit 後派工觀測者）
+- 觀測者具備受限寫入權
+
 ## 產出規格
 
 產出路徑：`.shiftblame/<slug>/DEV/`（consensus.md + 各 PROXY result.md）
@@ -60,11 +67,11 @@ DEV 的三個 PROXY 透過外部 CLI（codex exec / claude -p / gemini -p）在 
 ### R10：全量測試時順序執行
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
-### R11：實作部門執行模型
-本部門屬實作部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並寫入實作報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
+### R11：執行部門執行模型
+本部門屬執行部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並寫入實作報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
-### R12：高等模式原子化執行
-高等模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者由步驟 13 動態調配選定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。中等模式不受此規則影響，DEV 依 PRD DAG 常規執行。
+### R12：L5 模式原子化執行
+L5 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
 
 ## 認知模型
 

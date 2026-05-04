@@ -1,4 +1,4 @@
-# 生命週期收尾
+# 生命週期收尾 v2.0.0
 
 MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。終點階段不可跳過）。
 
@@ -27,19 +27,27 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 
 無子循環的 slug 維持原有歸檔邏輯。
 
-## 三級歸檔邏輯
+## 五等級歸檔邏輯
 
-### 初等（basic）
+### L1（日常維護）
+- 秘書直接執行（不派工部門）
+- 無需歸檔
+
+### L2（基本）
 - RES → MIS(收尾) → 秘書復判 → 歸檔
 - 適用於框架定義檔維護、文件更新等小規模工作
 
-### 中等（medium）
-- RES → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
+### L3（標準）
+- RES → PRD → DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
 - 功能開發、bug 修復等中等規模工作
 
-### 高等（full）
-- RES → QA → SEC → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
-- 大型功能、架構重構等大規模工作
+### L4（完整）
+- RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔
+- 需品質驗證的功能開發
+
+### L5（高等）
+- RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾) → 秘書復判 → 歸檔
+- 資安+用戶體驗完整流程
 
 ## 0. 秘書復判
 
@@ -48,9 +56,11 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - **功能複核**：確認本次變更後的系統是否仍正確運作（如：核心功能測試、定義檔完整性）。
 - **復判通過**：秘書確認無誤後，方可發動歸檔流程。若復判不通過，應退回 MIS 修正。
 
-## 0.7 實作部門 consensus.md（歸檔前）
+## 0.7 執行部門 consensus.md（歸檔前）
 
-實作部門（DEV/QC/MIS）的 consensus.md 為驗證摘要（非辯論共識），由秘書在觀測者全部完成後、歸檔前，基於三份 result.md 彙整寫入。格式見 PROXY_PROTOCOL.md「實作部門共識產出」。
+執行部門（DEV/QC/MIS）的 consensus.md 為驗證摘要（非辯論共識），由秘書在觀測者全部完成後、歸檔前，基於三份 result.md 彙整寫入。格式見 PROXY_PROTOCOL.md「執行部門共識產出」。
+
+EXP 部門的 consensus.md 由單一執行者撰寫（驗證摘要）。
 
 ## 1. Squash Merge + Push
 
@@ -81,7 +91,8 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 ```bash
 # 歸檔閘門（SEC-A-03）
 # 研究部門：consensus.md 由部門產出（辯論共識），秘書不得代建。
-# 實作部門：consensus.md 由秘書基於三份 result.md 彙整寫入（驗證摘要），見步驟 0.7。
+# 執行部門：consensus.md 由秘書基於三份 result.md 彙整寫入（驗證摘要），見步驟 0.7。
+# EXP 部門：consensus.md 由單一執行者撰寫（驗證摘要）
 if [[ ! -s .shiftblame/<slug>/MIS/consensus.md ]]; then
   echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。" >&2
   exit 1

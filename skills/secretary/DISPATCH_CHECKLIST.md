@@ -1,14 +1,16 @@
-# 派工前 Checklist
+# 派工前 Checklist v2.0.0
 
 每次派工前逐條完成，不可跳過。
 
 ## 0. 模式確認
 
-派工前確認本次 slug 的模式（初等 / 中等 / 高等）。模式已在 SKILL.md 運作流程步驟 6 確認，此處為覆核：
+派工前確認本次 slug 的模式（L1/L2/L3/L4/L5）。模式已在 SKILL.md 運作流程步驟 6 確認，此處為覆核：
 
-- **初等（basic）**：RES → MIS 收尾，不走 QA → SEC → PRD → DEV → QC 流程
-- **中等（medium）**：RES → DEV（可多輪）→ QC → MIS(尾)
-- **高等（full）**：依完整流程依序派工
+- **L1（日常維護）**：秘書直接執行，不派工部門
+- **L2（基本）**：RES → MIS 收尾，不走 QA → SEC → PRD → DEV → QC → EXP 流程
+- **L3（標準）**：RES → PRD → DEV（可多輪）→ MIS(尾)
+- **L4（完整）**：RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾)
+- **L5（高等）**：RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 
 模式可升級也可降級（縮小範圍），降級不可逆轉。若模式未確認，退回 SKILL.md 運作流程步驟 6 完成確認。
 
@@ -53,19 +55,29 @@ task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 
 ```yaml
 ---
 execution_model: equal_consensus
-current_mode: <basic / medium / full>
+current_mode: <L2 / L3 / L4 / L5>
 task_type: research
 worktree_path: none
 ---
 ```
 
-**實作部門（DEV/QC/MIS）格式：**
+**執行部門（DEV/QC/MIS）格式：**
 ```yaml
 ---
 lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
 execution_model: lead_executor
-current_mode: <basic / medium / full>
+current_mode: <L2 / L3 / L4 / L5>
+worktree_path: <.shiftblame/<slug>/worktree/>
+---
+```
+
+**EXP 部門格式：**
+```yaml
+---
+execution_model: single_executor
+current_mode: <L5>
+task_type: validation
 worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```
@@ -109,18 +121,22 @@ proxy_prompt 只含四樣東西：
 | 部門 | 派工前必做 |
 |---|---|
 | RES | 確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、RES 獨立研究（不走兩階段派工） |
-| MIS（初等模式） | 確認模式為初等模式、確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、MIS 執行收尾 |
-| MIS（中等/高等模式） | 確認主執行者已由步驟 13 動態調配選定、單一 worktree 已建立 |
+| EXP | 確認 execution_model: single_executor、每次僅能有單一執行者、無 worktree 編輯權（僅執行測試） |
+| QC | 確認 execution_model: single_executor、每次僅能有單一執行者、無 worktree 編輯權（僅執行測試） |
+| MIS（L2 模式） | 確認模式為 L2 模式、確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、MIS 執行收尾 |
+| MIS（L3/L4/L5 模式） | 確認主執行者已由步驟 13 動態調配選定、單一 worktree 已建立 |
 | MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
-| QC | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
+| QC（L4/L5） | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
-| 實作部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
+| 執行部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
 | 研究部門（RES/QA/SEC/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 PROXY 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
 
-## 6. QC 定位提醒
+## 6. QC/EXP 定位提醒
 
-派工 QC 時 task.md 的目標中必須明確：QC 是破壞者（主動挖掘 BUG、邊緣案例、業務邏輯斷裂），不是規格驗收員。
+派工 QC 或 EXP 時 task.md 的目標中必須明確：
+- QC 是破壞者（主動挖掘 BUG、邊緣案例、業務邏輯斷裂），不是規格驗收員
+- EXP 是用戶視角驗證者，專注「用戶從哪個 view 點哪個按鈕觸發什麼行為」
 
 ## 7. 殭屍掃描注意
 
@@ -132,7 +148,7 @@ proxy_prompt 只含四樣東西：
 
 ## 9. Worktree 洩漏偵測
 
-派工前記錄 main 分支 git status 快照：
+派工明記錄 main 分支 git status 快照：
 ```bash
 git -C <MAIN_REPO> status --porcelain > /tmp/main-status-before.txt
 ```
@@ -143,15 +159,16 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 ```
 若 main 出現新增的未提交變更 → 標記為 worktree 洩漏違規，退回 MIS 處理。
 
-## 10. 兩階段派工確認（實作部門）
+## 10. 兩階段派工確認（執行部門）
 
-派工實作部門（DEV/QC/MIS）時，確認派工方式為兩階段：
+派工執行部門（DEV/QC/MIS）時，確認派工方式為兩階段：
 
 - **第一階段**：僅派工主執行者（`run_in_background=true`），不派工觀測者
 - **等待 commit**：主執行者完成後，驗證 worktree 中有對應 commit
 - **第二階段**：確認 commit 後，同時派工兩位觀測者（`run_in_background=true`）
 
 研究部門（RES/QA/SEC/PRD）不走兩階段，維持同時派工三個 PROXY。
+EXP 部門不走兩階段，每次僅能有單一執行者。
 
 ## 11. RES 起點產出驗證
 
@@ -161,7 +178,7 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 2. **執行準則確認**：確認 RES result 中含明確的執行準則
 3. **老闆確認**：透過 AskUserQuestion 確認 RES 起點產出可接受
 
-驗證不通過 → 退回 RES 補齊（不進入 QA）。
+驗證不通過 → 退回 RES 補齊（不進入下一部門）。
 
 ## 12. 模型額度檢視（全 CLI）
 
@@ -213,7 +230,7 @@ tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini po
 
 ### 12.3 額度呈報老闆
 
-秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 12.2 長條圖格式，含模型/供應商標示）：
+秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 12.2 長條圖格式，含模型/供應商的示）：
 
 ```
 AskUserQuestion({
@@ -254,7 +271,7 @@ AskUserQuestion({
 
 ### 12.5 去識別化合規
 
-- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取 的通訊檔案）
+- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案）
 - 秘書根據 settings.json 動態判斷各 CLI 供應商與模型，不硬編碼對應關係
 - 額度資訊僅在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案
 - onwatch poll 資料中的供應商名稱僅在秘書層內部使用
@@ -263,7 +280,7 @@ Claude 設定檔（settings.json）鎖定不動。秘書與 Claude PROXY 強制�
 
 ## 13. 動態調配決策
 
-根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執 行者機制。
+根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執行者機制。
 
 ### 13.1 調配資料來源
 
@@ -274,7 +291,7 @@ Claude 設定檔（settings.json）鎖定不動。秘書與 Claude PROXY 強制�
 ### 13.2 路由策略簡化
 
 1. **僅讀取 settings.json**：移除秘書對 `cli-*.json` 的掃描與注入邏輯。
-2. **額度共用**：秘書與 Claude PROXY 強制共用 `~/.claude/settings.json`。這能確 保 `onwatch` 監測與實際執行的一致性，並簡化認證流程。
+2. **額度共用**：秘書與 Claude PROXY 強制共用 `~/.claude/settings.json`。這能確保 `onwatch` 監測與實際執行的一致性，並簡化認證流程。
 3. **移除動態配方**：廢除配方檔掃描機制，將路由決策權交還給穩定的系統層配置。
 
 ### 13.3 排除條件
@@ -304,17 +321,21 @@ Claude 設定檔（settings.json）鎖定不動。秘書與 Claude PROXY 強制�
 6. 主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 CLI
 ```
 
-### 13.4 調配結果輸出
+### 13.5 調配結果輸出
 
 - **寫入 task.md frontmatter**：`lead_executor: <由步驟 13 動態調配選定的 CLI>`、`observers: [<其餘兩個 CLI>]`
 - **不輸出**：調配原因（不寫入 PROXY 可讀取的通訊檔案）
 
-### 13.5 Fallback 機制
+### 13.6 Fallback 機制
 
 當 onwatch 日誌無法讀取或額度資料不完整時，降級為公平序列 fallback：
 - Fallback 順序：Claude → Codex → Gemini → Claude...
 - **降級時須透過 AskUserQuestion 告知老闆**：「onwatch 不可用，暫時使用公平序列 fallback」
 
-### 13.6 與步驟 3 的銜接
+### 13.7 與步驟 3 的銜接
 
 步驟 3 的主執行者選定說明已更新為「由步驟 13 動態調配選定」，YAML 註解同步更新。
+
+### 13.8 EXP 部門特殊規則
+
+EXP 部門每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。主執行者由步驟 13 動態調配選定，但 EXP 不採兩階段派工。
