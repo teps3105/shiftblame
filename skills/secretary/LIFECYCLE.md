@@ -48,16 +48,6 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - **功能複核**：確認本次變更後的系統是否仍正確運作（如：核心功能測試、定義檔完整性）。
 - **復判通過**：秘書確認無誤後，方可發動歸檔流程。若復判不通過，應退回 MIS 修正。
 
-## 0.5 REPO.md 更新（push 後，必須執行）
-
-秘書在 push 成功後、執行 worktree 清理前，必須依據 MIS 收尾產出的 REPO.md 差異報告更新 .shiftblame/REPO.md，確保反映最終共識狀態。
-
-.shiftblame/REPO.md 更新原則：
-- 版本號：反映本次變更後的版本號
-- 技術棧：反映本次變更後的技術棧狀態
-- 待辦事項：移除已完成項目、新增本次產出的待辦
-- 其他區段：依差異報告更新
-
 ## 0.7 實作部門 consensus.md（歸檔前）
 
 實作部門（DEV/QC/MIS）的 consensus.md 為驗證摘要（非辯論共識），由秘書在觀測者全部完成後、歸檔前，基於三份 result.md 彙整寫入。格式見 PROXY_PROTOCOL.md「實作部門共識產出」。
@@ -69,6 +59,16 @@ MIS 回報 SUCCESS 後執行（MIS 為單向流程終點，收尾包含歸檔。
 - 使用 `git merge --squash <branch>` 合併 worktree 分支到 main
 - 使用 `git push origin main` 推送到遠端
 - 推送目標僅限 origin/main，禁止 force push
+
+## 1.5 REPO.md 更新（push 後，必須執行）
+
+秘書在 push 成功後、執行 worktree 清理前，必須依據 MIS 收尾產出的 REPO.md 差異報告更新 .shiftblame/REPO.md，確保反映最終共識狀態。
+
+.shiftblame/REPO.md 更新原則：
+- 版本號：反映本次變更後的版本號
+- 技術棧：反映本次變更後的技術棧狀態
+- 待辦事項：移除已完成項目、新增本次產出的待辦
+- 其他區段：依差異報告更新
 
 ## 2. Worktree 清理
 

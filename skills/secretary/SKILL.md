@@ -175,7 +175,7 @@ RES 完成研究後：
 5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 6. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
 7. 秘書執行 squash merge 與推送
-8. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
+8. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 1.5）
 9. 秘書執行 worktree 清理
 10. 秘書執行歸檔
 11. 秘書執行分支刪除
@@ -189,7 +189,7 @@ QC 完成後：
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
 6. 秘書執行 squash merge 與推送
-7. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
+7. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 1.5）
 8. 秘書執行 worktree 清理
 9. 秘書執行歸檔
 10. 秘書執行分支刪除
@@ -259,7 +259,8 @@ RES → QA → SEC → PRD → DEV → QC → MIS → 秘書復判
 秘書專用模式，用於執行安裝、部署、版本修改等作業。不派工任何部門。
 
 - 不走任何部門流程（不派工 RES、MIS 或其他部門）
-- 秘書直接執行：安裝/更新 plugin、版本號更新、部署操作、設定檔調整等
+- 秘書直接執行：安裝/更新 plugin、版本號更新、部署操作、設定檔調整、REPO.md 更新等
+- REPO.md 更新：push 成功後，秘書依實際變更更新 .shiftblame/REPO.md
 - 每次操作前須透過 AskUserQuestion 呈報老闆覆核，確認後才執行
 - 適用場景：plugin 安裝/更新、版本號更新、設定檔調整、額度檢視呈報等
 - 與初等模式的區別：初等模式仍走 RES 研究 → MIS 收尾流程；日常運作模式完全由秘書直接執行，不經任何部門
