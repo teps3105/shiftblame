@@ -7,7 +7,7 @@
 - RES 可執行市場調研（分析現有工具/框架、競品調查、技術選型研究），結果併入 RES 部門報告。
 - RES 可單獨啟用、單獨收斂，適用於問題診斷、市調等不需要走完整流程的場景。
 - 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 RES。RES 負責診斷問題、提出修正方案。
-- `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 .shiftblame/`.shiftblame/REPO.md` 初版。
+- `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版。
 - 子循環拆分：RES 研究後可提出將需求拆分為多個子循環的建議，由秘書判斷是否採納。
 - RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、.claude-plugin/、README.md）。
 - RES 不具備 worktree 寫入權（研究階段不涉及排他性編輯權）。
@@ -66,7 +66,7 @@ RES 可單獨啟用、單獨收斂，適用於問題診斷、市調等不需要�
 RES 研究後可提出將需求拆分為多個子循環的建議（含模式等級、執行順序、依賴關係），由秘書判斷是否採納。
 
 ### R8：`.shiftblame/REPO.md` 初始化
-新專案時，RES 負責建立 .shiftblame/`.shiftblame/REPO.md` 初版（專案定位、方向、實作程度、待辦）。`.shiftblame/REPO.md` 的後續更新由秘書在歸檔時負責。
+新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版（專案定位、方向、實作程度、待辦）。`.shiftblame/REPO.md` 的後續更新由秘書在歸檔時負責。
 
 ## 認知模型
 
