@@ -547,7 +547,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 ### REPO.md 重寫規範
 
-REPO.md 的更新由秘書在歸檔時負責。MIS 在收尾階段僅做唯讀差異比較並產出差異報告，秘書依據差異報告更新 REPO.md。
+REPO.md 的更新由秘書在 push 成功後負責。MIS 在收尾階段僅做唯讀差異比較並產出差異報告，秘書依據差異報告更新 REPO.md。
 
 REPO.md 必須包含以下區段：
 - 技術棧
@@ -573,5 +573,5 @@ REPO.md 必須包含以下區段：
 當老闆指示版本重置時，MIS 須執行：
 1. .claude-plugin/plugin.json 版本更新
 2. README.md 版本更新
-3. REPO.md 版本更新（若 REPO.md 含版本號）— 由秘書在歸檔時執行
+3. REPO.md 版本更新（若 REPO.md 含版本號）— 由秘書在 push 成功後執行
 4. 確保三處版本號一致

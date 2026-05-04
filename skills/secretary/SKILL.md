@@ -174,8 +174,8 @@ RES 完成研究後：
 4. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 6. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
-7. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
-8. 秘書執行 squash merge 與推送
+7. 秘書執行 squash merge 與推送
+8. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
 9. 秘書執行 worktree 清理
 10. 秘書執行歸檔
 11. 秘書執行分支刪除
@@ -188,8 +188,8 @@ QC 完成後：
 3. AskUserQuestion 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
 5. 復判通過且老闆選擇「確認歸檔」→ Read LIFECYCLE.md
-6. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
-7. 秘書執行 squash merge 與推送
+6. 秘書執行 squash merge 與推送
+7. 秘書依據 MIS 差異報告更新 REPO.md（見 LIFECYCLE.md 步驟 0.5）
 8. 秘書執行 worktree 清理
 9. 秘書執行歸檔
 10. 秘書執行分支刪除
