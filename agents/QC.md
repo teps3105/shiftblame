@@ -11,11 +11,10 @@
 
 ### execution_model
 
-QC 屬執行部門，execution_model 為 lead_executor：
-- 主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定
-- 無 worktree 編輯權（僅執行測試）
-- 採用兩階段派工（先主執行者，commit 後派觀測者）
-- 觀測者具備受限寫入權
+QC 屬執行部門，execution_model 為 single_executor：
+- 單一執行者，無 worktree 編輯權（僅執行測試）
+- 無兩階段派工（單一執行者，不適用兩階段）
+- 執行者負責產出驗證報告
 
 ## 產出規格
 
@@ -73,8 +72,8 @@ QC 的操作步驟必須可被其他 PROXY 在同一 worktree 上重現。任一
 ### R12：測試前檢查重複執行
 跑測試前檢查後台有沒有類似測試正在跑（不同 CLI 同時跑相同測試會互相干擾），避免重複執行。
 
-### R13：執行部門執行模型
-本部門屬執行部門。強制套用主執行者機制。主執行者無 worktree 編輯權（僅執行測試），觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
+### R13：單一執行部門執行模型
+本部門屬單一執行部門。單一執行者無 worktree 編輯權（僅執行測試），發現問題僅記錄於報告，不直接修改。
 
 ### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
 QC 在所有模式（L2/L3/L4/L5）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：

@@ -148,7 +148,7 @@ execution_model: <equal_consensus / lead_executor / single_executor>
 # single_executor: EXP 部門
 current_mode: <L2 / L3 / L4 / L5>
 task_type: <research / implementation / validation>  # research: 研究部門；implementation: 執行部門；validation: EXP
-worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 物理性移除此欄位
+worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 明確設為 none
 ---
 ```
 
@@ -163,7 +163,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 - ...（所有上游部門結論檔路徑）
 
 ## 約束
-- worktree 路徑：<路徑>（研究部門為「無（唯讀 worktree）」）
+- worktree 路徑：<路徑>（研究部門為 none，無 worktree）
 - 技術棧：<從 .shiftblame/REPO.md 提取>
 - 需求釐清結果：<如有>
 - 其他不可違反的限制

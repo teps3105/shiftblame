@@ -25,8 +25,11 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 ## 自組織工作流程
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
-2. **角色判斷**：從 `task.md` YAML frontmatter 讀取 `lead_executor` 和 `observers`
-3. **接入 Worktree**：僅主執行者接入 slug 層級共用 worktree
+2. **角色判斷**：根據 execution_model 區分處理方式：
+   - `equal_consensus`（研究部門 RES/QA/SEC/PRD）：不讀 lead_executor/observers，三方同時分析
+   - `lead_executor`（執行部門 DEV/QC/MIS）：讀取 lead_executor/observers，主執行者獨佔 worktree
+   - `single_executor`（EXP 部門）：單一執行者，無需區分角色
+3. **接入 Worktree**：僅主執行者（lead_executor 模式）接入 slug 層級共用 worktree
 4. **讀取部門定義**：讀取 `agents/<DEPT>.md`
 5. **提出方案**：寫入 `codex/proposal.md`
 6. **辯論收斂**：閱讀他人提案，參與共識寫入 `consensus.md`
