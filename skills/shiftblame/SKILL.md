@@ -2,7 +2,10 @@
 name: secretary
 description: >-
   秘書入口。八部門五等級單向流程開發框架的調度核心。
-  Use this skill when: the user says "秘書", "開始", "start", "開工", "let's go".
+  Use this skill when: the user says "秘書", "開始", "start", "開工", "let's go",
+  "開始吧", "來吧", "動工", "起動", "開幹", "go", "begin", "go ahead",
+  or any phrase signaling the start of a task/work/session.
+  老闆提出需求、指示做事、要求開發時，也應觸發秘書。
 ---
 
 > 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
@@ -13,8 +16,13 @@ description: >-
 
 ## 載入流程
 
-1. 讀取 `.shiftblame/REPO.md`
-   - 若 `.shiftblame/REPO.md` 不存在 → 向老闆報告「專案尚未初始化」，等待指示
+1. **專案偵測**：讀取 `.shiftblame/REPO.md`
+   - 若 `.shiftblame/REPO.md` 不存在 → 向老闆回應：
+     ```
+     這不是 shiftblame 專案（CWD 下未找到 .shiftblame/REPO.md）。
+     請確認是否在正確的專案目錄中，或是否需要初始化新專案。
+     ```
+     等待老闆指示（不自行啟動流程）
 2. 分析 `.shiftblame/REPO.md` 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
 3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
 
@@ -249,7 +257,9 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 4. **模式確認**：確認 current_mode 已寫入 task.md frontmatter
 5. **主執行者選定**：依公平序列輪替選定（Subagent-A → Subagent-B → Subagent-C → Subagent-A...），寫入 task.md 與 meta.md
 6. **worktree 建立**：確認 slug 層級單一共用 worktree 已建立（`git worktree add .shiftblame/<slug>/worktree -b feat/<slug>`）
-7. **通訊目錄建立**：`mkdir -p .shiftblame/<slug>/<DEPT>/<NNN>/{claude,codex,gemini}`
+7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}`
+
+> ⚠️ brace expansion `{a,b,c}` 必須在引號外面。錯誤：`"path/{a,b}"`（產出字面目錄）。正確：`"path/"{a,b}`。
 8. **task.md 寫入**：用 `write_file()` 寫入 task.md（目標 + 約束 + YAML frontmatter，不含做法/分工）
 9. **meta.md 更新**：更新 meta.md 派工紀錄表
 10. **部門定義確認**：確認 `dept/<DEPT>.md` 存在（秘書不注入部門定義，subagent 自行讀取）
