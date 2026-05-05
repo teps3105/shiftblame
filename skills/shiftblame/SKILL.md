@@ -27,7 +27,7 @@ description: >-
 
 1. **純提問/答詢**：直接回答，不派工
 2. **L1 日常操作**（`.shiftblame/REPO.md` 更新、歸檔、通訊目錄寫入）：直接執行
-3. **框架定義檔修改**（SKILL.md、`dept/*.md`、`cli/*.md`）：走 L2+ 流程
+3. **框架定義檔修改**（SKILL.md、PROXY.md、MODEL.md、`DEPT/*.md`）：走 L2+ 流程
 4. **程式碼修改**：走 L3+ 流程
 5. **無法分類**：向老闆確認
 
@@ -108,8 +108,8 @@ clarify(question="請確認本次執行模式：", choices=[
 
 ## 已知陷阱
 
-- **CLI 能力宣告必須實測**：涉及 CLI 能力（如 `--acp` 支援、沙箱行為）時，必須以 `--help` 輸出或實際執行為準，不可僅依賴 schema 文件或第三方文件推斷。
-- CLI 能力不足時向上請求工具支援（見「向上請求工具支援」機制）：subagent 透過 terminal() 呼叫 CLI 時若遇能力不足（缺少必要 flag、沙箱限制、無法完成寫入操作等），必須在 result.md 中寫入 `[TOOL_SUPPORT_REQUEST: <工具名稱>]` 標記，秘書偵測到此標記後透過 clarify() 向老闆報告並請求指示。禁止靜默降級或直接跳過任務。
+- **Hermes 呼叫規格必須遵守**：子代理透過 `hermes chat -q` 呼叫時，必須遵守 PROXY.md 中定義的呼叫參數規格。不可僅依賴第三方文件推斷。
+- Hermes 子代理呼叫能力不足時向上請求工具支援（見「向上請求工具支援」機制）：subagent 透過 `hermes chat -q` 呼叫時若遇能力不足（模型限額、服務不可用等），必須在 result.md 中寫入 `[TOOL_SUPPORT_REQUEST: <工具名稱>]` 標記，秘書偵測到此標記後透過 clarify() 向老闆報告並請求指示。禁止靜默降級或直接跳過任務。
 
 ## 寫入權限限制
 
@@ -119,7 +119,7 @@ clarify(question="請確認本次執行模式：", choices=[
 - task.md、result.md、consensus.md、failure-notice.md（通訊目錄內）
 
 禁止寫入：
-- `dept/` 目錄下任何檔案
+- `DEPT/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
 - `README.md` 等專案根目錄定義檔（`.shiftblame/REPO.md` 除外，秘書在歸檔時可更新 `.shiftblame/REPO.md`）
 - worktree 與通訊目錄建立（歸屬秘書，所有部門不負責建立）
@@ -137,9 +137,9 @@ clarify(question="請確認本次執行模式：", choices=[
         ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
         ├── consensus.md         # subagent/leader 寫入：分工 + 做法共識 + 產出結構
         ├── failure-notice.md   # subagent 寫入：失敗通知
-        ├── claude/{analysis,result}.md
-        ├── codex/{analysis,result}.md
-        └── gemini/{analysis,result}.md
+        ├── proxy-a/{analysis,result}.md
+        ├── proxy-b/{analysis,result}.md
+        └── proxy-c/{analysis,result}.md
 ```
 
 ### 共識匯聚機制（部門類型差異）
@@ -258,7 +258,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 - 分工指示（誰做什麼）← subagent 自行決定
 - 做法步驟（怎麼做）← subagent 自行決定
 - 產出格式指示（長什麼樣）← subagent 自行決定
-- 部門定義內容 ← subagent 自行讀取 dept/<DEPT>.md
+- 部門定義內容 ← subagent 自行讀取 DEPT/<DEPT>.md
 ```
 
 **秘書禁止在 task.md 中寫「建議分工」或「做法步驟」。** 寫了 = 違規。
@@ -275,12 +275,12 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 4. **模式確認**：確認 current_mode 已寫入 task.md frontmatter
 5. **主執行者選定**：依公平序列輪替選定（Subagent-A → Subagent-B → Subagent-C → Subagent-A...），寫入 task.md 與 meta.md
 6. **worktree 建立**：確認 slug 層級單一共用 worktree 已建立（`git worktree add .shiftblame/<slug>/worktree -b feat/<slug>`）
-7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}`
+7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{proxy-a,proxy-b,proxy-c}`（數量由 MODEL.md 定義）
 
 > ⚠️ brace expansion `{a,b,c}` 必須在引號外面。錯誤：`"path/{a,b}"`（產出字面目錄）。正確：`"path/"{a,b}`。
 8. **task.md 寫入**：用 `write_file()` 寫入 task.md（目標 + 約束 + YAML frontmatter，不含做法/分工）
 9. **meta.md 更新**：更新 meta.md 派工紀錄表
-10. **部門定義確認**：確認 `dept/<DEPT>.md` 存在（秘書不注入部門定義，subagent 自行讀取）
+10. **部門定義確認**：確認 `DEPT/<DEPT>.md` 存在（秘書不注入部門定義，subagent 自行讀取）
 11. **上游產出驗證**：讀取上游部門 result.md 確認完成（非第一個部門時）
 12. **去識別化檢查**：task.md 不含模型名稱、供應商名稱、具體分工
 13. **公平序列輪替**：確認主執行者與上次不同（除非三方中已有兩方完成輪替）
@@ -291,13 +291,13 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 
 ```
 delegate_task(tasks=[
-  {goal: "讀取 {task.md 路徑} 並以 Claude 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 Codex 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 Gemini 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Proxy-A 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Proxy-B 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Proxy-C 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
 ])
 ```
 
-三個 task 陣列元素自動並行執行。subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI 進行實際工作。CLI 分配由秘書在 context 中提供。
+三個 task 陣列元素自動並行執行。subagent 由 Hermes 透過 `hermes chat -q --provider <X> --model <Y>` 呼叫，模型配置由 MODEL.md 定義。
 
 ### 執行部門兩階段派工
 
@@ -330,8 +330,8 @@ delegate_task(tasks=[
 - **執行部門（DEV/QC/EXP/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工（QC/EXP 無 worktree 編輯權，僅執行測試）
 
 派工規則速記：
-- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI 進行實際工作（去識別化：claude / codex / gemini）
-- `delegate_task` 沒有直接的 per-task `model` 參數；跨模型派工透過 `terminal()` 呼叫外部 CLI 實現
+- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），subagent 由 Hermes 透過 `hermes chat -q` 呼叫（去識別化：proxy-a / proxy-b / proxy-c）
+- 跨模型派工透過 PROXY.md 定義的呼叫機制實現，模型映射由 MODEL.md 管理
 - 執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要 worktree
 - 執行部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
 - 研究部門（RES/SEC/QA/PRD）維持同時派工三個 subagent
@@ -339,7 +339,7 @@ delegate_task(tasks=[
 - 老闆可透過 `clarify` 表達意見（通用溝通機制），不限模式或部門
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - context 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
-- subagent 自行用 `read_file()` 讀取 dept/<DEPT>.md、確認主執行者身份、協商分工、決定做法
+- subagent 自行用 `read_file()` 讀取 DEPT/<DEPT>.md、確認主執行者身份、協商分工、決定做法
 - 技術分歧由 subagent 內部解決，秘書不參與技術裁決
 - 需求不明時先問老闆釐清，不自行解讀傳遞
 
@@ -363,7 +363,7 @@ subagent 彼此僅知透過框架派工，不知底層模型。派工時不可�
 1. 讀取 task.md（目標 + 約束）— 使用 read_file()
 2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門、主執行者為執行部門），在讀取 task.md 後立即判斷
 3. 接入 slug 層級共用 worktree（由秘書建立）
-4. 讀取 dept/<DEPT>.md（部門職責 + 產出規格，自行讀取）— 使用 read_file()
+4. 讀取 DEPT/<DEPT>.md（部門職責 + 產出規格，自行讀取）— 使用 read_file()
 5. 讀取上游輸入（task.md 中列出的路徑）— 使用 read_file()
 6. 辯論收斂 → 寫入 consensus.md（直接論點比較，三方異議直接在共識階段表達）— 使用 write_file()
 7. 各自執行分工 → 寫入 result.md — 使用 write_file()
@@ -379,9 +379,9 @@ consensus.md 必須包含：
 ```markdown
 # <DEPT> 共識
 ## 分工
-- Claude：<工作項目>
-- Codex：<工作項目>
-- Gemini：<工作項目>
+- Proxy-A：<工作項目>
+- Proxy-B：<工作項目>
+- Proxy-C：<工作項目>
 ## 做法
 <三方同意的執行方案>
 ## 產出結構
@@ -408,7 +408,7 @@ consensus.md 必須包含：
 
 ```markdown
 # 失敗通知
-- **Subagent**：<Claude/Codex/Gemini>
+- **Subagent**：<Proxy-A/Proxy-B/Proxy-C>
 - **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED(N)/EMPTY_OUTPUT>
 - **已完成**：<已完成的分工項目清單>
 - **未完成**：<未完成的分工項目清單>
@@ -429,7 +429,7 @@ consensus.md 必須包含：
 
 - subagent 應互相監督，發現同事的執行錯誤時直接修正，不等秘書發現
 - 提前完成作業的 subagent 不是發呆，而是監督同事的作業是否正確
-- 各 subagent 的工具與指令定義是明文寫在 dept/*.md 中的，同事可以閱讀並驗證
+- 各 subagent 的工具與指令定義是明文寫在 DEPT/*.md 與 PROXY.md 中的，同事可以閱讀並驗證
 
 ### 執行期限額偵測
 
@@ -488,14 +488,14 @@ subagent 執行後，若偵測到 HTTP 429/503/529 等限額錯誤，自動寫�
 **禁止行為：**
 - 禁止以文字描述替代實際執行證據
 - 禁止跳過驗證步驟
-- CLI 能力不足時不跳過，寫入 result.md 向上請求工具支援（見下方機制）
+- Hermes 子代理呼叫能力不足時不跳過，寫入 result.md 向上請求工具支援（見下方機制）
 
 ### 向上請求工具支援
 
-當 subagent 偵測到 CLI 能力不足（缺少必要 flag、無法完成寫入操作、沙箱限制等）時，必須依以下流程處理：
+當 subagent 偵測到 Hermes 子代理呼叫能力不足（模型限額、服務不可用、工具缺失等）時，必須依以下流程處理：
 
-1. **記錄問題**：在 result.md 中記錄具體的 CLI 限制和嘗試過的解決方案
-2. **嘗試替代方案**：使用 CLI 的其他 flags 或原生工具（`terminal()` shell 指令、`write_file()`、`patch()`）完成工作
+1. **記錄問題**：在 result.md 中記錄具體的限制和嘗試過的解決方案
+2. **嘗試替代方案**：使用其他工具（`terminal()` shell 指令、`write_file()`、`patch()`）完成工作
 3. **向上請求支援**（若替代方案不足）：在 result.md 中寫入：
    ```
    [TOOL_SUPPORT_REQUEST: <需要的工具/能力>]
@@ -775,7 +775,7 @@ sudo -S <command> < <(secret-tool lookup service sudo-pwd)
 
 #### 其他部門與 sudo
 
-僅秘書需要 sudo 權限。其他部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS）不需要也不應取得 sudo 存取權。CLI 定義（cli/*.md）不涉及 sudo 相關 flags。
+僅秘書需要 sudo 權限。其他部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS）不需要也不應取得 sudo 存取權。PROXY.md 定義子代理呼叫機制，不涉及 sudo 相關配置。
 
 ## 五等級流程圖
 
@@ -838,10 +838,10 @@ L5: RES（可多輪）→ SEC（可多輪）→ QA（可多輪）→ PRD（可�
 ## 秘書運作規則
 
 - 無過濾二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
-- CLI 能力不足時向上請求工具支援：subagent 透過 terminal() 呼叫 CLI 時可能被 sandbox 或安全掃描阻擋，或遇到 CLI 能力不足的情況。subagent 必須在 result.md 中記錄問題，嘗試替代方案後若仍不足，寫入 `[TOOL_SUPPORT_REQUEST]` 標記請求支援。秘書偵測到此標記後透過 clarify() 向老闆報告。禁止靜默降級或直接跳過任務。閘門不因 CLI 降級而退回（已記錄並有替代方案時），但在報告中記錄。
+- Hermes 子代理呼叫能力不足時向上請求工具支援：subagent 透過 `hermes chat -q` 呼叫時可能遇到模型限額、服務不可用等情況。subagent 必須在 result.md 中記錄問題，嘗試替代方案後若仍不足，寫入 `[TOOL_SUPPORT_REQUEST]` 標記請求支援。秘書偵測到此標記後透過 clarify() 向老闆報告。禁止靜默降級或直接跳過任務。閘門不因模型降級而退回（已記錄並有替代方案時），但在報告中記錄。
 - 流程強制性輸入鏈：流程的每個節點必須用 `read_file()` 讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，匯報三方 subagent 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
-- subagent 職責：自行讀取 task.md、dept/<DEPT>.md、上游輸入；自行決定分工、做法、產出結構；辯論收斂、執行、寫入 result.md。
+- subagent 職責：自行讀取 task.md、DEPT/<DEPT>.md、上游輸入；自行決定分工、做法、產出結構；辯論收斂、執行、寫入 result.md。
 - 秘書寫入權限限制：秘書零編輯權限。秘書的所有寫入操作限於通訊目錄。框架定義檔的變更只能由 MIS 部門在 worktree 上執行。.shiftblame/REPO.md 的更新由秘書在歸檔時執行。
 - 禁止在 main 上修改：所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。
 

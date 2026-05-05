@@ -19,7 +19,7 @@ _「這不是我的鍋。」_
 
 ## ✨ 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以**純 Markdown 定義檔**構建跨模型的協作流程。三個 PROXY 以 Hermes Agent 的 `delegate_task` 子代理形式運作，各自可配置不同模型，在同一個 worktree 上透過**自組織分工機制**共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
+`shiftblame` 是一套 AI agents 流程定義框架，以**純 Markdown 定義檔**構建跨模型的協作流程。子代理以 Hermes Agent 的 `delegate_task` 子代理形式運作，透過 `hermes chat -q` 統一呼叫，各自可配置不同模型，在同一個 worktree 上透過**自組織分工機制**共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
 框架以 Hermes Agent Skill 形式發布，載入後 Skill 自動注入秘書系統提示，使用者直接對話即可啟動八部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
@@ -29,9 +29,7 @@ _「這不是我的鍋。」_
 
 ### 🤖 PROXY 外殼代理
 
-三個 PROXY（`PROXY_A` / `PROXY_B` / `PROXY_C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。subagent 透過 `terminal()` 呼叫各自的非互動 CLI（`claude -p` / `codex exec` / `gemini -p`）進行實際工作，實現三方去識別化與上下文完全隔離。
-
-> **技術說明**：三方 CLI 的 ACP 協議支援程度不同。截至 2026-05-05，僅 Gemini CLI 原生支援 `--acp` 旗標；Claude CLI 和 Codex CLI 均不支援 `--acp`。因此跨模型派工的標準路徑是 subagent 透過 `terminal()` 呼叫各 CLI 的非互動模式，而非 `acp_command`。
+三個 PROXY（`Proxy-A` / `Proxy-B` / `Proxy-C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。subagent 由 Hermes 透過 `hermes chat -q --provider <X> --model <Y>` 統一呼叫，實現多方去識別化與上下文完全隔離。
 
 ### 🔄 自組織分工
 
@@ -60,7 +58,7 @@ _「這不是我的鍋。」_
 
 ### 🎭 代理去識別化
 
-PROXY 彼此僅知使用三種不同的 CLI（由秘書透過 context 分配），不知底層模型細節，避免偏好干擾協作判斷。CLI 名稱由 Hermes config.yaml 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
+PROXY 彼此僅知使用不同的模型（由 MODEL.md 定義配置），不知底層模型細節，避免偏好干擾協作判斷。模型配置由 MODEL.md 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
 
 ---
 
@@ -103,19 +101,14 @@ PROXY 彼此僅知使用三種不同的 CLI（由秘書透過 context 分配）�
 
 ```
 shiftblame-hermes/
-├── agents/
-│   ├── RES.md · SEC.md · QA.md · PRD.md · DEV.md · QC.md · EXP.md · MIS.md
-│   ├── PROXY_A.md
-│   ├── PROXY_B.md
-│   └── PROXY_C.md
 ├── skills/
-│   └── secretary/
+│   └── shiftblame/
 │       ├── SKILL.md
-│       ├── DISPATCH_CHECKLIST.md
-│       ├── GATE_FLOW.md
-│       ├── PROXY_PROTOCOL.md
-│       ├── WORKTREE_SOP.md
-│       └── LIFECYCLE.md
+│       ├── PROXY.md
+│       ├── MODEL.md
+│       └── DEPT/
+│           ├── RES.md · SEC.md · QA.md · PRD.md
+│           ├── DEV.md · QC.md · EXP.md · MIS.md
 ├── LICENSE
 └── README.md
 ```
