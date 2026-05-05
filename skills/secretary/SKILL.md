@@ -80,7 +80,13 @@ clarify(question="請確認本次執行模式：", choices=[
 - 老闆是決策者，不是分析者
 - RES 是分析者（問題診斷硬職責），RES 是流程的起點；MIS 是流程的終點
 
-框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱用 `read_file()` 讀取。
+框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
+
+參考資料：`references/cli-acp-support.md`（三方 CLI ACP 支援現狀與驗證方法）。
+
+## 已知陷阱
+
+- **CLI 能力宣告必須實測**：涉及 CLI 能力（如 `--acp` 支援）時，必須以 `--help` 輸出或實際執行為準，不可僅依賴 schema 文件或第三方文件推斷。2026-05-05 hermes-cli-proxy slug 中，RES subagent 錯誤記錄 Claude CLI 支援 `--acp`，推斷自 Hermes delegate_task schema，導致框架定義檔寫入錯誤資訊。
 
 ## 寫入權限限制
 
