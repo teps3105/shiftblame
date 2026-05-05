@@ -62,3 +62,29 @@ description: Codex 子代理。在同一 worktree 上與其他子代理協調，
 | `TIMEOUT` | 執行超時 |
 | `EXEC_FAILED` | 執行失敗 |
 | `EMPTY_OUTPUT` | 輸出為空 |
+
+## CLI 呼叫規格（Hermes delegate_task）
+
+Hermes 透過 `delegate_task` 呼叫 Codex CLI 時，使用以下規格：
+
+### 非互動模式
+```bash
+codex -q "prompt" --approval-mode full-auto
+```
+- `-q`：快速模式（quiet），直接傳入 prompt 非互動執行
+- `--approval-mode full-auto`：全自動審批模式，無需人工確認
+
+### ACP 模式（Agent Communication Protocol）
+```bash
+codex --acp --stdio
+```
+- `--acp`：啟用 ACP 協議模式
+- `--stdio`：透過標準輸入輸出通訊
+
+### 權限 Flags
+- `--dangerously-bypass-approvals-and-sandbox`：**Codex 必加此 flag 才能執行寫入操作**（檔案建立、修改、刪除等）。無此 flag 時 Codex 為唯讀模式，僅能讀取與分析。
+- delegate_task 應根據任務性質決定是否附加此 flag（研究任務可省略，執行任務必須附加）
+
+### 安全注意事項
+- 無 `--dangerously-bypass-approvals-and-sandbox` 時 Codex 為唯讀模式，delegate_task 需在需要寫入操作時明確附加此 flag
+- 此 flag 名稱含「dangerously」提醒使用者注意風險，delegate_task 應僅在受控環境（worktree 分支）中使用

@@ -69,7 +69,7 @@ MIS 可單獨收斂，適用於框架定義檔修正等收尾工作。流程的�
 功能開發途中若有外部工具需求（如需安裝新套件、啟用新服務等），須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ### R7：合併、push、歸檔、worktree 清理、分支刪除由秘書執行
-合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。subagent（PROXY）嚴禁直接操作 main 分支。
+合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。subagent（子代理）嚴禁直接操作 main 分支。
 
 ### R8：MIS L2 模式獨立執行
 MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 負責診斷與規劃，MIS 負責執行變更與收尾。L2 模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。L2 模式下 MIS 可直接修改定義檔並執行必要 git 操作。L2 模式結束前，MIS 必須產出 MIS 部門報告到 `.shiftblame/<slug>/MIS/<NNN>/`（consensus.md + 各 subagent result.md），內容依「流程終點產出」規格。其中 L2 模式的產出必須明確包含 `.shiftblame/REPO.md` 差異報告（見流程終點產出第 6 項）。

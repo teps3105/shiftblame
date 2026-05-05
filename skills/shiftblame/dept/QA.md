@@ -57,7 +57,7 @@ QA 嚴禁定義涉及修改 `dept/`、`skills/`、`README.md` 的行為斷言。
 ### R8：命運共同體驗證
 任何一條斷言失效視為全體 subagent 的責任。提案中必須包含至少一條跨進程整合斷言，確保 subagent 間透過 delegate_task 派工的工具能協同作業。
 ### R9：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
+本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
 
 ## 認知模型
 

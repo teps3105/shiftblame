@@ -111,9 +111,9 @@ clarify(question="請確認本次執行模式：", choices=[
         ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
         ├── consensus.md         # subagent/leader 寫入：分工 + 做法共識 + 產出結構
         ├── failure-notice.md   # subagent 寫入：失敗通知
-        ├── claude/{proposal,result}.md
-        ├── codex/{proposal,result}.md
-        └── gemini/{proposal,result}.md
+        ├── claude/{analysis,result}.md
+        ├── codex/{analysis,result}.md
+        └── gemini/{analysis,result}.md
 ```
 
 ### 共識匯聚機制（部門類型差異）
@@ -125,7 +125,7 @@ clarify(question="請確認本次執行模式：", choices=[
 
 **研究部門（equal_consensus）共識流程：**
 1. 三個 subagent 同時派工
-2. 各自提出 proposal
+2. 各自提出分析
 3. 辯論收斂（最多 2 輪）
 4. leader 負責彙整寫入 consensus.md
 5. 各自執行分工，寫入 result.md
@@ -531,7 +531,7 @@ clarify(question="秘書復判完成（第 N 次增量）。MIS 工作已確認�
 ### 退回規則
 
 - **採增量**：退回時 task.md 只列需補強的目標，不重寫已完成的部分
-- **通訊文件增量重寫**：退回時既有的 proposal/result/consensus 以增量方式重寫內容，不刪除文件
+- **通訊文件增量重寫**：退回時既有的 analysis/result/consensus 以增量方式重寫內容，不刪除文件
 - **L2 模式例外**：退回增量記錄規則僅適用 L3/L4/L5 模式；L2 模式只有 RES 和 MIS，退回僅發生於 RES 與 MIS 之間
 - **文件結構不變**：退回前後的通訊目錄與產出檔案結構完全一致
 
@@ -746,4 +746,4 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 
 ## 日常運作模式
 
-秘書專用模式（即 L1），用於安裝、部署、版本修改等作業。適用場景：plugin 安裝/更新、版本號更新、設定檔調整等。與 L2 的區別：L2 仍走 RES -> MIS 流程；日常運作模式完全由秘書直接執行，不經任何部門。
+秘書專用模式（即 L1），用於安裝、部署、版本修改等作業。適用場景：框架安裝/更新、版本號更新、設定檔調整等。與 L2 的區別：L2 仍走 RES -> MIS 流程；日常運作模式完全由秘書直接執行，不經任何部門。
