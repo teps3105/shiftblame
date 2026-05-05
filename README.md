@@ -29,9 +29,9 @@ _「這不是我的鍋。」_
 
 ### 🤖 PROXY 外殼代理
 
-三個 PROXY（`PROXY_A` / `PROXY_B` / `PROXY_C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。透過 `acp_command` + `acp_args` 的**任務級別覆寫**，可在一次派工中為三個 subagent 分別指定不同 CLI（如 `claude`、`codex`、`gemini`），實現三方去識別化與上下文完全隔離。
+三個 PROXY（`PROXY_A` / `PROXY_B` / `PROXY_C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。subagent 透過 `terminal()` 呼叫各自的非互動 CLI（`claude -p` / `codex exec` / `gemini -p`）進行實際工作，實現三方去識別化與上下文完全隔離。
 
-> **技術說明**：`delegate_task` 沒有直接的 `model` 參數。跨模型派工透過 `acp_command`（指定外部 CLI）+ `acp_args`（如 `--acp`、`--stdio`、`--model`）的任務級別覆寫實現。`delegation.model`（config.yaml 全域設定）為所有 subagent 共用，無法實現三方不同模型。
+> **技術說明**：三方 CLI 的 ACP 協議支援程度不同。截至 2026-05-05，僅 Gemini CLI 原生支援 `--acp` 旗標；Claude CLI 和 Codex CLI 均不支援 `--acp`。因此跨模型派工的標準路徑是 subagent 透過 `terminal()` 呼叫各 CLI 的非互動模式，而非 `acp_command`。
 
 ### 🔄 自組織分工
 
@@ -60,7 +60,7 @@ _「這不是我的鍋。」_
 
 ### 🎭 代理去識別化
 
-PROXY 彼此僅知使用三種不同的 CLI 配置（透過 `acp_command` 任務級別覆寫），不知底層模型細節，避免偏好干擾協作判斷。CLI 名稱由 Hermes config.yaml 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
+PROXY 彼此僅知使用三種不同的 CLI（由秘書透過 context 分配），不知底層模型細節，避免偏好干擾協作判斷。CLI 名稱由 Hermes config.yaml 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
 
 ---
 

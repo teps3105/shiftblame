@@ -178,21 +178,23 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 主執行者採公平序列輪替：Subagent-A → Subagent-B → Subagent-C → Subagent-A...。老闆可透過 clarify() 指定主執行者。主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 subagent。
 
-## 14. ACP 可用性確認
+## 14. CLI 可用性確認
 
-派工前確認三方 CLI 的 ACP 協議可用性。秘書透過 `terminal()` 執行以下檢測：
+派工前確認三方 CLI 已安裝且可執行。秘書透過 `terminal()` 執行：
 
 ```bash
-# 確認三方 CLI 已安裝且可執行
 which claude && which codex && which gemini
-
-# 確認 Claude ACP 模式可用（已驗證支援）
-claude --acp --stdio < /dev/null 2>&1 | head -1
 ```
 
-> **注意**：Codex 和 Gemini 的 ACP 協議支援待驗證。若 ACP 模式不可用，subagent 透過 `terminal()` 呼叫非互動模式（`claude -p`/`codex exec`/`gemini -p`）作為降級路徑。降級路徑下 `delegate_task` 的原生隔離優勢不復存在，但仍可完成任務。
-
-> **`acp_command` 與 `model` 參數**：`delegate_task` 沒有直接的 `model` 參數。跨模型派工透過 `acp_command`（指定 CLI）+ `acp_args`（如 `--model` 參數）的任務級別覆寫實現。`delegation.model`（config.yaml 全域設定）為所有 subagent 共用，無法實現三方不同模型。
+> **ACP 支援現狀（2026-05-05 驗證）**：
+>
+> | CLI | 版本 | `--acp` 支援 | 非互動模式 |
+> |---|---|---|---|
+> | Claude | 2.1.126 | 不支援 | `claude -p` |
+> | Codex | 0.128.0 | 不支援 | `codex exec` |
+> | Gemini | 0.40.1 | 支援 | `gemini -p` |
+>
+> 僅 Gemini CLI 原生支援 `--acp`。Claude 和 Codex 均不支援 `--acp`，跨模型派工的標準路徑為 subagent 透過 `terminal()` 呼叫各 CLI 的非互動模式。
 
 ## 15. API 金鑰確認
 
