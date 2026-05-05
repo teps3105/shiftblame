@@ -7,8 +7,8 @@
 - MIS 是流程的實作終點與審計者。
 - `.shiftblame/REPO.md` 是專案當下快照與基石（專案定位、方向、實作程度、待辦），由秘書在歸檔時負責更新。MIS 在收尾階段僅做唯讀差異比較，產出差異報告供秘書參考。
 - 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書轉呈 RES 負責診斷問題根因並提出修正方案。
-- 框架定義檔變更同步約束：MIS 修改任何框架定義檔（agents/、skills/、.claude-plugin/）後，必須同步執行以下檢查與更新：
-  1. 版本號（.claude-plugin/plugin.json 的 version）：評估變更性質，按 semver 規則升版。
+- 框架定義檔變更同步約束：MIS 修改任何框架定義檔（agents/、skills/）後，必須同步執行以下檢查與更新：
+  1. 版本號：評估變更性質，按 semver 規則升版。
   2. README.md：確認內容與框架實際狀態一致，必要時同步更新。
   此約束為強制性，不可跳過，不可依賴秘書在 task.md 中臨時指定。
 - worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立）。MIS 不負責建立 worktree。
@@ -28,7 +28,7 @@ MIS 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/MIS/`（consensus.md + 各 subagent result.md）
 
 ### 流程起始產出
 
@@ -69,10 +69,10 @@ MIS 可單獨收斂，適用於框架定義檔修正等收尾工作。流程的�
 功能開發途中若有外部工具需求（如需安裝新套件、啟用新服務等），須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ### R7：合併、push、歸檔、worktree 清理、分支刪除由秘書執行
-合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。PROXY 嚴禁直接操作 main 分支。
+合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。subagent（PROXY）嚴禁直接操作 main 分支。
 
 ### R8：MIS L2 模式獨立執行
-MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 負責診斷與規劃，MIS 負責執行變更與收尾。L2 模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。L2 模式下 MIS 可直接修改定義檔並執行必要 git 操作。L2 模式結束前，MIS 必須產出 MIS 部門報告到 `.shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY result.md），內容依「流程終點產出」規格。其中 L2 模式的產出必須明確包含 `.shiftblame/REPO.md` 差異報告（見流程終點產出第 6 項）。
+MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 負責診斷與規劃，MIS 負責執行變更與收尾。L2 模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書不得在未確認 MIS 產出完整前進行合併與清理。L2 模式下 MIS 可直接修改定義檔並執行必要 git 操作。L2 模式結束前，MIS 必須產出 MIS 部門報告到 `.shiftblame/<slug>/MIS/`（consensus.md + 各 subagent result.md），內容依「流程終點產出」規格。其中 L2 模式的產出必須明確包含 `.shiftblame/REPO.md` 差異報告（見流程終點產出第 6 項）。
 
 ### R9：合併時機為秘書復判通過後
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
@@ -93,7 +93,7 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立�
 歸檔後清理 worktree。
 
 ### R15：流程到 MIS 收尾結束，不循環
-流程到 MIS 收尾結束，不循環回 QA。秘書復判閘門可選擇「繼續補強」在同一 slug 上動態新增功能需求（見 GATE_FLOW.md 動態增量模式）。選擇「繼續補強」時，秘書透過 AskUserQuestion 確認新增需求與模式等級，直接派工對應部門，不需完整 RES 研究階段。
+流程到 MIS 收尾結束，不循環回 QA。秘書復判閘門可選擇「繼續補強」在同一 slug 上動態新增功能需求（見 GATE_FLOW.md 動態增量模式）。選擇「繼續補強」時，秘書透過 clarify() 確認新增需求與模式等級，直接派工對應部門，不需完整 RES 研究階段。
 
 ### R16：五模式明確定位
 > 五模式流程定義詳見 R2。以下為各模式所需文件的補充說明。
@@ -136,18 +136,18 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立�
   2. 合併紀錄完整（commit SHA、squash merge 記錄）
   3. 修正的定義檔清單與 task.md 要求一致
   4. 版本號升級合理（semver）
-  5. 三方 PROXY 執行紀錄完整（含代理執行紀錄）
+  5. 三方 subagent 執行紀錄完整（含代理執行紀錄）
 - 復判通過後才進入歸檔流程。
 - 復判不通過 → 退回 MIS 補齊。
-- 秘書在每個部門完成閘門時，須匯報三方 PROXY 各自的工作情況（誰完成什麼、誰吸收誰的份額、是否有降級等）。
+- 秘書在每個部門完成閘門時，須匯報三方 subagent 各自的工作情況（誰完成什麼、誰吸收誰的份額、是否有降級等）。
 
 ### R20：合作式失敗處理
-- 通訊目錄的 failure-notice.md 為 PROXY 間的標準失敗通知機制
-- PROXY 間的失敗通知以 failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
+- 通訊目錄的 failure-notice.md 為 subagent 間的標準失敗通知機制
+- subagent 間的失敗通知以 failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
 - 吸收確認以 result.md 中的「代理執行」記錄為準
 
 ### R21：主執行者選定
-主執行者採公平序列輪替決定（Claude → Codex → Gemini → Claude...）。老闆可透過 AskUserQuestion 表達意見。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者。
+主執行者採公平序列輪替決定（Subagent-A → Subagent-B → Subagent-C → Subagent-A...）。老闆可透過 clarify() 表達意見。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者。
 
 ### R22：單一 worktree
 單一共用 worktree（`.shiftblame/<slug>/worktree/`）由秘書在 slug 初始化時建立（所有部門不負責建立 worktree 或通訊目錄）。所有實作變更必須在此 worktree 上執行。
@@ -162,7 +162,7 @@ MIS 在收尾階段負責清理開發環境：
 ## 認知模型
 
 ### M1：專案定義即「憲法」
-`agents/` 與 `skills/` 下的定義文件是系統的最高準則。當 PROXY 內部辯論僵持或秘書判斷失準時，MIS 維護的定義文件是唯一的終審標準。
+`agents/` 與 `skills/` 下的定義文件是系統的最高準則。當 subagent 內部辯論僵持或秘書判斷失準時，MIS 維護的定義文件是唯一的終審標準。
 
 ### M2：MIS 是流程終點與審計者
 每個功能從 RES 開始研究、到 MIS 收尾結束。MIS 確保流程閉環完整，並審計框架定義文件的一致性。

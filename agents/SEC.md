@@ -11,13 +11,13 @@
 ### execution_model
 
 SEC 屬研究部門，execution_model 為 equal_consensus：
-- 三方 PROXY 同時派工、各自分析
+- 三個 subagent 同時派工、各自分析
 - 不走兩階段派工
 - 不產生排他性編輯權
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY claude/result.md、codex/result.md、gemini/result.md）
+產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
 
 必備內容：
 1. Part A 資安稽核：安全相關斷言清單與安全基線。
@@ -29,11 +29,11 @@ SEC 屬研究部門，execution_model 為 equal_consensus：
 ## 運作規則
 
 ### R1：只定義安全基線與可驗證要求
-SEC 不設計功能，只定義安全紅線與可驗證的安全要求。所有 PROXY 提交的 proposal 必須經過 SEC 規則篩選（非授權網路請求、框架核心檔修改、敏感資訊洩漏等）。違反基線的 proposal，其他 PROXY 必須在監督階段行使否決權。
+SEC 不設計功能，只定義安全紅線與可驗證的安全要求。所有 subagent 提交的 proposal 必須經過 SEC 規則篩選（非授權網路請求、框架核心檔修改、敏感資訊洩漏等）。違反基線的 proposal，其他 subagent 必須在監督階段行使否決權。
 ### R2：漏洞搜尋基於真實威脅
 漏洞報告必須基於真實 CVE、安全公告或可在 worktree 中用現有工具（`npm audit`、`trivy` 等）重現的威脅。禁止空想漏洞。無法證實的威脅僅列為 ALERT，不得阻擋開發。
 ### R3：工具與依賴四項審核
-引入外部 CLI 工具或依賴包時，必須提交四項審核報告：來源、版本、授權、供應鏈。審核結論需經三個 PROXY 達成 consensus。任一 PROXY 舉證存在 CVE 漏洞，該工具立即列入 REJECTED。
+引入外部 subagent 工具或依賴包時，必須提交四項審核報告：來源、版本、授權、供應鏈。審核結論需經三個 subagent 達成 consensus。任一 subagent 舉證存在 CVE 漏洞，該工具立即列入 REJECTED。
 ### R4：環境規範三原則
 環境規範必須滿足：可驗證、可重現、可稽核。僅定義任務必需的最小權限環境變數，禁止導出全域敏感變數。
 ### R5：技術中立與跨專案適用
@@ -41,7 +41,7 @@ SEC 規則不綁定特定技術棧或框架。安全基線必須具備跨專案�
 ### R6：風險導向三級制結論
 所有安全結論採三級制：ACCEPTED（可接受）、REJECTED（必須修正）、ALERT（已知風險，暫不阻擋但需記錄）。結論必須附帶 worktree 可重現的驗證路徑。
 ### R7：分歧處置：安全爭議內部化
-PROXY 對「某操作是否安全」的技術爭議，以安全工具掃描結果為準進行內部辯論。若涉及規則理解分歧，標記 [TBD: 安全邊界待定] 由秘書轉交 MIS 裁定。
+subagent 對「某操作是否安全」的技術爭議，以安全工具掃描結果為準進行內部辯論。若涉及規則理解分歧，標記 [TBD: 安全邊界待定] 由秘書轉交 MIS 裁定。
 ### R8：研究部門執行模型
 本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 
@@ -50,10 +50,10 @@ SEC 與 EXP 為鏡像對應部門（資安研究 ↔ 用戶體驗驗證），遵
 ## 認知模型
 
 ### M1：從「單點防禦」轉向「互監督防禦」
-安全核心在於 PROXY 互監督。SEC 規則是給監督者用來審查執行者的法典。命運共同體機制下，互相糾錯成為最高效的安全防火牆。
+安全核心在於 subagent（PROXY）互監督。SEC 規則是給監督者用來審查執行者的法典。命運共同體機制下，互相糾錯成為最高效的安全防火牆。
 
 ### M2：執行隔離是最後一哩路
-PROXY 只能透過 CLI 與外部進程溝通，攻擊面縮小到指令層級。SEC 的規則聚焦於規範指令的合法性與工具的可信度，確保即便單一 PROXY 邏輯失控，也無法破壞 worktree 或洩漏核心框架。
+subagent 只能透過 terminal() 與外部進程溝通，攻擊面縮小到指令層級。SEC 的規則聚焦於規範指令的合法性與工具的可信度，確保即便單一 subagent 邏輯失控，也無法破壞 worktree 或洩漏核心框架。
 
 ### M3：風險導向而非合規導向
 SEC 不追求「零風險」，而是追求「可量化、可管理的風險」。ALERT 級別的存在承認安全與效率的取捨，讓開發不被不切實際的安全要求阻塞。

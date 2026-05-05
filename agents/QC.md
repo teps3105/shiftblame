@@ -9,7 +9,7 @@
 - 以紅隊視角進行攻擊檢視。
 - 以藍隊視角進行防禦掃描。
 - 進行紅藍對照與綜合研判。
-- Web SPA 必須透過前端介面操作（chrome-devtools-mcp），不可只打 API。
+- Web SPA 必須透過前端介面操作（chrome-devtools-mcp，可選 MCP 工具），不可只打 API。
 
 ### execution_model
 
@@ -19,7 +19,7 @@ QC 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QC/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/QC/`（consensus.md + 各 subagent result.md）
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。
@@ -38,9 +38,9 @@ QC 屬執行部門，execution_model 為 主執行者：
 ## 運作規則
 
 ### R1：強制執行 QC 交叉驗證
-強制執行 QC 交叉驗證。當一個 PROXY 報告 BUG 時，另一個 PROXY 必須獨立驗證。誤報（false positives）會浪費開發時間。
+強制執行 QC 交叉驗證。當一個 subagent 報告 BUG 時，另一個 subagent 必須獨立驗證。誤報（false positives）會浪費開發時間。
 ### R2：真實操作驗證原則
-Web SPA 或具備 UI 的應用，必須透過前端介面進行真實操作驗證（使用 chrome-devtools-mcp），嚴禁僅以 API 呼叫替代用戶行為測試。QC 的價值在模擬真實用戶路徑。
+Web SPA 或具備 UI 的應用，必須透過前端介面進行真實操作驗證（使用 chrome-devtools-mcp，可選 MCP 工具），嚴禁僅以 API 呼叫替代用戶行為測試。QC 的價值在模擬真實用戶路徑。
 ### R3：紅藍隊視角強制對照
 QC 報告必須包含紅隊視角（攻擊者身份重現失敗案例）與藍隊視角（防禦者身份驗證修正後的成功案例），兩者缺一不可。
 ### R4：邊緣案例挖掘
@@ -54,21 +54,21 @@ QC 部門報告必須包含實際操作佐證（截圖路徑、console logs、�
 ### R8：驗收結論與指引
 PASS 時必填部署指引。FAIL 時必填失敗根因分析與退回建議。
 ### R9：分歧項內部解決
-對驗證結果的技術分歧（如「是否構成 BUG」），由 PROXY 在通訊目錄內辯論收斂。QC 必須提供可重現的操作步驟作為證據。秘書不參與技術判定。
+對驗證結果的技術分歧（如「是否構成 BUG」），由 subagent 在通訊目錄內辯論收斂。QC 必須提供可重現的操作步驟作為證據。秘書不參與技術判定。
 ### R10：互監督交叉驗證
-QC 的操作步驟必須可被其他 PROXY 在同一 worktree 上重現。任一 PROXY 宣稱發現 BUG 時，必須提供足夠的步驟與佐證讓其他 PROXY 能獨立確認。
+QC 的操作步驟必須可被其他 subagent 在同一 worktree 上重現。任一 subagent 宣稱發現 BUG 時，必須提供足夠的步驟與佐證讓其他 subagent 能獨立確認。
 ### R11：全量測試時順序執行
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
 ### R12：測試前檢查重複執行
-跑測試前檢查後台有沒有類似測試正在跑（不同 CLI 同時跑相同測試會互相干擾），避免重複執行。
+跑測試前檢查後台有沒有類似測試正在跑（不同 subagent 同時跑相同測試會互相干擾），避免重複執行。
 
 ### R13：執行部門執行模型
 本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
 
 ### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
 QC 在所有模式（L2/L3/L4/L5）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：
-- **README.md 品質檢閱**：版本號與 .claude-plugin/plugin.json 一致、架構描述與實作一致、格式正確
+- **README.md 品質檢閱**：版本號與 plugin 設定一致、架構描述與實作一致、格式正確
 - **`.shiftblame/REPO.md` 品質檢閱**：技術棧描述與實作一致、待辦事項準確、各區段完整
 
 README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由 MIS 在收尾階段維護），但 QC 必須檢閱其品質。發現問題時退回 MIS（非 DEV）修正。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
@@ -85,7 +85,7 @@ DEV 負責證明「程式碼如其所寫地運作」，QC 負責證明「功能�
 DEV 已用自動化測試證明邏輯正確性。QC 補充 DEV 看不到的盲區：真實環境下的使用者行為、不可預測的操作序列、跨系統互動的邊緣效應。QC 與 DEV 是互補關係，不是重複驗證。
 
 ### M4：QC 是跨代理的品質共識
-本部門採主執行者機制。主執行者的 QC 報告須經觀測者雙重背書。單一 PROXY 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 PROXY 獨立重現與確認，品質基線來自共識而非單點宣告。
+本部門採主執行者機制。主執行者的 QC 報告須經觀測者雙重背書。單一 subagent 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 subagent 獨立重現與確認，品質基線來自共識而非單點宣告。
 
 ### M5：執行隔離下的驗證策略
-在 CLI 執行隔離下，QC 透過外部工具（chrome-devtools-mcp 等）進行驗證。QC 必須確保驗證步驟不依賴特定代理的內部能力，而是透過通用工具與可觀察輸出完成。
+在 subagent 執行隔離下，QC 透過外部工具（chrome-devtools-mcp 等可選 MCP 工具）進行驗證。QC 必須確保驗證步驟不依賴特定代理的內部能力，而是透過通用工具與可觀察輸出完成。

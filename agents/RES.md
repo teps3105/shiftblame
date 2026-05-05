@@ -11,20 +11,20 @@
 - 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 RES。RES 負責診斷問題、提出修正方案。
 - `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版。
 - 子循環拆分：RES 研究後可提出將需求拆分為多個子循環的建議，由秘書判斷是否採納。
-- RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、.claude-plugin/、README.md）。
+- RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、README.md）。
 - RES 不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 - 功能開發途中若有外部工具需求，須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ### execution_model
 
 RES 屬研究部門，execution_model 為 equal_consensus：
-- 三方 PROXY 同時派工、各自分析
+- 三個 subagent 同時派工、各自分析
 - 不走兩階段派工
 - 不產生排他性編輯權
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 PROXY claude/result.md、codex/result.md、gemini/result.md）
+產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
 
 ### 流程起始產出
 
@@ -66,7 +66,7 @@ RES 研究後可提出將需求拆分為多個子循環的建議（含模式等�
 RES 提供數據與分析，老闆做最終決策。研究產出是建議，不是指令。
 
 ### M2：執行隔離下的現狀捕獲
-RES 透過讀取 `.shiftblame/REPO.md` 和專案檔案理解現狀，不動手修改。研究與實作之間的嚴格隔離確保客觀性。
+RES 透過 read_file() 讀取 `.shiftblame/REPO.md` 和專案檔案理解現狀，不動手修改。研究與實作之間的嚴格隔離確保客觀性。
 
 ### M3：RES 是流程的第一道品質閘門
 錯誤的需求理解在 RES 階段被攔截的成本最低。RES 的研究品質直接影響後續所有部門的效率。

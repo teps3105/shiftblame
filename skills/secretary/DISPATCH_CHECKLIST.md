@@ -24,7 +24,7 @@
 ## 1. 讀取專案資訊
 
 ```
-Read .shiftblame/REPO.md
+read_file() .shiftblame/REPO.md
 ```
 
 從 `.shiftblame/REPO.md` 提取約束條件（不是做法）：
@@ -73,7 +73,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```
 
-主執行者採公平序列輪替（Claude → Codex → Gemini → Claude...），並寫入 YAML frontmatter。
+主執行者採公平序列輪替（Subagent-A → Subagent-B → Subagent-C → Subagent-A...），並寫入 YAML frontmatter。
 
 ```
 === task.md 必含 ===
@@ -82,16 +82,16 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 - 約束：worktree 路徑 + `.shiftblame/REPO.md` 約束 + 需求釐清結果
 
 === task.md 禁止含 ===
-- 分工指示（誰做什麼）← PROXY 自行決定
-- 做法步驟（怎麼做）← PROXY 自行決定
-- 產出格式指示（長什麼樣）← PROXY 自行決定
-- 部門定義內容 ← PROXY 自行讀取 agents/<DEPT>.md
+- 分工指示（誰做什麼）← Subagent 自行決定
+- 做法步驟（怎麼做）← Subagent 自行決定
+- 產出格式指示（長什麼樣）← Subagent 自行決定
+- 部門定義內容 ← Subagent 自行讀取 agents/<DEPT>.md
 ```
 
 
-## 4. proxy_prompt 最小化
+## 4. context 參數最小化
 
-proxy_prompt 只含四樣東西：
+delegate_task() 的 context 參數只含四樣東西：
 1. task.md 路徑
 2. 通訊目錄路徑
 3. worktree 路徑
@@ -99,8 +99,8 @@ proxy_prompt 只含四樣東西：
 
 ```bash
 # 以下禁止注入 prompt
-- 部門定義（agents/<DEPT>.md 的內容）← PROXY 自己讀
-- 分工建議（「建議 Claude 做前端、Codex 做後端」）← 違規
+- 部門定義（agents/<DEPT>.md 的內容）← Subagent 自己讀
+- 分工建議（「建議 Subagent-A 做前端、Subagent-B 做後端」）← 違規
 - 具體做法（「先跑 X 再跑 Y」）← 違規
 - 產出模板 ← 違規
 ```
@@ -116,12 +116,12 @@ proxy_prompt 只含四樣東西：
 | EXP | 確認 execution_model: lead_executor、QC/EXP 無 worktree 編輯權（僅執行測試） |
 | MIS（L2 模式） | 確認模式為 L2 模式、確認主執行者已寫入 task.md frontmatter、MIS 執行收尾 |
 | MIS（L3/L4/L5 模式） | 確認主執行者已寫入、單一 worktree 已建立 |
-| MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
+| MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 Subagent result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC（L4/L5） | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
 | 執行部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
-| 研究部門（RES/SEC/QA/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 PROXY 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
+| 研究部門（RES/SEC/QA/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 Subagent 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
 
 ## 6. QC/EXP 定位提醒
 
@@ -135,7 +135,7 @@ proxy_prompt 只含四樣東西：
 
 ## 8. 禁止在 main 上修改
 
-所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 PROXY 及 MIS。
+所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 Subagent 及 MIS。
 
 ## 9. Worktree 洩漏偵測
 
@@ -143,7 +143,7 @@ proxy_prompt 只含四樣東西：
 ```bash
 git -C <MAIN_REPO> status --porcelain > /tmp/main-status-before.txt
 ```
-PROXY 完成後比對：
+Subagent 完成後比對：
 ```bash
 git -C <MAIN_REPO> status --porcelain > /tmp/main-status-after.txt
 diff /tmp/main-status-before.txt /tmp/main-status-after.txt
@@ -154,11 +154,11 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 派工執行部門（DEV/QC/EXP/MIS）時，確認派工方式為兩階段（QC/EXP 無 worktree 編輯權，僅執行測試）：
 
-- **第一階段**：僅派工主執行者（`run_in_background=true`），不派工觀測者
+- **第一階段**：僅派工主執行者（delegate_task() 自動並行），不派工觀測者
 - **等待完成**：主執行者完成後，驗證結果
-- **第二階段**：確認完成後，同時派工兩位觀測者（`run_in_background=true`）
+- **第二階段**：確認完成後，同時派工兩位觀測者（delegate_task() 自動並行）
 
-研究部門（RES/SEC/QA/PRD）不走兩階段，維持同時派工三個 PROXY。
+研究部門（RES/SEC/QA/PRD）不走兩階段，維持同時派工三個 Subagent。
 
 ## 11. RES 起點產出驗證
 
@@ -166,14 +166,14 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 1. **`.shiftblame/REPO.md` 讀取確認**：讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
 2. **執行準則確認**：確認 RES result 中含明確的執行準則
-3. **老闆確認**：透過 AskUserQuestion 確認 RES 起點產出可接受
+3. **老闆確認**：透過 clarify() 確認 RES 起點產出可接受
 
 驗證不通過 → 退回 RES 補齊（不進入下一部門）。
 
 ## 12. 額度提醒（提醒老闆確認）
 
-提醒老闆透過 onwatch 確認各 CLI 額度是否適合進行作業。秘書透過 AskUserQuestion 提醒老闆。此為秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案。
+提醒老闆確認各 subagent API 額度是否適合進行作業。秘書透過 clarify() 提醒老闆。此為秘書→老闆通訊層，不寫入 Subagent 可讀取的通訊檔案。
 
 ## 13. 主執行者選定
 
-主執行者採公平序列輪替：Claude → Codex → Gemini → Claude...。老闆可透過 AskUserQuestion 指定主執行者。主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 CLI。
+主執行者採公平序列輪替：Subagent-A → Subagent-B → Subagent-C → Subagent-A...。老闆可透過 clarify() 指定主執行者。主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 subagent。

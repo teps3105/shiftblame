@@ -16,7 +16,7 @@ EXP 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/EXP/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/EXP/`（consensus.md + 各 subagent result.md）
 
 必備內容：
 1. 用戶旅程地圖（操作路徑視角）。
@@ -36,7 +36,7 @@ EXP 執行者無 worktree 編輯權（僅執行測試）。發現問題僅記錄
 本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
 
 ### R4：可重現的操作步驟
-EXP 必須提供可重現的操作步驟與佐證，讓其他 PROXY 能獨立確認發現。
+EXP 必須提供可重現的操作步驟與佐證，讓其他 subagent 能獨立確認發現。
 
 ### R5：與 QC 的差異
 EXP 聚焦用戶體驗（操作流程是否直覺、是否符合心智模型），QC 聚焦品質驗證（功能是否正確運作、邊緣案例）。兩者互補，EXP 不重複 QC 的驗證工作。

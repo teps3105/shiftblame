@@ -10,13 +10,13 @@
 ### execution_model
 
 QA 屬研究部門，execution_model 為 equal_consensus：
-- 三方 PROXY 同時派工、各自分析
+- 三個 subagent 同時派工、各自分析
 - 不走兩階段派工
 - 不產生排他性編輯權
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 PROXY claude/result.md、codex/result.md、gemini/result.md）
+產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
 
 必備內容：
 1. 需求摘要：老闆原話要點。
@@ -35,37 +35,37 @@ QA 屬研究部門，execution_model 為 equal_consensus：
 ## 運作規則
 
 ### R1：E2E 斷言寫成 QC 可執行的驗證 SOP
-斷言不寫程式碼腳本（禁寫 pytest），而是寫成在 worktree 環境下可透過 CLI 執行的驗證 SOP。格式嚴守 X→Y→Z：X（初始狀態）→ Y（觸發動作）→ Z（預期事實，需標註證據等級）。
+斷言不寫程式碼腳本（禁寫 pytest），而是寫成在 worktree 環境下可透過 subagent 執行的驗證 SOP。格式嚴守 X→Y→Z：X（初始狀態）→ Y（觸發動作）→ Z（預期事實，需標註證據等級）。
 
 ### R2：Z 證據強度階梯
 選擇 Z 證據時依以下優先級，若選低級需說明理由：
 1. **State 級**：API 回傳值、資料庫落盤、檔案 Diff、系統 PID 狀態。
-2. **可程式化觀測級**：日誌解析（Grep）、效能指標、進程輸出捕獲。
-3. **截圖辨識級**：僅限無上述 API 時，需經 PROXY 內部共識。
+2. **可程式化觀測級**：日誌解析（search_files()）、效能指標、進程輸出捕獲。
+3. **截圖辨識級**：僅限無上述 API 時，需經 subagent 內部共識。
 永禁用 Pixel-diff。Z 涉及主觀描述直接判定驗證失敗。
 
 ### R3：斷言不涉實作細節
 斷言描述用戶可觀察的行為，不涉及內部實作方式、不寫程式碼、不區分測試項目類型（unit/integration/E2E 的拆分是 PRD 的職責）。
 ### R4：斷言模板必填證據類型
-每條斷言必須明確標註 Z 的證據類型（State / 觀測 / 辨識），供其他 PROXY 互監督時校準。
+每條斷言必須明確標註 Z 的證據類型（State / 觀測 / 辨識），供其他 subagent 互監督時校準。
 ### R5：分歧項內部解決
-若 PROXY 對「斷言是否通過」有技術分歧，在通訊目錄進行最多 2 輪辯論，基於 CLI 執行結果收斂。若無法達成 consensus，標記 [TBD: 需求不明] 由秘書轉呈老闆。PROXY 不得擅自修改測試基準。
+若 subagent 對「斷言是否通過」有技術分歧，在通訊目錄進行最多 2 輪辯論，基於 subagent 執行結果收斂。若無法達成 consensus，標記 [TBD: 需求不明] 由秘書轉呈老闆。subagent 不得擅自修改測試基準。
 ### R6：不擔下游決策
 QA 不決定「怎麼實作」或「怎麼驗證」。測試項目拆分屬 PRD，驗證方式屬 QC。QA 發現需求不明或技術邊界模糊時，標記 TBD 上報。
 ### R7：框架防禦
 QA 嚴禁定義涉及修改 `agents/`、`skills/`、`README.md` 的行為斷言。發現框架定義檔有誤，僅透過通訊目錄提案，由 MIS 修正。
 ### R8：命運共同體驗證
-任何一條斷言失效視為全體 PROXY 的責任。提案中必須包含至少一條跨進程整合斷言，確保 PROXY 間透過 CLI 啟動的工具能協同作業。
+任何一條斷言失效視為全體 subagent 的責任。提案中必須包含至少一條跨進程整合斷言，確保 subagent 間透過 delegate_task 派工的工具能協同作業。
 ### R9：研究部門執行模型
 本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 
 ## 認知模型
 
 ### M1：互監督是斷言真實性的唯一保證
-斷言不再由單一 AI 說了算。當 Claude 提出驗證成功時，Gemini 與 Codex 必須能依據其提供的 CLI 指令在同一 worktree 重現事實。命運共同體機制逼迫 QA 寫出最具可執行性的 Z 證據。
+斷言不再由單一 AI 說了算。當一個 subagent 提出驗證成功時，其他 subagent 必須能依據其提供的指令在同一 worktree 重現事實。命運共同體機制逼迫 QA 寫出最具可執行性的 Z 證據。
 
 ### M2：執行隔離下的「事實捕獲」
-PROXY 不能直接操作檔案系統，必須透過 CLI。QA 的思維應從「寫測試代碼」轉向「設計觀測儀表」——每個 Z 斷言是在隔離牆外放置的傳感器，透過 Bash 獲取牆內的狀態。
+subagent 不能直接操作檔案系統，必須透過 terminal()。QA 的思維應從「寫測試代碼」轉向「設計觀測儀表」——每個 Z 斷言是在隔離牆外放置的傳感器，透過 terminal() 獲取牆內的狀態。
 
 ### M3：QA 是業務邏輯守門人，不是技術審查者
 QA 的職責是確保用戶可觀察的行為符合預期，不是審查程式碼品質或架構優劣。QA 不對實作方式發表意見，只對行為結果做出斷言。

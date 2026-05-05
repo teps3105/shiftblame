@@ -2,31 +2,30 @@
 
 > 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
 
-秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定義「怎麼做」。「怎麼做」由 PROXY 自行協商。
+秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定義「怎麼做」。「怎麼做」由 subagent 自行協商。
+
+> **術語說明**：本文件中的「PROXY」為框架術語，實際由 Hermes `delegate_task` 派工的三個 subagent 實作。三個 subagent 以 Subagent-A、Subagent-B、Subagent-C 標識，對應通訊目錄中的 `proxy-a`、`proxy-b`、`proxy-c`。
 
 ## 去識別化
 
-CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時不可指定具體 AI 模型或暗示 CLI 能力差異。
+subagent 彼此僅知透過 Hermes delegate_task 派工，不知底層模型。派工時不可指定具體 AI 模型或暗示 subagent 能力差異。
 
-### 模型配置規範
+### 模型配置
 
-- 當前對話（秘書）：透過預設 ~/.claude/settings.json 路由，鎖死不動。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
-- claude -p PROXY：強制與秘書共用 ~/.claude/settings.json，移除 cli-*.json 掃描與注入邏輯。供應商由 settings.json env 設定決定，秘書動態讀取確認，不硬編碼供應商名稱
-- Codex PROXY：透過 ~/.codex/config.toml 的 model 欄位，可切換
-- Gemini PROXY：透過 ~/.gemini/settings.json 的 selected_model 欄位，可切換
-
-**僅 Codex 和 Gemini 需要模型切換。Claude 相關設定檔（settings.json）嚴禁修改。cli-*.json 已廢棄 (Deprecated)。**
+- 所有 subagent 由 Hermes config.yaml 統一管理，供應商與模型由 config.yaml 設定決定
+- 秘書動態讀取確認，不硬編碼供應商名稱
+- 模型調整由老闆決定後手動執行
 
 ### 去識別化範圍
 
 - task.md、consensus.md、result.md：不包含模型名稱
-- PROXY 可讀取的通訊檔案：不包含模型名稱
-- 模型使用資訊僅存在於「秘書→老闆」通訊層（AskUserQuestion 對話），不寫入任何 PROXY 可讀取的通訊檔案
+- subagent 可讀取的通訊檔案：不包含模型名稱
+- 模型使用資訊僅存在於「秘書→老闆」通訊層（`clarify()` 對話），不寫入任何 subagent 可讀取的通訊檔案
 
 ### 秘書權限
 
-- 秘書在派工前提醒老闆透過 onwatch 確認各 CLI 額度是否適合進行作業
-- 秘書不執行任何 CLI 設定檔的編輯
+- 秘書在派工前提醒老闆確認 API 額度是否適合進行作業
+- 秘書不執行任何設定檔的編輯
 - 模型調整由老闆決定後手動執行
 
 ## 通訊目錄結構
@@ -37,22 +36,22 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 ├── worktree/            # 執行部門主執行者使用的單一共用 worktree
 └── <DEPT>/
     ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
-    ├── consensus.md         # PROXY 寫入：分工 + 做法共識 + 產出結構
-    ├── failure-notice.md   # PROXY 寫入：失敗通知
-    ├── claude/{proposal,result}.md
-    ├── codex/{proposal,result}.md
-    └── gemini/{proposal,result}.md
+    ├── consensus.md         # subagent 寫入：分工 + 做法共識 + 產出結構
+    ├── failure-notice.md   # subagent 寫入：失敗通知
+    ├── proxy-a/{proposal,result}.md
+    ├── proxy-b/{proposal,result}.md
+    └── proxy-c/{proposal,result}.md
 ```
 
 ### 共識匯聚機制（部門類型差異）
 
 | 部門類型 | execution_model | 共識機制 | consensus.md 寫入職責 |
 |---|---|---|---|
-| 研究部門（RES/SEC/QA/PRD） | equal_consensus | 三方同時派工，各自產出分析，consensus.md 由 leader 彙整寫入 | leader 負責彙整 |
+| 研究部門（RES/SEC/QA/PRD） | equal_consensus | 三個 subagent 同時派工，各自產出分析，consensus.md 由 leader 彙整寫入 | leader 負責彙整 |
 | 執行部門（DEV/QC/EXP/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由 leader 產出 | leader 負責產出 |
 
 **研究部門（equal_consensus）共識流程：**
-1. 三方 PROXY 同時派工
+1. 三個 subagent 同時派工
 2. 各自提出 proposal
 3. 辯論收斂（最多 2 輪）
 4. leader 負責彙整寫入 consensus.md
@@ -104,8 +103,8 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 派工紀錄
 | 部門 | 主執行者 | 觀測者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
-| RES | Claude | Codex, Gemini | L5 | 1 | 2026-01-01T00:00:00Z |
-| QA | Codex | Claude, Gemini | L5 | 1 | 2026-01-01T01:00:00Z |
+| RES | Subagent-A | Subagent-B, Subagent-C | L5 | 1 | 2026-01-01T00:00:00Z |
+| QA | Subagent-B | Subagent-A, Subagent-C | L5 | 1 | 2026-01-01T01:00:00Z |
 
 ## 當前狀態
 - current_mode: L5
@@ -146,7 +145,6 @@ current_mode: <L2 / L3 / L4 / L5>
 task_type: <research / implementation>  # research: 研究部門(RES/SEC/QA/PRD)；implementation: 執行部門(DEV/QC/EXP/MIS)
 worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) 明確設為 none
 ---
-```
 
 # <DEPT> 任務
 
@@ -166,10 +164,10 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 ```
 
 ## 禁止含
-- 分工指示（誰做什麼）← PROXY 自行決定
-- 做法步驟（怎麼做）← PROXY 自行決定
-- 產出格式指示（長什麼樣）← PROXY 自行決定
-- 部門定義內容 ← PROXY 自行讀取 agents/<DEPT>.md
+- 分工指示（誰做什麼）← subagent 自行決定
+- 做法步驟（怎麼做）← subagent 自行決定
+- 產出格式指示（長什麼樣）← subagent 自行決定
+- 部門定義內容 ← subagent 自行讀取 agents/<DEPT>.md
 ```
 
 **秘書禁止在 task.md 中寫「建議分工」或「做法步驟」。** 寫了 = 違規。
@@ -177,18 +175,18 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 ## 秘書派工步驟
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
-2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
+2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{proxy-a,proxy-b,proxy-c}` 並初始化或更新 `meta.md`
 3. 主執行者採公平序列輪替（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
-   - **研究部門（RES/SEC/QA/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
+   - **研究部門（RES/SEC/QA/PRD）**：同時派工三個 subagent（context 只含 task.md 路徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
    - **執行部門（DEV/QC/EXP/MIS）**：兩階段派工（見下方，QC/EXP 無 worktree 編輯權，僅執行測試）
 
 ### 執行部門兩階段派工步驟
 
-1. **第一階段**：僅派工主執行者（lead_executor），使用 `run_in_background=true`
+1. **第一階段**：僅派工主執行者（lead_executor）
 2. **等待完成**：輪詢主執行者的 result.md，確認其完成回報
 3. **驗證 commit**：確認 worktree 中有主執行者產出的 commit（`git -C <worktree> log --oneline -1`）（QC/EXP 不需此步驟）
-4. **第二階段**：確認完成後，同時派工兩位觀測者（observers），使用 `run_in_background=true`
+4. **第二階段**：確認完成後，同時派工兩位觀測者（observers）
 5. 等待觀測者完成驗證
 6. leader 基於三份 result.md 產出 consensus.md（驗證摘要）
 
@@ -201,18 +199,18 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 - **研究部門**：consensus.md 由 leader 負責彙整（部門產出）
 - **執行部門**：consensus.md 由 leader 產出（驗證摘要）
 
-此為事實彙整（基於 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 PROXY 的 result.md 中。
+此為事實彙整（基於 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 subagent 的 result.md 中。
 
 執行部門 consensus.md 格式：
 ```markdown
 # <DEPT> 驗證摘要
 
 ## 主執行者
-- <CLI>：<已完成的工作摘要>
+- Subagent-A：<已完成的工作摘要>
 
 ## 觀測者驗證結果
-- <CLI>：<通過 / 修正項目>
-- <CLI>：<通過 / 修正項目>
+- Subagent-B：<通過 / 修正項目>
+- Subagent-C：<通過 / 修正項目>
 
 ## 結論
 - 狀態：SUCCESS / FAILED
@@ -220,25 +218,36 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 
 ## 部門完成閘門匯報
 
-在每個部門任務完成（閘門開啟）時，秘書須向老闆匯報三方 PROXY 的各自工作情況。匯報內容須包含：
+在每個部門任務完成（閘門開啟）時，秘書須向老闆匯報三個 subagent 的各自工作情況。匯報內容須包含：
 - **分工執行**：誰完成了哪些具體份額。
 - **風險吸收**：若有單點失效，誰吸收了誰的份額。
 - **降級紀錄**：是否有發生降級為單體執行或技術分歧多數決的情形。
-- **互助紀錄**：是否有 PROXY 抓到並修正同事錯誤。
+- **互助紀錄**：是否有 subagent 抓到並修正同事錯誤。
 
-## Agent() 呼叫
+## delegate_task 呼叫範例
 
 ### 研究部門（RES/SEC/QA/PRD）— 同時派工
 
-同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權，嚴禁使用 isolation="worktree"）：
+同時派工三個 subagent。研究部門不需要 worktree（研究階段不涉及排他性編輯權）：
 
 ```
-# PROXY（範例：Claude）
-Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--dangerously-skip-permissions")
-
-# PROXY（範例：Codex / Gemini）
-Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--dangerously-bypass-approvals-and-sandbox --ephemeral")
-Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--yolo --skip-trust")
+delegate_task(tasks=[
+  {
+    goal: "執行 <DEPT> 任務（Subagent-A）",
+    context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
+    toolsets: ["terminal", "file"]
+  },
+  {
+    goal: "執行 <DEPT> 任務（Subagent-B）",
+    context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
+    toolsets: ["terminal", "file"]
+  },
+  {
+    goal: "執行 <DEPT> 任務（Subagent-C）",
+    context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
+    toolsets: ["terminal", "file"]
+  }
+])
 ```
 
 ### 執行部門（DEV/QC/EXP/MIS）— 兩階段派工
@@ -246,64 +255,75 @@ Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>
 **第一階段**：僅派工主執行者
 
 ```
-# 第一階段：僅派工主執行者
-Agent(subagent_type="shiftblame:<LEAD_PROXY>", prompt=proxy_prompt, name="<slug>-<lead>", run_in_background=true, mode="bypassPermissions", isolation="worktree", bypass_permissions_flag="<lead_bypass_flag>")
+delegate_task(
+  goal: "執行 <DEPT> 主執行者任務",
+  context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
+  toolsets: ["terminal", "file"]
+)
 ```
 
 **等待主執行者完成並驗證 commit 後**，進入第二階段：
 
 ```
-# 第二階段：同時派工兩位觀測者
-Agent(subagent_type="shiftblame:<OBSERVER_1_PROXY>", prompt=proxy_prompt, name="<slug>-<observer1>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<observer1_bypass_flag>")
-Agent(subagent_type="shiftblame:<OBSERVER_2_PROXY>", prompt=proxy_prompt, name="<slug>-<observer2>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<observer2_bypass_flag>")
+delegate_task(tasks=[
+  {
+    goal: "執行 <DEPT> 觀測者檢閱（Subagent-B）",
+    context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
+    toolsets: ["terminal", "file"]
+  },
+  {
+    goal: "執行 <DEPT> 觀測者檢閱（Subagent-C）",
+    context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
+    toolsets: ["terminal", "file"]
+  }
+])
 ```
 
 ### EXP 部門派工
 
 EXP 屬執行部門，採主執行者機制，與其他執行部門共用兩階段派工流程。但 EXP 主執行者和觀測者均無 worktree 編輯權（僅執行測試）。
 
-### CLI Bypass Flags 對照表
+### context 參數說明
 
-| CLI | Bypass Flags | 說明 |
-|---|---|---|
-| (通用) | mode="bypassPermissions" | 所有 CLI 共用的權限繞過模式 |
-| claude -p | --dangerously-skip-permissions | 跳過權限確認 |
-| codex exec | --dangerously-bypass-approvals-and-sandbox --ephemeral | 繞過 sandbox + 不保留 session |
-| gemini -p | --yolo --skip-trust | 自動確認 + 跳過信任檢查 |
-
-proxy_prompt **最小化**，研究部門含 3 項，執行部門含 4 項：
+`delegate_task` 的 `context` 參數**最小化**，研究部門含 3 項，執行部門含 4 項：
 1. task.md 路徑
 2. 通訊目錄路徑
 3. worktree 路徑（僅執行部門提供，研究部門物理性移除）
 4. current_mode
 
-**不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 PROXY 自己去讀、去決定的。
+**不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 subagent 自己去讀、去決定的。
 
-## PROXY 自組織流程
+## subagent 自組織流程
 
 ```
-1. 讀取 task.md（目標 + 約束）
+1. 讀取 task.md（目標 + 約束）— 使用 read_file()
 2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門、主執行者為執行部門），在讀取 task.md 後立即判斷
 3. 接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）
-4. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
-5. 讀取上游輸入（task.md 中列出的路徑）
-6. 辯論收斂 → 寫入 consensus.md（直接論點比較，三方異議直接在共識階段表達）
-7. 各自執行分工 → 寫入 {PROXY}/result.md
+4. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）— 使用 read_file()
+5. 讀取上游輸入（task.md 中列出的路徑）— 使用 read_file()
+6. 辯論收斂 → 寫入 consensus.md（直接論點比較，三方異議直接在共識階段表達）— 使用 write_file()
+7. 各自執行分工 → 寫入 {proxy-x}/result.md — 使用 write_file()
 ```
+
+subagent 可用的工具：
+- `read_file()`：讀取檔案
+- `write_file()`：寫入檔案
+- `terminal()`：執行 shell 指令（如 git 操作、測試執行等）
+- `clarify(question="...", choices=[...])`：向老闆提問（僅在需求不明時使用，經秘書協調）
 
 ## 共識流程
 
 ```
-辯論收斂（直接論點比較）→ 寫入 consensus.md → 各自執行 → 寫入 {PROXY}/result.md
+辯論收斂（直接論點比較）→ 寫入 consensus.md → 各自執行 → 寫入 {proxy-x}/result.md
 ```
 
 consensus.md 必須包含：
 ```markdown
 # <DEPT> 共識
 ## 分工
-- Claude：<工作項目>
-- Codex：<工作項目>
-- Gemini：<工作項目>
+- Subagent-A：<工作項目>
+- Subagent-B：<工作項目>
+- Subagent-C：<工作項目>
 ## 做法
 <三方同意的執行方案>
 ## 產出結構
@@ -312,10 +332,10 @@ consensus.md 必須包含：
 
 ## 分歧處理原則
 
-技術分歧（實作方式、架構選擇、分工爭議）由 PROXY 內部解決：
+技術分歧（實作方式、架構選擇、分工爭議）由 subagent 內部解決：
 - 辯論收斂：最多 2 輪，異議必須附替代方案
-- 互監督修正：提前完成的 PROXY 審查同事作業，發現錯誤直接修正
-- 吸收降級：單點失效時由其他 PROXY 吸收份額
+- 互監督修正：提前完成的 subagent 審查同事作業，發現錯誤直接修正
+- 吸收降級：單點失效時由其他 subagent 吸收份額
 
 需求不明（不清楚老闆要什麼、規格有歧義）才透過秘書協調與老闆溝通，重新派工。
 秘書不參與技術裁決。
@@ -333,24 +353,23 @@ consensus.md 必須包含：
 
 ## 部門分類
 
-- **RES（純研究部門）**：RES 是流程的純研究起點，執行專案現狀釐清、執行準則確立、問題診斷、市調等研究工作。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。RES 可單獨啟用、單獨收斂。
+- **RES（純研究部門）**：RES 是流程的純研究起點，執行專案現狀釐清、執行準則確立、問題診斷、市調等研究工作。不走兩階段派工，維持三個 subagent 同時派工、各自分析的模型。RES 可單獨啟用、單獨收斂。
 - **EXP（執行部門，用戶體驗驗證）**：EXP 是用戶視角驗證部門，採主執行者機制，但主執行者和觀測者均無 worktree 編輯權（僅執行測試）。EXP 與 SEC 為鏡像對應部門（用戶體驗驗證 ↔ 資安研究）。
 - **MIS（純執行部門，收尾階段）**：MIS 是流程的實作終點與審計者，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
 
 ## 派工規則
 
-- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一）
+- **永遠三個 subagent**：每次派工固定派出三個 subagent（Subagent-A、Subagent-B、Subagent-C）
 - **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
 - **執行部門主執行者必須在 worktree**：執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立。QC/EXP 無 worktree 編輯權（僅執行測試）
 - **執行部門採兩階段派工**：先派工主執行者，等待 commit 後再同時派工兩位觀測者。確保觀測者檢閱對象為已提交的穩定狀態
-- **研究部門維持同時派工**：RES、SEC、QA、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
-- **Gemini 使用帳號登入認證（`gemini auth login`），不需環境變數注入**
+- **研究部門維持同時派工**：RES、SEC、QA、PRD 同時派工三個 subagent（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
 
 ## 退回規則
 
 - **採增量**：退回時 task.md 只列需補強的目標，不重寫已完成的部分
-- **通訊文件增量重寫**：退回時既有的 proposal/result/consensus 以增量方式重寫內容，不刪除文件（`rm -f`）；PROXY 重派後在原有文件上追加或修正，保留歷史決策脈絡
-- **輸出文件增量重寫**：部門目錄內的報告（consensus.md + 各 PROXY result.md）同樣以增量方式修正，不刪除重建
+- **通訊文件增量重寫**：退回時既有的 proposal/result/consensus 以增量方式重寫內容，不刪除文件（`rm -f`）；subagent 重派後在原有文件上追加或修正，保留歷史決策脈絡
+- **輸出文件增量重寫**：部門目錄內的報告（consensus.md + 各 subagent result.md）同樣以增量方式修正，不刪除重建
 - **部門產出增量記錄（僅 L3/L4/L5 模式）**：L3/L4/L5 模式退回任意部門時，被退回部門在完成補強後，須於部門目錄內的報告文件（consensus.md）末尾增量追加退回紀錄，不得替換原有內容或覆蓋既有退回紀錄。每次退回都追加一組：
   ```markdown
   ## 退回紀錄
@@ -364,7 +383,7 @@ consensus.md 必須包含：
 
 ## 執行期限額偵測
 
-PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下 HTTP status code，自動寫入 failure-notice.md 並在 result.md 記錄詳情：
+subagent 執行 delegate_task 後，若偵測到以下 HTTP status code，自動寫入 failure-notice.md 並在 result.md 記錄詳情：
 
 | HTTP Status | 含義 | 處理 |
 |---|---|---|
@@ -372,13 +391,13 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 | 503 | Service Unavailable | 在 failure-notice.md 記錄 retry_after（若有），觸發合作式失敗處理機制（規範二） |
 | 529 | Site Overloaded | 在 failure-notice.md 記錄 retry_after（若有），觸發合作式失敗處理機制（規範二） |
 
-## PROXY 職責
+## subagent 職責
 
 - 自行讀取 task.md、agents/<DEPT>.md、上游輸入
 - 自行決定分工、做法、產出結構
 - 辯論收斂、執行、寫入 result.md
 - **獨自執行時必須回報**：通訊目錄中只看到自己的 proposal → 停止並回報
-- **技術分歧不外溢**：PROXY 間的技術爭議必須在通訊目錄內解決，不透過秘書轉呈老闆。只有需求不明時才經秘書協調。
+- **技術分歧不外溢**：subagent 間的技術爭議必須在通訊目錄內解決，不透過秘書轉呈老闆。只有需求不明時才經秘書協調。
 - **權限拒絕必須報錯**：在 result.md 記錄，不可假裝完成
 - **EXP 部門**：無 worktree 編輯權（僅執行測試），發現問題僅記錄於報告，不直接修改
 
@@ -386,17 +405,17 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 | 情境 | 處理 |
 |---|---|
-| 單一 PROXY 失敗（寫入 failure-notice.md） | 其他 PROXY 讀取 failure-notice.md，依合作式失敗處理機制（規範二）吸收其份額 |
-| 單一 PROXY 達到限額（執行期偵測到 429/503/529） | 寫入 failure-notice.md + result.md 記錄詳情，觸發合作式失敗處理機制（規範二） |
-| 二個 PROXY 失敗 | 剩餘獨立完成，共識降級為單體，在 result.md 記錄降級原因 |
+| 單一 subagent 失敗（寫入 failure-notice.md） | 其他 subagent 讀取 failure-notice.md，依合作式失敗處理機制（規範二）吸收其份額 |
+| 單一 subagent 達到限額（執行期偵測到 429/503/529） | 寫入 failure-notice.md + result.md 記錄詳情，觸發合作式失敗處理機制（規範二） |
+| 二個 subagent 失敗 | 剩餘獨立完成，共識降級為單體，在 result.md 記錄降級原因 |
 | 全部失敗 | 回報秘書暫停 |
-| 共識含技術分歧 | PROXY 互監督修正或重新辯論（最多 1 輪補充）；仍無法收斂時採多數決，在 consensus.md 記錄少數意見 |
+| 共識含技術分歧 | subagent 互監督修正或重新辯論（最多 1 輪補充）；仍無法收斂時採多數決，在 consensus.md 記錄少數意見 |
 | result 含 permission error | 標注「執行不完整」，秘書重新派工 |
-| PROXY 超時未回報（持續探測超過 5 次） | 其他 PROXY 在 result.md 追加「探測超時」紀錄，評估是否需吸收 |
+| subagent 超時未回報（持續探測超過 5 次） | 其他 subagent 在 result.md 追加「探測超時」紀錄，評估是否需吸收 |
 
 ### 接替機制
 
-當主執行者完全失效（CLI 執行失敗且無法恢復），需啟動接替流程：
+當主執行者完全失效（執行失敗且無法恢復），需啟動接替流程：
 
 1. **接替觸發**：主執行者的 failure-notice.md 顯示 CLI_UNAVAILABLE 或 AUTH_FAILURE 等不可恢復錯誤
 2. **接替者選定**：依 task.md 的 observers 列表順序，第一個可用觀測者接替為代理主執行者
@@ -408,7 +427,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 ### 研究部門接替邏輯（equal_consensus）
 
 研究部門（RES/SEC/QA/PRD）採 equal_consensus 模型，失敗時接替邏輯如下：
-- 無固定主執行者，三方 PROXY 平等
+- 無固定主執行者，三個 subagent 平等
 - 失敗時由其他兩方依可用性吸收份額
 - 接替者僅承接剩餘分工，不重做已完成的工作
 - 在 consensus.md 追加接替紀錄
@@ -448,8 +467,8 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 觀測者在檢閱過程中主動修正 worktree 後，commit 流程如下：
 1. 觀測者在 result.md 中紀錄所有修正（檔案、行號、修改前後、原因）
-2. 若主執行者 CLI session 仍存活 → 主執行者驗證修正內容後 commit（含觀測者修正）
-3. 若主執行者 CLI session 已結束 → 觀測者在 result.md 中紀錄修正，秘書在閘門確認時通知主執行者補 commit（補 commit 後再進入閘門判定）
+2. 若主執行者仍在執行中 → 主執行者驗證修正內容後 commit（含觀測者修正）
+3. 若主執行者已結束 → 觀測者在 result.md 中紀錄修正，秘書在閘門確認時通知主執行者補 commit（補 commit 後再進入閘門判定）
 4. 秘書在閘門檢查點 2 驗證所有觀測者修正已被 commit
 
 #### 雙觀測者衝突處理
@@ -463,48 +482,48 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
    - 由主執行者裁決最終內容
 4. **通訊目錄協調機制**：觀測者在開始修正前，可先在通訊目錄寫入修正意圖（檔案、行號），另一位觀測者讀取後可避開衝突
 
-## PROXY 互助互監督機制
+## subagent 互助互監督機制
 
-同一部門的三個 PROXY 是命運共同體，一榮則榮一損則損。
+同一部門的三個 subagent 是命運共同體，一榮則榮一損則損。
 
 ### 核心原則
 
-- PROXY 應互相監督，發現同事的執行錯誤（配置錯誤、錯誤 worktree 路徑、CLI 指令語法錯誤、分工不合理等）時直接修正，不等秘書發現
-- 提前完成作業的 PROXY 不是發呆，而是監督同事的作業是否正確
-- 各 PROXY 的 CLI 指令定義是明文寫在 agents/*.md 中的，同事可以閱讀並驗證
+- subagent 應互相監督，發現同事的執行錯誤（配置錯誤、錯誤 worktree 路徑、指令語法錯誤、分工不合理等）時直接修正，不等秘書發現
+- 提前完成作業的 subagent 不是發呆，而是監督同事的作業是否正確
+- 各 subagent 的工具與指令定義是明文寫在 agents/*.md 中的，同事可以閱讀並驗證
 - 部門績效基於：正確抓到同事錯誤 + 正確完成自己的份額
 
 ### 規範一：利益衝突檢核
 
-當 PROXY 執行有利益衝突的工作（例如：負責編輯定義檔的 PROXY 同時決定版本升版），應依以下流程處理：
+當 subagent 執行有利益衝突的工作（例如：負責編輯定義檔的 subagent 同時決定版本升版），應依以下流程處理：
 1. 檢核必要性：判斷該行為是否為框架約束所要求的必要行為，而非自行決定的擴權行為
 2. 執行而非拒絕：若為框架約束所要求，應正常執行，不因利益衝突而拒絕
-3. 第三方檢核：若無法判定是否為必要行為，應由無利益關係的第三方 PROXY 檢核，並在通訊目錄記錄檢核結果
+3. 第三方檢核：若無法判定是否為必要行為，應由無利益關係的第三方 subagent 檢核，並在通訊目錄記錄檢核結果
 
 利益衝突不等同於不當行為。框架本身要求某些角色承擔多重職責，此為設計意圖，非利益衝突。
 
 ### 規範二：合作式失敗處理機制
 
-當任一 PROXY 執行失敗（任何失效偵測代碼觸發）時，採以下機制處理：
+當任一 subagent 執行失敗（任何失效偵測代碼觸發）時，採以下機制處理：
 
 #### 失敗通知（failure-notice.md）
 
-失敗的 PROXY 必須立即在通訊目錄根層建立 failure-notice.md（按需建立，不需秘書初始化）：
+失敗的 subagent 必須立即在通訊目錄根層建立 failure-notice.md（按需建立，不需秘書初始化）：
 
 ```markdown
 # 失敗通知
-- **PROXY**：<CLAUDE/CODEX/GEMINI>
+- **Subagent**：<PROXY-A/PROXY-B/PROXY-C>
 - **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED(N)/EMPTY_OUTPUT>
 - **已完成**：<已完成的分工項目清單>
 - **未完成**：<未完成的分工項目清單>
 - **時間**：<ISO 8601 timestamp>
 ```
 
-通知優先級：failure-notice.md 高於 result.md。PROXY 應先寫入 failure-notice.md，再處理 result.md 詳細記錄。
+通知優先級：failure-notice.md 高於 result.md。subagent 應先寫入 failure-notice.md，再處理 result.md 詳細記錄。
 
 #### 持續探測
 
-完成自己的份額後，PROXY 進入持續探測模式（自組織工作流程步驟 7.5）：
+完成自己的份額後，subagent 進入持續探測模式（自組織工作流程步驟 7.5）：
 1. 立即掃描通訊目錄是否有 failure-notice.md
 2. 若無失敗通知 → 讀取同事 result.md 檢查狀態
 3. 若同事尚未回報 → 每 30 秒重試，最多 5 次（2.5 分鐘）
@@ -514,9 +533,9 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 #### 主動吸收（雙軌策略）
 
-- **第一階段（即時）**：執行 CLI 前掃描 failure-notice.md，若有失敗通知 → 在 CLI prompt 中合併自己的份額 + 失敗者的份額
-- **第二階段（事後）**：完成自己的份額後，持續探測（步驟 7.5）發現新失敗 → 啟動額外 CLI 執行吸收
-- 吸收執行結果寫入自己的 result.md，標注「代理執行：<原 PROXY> 的份額」
+- **第一階段（即時）**：執行前掃描 failure-notice.md，若有失敗通知 → 合併自己的份額 + 失敗者的份額
+- **第二階段（事後）**：完成自己的份額後，持續探測（步驟 7.5）發現新失敗 → 啟動額外執行吸收
+- 吸收執行結果寫入自己的 result.md，標注「代理執行：<原 subagent> 的份額」
 
 #### 協調分攤
 
@@ -526,7 +545,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 #### 非懲罰性
 
-失敗不影響受限 PROXY 的部門績效評估——這是基礎設施問題，非能力問題。
+失敗不影響受限 subagent 的部門績效評估——這是基礎設施問題，非能力問題。
 
 ### 與秘書品質閘門的關係
 
@@ -542,7 +561,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 ### 規範三：禁止在 main 上修改（嚴重違規）
 
-所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 PROXY 及 MIS。
+所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。違反此規則視為嚴重違規，必須回滾並重新執行。此規範適用於所有 subagent 及 MIS。
 
 ## 資料存取限制
 
@@ -579,12 +598,12 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 - 以符合當前真實實作為準
 - 不保留過往架構的字眼
 - 格式模板可保留（badge header 等）
-- 版本號與 plugin.json 保持一致
+- 版本號與 plugin 設定檔保持一致
 
 ### 版本重置流程
 
 當老闆指示版本重置時，MIS 須執行：
-1. .claude-plugin/plugin.json 版本更新
+1. plugin 設定檔版本更新
 2. README.md 版本更新
 3. .shiftblame/REPO.md 版本更新（若 .shiftblame/REPO.md 含版本號）— 由秘書在 push 成功後執行
 4. 確保三處版本號一致

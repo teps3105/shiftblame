@@ -7,7 +7,7 @@ _「這不是我的鍋。」_
 _AI agents 開發框架——流程協議與定義檔_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-8a2be2.svg)](https://claude.com/claude-code)
+[![Hermes Agent Skill](https://img.shields.io/badge/Hermes%20Agent-skill-8a2be2.svg)](https://hermes-agent.nousresearch.com)
 [![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#八部門職能)
 
 **[核心機制](#核心機制)** · **[架構概覽](#架構概覽)** · **[檔案結構](#檔案結構)** · **[安裝](#安裝)** · **[使用](#使用)**
@@ -16,11 +16,11 @@ _AI agents 開發框架——流程協議與定義檔_
 
 ## 簡介
 
-shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨 CLI 框架的協作流程。三個 PROXY（Claude / Codex / Gemini）在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
+shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型的協作流程。三個 PROXY（Claude / Codex / Gemini）以 Hermes Agent 的 `delegate_task` 子代理形式運作，各自可配置不同模型，在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
 
-框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動八部門單向流程，協調從需求研究到品質驗證的完整開發流程。
+框架以 Hermes Agent Skill 形式發布，載入後 Skill 自動注入秘書系統提示，使用者直接對話即可啟動八部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
-當前版本：v2.0.4
+當前版本：v3.0.0
 
 ---
 
@@ -28,7 +28,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 ### PROXY 外殼代理
 
-三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`）不直接操作程式碼，而是各自啟動外部 CLI 進程執行任務。這確保三個 CLI 的上下文完全獨立、對等、不被 Claude Code 污染。各 CLI 使用自家預設模型，不從外部指定。
+三個 PROXY（`CLAUDE_PROXY` / `CODEX_PROXY` / `GEMINI_PROXY`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理，各自可配置不同模型與參數。這確保三個子代理的上下文完全獨立、對等、不被主代理污染。模型配置由使用者在 Hermes 設定中指定。
 
 ### 自組織分工
 
@@ -40,7 +40,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 - 異議必須附替代方案
 - 同一部門的三個 PROXY 互相監督執行正確性
-- 任一 CLI 失敗時透過 failure-notice.md 通知，其他 PROXY 主動探測並吸收份額；三方全失敗則通知秘書暫停流程
+- 任一代理失敗時透過 failure-notice.md 通知，其他 PROXY 主動探測並吸收份額；三方全失敗則通知秘書暫停流程
 
 ### 合作式失敗處理
 
@@ -52,9 +52,9 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 常識不隨運行動態新增。若有需要新增或修改常識，應更新框架定義檔。
 
-### CLI 去識別化
+### 代理去識別化
 
-CLI 彼此僅知使用三種不同的 CLI 框架，不知底層模型細節，避免偏好干擾協作判斷。
+PROXY 彼此僅知使用三種不同的模型配置，不知底層模型細節，避免偏好干擾協作判斷。
 
 ---
 
@@ -95,18 +95,15 @@ DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權�
 
 ## 檔案結構
 
-### Plugin 結構
+### Skill 結構
 
 ```
 shiftblame/
-├── .claude-plugin/
-│   ├── plugin.json          # v2.0.4
-│   └── marketplace.json
 ├── agents/
 │   ├── RES.md / SEC.md / QA.md / PRD.md / DEV.md / QC.md / EXP.md / MIS.md  # 八部門主管
-│   ├── CLAUDE_PROXY.md                                       # Claude 外殼代理
-│   ├── CODEX_PROXY.md                                       # Codex 外殼代理
-│   └── GEMINI_PROXY.md                                      # Gemini 外殼代理
+│   ├── CLAUDE_PROXY.md                                       # Claude 子代理
+│   ├── CODEX_PROXY.md                                       # Codex 子代理
+│   └── GEMINI_PROXY.md                                      # Gemini 子代理
 ├── skills/
 │   └── secretary/
 │       ├── SKILL.md
@@ -115,9 +112,6 @@ shiftblame/
 │       ├── PROXY_PROTOCOL.md
 │       ├── WORKTREE_SOP.md
 │       └── LIFECYCLE.md
-├── hooks/
-│   ├── hooks.json           # SessionStart hook 定義
-│   └── inject-claudemd.sh   # CLAUDE.md 自動注入腳本
 ├── LICENSE                  # MIT
 └── README.md
 ```
@@ -144,23 +138,22 @@ shiftblame/
 ## 安裝
 
 ```bash
-# 註冊 Marketplace
-claude plugin marketplace add teps3105/shiftblame
+# 將 shiftblame skill 複製到 Hermes skills 目錄
+cp -r shiftblame/ ~/.hermes/skills/shiftblame/
 
-# 安裝 Plugin
-claude plugin install shiftblame@shiftblame
+# 或直接 clone 到 skills 目錄
+git clone https://github.com/teps3105/shiftblame.git ~/.hermes/skills/shiftblame
 ```
 
 更新：
 
 ```bash
-claude plugin marketplace update
-claude plugin update shiftblame
+cd ~/.hermes/skills/shiftblame && git pull
 ```
 
-安裝後首次啟動 Claude Code 時，Plugin 透過 SessionStart hook 自動完成以下初始化：
+Hermes 載入 Skill 時自動完成以下初始化：
 
-1. 將秘書提示詞注入 `~/.claude/CLAUDE.md`（若已有相關提示則不重複注入）
+1. 秘書系統提示透過 Skill 自動載入，無需手動注入
 2. 確認 `.shiftblame/` 目錄存在、檢查 `.gitignore` 是否包含 `.shiftblame/`
 
 無需手動設定，直接開始使用即可。
@@ -169,7 +162,7 @@ claude plugin update shiftblame
 
 ## 使用
 
-安裝後直接對話即可。秘書負責流程調度、部門派工與閘門管控，依需求複雜度判定模式（見[五等級開發制度](#五等級開發制度)）。
+Skill 載入後直接對話即可。秘書負責流程調度、部門派工與閘門管控，依需求複雜度判定模式（見[五等級開發制度](#五等級開發制度)）。
 
 ```
 老闆提問 → 秘書顧問翻譯 → RES 研究 → 模式確認 → 老闆決策 → 秘書調度

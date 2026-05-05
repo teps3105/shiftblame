@@ -1,6 +1,8 @@
-# 閘門流程 v2.0.0
+# 閘門流程 v2.1.0
 
 > 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+>
+> **術語說明**：本文中「subagent」指框架中的 PROXY（子代理），即 Claude → Codex → Gemini → Claude... 輪替序列中的個別代理實例。相對應的產出目錄為 `proxy-a/`、`proxy-b/`、`proxy-c/`（輪替使用）。
 
 ## RES 啟動閘門（流程起點）
 
@@ -16,70 +18,42 @@ RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清�
    - 讀取 `.shiftblame/REPO.md` 作為專案現狀參考（RES 負責初始化 .shiftblame/REPO.md）。
    - 確認執行準則已落袋：RES result.md 中含明確的執行準則。
 6. 驗證不通過 → 退回 RES 補齊（不進入下一部門）。
-7. 透過 AskUserQuestion 確認 RES 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：
+7. 透過 clarify 確認 RES 起點產出可接受（依 task.md 的 current_mode 選擇對應模板）：
 
 **L2 模式（basic）：**
 ```
-AskUserQuestion({
-  questions: [{
-    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
-    header: "RES 啟動",
-    options: [
-      { label: "確認派工 MIS", description: "專案現狀與準則 OK，派工 MIS 執行收尾" },
-      { label: "退回 RES", description: "有問題，要求 RES 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。", choices=[
+  "確認派工 MIS — 專案現狀與準則 OK，派工 MIS 執行收尾",
+  "退回 RES — 有問題，要求 RES 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 **L3 模式（medium）：**
 ```
-AskUserQuestion({
-  questions: [{
-    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
-    header: "RES 啟動",
-    options: [
-      { label: "確認派工 PRD", description: "專案現狀與準則 OK，啟動單向流程" },
-      { label: "退回 RES", description: "有問題，要求 RES 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。", choices=[
+  "確認派工 PRD — 專案現狀與準則 OK，啟動單向流程",
+  "退回 RES — 有問題，要求 RES 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 **L4 模式（full）：**
 ```
-AskUserQuestion({
-  questions: [{
-    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
-    header: "RES 啟動",
-    options: [
-      { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
-      { label: "退回 RES", description: "有問題，要求 RES 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。", choices=[
+  "確認派工 QA — 專案現狀與準則 OK，啟動單向流程",
+  "退回 RES — 有問題，要求 RES 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 **L5 模式（full）：**
 ```
-AskUserQuestion({
-  questions: [{
-    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
-    header: "RES 啟動",
-    options: [
-      { label: "確認派工 SEC", description: "專案現狀與準則 OK，啟動單向流程" },
-      { label: "退回 RES", description: "有問題，要求 RES 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。", choices=[
+  "確認派工 SEC — 專案現狀與準則 OK，啟動單向流程",
+  "退回 RES — 有問題，要求 RES 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 ## 模式升級/降級閘門
@@ -87,9 +61,9 @@ AskUserQuestion({
 當前 slug 模式可升級也可降級（縮小範圍）。流程如下：
 
 1. **升級請求**：主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`（例如：L3 模式發現需進入 L5 模式，提議升級）。
-2. **瓶頸升級**：PROXY 發現範圍過大 → 秘書確認。
-3. **秘書確認**：秘書在部門閘門開啟時偵測到升級請求，透過 AskUserQuestion 請老闆複核升級。
-4. **降級處理**：老闆透過 AskUserQuestion 縮小範圍 → 秘書更新 meta.md 和 task.md。
+2. **瓶頸升級**：subagent 發現範圍過大 → 秘書確認。
+3. **秘書確認**：秘書在部門閘門開啟時偵測到升級請求，透過 clarify 請老闆複核升級。
+4. **降級處理**：老闆透過 clarify 縮小範圍 → 秘書更新 meta.md 和 task.md。
 5. **降級不可逆轉（同一輪次內有效）**：縮小範圍降級後不可再升回原等級。
 6. **執行更新**：
    - 更新 `meta.md` 中的 `current_mode`。
@@ -102,23 +76,16 @@ AskUserQuestion({
 
 L2 模式下，RES 完成研究後派工 MIS 執行收尾，MIS 完成後的閘門簡化為直接進入收尾：
 
-1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
-2. 確認 MIS 部門報告完整性（consensus.md + 各 PROXY result.md）
-3. AskUserQuestion 呈報 MIS 完成結果：
+1. 秘書讀取 MIS 產出（consensus.md + 各 subagent result.md）
+2. 確認 MIS 部門報告完整性（consensus.md + 各 subagent result.md）
+3. clarify 呈報 MIS 完成結果：
 
 ```
-AskUserQuestion({
-  questions: [{
-    question: "MIS 收尾完成。是否確認進入秘書復判？\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
-    header: "L2 模式",
-    options: [
-      { label: "確認復判", description: "確認進入秘書復判" },
-      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="MIS 收尾完成。是否確認進入秘書復判？\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>", choices=[
+  "確認復判 — 確認進入秘書復判",
+  "退回 MIS — 有問題，要求 MIS 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 4. 「確認復判」→ 秘書執行復判確認有確實收尾與正確運作 → 復判通過 → 進入 L2 模式收尾流程
@@ -134,66 +101,52 @@ MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作，
 
 ### L2 模式復判
 
-1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+1. 秘書讀取 MIS 產出（consensus.md + 各 subagent result.md）
 2. 復判確認項目：
-   - MIS 部門報告完整性（consensus.md + 各 PROXY result.md，含歸檔紀錄、合併紀錄、變更摘要、semver 評估、結論）
+   - MIS 部門報告完整性（consensus.md + 各 subagent result.md，含歸檔紀錄、合併紀錄、變更摘要、semver 評估、結論）
    - 定義檔變更與 task.md 要求一致
-   - 三方 PROXY 均有完成回報（或已有降級/吸收記錄）
-3. AskUserQuestion 呈報復判結果：
+   - 三方 subagent 均有完成回報（或已有降級/吸收記錄）
+3. clarify 呈報復判結果：
 
 ```
-AskUserQuestion({
-  questions: [{
-    question: "秘書復判完成（第 N 次增量）。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
-    header: "秘書復判",
-    options: [
-      { label: "確認歸檔", description: "復判通過，執行歸檔" },
-      { label: "繼續補強", description: "功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）" },
-      { label: "退回修正", description: "有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）" },
-      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="秘書復判完成（第 N 次增量）。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>", choices=[
+  "確認歸檔 — 復判通過，執行歸檔",
+  "繼續補強 — 功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）",
+  "退回修正 — 有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）",
+  "退回 MIS — 有問題，要求 MIS 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 4. 「確認歸檔」→ 進入收尾流程（SKILL.md 收尾流程區段）
-5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 RES 研究階段）
+5. 「繼續補強」→ 秘書透過 clarify 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 RES 研究階段）
 6. 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（不重新派工觀測者）
 7. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
 8. 「暫停」→ 結束 turn，等老闆討論
 
 ### L3/L4/L5 模式復判
 
-1. 秘書讀取 MIS 產出（consensus.md + 各 PROXY result.md）
+1. 秘書讀取 MIS 產出（consensus.md + 各 subagent result.md）
 2. 復判確認項目：
-   - MIS 部門報告完整性（consensus.md + 各 PROXY result.md）
+   - MIS 部門報告完整性（consensus.md + 各 subagent result.md）
    - 合併紀錄（commit SHA、squash merge 記錄）
    - 定義檔變更與 task.md 要求一致
    - worktree 狀態乾淨（無未提交變更）
-   - 三方 PROXY 均有完成回報（或已有降級/吸收記錄）
-3. AskUserQuestion 呈報復判結果：
+   - 三方 subagent 均有完成回報（或已有降級/吸收記錄）
+3. clarify 呈報復判結果：
 
 ```
-AskUserQuestion({
-  questions: [{
-    question: "秘書復判完成（第 N 次增量）。MIS 收尾工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>",
-    header: "秘書復判",
-    options: [
-      { label: "確認歸檔", description: "復判通過，執行歸檔" },
-      { label: "繼續補強", description: "功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）" },
-      { label: "退回修正", description: "有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）" },
-      { label: "退回 MIS", description: "有問題，要求 MIS 補齊" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="秘書復判完成（第 N 次增量）。MIS 收尾工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>", choices=[
+  "確認歸檔 — 復判通過，執行歸檔",
+  "繼續補強 — 功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）",
+  "退回修正 — 有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）",
+  "退回 MIS — 有問題，要求 MIS 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 4. 「確認歸檔」→ 進入收尾流程
-5. 「繼續補強」→ 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 RES 研究階段）
+5. 「繼續補強」→ 秘書透過 clarify 確認新增需求與模式等級（顯示當前增量次數）→ 直接派工對應部門（不需完整 RES 研究階段）
 6. 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（不重新派工觀測者）
 7. 「退回 MIS」→ 結束 turn
 8. 「暫停」→ 結束 turn
@@ -208,11 +161,11 @@ AskUserQuestion({
 4. **暫停**：有問題待討論。
 
 task.md 需支援 round 標記（Round 2、Round 3...）。
-AskUserQuestion 格式包含 Round N 標題與選項。
+clarify 格式包含 Round N 標題與選項。
 
 ## 部門完成閘門流程
 
-每個部門完成後，秘書讀取 PROXY 共識產出，驗證品質門檻，用 AskUserQuestion 回報老闆。
+每個部門完成後，秘書讀取 subagent 共識產出，驗證品質門檻，用 clarify 回報老闆。
 
 ### 執行部門閘門（兩階段派工）
 
@@ -220,18 +173,18 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 
 **檢查點 1：主執行者完成**
 1. 讀取主執行者 result.md，確認執行完成
-2. 驗證 worktree 中有對應 commit（`git -C <worktree> log --oneline -1`）
+2. 驗證 worktree 中有對應 commit（`terminal("git -C <worktree> log --oneline -1")`）
 3. 若無 commit → 退回主執行者補齊
 4. 若有 commit → 進入第二階段派工觀測者
 
 **檢查點 2：觀測者完成（閘門）**
 1. 讀取兩位觀測者 result.md，確認檢閱完成
 1.5. 檢查觀測者 result.md 是否含「觀測者主動修正紀錄」表格
-     - 若有修正紀錄 → 驗證 worktree 無未提交的觀測者修正（`git -C <worktree> diff HEAD` 確認）
+     - 若有修正紀錄 → 驗證 worktree 無未提交的觀測者修正（`terminal("git -C <worktree> diff HEAD")` 確認）
      - 若有未提交修正 → 退回主執行者補 commit
 2. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
 3. 執行部門驗證 SOP（見下方）
-4. AskUserQuestion 呈報共識結果 → 等老闆判定（含「退回修正」選項，僅執行部門適用）
+4. clarify 呈報共識結果 → 等老闆判定（含「退回修正」選項，僅執行部門適用）
 
 #### 退回修正流程
 
@@ -265,11 +218,11 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 ### 步驟
 
 ```
-1. 部門完成 → 秘書讀取 consensus.md + 各 PROXY result.md
-2. 讀取三方 PROXY result.md，整理三方工作情況
+1. 部門完成 → 秘書讀取 consensus.md + 各 subagent result.md
+2. 讀取三方 subagent result.md，整理三方工作情況
 3. 讀取通訊目錄的 failure-notice.md（若有），確認是否有未被吸收的失敗通知
 4. 執行部門驗證 SOP（見下方）
-5. AskUserQuestion 呈報共識結果 → 等老闆判定
+5. clarify 呈報共識結果 → 等老闆判定
 6. 工具回傳 → 依老闆選擇分支：
    - 「繼續」→ 同一 turn 內直接推進（派下一部門或進入收尾流程）
    - 「退回修正」→ 覆述選擇 → 結束 turn，等老闆下一則訊息說明修正內容（僅執行部門）
@@ -293,57 +246,43 @@ AskUserQuestion 格式包含 Round N 標題與選項。
    - 退回輪次：Round N
    ```
 
-## AskUserQuestion 格式
+## clarify 格式
 
 ### 共識收斂
 
 ```
-AskUserQuestion({
-  questions: [{
-    question: "[部門] 完成。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>",
-    header: "部門回報",
-    options: [
-      { label: "繼續", description: "共識 OK，推進下一部門" },
-      { label: "退回修正", description: "觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅執行部門）" },
-      { label: "重做", description: "有問題，要求重新執行" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="[部門] 完成。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>", choices=[
+  "繼續 — 共識 OK，推進下一部門",
+  "退回修正 — 觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅執行部門）",
+  "重做 — 有問題，要求重新執行",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
 > **註**：「退回修正」選項僅適用於執行部門（DEV/QC/EXP/MIS）。研究部門（RES/SEC/QA/PRD）使用此模板時應移除「退回修正」選項。
 
-### 共識含技術分歧（PROXY 內部已處理）
+### 共識含技術分歧（subagent 內部已處理）
 
 ```
-AskUserQuestion({
-  questions: [{
-    question: "[部門] 完成。含技術分歧（已由 PROXY 內部多數決解決）。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>",
-    header: "部門回報",
-    options: [
-      { label: "繼續", description: "共識 OK，推進下一部門" },
-      { label: "退回修正", description: "觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅執行部門）" },
-      { label: "重做", description: "有問題，要求重新執行" },
-      { label: "暫停", description: "先暫停，有問題要討論" }
-    ],
-    multiSelect: false
-  }]
-})
+clarify(question="[部門] 完成。含技術分歧（已由 subagent 內部多數決解決）。共識結果：<摘要>。\n\n主執行者（<Name>）：<完成項目/風險吸收>\n觀測者（<Name>, <Name>）：<檢閱情況/降級狀態>", choices=[
+  "繼續 — 共識 OK，推進下一部門",
+  "退回修正 — 觀測者發現輕微問題，退回主執行者進行針對性修正（不重新派工觀測者）（僅執行部門）",
+  "重做 — 有問題，要求重新執行",
+  "暫停 — 先暫停，有問題要討論",
+])
 ```
 
-當 consensus.md 含技術分歧的多數決記錄時，秘書不需特別處理——技術分歧已由 PROXY 內部解決。秘書僅需確認 consensus.md 存在且含分工與做法。
+當 consensus.md 含技術分歧的多數決記錄時，秘書不需特別處理——技術分歧已由 subagent 內部解決。秘書僅需確認 consensus.md 存在且含分工與做法。
 
 ## 判讀老闆回應
 
-| AskUserQuestion 回傳 | 秘書動作 |
+| clarify 回傳 | 秘書動作 |
 |---|---|
-| label: 「繼續」 | 同一 turn 內派工下一部門或進入收尾流程 |
-| label: 「繼續補強」 | 秘書透過 AskUserQuestion 確認新增需求與模式等級（顯示第 N 次增量），直接派工對應部門。不走歸檔流程 |
-| label: 「退回修正」 | 結束 turn，等老闆下一則訊息說明修正內容。主執行者修正後不重新走兩階段派工，秘書確認修正完成後繼續流程（適用於部門完成閘門與復判閘門；僅執行部門適用） |
-| label: 「重做」 | 結束 turn，等老闆下一則訊息說明修正內容 |
-| label: 「暫停」 | 結束 turn，等老闆討論 |
+| 「繼續」 | 同一 turn 內派工下一部門或進入收尾流程 |
+| 「繼續補強」 | 秘書透過 clarify 確認新增需求與模式等級（顯示第 N 次增量），直接派工對應部門。不走歸檔流程 |
+| 「退回修正」 | 結束 turn，等老闆下一則訊息說明修正內容。主執行者修正後不重新走兩階段派工，秘書確認修正完成後繼續流程（適用於部門完成閘門與復判閘門；僅執行部門適用） |
+| 「重做」 | 結束 turn，等老闆下一則訊息說明修正內容 |
+| 「暫停」 | 結束 turn，等老闆討論 |
 
 > **註**：上表為閘門工具回傳後的結構化分支。老闆在「退回修正」、「重做」或「暫停」之後的後續訊息仍需語意判讀——例如追問細節、修改需求、或取消——此時適用一般意圖理解，不構成新的閘門流程。「退回修正」僅適用於執行部門（DEV/QC/EXP/MIS）。
 
@@ -361,7 +300,7 @@ QC 共識到達後，秘書必執行：
 ### DEV 報告後：無過濾 pytest + 業務 sanity check
 
 DEV 共識到達後，秘書必執行：
-1. 無過濾 pytest：`cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20`，比對共識報告數字
+1. 無過濾 pytest：`terminal("cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20")`，比對共識報告數字
 2. 業務 sanity check（read-only）：跑專案的 quality_check CLI、manifest schema 驗證、grep PRD 閾值關鍵字 vs 實作確認未暗改
 
 派工 DEV 時 prompt 禁含 `tests/e2e/`（DEV 不跑 e2e，測試指令只含 unit + integration）。
@@ -381,4 +320,4 @@ QC 共識到達後，秘書必執行：
 
 ### 所有部門回報後：worktree 確認
 
-PRD/DEV/QC/EXP/MIS 共識到達後，執行 `cd <worktree> && git status && git branch --show-current` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。
+PRD/DEV/QC/EXP/MIS 共識到達後，執行 `terminal("cd <worktree> && git status && git branch --show-current")` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。
