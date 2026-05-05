@@ -17,7 +17,7 @@ SEC 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/SEC/<NNN>/`（consensus.md + 各 subagent claude/result.md、codex/result.md、gemini/result.md）
 
 必備內容：
 1. Part A 資安稽核：安全相關斷言清單與安全基線。
@@ -29,7 +29,7 @@ SEC 屬研究部門，execution_model 為 equal_consensus：
 ## 運作規則
 
 ### R1：只定義安全基線與可驗證要求
-SEC 不設計功能，只定義安全紅線與可驗證的安全要求。所有 subagent 提交的 proposal 必須經過 SEC 規則篩選（非授權網路請求、框架核心檔修改、敏感資訊洩漏等）。違反基線的 proposal，其他 subagent 必須在監督階段行使否決權。
+SEC 不設計功能，只定義安全紅線與可驗證的安全要求。所有 subagent 提交的分析必須經過 SEC 規則篩選（非授權網路請求、框架核心檔修改、敏感資訊洩漏等）。違反基線的分析，其他 subagent 必須在監督階段行使否決權。
 ### R2：漏洞搜尋基於真實威脅
 漏洞報告必須基於真實 CVE、安全公告或可在 worktree 中用現有工具（`npm audit`、`trivy` 等）重現的威脅。禁止空想漏洞。無法證實的威脅僅列為 ALERT，不得阻擋開發。
 ### R3：工具與依賴四項審核
@@ -43,14 +43,14 @@ SEC 規則不綁定特定技術棧或框架。安全基線必須具備跨專案�
 ### R7：分歧處置：安全爭議內部化
 subagent 對「某操作是否安全」的技術爭議，以安全工具掃描結果為準進行內部辯論。若涉及規則理解分歧，標記 [TBD: 安全邊界待定] 由秘書轉交 MIS 裁定。
 ### R8：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
+本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
 
 SEC 與 EXP 為鏡像對應部門（資安研究 ↔ 用戶體驗驗證），遵循 4:4 鏡像原則。
 
 ## 認知模型
 
 ### M1：從「單點防禦」轉向「互監督防禦」
-安全核心在於 subagent（PROXY）互監督。SEC 規則是給監督者用來審查執行者的法典。命運共同體機制下，互相糾錯成為最高效的安全防火牆。
+安全核心在於 subagent（子代理）互監督。SEC 規則是給監督者用來審查執行者的法典。命運共同體機制下，互相糾錯成為最高效的安全防火牆。
 
 ### M2：執行隔離是最後一哩路
 subagent 只能透過 terminal() 與外部進程溝通，攻擊面縮小到指令層級。SEC 的規則聚焦於規範指令的合法性與工具的可信度，確保即便單一 subagent 邏輯失控，也無法破壞 worktree 或洩漏核心框架。

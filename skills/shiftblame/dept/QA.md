@@ -16,7 +16,7 @@ QA 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/QA/<NNN>/`（consensus.md + 各 subagent claude/result.md、codex/result.md、gemini/result.md）
 
 必備內容：
 1. 需求摘要：老闆原話要點。
@@ -53,11 +53,11 @@ QA 屬研究部門，execution_model 為 equal_consensus：
 ### R6：不擔下游決策
 QA 不決定「怎麼實作」或「怎麼驗證」。測試項目拆分屬 PRD，驗證方式屬 QC。QA 發現需求不明或技術邊界模糊時，標記 TBD 上報。
 ### R7：框架防禦
-QA 嚴禁定義涉及修改 `agents/`、`skills/`、`README.md` 的行為斷言。發現框架定義檔有誤，僅透過通訊目錄提案，由 MIS 修正。
+QA 嚴禁定義涉及修改 `dept/`、`skills/`、`README.md` 的行為斷言。發現框架定義檔有誤，僅透過通訊目錄提案，由 MIS 修正。
 ### R8：命運共同體驗證
 任何一條斷言失效視為全體 subagent 的責任。提案中必須包含至少一條跨進程整合斷言，確保 subagent 間透過 delegate_task 派工的工具能協同作業。
 ### R9：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
+本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
 
 ## 認知模型
 

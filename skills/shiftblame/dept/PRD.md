@@ -18,7 +18,7 @@ PRD 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/PRD/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/PRD/<NNN>/`（consensus.md + 各 subagent claude/result.md、codex/result.md、gemini/result.md）
 
 PRD 必備內容：
 1. 產品或功能名稱。
@@ -59,7 +59,7 @@ PRD 嚴禁撰寫具體測試代碼（`.test.ts`、`.spec.py` 等）。測試代�
 ### R7：不可自行發明硬性上限
 PRD 不自行設定數量上限、效能門檻等硬性約束，除非這些上限來自 QA 斷言或老闆明確要求。
 ### R8：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
+本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
 
 ## 認知模型
 

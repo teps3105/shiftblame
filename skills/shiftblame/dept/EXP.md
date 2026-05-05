@@ -16,7 +16,7 @@ EXP 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/EXP/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/EXP/<NNN>/`（consensus.md + 各 subagent result.md）
 
 必備內容：
 1. 用戶旅程地圖（操作路徑視角）。
