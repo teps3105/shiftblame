@@ -29,7 +29,9 @@ _「這不是我的鍋。」_
 
 ### 🤖 PROXY 外殼代理
 
-三個 PROXY（`PROXY_A` / `PROXY_B` / `PROXY_C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理，各自可配置不同模型與參數。這確保三個子代理的**上下文完全獨立、對等、不被主代理污染**。模型配置由使用者在 Hermes 設定中指定。
+三個 PROXY（`PROXY_A` / `PROXY_B` / `PROXY_C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。透過 `acp_command` + `acp_args` 的**任務級別覆寫**，可在一次派工中為三個 subagent 分別指定不同 CLI（如 `claude`、`codex`、`gemini`），實現三方去識別化與上下文完全隔離。
+
+> **技術說明**：`delegate_task` 沒有直接的 `model` 參數。跨模型派工透過 `acp_command`（指定外部 CLI）+ `acp_args`（如 `--acp`、`--stdio`、`--model`）的任務級別覆寫實現。`delegation.model`（config.yaml 全域設定）為所有 subagent 共用，無法實現三方不同模型。
 
 ### 🔄 自組織分工
 
@@ -58,7 +60,7 @@ _「這不是我的鍋。」_
 
 ### 🎭 代理去識別化
 
-PROXY 彼此僅知使用三種不同的模型配置，不知底層模型細節，避免偏好干擾協作判斷。
+PROXY 彼此僅知使用三種不同的 CLI 配置（透過 `acp_command` 任務級別覆寫），不知底層模型細節，避免偏好干擾協作判斷。CLI 名稱由 Hermes config.yaml 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
 
 ---
 

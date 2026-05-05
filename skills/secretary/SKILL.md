@@ -110,36 +110,38 @@ clarify(question="請確認本次執行模式：", choices=[
 
 ### 研究部門同時派工
 
-研究部門（RES、SEC、QA、PRD）維持同時派工三個 subagent，等待共識產出：
+研究部門（RES、SEC、QA、PRD）維持同時派工三個 subagent，等待共識產出。透過 `acp_command` + `acp_args` 的任務級別覆寫，為三個 subagent 分別指定不同 CLI（三方去識別化）：
 
 ```
 delegate_task(tasks=[
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-A 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-B 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-C 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 PROXY-A 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"], acp_command: "claude", acp_args: ["--acp", "--stdio"]},
+  {goal: "讀取 {task.md 路徑} 並以 PROXY-B 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"], acp_command: "codex", acp_args: ["--acp", "--stdio"]},
+  {goal: "讀取 {task.md 路徑} 並以 PROXY-C 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"], acp_command: "gemini", acp_args: ["--acp", "--stdio"]},
 ])
 ```
 
-三個 task 陣列元素自動並行執行。
+三個 task 陣列元素自動並行執行。`acp_command` 和 `acp_args` 支援任務級別覆寫（tasks[i]），可在一次呼叫中為三個 task 分別指定不同 CLI 和模型。CLI 名稱由 Hermes config.yaml 管理，秘書動態讀取，不硬編碼。
+
+> **降級路徑**：若三方 CLI 的 ACP 支援未完全驗證通過，subagent 可透過 `terminal()` 呼叫非互動模式（`claude -p`/`codex exec`/`gemini -p`）作為備用方案。
 
 ### 執行部門兩階段派工
 
 執行部門（DEV、QC、EXP、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
 
-**第一階段**：僅派工主執行者（lead_executor）
+**第一階段**：僅派工主執行者（lead_executor）。`acp_command` 由秘書依主執行者身份動態指定：
 
 ```
-delegate_task(goal="讀取 {task.md 路徑} 並以主執行者身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"])
+delegate_task(goal="讀取 {task.md 路徑} 並以主執行者身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"], acp_command: "<對應 CLI>", acp_args: ["--acp", "--stdio"])
 ```
 
 **等待主執行者完成**：確認主執行者的 result.md 存在，且 worktree 中有對應 commit
 
-**第二階段**：確認 commit 後，同時派工兩位觀測者（observers）
+**第二階段**：確認 commit 後，同時派工兩位觀測者（observers）。觀測者使用其對應的 `acp_command`：
 
 ```
 delegate_task(tasks=[
-  {goal: "以觀測者身份檢閱主執行者產出", context: "...", toolsets: ["terminal","file"]},
-  {goal: "以觀測者身份檢閱主執行者產出", context: "...", toolsets: ["terminal","file"]},
+  {goal: "以觀測者身份檢閱主執行者產出", context: "...", toolsets: ["terminal","file"], acp_command: "<觀測者1 CLI>", acp_args: ["--acp", "--stdio"]},
+  {goal: "以觀測者身份檢閱主執行者產出", context: "...", toolsets: ["terminal","file"], acp_command: "<觀測者2 CLI>", acp_args: ["--acp", "--stdio"]},
 ])
 ```
 
@@ -153,7 +155,8 @@ delegate_task(tasks=[
 - **執行部門（DEV/QC/EXP/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工（QC/EXP 無 worktree 編輯權，僅執行測試）
 
 派工規則速記：
-- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），透過 subagent 的 model 或 acp_command 參數指定不同模型（proxy-a / proxy-b / proxy-c）
+- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），透過 `acp_command` + `acp_args` 的任務級別覆寫為各 subagent 指定不同 CLI（去識別化：proxy-a / proxy-b / proxy-c）
+- `delegate_task` 沒有直接的 `model` 參數；模型指定透過 `acp_command`（指定 CLI）和 `acp_args`（如 `--model` 參數）實現
 - 執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要 worktree
 - 執行部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
 - 研究部門（RES/SEC/QA/PRD）維持同時派工三個 subagent
