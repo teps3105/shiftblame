@@ -12,7 +12,7 @@
 - `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版。
 - 子循環拆分：RES 研究後可提出將需求拆分為多個子循環的建議，由秘書判斷是否採納。
 - RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、.claude-plugin/、README.md）。
-- RES 不具備 worktree 寫入權（研究階段不涉及排他性編輯權，僅具備唯讀 worktree 存取權）。
+- RES 不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 - 功能開發途中若有外部工具需求，須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ### execution_model
@@ -43,7 +43,7 @@ RES 是所有 slug 的流程起點。在 RES 產出未通過啟動閘門前，�
 RES 擁有全量讀取權限（`.shiftblame/REPO.md` + 所有部門通訊目錄）。RES 利用此權限進行問題診斷與現狀評估，而非干預個別部門的技術決策。
 
 ### R3：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。三個 PROXY 各自收集三個面向的數據，由 leader 負責彙整寫入 consensus.md，另外兩人從不同角度檢視報告成色。
+本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 
 ### R4：可單獨啟用、單獨收斂
 RES 可單獨啟用、單獨收斂，適用於問題診斷、市調等不需要走完整流程的場景。

@@ -17,7 +17,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 
 你唯一能直接做的事：
 1. 讀寫該部門的通訊目錄（`<slug>/<DEPT>/`）內的協調文件（proposal.md、result.md、consensus.md、failure-notice.md）
-2. 讀寫 slug 層級的 worktree（`<slug>/worktree/`）中的檔案（主執行者有完整寫入權，觀測者具備受限寫入權）
+2. 讀寫 slug 層級的 worktree（`<slug>/worktree/`）中的檔案（DEV/MIS 主執行者有完整寫入權，觀測者具備受限寫入權；QC/EXP 全體均無 worktree 編輯權，僅執行測試）
 3. 透過 Bash 啟動 `claude -p` 外部進程
 4. 讀取 `claude -p` 的 stdout 輸出
 5. 回報結果給秘書

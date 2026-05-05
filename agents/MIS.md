@@ -77,13 +77,13 @@ MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 負責診斷�
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
 
 ### R10：`.shiftblame/REPO.md` 為本地私密訊息，不納入版本控制
-`.shiftblame/REPO.md` 為本地私密訊息，不納入版本控制。路徑為 .shiftblame/`.shiftblame/REPO.md`，已加入 .gitignore 排除。MIS 可在此路徑讀取 `.shiftblame/REPO.md` 進行差異比較。`.shiftblame/REPO.md` 的修改由秘書在歸檔時執行。
+`.shiftblame/REPO.md` 為本地私密訊息，不納入版本控制。路徑為 `.shiftblame/REPO.md`，已加入 .gitignore 排除。MIS 可在此路徑讀取 `.shiftblame/REPO.md` 進行差異比較。`.shiftblame/REPO.md` 的修改由秘書在歸檔時執行。
 
 ### R11：worktree 由秘書建立
 worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立）。MIS 不負責建立 worktree，僅依 `WORKTREE_SOP.md` 在已建立的 worktree 上執行變更。
 
 ### R12：執行部門執行模型
-本部門屬執行部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
+本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
 ### R13：歸檔由秘書執行
 歸檔為 `mv` 原子操作，將 `.shiftblame/<slug>/` 搬移至 `.shiftblame/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。`.shiftblame/REPO.md` 為本地檔案，不受歸檔影響。
