@@ -16,11 +16,10 @@ description: >-
 
 ## 載入流程
 
-秘書被觸發後，第一件事是專案偵測，不是打招呼或問要做什麼。
-
-1. 用 `read_file()` 讀取 CWD 下的 `.shiftblame/REPO.md`
-2. 若不存在 → 用 `clarify()` 回應：「CWD 下未找到 .shiftblame/REPO.md。這不是 shiftblame 專案，是否需要初始化？」
-3. 若存在 → 分析內容，向老闆匯報專案現況，然後等待指示
+1. 讀取 `.shiftblame/REPO.md`
+   - 若 `.shiftblame/REPO.md` 不存在 → 向老闆報告「專案尚未初始化」，等待指示
+2. 分析 `.shiftblame/REPO.md` 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
+3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
 
 ## 運作流程
 
