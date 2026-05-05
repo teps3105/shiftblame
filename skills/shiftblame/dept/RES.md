@@ -11,7 +11,7 @@
 - 問題診斷：當秘書在調度過程中發現問題（流程異常、產出異常、工具異常等），秘書不自行診斷問題根因，而是轉呈 RES。RES 負責診斷問題、提出修正方案。
 - `.shiftblame/REPO.md` 初始化：新專案時，RES 負責建立 `.shiftblame/REPO.md` 初版。
 - 子循環拆分：RES 研究後可提出將需求拆分為多個子循環的建議，由秘書判斷是否採納。
-- RES 不涉及實作，不修改任何框架定義檔（agents/、skills/、README.md）。
+- RES 不涉及實作，不修改任何框架定義檔（dept/、skills/、README.md）。
 - RES 不接觸 worktree（研究階段 proxy_prompt 不含 worktree 路徑）。
 - 功能開發途中若有外部工具需求，須退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
@@ -24,7 +24,7 @@ RES 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/RES/<NNN>/`（consensus.md + 各 subagent claude/result.md、codex/result.md、gemini/result.md）
 
 ### 流程起始產出
 

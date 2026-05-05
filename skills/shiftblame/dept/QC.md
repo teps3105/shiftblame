@@ -19,7 +19,7 @@ QC 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QC/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/QC/<NNN>/`（consensus.md + 各 subagent result.md）
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。

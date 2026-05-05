@@ -64,11 +64,11 @@ clarify(question="請確認本次執行模式：", choices=[
 
 - **判斷時機**：模式確認後、進入派工前
 - **拆分依據**：RES 研究結果顯示需求可獨立拆分為多個子任務
-- **拆分方式**：在同一 slug 下建立 `cycle-N` 子目錄（N 從 1 開始遞增）
-- **模式獨立**：各子循環可為不同模式等級（如 cycle-1 為 L2、cycle-2 為 L3）
-- **紀錄**：拆分結果記錄於 meta.md 的子循環紀錄表（見 PROXY_PROTOCOL.md）
+- **拆分方式**：在同一 slug 下建立 `NNN` 子目錄（三位數遞增，從 001 開始）
+- **模式獨立**：各子循環可為不同模式等級（如 001 為 L2、002 為 L3）
+- **紀錄**：拆分結果記錄於 meta.md 的子循環紀錄表
 - **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者在每次派工時由公平序列輪替決定（部門級別）
-- **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理（見 LIFECYCLE.md）
+- **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理
 
 8. 老闆決策（目標、起始部門、或其他指示）
 9. 依老闆決策進入派工流程（見派工流程區段）
@@ -80,14 +80,10 @@ clarify(question="請確認本次執行模式：", choices=[
 - 老闆是決策者，不是分析者
 - RES 是分析者（問題診斷硬職責），RES 是流程的起點；MIS 是流程的終點
 
-框架協議（DISPATCH_CHECKLIST / GATE_FLOW / PROXY_PROTOCOL / WORKTREE_SOP / LIFECYCLE）與本 SKILL.md 同目錄，隨 skill 載入，按名稱 Read。
-
-參考資料：`references/cli-acp-support.md`（三方 CLI ACP 支援現狀與驗證方法）。
-
 ## 已知陷阱
 
-- **CLI 能力宣告必須實測**：涉及 CLI 能力（如 `--acp` 支援、沙箱行為）時，必須以 `--help` 輸出或實際執行為準，不可僅依賴 schema 文件或第三方文件推斷。2026-05-05 hermes-cli-proxy slug 中，RES subagent 錯誤記錄 Claude CLI 支援 `--acp`，推斷自 Hermes delegate_task schema，導致框架定義檔寫入錯誤資訊
-- **Codex 沙箱本環境不可用**：`codex exec` 預設使用 bubblewrap 沙箱，在本環境（容器/VM）無法啟動（`RTM_NEWADDR` 權限錯誤）。透過 `terminal()` 派工時必須加 `--dangerously-bypass-approvals-and-sandbox`，否則所有 Codex 呼叫都會失敗。
+- **CLI 能力宣告必須實測**：涉及 CLI 能力（如 `--acp` 支援、沙箱行為）時，必須以 `--help` 輸出或實際執行為準，不可僅依賴 schema 文件或第三方文件推斷。
+- **Codex 沙箱本環境可能需繞過**：`codex exec` 預設使用沙箱，在容器/VM 環境可能無法啟動。透過 `terminal()` 派工時應依環境需求加 `--dangerously-bypass-approvals-and-sandbox`。
 
 ## 寫入權限限制
 
@@ -97,23 +93,169 @@ clarify(question="請確認本次執行模式：", choices=[
 - task.md、result.md、consensus.md、failure-notice.md（通訊目錄內）
 
 禁止寫入：
-- `agents/` 目錄下任何檔案
+- `dept/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
 - `README.md` 等專案根目錄定義檔（`.shiftblame/REPO.md` 除外，秘書在歸檔時可更新 `.shiftblame/REPO.md`）
 - worktree 與通訊目錄建立（歸屬秘書，所有部門不負責建立）
 
 框架定義檔的變更只能由 MIS 部門在 worktree 上執行。
 
+## 通訊目錄結構
+
+```
+.shiftblame/<slug>/
+├── meta.md              # 秘書寫入：記錄每輪派工的主執行者、當前模式等狀態
+├── worktree/            # 執行部門主執行者使用的單一共用 worktree
+└── <DEPT>/
+    └── <NNN>/
+        ├── task.md              # 秘書寫入：目標 + 約束（含 YAML frontmatter）
+        ├── consensus.md         # subagent/leader 寫入：分工 + 做法共識 + 產出結構
+        ├── failure-notice.md   # subagent 寫入：失敗通知
+        ├── claude/{proposal,result}.md
+        ├── codex/{proposal,result}.md
+        └── gemini/{proposal,result}.md
+```
+
+### 共識匯聚機制（部門類型差異）
+
+| 部門類型 | execution_model | 共識機制 | consensus.md 寫入職責 |
+|---|---|---|---|
+| 研究部門（RES/SEC/QA/PRD） | equal_consensus | 三個 subagent 同時派工，各自產出分析，consensus.md 由 leader 彙整寫入 | leader 負責彙整 |
+| 執行部門（DEV/QC/EXP/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由 leader 產出 | leader 負責產出 |
+
+**研究部門（equal_consensus）共識流程：**
+1. 三個 subagent 同時派工
+2. 各自提出 proposal
+3. 辯論收斂（最多 2 輪）
+4. leader 負責彙整寫入 consensus.md
+5. 各自執行分工，寫入 result.md
+
+**執行部門（lead_executor）共識流程：**
+1. 主執行者派工（第一階段）
+2. 主執行者完成後 commit
+3. 觀測者派工檢閱（第二階段）
+4. consensus.md 由 leader 產出（驗證摘要）
+
+**QC/EXP 特殊約束：** QC/EXP 屬執行部門但無 worktree 編輯權（僅執行測試），主執行者和觀測者均僅執行測試，不直接修改 worktree。
+
+### 子循環通訊目錄
+
+當 RES 研究後將需求拆分為多個子循環時，多個子循環共用同一 slug 通訊目錄。子循環以 `<NNN>` 三位數子目錄區分：
+
+```
+.shiftblame/<slug>/
+├── meta.md              # slug 級別狀態（含子循環紀錄）
+├── worktree/            # 所有子循環共用同一 worktree
+├── RES/
+│   ├── 001/
+│   │   ├── task.md
+│   │   ├── consensus.md
+│   │   └── ...
+│   └── 002/
+│       ├── task.md
+│       ├── consensus.md
+│       └── ...
+└── DEV/
+    ├── 001/
+    │   └── ...
+    └── 002/
+        └── ...
+```
+
+- 各子循環可為不同模式等級
+- 子循環下的部門通訊目錄為 `<DEPT>/<NNN>/`
+- 無子循環時維持原有結構（`<DEPT>/<NNN>/` 直接存放）
+
+### meta.md 格式（秘書寫入）
+
+meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書在每輪派工時維護。記錄 slug 級別的跨部門狀態。
+
+```markdown
+# <slug> 狀態
+
+## 派工紀錄
+| 部門 | 主執行者 | 觀測者 | 模式 | 輪次 | 時間 |
+|------|---------|--------|------|------|------|
+| RES | Subagent-A | Subagent-B, Subagent-C | L5 | 1 | 2026-01-01T00:00:00Z |
+| QA | Subagent-B | Subagent-A, Subagent-C | L5 | 1 | 2026-01-01T01:00:00Z |
+
+## 當前狀態
+- current_mode: L5
+- 上次派工部門：QA
+- 下次主執行者由公平序列輪替決定
+
+## 模式變更紀錄
+- 2026-01-01T02:00:00Z：降級 L4（原因：範圍縮小，不可逆轉）
+
+## 子循環紀錄
+| 子循環 | 模式 | 部門 | 狀態 | 時間 |
+|--------|------|------|------|------|
+| 001 | L2 | RES | 完成 | 2026-01-01T00:00:00Z |
+| 002 | L3 | RES → DEV → QC → MIS | 進行中 | 2026-01-01T01:00:00Z |
+```
+
+> **註**：子循環紀錄表僅在需求拆分為多個子循環時才存在。無子循環時省略此區段。
+
+### task.md 格式（秘書寫入）
+
+task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML frontmatter 元數據區段。
+
+```markdown
+---
+# execution_model 取代 lead_executor/observers
+execution_model: <equal_consensus / lead_executor>
+# equal_consensus: 研究部門(RES/SEC/QA/PRD)
+# lead_executor: 執行部門(DEV/QC/EXP/MIS)（QC/EXP 無 worktree 編輯權，僅執行測試）
+current_mode: <L2 / L3 / L4 / L5>
+task_type: <research / implementation>  # research: 研究部門(RES/SEC/QA/PRD)；implementation: 執行部門(DEV/QC/EXP/MIS)
+worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) 明確設為 none
+---
+
+# <DEPT> 任務
+
+## 目標
+<老闆的需求摘要，轉化為該部門需要達成的具體目標>
+
+## 上游輸入
+- QA 部門報告：<路徑>（如適用）
+- SEC 部門報告：<路徑>（如適用）
+- ...（所有上游部門結論檔路徑）
+
+## 約束
+- worktree 路徑：<路徑>（研究部門為 none，無 worktree）
+- 技術棧：<從 .shiftblame/REPO.md 提取>
+- 需求釐清結果：<如有>
+- 其他不可違反的限制
+```
+
+## 禁止含
+- 分工指示（誰做什麼）← subagent 自行決定
+- 做法步驟（怎麼做）← subagent 自行決定
+- 產出格式指示（長什麼樣）← subagent 自行決定
+- 部門定義內容 ← subagent 自行讀取 dept/<DEPT>.md
+```
+
+**秘書禁止在 task.md 中寫「建議分工」或「做法步驟」。** 寫了 = 違規。
+
 ## 派工流程
 
-每次派工前 **必須** 用 `read_file()` 讀取 DISPATCH_CHECKLIST.md 並逐條完成。
+### 派工前檢查清單
 
-核心步驟：
-0. 每次派工前，向老闆確認需求（透過 `clarify`）
-1. `read_file()` 讀取 DISPATCH_CHECKLIST.md → 逐條完成 checklist
-2. 永遠派三個 subagent（三種模型各一，保持去識別化：proxy-a / proxy-b / proxy-c）
-3. `read_file()` 讀取 PROXY_PROTOCOL.md → 用 `write_file()` 寫 task.md（目標 + 約束，不含做法）→ 建通訊目錄 → 派工三個 subagent
-4. 等待 subagent 共識產出
+每次派工前必須逐條完成以下檢查：
+
+1. **需求確認**：透過 `clarify` 確認老闆需求
+2. **slug 命名**：確認 slug 名稱格式正確（kebab-case，如 `feat-login-flow`）
+3. **REPO.md 讀取**：用 `read_file()` 讀取 `.shiftblame/REPO.md` 作為專案現狀參考
+4. **模式確認**：確認 current_mode 已寫入 task.md frontmatter
+5. **主執行者選定**：依公平序列輪替選定（Subagent-A → Subagent-B → Subagent-C → Subagent-A...），寫入 task.md 與 meta.md
+6. **worktree 建立**：確認 slug 層級單一共用 worktree 已建立（`git worktree add .shiftblame/<slug>/worktree -b feat/<slug>`）
+7. **通訊目錄建立**：`mkdir -p .shiftblame/<slug>/<DEPT>/<NNN>/{claude,codex,gemini}`
+8. **task.md 寫入**：用 `write_file()` 寫入 task.md（目標 + 約束 + YAML frontmatter，不含做法/分工）
+9. **meta.md 更新**：更新 meta.md 派工紀錄表
+10. **部門定義確認**：確認 `dept/<DEPT>.md` 存在（秘書不注入部門定義，subagent 自行讀取）
+11. **上游產出驗證**：讀取上游部門 result.md 確認完成（非第一個部門時）
+12. **去識別化檢查**：task.md 不含模型名稱、供應商名稱、具體分工
+13. **公平序列輪替**：確認主執行者與上次不同（除非三方中已有兩方完成輪替）
 
 ### 研究部門同時派工
 
@@ -121,19 +263,17 @@ clarify(question="請確認本次執行模式：", choices=[
 
 ```
 delegate_task(tasks=[
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-A 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-B 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
-  {goal: "讀取 {task.md 路徑} 並以 PROXY-C 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Claude 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Codex 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
+  {goal: "讀取 {task.md 路徑} 並以 Gemini 身份執行 {DEPT} 部門任務", context: "...", toolsets: ["terminal","file"]},
 ])
 ```
 
-三個 task 陣列元素自動並行執行。subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI（`claude -p` / `codex exec` / `gemini -p`）進行實際工作。CLI 分配由秘書在 context 中提供。
-
-> **ACP 支援現狀（2026-05-05）**：僅 Gemini CLI 支援 `--acp`；Claude CLI 和 Codex CLI 均不支援。因此 `acp_command` 路徑目前僅 Gemini 可用，標準路徑為 `terminal()` 呼叫非互動模式。
+三個 task 陣列元素自動並行執行。subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI 進行實際工作。CLI 分配由秘書在 context 中提供。
 
 ### 執行部門兩階段派工
 
-執行部門（DEV、QC、EXP、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
+執行部門（DEV、QC、EXP、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態：
 
 **第一階段**：僅派工主執行者（lead_executor）
 
@@ -156,13 +296,13 @@ delegate_task(tasks=[
 
 ### 部門執行模型
 
-不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
+不同部門依職責性質採不同執行模型：
 
 - **研究部門（RES/SEC/QA/PRD）**：equal_consensus 模型，三方 subagent 同時派工、各自分析、leader 彙整寫入 consensus.md
 - **執行部門（DEV/QC/EXP/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工（QC/EXP 無 worktree 編輯權，僅執行測試）
 
 派工規則速記：
-- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI 進行實際工作（去識別化：proxy-a / proxy-b / proxy-c）
+- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），subagent 透過 `terminal()` 呼叫各自分配的非互動 CLI 進行實際工作（去識別化：claude / codex / gemini）
 - `delegate_task` 沒有直接的 per-task `model` 參數；跨模型派工透過 `terminal()` 呼叫外部 CLI 實現
 - 執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要 worktree
 - 執行部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
@@ -170,30 +310,238 @@ delegate_task(tasks=[
 - 主執行者採公平序列輪替決定，並寫入 task.md 與 meta.md
 - 老闆可透過 `clarify` 表達意見（通用溝通機制），不限模式或部門
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
-- proxy_prompt 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
-- subagent 自行用 `read_file()` 讀取 agents/<DEPT>.md、確認主執行者身份、協商分工、決定做法
+- context 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
+- subagent 自行用 `read_file()` 讀取 dept/<DEPT>.md、確認主執行者身份、協商分工、決定做法
 - 技術分歧由 subagent 內部解決，秘書不參與技術裁決
 - 需求不明時先問老闆釐清，不自行解讀傳遞
 
+### 去識別化
+
+subagent 彼此僅知透過框架派工，不知底層模型。派工時不可指定具體 AI 模型或暗示 subagent 能力差異。
+
+- task.md、consensus.md、result.md：不包含模型名稱
+- subagent 可讀取的通訊檔案：不包含模型名稱
+- 模型使用資訊僅存在於「秘書→老闆」通訊層（`clarify()` 對話），不寫入任何 subagent 可讀取的通訊檔案
+
+### 秘書權限
+
+- 秘書在派工前提醒老闆確認 API 額度是否適合進行作業
+- 秘書不執行任何設定檔的編輯
+- 模型調整由老闆決定後手動執行
+
+### subagent 自組織流程
+
+```
+1. 讀取 task.md（目標 + 約束）— 使用 read_file()
+2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門、主執行者為執行部門），在讀取 task.md 後立即判斷
+3. 接入 slug 層級共用 worktree（由秘書建立）
+4. 讀取 dept/<DEPT>.md（部門職責 + 產出規格，自行讀取）— 使用 read_file()
+5. 讀取上游輸入（task.md 中列出的路徑）— 使用 read_file()
+6. 辯論收斂 → 寫入 consensus.md（直接論點比較，三方異議直接在共識階段表達）— 使用 write_file()
+7. 各自執行分工 → 寫入 result.md — 使用 write_file()
+```
+
+### 共識流程
+
+```
+辯論收斂（直接論點比較）→ 寫入 consensus.md → 各自執行 → 寫入 result.md
+```
+
+consensus.md 必須包含：
+```markdown
+# <DEPT> 共識
+## 分工
+- Claude：<工作項目>
+- Codex：<工作項目>
+- Gemini：<工作項目>
+## 做法
+<三方同意的執行方案>
+## 產出結構
+<三方同意的最終產出格式>
+```
+
+### 分歧處理原則
+
+技術分歧（實作方式、架構選選、分工爭議）由 subagent 內部解決：
+- 辯論收斂：最多 2 輪，異議必須附替代方案
+- 互監督修正：提前完成的 subagent 審查同事作業，發現錯誤直接修正
+- 吸收降級：單點失效時由其他 subagent 吸收份額
+
+需求不明（不清楚老闆要什麼、規格有歧義）才透過秘書協調與老闆溝通，重新派工。
+秘書不參與技術裁決。
+
 ### 合作式失敗處理機制
 
-合作式失敗處理機制詳見 PROXY_PROTOCOL.md「單點失效補救」與「規範二」。
+同一部門的三個 subagent 是命運共同體，一榮則榮一損則損。
+
+**失敗通知（failure-notice.md）：**
+
+失敗的 subagent 必須立即在通訊目錄根層建立 failure-notice.md：
+
+```markdown
+# 失敗通知
+- **Subagent**：<Claude/Codex/Gemini>
+- **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED(N)/EMPTY_OUTPUT>
+- **已完成**：<已完成的分工項目清單>
+- **未完成**：<未完成的分工項目清單>
+- **時間**：<ISO 8601 timestamp>
+```
+
+**單點失效補救：**
+
+| 情境 | 處理 |
+|---|---|
+| 單一 subagent 失敗 | 其他 subagent 讀取 failure-notice.md，吸收其份額 |
+| 單一 subagent 達到限額 | 寫入 failure-notice.md + result.md 記錄詳情 |
+| 二個 subagent 失敗 | 剩餘獨立完成，共識降級為單體，在 result.md 記錄降級原因 |
+| 全部失敗 | 回報秘書暫停 |
+| 共識含技術分歧 | subagent 互監督修正或重新辯論；仍無法收斂時採多數決，在 consensus.md 記錄少數意見 |
+
+### subagent 互助互監督機制
+
+- subagent 應互相監督，發現同事的執行錯誤時直接修正，不等秘書發現
+- 提前完成作業的 subagent 不是發呆，而是監督同事的作業是否正確
+- 各 subagent 的工具與指令定義是明文寫在 dept/*.md 中的，同事可以閱讀並驗證
+
+### 執行期限額偵測
+
+subagent 執行後，若偵測到 HTTP 429/503/529 等限額錯誤，自動寫入 failure-notice.md 並在 result.md 記錄詳情。
+
+### 資料存取限制
+
+各部門僅能讀取自身及上游部門的產出，嚴格禁止讀取下游部門的檔案。
+
+### 收尾規範
+
+#### 版本號制度（Semantic Versioning）
+
+- 格式：major.minor.build
+- 預設每次升級 build（第三段）
+- 不主動升級 minor 或 major，除非老闆明確指示
+- 同一 slug 內版本號僅在首次實作輪升 build，後續退回修正/增量輪次不重複升版。版本號最終由秘書在 squash merge 前確認
+
+#### .shiftblame/REPO.md 重寫規範
+
+.shiftblame/REPO.md 的更新由秘書在 push 成功後負責。MIS 在收尾階段僅做唯讀差異比較並產出差異報告，秘書依據差異報告更新 .shiftblame/REPO.md。
+
+.shiftblame/REPO.md 必須包含以下區段：
+- 技術棧
+- 開發策略
+- 測試流程
+- 部署流程
+- 安全規範
+- 待辦事項
+
+規則：
+- 已完成的代辦項目直接刪除，不保留「已完成」狀態
+- 不保留歷史版本演進表格（屬 git 歷史，非 .shiftblame/REPO.md 內容）
 
 ## 閘門流程
 
-每個部門完成後 **必須** 用 `read_file()` 讀取 GATE_FLOW.md 依格式回報。
+### RES 啟動閘門（流程起點）
 
-核心：`clarify` 回報 → 「繼續」則同 turn 內直接派工下一部門；「暫停」/「重做」則結束 turn。
+RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清、執行準則確立、主執行者已由公平序列輪替選定。
 
+#### 確認步驟
+
+1. 讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
+2. 確認本次派工的主執行者已由公平序列輪替選定，並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
+3. 確認單一共用 worktree 已由秘書建立在 slug 層級。
+4. 若以上任一項不滿足 → 退回 RES 補齊。
+5. 上游產出驗證：
+   - 讀取 `.shiftblame/REPO.md` 作為專案現狀參考（RES 負責初始化 .shiftblame/REPO.md）。
+   - 確認執行準則已落袋：RES result.md 中含明確的執行準則。
+6. 驗證不通過 → 退回 RES 補齊。
+7. 透過 clarify 確認 RES 起點產出可接受：
+
+**L2 模式（basic）：**
 ```
-clarify(question="{DEPT} 部門完成。主執行者已選定，專案現狀已釐清。三方工作情況：...", choices=[
-  "確認派工 {下一部門}",
-  "退回 {DEPT}",
-  "暫停",
+clarify(question="RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。", choices=[
+  "確認派工 MIS — 專案現狀與準則 OK，派工 MIS 執行收尾",
+  "退回 RES — 有問題，要求 RES 補齊",
+  "暫停 — 先暫停，有問題要討論",
 ])
 ```
 
-秘書不處理技術分歧（由 subagent 內部解決），僅處理需求不明（需與老闆確認）。
+**L3/L4/L5 模式**：依模式選擇對應下一部門（PRD/QA/SEC）。
+
+### 模式升級/降級閘門
+
+1. **升級請求**：主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`
+2. **降級處理**：老闆透過 clarify 縮小範圍 → 秘書更新 meta.md 和 task.md
+3. **降級不可逆轉（同一輪次內有效）**
+
+### L2 模式閘門
+
+1. 秘書讀取 MIS 產出（consensus.md + 各 subagent result.md）
+2. 確認 MIS 部門報告完整性
+3. clarify 呈報 MIS 完成結果
+4. 「確認復判」→ 秘書執行復判確認有確實收尾 → 復判通過 → 進入收尾流程
+5. 「退回 MIS」→ 結束 turn，等老闆說明修正內容
+
+L2 模式不經過部門完成閘門流程（無 QA/SEC/PRD/DEV/QC/EXP 閘門）。
+
+### 秘書復判閘門
+
+MIS(尾)完成後，秘書須執行復判確認有確實收尾與正確運作：
+
+1. 秘書讀取 MIS 產出（consensus.md + 各 subagent result.md）
+2. 復判確認項目：
+   - MIS 部門報告完整性
+   - 定義檔變更與 task.md 要求一致
+   - 三方 subagent 均有完成回報（或已有降級/吸收記錄）
+3. clarify 呈報復判結果：
+
+```
+clarify(question="秘書復判完成（第 N 次增量）。MIS 工作已確認收尾與正確運作。\n\n主執行者（<Name>）：<完成項目>\n觀測者（<Name>, <Name>）：<工作情況>", choices=[
+  "確認歸檔 — 復判通過，執行歸檔",
+  "繼續補強 — 功能完成但想繼續補強，在同一 slug 上動態新增功能需求（不走歸檔）",
+  "退回修正 — 有輕微問題需修正，退回主執行者進行針對性修正（不重新走完整派工）",
+  "退回 MIS — 有問題，要求 MIS 補齊",
+  "暫停 — 先暫停，有問題要討論",
+])
+```
+
+### 執行部門閘門（兩階段派工）
+
+**檢查點 1：主執行者完成**
+1. 讀取主執行者 result.md，確認執行完成
+2. 驗證 worktree 中有對應 commit
+3. 若無 commit → 退回主執行者補齊
+
+**檢查點 2：觀測者完成（閘門）**
+1. 讀取兩位觀測者 result.md，確認檢閱完成
+2. 讀取通訊目錄的 failure-notice.md（若有）
+3. clarify 呈報共識結果 → 等老闆判定
+
+### 研究部門閘門（同時派工）
+
+研究部門（RES/SEC/QA/PRD）維持現有閘門流程（同時派工，一次性閘門）。
+
+### 判讀老闆回應
+
+| clarify 回傳 | 秘書動作 |
+|---|---|
+| 「繼續」 | 同一 turn 內派工下一部門或進入收尾流程 |
+| 「繼續補強」 | 秘書透過 clarify 確認新增需求與模式等級，直接派工對應部門 |
+| 「退回修正」 | 結束 turn，等老闆下一則訊息說明修正內容（僅執行部門） |
+| 「重做」 | 結束 turn，等老闆下一則訊息說明修正內容 |
+| 「暫停」 | 結束 turn，等老闆討論 |
+
+### 退回規則
+
+- **採增量**：退回時 task.md 只列需補強的目標，不重寫已完成的部分
+- **通訊文件增量重寫**：退回時既有的 proposal/result/consensus 以增量方式重寫內容，不刪除文件
+- **L2 模式例外**：退回增量記錄規則僅適用 L3/L4/L5 模式；L2 模式只有 RES 和 MIS，退回僅發生於 RES 與 MIS 之間
+- **文件結構不變**：退回前後的通訊目錄與產出檔案結構完全一致
+
+### 部門完成閘門匯報
+
+在每個部門任務完成（閘門開啟）時，秘書須向老闆匯報三個 subagent 的各自工作情況：
+- **分工執行**：誰完成了哪些具體份額。
+- **風險吸收**：若有單點失效，誰吸收了誰的份額。
+- **降級紀錄**：是否有發生降級為單體執行或技術分歧多數決的情形。
+- **互助紀錄**：是否有 subagent 抓到並修正同事錯誤。
 
 ## 收尾流程
 
@@ -208,9 +556,9 @@ L1 模式下秘書直接執行，無需派工部門。
 3. 秘書執行復判：確認有確實收尾與正確運作（檢查 MIS 部門報告完整性、定義檔變更與 task.md 一致性）
 4. `clarify` 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 5. 「繼續補強」→ 秘書透過 `clarify` 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-6. 復判通過且老闆選擇「確認歸檔」→ `read_file()` 讀取 LIFECYCLE.md
+6. 復判通過且老闆選擇「確認歸檔」→ 進入歸檔流程
 7. 秘書透過 `terminal()` 執行 squash merge 與推送
-8. 秘書依據 MIS 差異報告用 `write_file()` 更新 `.shiftblame/REPO.md`（見 LIFECYCLE.md 步驟 1.5）
+8. 秘書依據 MIS 差異報告用 `write_file()` 更新 `.shiftblame/REPO.md`
 9. 秘書透過 `terminal()` 執行 worktree 清理
 10. 秘書執行歸檔
 11. 秘書透過 `terminal()` 執行分支刪除
@@ -222,9 +570,9 @@ QC/EXP 完成後：
 2. 秘書執行復判：確認有確實收尾與正確運作
 3. `clarify` 呈報復判結果（含三方工作情況，含「繼續補強」選項與第 N 次增量提示）
 4. 「繼續補強」→ 秘書透過 `clarify` 確認新增需求與模式等級（顯示當前增量次數，第 N 次增量）→ 直接派工對應部門（不走歸檔）
-5. 復判通過且老闆選擇「確認歸檔」→ `read_file()` 讀取 LIFECYCLE.md
+5. 復判通過且老闆選擇「確認歸檔」→ 進入歸檔流程
 6. 秘書透過 `terminal()` 執行 squash merge 與推送
-7. 秘書依據 MIS 差異報告用 `write_file()` 更新 `.shiftblame/REPO.md`（見 LIFECYCLE.md 步驟 1.5）
+7. 秘書依據 MIS 差異報告用 `write_file()` 更新 `.shiftblame/REPO.md`
 8. 秘書透過 `terminal()` 執行 worktree 清理
 9. 秘書執行歸檔
 10. 秘書透過 `terminal()` 執行分支刪除
@@ -233,7 +581,87 @@ QC/EXP 完成後：
 
 ### 動態增量模式
 
-動態增量模式詳見 LIFECYCLE.md。
+任何循環（主循環或子循環）的秘書復判閘門可選擇「繼續補強」而非「確認歸檔」。
+
+- **觸發條件**：秘書復判閘門選擇「繼續補強」（所有模式通用）
+- **流程**：秘書透過 clarify 確認新增需求與模式等級（顯示第 N 次增量）→ 直接派工對應部門（不需完整 RES 研究階段）
+- **模式判定**：動態增量輪次為獨立模式判定，不受先前輪次的降級約束
+- **增量次數**：不設硬性上限，秘書在 clarify 中顯示當前增量次數供老闆參考
+- **歸檔時機**：最終閘門選擇「確認歸檔」時才執行歸檔
+
+### 歸檔流程
+
+**秘書復判（歸檔前）：**
+- **查驗收尾**：確認 MIS 是否已完成清理與合併準備。
+- **功能複核**：確認本次變更後的系統是否仍正確運作。
+- **復判通過**：秘書確認無誤後，方可發動歸檔流程。
+
+**Squash Merge + Push：**
+- 使用 `git merge --squash <branch>` 合併 worktree 分支到 main
+- 使用 `git push origin main` 推送到遠端
+- 推送目標僅限 origin/main，禁止 force push
+
+**REPO.md 更新（push 後）：**
+秘書在 push 成功後、執行 worktree 清理前，必須依據 MIS 收尾產出的差異報告更新 `.shiftblame/REPO.md`。
+
+**Worktree 清理：**
+
+shiftblame 自定義 worktree（`.shiftblame/<slug>/worktree/`），位於 slug 層級目錄內。
+
+建立（由秘書執行）：
+```bash
+mkdir -p .shiftblame/"$SLUG"
+git worktree add .shiftblame/"$SLUG"/worktree -b feat/"$SLUG"
+```
+確認 `.gitignore` 含 `.shiftblame/`（獨立一行）。
+
+清理（由秘書執行）：
+```bash
+git worktree remove .shiftblame/<slug>/worktree
+```
+
+結束時詢問老闆 worktree 處置意願：
+```
+clarify(question="本輪工作完成。Worktree `<slug>` 要怎麼處理？", choices=["刪除 — 清理 worktree，回到主 repo", "保留迭代 — 保留 worktree，繼續迭代", "保留待命 — 保留但不動"])
+```
+
+**Worktree 規範：**
+- worktree 與通訊目錄的建立權歸屬秘書（所有部門不負責建立）。清理由秘書執行（收尾流程）。僅主執行者（lead_executor）擁有 worktree 的寫入權。
+- **單一共用**：所有部門共用同一個位於 slug 層級的 worktree。
+- **主執行者獨佔**：在實作階段，僅主執行者有權在 worktree 上進行編輯與 Git 操作。
+- **禁止內建**：明確禁止使用內建 worktree 管理方式。
+
+**歸檔操作（由秘書執行）：**
+
+```bash
+# 歸檔閘門
+if [[ ! -s .shiftblame/<slug>/MIS/<NNN>/consensus.md ]]; then
+  echo "ERROR: MIS/consensus.md 不存在或為空，拒絕歸檔。" >&2
+  exit 1
+fi
+
+# 原子歸檔
+mkdir -p .shiftblame/archive
+mv .shiftblame/<slug> .shiftblame/archive/<slug>
+
+# 驗證
+test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
+```
+
+含子循環的 slug 歸檔邏輯：
+- **歸檔時機**：所有子循環完成後才執行歸檔，不可單獨歸檔個別子循環
+- **完整性確認**：歸檔前確認所有子循環的部門報告（consensus.md）完整
+- **整體歸檔**：歸檔時整個 slug 一起歸檔（含所有子循環目錄）
+
+### 五等級歸檔邏輯
+
+| 等級 | 流程 |
+|---|---|
+| L1（日常維護） | 秘書直接執行（不派工部門），無需歸檔 |
+| L2（基本） | RES → MIS(收尾) → 秘書復判 → 歸檔 |
+| L3（標準） | RES → PRD → DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔 |
+| L4（完整） | RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾) → 秘書復判 → 歸檔 |
+| L5（高等） | RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾) → 秘書復判 → 歸檔 |
 
 ### 部署權限
 
@@ -285,15 +713,36 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 
 高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者採公平序列輪替決定。原子任務的派工依 PRD 定義的前置依賴順序進行。
 
-資料存取見 PROXY_PROTOCOL.md。
+### 部門驗證 SOP
+
+**QC 報告後：弱斷言掃描**
+1. 弱斷言關鍵字掃描（`pixel diff` / `ratio` / `source="game"` fallback / 紅隊全擋但無正路徑 video/state）
+2. OBS-/觀察 條目逐條判讀
+3. 確認至少一條業務行為斷言用 video/state 級
+
+任一不通 → 退 QC，不問老闆。
+
+**DEV 報告後：無過濾 pytest + 業務 sanity check**
+1. 無過濾 pytest：`terminal("cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20")`
+2. 業務 sanity check（read-only）：跑專案的 quality_check CLI、manifest schema 驗證
+
+不一致或驗證失敗 → 退 DEV。秘書沒跑 = 違規。
+
+**PRD 報告後：測試數量驗證**
+秘書必驗證前端+後端測試數量，任一為 0 → 退 PRD 補寫。
+
+**所有部門回報後：worktree 確認**
+執行 `terminal("cd <worktree> && git status && git branch --show-current")` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。
 
 ## 秘書運作規則
 
-- SKILL 組件文件名禁止暴露：DISPATCH_CHECKLIST.md、PROXY_PROTOCOL.md、GATE_FLOW.md、LIFECYCLE.md、WORKTREE_SOP.md 是秘書內部零件，嚴禁在 task.md、proxy_prompt 或任何派工內容中提及。
-- 無過濋二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
-- CLI sandbox 阻擋降級處理：subagent 透過 terminal() 呼叫 Claude/Codex CLI 時可能被 sandbox 或安全掃描阻擋（詳見 references/cli-sandbox-pitfalls.md）。此為基礎設施問題，非能力問題。派工 context 中應告知 subagent：若 CLI 呼叫失敗，可降級使用原生工具完成工作並在 result.md 記錄。閘門不因 CLI 降級而退回，但須在報告中記錄。
+- 無過濾二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
+- CLI sandbox 阻擋降級處理：subagent 透過 terminal() 呼叫 CLI 時可能被 sandbox 或安全掃描阻擋。此為基礎設施問題，非能力問題。派工 context 中應告知 subagent：若 CLI 呼叫失敗，可降級使用原生工具完成工作並在 result.md 記錄。閘門不因 CLI 降級而退回，但須在報告中記錄。
 - 流程強制性輸入鏈：流程的每個節點必須用 `read_file()` 讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 subagent 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
+- subagent 職責：自行讀取 task.md、dept/<DEPT>.md、上游輸入；自行決定分工、做法、產出結構；辯論收斂、執行、寫入 result.md。
+- 秘書寫入權限限制：秘書零編輯權限。秘書的所有寫入操作限於通訊目錄。框架定義檔的變更只能由 MIS 部門在 worktree 上執行。.shiftblame/REPO.md 的更新由秘書在歸檔時負責。
+- 禁止在 main 上修改：所有框架定義檔的修改必須在 worktree 分支上執行，嚴禁直接在 main 分支上修改任何檔案。
 
 ## 日常運作模式
 

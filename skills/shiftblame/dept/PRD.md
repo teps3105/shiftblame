@@ -18,7 +18,7 @@ PRD 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/PRD/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/PRD/<NNN>/`（consensus.md + 各 subagent claude/result.md、codex/result.md、gemini/result.md）
 
 PRD 必備內容：
 1. 產品或功能名稱。

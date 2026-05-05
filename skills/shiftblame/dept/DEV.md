@@ -20,7 +20,7 @@ DEV 屬執行部門，execution_model 為 主執行者：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/DEV/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/DEV/<NNN>/`（consensus.md + 各 subagent result.md）
 
 devlog 必備內容：
 1. 實作檔案清單與路徑（按職能分組）。
