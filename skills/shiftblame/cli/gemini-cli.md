@@ -65,26 +65,44 @@ description: Gemini 子代理。在同一 worktree 上與其他子代理協調�
 
 ## CLI 呼叫規格（Hermes delegate_task）
 
-Hermes 透過 `delegate_task` 呼叫 Gemini CLI 時，使用以下規格：
+Hermes 透過 `delegate_task` 呼叫 Gemini CLI 時，使用以下規格（基於 `gemini --help` 實測）：
 
 ### 非互動模式
+
+#### 分析/研究任務（唯讀）
 ```bash
-gemini -p "prompt"
+gemini -p "prompt" -o json --skip-trust
 ```
-- `-p`：直接傳入 prompt，非互動執行
+- `-p, --prompt`：非互動模式（headless）
+- `-o json`：JSON 結構化輸出
+- `--skip-trust`：信任工作區，避免首次信任提示
 
-### ACP 模式（Agent Communication Protocol）
+#### 執行任務（可寫入）
 ```bash
-gemini --acp --stdio
+gemini -p "prompt" -o json --skip-trust -y
 ```
-- `--acp`：啟用 ACP 協議模式
-- `--stdio`：透過標準輸入輸出通訊
-- **delegate_task 應優先使用 ACP 模式**，因為 `gemini -p` 會被安全掃描攔截
+- `-y, --yolo`：自動接受所有操作（等同 `--approval-mode yolo`）
 
-### 權限 Flags
-- `--sandbox`：沙箱模式，限制 Gemini 的檔案系統存取範圍
-- delegate_task 應根據任務需求決定是否啟用沙箱
+#### 執行任務（使用 approval-mode）
+```bash
+gemini -p "prompt" -o json --skip-trust --approval-mode yolo
+```
 
-### 安全注意事項
-- `gemini -p` 會被安全掃描攔截，delegate_task 需使用 ACP 模式避開此限制
-- 沙箱模式適用於不受信任的程式碼執行場景，可防止意外檔案系統損壞
+### 權限 Flags 一覽
+
+| Flag | 用途 | 建議場景 |
+|------|------|---------|
+| `--approval-mode <mode>` | 權限模式：`default`/`auto_edit`/`yolo`/`plan` | 執行任務用 `yolo` |
+| `-y, --yolo` | 自動接受所有操作 | 執行任務的簡寫 |
+| `-s, --sandbox` | 啟用沙箱（布林值） | 需要隔離時啟用 |
+| `--skip-trust` | 信任工作區 | 避免首次信任提示 |
+| `--acp` | 啟用 ACP 模式 | 僅 Gemini 支援，框架不使用 |
+
+### 禁止事項
+- ❌ `--stdio`：Gemini CLI 不存在此 flag
+- ❌ 不存在所謂「安全掃描攔截 `-p`」的問題，`gemini -p` 是正規的非互動模式
+- ⚠️ `--acp` 存在（Gemini 是唯一支援 ACP 的 CLI），但框架不使用 ACP 模式
+
+### 環境注意事項
+- 工作目錄無直接 flag，可透過 shell `cd` 控制
+- `--skip-trust` 可避免首次使用時的信任提示卡住非互動流程

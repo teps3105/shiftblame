@@ -65,27 +65,42 @@ description: Claude 子代理。在同一 worktree 上與其他子代理協調�
 
 ## CLI 呼叫規格（Hermes delegate_task）
 
-Hermes 透過 `delegate_task` 呼叫 Claude CLI 時，使用以下規格：
+Hermes 透過 `delegate_task` 呼叫 Claude CLI 時，使用以下規格（基於 `claude --help` 實測）：
 
 ### 非互動模式
+
+#### 分析/研究任務（唯讀）
 ```bash
 claude -p "prompt" --output-format json
 ```
-- `-p`：直接傳入 prompt，非互動執行
+- `-p, --print`：非互動模式，印出回應後退出
 - `--output-format json`：結構化 JSON 輸出，便於 delegate_task 解析回傳結果
 
-### ACP 模式（Agent Communication Protocol）
+#### 執行任務（可寫入）
 ```bash
-claude --acp --stdio
+claude -p "prompt" --output-format json --permission-mode bypassPermissions
 ```
-- `--acp`：啟用 ACP 協議模式
-- `--stdio`：透過標準輸入輸出通訊
-- **delegate_task 應優先使用 ACP 模式**，因為 `claude -p` 會被安全掃描攔截
+- `--permission-mode bypassPermissions`：繞過所有權限檢查，允許 Claude 修改檔案、執行指令
 
-### 權限 Flags
-- `--allowedTools`：允許工具清單（白名單），限制 subagent 可使用的工具範圍
-- `--disallowedTools`：拒絕工具清單（黑名單），禁止特定危險工具
+#### 容器/VM 環境（完全跳過權限）
+```bash
+claude -p "prompt" --output-format json --dangerously-skip-permissions
+```
 
-### 安全注意事項
-- `claude -p` 會被安全掃描攔截，delegate_task 需使用 ACP 模式避開此限制
-- 生產環境應搭配 `--allowedTools` 限制工具範圍，避免未授權操作
+### 權限 Flags 一覽
+
+| Flag | 用途 | 建議場景 |
+|------|------|---------|
+| `--permission-mode <mode>` | 權限模式：`acceptEdits`/`auto`/`bypassPermissions`/`default`/`dontAsk`/`plan` | 執行任務用 `bypassPermissions` |
+| `--dangerously-skip-permissions` | 跳過所有權限檢查 | 容器/VM 環境 |
+| `--allowedTools <tools...>` | 工具白名單 | 研究任務限制工具範圍 |
+| `--disallowedTools <tools...>` | 工具黑名單 | 禁止特定危險工具 |
+
+### 禁止事項
+- ❌ `--acp`：Claude CLI 不存在此 flag
+- ❌ `--stdio`：Claude CLI 不存在此 flag
+- ❌ 不存在所謂「安全掃描攔截 `-p`」的問題，`claude -p` 是正規的非互動模式
+
+### 環境注意事項
+- Claude CLI 無獨立沙箱 flag，權限透過 `--permission-mode` 控制
+- 工作目錄可透過 shell `cd` 控制

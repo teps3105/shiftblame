@@ -73,6 +73,13 @@ QC 在所有模式（L2/L3/L4/L5）的驗證範圍應包含 README.md 與 `.shif
 
 README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由 MIS 在收尾階段維護），但 QC 必須檢閱其品質。發現問題時退回 MIS（非 DEV）修正。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
 
+### R14a：桌面驗證（真實操作驗證強化）
+QC 完成後必須提供「實際跑通」證據。驗證標準：
+- 至少一個 Happy Path 和一個邊緣案例透過 `terminal()` 實際執行驗證
+- 驗證必須有完整 `terminal()` 輸出（HTTP response、測試執行結果、操作日誌等）
+- 不可只寫「預期會通過/失敗」，必須「實際操作後結果為...」
+- CLI 能力不足時不跳過驗證，寫入 result.md 向上請求工具支援（`[TOOL_SUPPORT_REQUEST]`）
+
 ## 認知模型
 
 ### M1：行為驗證勝於邏輯驗證

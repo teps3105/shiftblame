@@ -65,26 +65,48 @@ description: Codex 子代理。在同一 worktree 上與其他子代理協調，
 
 ## CLI 呼叫規格（Hermes delegate_task）
 
-Hermes 透過 `delegate_task` 呼叫 Codex CLI 時，使用以下規格：
+Hermes 透過 `delegate_task` 呼叫 Codex CLI 時，使用以下規格（基於 `codex --help` 與 `codex exec --help` 實測）：
 
 ### 非互動模式
+
+Codex 的非互動模式使用 `exec` 子命令（非 `-q` flag）。
+
+#### 分析/研究任務（唯讀）
 ```bash
-codex -q "prompt" --approval-mode full-auto
+codex exec "prompt" -s read-only -a never -C /path/to/worktree
 ```
-- `-q`：快速模式（quiet），直接傳入 prompt 非互動執行
-- `--approval-mode full-auto`：全自動審批模式，無需人工確認
+- `exec`：非互動子命令（aliases: `e`）
+- `-s read-only`：唯讀沙箱
+- `-a never`：不需人工審批
 
-### ACP 模式（Agent Communication Protocol）
+#### 執行任務（可寫入 worktree）
 ```bash
-codex --acp --stdio
+codex exec "prompt" -s workspace-write -a never -C /path/to/worktree
 ```
-- `--acp`：啟用 ACP 協議模式
-- `--stdio`：透過標準輸入輸出通訊
+- `-s workspace-write`：允許寫入 worktree 目錄
 
-### 權限 Flags
-- `--dangerously-bypass-approvals-and-sandbox`：**Codex 必加此 flag 才能執行寫入操作**（檔案建立、修改、刪除等）。無此 flag 時 Codex 為唯讀模式，僅能讀取與分析。
-- delegate_task 應根據任務性質決定是否附加此 flag（研究任務可省略，執行任務必須附加）
+#### 容器/VM 環境（完全跳過沙箱）
+```bash
+codex exec "prompt" --dangerously-bypass-approvals-and-sandbox -C /path/to/worktree
+```
+- `--dangerously-bypass-approvals-and-sandbox`：跳過所有審批與沙箱，僅用於外部已沙箱化的環境
 
-### 安全注意事項
-- 無 `--dangerously-bypass-approvals-and-sandbox` 時 Codex 為唯讀模式，delegate_task 需在需要寫入操作時明確附加此 flag
-- 此 flag 名稱含「dangerously」提醒使用者注意風險，delegate_task 應僅在受控環境（worktree 分支）中使用
+### 權限 Flags 一覽
+
+| Flag | 用途 | 建議場景 |
+|------|------|---------|
+| `-s, --sandbox <mode>` | 沙箱模式：`read-only`/`workspace-write`/`danger-full-access` | 執行任務用 `workspace-write` |
+| `-a, --ask-for-approval <policy>` | 審批模式：`untrusted`/`on-failure`/`on-request`/`never` | 自動執行用 `never` |
+| `--dangerously-bypass-approvals-and-sandbox` | 跳過所有審批與沙箱 | 容器/VM 環境 |
+| `-C, --cd <DIR>` | 指定工作目錄 | 指向 worktree |
+| `--add-dir <DIR>` | 額外可寫目錄 | 需存取 worktree 外資源時 |
+
+### 禁止事項
+- ❌ `--acp`：Codex CLI 不存在此 flag
+- ❌ `--stdio`：Codex CLI 不存在此 flag
+- ❌ `-q`：Codex CLI 不存在此 flag，正確非互動方式為 `codex exec`
+- ❌ `--approval-mode full-auto`：不存在，正確值為 `-a never`
+
+### 環境注意事項
+- Codex 預設使用沙箱，在容器/VM 環境中沙箱可能無法啟動，需使用 `--dangerously-bypass-approvals-and-sandbox`
+- 工作目錄透過 `-C` flag 指定
