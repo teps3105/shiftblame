@@ -6,13 +6,27 @@
 
 `delegate_task` 沒有直接的 per-task `model` 參數。跨模型 subagent 派工透過 `terminal()` 呼叫各 CLI 的非互動模式實現。
 
-## ACP 支援現狀（2026-05-05 驗證）
+## ACP 支援與沙箱現狀（2026-05-05 驗證）
 
-| CLI | 版本 | `--acp` 支援 | 非互動模式 | 結論 |
-|-----|------|-------------|-----------|------|
-| Claude | 2.1.126 | **不支援** | `claude -p "prompt"` | 僅 `terminal()` 路徑 |
-| Codex | 0.128.0 | **不支援** | `codex exec "prompt"` | 僅 `terminal()` 路徑 |
-| Gemini | 0.40.1 | **支援** | `gemini -p "prompt"` | `acp_command` 或 `terminal()` 均可 |
+| CLI | 版本 | `--acp` | 沙箱 | 非互動指令 | 結論 |
+|-----|------|---------|------|-----------|------|
+| Claude | 2.1.126 | 不支援 | 無（`-p` 模式自動跳過 workspace trust） | `claude -p "prompt"` | 直接可用 |
+| Codex | 0.128.0 | 不支援 | bubblewrap，**本環境無法啟動**（RTM_NEWADDR 權限錯誤） | `codex exec --dangerously-bypass-approvals-and-sandbox "prompt"` | 必須加 `--dangerously-bypass-approvals-and-sandbox` |
+| Gemini | 0.40.1 | 支援 | 無預設沙箱 | `gemini -p "prompt"` | 直接可用 |
+
+### Codex 沙箱問題詳情
+
+Codex CLI 預設使用 bubblewrap（bwrap）沙箱。在本環境（容器/VM）中，bwrap 無法啟動：
+
+```
+bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
+```
+
+所有沙箱模式（`-s read-only`、`-s workspace-write`）均失敗。唯一可用路徑為加 `--dangerously-bypass-approvals-and-sandbox` 繞過沙箱。此旗標名稱帶有「dangerously」前綴，正式文件建議僅用於外部沙箱環境，但本環境的 Hermes subagent 本身已有隔離，實際風險可控。
+
+### Claude 沙箱
+
+`claude -p`（非互動模式）預設跳過 workspace trust dialog，檔案寫入與 shell 執行均無需額外旗標。若需完全跳過權限檢查，可加 `--dangerously-skip-permissions`，但 `-p` 模式通常不需要。
 
 ## 模型指定路徑
 
@@ -33,6 +47,7 @@
 
 - **`clarify()` 不可用**：subagent 無法使用 `clarify()`，需透過秘書中繼與老闆溝通
 - **非 ACP 路徑無原生隔離**：透過 `terminal()` 呼叫外部 CLI 時，subagent 仍在 Hermes 原生環境中執行，CLI 的輸出需由 subagent 解析
+- **Codex 必須繞過沙箱**：`codex exec` 預設沙箱在本環境無法啟動，必須加 `--dangerously-bypass-approvals-and-sandbox`
 
 ## 派工範例
 

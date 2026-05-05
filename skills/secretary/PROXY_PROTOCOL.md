@@ -240,11 +240,11 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 
 **ACP 支援現狀（2026-05-05 驗證）**：
 
-| CLI | 版本 | `--acp` 支援 | 非互動模式 | 結論 |
-|---|---|---|---|---|
-| Claude | 2.1.126 | 不支援 | `claude -p` | 僅 `terminal()` 路徑 |
-| Codex | 0.128.0 | 不支援 | `codex exec` | 僅 `terminal()` 路徑 |
-| Gemini | 0.40.1 | 支援 | `gemini -p` | `acp_command` 或 `terminal()` 均可 |
+| CLI | 版本 | `--acp` | 沙箱 | 非互動指令 | 結論 |
+|---|---|---|---|---|---|
+| Claude | 2.1.126 | 不支援 | 無（`-p` 模式自動跳過） | `claude -p` | 直接可用 |
+| Codex | 0.128.0 | 不支援 | bubblewrap 本環境無法啟動 | `codex exec --dangerously-bypass-approvals-and-sandbox` | 必須繞過沙箱 |
+| Gemini | 0.40.1 | 支援 | 無預設沙箱 | `gemini -p` | 直接可用 |
 
 ### 研究部門（RES/SEC/QA/PRD）— 同時派工
 
