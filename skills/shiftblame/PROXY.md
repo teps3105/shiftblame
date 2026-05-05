@@ -89,7 +89,9 @@ hermes chat -q "<prompt>" --provider <PROVIDER> --model <MODEL>
 4. **讀取部門定義**：讀取 `DEPT/<DEPT>.md`
 5. **辯論收斂**：閱讀他人提案，參與共識寫入 `consensus.md`
 6. **執行分工**：直接使用工具執行分工任務
-7. **回報結果**：寫入 `proxy-<N>/result.md`
+7. **回報結果**：寫入雙檔：
+   - `proxy-<N>/analysis.md`：觀察/分析過程（執行中的發現、中間推論、探測結果）
+   - `proxy-<N>/result.md`：最終執行結論（完成的分工項目、產出摘要、建議）
 
 ## 失敗通知
 
