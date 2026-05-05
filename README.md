@@ -10,10 +10,8 @@ _「這不是我的鍋。」_
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Hermes Agent Skill](https://img.shields.io/badge/Hermes%20Agent-skill-8a2be2.svg)](https://hermes-agent.nousresearch.com)
-[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#-八部門職能)
+[![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#八部門職能)
 [![Version](https://img.shields.io/badge/version-v3.0.0-green.svg)]()
-
-**[核心機制](#-核心機制)** · **[架構概覽](#-架構概覽)** · **[檔案結構](#-檔案結構)** · **[安裝](#-安裝)** · **[使用](#-使用)**
 
 </div>
 
@@ -169,7 +167,7 @@ Hermes 載入 Skill 時自動完成以下初始化：
 
 ## 🚀 使用
 
-Skill 載入後直接對話即可。秘書負責流程調度、部門派工與閘門管控，依需求複雜度判定模式（見[五等級開發制度](#-五等級開發制度)）。
+Skill 載入後直接對話即可。秘書負責流程調度、部門派工與閘門管控，依需求複雜度判定模式（見「五等級開發制度」）。
 
 ```
 🗣️ 老闆提問 → 🧠 秘書顧問翻譯 → 🔍 RES 研究 → 📊 模式確認 → 🎯 老闆決策 → 📋 秘書調度
