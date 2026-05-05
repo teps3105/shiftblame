@@ -177,3 +177,26 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 ## 13. 主執行者選定
 
 主執行者採公平序列輪替：Subagent-A → Subagent-B → Subagent-C → Subagent-A...。老闆可透過 clarify() 指定主執行者。主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 subagent。
+
+## 14. ACP 可用性確認
+
+派工前確認三方 CLI 的 ACP 協議可用性。秘書透過 `terminal()` 執行以下檢測：
+
+```bash
+# 確認三方 CLI 已安裝且可執行
+which claude && which codex && which gemini
+
+# 確認 Claude ACP 模式可用（已驗證支援）
+claude --acp --stdio < /dev/null 2>&1 | head -1
+```
+
+> **注意**：Codex 和 Gemini 的 ACP 協議支援待驗證。若 ACP 模式不可用，subagent 透過 `terminal()` 呼叫非互動模式（`claude -p`/`codex exec`/`gemini -p`）作為降級路徑。降級路徑下 `delegate_task` 的原生隔離優勢不復存在，但仍可完成任務。
+
+> **`acp_command` 與 `model` 參數**：`delegate_task` 沒有直接的 `model` 參數。跨模型派工透過 `acp_command`（指定 CLI）+ `acp_args`（如 `--model` 參數）的任務級別覆寫實現。`delegation.model`（config.yaml 全域設定）為所有 subagent 共用，無法實現三方不同模型。
+
+## 15. API 金鑰確認
+
+派工前提醒老闆確認三方 CLI 各自的 API 金鑰配置狀態：
+- Claude：透過 `~/.claude/` 配置
+- Codex：透過 `~/.codex/` 配置
+- Gemini：透過 `~/.gemini/` 配置

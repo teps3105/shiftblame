@@ -12,8 +12,11 @@ subagent 彼此僅知透過 Hermes delegate_task 派工，不知底層模型。�
 
 ### 模型配置
 
-- 所有 subagent 由 Hermes config.yaml 統一管理，供應商與模型由 config.yaml 設定決定
-- 秘書動態讀取確認，不硬編碼供應商名稱
+`delegate_task` 沒有直接的 `model` 參數。跨模型 subagent 派工透過以下方式實現：
+
+- **`acp_command` + `acp_args`（任務級別覆寫）**：推薦方案。為每個 task 分別指定不同 CLI 和模型參數，實現三方去識別化。`acp_command` 和 `acp_args` 均支援頂層（全域預設）和 tasks[i]（個別覆寫）
+- **`delegation.model`（全域設定）**：Hermes config.yaml 的 `delegation.model` 為全域設定，所有 subagent 共用同一模型。此方式無法為三個 subagent 分別指定不同模型，僅適用降級場景
+- CLI 名稱由 Hermes config.yaml 管理，秘書動態讀取確認，不硬編碼供應商名稱
 - 模型調整由老闆決定後手動執行
 
 ### 去識別化範圍
@@ -226,39 +229,62 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) �
 
 ## delegate_task 呼叫範例
 
+### 關於 acp_command
+
+`delegate_task` 沒有直接的 `model` 參數。跨模型 subagent 派工透過 `acp_command` + `acp_args` 的任務級別覆寫實現：
+
+- **`acp_command`**（頂層 / tasks[i]）：覆寫 ACP 命令，指定外部 CLI（如 `claude`、`codex`、`gemini`）
+- **`acp_args`**（頂層 / tasks[i]）：ACP 命令參數陣列，預設 `["--acp", "--stdio"]`
+- 兩者均支援**任務級別覆寫**（tasks[i]），可在單次 `delegate_task(tasks=[...])` 呼叫中為每個 task 指定不同 CLI 和模型
+
+**ACP 模式行為注意事項**：
+- 使用 `acp_command` 時，Hermes 啟動指定的 CLI 進程並透過 stdio 管道進行 ACP 協議通訊
+- subagent 的工具集**由外部 CLI 決定**（如 Claude Code 的 `Read`/`Write`/`Bash`/`Edit`），Hermes 嘗試將工具呼叫轉譯，但行為可能與原生 subagent 不同
+- `clarify()` 僅主代理可用，subagent 需透過秘書中繼與老闆溝通
+
+**降級路徑**：若 ACP 協議支援不完整，subagent 可透過 `terminal()` 呼叫非互動模式（`claude -p`/`codex exec`/`gemini -p`），但失去 `delegate_task` 的原生隔離優勢。
+
 ### 研究部門（RES/SEC/QA/PRD）— 同時派工
 
-同時派工三個 subagent。研究部門不需要 worktree（研究階段不涉及排他性編輯權）：
+同時派工三個 subagent，透過 `acp_command` 分別指定不同 CLI。研究部門不需要 worktree（研究階段不涉及排他性編輯權）：
 
 ```
 delegate_task(tasks=[
   {
     goal: "執行 <DEPT> 任務（Subagent-A）",
     context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
-    toolsets: ["terminal", "file"]
+    toolsets: ["terminal", "file"],
+    acp_command: "claude",
+    acp_args: ["--acp", "--stdio"]
   },
   {
     goal: "執行 <DEPT> 任務（Subagent-B）",
     context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
-    toolsets: ["terminal", "file"]
+    toolsets: ["terminal", "file"],
+    acp_command: "codex",
+    acp_args: ["--acp", "--stdio"]
   },
   {
     goal: "執行 <DEPT> 任務（Subagent-C）",
     context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\ncurrent_mode: <L2/L3/L4/L5>",
-    toolsets: ["terminal", "file"]
+    toolsets: ["terminal", "file"],
+    acp_command: "gemini",
+    acp_args: ["--acp", "--stdio"]
   }
 ])
 ```
 
 ### 執行部門（DEV/QC/EXP/MIS）— 兩階段派工
 
-**第一階段**：僅派工主執行者
+**第一階段**：僅派工主執行者。`acp_command` 依主執行者身份動態指定：
 
 ```
 delegate_task(
   goal: "執行 <DEPT> 主執行者任務",
   context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
-  toolsets: ["terminal", "file"]
+  toolsets: ["terminal", "file"],
+  acp_command: "<主執行者對應 CLI>",
+  acp_args: ["--acp", "--stdio"]
 )
 ```
 
@@ -269,12 +295,16 @@ delegate_task(tasks=[
   {
     goal: "執行 <DEPT> 觀測者檢閱（Subagent-B）",
     context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
-    toolsets: ["terminal", "file"]
+    toolsets: ["terminal", "file"],
+    acp_command: "<觀測者1 對應 CLI>",
+    acp_args: ["--acp", "--stdio"]
   },
   {
     goal: "執行 <DEPT> 觀測者檢閱（Subagent-C）",
     context: "task.md 路徑: .shiftblame/<slug>/<DEPT>/task.md\n通訊目錄路徑: .shiftblame/<slug>/<DEPT>/\nworktree 路徑: .shiftblame/<slug>/worktree/\ncurrent_mode: <L2/L3/L4/L5>",
-    toolsets: ["terminal", "file"]
+    toolsets: ["terminal", "file"],
+    acp_command: "<觀測者2 對應 CLI>",
+    acp_args: ["--acp", "--stdio"]
   }
 ])
 ```
@@ -291,7 +321,9 @@ EXP 屬執行部門，採主執行者機制，與其他執行部門共用兩階�
 3. worktree 路徑（僅執行部門提供，研究部門物理性移除）
 4. current_mode
 
-**不注入**：部門定義、分工建議、具體做法、產出模板。這些都是 subagent 自己去讀、去決定的。
+**不注入**：部門定義、分工建議、具體做法、產出模板、CLI 名稱或模型資訊。這些都是 subagent 自己去讀、去決定的。
+
+> **`acp_command` 不透過 context 傳遞**：`acp_command` 和 `acp_args` 是 `delegate_task` 的正式參數，直接在呼叫中指定，不透過 `context` 字串傳遞。
 
 ## subagent 自組織流程
 
@@ -309,7 +341,9 @@ subagent 可用的工具：
 - `read_file()`：讀取檔案
 - `write_file()`：寫入檔案
 - `terminal()`：執行 shell 指令（如 git 操作、測試執行等）
-- `clarify(question="...", choices=[...])`：向老闆提問（僅在需求不明時使用，經秘書協調）
+- `clarify(question="...", choices=[...])`：向老闆提問（僅主代理可用，subagent 需透過秘書中繼）
+
+> **ACP 模式工具注意事項**：使用 `acp_command` 時，subagent 透過 ACP subprocess transport 與外部 CLI 通訊，工具集由外部 CLI 決定（如 Claude Code 的 `Read`/`Write`/`Bash`/`Edit`），Hermes 嘗試將工具呼叫轉譯，但行為可能與原生 subagent 不同。
 
 ## 共識流程
 
