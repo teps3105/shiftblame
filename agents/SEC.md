@@ -17,7 +17,7 @@ SEC 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY proposal.md 與 result.md）
+產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY claude/result.md、codex/result.md、gemini/result.md）
 
 必備內容：
 1. Part A 資安稽核：安全相關斷言清單與安全基線。

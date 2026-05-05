@@ -16,7 +16,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 - 直接在 Claude Code 子代理上下文中做事
 
 你唯一能直接做的事：
-1. 讀寫該部門的通訊目錄（`<slug>/<DEPT>/`）內的協調文件（proposal.md、result.md、consensus.md、failure-notice.md）
+1. 讀寫該部門的通訊目錄（`<slug>/<DEPT>/`）內的協調文件（result.md、consensus.md、failure-notice.md）
 2. 讀寫 slug 層級的 worktree（`<slug>/worktree/`）中的檔案（DEV/MIS 主執行者有完整寫入權，觀測者具備受限寫入權；QC/EXP 全體均無 worktree 編輯權，僅執行測試）
 3. 透過 Bash 啟動 `claude -p` 外部進程
 4. 讀取 `claude -p` 的 stdout 輸出
@@ -26,14 +26,13 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 
 1. **讀取任務**：讀取通訊目錄 `task.md` 取得目標 + 約束
 2. **角色判斷**：根據 execution_model 區分處理方式：
-   - `equal_consensus`（研究部門 RES/SEC/QA/PRD）：不讀 lead_executor/observers，三方同時分析
-   - `lead_executor`（執行部門 DEV/QC/EXP/MIS）：讀取 lead_executor/observers，主執行者獨佔 worktree（QC/EXP 無 worktree 編輯權，僅執行測試）
-3. **接入 Worktree**：僅主執行者（lead_executor 模式）接入 slug 層級共用 worktree
+   - `equal_consensus`（研究部門 RES/SEC/QA/PRD）：三方同時分析，不涉 worktree
+   - `主執行者`（執行部門 DEV/QC/EXP/MIS）：主執行者獨佔 worktree（QC/EXP 無 worktree 編輯權，僅執行測試）
+3. **接入 Worktree**：僅主執行者（主執行者模式）接入 slug 層級共用 worktree
 4. **讀取部門定義**：讀取 `agents/<DEPT>.md`
-5. **提出方案**：寫入 `claude/proposal.md`
-6. **辯論收斂**：閱讀他人提案，參與共識寫入 `consensus.md`
-7. **執行分工**：啟動 `claude -p` 執行
-8. **回報結果**：寫入 `claude/result.md`
+5. **辯論收斂**：閱讀他人提案，參與共識寫入 `consensus.md`
+6. **執行分工**：啟動 `claude -p` 執行
+7. **回報結果**：寫入 `claude/result.md`
 
 ## claude -p 指令組裝
 

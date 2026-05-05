@@ -283,38 +283,18 @@ proxy_prompt **最小化**，研究部門含 3 項，執行部門含 4 項：
 
 ```
 1. 讀取 task.md（目標 + 約束）
-2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門，lead_executor 為執行部門），在讀取 task.md 後立即判斷
+2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門、主執行者為執行部門），在讀取 task.md 後立即判斷
 3. 接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）
-3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
-4. 讀取上游輸入（task.md 中列出的路徑）
-5. 各自提出 proposal（分工 + 做法 + 產出結構）
-6. 辯論收斂 → 寫入 consensus.md
-7. 各自執行分工 → 寫入 result.md
-```
-
-proposal.md 格式：
-```markdown
-# <PROXY> 提案
-
-## 分工
-- 我負責：<工作項目>，因為 <能力理由>
-- <另一 PROXY> 適合：<工作項目>，因為 <能力理由>
-- <另一 PROXY> 適合：<工作項目>，因為 <能力理由>
-
-## 做法
-<我計劃怎麼完成我的分工>
-
-## 產出結構
-<我認為最終產出應該長什麼樣>
-
-## 爭議
-<對他人提案的不同意見，無則寫「無」>
+4. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
+5. 讀取上游輸入（task.md 中列出的路徑）
+6. 辯論收斂 → 寫入 consensus.md（直接論點比較，三方異議直接在共識階段表達）
+7. 各自執行分工 → 寫入 {PROXY}/result.md
 ```
 
 ## 共識流程
 
 ```
-各自提出 proposal → 辯論收斂（最多 2 輪）→ 寫入 consensus.md → 各自執行 → 寫入 result.md
+辯論收斂（直接論點比較）→ 寫入 consensus.md → 各自執行 → 寫入 {PROXY}/result.md
 ```
 
 consensus.md 必須包含：
@@ -423,7 +403,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 3. **權限轉移**：代理主執行者取得 worktree 的編輯權與 Git 操作權
 4. **記錄**：在 consensus.md 追加接替紀錄（原主執行者、接替者、接替原因、時間）
 5. **接替範圍**：代理主執行者僅承接剩餘分工，不重做已完成的工作
-6. **通知**：接替後在通訊目錄更新 proposal.md，標注接替事件
+6. **通知**：接替後在通訊目錄標注接替事件
 
 ### 研究部門接替邏輯（equal_consensus）
 
@@ -479,7 +459,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 2. **後修改者責任**：後修改者在修改前必須確認該位置未被另一位觀測者修改（讀取另一位觀測者的 result.md 確認）
 3. **衝突發生時**：若兩位觀測者確實修改了同一位置：
    - 後修改者發現衝突 → 不覆蓋先修改者的修正，在 result.md 中紀錄衝突
-   - 透過通訊目錄協調（在 proposal.md 中發起協調請求）
+   - 透過通訊目錄協調（發起協調請求）
    - 由主執行者裁決最終內容
 4. **通訊目錄協調機制**：觀測者在開始修正前，可先在通訊目錄寫入修正意圖（檔案、行號），另一位觀測者讀取後可避開衝突
 
@@ -540,7 +520,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 #### 協調分攤
 
-- 發現同事失敗且自己的份額已過重 → 在通訊目錄發起協調請求（寫入自己的 proposal.md 更新）
+- 發現同事失敗且自己的份額已過重 → 在通訊目錄發起協調請求
 - 若三方中有兩方失敗 → 剩餘一方獨立完成，不需等待協調
 - 吸收份額後明確記錄：原分配者、吸收原因、吸收內容
 
@@ -555,7 +535,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 ### 秘書寫入權限限制
 
 秘書零編輯權限。秘書的所有寫入操作限於以下路徑：
-- 通訊目錄：`.shiftblame/<slug>/<DEPT>/`（task.md、proposal.md、result.md、consensus.md）
+- 通訊目錄：`.shiftblame/<slug>/<DEPT>/`（task.md、result.md、consensus.md、failure-notice.md）
 
 框架定義檔（`agents/`、`skills/`、`README.md` 等）的變更只能由 MIS 部門在 worktree 上執行。.shiftblame/REPO.md 的更新由秘書在歸檔時負責。
 秘書載入流程中的 symlink 建立是指向操作，不是定義檔修改。

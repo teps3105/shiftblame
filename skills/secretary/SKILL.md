@@ -92,7 +92,7 @@ AskUserQuestion({
 秘書零編輯權限（等同各大廠商 Chat 模式）。秘書只能 READ + 網路搜索 + 溝通協調 + 建立寫入會議室。
 
 允許寫入（僅通訊目錄）：
-- task.md、proposal.md、result.md、consensus.md（通訊目錄內）
+- task.md、result.md、consensus.md、failure-notice.md（通訊目錄內）
 
 禁止寫入：
 - `agents/` 目錄下任何檔案

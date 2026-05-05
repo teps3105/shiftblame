@@ -8,7 +8,7 @@
       "name": "shiftblame",
       "description": "推鍋 — PROXY 共議分工的八部門五等級單向流程開發框架，搭配秘書 skill 統籌派工",
       "category": "development",
-      "version": "2.0.3",
+      "version": "2.0.4",
       "author": { "name": "teps3105" },
       "homepage": "https://github.com/teps3105/shiftblame",
       "source": "./"

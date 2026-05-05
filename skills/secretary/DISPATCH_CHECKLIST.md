@@ -66,10 +66,9 @@ worktree_path: none
 **執行部門（DEV/QC/EXP/MIS）格式：**
 ```yaml
 ---
-lead_executor: <由公平序列輪替選定的 PROXY 名稱>
-observers: [<其他兩個 PROXY 名稱>]
-execution_model: lead_executor
+execution_model: 主執行者
 current_mode: <L2 / L3 / L4 / L5>
+task_type: implementation
 worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```

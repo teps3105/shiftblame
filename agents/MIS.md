@@ -20,14 +20,15 @@
 
 ### execution_model
 
-MIS 屬執行部門，execution_model 為 lead_executor：
+MIS 屬執行部門，execution_model 為 主執行者：
 - 主執行者獨佔 worktree 編輯權與 Git 操作權
 - 採用兩階段派工（先主執行者，commit 後派工觀測者）
 - 觀測者具備受限寫入權
+- QC/EXP 全體均無 worktree 編輯權（僅執行測試）
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY proposal.md 與 result.md）
+產出路徑：`.shiftblame/<slug>/MIS/`（consensus.md + 各 PROXY result.md）
 
 ### 流程起始產出
 

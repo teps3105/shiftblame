@@ -2,7 +2,7 @@
 # ==============================================================================
 # shiftblame PreToolUse Hook: Intercept Memory Write
 # ------------------------------------------------------------------------------
-# 攔截 Write tool 寫入 memory 路徑的行為，導向秘書確認老闆需求 → MIS 派工流程。
+# 攔截 Write tool 寫入 memory 路徑的行為，導向秘書確認老闆需求 → 正式派工流程。
 # ==============================================================================
 
 # 從 stdin 讀取 JSON (Claude Code PreToolUse hook 格式)
@@ -15,12 +15,14 @@ TOOL_NAME=$(echo "$INPUT" | sed -n 's/.*"tool_name": *"\([^"]*\)".*/\1/p')
 if [ "$TOOL_NAME" = "Write" ]; then
     # 簡易解析 file_path
     FILE_PATH=$(echo "$INPUT" | sed -n 's/.*"file_path": *"\([^"]*\)".*/\1/p')
-    
+
     # 判斷是否為 memory 相關路徑（涵蓋 ~/.claude/memory/ 與 ~/.claude/projects/.../memory/）
     if [[ "$FILE_PATH" == *"/.claude/"*"memory"* ]]; then
         echo "======================================================================" >&2
         echo "【shiftblame 警告】偵測到自動 memory 寫入行為。" >&2
-        echo "請透過 /secretary 或 MIS 派工流程處理框架核心變更，以維持共識機制。" >&2
+        echo "" >&2
+        echo "請透過 /secretary 啟動正式框架變更流程。" >&2
+        echo "框架核心變更必須透過正式派工流程處理，以維持共識機制。" >&2
         echo "======================================================================" >&2
     fi
 fi
