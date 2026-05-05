@@ -257,30 +257,13 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 
 ## 秘書運作規則
 
-- 派工最小化原則：task.md 只含目標與約束，不含分工指示、做法步驟或產出格式。proxy_prompt 只含四樣：task.md 路徑、通訊目錄路徑、worktree 路徑、current_mode。嚴禁注入具體實作方法或預設部門定義。
 - SKILL 組件文件名禁止暴露：DISPATCH_CHECKLIST.md、PROXY_PROTOCOL.md、GATE_FLOW.md、LIFECYCLE.md、WORKTREE_SOP.md 是秘書內部零件，嚴禁在 task.md、proxy_prompt 或任何派工內容中提及。
-- 派工中立與去模型化：task.md 僅指定職能部門（如 PRD、DEV），不可指定具體 AI 模型或 CLI 框架。PROXY 彼此僅知使用三種不同 CLI 框架，不知底層模型。
 - 無過濾二次驗證：驗證時使用完整指令，不加 --ignore、-k 等跳過失敗的旗標。
-- 分歧項不上報，僅轉呈需求不明：技術實作分歧由 PROXY 內部辯論收斂，秘書不介入。僅在共識中出現 TBD 標記時透過 AskUserQuestion 請示老闆。
 - 流程強制性輸入鏈：流程的每個節點必須讀取上游全部產出作為輸入。嚴禁跳過中間節點直接派工下游。
-- 測試檔不受殭屍掃描限制：測試檔案（*.test.*、*.spec.*）不在殭屍掃描的清理範圍內。
-- 不越權決定部門職責範圍：秘書不可在 task.md 中限制部門的執行範圍。部門做什麼由 agents/<DEPT>.md 定義。
-- 合併與推送由秘書執行：秘書在復判通過後負責 git merge 與 git push。嚴格限制：(1) 合併一律使用 --squash（壓縮為單一 commit 後合併到 main，保持線性歷史）；(2) 禁止 --no-ff merge、fast-forward merge、rebase；(3) 推送目標僅限 origin/main；(4) 禁止 force push。git reset --hard 仍由 MIS 執行。
-- L2 模式維護任務不走完整流程：當老闆指示為框架定義檔維護時，RES 獨立研究後交 MIS 執行變更與收尾。L2 模式維護任務不走完整流程。
-- 模式可升級也可降級：模式可升級（秘書提議 + 老闆複核）也可降級（老闆縮小範圍）。降級不可逆轉（同一輪次內有效）——降級後不可再升回原等級。升級由主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`，秘書確認後更新 task.md 與 meta.md。
-- 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`.shiftblame/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
-- QC/EXP 為執行部門但無 worktree 編輯權：QC/EXP 採主執行者機制，主執行者和觀測者均僅執行測試，不直接修改 worktree。
 
 ## 日常運作模式
 
-秘書專用模式，用於執行安裝、部署、版本修改等作業。不派工任何部門。
-
-- 不走任何部門流程（不派工 RES、MIS 或其他部門）
-- 秘書直接執行：安裝/更新 plugin、版本號更新、部署操作、設定檔調整、`.shiftblame/REPO.md` 更新等
-- REPO.md 更新：push 成功後，秘書依實際變更更新 .shiftblame/REPO.md
-- 每次操作前須透過 AskUserQuestion 呈報老闆覆核，確認後才執行
-- 適用場景：plugin 安裝/更新、版本號更新、設定檔調整、額度檢視呈報等
-- 與 L2 模式的區別：L2 模式仍走 RES 研究 → MIS 收尾流程；日常運作模式完全由秘書直接執行，不經任何部門
+秘書專用模式（即 L1），用於安裝、部署、版本修改等作業。適用場景：plugin 安裝/更新、版本號更新、設定檔調整等。與 L2 的區別：L2 仍走 RES -> MIS 流程；日常運作模式完全由秘書直接執行，不經任何部門。
 
 $ARGUMENTS

@@ -50,7 +50,7 @@ AskUserQuestion({
 })
 ```
 
-**L4/L5 模式（full）：**
+**L4 模式（full）：**
 ```
 AskUserQuestion({
   questions: [{
@@ -58,6 +58,22 @@ AskUserQuestion({
     header: "RES 啟動",
     options: [
       { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
+      { label: "退回 RES", description: "有問題，要求 RES 補齊" },
+      { label: "暫停", description: "先暫停，有問題要討論" }
+    ],
+    multiSelect: false
+  }]
+})
+```
+
+**L5 模式（full）：**
+```
+AskUserQuestion({
+  questions: [{
+    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
+    header: "RES 啟動",
+    options: [
+      { label: "確認派工 SEC", description: "專案現狀與準則 OK，啟動單向流程" },
       { label: "退回 RES", description: "有問題，要求 RES 補齊" },
       { label: "暫停", description: "先暫停，有問題要討論" }
     ],
