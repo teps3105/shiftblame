@@ -1,13 +1,15 @@
 # 閘門流程 v2.0.0
 
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## RES 啟動閘門（流程起點）
 
-RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清、執行準則確立、主執行者已由步驟 13 動態調配選定。
+RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清、執行準則確立、主執行者已由公平序列輪替選定。
 
 ### 確認步驟
 
 1. 讀取 `.shiftblame/REPO.md` 作為專案現狀參考。
-2. 確認本次派工的主執行者已由步驟 13 動態調配選定，並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
+2. 確認本次派工的主執行者已由公平序列輪替選定，並寫入 `meta.md` 與 `task.md` 的 YAML frontmatter。
 3. 確認單一共用 worktree 已由秘書建立在 slug 層級（所有部門不負責建立 worktree 或通訊目錄）。
 4. 若以上任一項不滿足 → 退回 RES 補齊。
 5. 上游產出驗證（DISPATCH_CHECKLIST 11）：
@@ -20,7 +22,7 @@ RES 啟動後（流程起點），秘書確認 RES 已完成專案現狀釐清�
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 MIS", description: "專案現狀與準則 OK，派工 MIS 執行收尾" },
@@ -36,7 +38,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 PRD", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -52,7 +54,7 @@ AskUserQuestion({
 ```
 AskUserQuestion({
   questions: [{
-    question: "RES 啟動完成。主執行者已由步驟 13 動態調配選定，專案現狀已釐清。",
+    question: "RES 啟動完成。主執行者已由公平序列輪替選定，專案現狀已釐清。",
     header: "RES 啟動",
     options: [
       { label: "確認派工 QA", description: "專案現狀與準則 OK，啟動單向流程" },
@@ -198,7 +200,7 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 
 ### 執行部門閘門（兩階段派工）
 
-執行部門（DEV/QC/MIS）因採兩階段派工，閘門流程分為兩個檢查點：
+執行部門（DEV/QC/EXP/MIS）因採兩階段派工，閘門流程分為兩個檢查點（QC/EXP 無 worktree 編輯權，僅執行測試）：
 
 **檢查點 1：主執行者完成**
 1. 讀取主執行者 result.md，確認執行完成
@@ -242,11 +244,7 @@ AskUserQuestion 格式包含 Round N 標題與選項。
 
 ### 研究部門閘門（同時派工）
 
-研究部門（RES/QA/SEC/PRD）維持現有閘門流程（同時派工，一次性閘門）。研究部門不走兩階段派工，閘門選項維持「繼續」「重做」「暫停」三選項，無「退回修正」。
-
-### EXP 部門閘門（單一執行者）
-
-EXP 部門每次僅能有單一執行者，無 worktree 編輯權。閘門選項維持「繼續」「重做」「暫停」三選項，無「退回修正」。
+研究部門（RES/SEC/QA/PRD）維持現有閘門流程（同時派工，一次性閘門）。研究部門不走兩階段派工，閘門選項維持「繼續」「重做」「暫停」三選項，無「退回修正」。
 
 ### 步驟
 
@@ -263,7 +261,7 @@ EXP 部門每次僅能有單一執行者，無 worktree 編輯權。閘門選項
    - 「暫停」→ 覆述選擇 → 結束 turn，等老闆討論
 ```
 
-**關鍵**：只有「退回修正」、「重做」和「暫停」才結束 turn。「繼續」必須在同一 turn 內完成推進。「退回修正」僅適用於執行部門（DEV/QC/MIS）。
+**關鍵**：只有「退回修正」、「重做」和「暫停」才結束 turn。「繼續」必須在同一 turn 內完成推進。「退回修正」僅適用於執行部門（DEV/QC/EXP/MIS）。
 
 ### 退回增量記錄
 
@@ -299,7 +297,7 @@ AskUserQuestion({
 })
 ```
 
-> **註**：「退回修正」選項僅適用於執行部門（DEV/QC/MIS）。研究部門（RES/QA/SEC/PRD）使用此模板時應移除「退回修正」選項。
+> **註**：「退回修正」選項僅適用於執行部門（DEV/QC/EXP/MIS）。研究部門（RES/SEC/QA/PRD）使用此模板時應移除「退回修正」選項。
 
 ### 共識含技術分歧（PROXY 內部已處理）
 
@@ -331,7 +329,7 @@ AskUserQuestion({
 | label: 「重做」 | 結束 turn，等老闆下一則訊息說明修正內容 |
 | label: 「暫停」 | 結束 turn，等老闆討論 |
 
-> **註**：上表為閘門工具回傳後的結構化分支。老闆在「退回修正」、「重做」或「暫停」之後的後續訊息仍需語意判讀——例如追問細節、修改需求、或取消——此時適用一般意圖理解，不構成新的閘門流程。「退回修正」僅適用於執行部門（DEV/QC/MIS）。
+> **註**：上表為閘門工具回傳後的結構化分支。老闆在「退回修正」、「重做」或「暫停」之後的後續訊息仍需語意判讀——例如追問細節、修改需求、或取消——此時適用一般意圖理解，不構成新的閘門流程。「退回修正」僅適用於執行部門（DEV/QC/EXP/MIS）。
 
 ## 部門驗證 SOP
 
@@ -367,4 +365,4 @@ QC 共識到達後，秘書必執行：
 
 ### 所有部門回報後：worktree 確認
 
-PRD/DEV/QC/MIS 共識到達後，執行 `cd <worktree> && git status && git branch --show-current` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。
+PRD/DEV/QC/EXP/MIS 共識到達後，執行 `cd <worktree> && git status && git branch --show-current` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。

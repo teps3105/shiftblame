@@ -1,5 +1,7 @@
 # 派工前 Checklist v2.0.0
 
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 每次派工前逐條完成，不可跳過。
 
 ## 0. 模式確認
@@ -7,7 +9,7 @@
 派工前確認本次 slug 的模式（L1/L2/L3/L4/L5）。模式已在 SKILL.md 運作流程步驟 6 確認，此處為覆核：
 
 - **L1（日常維護）**：秘書直接執行，不派工部門
-- **L2（基本）**：RES → MIS 收尾，不走 QA → SEC → PRD → DEV → QC → EXP 流程
+- **L2（基本）**：RES → MIS 收尾，不走 SEC → QA → PRD → DEV → QC → EXP 流程
 - **L3（標準）**：RES → PRD → DEV（可多輪）→ MIS(尾)
 - **L4（完整）**：RES → QA → PRD → DEV（可多輪）→ QC → MIS(尾)
 - **L5（高等）**：RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
@@ -51,7 +53,7 @@ Read .shiftblame/REPO.md
 
 task.md 只含**目標**和**約束**，不含任何做法指示。必須包含 YAML frontmatter 元數據區段。YAML 格式依 execution_model 動態決定：
 
-**研究部門（RES/QA/SEC/PRD）格式：**
+**研究部門（RES/SEC/QA/PRD）格式：**
 ```yaml
 ---
 execution_model: equal_consensus
@@ -61,10 +63,10 @@ worktree_path: none
 ---
 ```
 
-**執行部門（DEV/QC/MIS）格式：**
+**執行部門（DEV/QC/EXP/MIS）格式：**
 ```yaml
 ---
-lead_executor: <由步驟 13 動態調配選定的 PROXY 名稱>
+lead_executor: <由公平序列輪替選定的 PROXY 名稱>
 observers: [<其他兩個 PROXY 名稱>]
 execution_model: lead_executor
 current_mode: <L2 / L3 / L4 / L5>
@@ -72,17 +74,7 @@ worktree_path: <.shiftblame/<slug>/worktree/>
 ---
 ```
 
-**EXP 部門格式：**
-```yaml
----
-execution_model: single_executor
-current_mode: <L5>
-task_type: validation
-worktree_path: <.shiftblame/<slug>/worktree/>
----
-```
-
-主執行者由步驟 13 動態調配選定（依 onwatch 額度狀態自動決定），並寫入 YAML frontmatter。
+主執行者採公平序列輪替（Claude → Codex → Gemini → Claude...），並寫入 YAML frontmatter。
 
 ```
 === task.md 必含 ===
@@ -120,17 +112,17 @@ proxy_prompt 只含四樣東西：
 
 | 部門 | 派工前必做 |
 |---|---|
-| RES | 確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、RES 獨立研究（不走兩階段派工） |
-| EXP | 確認 execution_model: single_executor、每次僅能有單一執行者、無 worktree 編輯權（僅執行測試） |
-| QC | 確認 execution_model: single_executor、每次僅能有單一執行者、無 worktree 編輯權（僅執行測試） |
-| MIS（L2 模式） | 確認模式為 L2 模式、確認主執行者已由步驟 13 動態調配選定並寫入 task.md frontmatter、MIS 執行收尾 |
-| MIS（L3/L4/L5 模式） | 確認主執行者已由步驟 13 動態調配選定、單一 worktree 已建立 |
+| RES | 確認 execution_model 為 equal_consensus、RES 獨立研究（不走兩階段派工） |
+| QC | 確認 execution_model: lead_executor、QC/EXP 無 worktree 編輯權（僅執行測試） |
+| EXP | 確認 execution_model: lead_executor、QC/EXP 無 worktree 編輯權（僅執行測試） |
+| MIS（L2 模式） | 確認模式為 L2 模式、確認主執行者已寫入 task.md frontmatter、MIS 執行收尾 |
+| MIS（L3/L4/L5 模式） | 確認主執行者已寫入、單一 worktree 已建立 |
 | MIS（尾，復判前） | 確認 MIS 部門報告（consensus.md）已產出且完整、三方 PROXY result.md 均存在、定義檔變更與 task.md 一致 |
 | QA | user journey 需求確認：主業務 view 是什麼？user 從哪個 view 點哪個按鈕觸發？寫不出 = 不派工 |
 | QC（L4/L5） | 檢查 QC agent type 工具清單是否含任務所需工具（Web SPA 需要 chrome-devtools-mcp）。不足 = 不硬派 |
 | 所有部門 | 確認 `.gitignore` 含 `.shiftblame/` |
 | 執行部門 | 確認主執行者 worktree 已建立且位於 slug 層級、確認採兩階段派工（先主執行者，等待 commit 後再派工觀測者） |
-| 研究部門（RES/QA/SEC/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 PROXY 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
+| 研究部門（RES/SEC/QA/PRD） | 確認 execution_model: equal_consensus（從 task.md frontmatter 讀取）、確認採同時派工（三個 PROXY 同時派工）、確認無需等待 commit（研究階段無排他性編輯權） |
 
 ## 6. QC/EXP 定位提醒
 
@@ -161,14 +153,13 @@ diff /tmp/main-status-before.txt /tmp/main-status-after.txt
 
 ## 10. 兩階段派工確認（執行部門）
 
-派工執行部門（DEV/QC/MIS）時，確認派工方式為兩階段：
+派工執行部門（DEV/QC/EXP/MIS）時，確認派工方式為兩階段（QC/EXP 無 worktree 編輯權，僅執行測試）：
 
 - **第一階段**：僅派工主執行者（`run_in_background=true`），不派工觀測者
-- **等待 commit**：主執行者完成後，驗證 worktree 中有對應 commit
-- **第二階段**：確認 commit 後，同時派工兩位觀測者（`run_in_background=true`）
+- **等待完成**：主執行者完成後，驗證結果
+- **第二階段**：確認完成後，同時派工兩位觀測者（`run_in_background=true`）
 
-研究部門（RES/QA/SEC/PRD）不走兩階段，維持同時派工三個 PROXY。
-EXP 部門不走兩階段，每次僅能有單一執行者。
+研究部門（RES/SEC/QA/PRD）不走兩階段，維持同時派工三個 PROXY。
 
 ## 11. RES 起點產出驗證
 
@@ -180,162 +171,10 @@ RES 啟動後（流程起點），秘書確認上游產出已落袋：
 
 驗證不通過 → 退回 RES 補齊（不進入下一部門）。
 
-## 12. 模型額度檢視（全 CLI）
+## 12. 額度提醒（提醒老闆確認）
 
-每次派工前，秘書讀取 onwatch 日誌（`~/.onwatch/data/.onwatch.log`），執行五個 provider 的額度狀態查詢。秘書動態判斷自身及各 CLI 的當前供應商（讀取 ~/.claude/settings.json 的 env 設定），不硬編碼供應商名稱。
+提醒老闆透過 onwatch（http://localhost:10001）確認各 CLI 額度是否適合進行作業。秘書透過 AskUserQuestion 提醒老闆。此為秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案。
 
-供應商判斷規則（讀取 ~/.claude/settings.json）：
-- 若含 `ANTHROPIC_BASE_URL` → 該 URL 對應的供應商（如 api.z.ai → Z.ai，api.minimax.io → MiniMax）
-- 若不含 `ANTHROPIC_BASE_URL` → Claude 官方訂閱（對應 onwatch `Anthropic poll complete` 資料）
+## 13. 主執行者選定
 
-### 12.1 額度查詢指令
-
-```bash
-# 讀取最近 onwatch 額度資料
-tail -200 ~/.onwatch/data/.onwatch.log | grep -E "(Codex poll complete|Gemini poll complete|Anthropic poll complete|Z.ai poll complete|MiniMax poll complete)" | tail -30
-```
-
-### 12.2 額度報告格式（長條圖 + 秘書/PROXY 分離）
-
-額度報告在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案。秘書根據當前 ~/.claude/settings.json 動態判斷各 CLI 供應商與模型，對應 onwatch poll 資料。
-
-報告必須：
-1. 明確區分「秘書模型」與「三家 PROXY CLI」，標示各自使用的模型與供應商
-2. 一律使用長條圖（█░）顯示各家 CLI 剩餘額度百分比
-
-```
-╔════════════════════════════════════════════════════╗
-║              額度狀態長條圖（剩餘 %）               ║
-╠════════════════════════════════════════════════════╣
-║ 【秘書】<模型名> / <供應商>                        ║
-║ ████████░░  <P>%                                   ║
-║                                                    ║
-║ 【Claude】<模型名> / <供應商>                       ║
-║ ██████████  <P>%                                   ║
-║                                                    ║
-║ 【Codex】<模型名> / <供應商>                        ║
-║ 5hr  ██████████  <P>%                              ║
-║ 7day ███████░░░  <P>%                              ║
-║                                                    ║
-║ 【Gemini】<模型名> / <供應商>                       ║
-║ pro  ██████████  <P>%                              ║
-║ flash█████████░  <P>%                              ║
-╚════════════════════════════════════════════════════╝
-```
-
-長條圖規則：
-- 10 格寬度，每格代表 10%
-- █ 表示已用額度區間，░ 表示剩餘額度區間
-- 百分比為「剩餘額度」百分比
-
-### 12.3 額度呈報老闆
-
-秘書透過 AskUserQuestion 向老闆呈報各 CLI 額度摘要（使用 12.2 長條圖格式，含模型/供應商的示）：
-
-```
-AskUserQuestion({
-  questions: [{
-    question: "派工前額度呈報：\n\n╔════════════════════════════════════════════════════╗\n║              額度狀態長條圖（剩餘 %）               ║\n╠════════════════════════════════════════════════════╣\n║ （填入實際長條圖）                                  ║\n╚════════════════════════════════════════════════════╝\n\n是否繼續派工？",
-    header: "額度呈報",
-    options: [
-      { label: "繼續派工", description: "按當前額度狀態繼續派工流程" },
-      { label: "等待額度恢復", description: "暫停派工，等待額度恢復後再試" }
-    ],
-    multiSelect: false
-  }]
-})
-```
-
-### 12.4 秘書模型額度警告
-
-讀取秘書當前供應商（從 settings.json env 設定判斷，不硬編碼供應商名稱）的 onwatch poll 資料。若供應商提供 tokens_percentage 指標且 tokens_percentage >= 80%，主動呈報老闆：
-
-```
-AskUserQuestion({
-  questions: [{
-    question: "秘書模型額度警告（tokens_percentage: <P>%）。是否切換供應商或休息？",
-    header: "秘書模型額度警告",
-    options: [
-      { label: "切換供應商", description: "降載，改用其他供應商" },
-      { label: "休息片刻", description: "等待額度恢復後再繼續" },
-      { label: "繼續（無視警告）", description: "忽略警告，繼續當前操作" }
-    ],
-    multiSelect: false
-  }]
-})
-```
-
-此機制為秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案。
-
-此警告機制為預警性質（閾值 80% 已用額度），與步驟 13.2 的排除條件（剩餘額度 < 10%）為不同維度：前者提醒注意，後者硬性排除。
-
-### 12.5 去識別化合規
-
-- 額度長條圖中標示各 CLI 的模型名與供應商（秘書→老闆通訊層，不寫入 PROXY 可讀取的通訊檔案）
-- 秘書根據 settings.json 動態判斷各 CLI 供應商與模型，不硬編碼對應關係
-- 額度資訊僅在秘書→老闆通訊層流通，不寫入 PROXY 可讀取的通訊檔案
-- onwatch poll 資料中的供應商名稱僅在秘書層內部使用
-
-Claude 設定檔（settings.json）鎖定不動。秘書與 Claude PROXY 強制共用 ~/.claude/settings.json。
-
-## 13. 動態調配決策
-
-根據步驟 12 的 onwatch 額度資料，由秘書自動決定主執行者。取代固定輪流與指定主執行者機制。
-
-### 13.1 調配資料來源
-
-- onwatch 日誌（~/.onwatch/data/.onwatch.log）的 poll 資料
-- 秘書動態判斷各 CLI 當前供應商（讀取 settings.json 的 env 設定），不硬編碼供應商名稱
-- 從對應供應商的 onwatch poll 取得額度資料
-
-### 13.2 路由策略簡化
-
-1. **僅讀取 settings.json**：移除秘書對 `cli-*.json` 的掃描與注入邏輯。
-2. **額度共用**：秘書與 Claude PROXY 強制共用 `~/.claude/settings.json`。這能確保 `onwatch` 監測與實際執行的一致性，並簡化認證流程。
-3. **移除動態配方**：廢除配方檔掃描機制，將路由決策權交還給穩定的系統層配置。
-
-### 13.3 排除條件
-
-以下 CLI 額度吃緊時，排除其作為主執行者的候選資格：
-
-| CLI | 排除條件 | 備註 |
-|---|---|---|
-| Codex | `five_hour remaining <= 10%` AND `seven_day remaining <= 10%` | 雙重額度吃緊 |
-| Gemini | 所有模型的 `remaining < 10%` | 任一模型可用則不排除 |
-| Claude | Claude PROXY 對應供應商（從 settings.json env 判斷）的 `remain/total < 10%` | OR 條件：任一指標達限額即排除 |
-
-以上排除條件統一以「剩餘額度」為基準（剩餘 < 10% 即排除）。
-
-### 13.4 動態調配演算法
-
-```
-1. 取得各 CLI 的當下額度狀態（來自步驟 12，透過動態供應商對應）
-2. 排除已達限額的 CLI（依排除條件）
-3. 若無任何 CLI 可用 → AskUserQuestion 向老闆呈報「全部 CLI 額度吃緊」，等待指示
-4. 若只有一個 CLI 可用 → 該 CLI 為主執行者
-5. 若多個 CLI 可用：
-   a. 計算每個可用 CLI 的額度餘量分數。額度餘量分數 = 剩餘額度百分比（0-100）。差異 = |CLI_A分數 - CLI_B分數|（絕對值差）
-   b. 按分數排序（分數高者優先）
-   c. 若前兩名分數差異 < 20% → fallback 到公平序列的下一個（維持公平性）
-   d. 若前兩名分數差異 >= 20% → 選擇分數最高者
-6. 主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 CLI
-```
-
-### 13.5 調配結果輸出
-
-- **寫入 task.md frontmatter**：`lead_executor: <由步驟 13 動態調配選定的 CLI>`、`observers: [<其餘兩個 CLI>]`
-- **不輸出**：調配原因（不寫入 PROXY 可讀取的通訊檔案）
-
-### 13.6 Fallback 機制
-
-當 onwatch 日誌無法讀取或額度資料不完整時，降級為公平序列 fallback：
-- Fallback 順序：Claude → Codex → Gemini → Claude...
-- **降級時須透過 AskUserQuestion 告知老闆**：「onwatch 不可用，暫時使用公平序列 fallback」
-
-### 13.7 與步驟 3 的銜接
-
-步驟 3 的主執行者選定說明已更新為「由步驟 13 動態調配選定」，YAML 註解同步更新。
-
-### 13.8 EXP 部門特殊規則
-
-EXP 部門每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。主執行者由步驟 13 動態調配選定，但 EXP 不採兩階段派工。
+主執行者採公平序列輪替：Claude → Codex → Gemini → Claude...。老闆可透過 AskUserQuestion 指定主執行者。主執行者寫入 task.md frontmatter 的 lead_executor，observers 為其餘兩個 CLI。

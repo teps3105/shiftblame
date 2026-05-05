@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 ### 研究與起點職責
@@ -22,7 +24,7 @@ RES 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/RES/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 ### 流程起始產出
 
@@ -41,7 +43,7 @@ RES 是所有 slug 的流程起點。在 RES 產出未通過啟動閘門前，�
 RES 擁有全量讀取權限（`.shiftblame/REPO.md` + 所有部門通訊目錄）。RES 利用此權限進行問題診斷與現狀評估，而非干預個別部門的技術決策。
 
 ### R3：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。
+本部門屬研究部門，execution_model 為 equal_consensus。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。三個 PROXY 各自收集三個面向的數據，由 leader 負責彙整寫入 consensus.md，另外兩人從不同角度檢視報告成色。
 
 ### R4：可單獨啟用、單獨收斂
 RES 可單獨啟用、單獨收斂，適用於問題診斷、市調等不需要走完整流程的場景。

@@ -1,5 +1,7 @@
 # PROXY 自組織通訊協定 v2.0.0
 
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 秘書是純邊界設定者：定義「要達成什麼」和「不能碰什麼」，不定義「怎麼做」。「怎麼做」由 PROXY 自行協商。
 
 ## 去識別化
@@ -23,8 +25,7 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 ### 秘書權限
 
-- 秘書僅負責讀取 ~/.onwatch/data/.onwatch.log 取得配額狀態
-- 秘書透過 AskUserQuestion 向老闆呈報各 CLI 配額狀態
+- 秘書在派工前提醒老闆透過 onwatch（http://localhost:10001）確認各 CLI 額度是否適合進行作業
 - 秘書不執行任何 CLI 設定檔的編輯
 - 模型調整由老闆決定後手動執行
 
@@ -47,27 +48,23 @@ CLI 彼此僅知使用三種不同 CLI 框架，不知底層模型。派工時�
 
 | 部門類型 | execution_model | 共識機制 | consensus.md 寫入職責 |
 |---|---|---|---|
-| 研究部門（RES/QA/SEC/PRD） | equal_consensus | 三方同時派工，各自產出分析，consensus.md 由三方協商寫入（最後完成者彙整） | 三方 PROXY 協商，最後完成者彙整 |
-| 執行部門（DEV/QC/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由主執行者撰寫 | 主執行者負責撰寫 |
-| EXP 部門 | single_executor | 單一執行者，無 worktree 編輯權，consensus.md 由執行者撰寫 | 單一執行者負責撰寫 |
+| 研究部門（RES/SEC/QA/PRD） | equal_consensus | 三方同時派工，各自產出分析，consensus.md 由 leader 彙整寫入 | leader 負責彙整 |
+| 執行部門（DEV/QC/EXP/MIS） | lead_executor | 主執行者完成後 commit，觀測者檢閱，consensus.md 由 leader 產出 | leader 負責產出 |
 
 **研究部門（equal_consensus）共識流程：**
 1. 三方 PROXY 同時派工
 2. 各自提出 proposal
 3. 辯論收斂（最多 2 輪）
-4. 三方協商寫入 consensus.md（最後完成者負責彙整，或由第三方 PROXY 接手）
+4. leader 負責彙整寫入 consensus.md
 5. 各自執行分工，寫入 result.md
 
 **執行部門（lead_executor）共識流程：**
 1. 主執行者派工（第一階段）
 2. 主執行者完成後 commit
 3. 觀測者派工檢閱（第二階段）
-4. consensus.md 由主執行者撰寫（驗證摘要）
+4. consensus.md 由 leader 產出（驗證摘要）
 
-**EXP 部門（single_executor）共識流程：**
-1. 單一執行者派工
-2. 執行者完成後寫入 result.md
-3. consensus.md 由執行者撰寫（驗證摘要）
+**QC/EXP 特殊約束：** QC/EXP 屬執行部門但無 worktree 編輯權（僅執行測試），主執行者和觀測者均僅執行測試，不直接修改 worktree。
 
 ### 子循環通訊目錄
 
@@ -113,7 +110,7 @@ meta.md 位於通訊目錄根層（`.shiftblame/<slug>/meta.md`），由秘書�
 ## 當前狀態
 - current_mode: L5
 - 上次派工部門：QA
-- 下次主執行者由步驟 13 動態調配決定
+- 下次主執行者由公平序列輪替決定
 
 ## 模式變更紀錄
 - 2026-01-01T02:00:00Z：降級 L4（原因：範圍縮小，不可逆轉）
@@ -142,13 +139,12 @@ task.md 只包含兩樣東西：**目標**和**約束**。必須包含 YAML fron
 ```markdown
 ---
 # execution_model 取代 lead_executor/observers
-execution_model: <equal_consensus / lead_executor / single_executor>
-# equal_consensus: 研究部門(RES/QA/SEC/PRD)
-# lead_executor: 執行部門(DEV/QC/MIS)
-# single_executor: EXP 部門
+execution_model: <equal_consensus / lead_executor>
+# equal_consensus: 研究部門(RES/SEC/QA/PRD)
+# lead_executor: 執行部門(DEV/QC/EXP/MIS)（QC/EXP 無 worktree 編輯權，僅執行測試）
 current_mode: <L2 / L3 / L4 / L5>
-task_type: <research / implementation / validation>  # research: 研究部門；implementation: 執行部門；validation: EXP
-worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) 明確設為 none
+task_type: <research / implementation>  # research: 研究部門(RES/SEC/QA/PRD)；implementation: 執行部門(DEV/QC/EXP/MIS)
+worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/SEC/QA/PRD) 明確設為 none
 ---
 ```
 
@@ -182,36 +178,28 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 
 1. 驗證 slug 名稱（SEC-A-01，見 DISPATCH_CHECKLIST.md）
 2. 建立通訊目錄：`mkdir -p .shiftblame/<slug>/<DEPT>/{claude,codex,gemini}` 並初始化或更新 `meta.md`
-3. 主執行者由步驟 13 動態調配選定（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
+3. 主執行者採公平序列輪替（見 DISPATCH_CHECKLIST.md 步驟 13），並寫入 `task.md`（目標 + 約束，包含 YAML frontmatter）
 4. 依部門類型選擇派工方式：
-   - **研究部門（RES/QA/SEC/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
-   - **執行部門（DEV/QC/MIS）**：兩階段派工（見下方）
-   - **EXP 部門**：單一執行者，不採兩階段派工
+   - **研究部門（RES/SEC/QA/PRD）**：同時派工三個 PROXY（prompt 只含 task.md 路徑 + 通訊目錄路徑 + current_mode，物理性移除 worktree 路徑）
+   - **執行部門（DEV/QC/EXP/MIS）**：兩階段派工（見下方，QC/EXP 無 worktree 編輯權，僅執行測試）
 
 ### 執行部門兩階段派工步驟
 
 1. **第一階段**：僅派工主執行者（lead_executor），使用 `run_in_background=true`
 2. **等待完成**：輪詢主執行者的 result.md，確認其完成回報
-3. **驗證 commit**：確認 worktree 中有主執行者產出的 commit（`git -C <worktree> log --oneline -1`）
-4. **第二階段**：確認 commit 後，同時派工兩位觀測者（observers），使用 `run_in_background=true`
+3. **驗證 commit**：確認 worktree 中有主執行者產出的 commit（`git -C <worktree> log --oneline -1`）（QC/EXP 不需此步驟）
+4. **第二階段**：確認完成後，同時派工兩位觀測者（observers），使用 `run_in_background=true`
 5. 等待觀測者完成驗證
-6. 秘書基於三份 result.md 彙整寫入 consensus.md（驗證摘要，見下方）
+6. leader 基於三份 result.md 產出 consensus.md（驗證摘要）
 
-觀測者在主執行者 commit 後才開始檢閱，確保檢閱對象為已提交的穩定狀態。
-
-### EXP 部門派工步驟
-
-1. **單一執行者派工**：由步驟 13 動態調配選定的單一 PROXY 執行
-2. **執行完成**：確認執行者的 result.md 存在
-3. **產出共識**：consensus.md 由執行者撰寫（驗證摘要）
+觀測者在主執行者完成後才開始檢閱，確保檢閱對象為已完成的穩定狀態。
 
 ### 執行部門共識產出
 
-執行部門（DEV/QC/MIS）採兩階段派工，觀測者獨立驗證而非辯論收斂。consensus.md 產出方式與研究部門不同：
+執行部門（DEV/QC/EXP/MIS）採兩階段派工，觀測者獨立驗證而非辯論收斂。consensus.md 產出方式：
 
-- **研究部門**：consensus.md 由三方 PROXY 透過辯論收斂產出（部門產出）
-- **執行部門**：consensus.md 由秘書在觀測者全部完成後，基於三份 result.md 彙整寫入（驗證摘要）
-- **EXP 部門**：consensus.md 由單一執行者撰寫（驗證摘要）
+- **研究部門**：consensus.md 由 leader 負責彙整（部門產出）
+- **執行部門**：consensus.md 由 leader 產出（驗證摘要）
 
 此為事實彙整（基於 result.md 的客觀摘要），非部門分析產出，不違反「秘書不得代建 MIS 部門報告」原則。MIS 部門報告的實質內容在各 PROXY 的 result.md 中。
 
@@ -240,20 +228,20 @@ worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門 (RES/QA/SEC/PRD) �
 
 ## Agent() 呼叫
 
-### 研究部門（RES/QA/SEC/PRD）— 同時派工
+### 研究部門（RES/SEC/QA/PRD）— 同時派工
 
 同時派工三個 PROXY。研究部門不需要 worktree（研究階段不涉及排他性編輯權，嚴禁使用 isolation="worktree"）：
 
 ```
-# 主執行者（範例：Claude）
+# PROXY（範例：Claude）
 Agent(subagent_type="shiftblame:CLAUDE_PROXY", prompt=proxy_prompt, name="<slug>-claude", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--dangerously-skip-permissions")
 
-# 觀測者（範例：Codex / Gemini）
+# PROXY（範例：Codex / Gemini）
 Agent(subagent_type="shiftblame:CODEX_PROXY", prompt=proxy_prompt, name="<slug>-codex", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--dangerously-bypass-approvals-and-sandbox --ephemeral")
 Agent(subagent_type="shiftblame:GEMINI_PROXY", prompt=proxy_prompt, name="<slug>-gemini", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="--yolo --skip-trust")
 ```
 
-### 執行部門（DEV/QC/MIS）— 兩階段派工
+### 執行部門（DEV/QC/EXP/MIS）— 兩階段派工
 
 **第一階段**：僅派工主執行者
 
@@ -270,12 +258,9 @@ Agent(subagent_type="shiftblame:<OBSERVER_1_PROXY>", prompt=proxy_prompt, name="
 Agent(subagent_type="shiftblame:<OBSERVER_2_PROXY>", prompt=proxy_prompt, name="<slug>-<observer2>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<observer2_bypass_flag>")
 ```
 
-### EXP 部門 — 單一執行者派工
+### EXP 部門派工
 
-```
-# 單一執行者
-Agent(subagent_type="shiftblame:<PROXY>", prompt=proxy_prompt, name="<slug>-<executor>", run_in_background=true, mode="bypassPermissions", bypass_permissions_flag="<bypass_flag>")
-```
+EXP 屬執行部門，採主執行者機制，與其他執行部門共用兩階段派工流程。但 EXP 主執行者和觀測者均無 worktree 編輯權（僅執行測試）。
 
 ### CLI Bypass Flags 對照表
 
@@ -297,8 +282,9 @@ proxy_prompt **最小化**，研究部門含 3 項，執行部門含 4 項：
 ## PROXY 自組織流程
 
 ```
-1. 讀取 task.md（目標 + 約束，確認 execution_model：equal_consensus 為研究部門，lead_executor 為執行部門，single_executor 為 EXP）
-2. 接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）
+1. 讀取 task.md（目標 + 約束）
+2. 角色判斷：根據 execution_model 區分處理方式（equal_consensus 為研究部門，lead_executor 為執行部門），在讀取 task.md 後立即判斷
+3. 接入 slug 層級共用 worktree（由秘書建立，見 WORKTREE_SOP.md）
 3. 讀取 agents/<DEPT>.md（部門職責 + 產出規格，自行讀取）
 4. 讀取上游輸入（task.md 中列出的路徑）
 5. 各自提出 proposal（分工 + 做法 + 產出結構）
@@ -361,24 +347,23 @@ consensus.md 必須包含：
 - **觸發條件**：RES 研究後，秘書判斷需求可拆分為多個獨立子任務
 - **獨立執行**：各子循環獨立執行流程，各自可有不同模式等級（L2/L3/L4/L5）
 - **共用 worktree**：同一 slug 下的所有子循環共用同一 worktree
-- **主執行者選定**：主執行者在每次派工時由步驟 13 動態調配決定（部門級別，非 slug 級別）
+- **主執行者選定**：主執行者在每次派工時由公平序列輪替決定（部門級別，非 slug 級別）
 - **通訊目錄**：各子循環的部門通訊目錄為 `<DEPT>/cycle-N/`（見通訊目錄結構）
 - **紀錄**：子循環拆分結果記錄於 meta.md 的子循環紀錄表
 
 ## 部門分類
 
 - **RES（純研究部門）**：RES 是流程的純研究起點，執行專案現狀釐清、執行準則確立、問題診斷、市調等研究工作。不走兩階段派工，維持三方 PROXY 同時派工、各自分析的模型。RES 可單獨啟用、單獨收斂。
-- **EXP（單一執行部門）**：EXP 是用戶視角驗證部門，每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。不走兩階段派工。
+- **EXP（執行部門，用戶體驗驗證）**：EXP 是用戶視角驗證部門，採主執行者機制，但主執行者和觀測者均無 worktree 編輯權（僅執行測試）。EXP 與 SEC 為鏡像對應部門（用戶體驗驗證 ↔ 資安研究）。
 - **MIS（純執行部門，收尾階段）**：MIS 是流程的實作終點與審計者，執行定義檔修正、合併準備、歸檔紀錄等實作工作。此階段涉及排他性編輯權，採兩階段派工。
 
 ## 派工規則
 
-- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一），除 EXP 部門（單一執行者）
+- **永遠三個 PROXY**：每次派工固定派出三個 PROXY（三種 CLI 框架各一）
 - **秘書不分工**：task.md 只有目標和約束，沒有分工和做法
-- **執行部門主執行者必須在 worktree**：執行部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立
+- **執行部門主執行者必須在 worktree**：執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要；觀測者具備受限寫入權（主動修正），但不需要獨立的 worktree 建立。QC/EXP 無 worktree 編輯權（僅執行測試）
 - **執行部門採兩階段派工**：先派工主執行者，等待 commit 後再同時派工兩位觀測者。確保觀測者檢閱對象為已提交的穩定狀態
-- **研究部門維持同時派工**：RES、QA、SEC、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
-- **EXP 部門單一執行**：EXP 部門每次僅能有單一執行者，不採兩階段派工，無 worktree 編輯權
+- **研究部門維持同時派工**：RES、SEC、QA、PRD 同時派工三個 PROXY（研究階段不產生需要 commit 後才檢閱的排他性編輯權）
 - **Gemini 使用帳號登入認證（`gemini auth login`），不需環境變數注入**
 
 ## 退回規則
@@ -442,7 +427,7 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 ### 研究部門接替邏輯（equal_consensus）
 
-研究部門（RES/QA/SEC/PRD）採 equal_consensus 模型，失敗時接替邏輯如下：
+研究部門（RES/SEC/QA/PRD）採 equal_consensus 模型，失敗時接替邏輯如下：
 - 無固定主執行者，三方 PROXY 平等
 - 失敗時由其他兩方依可用性吸收份額
 - 接替者僅承接剩餘分工，不重做已完成的工作
@@ -452,28 +437,21 @@ PROXY 執行 `claude -p` / `codex exec` / `gemini -p` 後，若 stderr 含以下
 
 不同部門依職責性質採不同執行模型：
 
-### 研究部門（RES/QA/SEC/PRD）
+### 研究部門（RES/SEC/QA/PRD）
 
 採 equal_consensus 模型，維持三人各自分析的現有模型：
 - 三人各自從不同面向收集數據與分析
-- 統一由主執行者寫入報告（最後完成者彙整）
+- leader 負責彙整寫入報告
 - 另外兩人從不同角度檢視報告成色（正確性、完整性、一致性）
 
-### 執行部門（DEV/QC/MIS）
+### 執行部門（DEV/QC/EXP/MIS）
 
 採 lead_executor 模型，主執行者獨佔單一 worktree 的編輯權與 Git 操作權：
 - 三人協調分工
 - 主執行者負責實作/執行/測試並寫入實作報告
 - 觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤
 - 採用兩階段派工：先派工主執行者，等待其完成並 commit 後，再同時派工觀測者檢閱已提交的內容
-
-### EXP 部門
-
-採 single_executor 模型，單一執行者：
-- 每次僅能有單一執行者，避免測試衝突
-- 無 worktree 編輯權（僅執行測試）
-- 發現問題僅記錄於報告，不直接修改
-- 由步驟 13 動態調配選定
+- **QC/EXP 特殊約束**：QC/EXP 無 worktree 編輯權（僅執行測試），主執行者和觀測者均僅執行測試，不直接修改 worktree
 
 ### 觀測者主動修正規範
 

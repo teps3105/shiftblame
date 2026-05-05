@@ -1,5 +1,7 @@
 # QUOTA_NORMALIZATION.md
 
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## Provider Normalization Layer 輸出格式
 
 所有 Provider 的額度資料應統一轉換為以下欄位：
@@ -32,4 +34,4 @@
 | MiniMax | `剩餘% = (remain / total) * 100` | 原始提供三值分離 |
 
 ---
-*Version: v1.2.0*
+*Version: v2.0.2*

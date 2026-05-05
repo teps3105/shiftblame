@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 - 資安稽核：審核 RES 研究結果的安全性，產出安全基線。
@@ -15,7 +17,7 @@ SEC 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/SEC/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 必備內容：
 1. Part A 資安稽核：安全相關斷言清單與安全基線。
@@ -48,7 +50,9 @@ SEC 規則不綁定特定技術棧或框架。安全基線必須具備跨專案�
 PROXY 對「某操作是否安全」的技術爭議，以安全工具掃描結果為準進行內部辯論。若涉及規則理解分歧，標記 [TBD: 安全邊界待定] 由秘書轉交 MIS 裁定。（參見上方廣義職責）
 
 ### R8：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段維持現有模型。主執行者身份已由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定並寫入 task.md frontmatter，但研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，統一由主執行者寫入報告，另外兩人從不同角度檢視報告成色。
+本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，由 leader 負責彙整寫入 consensus.md，另外兩人從不同角度檢視報告成色。
+
+SEC 與 EXP 為鏡像對應部門（資安研究 ↔ 用戶體驗驗證），遵循 4:4 鏡像原則。
 
 ## 認知模型
 

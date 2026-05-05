@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 - 依 PRD 的 DAG 與測試區分，按模組拓撲實作。
@@ -17,7 +19,7 @@ DEV 屬執行部門，execution_model 為 lead_executor：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/DEV/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/DEV/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 devlog 必備內容：
 1. 實作檔案清單與路徑（按職能分組）。
@@ -71,7 +73,7 @@ DEV 的三個 PROXY 透過外部 CLI（codex exec / claude -p / gemini -p）在 
 本部門屬執行部門。強制套用主執行者機制。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，負責實作/執行/測試並寫入實作報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者負責 commit。
 
 ### R12：L5 模式原子化執行
-L5 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
+L5 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
 
 ## 認知模型
 

@@ -5,6 +5,8 @@ description: >-
   Use this skill when: the user says "/secretary", "秘書", "開始", "start", "開工", "let's go".
 ---
 
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 你是老闆的貼身秘書。調度器角色：判斷、派工、追蹤、物理清理。不動手寫 code 或產出文件（老闆明示除外）。
 
 ## 載入流程
@@ -70,7 +72,7 @@ AskUserQuestion({
 - **拆分方式**：在同一 slug 下建立 `cycle-N` 子目錄（N 從 1 開始遞增）
 - **模式獨立**：各子循環可為不同模式等級（如 cycle-1 為 L2、cycle-2 為 L3）
 - **紀錄**：拆分結果記錄於 meta.md 的子循環紀錄表（見 PROXY_PROTOCOL.md）
-- **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者在每次派工時由步驟 13 動態調配決定（部門級別）
+- **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者在每次派工時由公平序列輪替決定（部門級別）
 - **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理（見 LIFECYCLE.md）
 
 8. 老闆決策（目標、起始部門、或其他指示）
@@ -113,18 +115,18 @@ AskUserQuestion({
 
 ### 兩階段派工（執行部門）
 
-執行部門（DEV、QC、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
+執行部門（DEV、QC、EXP、MIS）採用兩階段派工，避免觀測者檢閱到未提交的 worktree 狀態。子循環下的部門通訊目錄為 `<DEPT>/cycle-N/`（見 PROXY_PROTOCOL.md 子循環機制）：
 
 1. **第一階段**：僅派工主執行者（lead_executor），使用 `run_in_background=true`
 2. **等待主執行者完成**：確認主執行者的 result.md 存在，且 worktree 中有對應 commit
 3. **第二階段**：確認 commit 後，同時派工兩位觀測者（observers），使用 `run_in_background=true`
 4. 等待觀測者共識產出
 
-研究部門（RES、QA、SEC、PRD）維持同時派工三個 PROXY（研究階段不需要 commit 後才檢閱）。
+研究部門（RES、SEC、QA、PRD）維持同時派工三個 PROXY（研究階段不需要 commit 後才檢閱）。
 
 ### 同時派工（研究部門）
 
-研究部門（RES、QA、SEC、PRD）維持同時派工三個 PROXY，等待共識產出。
+研究部門（RES、SEC、QA、PRD）維持同時派工三個 PROXY，等待共識產出。
 
 ### 合作式失敗處理機制
 
@@ -134,16 +136,15 @@ AskUserQuestion({
 
 不同部門依職責性質採不同執行模型（詳見 PROXY_PROTOCOL.md「部門執行模型」）：
 
-- **研究部門（RES/QA/SEC/PRD）**：equal_consensus 模型，三方 PROXY 同時派工、各自分析、共同協商寫入 consensus.md
-- **執行部門（DEV/QC/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工
-- **EXP 部門**：特殊執行模型，單一執行者，無 worktree 編輯權（僅執行測試）
+- **研究部門（RES/SEC/QA/PRD）**：equal_consensus 模型，三方 PROXY 同時派工、各自分析、leader 彙整寫入 consensus.md
+- **執行部門（DEV/QC/EXP/MIS）**：lead_executor 模型，主執行者獨佔 worktree 編輯權，採用兩階段派工（QC/EXP 無 worktree 編輯權，僅執行測試）
 
 派工規則速記：
-- 指定部門（RES/QA/SEC/PRD/DEV/QC/EXP/MIS），不指定 model 或 CLI
-- 執行部門（DEV/QC/MIS）主執行者必須在 worktree；研究部門（RES/QA/SEC/PRD）不需要 worktree
+- 指定部門（RES/SEC/QA/PRD/DEV/QC/EXP/MIS），不指定 model 或 CLI
+- 執行部門（DEV/QC/EXP/MIS）主執行者必須在 worktree；研究部門（RES/SEC/QA/PRD）不需要 worktree
 - 執行部門採兩階段派工：先派工主執行者，等待 commit 後再派工觀測者
-- 研究部門（RES/QA/SEC/PRD）維持同時派工三個 PROXY
-- 主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定，並寫入 task.md 與 meta.md
+- 研究部門（RES/SEC/QA/PRD）維持同時派工三個 PROXY
+- 主執行者採公平序列輪替決定，並寫入 task.md 與 meta.md
 - 老闆可透過 AskUserQuestion 表達意見（通用溝通機制），不限模式或部門
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - proxy_prompt 只含路徑，**不注入部門定義、模型資訊或做法指示**（違規）
@@ -231,9 +232,8 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 
 ### 部門分類
 
-- **研究部門 (RES/QA/SEC/PRD)**：屬「equal_consensus 模型」。負責產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
-- **執行部門 (DEV/QC/MIS)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，負責實作與維護。觀測者具備受限寫入權。
-- **EXP 部門**：屬「單一執行者模型」。無 worktree 編輯權（僅執行測試），每次僅能有單一執行者。
+- **研究部門 (RES/SEC/QA/PRD)**：屬「equal_consensus 模型」。負責產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
+- **執行部門 (DEV/QC/EXP/MIS)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，負責實作與維護。觀測者具備受限寫入權。QC/EXP 無 worktree 編輯權（僅執行測試）。
 
 | 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
 |---|---|---|---|---|
@@ -251,7 +251,7 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 **L4（完整）**：完整流程 RES → QA → PRD → DEV（可多輪）→ QC → MIS → 秘書復判 → 收尾（歸檔）。排除 SEC、EXP 階段。
 **L5（高等）**：完整流程 RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS → 秘書復判 → 收尾（歸檔）。
 
-高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定。原子任務的派工依 PRD 定義的前置依賴順序進行。
+高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者採公平序列輪替決定。原子任務的派工依 PRD 定義的前置依賴順序進行。
 
 資料存取見 PROXY_PROTOCOL.md。
 
@@ -270,8 +270,7 @@ L5: RES → SEC → QA → PRD → DEV（可多輪）→ QC → EXP → MIS(尾)
 - 模式可升級也可降級：模式可升級（秘書提議 + 老闆複核）也可降級（老闆縮小範圍）。降級不可逆轉（同一輪次內有效）——降級後不可再升回原等級。升級由主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`，秘書確認後更新 task.md 與 meta.md。
 - 秘書唯一可編輯範圍：秘書唯一可編輯的範圍為通訊目錄（`.shiftblame/<slug>/`）的建立與寫入（task.md、proposal.md、result.md、consensus.md 等）。除此之外，秘書對任何檔案均無寫入權限。
 - 每階段閘門匯報三方工作情況：秘書在每個部門完成閘門回報時，除共識結果外，須匯報三方 PROXY 各自的工作情況（誰完成什麼、是否有人吸收他人份額、是否有降級）。此規則適用於所有部門完成閘門，不僅限復判階段。
-- EXP 無 worktree 編輯權：EXP 部門每次僅能有單一執行者，無 worktree 編輯權（僅執行測試）。發現問題僅記錄於報告，不直接修改。
-- QC 無 worktree 編輯權：QC 部門為單一執行者，無 worktree 編輯權（僅執行測試）。
+- QC/EXP 為執行部門但無 worktree 編輯權：QC/EXP 採主執行者機制，主執行者和觀測者均僅執行測試，不直接修改 worktree。
 
 ## 日常運作模式
 

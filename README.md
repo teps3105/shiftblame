@@ -20,7 +20,7 @@ shiftblame 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構
 
 框架以 Claude Code Plugin 形式發布，安裝後 SessionStart hook 自動注入秘書，使用者直接對話即可啟動八部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
-當前版本：v2.0.1
+當前版本：v2.0.2
 
 ---
 
@@ -83,13 +83,13 @@ CLI 彼此僅知使用三種不同的 CLI 框架，不知底層模型細節，�
 | **QA** | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | **PRD** | 架構設計、DAG、測試區分、實作計畫 |
 | **DEV** | 開發實作：TDD 開發 → 全綠 + 啟動應用驗證 |
-| **QC** | 品質檢核：穩健性攻擊、邊緣案例、紅藍隊（無編輯權，單一執行者） |
-| **EXP** | 用戶體驗：用戶視角驗證，專注「用戶從哪個 view 點哪個按鈕觸發什麼行為」（無編輯權，單一執行者） |
+| **QC** | 品質檢核：穩健性攻擊、邊緣案例、紅藍隊（執行部門，無 worktree 編輯權，僅執行測試） |
+| **EXP** | 用戶體驗：用戶視角驗證，專注「用戶從哪個 view 點哪個按鈕觸發什麼行為」（執行部門，無 worktree 編輯權，僅執行測試） |
 | **MIS** | 維護部門（流程終點）：框架定義檔維護、文件維護、semver 同步、一致性審計、歸檔紀錄、環境清理 |
 
 ### 執行部門定位
 
-DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權（僅執行測試），每次僅能有單一執行者，避免測試衝突。
+DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權（僅執行測試），採主執行者機制但全體 PROXY 均僅執行測試。
 
 ---
 
@@ -100,7 +100,7 @@ DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權�
 ```
 shiftblame/
 ├── .claude-plugin/
-│   ├── plugin.json          # v2.0.1
+│   ├── plugin.json          # v2.0.2
 │   └── marketplace.json
 ├── agents/
 │   ├── RES.md / SEC.md / QA.md / PRD.md / DEV.md / QC.md / EXP.md / MIS.md  # 八部門主管

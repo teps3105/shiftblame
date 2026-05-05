@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 - 親自啟動應用，以真實用戶身份操作驗證。
@@ -11,14 +13,13 @@
 
 ### execution_model
 
-QC 屬執行部門，execution_model 為 single_executor：
-- 單一執行者，無 worktree 編輯權（僅執行測試）
-- 無兩階段派工（單一執行者，不適用兩階段）
-- 執行者負責產出驗證報告
+QC 屬執行部門，execution_model 為 lead_executor：
+- 主執行者獨佔 worktree 編輯權與 Git 操作權，採用兩階段派工（先主執行者，commit 後派工觀測者），觀測者具備受限寫入權
+- 但 QC 主執行者和觀測者均無 worktree 編輯權（僅執行測試）
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QC/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/QC/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。
@@ -72,8 +73,8 @@ QC 的操作步驟必須可被其他 PROXY 在同一 worktree 上重現。任一
 ### R12：測試前檢查重複執行
 跑測試前檢查後台有沒有類似測試正在跑（不同 CLI 同時跑相同測試會互相干擾），避免重複執行。
 
-### R13：單一執行部門執行模型
-本部門屬單一執行部門。單一執行者無 worktree 編輯權（僅執行測試），發現問題僅記錄於報告，不直接修改。
+### R13：執行部門執行模型
+本部門屬執行部門。強制套用主執行者機制。主執行者無 worktree 編輯權（僅執行測試），觀測者亦無 worktree 編輯權。QC 部門全體 PROXY 均僅執行測試，發現問題僅記錄於報告，不直接修改。
 
 ### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
 QC 在所有模式（L2/L3/L4/L5）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：

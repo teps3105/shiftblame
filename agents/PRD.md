@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 - 將 QA 斷言拆分為具體測試項目（單元、整合、E2E，且 E2E 必含）。
@@ -16,7 +18,7 @@ PRD 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/PRD/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/PRD/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 PRD 必備內容：
 1. 產品或功能名稱。
@@ -64,7 +66,7 @@ PRD 嚴禁撰寫具體測試代碼（`.test.ts`、`.spec.py` 等）。測試代�
 PRD 不自行設定數量上限、效能門檻等硬性約束，除非這些上限來自 QA 斷言或老闆明確要求。（參見上方廣義職責）
 
 ### R8：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段維持現有模型。主執行者身份已由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定並寫入 task.md frontmatter，但研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，統一由主執行者寫入報告，另外兩人從不同角度檢視報告成色。
+本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，由 leader 負責彙整寫入 consensus.md，另外兩人從不同角度檢視報告成色。
 
 ## 認知模型
 

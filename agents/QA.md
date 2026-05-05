@@ -1,3 +1,5 @@
+> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+
 ## 廣義職責
 
 - 定義用戶業務邏輯的行為斷言，使用 X→Y→Z（初始狀態→觸發動作→預期結果）格式。
@@ -14,7 +16,7 @@ QA 屬研究部門，execution_model 為 equal_consensus：
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 PROXY result.md）
+產出路徑：`.shiftblame/<slug>/QA/`（consensus.md + 各 PROXY proposal.md 與 result.md）
 
 必備內容：
 1. 需求摘要：老闆原話要點。
@@ -61,7 +63,7 @@ QA 嚴禁定義涉及修改 `agents/`、`skills/`、`README.md` 的行為斷言�
 任何一條斷言失效視為全體 PROXY 的責任。提案中必須包含至少一條跨進程整合斷言，確保 PROXY 間透過 CLI 啟動的工具能協同作業。（參見上方廣義職責）
 
 ### R9：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段維持現有模型。主執行者身份已由 DISPATCH_CHECKLIST.md 步驟 13 動態調配選定並寫入 task.md frontmatter，但研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，統一由主執行者寫入報告，另外兩人從不同角度檢視報告成色。
+本部門屬研究部門，execution_model 為 equal_consensus。職責不變更 worktree（權限也不可變更 worktree，僅具備唯讀 worktree 存取權）。研究階段不產生排他性編輯權，三方皆可產出分析報告。三個 PROXY 各自收集三個面向的數據，由 leader 負責彙整寫入 consensus.md，另外兩人從不同角度檢視報告成色。
 
 ## 認知模型
 
