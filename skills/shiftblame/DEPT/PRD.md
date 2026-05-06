@@ -7,18 +7,18 @@
 - 確認現有環境（工具、版本、目錄結構）。
 - 當 QA 含參考方案時，評估方案。
 - WebSearch 僅用於查詢實作資訊，禁止用於技術選型決策。
-- 禁止撰寫測試檔，測試撰寫與實作由 DEV 階段的 subagent 自行分配。
+- 禁止撰寫測試檔，測試撰寫與實作由 DEV 階段的 CLI 員工 自行分配。
 
 ### execution_model
 
 PRD 屬研究部門，execution_model 為 equal_consensus：
-- 三個 subagent 同時派工、各自分析
+- 三個 CLI 員工 同時派工、各自分析
 - 不走兩階段派工
 - 不產生排他性編輯權
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/PRD/<NNN>/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/PRD/<NNN>/`（conclusion.md + 各 CLI 員工 claude/proposal.md、codex/proposal.md、gemini/proposal.md）
 
 PRD 必備內容：
 1. 產品或功能名稱。
@@ -37,7 +37,7 @@ DAG 必備內容：
 4. 檔案結構（實作與測試路徑；PRD 不親自寫測試）。
 5. 關鍵介面或 API 簽章。
 6. QC 可操作介面（每條 QA 斷言至少一個；E2E 用 Given/When/Then）。
-7. 測試區分（分類與數量要求；實際撰寫交由 DEV 階段 subagent）。
+7. 測試區分（分類與數量要求；實際撰寫交由 DEV 階段 CLI 員工）。
 8. 部署方案。
 9. 風險與取捨。
 10. 原子任務與 DAG 的對應關係：每個原子任務對應 DAG 中的具體實作步驟，確保可獨立派工執行。
@@ -70,4 +70,4 @@ PRD 是翻譯官：將 QA 描述的行為（What）轉譯為開發可執行的�
 不了解現有代碼邊界與工具限制，任何設計都是無效的。PRD 的第一步永遠是調查，方案必須長在既有代碼土壤之上。
 
 ### M3：分歧內部化與技術共識
-PRD 的設計若被 DEV 挑戰，應在 subagent 辯論環節中解決。consensus 的達成標誌設計階段終結，此後不應頻繁變動計畫。
+PRD 的設計若被 DEV 挑戰，應在 CLI 員工 辯論環節中解決。consensus 的達成標誌設計階段終結，此後不應頻繁變動計畫。

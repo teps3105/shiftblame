@@ -13,13 +13,13 @@
 
 ### execution_model
 
-QC 屬執行部門，execution_model 為 主執行者：
-- 主執行者獨佔 worktree 編輯權與 Git 操作權，採用兩階段派工（先主執行者，commit 後派工觀測者），觀測者具備受限寫入權
-- 但 QC 主執行者和觀測者均無 worktree 編輯權（僅執行測試）
+QC 屬執行部門，execution_model 為 team_leader：
+- team_leader 獨佔 worktree 編輯權與 Git 操作權，採用兩階段派工（先team_leader，commit 後派工輔助者），輔助者具備受限寫入權
+- 但 QC team_leader 和輔助者均無 worktree 編輯權（僅執行測試）
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QC/<NNN>/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/QC/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。
@@ -38,7 +38,7 @@ QC 屬執行部門，execution_model 為 主執行者：
 ## 運作規則
 
 ### R1：強制執行 QC 交叉驗證
-強制執行 QC 交叉驗證。當一個 subagent 報告 BUG 時，另一個 subagent 必須獨立驗證。誤報（false positives）會浪費開發時間。
+強制執行 QC 交叉驗證。當一個 CLI 員工 報告 BUG 時，另一個 CLI 員工 必須獨立驗證。誤報（false positives）會浪費開發時間。
 ### R2：真實操作驗證原則
 Web SPA 或具備 UI 的應用，必須透過前端介面進行真實操作驗證（使用 chrome-devtools-mcp，可選 MCP 工具），嚴禁僅以 API 呼叫替代用戶行為測試。QC 的價值在模擬真實用戶路徑。
 ### R3：紅藍隊視角強制對照
@@ -54,14 +54,14 @@ QC 部門報告必須包含實際操作佐證（截圖路徑、console logs、�
 ### R8：驗收結論與指引
 PASS 時必填部署指引。FAIL 時必填失敗根因分析與退回建議。
 ### R9：分歧項內部解決
-對驗證結果的技術分歧（如「是否構成 BUG」），由 subagent 在通訊目錄內辯論收斂。QC 必須提供可重現的操作步驟作為證據。秘書不參與技術判定。
+對驗證結果的技術分歧（如「是否構成 BUG」），由 CLI 員工 在通訊目錄內辯論收斂。QC 必須提供可重現的操作步驟作為證據。秘書不參與技術判定。
 ### R10：互監督交叉驗證
-QC 的操作步驟必須可被其他 subagent 在同一 worktree 上重現。任一 subagent 宣稱發現 BUG 時，必須提供足夠的步驟與佐證讓其他 subagent 能獨立確認。
+QC 的操作步驟必須可被其他 CLI 員工 在同一 worktree 上重現。任一 CLI 員工 宣稱發現 BUG 時，必須提供足夠的步驟與佐證讓其他 CLI 員工 能獨立確認。
 ### R11：全量測試時順序執行
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
 ### R12：測試前檢查重複執行
-跑測試前檢查後台有沒有類似測試正在跑（不同 subagent 同時跑相同測試會互相干擾），避免重複執行。
+跑測試前檢查後台有沒有類似測試正在跑（不同 CLI 員工 同時跑相同測試會互相干擾），避免重複執行。
 
 ### R13：執行部門執行模型
 本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
@@ -92,7 +92,7 @@ DEV 負責證明「程式碼如其所寫地運作」，QC 負責證明「功能�
 DEV 已用自動化測試證明邏輯正確性。QC 補充 DEV 看不到的盲區：真實環境下的使用者行為、不可預測的操作序列、跨系統互動的邊緣效應。QC 與 DEV 是互補關係，不是重複驗證。
 
 ### M4：QC 是跨代理的品質共識
-本部門採主執行者機制。主執行者的 QC 報告須經觀測者雙重背書。單一 subagent 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 subagent 獨立重現與確認，品質基線來自共識而非單點宣告。
+本部門採team_leader 機制。team_leader 的 QC 報告須經輔助者雙重背書。單一 CLI 員工 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 CLI 員工 獨立重現與確認，品質基線來自共識而非單點宣告。
 
 ### M5：執行隔離下的驗證策略
-在 subagent 執行隔離下，QC 透過外部工具（chrome-devtools-mcp 等可選 MCP 工具）進行驗證。QC 必須確保驗證步驟不依賴特定代理的內部能力，而是透過通用工具與可觀察輸出完成。
+在 CLI 員工 執行隔離下，QC 透過外部工具（chrome-devtools-mcp 等可選 MCP 工具）進行驗證。QC 必須確保驗證步驟不依賴特定代理的內部能力，而是透過通用工具與可觀察輸出完成。

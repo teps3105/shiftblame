@@ -18,13 +18,13 @@
 ### execution_model
 
 RES 屬研究部門，execution_model 為 equal_consensus：
-- 三個 subagent 同時派工、各自分析
+- 三個 CLI 員工 同時派工、各自分析
 - 不走兩階段派工
 - 不產生排他性編輯權
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/RES/<NNN>/`（consensus.md + 各 subagent proxy-a/result.md、proxy-b/result.md、proxy-c/result.md）
+產出路徑：`.shiftblame/<slug>/RES/<NNN>/`（conclusion.md + 各 CLI 員工 claude/proposal.md、codex/proposal.md、gemini/proposal.md）
 
 ### 流程起始產出
 

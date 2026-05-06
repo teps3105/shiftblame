@@ -20,15 +20,15 @@
 
 ### execution_model
 
-MIS 屬執行部門，execution_model 為 主執行者：
-- 主執行者獨佔 worktree 編輯權與 Git 操作權
-- 採用兩階段派工（先主執行者，commit 後派工觀測者）
-- 觀測者具備受限寫入權
+MIS 屬執行部門，execution_model 為 team_leader：
+- team_leader 獨佔 worktree 編輯權與 Git 操作權
+- 採用兩階段派工（先team_leader，commit 後派工輔助者）
+- 輔助者具備受限寫入權
 - QC/EXP 全體均無 worktree 編輯權（僅執行測試）
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/MIS/<NNN>/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/MIS/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
 
 ### 流程起始產出
 
@@ -75,10 +75,10 @@ MIS 單獨收斂，適用於框架定義檔修正等收尾工作。流程的起�
 功能開發途中若有外部工具需求（如需安裝新套件、啟用新服務等），退回 RES 共議，老闆覆核同意後啟用，再返回繼續流程。
 
 ### R7：合併、push、歸檔、worktree 清理、分支刪除由秘書執行
-合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。subagent（子代理）嚴禁直接操作 main 分支。
+合併（squash merge）、push、歸檔、worktree 清理、分支刪除等收尾操作由秘書執行。CLI 員工（子代理）嚴禁直接操作 main 分支。
 
 ### R8：MIS L2 模式獨立執行
-MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 診斷與規劃，MIS 執行變更與收尾。L2 模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書禁止在未確認 MIS 產出完整前進行合併與清理。L2 模式下 MIS 直接修改定義檔並執行必要 git 操作。L2 模式結束前，MIS 產出 MIS 部門報告到 `.shiftblame/<slug>/MIS/<NNN>/`（consensus.md + 各 subagent result.md），內容依「流程終點產出」規格。其中 L2 模式的產出包含 `.shiftblame/REPO.md` 差異報告（見流程終點產出第 6 項）。
+MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 診斷與規劃，MIS 執行變更與收尾。L2 模式下 MIS 只需執行一次（完成所有框架變更後即可交由秘書進行收尾清理），秘書禁止在未確認 MIS 產出完整前進行合併與清理。L2 模式下 MIS 直接修改定義檔並執行必要 git 操作。L2 模式結束前，MIS 產出 MIS 部門報告到 `.shiftblame/<slug>/MIS/<NNN>/`（consensus.md + 各 CLI 員工 result.md），內容依「流程終點產出」規格。其中 L2 模式的產出包含 `.shiftblame/REPO.md` 差異報告（見流程終點產出第 6 項）。
 
 ### R9：合併時機為秘書復判通過後
 秘書的合併時機固定為復判通過後。未完成復判不得執行 merge。
@@ -90,7 +90,7 @@ MIS L2 模式（框架維護、歷史修正、歸檔等）由 RES 診斷與規�
 worktree 與通訊目錄的建立權歸屬秘書（所有部門禁止建立）。MIS 禁止建立 worktree，僅依 SKILL.md 內嵌 Worktree 管理規則在已建立的 worktree 上執行變更。
 
 ### R12：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，實作、執行、測試並產出報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者 commit。
+本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。team_leader 獨佔單一 worktree 的編輯權與 Git 操作權，實作、執行、測試並產出報告。輔助者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。輔助者不具 Git 操作權，修正後由team_leader commit。
 
 ### R13：歸檔由秘書執行
 歸檔為 `mv` 原子操作，將 `.shiftblame/<slug>/` 搬移至 `.shiftblame/archive/<slug>/`。歸檔前確認 MIS 部門報告（consensus.md）存在且非空（SEC-A-03 閘門）。歸檔後驗證原路徑不存在、archive 結構完整。`.shiftblame/REPO.md` 為本地檔案，不受歸檔影響。
@@ -110,7 +110,7 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門禁止建立）�
 
 ### R17：退回增量記錄
 - L3/L4/L5 模式中，退回任意部門時，其部門文件應增量填寫（不替換），確保退回有紀錄。
-- 退回後重新派工時，主執行者採公平序列輪替重新選定。
+- 退回後重新派工時，team_leader 採公平序列輪替重新選定。
 - 退回紀錄格式：
   ```
   ## 退回紀錄
@@ -123,12 +123,12 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門禁止建立）�
 - 退回修正紀錄格式（「退回修正」為輕微問題的針對性修正，不重新走完整派工流程）：
   ```
   ## 退回修正紀錄
-  - 退回來源：閘門檢查點 2（觀測者檢閱）
+  - 退回來源：閘門檢查點 2（輔助者檢閱）
   - 修正內容：<簡述修正項目>
   - 修正時間：<ISO 8601 timestamp>
   - 退回修正次數：N / 2
   ```
-- 「退回」與「退回修正」的區別：「退回」= 完整重做，需重新走完整派工流程；「退回修正」= 輕微修正，不重新派工觀測者。兩者紀錄格式不同，不可混用。
+- 「退回」與「退回修正」的區別：「退回」= 完整重做，需重新走完整派工流程；「退回修正」= 輕微修正，不重新派工輔助者。兩者紀錄格式不同，不可混用。
 - 退回修正次數限制：同一部門最多 2 次退回修正，超過自動升級為「退回」（完整重做）。
 - 退回只針對 L3/L4/L5 模式發生（L2 模式只有 RES 和 MIS 兩個部門，退回僅發生於 RES 與 MIS 之間）。
 
@@ -142,18 +142,18 @@ worktree 與通訊目錄的建立權歸屬秘書（所有部門禁止建立）�
   2. 合併紀錄完整（commit SHA、squash merge 記錄）
   3. 修正的定義檔清單與 task.md 要求一致
   4. 版本號升級合理（semver）
-  5. 三方 subagent 執行紀錄完整（含代理執行紀錄）
+  5. 三方 CLI 員工 執行紀錄完整（含代理執行紀錄）
 - 復判通過後才進入歸檔流程。
 - 復判不通過 → 退回 MIS 補齊。
-- 秘書在每個部門完成閘門時，匯報三方 subagent 各自的工作情況（誰完成什麼、誰吸收誰的份額、是否有降級等）。
+- 秘書在每個部門完成閘門時，匯報三方 CLI 員工 各自的工作情況（誰完成什麼、誰吸收誰的份額、是否有降級等）。
 
 ### R20：合作式失敗處理
-- 通訊目錄的 failure-notice.md 為 subagent 間的標準失敗通知機制
-- subagent 間的失敗通知以 failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
+- 通訊目錄的 failure-notice.md 為標準失敗通知機制（由主管偵測並寫入）
+- failure-notice.md 為主要通知板，優先級高於 result.md 詳細記錄
 - 吸收確認以 result.md 中的「代理執行」記錄為準
 
-### R21：主執行者選定
-主執行者採公平序列輪替決定（Subagent-A → Subagent-B → Subagent-C → Subagent-A...）。老闆可透過 clarify() 表達意見。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的主執行者。meta.md 記錄每輪派工的主執行者。
+### R21：team_leader 選定
+team_leader 採公平序列輪替決定（claude → codex → gemini → claude...）。老闆可透過 clarify() 表達意見。結果寫入 task.md frontmatter 及 meta.md。不同部門可以有不同的team_leader。meta.md 記錄每輪派工的team_leader。
 
 ### R22：單一 worktree
 單一共用 worktree（`.shiftblame/<slug>/worktree/`）由秘書在 slug 初始化時建立（所有部門禁止建立 worktree 或通訊目錄）。所有實作變更必須在此 worktree 上執行。
@@ -168,7 +168,7 @@ MIS 在收尾階段清理開發環境：
 ## 認知模型
 
 ### M1：專案定義即「憲法」
-`DEPT/` 與 `skills/` 下的定義文件是系統的最高準則。當 subagent 內部辯論僵持或秘書判斷失準時，MIS 維護的定義文件是唯一的終審標準。
+`DEPT/` 與 `skills/` 下的定義文件是系統的最高準則。當 CLI 員工 內部辯論僵持或秘書判斷失準時，MIS 維護的定義文件是唯一的終審標準。
 
 ### M2：MIS 是流程終點與審計者
 每個功能從 RES 開始研究、到 MIS 收尾結束。MIS 確保流程閉環完整，並審計框架定義文件的一致性。

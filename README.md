@@ -11,7 +11,7 @@ _「這不是我的鍋。」_
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Hermes Agent Skill](https://img.shields.io/badge/Hermes%20Agent-skill-8a2be2.svg)](https://hermes-agent.nousresearch.com)
 [![Agents](https://img.shields.io/badge/agents-8-blue.svg)](#八部門職能)
-[![Version](https://img.shields.io/badge/version-v3.0.0-green.svg)]()
+[![Version](https://img.shields.io/badge/version-v3.1.0-green.svg)]()
 
 </div>
 
@@ -19,7 +19,7 @@ _「這不是我的鍋。」_
 
 ## ✨ 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以**純 Markdown 定義檔**構建跨模型的協作流程。子代理以 Hermes Agent 的 `delegate_task` 子代理形式運作，透過 `hermes chat -q` 統一呼叫，各自可配置不同模型，在同一個 worktree 上透過**自組織分工機制**共議分工、自主執行、互相辯論，由秘書統籌派工與閘門管控。
+`shiftblame` 是一套 AI agents 流程定義框架，以**純 Markdown 定義檔**構建跨模型的協作流程。三名 CLI 員工（claude / codex / gemini）透過 `terminal()` 直接呼叫，各自使用獨立模型，在同一個 worktree 上透過**自組織分工機制**共議分工、自主執行、互相辯論，由祕書統籌派工與閘門管控。
 
 框架以 Hermes Agent Skill 形式發布，載入後 Skill 自動注入秘書系統提示，使用者直接對話即可啟動八部門單向流程，協調從需求研究到品質驗證的完整開發流程。
 
@@ -27,28 +27,28 @@ _「這不是我的鍋。」_
 
 ## ⚙️ 核心機制
 
-### 🤖 PROXY 外殼代理
+### 🤖 CLI 員工
 
-三個 PROXY（`Proxy-A` / `Proxy-B` / `Proxy-C`）透過 Hermes 的 `delegate_task` 機制啟動為獨立子代理。subagent 由 Hermes 透過 `hermes chat -q --provider <X> --model <Y>` 統一呼叫，實現多方去識別化與上下文完全隔離。
+三名 CLI 員工（`claude` / `codex` / `gemini`）透過 `terminal()` 直接呼叫，各自使用獨立模型，實現多方上下文完全隔離。
 
 ### 🔄 自組織分工
 
-秘書只定義「目標 + 約束」，不指定分工與做法。三個 PROXY 讀取任務後各自提出方案，經辯論收斂為共識後各自執行：
+秘書只定義「目標 + 約束」，不指定分工與做法。三名 CLI 員工讀取任務後各自提出方案，經辯論收斂為共識後各自執行：
 
 ```
-📖 讀取任務 → 💡 三 PROXY 各自提案 → ⚔️ 辯論收斂 → 🤝 共識 → ⚡ 各自執行 → 📋 回報結果
+📖 讀取任務 → 💡 三名 CLI 員工各自提案 → ⚔️ 辯論收斂 → 🤝 共識 → ⚡ 各自執行 → 📋 回報結果
 ```
 
 > **規則**
 > - 異議必須附替代方案
-> - 同一部門的三個 PROXY 互相監督執行正確性
-> - 任一代理失敗時透過 `failure-notice.md` 通知，其他 PROXY 主動探測並吸收份額；三方全失敗則通知秘書暫停流程
+> - 同一部門的三名 CLI 員工互相監督執行正確性
+> - 任一員工失敗時透過 `failure-notice.md` 通知，其他 CLI 員工 主動探測並吸收份額；三方全失敗則通知秘書暫停流程
 
 ### 🛡️ 合作式失敗處理
 
 | 機制 | 說明 |
 |:---:|---|
-| 📄 **failure-notice.md** | 失敗的 PROXY 建立標準化失敗通知，優先級高於 `result.md` |
+| 📄 **failure-notice.md** | 失敗的 CLI 員工建立標準化失敗通知，優先級高於 `result.md` |
 | 🔍 **持續探測** | 完成份額後進入探測模式，掃描同事狀態，超時未回報則記錄 |
 | 🔀 **雙軌吸收** | 執行前即時掃描吸收 + 完成後事後探測吸收，吸收結果標注於 `result.md` |
 
@@ -58,7 +58,7 @@ _「這不是我的鍋。」_
 
 ### 🎭 代理去識別化
 
-PROXY 彼此僅知使用不同的模型（由 MODEL.md 定義配置），不知底層模型細節，避免偏好干擾協作判斷。模型配置由 MODEL.md 管理，不硬編碼於框架定義檔或 subagent 可讀取的通訊檔案中。
+三名 CLI 員工各自使用獨立模型，彼此不知底層模型供應商與名稱細節，避免偏好干擾協作判斷。模型配置不存在於框架定義檔或 CLI 員工可讀取的通訊檔案中。
 
 ---
 
@@ -91,7 +91,7 @@ PROXY 彼此僅知使用不同的模型（由 MODEL.md 定義配置），不知�
 | **EXP** 👀 | 用戶體驗：用戶視角驗證（執行部門，無 worktree 編輯權，僅執行測試） |
 | **MIS** 🗂️ | 維護部門（流程終點）：框架定義檔維護、文件維護、semver 同步、一致性審計、歸檔紀錄、環境清理 |
 
-> **執行部門定位** — DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權（僅執行測試），採主執行者機制但全體 PROXY 均僅執行測試。
+> **執行部門定位** — DEV、QC、EXP、MIS 為執行部門。其中 QC 與 EXP 無 worktree 編輯權（僅執行測試），採 team_leader 機制但全體 CLI 員工均僅執行測試。
 
 ---
 
@@ -103,9 +103,10 @@ PROXY 彼此僅知使用不同的模型（由 MODEL.md 定義配置），不知�
 shiftblame-hermes/
 ├── skills/
 │   └── shiftblame/
-│       ├── SKILL.md
-│       ├── PROXY.md
-│       ├── MODEL.md
+│       ├── SKILL.md          # 框架入口（骨架）
+│       ├── SECRETARY.md      # 祕書準則
+│       ├── DEPT.md           # 部門主管協調機制
+│       ├── CLI.md            # CLI 員工呼叫規格
 │       └── DEPT/
 │           ├── RES.md · SEC.md · QA.md · PRD.md
 │           ├── DEV.md · QC.md · EXP.md · MIS.md
@@ -125,9 +126,9 @@ shiftblame-hermes/
         ├── task.md                 # 任務目標與約束
         ├── consensus.md            # 部門共識報告
         ├── failure-notice.md       # 失敗通知
-        ├── proxy-a/{proposal,result}.md
-        ├── proxy-b/{proposal,result}.md
-        └── proxy-c/{proposal,result}.md
+        ├── claude/{proposal,result}.md
+        ├── codex/{proposal,result}.md
+        └── gemini/{proposal,result}.md
 ```
 
 ---

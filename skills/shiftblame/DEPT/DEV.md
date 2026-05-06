@@ -12,15 +12,15 @@
 
 ### execution_model
 
-DEV 屬執行部門，execution_model 為 主執行者：
-- 主執行者獨佔 worktree 編輯權與 Git 操作權
-- 採用兩階段派工（先主執行者，commit 後派工觀測者）
-- 觀測者具備受限寫入權
+DEV 屬執行部門，execution_model 為 team_leader：
+- team_leader 獨佔 worktree 編輯權與 Git 操作權
+- 採用兩階段派工（先team_leader，commit 後派工輔助者）
+- 輔助者具備受限寫入權
 - QC/EXP 全體均無 worktree 編輯權（僅執行測試）
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/DEV/<NNN>/`（consensus.md + 各 subagent result.md）
+產出路徑：`.shiftblame/<slug>/DEV/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
 
 devlog 必備內容：
 1. 實作檔案清單與路徑（按職能分組）。
@@ -54,8 +54,8 @@ DAG 中標示為 QC 可操作的介面必須完整落地，不可只做內部邏
 執行對應技術棧的語法/解析檢查（parse/check/lint），確保基本可編譯與可解析。
 ### R7：撰寫 devlog
 每次開發循環記錄：變更檔案、關鍵決策、重構、踩坑繞行、驗證證據。
-### R8：執行隔離下的 subagent 作業模式
-DEV 的三個 subagent 透過 delegate_task 在 worktree 上執行任務，所有實作產出必須可透過 terminal() 指令重現。
+### R8：執行隔離下的 CLI 員工 作業模式
+DEV 的三個 CLI 員工 透過 terminal() 在 worktree 上執行任務，所有實作產出必須可透過 terminal() 指令重現。
 
 ### R8a：桌面驗證（啟動驗證強化）
 DEV 完成後必須提供「實際跑通」證據。驗證標準：
@@ -65,20 +65,20 @@ DEV 完成後必須提供「實際跑通」證據。驗證標準：
 - CLI 能力不足時不跳過驗證，寫入 result.md 向上請求工具支援（`[TOOL_SUPPORT_REQUEST]`）
 
 ### R9：分歧項內部解決
-對實作方式或架構選擇的技術分歧，由 subagent 在通訊目錄內辯論收斂（最多 2 輪）。異議必須附替代方案與可驗證的證據。只有需求不明時才透過秘書協調與老闆溝通。
+對實作方式或架構選擇的技術分歧，由 CLI 員工 在通訊目錄內辯論收斂（最多 2 輪）。異議必須附替代方案與可驗證的證據。只有需求不明時才透過秘書協調與老闆溝通。
 ### R10：全量測試時順序執行
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
 ### R11：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，實作/執行/測試並寫入實作報告。觀測者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。觀測者不具 Git 操作權，修正後由主執行者 commit。
+本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。team_leader 獨佔單一 worktree 的編輯權與 Git 操作權，實作/執行/測試並寫入實作報告。輔助者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。輔助者不具 Git 操作權，修正後由team_leader commit。
 
 ### R12：L5 模式原子化執行
-L5 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
+L5 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，team_leader 採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
 
 ## 認知模型
 
 ### M1：命運共同體的品質基線
-本部門採主執行者機制。主執行者的實作產出須通過觀測者的檢閱才能放行。三個 subagent 的實作產出必須可在同一 worktree 上共存與整合。單一 subagent 的「測試全綠」不代表整合成功，跨代理的介面相容性是 DEV 的隱含驗證責任。
+本部門採team_leader 機制。team_leader 的實作產出須通過輔助者的檢閱才能放行。三個 CLI 員工 的實作產出必須可在同一 worktree 上共存與整合。單一 CLI 員工 的「測試全綠」不代表整合成功，跨代理的介面相容性是 DEV 的隱含驗證責任。
 
 ### M2：執行隔離改變除錯模式
-在 subagent 執行隔離下，除錯依賴 stdout/stderr 輸出而非即時斷點。DEV 必須確保每個實作步驟都有可觀察的 terminal() 輸出，讓互監督的 subagent 能從輸出驗證正確性。
+在 CLI 員工 執行隔離下，除錯依賴 stdout/stderr 輸出而非即時斷點。DEV 必須確保每個實作步驟都有可觀察的 terminal() 輸出，讓互監督的 CLI 員工 能從輸出驗證正確性。
