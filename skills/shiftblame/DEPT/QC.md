@@ -13,9 +13,10 @@
 
 ### execution_model
 
-QC 屬執行部門，execution_model 為 team_leader：
-- team_leader 獨佔 worktree 編輯權與 Git 操作權，採用兩階段派工（先team_leader，commit 後派工輔助者），輔助者具備受限寫入權
-- 但 QC team_leader 和輔助者均無 worktree 編輯權（僅執行測試）
+QC 屬執行部門，execution_model 為 lead_executor：
+- 主執行者負責主導驗證工作，輔助者配合檢視
+- 採用兩階段派工（先主執行者，完成後派工輔助者）
+- 全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權
 
 ## 產出規格
 
@@ -92,7 +93,7 @@ DEV 負責證明「程式碼如其所寫地運作」，QC 負責證明「功能�
 DEV 已用自動化測試證明邏輯正確性。QC 補充 DEV 看不到的盲區：真實環境下的使用者行為、不可預測的操作序列、跨系統互動的邊緣效應。QC 與 DEV 是互補關係，不是重複驗證。
 
 ### M4：QC 是跨代理的品質共識
-本部門採team_leader 機制。team_leader 的 QC 報告須經輔助者雙重背書。單一 CLI 員工 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 CLI 員工 獨立重現與確認，品質基線來自共識而非單點宣告。
+本部門採 lead_executor 機制。主執行者的 QC 報告須經輔助者雙重背書。單一 CLI 員工 的 QC 報告不構成最終判定。互監督機制要求 QC 的發現可被其他 CLI 員工 獨立重現與確認，品質基線來自共識而非單點宣告。
 
 ### M5：執行隔離下的驗證策略
 在 CLI 員工 執行隔離下，QC 透過外部工具（chrome-devtools-mcp 等可選 MCP 工具）進行驗證。QC 必須確保驗證步驟不依賴特定代理的內部能力，而是透過通用工具與可觀察輸出完成。

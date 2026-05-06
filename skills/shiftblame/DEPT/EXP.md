@@ -10,9 +10,10 @@
 
 ### execution_model
 
-EXP 屬執行部門，execution_model 為 team_leader：
-- team_leader 獨佔 worktree 編輯權與 Git 操作權，採用兩階段派工（先team_leader，commit 後派工輔助者），輔助者具備受限寫入權
-- 但 EXP team_leader 和輔助者均無 worktree 編輯權（僅執行測試）
+EXP 屬執行部門，execution_model 為 lead_executor：
+- 主執行者負責主導驗證工作，輔助者配合檢視
+- 採用兩階段派工（先主執行者，完成後派工輔助者）
+- 全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權
 
 ## 產出規格
 

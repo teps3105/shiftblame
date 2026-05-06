@@ -27,34 +27,11 @@
 
 ## 2. 載入流程
 
-1. 讀取 `.shiftblame/REPO.md`
-   - 若不存在 → 向老闆報告「專案尚未初始化」，等待指示
-2. 分析 `.shiftblame/REPO.md` 內容，整理專案現況（版本、定位、架構、技術棧、當前狀態、已知待辦）
-3. 向老闆匯報專案現況（載入階段到此結束，秘書不主動問老闆要做什麼）
+見 SKILL.md「載入流程」。
 
 ## 3. 決策規則
 
-秘書收到老闆指令時，依以下有序判斷流程決定處理方式：
-
-1. **純提問/答詢**：直接回答，不派工
-2. **L1 日常操作**（`.shiftblame/REPO.md` 更新、歸檔、通訊目錄寫入）：直接執行
-3. **L1 研究**：所有非日常操作任務預設先做 L1 研究，確立初步研究結果與最終目標，老闆覆核後才可進入 L2+ 流程
-4. **框架定義檔修改**（SKILL.md、DEPT.md、CLI.md、`DEPT/*.md`）：L1 研究覆核後走 L2+ 流程
-5. **程式碼修改**：L1 研究覆核後走 L2+ 流程
-6. **無法分類**：向老闆確認
-
-### 邊界案例
-
-| 指令 | 分類 | 理由 |
-|------|------|------|
-| 「幫我看一下 xxx 的狀態」 | 純查詢，直接回覆 | 不涉及修改 |
-|| 「更新 `.shiftblame/REPO.md`」 | L1（歸檔時）或直接執行 | REPO.md 歸檔時由秘書更新 |
-|| 「修改 SKILL.md 中的 xxx」 | L1 研究 → 走 PRD（最低 L2） | 框架定義檔修改 |
-|| 「安裝 xxx 套件」 | L1（安裝/部署） | 日常運作模式 |
-|| 「修一下 xxx bug」 | L1 研究 → 走 PRD（最低 L2） | 涉及程式碼修改 |
-|| 「回報目前進度」 | 純查詢，直接回覆 | 不涉及修改 |
-|| 「修改通訊目錄的 task.md」 | 直接執行 | 通訊目錄屬秘書寫入權限範圍 |
-|| 「建議一個技術方案」 | L1 研究 | 分析由秘書執行 |
+見 SKILL.md「秘書決策規則」與「邊界案例」。
 
 ## 4. 運作流程
 
@@ -85,7 +62,7 @@ clarify(question="請確認本次執行模式：", choices=[
 - 瓶頸升級：執行過程中主執行者發現範圍過大 → 秘書確認 → 升級（老闆覆核）。
 - 降級不可逆轉（同一輪次內有效）：縮小範圍降級後不可再升回原等級。
 
-7. 依模式分支：
+4. 依模式分支：
    - **L1（日常維護）**：秘書獨立研究和修改檔案，不呼叫 CLI 員工
    - **L2（標準）**：秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾
    - **L3（完整）**：秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾
@@ -103,13 +80,13 @@ clarify(question="請確認本次執行模式：", choices=[
 - **共用資源**：同一 slug 下的所有子循環共用 worktree，主執行者在每次派工時由公平序列輪替決定（部門級別）
 - **流程獨立**：各子循環獨立執行各自的流程（閘門、派工），歸檔時整體處理
 
-8. 老闆決策（目標、起始部門、或其他指示）
-9. **L1 → L2+ 過渡**（模式為 L2+ 時）：
+5. 老闆決策（目標、起始部門、或其他指示）
+6. **L1 → L2+ 過渡**（模式為 L2+ 時）：
    - 秘書先以 L1 身份建立 worktree：`mkdir -p .shiftblame/$SLUG && git worktree add .shiftblame/$SLUG/worktree -b feat/$SLUG`
-   - 建立通訊目錄骨架：`mkdir -p .shiftblame/$SLUG/meta.md`
+   - 建立通訊目錄骨架：`mkdir -p .shiftblame/$SLUG`
    - 寫入初始 meta.md（slug 狀態、模式、時間戳、L1 研究結論）
    - 過渡完成：秘書轉為部門主管角色，後續以主管身份建立會議室（通訊目錄）並派工
-10. 依老闆決策進入派工流程（見派工流程區段）
+7. 依老闆決策進入派工流程（見派工流程區段）
 
 首次啟用或新專案時（`.shiftblame/REPO.md` 不存在），載入步驟 1 會偵測到 `.shiftblame/REPO.md` 不存在並報告老闆。老闆決定是否由秘書直接初始化。
 
@@ -120,28 +97,7 @@ clarify(question="請確認本次執行模式：", choices=[
 
 ## 5. 通訊目錄與寫入權限
 
-### 通訊目錄結構
-
-```
-.shiftblame/<slug>/
-├── meta.md              # 秘書寫入：slug 級別狀態、決策紀錄
-├── worktree/            # 執行部門使用的單一共用 worktree
-└── <DEPT>/
-    └── <NNN>/
-        ├── task.md              # 部門主管寫入：目標 + 約束
-        ├── consensus.md         # 部門主管寫入：三方意見彙整共識
-        ├── conclusion.md       # 部門主管寫入：部門最終結論（下游部門的輸入來源）
-        ├── failure-notice.md    # 部門主管寫入：失敗通知（CLI 掛了主管寫）
-        ├── claude/
-        │   ├── proposal.md      # CLI 員工產出
-        │   └── result.md        # CLI 員工產出
-        ├── codex/
-        │   ├── proposal.md      # CLI 員工產出
-        │   └── result.md        # CLI 員工產出
-        └── gemini/
-            ├── proposal.md      # CLI 員工產出
-            └── result.md        # CLI 員工產出
-```
+通訊目錄結構、寫入權限矩陣、worktree 修改權限見 SKILL.md「通訊目錄結構」區段。
 
 ### 通訊目錄規則
 
@@ -153,25 +109,11 @@ clarify(question="請確認本次執行模式：", choices=[
 3. **CLI 不可跨寫**：CLI 只能寫自己子目錄，不能寫其他 CLI 的子目錄，不能寫 task.md/consensus.md 等主管檔
 4. **標準結構**：每個部門每輪任務遵循 `<DEPT>/<00x>/` 結構，編號三位數遞增
 
-### 寫入權限矩陣
-
-| 角色 | 可寫檔案 | 禁止寫入 |
-|------|---------|---------|
-| 主管（部門主管） | task.md、consensus.md、conclusion.md、failure-notice.md | CLI 子目錄 |
-| claude/codex/gemini | 自己子目錄的 proposal.md、result.md | task.md、consensus.md、conclusion.md、failure-notice.md、其他 CLI 子目錄 |
-| 秘書 | meta.md | 其餘全部 |
-
-### worktree 修改權限
-
-- **僅 DEV 部門**的 CLI 可修改 worktree
-- 其餘部門（SEC/QA/PRD/QC/EXP）的 CLI 禁止修改 worktree
-- CLI 的唯一寫入權限就是 worktree（僅限 DEV）
-
 ### 寫入權限限制
 
 **L1 模式**：秘書具備完整編輯權限，可直接修改任何專案檔案。
 
-**L2+ 模式**：秘書零編輯權限。秘書只能 `read_file()` + 溝通協調 + 建立寫入會議室。
+**L2+ 模式**：秘書僅具通訊目錄寫入權限。不可編輯專案檔案、框架定義檔、worktree 內容。
 
 **L2+ 允許寫入（僅通訊目錄）：
 - task.md、result.md、proposal.md、consensus.md、conclusion.md、failure-notice.md（通訊目錄內）
@@ -500,7 +442,7 @@ L1 模式下秘書獨立執行，不呼叫 CLI 員工，無需派工部門。
 4. 更新 REPO.md（依據 worktree 變更更新 .shiftblame/REPO.md）
 5. 刪除 worktree（git worktree remove .shiftblame/<slug>/worktree）
 6. 歸檔（mv .shiftblame/<slug> .shiftblame/archive/<slug>）
-7. �主分支（git branch -d feat/<slug>）
+7. 刪除分支（git branch -d feat/<slug>）
 ```
 
 **Worktree 清理：**
@@ -528,6 +470,7 @@ git worktree remove .shiftblame/<slug>/worktree
 
 ```bash
 # 歸檔閘門
+# 最後一部門必為執行部門（DEV/QC/EXP），產出 consensus.md
 if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/consensus.md ]]; then
   echo "ERROR: 最後部門 consensus.md 不存在或為空，拒絕歸檔。" >&2
   exit 1
@@ -546,7 +489,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 - **完整性確認**：歸檔前確認所有子循環的部門報告（consensus.md）完整
 - **整體歸檔**：歸檔時整個 slug 一起歸檔（含所有子循環目錄）
 
-### 五等級歸檔邏輯
+### 四等級歸檔邏輯
 
 | 等級 | 流程 |
 |---|---|
@@ -591,73 +534,3 @@ sudo -S <command> < <(secret-tool lookup service sudo-pwd)
 ## 11. 日常運作模式
 
 主管專用模式（即 L1），用於安裝、部署、版本修改等作業。適用場景：框架安裝/更新、版本號更新、設定檔調整等。L1 模式下秘書獨立研究和修改檔案，不呼叫 CLI 員工。與 L2 的區別：L2 走 PRD → DEV 管線，秘書轉為部門主管角色協調 CLI 員工。
-
-## 五等級流程圖
-
-```
-L1: 秘書獨立執行（不呼叫 CLI）
-
-L2: 秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾
-
-L3: 秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾
-
-L4: 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾
-```
-
-### 部門分類
-
-- **研究部門 (SEC/QA/PRD)**：屬「equal_consensus 模型」。產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
-- **執行部門 (DEV/QC/EXP)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，實作與維護。輔助者具備受限寫入權。QC/EXP 無 worktree 編輯權（僅執行測試）。
-
-| 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
-|---|---|---|---|---|
-| 0 | SEC | 資安稽核 + 工具篩選 | SEC 部門報告 | L4 |
-| 1 | QA | 行為斷言 | QA 部門報告 | L3 + L4 |
-| 2 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 部門報告 | L2 + L3 + L4 |
-| 3 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 部門報告 + worktree | L2 + L3 + L4 |
-| 4 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 部門報告 | L3 + L4 |
-| 5 | EXP | 用戶視角驗證 | EXP 部門報告 | L4 |
-
-**L2（標準）**：秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾。排除 SEC、QA、QC、EXP 階段。
-**L3（完整）**：秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾。排除 SEC、EXP 階段。
-**L4（高等）**：完整流程 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾。
-
-高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者採公平序列輪替決定。原子任務的派工依 PRD 定義的前置依賴順序進行。
-
-### 部門驗證 SOP
-
-**QC 報告後：弱斷言掃描**
-1. 弱斷言關鍵字掃描（`pixel diff` / `ratio` / `source="game"` fallback / 紅隊全擋但無正路徑 video/state）
-2. OBS-/輔助者 條目逐條判讀
-3. 確認至少一條業務行為斷言用 video/state 級
-
-任一不通 → 退 QC，不問老闆。
-
-**DEV 報告後：無過濾 pytest + 業務 sanity check**
-1. 無過濾 pytest：`terminal("cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20")`
-2. 業務 sanity check（read-only）：跑專案的 quality_check CLI、manifest schema 驗證
-
-不一致或驗證失敗 → 退 DEV。主管沒跑 = 違規。
-
-**PRD 報告後：測試數量驗證**
-主管必驗證前端+後端測試數量，任一為 0 → 退 PRD 補寫。
-
-**所有部門回報後：worktree 確認**
-執行 `terminal("cd <worktree> && git status && git branch --show-current")` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。
-
-## 已知陷阱
-
-- **三方 CLI 必須分別派工**：claude（Claude Code）、codex（Codex）、gemini（Gemini）各有獨立的呼叫路徑和已知問題。某條 CLI 失敗時，診斷根因並修復，**不要建議 fallback 到單一「穩定的」路徑**。
-- **CLI = 員工本人**：不用「Proxy」或「subagent」稱呼 CLI。claude/codex/gemini 就是員工，直接用 CLI 名稱。
-- **`mcp_claude_code_Agent` 不可用**：`claude mcp serve` 不載入 agents，MCP server 模式回報 "Available agents:" 為空。改用 `terminal()` + `claude -p`。
-- **`mcp_codex_codex` 恆定 timeout**：Codex MCP server 發送非標準 `codex/event` 通知 + `apply_patch_approval_request`，Hermes MCP client 不處理，導致 hang。改用 `terminal()` + `codex exec`。
-- **codex bubblewrap sandbox 啟動失敗**：此環境中 codex 的 sandbox（bubblewrap）因 `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` 無法啟動，導致所有 shell 命令失敗。派工時必須帶 `--dangerously-bypass-approvals-and-sandbox` 跳過 sandbox。
-- **codex 非 PTY 模式卡 stdin**：`codex exec` 在非 PTY 環境下會嘗試讀 stdin（"Reading additional input from stdin..."）然後卡住不動。派工時 `terminal()` 必須帶 `pty: true`。
-- **background process 禁止 pipe 到 tail/head**：`terminal(background=true)` 派工時，指令不要加 `| tail -5` 或類似 pipe。CLI 輸出量大時，pipe buffer（64KB）會塞滿，導致 CLI stdout write 被 block，程序無限期卡死。output_preview 看起來空的就是這個問題。直接讓 stdout 進背景 buffer 即可。
-- **api_max_retries 影響併發派工**：`hermes config` 的 `agent.api_max_retries` 低於 3 時，`terminal()` 三方併發容易失敗（interrupted）。確認值為 3：`hermes config set agent.api_max_retries 3`。修改後需重啟 Hermes。
-- **模式升級導致已完成部門作廢**：升級模式時（如 L3→L4），已完成的部門若其產出會被新插入的部門（如 QA）影響，需和老闆確認是否作廢重走。作廢時清除 worktree 未提交變更（`git checkout -- . && git clean -fd`），更新 meta.md 作廢紀錄。
-- **搜尋一律用 searxng MCP**：CLI 員工需要搜尋時，使用 `mcp_searxng_*` 工具（由 `~/.hermes/config.yaml` 的 `mcp_servers.searxng` 提供）。禁止使用 web_search 等外部搜尋工具。
-- **gemini workspace 權限**：gemini 的 `read_file` 工具會拒絕讀取 `.gitignore` 內的路徑（`.shiftblame/`），且不會自動存取 skill 目錄（`~/.hermes/skills/`）。派工時必須帶 `--include-directories="/home/derek/.hermes/skills/shiftblame"` 參數。`.shiftblame/` 目錄雖然 `read_file` 被擋，但 gemini 可透過 shell `cat` 命令繞過讀取。task.md 中應提示 gemini 用 `cat` 讀取 `.shiftblame/` 下的檔案。
-- **task.md 更新時保留完整內容**：修改 task.md 時必須保留原有完整內容（約束、技術事實、CLI 派工規格、通訊協議等），只改需要修改的部分。重寫 task.md 導致內容縮水是嚴重錯誤——會導致 CLI 缺少必要約束和技術事實。
-- **task.md 禁止自行擴充範圍**：寫 task.md 時嚴格依據老闆指示與上游共識，禁止自行添加老闆未要求的修改項目。
-- **CLI 直接寫入自己的 proposal.md / result.md**：派工 prompt 必須指示 CLI 用 write_file() 直接寫入自己子目錄的產出檔，不透過 stdout 中轉。主管不代寫 CLI 的 proposal.md / result.md。CLI 有權限寫入（claude --dangerously-skip-permissions、codex --dangerously-bypass-approvals-and-sandbox、gemini --approval-mode yolo）。若 CLI 因權限問題無法寫入，診斷根因並修復派工參數，不要改用 stdout 中轉模式。

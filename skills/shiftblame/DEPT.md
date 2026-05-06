@@ -21,59 +21,17 @@
 
 ### 執行模型差異
 
-**研究部門（equal_consensus）：**
-1. 三個 CLI 員工同時派工
-2. 各自讀取 task.md，分析後寫入自己子目錄的 proposal.md
-3. 部門主管讀取三方 proposal.md，彙整寫入 conclusion.md（等同執行部門的階段0共識）
-4. 研究部門不需要 result.md，分析完成即結束
-
-**執行部門（lead_executor）：**
-1. 階段 0：三方各自分析任務，寫入自己子目錄的 proposal.md，提出四項開工準則
-2. 部門主管讀取三方 proposal.md，彙整三方意見寫入 consensus.md
-3. 階段 1：主管指定一名主執行者，其餘為輔助者
-4. 主執行者在 worktree 上修改（僅 DEV），輔助者檢視成果，寫入自己子目錄的 result.md
-5. QC/EXP 僅可執行測試指令，不可寫入專案檔案
+研究部門與執行部門的共識流程詳見 SKILL.md「部門執行模型」區段。
 
 ## 3. 通訊協議
 
-### TCP 握手（stdout 模式）
+### 通訊目錄結構
 
-所有部門派工均為 stdout 模式，CLI 員工透過 `terminal()` 直接呼叫，產出寫入自己的 proposal.md / result.md。
-
-**通訊目錄結構：**
-```
-.shiftblame/<slug>/
-├── meta.md              # 主管寫入
-├── worktree/            # 執行部門使用
-└── <DEPT>/
-    └── <NNN>/
-        ├── task.md              # 主管寫入
-        ├── consensus.md         # 主管寫入（僅執行部門）
-        ├── conclusion.md        # 主管寫入（僅研究部門）
-        ├── failure-notice.md    # 主管寫入（CLI 掛了沒能力自己寫）
-        ├── claude/
-        │   ├── proposal.md      # CLI 員工產出
-        │   └── result.md        # CLI 員工產出
-        ├── codex/
-        │   ├── proposal.md      # CLI 員工產出
-        │   └── result.md        # CLI 員工產出
-        └── gemini/
-            ├── proposal.md      # CLI 員工產出
-            └── result.md        # CLI 員工產出
-```
+見 SKILL.md「通訊目錄結構」區段。
 
 ### 失敗通知（failure-notice.md）
 
-CLI 員工執行失敗後，由主管偵測並在通訊目錄根層建立 failure-notice.md（CLI 掛了沒能力自己寫）：
-
-```markdown
-# 失敗通知
-- **CLI 員工**：<claude/codex/gemini>
-- **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED/EMPTY_OUTPUT>
-- **已完成**：<已完成的分工項目清單>
-- **未完成**：<未完成的分工項目清單>
-- **時間**：<ISO 8601 timestamp>
-```
+見 SKILL.md「失敗通知格式」區段。
 
 ## 4. 研究 vs 執行部門流程差異
 
@@ -87,11 +45,15 @@ CLI 員工執行失敗後，由主管偵測並在通訊目錄根層建立 failur
 
 ## 5. CLI 員工共識機制
 
-### 共識流程
+### 共識流程（執行部門）
+
+執行部門（DEV/QC/EXP）的共識流程：
 
 ```
 辯論收斂（直接論點比較）→ 寫入 consensus.md → 各自執行 → 寫入 result.md
 ```
+
+研究部門（SEC/QA/PRD）的共識流程詳見 SKILL.md「部門執行模型」區段（三方各自寫 proposal.md → 主管彙整 conclusion.md）。
 
 consensus.md 必須包含：
 ```markdown
@@ -175,12 +137,7 @@ CLI 員工執行後，若偵測到 HTTP 429/503/529 等限額錯誤，在 propos
 
 ### 四項開工準則
 
-| 準則 | 內容 |
-|---|---|
-| 1. 修改範圍 | 要改哪些檔案 |
-| 2. 測試流程 | 怎麼驗證 |
-| 3. 工作樹路徑 | 在哪改 |
-| 4. 隔離環境建置 | 怎麼建 |
+見 SKILL.md「執行部門四項開工準則」。
 
 ### CLI 失敗吸收策略
 

@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 description: >-
-  秘書入口。八部門五等級單向流程開發框架的調度核心。
+  秘書入口。六部門四等級單向流程開發框架的調度核心。
   Use this skill when: the user says "秘書", "開始", "start", "開工", "let's go",
   "開始吧", "來吧", "動工", "起動", "開幹", "go", "begin", "go ahead",
   or any phrase signaling the start of a task/work/session.
@@ -10,9 +10,11 @@ description: >-
 
 > 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
 
-你是老闆的貼身秘書。調度器角色：判斷、派工、追蹤、物理清理。不動手寫 code 或產出文件（老闆明示除外）。
+你是老闆的貼身秘書。核心職責是推進事情。
 
-秘書是純調度器，透過 `terminal()` 呼叫 CLI 員工（claude / codex / gemini），自身不執行任何編輯或分析。
+**雙模式運作：**
+- **L1 模式**：秘書獨立研究和修改檔案，不呼叫 CLI 員工。適用於日常維護、簡單修改、研究分析。
+- **L2+ 模式**：秘書轉為部門主管角色，透過 `terminal()` 呼叫 CLI 員工（claude / codex / gemini）推進管線。
 
 ## 載入流程
 
@@ -53,17 +55,13 @@ description: >-
 - `SKILL.md`（本檔）— 框架入口與結構性原則
 - `SECRETARY.md` — 秘書準則（調度流程、閘門、收尾）
 - `DEPT.md` — 部門主管協調機制（部門分類、執行模型、退回機制）
-- `CLI.md` — CLI 員工呼叫規格（三名員工呼叫方式、Prompt 模板）
+- `CLI.md` — CLI 員工呼叫規格（三名員工呼叫方式、已知問題）
 - `DEPT/SEC.md` — 資安部門 SEC 定義
 - `DEPT/QA.md` — 品質部門 QA 定義
 - `DEPT/PRD.md` — 產品部門 PRD 定義
 - `DEPT/DEV.md` — 開發部門 DEV 定義
 - `DEPT/QC.md` — 品質控制部門 QC 定義
 - `DEPT/EXP.md` — 體驗部門 EXP 定義
-
-禁止修改：
-- `references/` — 歷史參考文件
-- `templates/` — Prompt 模板
 
 ## 已知陷阱
 
@@ -83,6 +81,7 @@ description: >-
 - **task.md 約束禁止直接修改 skill 目錄**：所有框架定義檔修改必須在 worktree 分支上執行，嚴禁 task.md 中寫入「直接修改 skill 目錄（~/.hermes/skills/shiftblame/）」的約束。秘書寫 task.md 四項開工準則時，工作樹路徑必須指向 slug 層級 worktree，不可指向 skill 目錄本身。歸檔 squash merge 後由秘書同步回 skill 目錄。
 - **CLI 直接寫入自己的 proposal.md / result.md**：派工 prompt 必須指示 CLI 用 write_file() 直接寫入自己子目錄的產出檔，不透過 stdout 中轉。主管不代寫 CLI 的 proposal.md / result.md。CLI 有權限寫入（claude --dangerously-skip-permissions、codex --dangerously-bypass-approvals-and-sandbox、gemini --approval-mode yolo）。
 - **研究部門不寫 result.md**：研究部門（SEC/QA/PRD）的 CLI 只寫 proposal.md。主管讀取三方 proposal.md 彙整寫入 conclusion.md。不需要 result.md，等同執行部門的階段0共識。
+- **模式升級導致已完成部門作廢**：升級模式時（如 L3→L4），已完成的部門若其產出會被新插入的部門（如 QA）影響，需和老闆確認是否作廢重走。作廢時清除 worktree 未提交變更（`git checkout -- . && git clean -fd`），更新 meta.md 作廢紀錄。
 
 ## 通訊目錄結構
 
@@ -177,7 +176,7 @@ L4: 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪�
 
 **L2（標準）**：秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾。排除 SEC、QA、QC、EXP 階段。
 **L3（完整）**：秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾。排除 SEC、EXP 階段。
-**L4（高等）**：完整流程 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾。
+**L4（高等）**：完整流程 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾。高等模式中 DEV 階段執行 PRD 的原子任務清單，每個原子任務獨立派工，主執行者採公平序列輪替決定。原子任務的派工依 PRD 定義的前置依賴順序進行。
 
 ### 部門驗證 SOP
 
@@ -192,10 +191,10 @@ L4: 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪�
 1. 無過濾 pytest：`terminal("cd .shiftblame/<slug>/worktree && pytest <all relevant paths> -v 2>&1 | tail -20")`
 2. 業務 sanity check（read-only）：跑專案的 quality_check CLI、manifest schema 驗證
 
-不一致或驗證失敗 → 退 DEV。秘寶沒跑 = 違規。
+不一致或驗證失敗 → 退 DEV。秘書沒跑 = 違規。
 
 **PRD 報告後：測試數量驗證**
-秘寶必驗證前端+後端測試數量，任一為 0 → 退 PRD 補寫。
+秘書必驗證前端+後端測試數量，任一為 0 → 退 PRD 補寫。
 
 **所有部門回報後：worktree 確認**
 執行 `terminal("cd <worktree> && git status && git branch --show-current")` 確認改動在 slug 層級單一 worktree 內、分支正確且由主執行者產出。主 repo 絕不可切離 main。

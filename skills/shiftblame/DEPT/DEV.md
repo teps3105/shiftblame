@@ -12,9 +12,9 @@
 
 ### execution_model
 
-DEV 屬執行部門，execution_model 為 team_leader：
-- team_leader 獨佔 worktree 編輯權與 Git 操作權
-- 採用兩階段派工（先team_leader，commit 後派工輔助者）
+DEV 屬執行部門，execution_model 為 lead_executor：
+- 主執行者獨佔 worktree 編輯權與 Git 操作權
+- 採用兩階段派工（先主執行者，commit 後派工輔助者）
 - 輔助者具備受限寫入權
 - QC/EXP 全體均無 worktree 編輯權（僅執行測試）
 
@@ -70,15 +70,15 @@ DEV 完成後必須提供「實際跑通」證據。驗證標準：
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
 ### R11：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。team_leader 獨佔單一 worktree 的編輯權與 Git 操作權，實作/執行/測試並寫入實作報告。輔助者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。輔助者不具 Git 操作權，修正後由team_leader commit。
+本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，實作/執行/測試並寫入實作報告。輔助者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。輔助者不具 Git 操作權，修正後由主執行者 commit。
 
 ### R12：L4 模式原子化執行
-L4 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，team_leader 採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L3/L4 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
+L4 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L2/L3 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
 
 ## 認知模型
 
 ### M1：命運共同體的品質基線
-本部門採team_leader 機制。team_leader 的實作產出須通過輔助者的檢閱才能放行。三個 CLI 員工 的實作產出必須可在同一 worktree 上共存與整合。單一 CLI 員工 的「測試全綠」不代表整合成功，跨代理的介面相容性是 DEV 的隱含驗證責任。
+本部門採 lead_executor 機制。主執行者的實作產出須通過輔助者的檢閱才能放行。三個 CLI 員工 的實作產出必須可在同一 worktree 上共存與整合。單一 CLI 員工 的「測試全綠」不代表整合成功，跨代理的介面相容性是 DEV 的隱含驗證責任。
 
 ### M2：執行隔離改變除錯模式
 在 CLI 員工 執行隔離下，除錯依賴 stdout/stderr 輸出而非即時斷點。DEV 必須確保每個實作步驟都有可觀察的 terminal() 輸出，讓互監督的 CLI 員工 能從輸出驗證正確性。
