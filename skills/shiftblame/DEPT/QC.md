@@ -67,11 +67,11 @@ QC 的操作步驟必須可被其他 CLI 員工 在同一 worktree 上重現。�
 本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
 
 ### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
-QC 在所有模式（L2/L3/L4/L5）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：
+QC 在所有模式（L2/L3/L4）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：
 - **README.md 品質檢閱**：版本號與框架設定一致、架構描述與實作一致、格式正確
 - **`.shiftblame/REPO.md` 品質檢閱**：技術棧描述與實作一致、待辦事項準確、各區段完整
 
-README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由 MIS 在收尾階段維護），但 QC 必須檢閱其品質。發現問題時退回 MIS（非 DEV）修正。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
+README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由秘書在收尾階段維護），但 QC 必須檢閱其品質。發現問題時由秘書裁定修正方向。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
 
 ### R14a：桌面驗證（真實操作驗證強化）
 QC 完成後必須提供「實際跑通」證據。驗證標準：

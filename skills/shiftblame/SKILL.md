@@ -29,7 +29,7 @@ description: >-
 2. **L1 日常操作**（`.shiftblame/REPO.md` 更新、歸檔、通訊目錄寫入）：直接執行
 3. **L1 研究**：所有非日常操作任務預設先做 L1 研究，確立初步研究結果與最終目標，老闆覆核後才可進入 L2+ 流程
 4. **框架定義檔修改**（SKILL.md、DEPT.md、CLI.md、`DEPT/*.md`）：L1 研究覆核後走 L2+ 流程
-5. **程式碼修改**：L1 研究覆核後走 L3+ 流程
+5. **程式碼修改**：L1 研究覆核後走 L2+ 流程
 6. **無法分類**：向老闆確認
 
 ### 邊界案例
@@ -37,31 +37,29 @@ description: >-
 | 指令 | 分類 | 理由 |
 |------|------|------|
 | 「幫我看一下 xxx 的狀態」 | 純查詢，直接回覆 | 不涉及修改 |
-| 「更新 `.shiftblame/REPO.md`」 | L1（歸檔時）或走 RES | REPO.md 歸檔時由秘書更新；其他時機走 RES |
-| 「修改 SKILL.md 中的 xxx」 | 走 RES（最低 L2） | 框架定義檔修改，MIS 執行 |
+| 「更新 `.shiftblame/REPO.md`」 | L1（歸檔時）或直接執行 | REPO.md 歸檔時由秘書更新 |
+| 「修改 SKILL.md 中的 xxx」 | L1 研究 → 走 PRD（最低 L2） | 框架定義檔修改 |
 | 「安裝 xxx 套件」 | L1（安裝/部署） | 日常運作模式 |
-| 「修一下 xxx bug」 | 走 RES（最低 L3） | 涉及程式碼修改 |
+| 「修一下 xxx bug」 | L1 研究 → 走 PRD（最低 L2） | 涉及程式碼修改 |
 | 「回報目前進度」 | 純查詢，直接回覆 | 不涉及修改 |
 | 「修改通訊目錄的 task.md」 | 直接執行 | 通訊目錄屬秘書寫入權限範圍 |
-| 「建議一個技術方案」 | 走 RES（研究） | 分析屬 RES 職責 |
+| 「建議一個技術方案」 | L1 研究 | 分析由秘書執行 |
 
 ## 框架定義檔位置
 
 所有框架定義檔存放在 **skill 目錄** `~/.hermes/skills/shiftblame/`，**不在專案的 `.shiftblame/` 目錄**。
 
-框架定義檔（共 12 檔）：
+框架定義檔（共 10 檔）：
 - `SKILL.md`（本檔）— 框架入口與結構性原則
 - `SECRETARY.md` — 秘書準則（調度流程、閘門、收尾）
 - `DEPT.md` — 部門主管協調機制（部門分類、執行模型、退回機制）
 - `CLI.md` — CLI 員工呼叫規格（三名員工呼叫方式、Prompt 模板）
-- `DEPT/RES.md` — 研究部門 RES 定義
 - `DEPT/SEC.md` — 資安部門 SEC 定義
 - `DEPT/QA.md` — 品質部門 QA 定義
 - `DEPT/PRD.md` — 產品部門 PRD 定義
 - `DEPT/DEV.md` — 開發部門 DEV 定義
 - `DEPT/QC.md` — 品質控制部門 QC 定義
 - `DEPT/EXP.md` — 體驗部門 EXP 定義
-- `DEPT/MIS.md` — 管理資訊部門 MIS 定義
 
 禁止修改：
 - `references/` — 歷史參考文件
@@ -84,6 +82,7 @@ description: >-
 - **task.md 禁止自行擴充範圍**：寫 task.md 時嚴格依據老闆指示與上游共識，禁止自行添加老闆未要求的修改項目。
 - **task.md 約束禁止直接修改 skill 目錄**：所有框架定義檔修改必須在 worktree 分支上執行，嚴禁 task.md 中寫入「直接修改 skill 目錄（~/.hermes/skills/shiftblame/）」的約束。秘書寫 task.md 四項開工準則時，工作樹路徑必須指向 slug 層級 worktree，不可指向 skill 目錄本身。歸檔 squash merge 後由秘書同步回 skill 目錄。
 - **CLI 直接寫入自己的 proposal.md / result.md**：派工 prompt 必須指示 CLI 用 write_file() 直接寫入自己子目錄的產出檔，不透過 stdout 中轉。主管不代寫 CLI 的 proposal.md / result.md。CLI 有權限寫入（claude --dangerously-skip-permissions、codex --dangerously-bypass-approvals-and-sandbox、gemini --approval-mode yolo）。
+- **研究部門不寫 result.md**：研究部門（SEC/QA/PRD）的 CLI 只寫 proposal.md。主管讀取三方 proposal.md 彙整寫入 conclusion.md。不需要 result.md，等同執行部門的階段0共識。
 
 ## 通訊目錄結構
 
@@ -94,8 +93,9 @@ description: >-
 └── <DEPT>/
     └── <NNN>/
         ├── task.md              # 部門主管寫入：目標 + 約束
-        ├── consensus.md         # 部門主管寫入：三方意見彙整共識
-        ├── failure-notice.md    # 部門主管寫入：失敗通知（退回機制觸發時）
+        ├── consensus.md         # 部門主管寫入：僅執行部門（階段0共識）
+        ├── conclusion.md        # 部門主管寫入：僅研究部門（等同執行部門階段0）
+        ├── failure-notice.md    # 部門主管寫入：失敗通知（CLI 掛了沒能力自己寫）
         ├── claude/
         │   ├── proposal.md      # CLI 員工產出
         │   └── result.md        # CLI 員工產出
@@ -117,9 +117,9 @@ description: >-
 
 ### worktree 修改權限
 
-- **僅 DEV、MIS 兩個部門**的 CLI 可修改 worktree
-- 其餘部門（RES/SEC/QA/PRD/QC/EXP）的 CLI 禁止修改 worktree
-- CLI 的唯一寫入權限就是 worktree（僅限 DEV/MIS）
+- **僅 DEV 部門**的 CLI 可修改 worktree
+- 其餘部門（SEC/QA/PRD/QC/EXP）的 CLI 禁止修改 worktree
+- CLI 的唯一寫入權限就是 worktree（僅限 DEV）
 
 ## 部門執行模型
 
@@ -127,20 +127,20 @@ description: >-
 
 | 部門類型 | 模式 | 共識流程 | consensus.md 寫入 |
 |---|---|---|---|
-| 研究部門（RES/SEC/QA/PRD） | 三方各自分析 | 三個 CLI 員工同時派工，各自產出 proposal.md，部門主管彙整 | 部門主管 |
-| 執行部門（DEV/QC/EXP/MIS） | 主管協調執行 | 階段 0 三方共識（四項開工準則）→ 主管指定主執行者 → 輔助者檢視 | 部門主管 |
+| 研究部門（SEC/QA/PRD） | 三方各自分析 | 三個 CLI 員工同時派工，各自產出 proposal.md，主管讀取彙整寫入 conclusion.md | conclusion.md（部門主管） |
+| 執行部門（DEV/QC/EXP） | 主管協調執行 | 階段 0 三方共識（四項開工準則）→ 主管指定主執行者 → 輔助者檢視 | consensus.md（部門主管） |
 
 **研究部門共識流程：**
 1. 三個 CLI 員工同時派工
 2. 各自讀取 task.md，分析後寫入自己子目錄的 proposal.md
-3. 部門主管讀取三方 proposal.md，彙整寫入 consensus.md
-4. 若需執行階段，各自依共識執行分工，寫入自己子目錄的 result.md
+3. 部門主管讀取三方 proposal.md，彙整寫入 conclusion.md（等同執行部門的階段0共識）
+4. 研究部門不需要 result.md，分析完成即結束
 
 **執行部門共識流程：**
 1. 階段 0：三方各自分析任務，寫入自己子目錄的 proposal.md，提出四項開工準則
 2. 部門主管讀取三方 proposal.md，彙整三方意見寫入 consensus.md
 3. 階段 1：主管指定一名主執行者，其餘為輔助者
-4. 主執行者在 worktree 上修改（僅 DEV/MIS），輔助者檢視成果，寫入自己子目錄的 result.md
+4. 主執行者在 worktree 上修改（僅 DEV），輔助者檢視成果，寫入自己子目錄的 result.md
 5. QC/EXP 僅可執行測試指令，不可寫入專案檔案
 
 **執行部門四項開工準則：**
@@ -149,40 +149,35 @@ description: >-
 3. **工作樹路徑** — 在哪改
 4. **隔離環境建置** — 怎麼建
 
-## 五等級流程圖
+## 四等級流程圖
 
 ```
-L1: 秘書直接執行（不派工部門）
+L1: 秘書獨立執行（不派工部門）
 
-L2: RES（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
+L2: 秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾
 
-L3: RES（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
+L3: 秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾
 
-L4: RES（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
-
-L5: RES（可多輪）→ SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ MIS(尾) → 秘書復判 → 歸檔
+L4: 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾
 ```
 
 ### 部門分類
 
-- **研究部門 (RES/SEC/QA/PRD)**：屬「equal_consensus 模型」。產出共識報告，具備全量讀取權，僅具備唯讀 worktree 存取權。
-- **執行部門 (DEV/QC/EXP/MIS)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，實作與維護。輔助者具備受限寫入權。QC/EXP 無 worktree 編輯權（僅執行測試）。
+- **研究部門 (SEC/QA/PRD)**：屬「equal_consensus 模型」。三方各自分析寫 proposal.md，主管讀取彙整寫入 conclusion.md。不需要 result.md。具備全量讀取權，僅具備唯讀 worktree 存取權。
+- **執行部門 (DEV/QC/EXP)**：屬「lead_executor 模型」。主執行者獨佔 worktree 編輯權，實作與維護。輔助者具備受限寫入權。QC/EXP 無 worktree 編輯權（僅執行測試）。
 
 | 順序 | 部門 | 做什麼 | 產出 | 適用模式 |
 |---|---|---|---|---|
-| 0 | RES | 發起研究（專案現狀、執行準則、問題診斷） | RES 部門報告 | L2 + L3 + L4 + L5 |
-| 1 | SEC | 資安稽核 + 工具篩選 | SEC 部門報告 | L5 |
-| 2 | QA | 行為斷言 | QA 部門報告 | L4 + L5 |
-| 3 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 部門報告 | L3 + L4 + L5 |
-| 4 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 部門報告 + worktree | L3 + L4 + L5 |
-| 5 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 部門報告 | L4 + L5 |
-| 6 | EXP | 用戶視角驗證 | EXP 部門報告 | L5 |
-| 7 | MIS | 收尾（定義檔維護、歸檔紀錄） | MIS 部門報告 | L2 + L3 + L4 + L5 |
+| 0 | SEC | 資安稽核 + 工具篩選 | SEC 部門報告 | L4 |
+| 1 | QA | 行為斷言 | QA 部門報告 | L3 + L4 |
+| 2 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 部門報告 | L2 + L3 + L4 |
+| 3 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 部門報告 + worktree | L2 + L3 + L4 |
+| 4 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 部門報告 | L3 + L4 |
+| 5 | EXP | 用戶視角驗證 | EXP 部門報告 | L4 |
 
-**L2（基本）**：RES（可多輪）研究後 MIS 執行收尾（順序 0 → 7）→ 秘書復判 → 歸檔收尾。
-**L3（標準）**：進入 RES（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ MIS(尾) → 秘書復判 → 歸檔。排除 SEC、QA、QC、EXP 階段。
-**L4（完整）**：完整流程 RES（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ MIS → 祕書復判 → 收尾（歸檔）。排除 SEC、EXP 階段。
-**L5（高等）**：完整流程 RES（可多輪）→ SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ MIS → 祕書復判 → 收尾（歸檔）。
+**L2（標準）**：秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾。排除 SEC、QA、QC、EXP 階段。
+**L3（完整）**：秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾。排除 SEC、EXP 階段。
+**L4（高等）**：完整流程 秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾。
 
 ### 部門驗證 SOP
 

@@ -140,7 +140,7 @@ update_topic, list_directory, read_file, grep_search, glob, google_web_search, e
 - 用繁體中文產出
 - 用 write_file() 將完整結果寫入自己子目錄的 result.md
 - 禁止寫入其他 CLI 的子目錄、task.md、consensus.md 等主管檔
-- worktree 權限依 task.md 與 DEPT.md 規則判定（僅 DEV/MIS 可修改 worktree）
+- worktree 權限依 task.md 與 DEPT.md 規則判定（僅 DEV 可修改 worktree）
 - .shiftblame/ 下的檔案一律用 cat 讀取
 ```
 
@@ -245,7 +245,7 @@ gemini mcp list
 |---|---|---|
 | `CLI_UNAVAILABLE` | CLI 服務不可用 | 重試 1-2 次，仍失敗則吸收或退回 |
 | `RATE_LIMITED` | 觸發速率限制（HTTP 429） | 等待後重試 |
-| `QUOTA_EXCEEDED` | 配額用盡 | 吸收或退回 RES |
+| `QUOTA_EXCEEDED` | 配額用盡 | 吸收或退回上游部門 |
 | `TIMEOUT` | 執行超時 | 重試，仍失敗則吸收或退回 |
 | `EXEC_FAILED` | 執行失敗 | 吸收或退回 |
 | `EMPTY_OUTPUT` | 輸出為空 | 重試，仍失敗則吸收或退回 |
@@ -257,7 +257,7 @@ gemini mcp list
 當某個 CLI 員工遇到失敗：
 1. **重試**（內建 retry 机制）
 2. **吸收**：其餘兩個 CLI 員工接手失敗者的份額
-3. **退回 RES**：若全部失敗，則回報主管
+3. **退回上游**：若全部失敗，則回報主管
 
 ## 6. 已知問題與除錯
 
