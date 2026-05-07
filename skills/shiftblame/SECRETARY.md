@@ -184,7 +184,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
 | 監督者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
 
-- worktree 修改權僅限 DEV 部門的主執行者（claude）
+- worktree 修改權僅限 DEV 部門的輪替主執行者
 - 管理者不可代寫 CLI 的 proposal.md / result.md / review.md
 - L2+ 管線期間秘書不編輯 worktree 內容與通訊目錄文件
 
