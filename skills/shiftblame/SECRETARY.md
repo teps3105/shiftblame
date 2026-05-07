@@ -56,9 +56,8 @@ clarify(question="請確認本次執行模式：", choices=[
 
 - 秘書完成 L1 研究後，依據研究結果提出等級建議。
 - 透過 `clarify` 向老闆覆核等級。
-- 老闆可升級等級（L2→L3→L4）或縮小範圍降級（L4→L3→L2）。
+- 老闆可升級等級（L2→L3→L4）或縮小範圍降級（L4→L3→L2）。降級不可逆轉，見 SKILL.md「降級不可逆轉」。
 - 瓶頸升級：執行過程中主執行者發現範圍過大 → 秘書確認 → 升級（老闆覆核）。
-- 降級不可逆轉（同一輪次內有效）：縮小範圍降級後不可再升回原等級。
 
 4. 依模式分支：見 SKILL.md「四等級流程圖」區段。
 
@@ -110,10 +109,6 @@ clarify(question="請確認本次執行模式：", choices=[
 - `DEPT/` 目錄下任何檔案
 - `skills/` 目錄下任何檔案
 - `README.md` 等專案根目錄定義檔（`.shiftblame/REPO.md` 除外，秘書在歸檔時可更新 `.shiftblame/REPO.md`）
-
-worktree 由秘書建立（L1 → L2+ 過渡時）。通訊目錄由部門主管建立（派工前）。CLI 員工不負責建立。
-
-框架定義檔的變更由 DEV 部門在 worktree 上執行。
 
 ## 6. meta.md 與 task.md 格式
 
@@ -262,12 +257,8 @@ QC/EXP 僅可執行測試指令，不可寫入專案檔案（呼叫時不帶寫�
 
 ### 部門執行模型
 
-- **部門主管**：派工、嗅探完成狀態、讀取 CLI 產出彙整共識、寫入主管檔（task.md / consensus.md / conclusion.md / failure-notice.md）。不與 CLI 溝通、不代寫 CLI 的 proposal.md / result.md
-- **CLI 員工**：三個 CLI（claude、codex、gemini）透過 `terminal()` 直接呼叫，CLI 就是員工本人，自行寫入自己的 proposal.md / result.md
-- **研究部門 (SEC/QA/PRD)**：三方各自分析寫入 proposal.md，主管讀 proposal.md 彙整寫入 conclusion.md。不需要 result.md，等同執行部門的階段0
-- **執行部門 (DEV/QC/EXP)**：階段0 三方寫 proposal.md → 主管寫 consensus.md → 階段1 主執行者執行寫 result.md → 輔助者檢視
+見 SKILL.md「部門執行模型」區段。以下為派工規則速記：
 
-派工規則速記：
 - 指定部門（SEC/QA/PRD/DEV/QC/EXP），CLI 員工透過 `terminal()` 呼叫
 - 研究部門三方同時派工，執行部門主管協調三方
 - 執行部門（DEV/QC/EXP）主要執行者必須在 worktree；研究部門不需要 worktree
@@ -301,7 +292,7 @@ L2+ 模式確認後，秘書完成 L1 研究，確認研究結果足以支撐管
 
 1. **升級請求**：主執行者在 result.md 中寫入 `[MODE_UPGRADE_REQUEST: <target_mode>]`
 2. **降級處理**：老闆透過 clarify 縮小範圍 → 主管更新 meta.md 和 task.md
-3. **降級不可逆轉（同一輪次內有效）**
+3. 降級不可逆轉規則見 SKILL.md「降級不可逆轉」
 
 ### 秘書收尾閘門（管線終點）
 
@@ -485,12 +476,10 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 
 ### 四等級歸檔邏輯
 
-| 等級 | 流程 |
-|---|---|
-| L1（日常維護） | 秘書獨立執行（不呼叫 CLI），無需歸檔 |
-| L2（標準） | PRD（可多輪）→ DEV（可多輪）→ 秘書收尾 → 歸檔 |
-| L3（完整） | QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾 → 歸檔 |
-| L4（高等） | SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾 → 歸檔 |
+四等級流程定義見 SKILL.md「四等級流程圖」。歸檔特有規則：
+- L1：無需歸檔（秘書獨立執行）
+- L2/L3/L4：管線完成後統一走歸檔流程（見上方有序步驟鏈）
+- 含子循環的 slug：所有子循環完成後整體歸檔
 
 ### 部署權限
 
