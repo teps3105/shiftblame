@@ -15,10 +15,10 @@
 ## 執行模型
 
 執行部門。execution_model: lead_executor。
-固定主執行者：**claude**。001 三方共識 → claude 主導實作 → 輔助者（codex、gemini）檢視。
-002+ 純修正循環：claude 依 review.md 修正 → 輔助者重新檢視。
+固定主執行者：**claude**。001 三方共識 → claude 主導實作 → 監督者（codex、gemini）檢視。
+002+ 純修正循環：claude 依 review.md 修正 → 監督者重新檢視。
 **主執行者獨佔 worktree 編輯權與 Git 操作權。**
-輔助者寫 review.md 檢視成果，不修改 worktree。具備受限寫入權（限 typo、版本號不一致、小規格偏差），修正後由主執行者 commit。
+監督者寫 review.md 檢視成果，不修改 worktree。具備受限寫入權（限 typo、版本號不一致、小規格偏差），修正後由主執行者 commit。
 
 ## 產出規格
 
@@ -77,5 +77,5 @@ L4 模式中依 PRD 原子任務清單執行。每個原子任務為獨立派工
 
 ## 認知模型
 
-**命運共同體品質基線**：主執行者產出須通過輔助者 review.md 檢閱。三個 CLI 的產出必須可在同一 worktree 共存整合。review.md 發現問題時開啟新 NNN 子循環修正。
+**命運共同體品質基線**：主執行者產出須通過監督者 review.md 檢閱。三個 CLI 的產出必須可在同一 worktree 共存整合。review.md 發現問題時開啟新 NNN 子循環修正。
 **執行隔離改變除錯**：除錯依賴 stdout/stderr 而非斷點。每個步驟都必須有可觀察的 terminal() 輸出。

@@ -14,10 +14,10 @@
 ## 執行模型
 
 執行部門。execution_model: lead_executor。
-固定主執行者：**codex**。001 三方共識 → codex 主導驗證 → 輔助者（claude、gemini）檢視。
-002+ 純修正循環：codex 依 review.md 修正 → 輔助者重新檢視。
+固定主執行者：**codex**。001 三方共識 → codex 主導驗證 → 監督者（claude、gemini）檢視。
+002+ 純修正循環：codex 依 review.md 修正 → 監督者重新檢視。
 **全體無 worktree 編輯權（僅執行測試），全體無 Git 操作權。**
-輔助者寫 review.md 檢視 codex 驗證成果，不修改 worktree。
+監督者寫 review.md 檢視 codex 驗證成果，不修改 worktree。
 
 ## 產出規格
 
@@ -66,8 +66,8 @@ PASS → 部署指引。FAIL → 根因分析 + 退回建議。
 **R9 分歧內部解決**
 「是否構成 BUG」的分歧由 CLI 辯論收斂，須提供可重現步驟。管理者不參與技術判定。
 
-**R10 互監督交叉驗證**
-操作步驟必須可被其他 CLI 在同一 worktree 重現。宣稱 BUG 須附足夠步驟讓同事獨立確認。
+**R10 可重現性要求**
+操作步驟必須可被監督者在同一 worktree 獨立重現。宣稱 BUG 須附足夠步驟。
 
 **R11 全量測試順序執行**
 一次只跑一條線，不 parallel，避免 flaky。
@@ -90,4 +90,4 @@ QC 驗證標準：至少一個 Happy Path 和一個邊緣案例實際跑通。�
 **行為驗證勝於邏輯驗證**：DEV 證明「程式碼如其所寫地運作」，QC 證明「功能如用戶所預期地運作」。
 **證據是唯一基礎**：無證據的 PASS 視同失效。
 **QC 補 DEV 盲區**：不重複 DEV 工作，補充真實環境下的使用者行為、不可預測操作序列、跨系統邊緣效應。
-**跨 CLI 品質共識**：主執行者的 result.md 須經輔助者 review.md 雙重背書，品質基線來自共識而非單點宣告。review.md 發現問題時開啟新 NNN 子循環修正。
+**跨 CLI 品質共識**：主執行者的 result.md 須經監督者 review.md 雙重背書，品質基線來自共識而非單點宣告。review.md 發現問題時開啟新 NNN 子循環修正。

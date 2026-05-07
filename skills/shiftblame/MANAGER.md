@@ -13,7 +13,7 @@
 | 類型 | 部門 | execution_model | 特徵 |
 |------|------|-----------------|------|
 | 研究部門 | SEC / QA / PRD | equal_consensus | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
-| 執行部門 | DEV / QC / EXP | lead_executor | 主執行者獨佔 worktree，輔助者檢視 |
+| 執行部門 | DEV / QC / EXP | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
 
 ### 部門流水線
 
@@ -47,7 +47,7 @@
 1. 三方各自分析 task.md → 各自寫入 proposal.md（含四項開工準則）
 2. 管理者讀取三方 proposal.md → 寫入 consensus.md
 3. 主執行者依 consensus.md 執行 → 寫入 result.md（實際成果）
-4. 輔助者檢視主執行者成果 → 各自寫入 review.md（只檢視不修改）
+4. 監督者檢視主執行者成果 → 各自寫入 review.md（只檢視不修改）
 5. 管理者讀取 result.md + review.md 判定：
    - 通過 → 部門完成，推進下一部門
    - 有問題 → 開啟 002 子循環
@@ -55,14 +55,14 @@
 **002+（修正循環）：**
 1. 不重新生成 proposal.md，沿用 001 的 consensus.md 作為基準
 2. 主執行者依 review.md 反饋修正 → 寫入 result.md（覆蓋更新）
-3. 輔助者重新檢視 → 各自寫入 review.md（覆蓋更新）
+3. 監督者重新檢視 → 各自寫入 review.md（覆蓋更新）
 4. 管理者判定：通過 → 完成 / 有問題 → 開啟下一個 NNN
 
 **上游判定：** 循環的上游是上一個執行部門（或研究部門結論）。每次開新 NNN 時，主執行者讀取上一個執行部門的 result.md 作為輸入。
 
 **產出歸屬：**
 - result.md：僅主執行者寫入，含實際執行成果
-- review.md：僅輔助者寫入，含檢視結果與問題清單（不修改 worktree）
+- review.md：僅監督者寫入，含檢視結果與問題清單（不修改 worktree）
 - proposal.md：僅 001 生成，002+ 不重複
 
 ### 四項開工準則
@@ -81,7 +81,7 @@
 | 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md + consensus.md + result.md + review.md |
 | 002+ 產出 | — | result.md + review.md（不重複 proposal） |
 | result.md | 不需要 | 僅主執行者寫入 |
-| review.md | 不需要 | 僅輔助者寫入 |
+| review.md | 不需要 | 僅監督者寫入 |
 
 ## 3. 派工執行
 
@@ -93,7 +93,7 @@
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
 5. **主執行者選定**（僅執行部門）：固定指派（claude → DEV、codex → QC、gemini → EXP），寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
-7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 空白 proposal.md。執行部門額外建立空白 result.md（主執行者）和空白 review.md（輔助者）
+7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 空白 proposal.md。執行部門額外建立空白 result.md（主執行者）和空白 review.md（監督者）
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
@@ -139,12 +139,12 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 **001（首次循環）：**
 - 階段 0：三方分析 task.md → 各自寫 proposal.md（含四項開工準則）
 - 管理者：讀取三方 proposal.md → 寫入 consensus.md
-- 階段 1：主執行者依 consensus.md 執行 → 寫 result.md；輔助者檢視 → 寫 review.md
+- 階段 1：主執行者依 consensus.md 執行 → 寫 result.md；監督者檢視 → 寫 review.md
 
 **002+（修正循環）：**
 - 不重跑 proposal，沿用 001 consensus.md
 - 主執行者依 review.md 修正 → 寫 result.md
-- 輔助者重新檢視 → 寫 review.md
+- 監督者重新檢視 → 寫 review.md
 - 管理者判定通過 → 部門完成；有問題 → 開新 NNN
 
 ### 派工規則速記
@@ -153,8 +153,8 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - CLI 自行讀取 DEPT/<DEPT>.md、確認任務、執行分工
 - 研究部門：管理者寫 conclusion.md，不寫 consensus.md
-- 執行部門 001：管理者寫 consensus.md，主執行者寫 result.md，輔助者寫 review.md
-- 執行部門 002+：不重跑 proposal，主執行者寫 result.md，輔助者寫 review.md
+- 執行部門 001：管理者寫 consensus.md，主執行者寫 result.md，監督者寫 review.md
+- 執行部門 002+：不重跑 proposal，主執行者寫 result.md，監督者寫 review.md
 
 ## 4. 閘門流程
 
@@ -165,8 +165,8 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 2. 驗證 worktree 有對應 commit（僅 DEV）
 3. 無 commit → 退回補齊
 
-**檢查點 2：輔助者檢視完成**
-1. 讀取兩位輔助者 review.md
+**檢查點 2：監督者檢視完成**
+1. 讀取兩位監督者 review.md
 2. 判定：
    - review.md 均通過（無問題或問題已被吸收）→ 部門完成
    - review.md 發現問題 → 開啟新 NNN 子循環，主執行者修正
@@ -198,7 +198,6 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 - 分工執行：誰完成了哪些份額
 - 風險吸收：單點失效時誰吸收了誰的份額
 - 降級紀錄：是否有降級為單體或技術分歧多數決
-- 互助紀錄：是否有 CLI 抓到並修正同事錯誤
 
 ## 5. 失敗通知
 
@@ -246,11 +245,14 @@ CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.
 - 執行部門：寫入 consensus.md 和各 CLI 的 result.md
 - meta.md 記錄：「共識收斂階段連續超時，降級為單體彙整」
 
-### CLI 互助互監督
+### 監督者職責
 
-- CLI 互相監督，發現錯誤直接修正，不等管理者
-- 提前完成的 CLI 監督同事作業
-- 工具與指令定義明文寫在 DEPT/*.md 與 STAFF.md，同事可閱讀驗證
+每個 CLI 在非主執行者的執行部門中擔任監督者：
+- claude → DEV 主執行者；在 QC、EXP 擔任監督者
+- codex → QC 主執行者；在 DEV、EXP 擔任監督者
+- gemini → EXP 主執行者；在 DEV、QC 擔任監督者
+
+監督者的唯一職責：對照主執行者的 result.md 中列出的項目，逐一驗證是否確實完成。監督者不修改 worktree，不修正代碼，只寫 review.md 記錄驗證結果。
 
 ### 限額偵測
 
@@ -303,12 +305,12 @@ CLI 能力不足時：
 - 退回修正紀錄格式（輕微修正）：
   ```
   ## 退回修正紀錄
-  - 退回來源：閘門檢查點 2（輔助者檢閱）
+  - 退回來源：閘門檢查點 2（監督者檢閱）
   - 修正內容：<項目>
   - 修正時間：<ISO 8601>
   - 退回修正次數：N / 2
   ```
-- 「退回」= 完整重做；「退回修正」= 輕微修正，不重新派工輔助者
+- 「退回」= 完整重做；「退回修正」= 輕微修正，不重新派工監督者
 - 同一部門最多 2 次退回修正，超過自動升級為完整重做
 
 ### 部門多輪迭代（執行部門循環）
@@ -318,7 +320,7 @@ CLI 能力不足時：
 - consensus.md：001 生成，002+ 沿用（不重新共識）
 - proposal.md：僅 001 生成，002+ 不重複
 - result.md：每個 NNN 由主執行者覆蓋寫入
-- review.md：每個 NNN 由兩位輔助者覆蓋寫入
+- review.md：每個 NNN 由兩位監督者覆蓋寫入
 - meta.md：記錄各 NNN 的循環狀態與判定結果
 - 管線最後一部門不適用多輪，由秘書收尾閘門處理
 
@@ -327,7 +329,7 @@ CLI 能力不足時：
 ### QC 報告後：弱斷言掃描
 
 1. 弱斷言關鍵字掃描（`pixel diff` / `ratio` / `source=\"game\"` fallback 等）
-2. 輔助者條目逐條判讀
+2. 監督者條目逐條判讀
 3. 確認至少一條業務行為斷言用 video/state 級
 
 任一不通 → 退 QC，不問老闆。
@@ -371,5 +373,5 @@ CLI 能力不足時：
 - **CLI 直接寫入 proposal.md / result.md / review.md**：派工 prompt 指示 CLI 用 write_file() 直接寫入，不透過 stdout 中轉
 - **研究部門不寫 result.md / review.md**：研究部門 CLI 只寫 proposal.md，管理者彙整寫 conclusion.md
 - **執行部門主執行者寫 result.md**：含實際執行成果
-- **執行部門輔助者寫 review.md**：檢視主執行者成果，不修改 worktree
+- **執行部門監督者寫 review.md**：檢視主執行者成果，不修改 worktree
 - **模式升級時已完成部門的處置**：升級時若已完成部門的產出會被新插入部門影響，必須和老闆確認是否作廢重走。作廢時 `git checkout -- . && git clean -fd`，更新 meta.md

@@ -90,7 +90,7 @@ L2+ 確認後，秘書確認以下項目：
 3. `clarify` 呈報收尾結果：
 
 ```
-clarify(question="收尾確認。主執行者（<Name>）：<完成項目>\\n輔助者（<Name>, <Name>）：<工作情況>", choices=[
+clarify(question="收尾確認。主執行者（<Name>）：<完成項目>\\n監督者（<Name>, <Name>）：<工作情況>", choices=[
   "確認歸檔 — 收尾通過",
   "退回修正 — 輕微問題，針對性修正",
   "退回最後部門 — 要求補齊",
@@ -169,7 +169,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）
         ├── result.md            # 僅主執行者寫入（執行部門）
-        └── review.md            # 僅輔助者寫入（執行部門 001+）
+        └── review.md            # 僅監督者寫入（執行部門 001+）
 ```
 
 ### 寫入權限
@@ -179,7 +179,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 秘書 | meta.md（L1 模式除外，具完整權限） |
 | 管理者 | task.md、consensus.md、conclusion.md、failure-notice.md、meta.md |
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
-| 輔助者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
+| 監督者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
 
 - worktree 修改權僅限 DEV 部門的主執行者（claude）
 - 管理者不可代寫 CLI 的 proposal.md / result.md / review.md
@@ -191,7 +191,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 # <slug> 狀態
 
 ## 派工紀錄
-| 部門 | 主執行者 | 輔助者 | 模式 | 輪次 | 時間 |
+| 部門 | 主執行者 | 監督者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
 | PRD | 三方平等 | — | L4 | 1 | 2026-01-01T00:00:00Z |
 | DEV | claude | codex, gemini | L4 | 1 | 2026-01-01T00:00:00Z |
