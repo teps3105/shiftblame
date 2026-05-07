@@ -129,8 +129,8 @@ clarify(question="收尾確認。主執行者（<Name>）：<完成項目>\\n監
 **歸檔閘門腳本：**
 
 ```bash
-if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/consensus.md ]]; then
-  echo "ERROR: consensus.md 不存在或為空，拒絕歸檔。" >&2; exit 1
+if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/conclusion.md ]]; then
+  echo "ERROR: conclusion.md 不存在或為空，拒絕歸檔。" >&2; exit 1
 fi
 if ! compgen -G ".shiftblame/<slug>/<LAST_DEPT>/<NNN>/*/result.md" | xargs -I{} test -s {}; then
   echo "ERROR: 所有 result.md 均為空，拒絕歸檔。" >&2; exit 1
@@ -163,8 +163,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 ├── worktree/            # 單一共用 worktree
 └── <DEPT>/<NNN>/
     ├── task.md              # 001 管理者寫入；002+ 管理者每次重新發布
-    ├── conclusion.md        # 管理者寫入（001 規劃結論，研究與執行部門共用）
-    ├── consensus.md         # 管理者寫入（002+ 當次執行共識）
+    ├── conclusion.md        # 管理者寫入（每次循環：001 規劃結論，002+ 執行結論）
     ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）
@@ -177,7 +176,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 角色 | 可寫 |
 |------|------|
 | 秘書 | meta.md（L1 模式除外，具完整權限） |
-| 管理者 | task.md、consensus.md、conclusion.md、failure-notice.md、meta.md |
+| 管理者 | task.md、conclusion.md、failure-notice.md、meta.md |
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
 | 監督者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
 

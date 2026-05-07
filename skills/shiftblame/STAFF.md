@@ -101,7 +101,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 - 用繁體中文產出
 - 這是提案階段，只分析不執行
 - 用 write_file() 寫入自己子目錄的 proposal.md
-- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
+- 禁止寫入其他員工子目錄、task.md、conclusion.md 等管理者文件
 - 必須引用具體檔案內容
 - .shiftblame/ 下的檔案一律用 cat 讀取
 ```
@@ -127,7 +127,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 重要：
 |- 用繁體中文產出
 |- 用 write_file() 寫入自己子目錄的 result.md
-|- 禁止寫入其他員工子目錄、task.md、conclusion.md、consensus.md 等管理者文件
+|- 禁止寫入其他員工子目錄、task.md、conclusion.md 等管理者文件
 |- worktree 權限依 task.md 與 MANAGER.md 規則判定（僅 DEV 可修改 worktree）
 |- .shiftblame/ 下的檔案一律用 cat 讀取
 |- result.md 必須包含實際執行成果（完成的檔案、測試結果、驗證證據）
@@ -160,7 +160,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 |- 用繁體中文產出
 |- 用 write_file() 寫入自己子目錄的 review.md
 |- review.md 只檢視不修改：發現問題列出來，不直接修改 worktree
-|- 禁止寫入其他員工子目錄、task.md、conclusion.md、consensus.md 等管理者文件
+|- 禁止寫入其他員工子目錄、task.md、conclusion.md 等管理者文件
 |- .shiftblame/ 下的檔案一律用 cat 讀取
 |- review.md 格式：逐條驗證 result.md 項目（已完成 / 未完成 / 不符聲稱）/ 問題清單（附具體證據）/ 判定建議（PASS 或 NEEDS_FIX）
 ```
