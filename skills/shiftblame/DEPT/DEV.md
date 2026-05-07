@@ -12,11 +12,8 @@
 
 ### execution_model
 
-DEV 屬執行部門，execution_model 為 lead_executor：
-- 主執行者獨佔 worktree 編輯權與 Git 操作權
-- 採用兩階段派工（先主執行者，commit 後派工輔助者）
-- 輔助者具備受限寫入權
-- QC/EXP 全體均無 worktree 編輯權（僅執行測試）
+DEV 屬執行部門，execution_model 為 lead_executor。主執行者獨佔 worktree 編輯權與 Git 操作權。
+見 SKILL.md「部門執行模型」區段。
 
 ## 產出規格
 
@@ -57,12 +54,8 @@ DAG 中標示為 QC 可操作的介面必須完整落地，不可只做內部邏
 ### R8：執行隔離下的 CLI 員工 作業模式
 DEV 的三個 CLI 員工 透過 terminal() 在 worktree 上執行任務，所有實作產出必須可透過 terminal() 指令重現。
 
-### R8a：桌面驗證（啟動驗證強化）
-DEV 完成後必須提供「實際跑通」證據。驗證標準：
-- 用 `terminal()` 實際啟動應用/服務，產出啟動日誌作為證據
-- 執行至少一個核心功能的 health check 或端到端操作，有 `terminal()` 輸出證明
-- 文字描述「已啟動」不算證據，必須有實際 `terminal()` 輸出
-- CLI 能力不足時不跳過驗證，寫入 result.md 向上請求工具支援（`[TOOL_SUPPORT_REQUEST]`）
+### R8a：桌面驗證
+見 DEPT.md「執行部門桌面驗證」區段。DEV 驗證標準：應用/服務成功啟動，核心功能可操作。
 
 ### R9：分歧項內部解決
 對實作方式或架構選擇的技術分歧，由 CLI 員工 在通訊目錄內辯論收斂（最多 2 輪）。異議必須附替代方案與可驗證的證據。只有需求不明時才透過秘書協調與老闆溝通。

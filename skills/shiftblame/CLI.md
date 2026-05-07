@@ -221,7 +221,7 @@ gemini mcp list
 
 ⚠️ 語法差異：環境變數用 `-e KEY=VALUE`，放在 command 之後。scope 用 `-s user`（全域）或 `-s project`（專案級，預設）。
 
-### 目前已配置的 MCP servers（2026-05-06）
+### 目前已配置的 MCP servers
 
 | Server | Claude | Codex | Gemini |
 |--------|:------:|:-----:|:------:|

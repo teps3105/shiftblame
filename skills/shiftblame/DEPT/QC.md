@@ -13,10 +13,8 @@
 
 ### execution_model
 
-QC 屬執行部門，execution_model 為 lead_executor：
-- 主執行者負責主導驗證工作，輔助者配合檢視
-- 採用兩階段派工（先主執行者，完成後派工輔助者）
-- 全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權
+QC 屬執行部門，execution_model 為 lead_executor。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
+見 SKILL.md「部門執行模型」區段。
 
 ## 產出規格
 
@@ -74,12 +72,8 @@ QC 在所有模式（L2/L3/L4）的驗證範圍應包含 README.md 與 `.shiftbl
 
 README.md 和 `.shiftblame/REPO.md` 不在開發階段修改（由秘書在收尾階段維護），但 QC 必須檢閱其品質。發現問題時由秘書裁定修正方向。QC 報告中需明確列出 README.md / `.shiftblame/REPO.md` 的品質問題（若有）。
 
-### R14a：桌面驗證（真實操作驗證強化）
-QC 完成後必須提供「實際跑通」證據。驗證標準：
-- 至少一個 Happy Path 和一個邊緣案例透過 `terminal()` 實際執行驗證
-- 驗證必須有完整 `terminal()` 輸出（HTTP response、測試執行結果、操作日誌等）
-- 不可只寫「預期會通過/失敗」，必須「實際操作後結果為...」
-- CLI 能力不足時不跳過驗證，寫入 result.md 向上請求工具支援（`[TOOL_SUPPORT_REQUEST]`）
+### R14a：桌面驗證
+見 DEPT.md「執行部門桌面驗證」區段。QC 驗證標準：至少一個 Happy Path 和一個邊緣案例實際跑通。
 
 ## 認知模型
 

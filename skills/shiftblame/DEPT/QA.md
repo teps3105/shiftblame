@@ -9,10 +9,8 @@
 
 ### execution_model
 
-QA 屬研究部門，execution_model 為 equal_consensus：
-- 三個 CLI 員工 同時派工、各自分析
-- 不走兩階段派工
-- 不產生排他性編輯權
+QA 屬研究部門，execution_model 為 equal_consensus。
+見 SKILL.md「部門執行模型」區段。
 
 ## 產出規格
 

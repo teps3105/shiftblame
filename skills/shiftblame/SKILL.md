@@ -124,10 +124,10 @@ description: >-
 
 ### 共識機制（部門類型差異）
 
-| 部門類型 | 模式 | 共識流程 | consensus.md 寫入 |
+| 部門類型 | 模式 | 共識流程 | 主管產出 |
 |---|---|---|---|
-| 研究部門（SEC/QA/PRD） | 三方各自分析 | 三個 CLI 員工同時派工，各自產出 proposal.md，主管讀取彙整寫入 conclusion.md | conclusion.md（部門主管） |
-| 執行部門（DEV/QC/EXP） | 主管協調執行 | 階段 0 三方共識（四項開工準則）→ 主管指定主執行者 → 輔助者檢視 | consensus.md（部門主管） |
+| 研究部門（SEC/QA/PRD） | 三方各自分析 | 三個 CLI 員工同時派工，各自產出 proposal.md，主管讀取彙整寫入 conclusion.md | conclusion.md |
+| 執行部門（DEV/QC/EXP） | 主管協調執行 | 階段 0 三方共識（四項開工準則）→ 主管指定主執行者 → 輔助者檢視 | consensus.md |
 
 **研究部門共識流程：**
 1. 三個 CLI 員工同時派工
