@@ -42,7 +42,7 @@ clarify(question="請確認本次執行模式：", choices=[
   "L1（日常維護）— 秘書直接執行",
   "L2（標準）— PRD → DEV",
   "L3（完整）— QA → PRD → DEV → QC",
-  "L4（高等）— SEC → QA → PRD → DEV → QC → EXP",
+  "L4（高等）— SEC → QA → PRD → DEV → QC",
 ])
 ```
 
@@ -85,8 +85,8 @@ L2+ 確認後，秘書確認以下項目：
 
 ### 收尾閘門
 
-1. 讀取最後一部門主執行者 result.md + 兩位監督者 review.md，確認產出完整
-2. 確認項目：最後部門報告完整性、worktree 變更與 task.md 一致、主執行者和監督者均有回報
+1. 讀取最後一部門結論（QC 為管理者 conclusion.md；其他執行部門為主執行者 result.md + 監督者 review.md），確認產出完整
+2. 確認項目：最後部門報告完整性、worktree 變更與 task.md 一致、產出具備回報
 3. `clarify` 呈報收尾結果：
 
 ```
@@ -132,8 +132,12 @@ clarify(question="收尾確認。主執行者（<Name>）：<完成項目>\\n監
 if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/conclusion.md ]]; then
   echo "ERROR: conclusion.md 不存在或為空，拒絕歸檔。" >&2; exit 1
 fi
-if ! compgen -G ".shiftblame/<slug>/<LAST_DEPT>/<NNN>/*/result.md" | xargs -I{} test -s {}; then
-  echo "ERROR: 所有 result.md 均為空，拒絕歸檔。" >&2; exit 1
+# manager_direct 部門（如 QC）無 CLI result.md，僅檢查 conclusion.md
+# lead_executor 部門需檢查 result.md
+if [[ "<LAST_DEPT>" != "QC" ]]; then
+  if ! compgen -G ".shiftblame/<slug>/<LAST_DEPT>/<NNN>/*/result.md" | xargs -I{} test -s {}; then
+    echo "ERROR: 所有 result.md 均為空，拒絕歸檔。" >&2; exit 1
+  fi
 fi
 mkdir -p .shiftblame/archive && mv .shiftblame/<slug> .shiftblame/archive/<slug>
 test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
@@ -217,7 +221,7 @@ task.md 只含**目標**和**約束**。
 
 ```markdown
 ---
-execution_model: <equal_consensus / lead_executor>
+execution_model: <equal_consensus / lead_executor / manager_direct>
 current_mode: <L2 / L3 / L4>
 task_type: <research / implementation>
 worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門設為 none

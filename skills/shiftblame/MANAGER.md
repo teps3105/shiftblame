@@ -13,7 +13,8 @@
 | 類型 | 部門 | execution_model | 特徵 |
 |------|------|-----------------|------|
 | 研究部門 | SEC / QA / PRD | equal_consensus | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
-| 執行部門 | DEV / QC / EXP | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
+| 執行部門 | DEV | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
+| 管理者驗證 | QC | manager_direct | 管理者直接驗證，不派工 CLI |
 
 ### 部門流水線
 
@@ -23,12 +24,11 @@
 | 1 | QA | 行為斷言 | QA 報告 | L3 + L4 |
 | 2 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 報告 | L2 + L3 + L4 |
 | 3 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 報告 + worktree | L2 + L3 + L4 |
-| 4 | QC | 穩健性攻擊 + 業務邏輯驗證 | QC 報告 | L3 + L4 |
-| 5 | EXP | 用戶視角驗證 | EXP 報告 | L4 |
+| 4 | QC | 穩健性攻擊 + 業務邏輯驗證（管理者直接驗證） | QC 報告 | L3 + L4 |
 
 - **L2**：PRD → DEV
 - **L3**：QA → PRD → DEV → QC
-- **L4**：SEC → QA → PRD → DEV → QC → EXP。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門固定指派：claude 主導 DEV、codex 主導 QC、gemini 主導 EXP（不再動態輪替）
+- **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門固定指派：claude 主導 DEV（不再動態輪替）。QC 由管理者直接驗證，不派工 CLI
 
 ## 2. 執行模型
 
@@ -41,7 +41,9 @@
 
 ### 執行部門循環機制
 
-執行部門（DEV / QC / EXP）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
+執行部門（DEV）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
+
+QC 採管理者直接驗證，不進入執行部門循環機制。
 
 **001（規劃循環）：**
 1. 三方各自分析 task.md → 各自寫入 proposal.md（含四項開工準則）
@@ -81,16 +83,17 @@
 3. **工作樹路徑** — 在哪改
 4. **隔離環境建置** — 怎麼建
 
-### 研究 vs 執行 差異速查
+### 研究 vs 執行 vs 管理者驗證 差異速查
 
-| 項目 | 研究部門 | 執行部門 |
-|------|----------|----------|
-| worktree | 無（唯讀） | 主執行者獨佔 |
-| 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 |
-| 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md → 管理者寫 conclusion.md（純規劃） |
-| 002+ 產出 | — | result.md + review.md（不重複 proposal） |
-| result.md | 不需要 | 僅主執行者寫入 |
-| review.md | 不需要 | 僅監督者寫入 |
+| 項目 | 研究部門 | 執行部門 | 管理者驗證（QC） |
+|------|----------|----------|------------------|
+| worktree | 無（唯讀） | 主執行者獨佔 | 無（管理者只讀取） |
+| 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 | 不派工，管理者直接驗證 |
+| 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md → 管理者寫 conclusion.md（純規劃） | 無 001 循環 |
+| 002+ 產出 | — | result.md + review.md（不重複 proposal） | 無 002+ 循環 |
+| result.md | 不需要 | 僅主執行者寫入 | 不需要 |
+| review.md | 不需要 | 僅監督者寫入 | 不需要 |
+| conclusion.md | 管理者彙整 | 管理者彙整 | 管理者直接寫入 |
 
 ## 3. 派工執行
 
@@ -100,14 +103,14 @@
 2. **slug 命名**：kebab-case（如 `feat-login-flow`）
 3. **REPO.md 讀取**：`read_file()` 讀取現狀
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
-5. **主執行者選定**（僅執行部門）：固定指派（claude → DEV、codex → QC、gemini → EXP），寫入 meta.md。研究部門三方平等，不指定主執行者
+5. **主執行者選定**（僅執行部門）：固定指派（claude → DEV），寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
 7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 各 CLI 子目錄下空白 proposal.md（執行部門 002+ 不建 proposal.md）。執行部門額外在主執行者子目錄建立空白 result.md，在監督者子目錄建立空白 review.md
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
 11. **上游產出驗證**：讀取上游 conclusion.md（非第一個部門時）
-12. **固定指派確認**（僅執行部門）：DEV=claude、QC=codex、EXP=gemini
+12. **固定指派確認**（僅執行部門）：DEV=claude
 13. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
 
 ### 嗅探機制（派工後監控）
@@ -267,9 +270,11 @@ CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.
 ### 監督者職責
 
 每個 CLI 在非主執行者的執行部門中擔任監督者：
-- claude → DEV 主執行者；在 QC、EXP 擔任監督者
-- codex → QC 主執行者；在 DEV、EXP 擔任監督者
-- gemini → EXP 主執行者；在 DEV、QC 擔任監督者
+- claude → DEV 主執行者
+- codex → DEV 監督者
+- gemini → DEV 監督者
+
+QC 由管理者直接驗證，無 CLI 監督者角色。
 
 監督者的唯一職責：對照主執行者的 result.md 中列出的項目，逐一驗證是否確實完成。監督者不修改 worktree，不修正代碼，只寫 review.md 記錄驗證結果。
 
@@ -316,7 +321,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
 ### 退回增量記錄
 
 - L3/L4：退回時部門文件增量填寫（不替換）
-- 退回後主執行者仍依固定指派（DEV=claude、QC=codex、EXP=gemini），不重新選定
+- 退回後主執行者仍依固定指派（DEV=claude），不重新選定
 - 退回紀錄格式：
   ```
   ## 退回紀錄
@@ -347,13 +352,19 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
 
 ## 8. 驗證 SOP
 
-### QC 報告後：弱斷言掃描
+### QC 報告後：管理者直接驗證
+
+QC 不派工 CLI，由管理者直接驗證。流程：
 
 1. 弱斷言關鍵字掃描（`pixel diff` / `ratio` / `source=\"game\"` fallback 等）
 2. 監督者條目逐條判讀
 3. 確認至少一條業務行為斷言用 video/state 級
+4. 管理者判定：
+   - 通過 → QC 完成，推進下一階段（秘書收尾）
+   - 不通過 → 直接退回 DEV 開新 task，同一 slug 下最多退回 3 次，超過退回 PRD
+5. 管理者寫入 QC 的 conclusion.md（僅結論，無 CLI 產出）
 
-任一不通 → 退 QC，不問老闆。
+驗證不通過不問老闆，直接退回 DEV。
 
 ### DEV 報告後：無過濾 pytest + 業務 sanity check
 
@@ -377,8 +388,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
 | 部門 | 驗證標準 | 最低證據 |
 |------|----------|----------|
 | DEV | 應用成功啟動，核心功能可操作 | 啟動日誌 + health check |
-| QC | Happy Path + 邊緣案例跑通 | 測試輸出 + 操作步驟 |
-| EXP | 完整用戶旅程端到端走通 | 端到端日誌 + 可重現步驟 |
+| QC | Happy Path + 邊緣案例跑通（管理者直接驗證） | 測試輸出 + 操作步驟 |
 
 禁止文字描述替代 `terminal()` 輸出。
 

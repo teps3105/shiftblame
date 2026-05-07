@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 description: >-
-  框架入口。六部門四等級單向流程開發框架的調度核心。
+  框架入口。五部門四等級單向流程開發框架的調度核心。
   Use this skill when: the user says  "開始", "start", "開工", "let's go",
   "開始吧", "來吧", "動工", "起動", "開幹", "go", "begin", "go ahead",
   or any phrase signaling the start of a task/work/session.
@@ -15,7 +15,7 @@ description: >-
 L1: 秘書研究 → 秘書收尾
 L2: 秘書研究 → PRD → DEV → 秘書收尾
 L3: 秘書研究 → QA → PRD → DEV → QC → 秘書收尾
-L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
+L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 ```
 
 ## 框架定義檔
@@ -33,14 +33,14 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 | `DEPT/PRD.md` | 產品部門定義 |
 | `DEPT/DEV.md` | 開發部門定義 |
 | `DEPT/QC.md` | 品管部門定義 |
-| `DEPT/EXP.md` | 體驗部門定義 |
 
 ## 部門分類
 
 | 類型 | 部門 | 產出 |
 |------|------|------|
 | 研究部門 | SEC / QA / PRD | proposal.md → 管理者寫 conclusion.md |
-| 執行部門 | DEV / QC / EXP | proposal.md → conclusion.md (001) / conclusion.md + result.md + review.md (002+) |
+| 執行部門 | DEV | proposal.md → conclusion.md (001) / conclusion.md + result.md + review.md (002+) |
+| 管理者驗證 | QC | 管理者直接驗證 → conclusion.md（不通過直接退回 DEV） |
 
 ## 執行部門循環機制
 
@@ -54,7 +54,7 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 | 主執行者 | result.md | 002+ 實際執行成果 |
 | 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
 
-固定指派：claude=DEV、codex=QC、gemini=EXP。每個 CLI 在非主執行者的執行部門中擔任監督者。
+固定指派：claude=DEV。每個 CLI 在非主執行者的執行部門中擔任監督者。QC 由管理者直接驗證，不派工 CLI。
 
 - 001: proposal → conclusion（純規劃，和研究部門結構相同）
 - 002: 管理者發布 task.md → result + review → 管理者寫 conclusion → 判定（首次執行）
