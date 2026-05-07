@@ -27,7 +27,6 @@ claude -p "<prompt>" --dangerously-skip-permissions --output-format text
 **已知問題：**
 - `claude mcp serve`（MCP server 模式）**不載入 agents**。CLI 互動模式有 16 個 agents（含 general-purpose），但 MCP server 回報 "Available agents:" 為空。因此 `mcp_claude_code_Agent` 工具無法使用。
 - 解法：不走 Hermes MCP wrapper，改用 `terminal()` 直接呼叫 `claude -p`。
-- `--dangerously-skip-permissions` 需要 sandbox 環境配合（無網路存取）。
 
 ### codex（Codex）
 

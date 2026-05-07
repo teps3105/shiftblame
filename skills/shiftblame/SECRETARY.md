@@ -4,9 +4,7 @@
 
 你是老闆的貼身秘書。核心職責是推進事情。
 
-**雙模式運作：**
-- **L1 模式**：秘書獨立研究和修改檔案，不呼叫 CLI 員工。適用於日常維護、簡單修改、研究分析。
-- **L2+ 模式**：秘書完成 L1 研究後，轉為部門主管角色，透過 `terminal()` 呼叫 CLI 員工（claude / codex / gemini）推進管線。秘書負責研究起點和收尾終點，管線中間由部門 CLI 員工完成。
+雙模式運作定義見 SKILL.md 開頭「雙模式運作」區段。
 
 ## 1. 角色定義
 
@@ -62,11 +60,7 @@ clarify(question="請確認本次執行模式：", choices=[
 - 瓶頸升級：執行過程中主執行者發現範圍過大 → 秘書確認 → 升級（老闆覆核）。
 - 降級不可逆轉（同一輪次內有效）：縮小範圍降級後不可再升回原等級。
 
-4. 依模式分支：
-   - **L1（日常維護）**：秘書獨立研究和修改檔案，不呼叫 CLI 員工
-   - **L2（標準）**：秘書研究 → PRD（可多輪）→ DEV（可多輪）→ 秘書收尾
-   - **L3（完整）**：秘書研究 → QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ 秘書收尾
-   - **L4（高等）**：秘書研究 → SEC（可多輪）→ QA（可多輪）→ PRD（可多輪）→ DEV（可多輪）→ QC（可多輪）→ EXP（可多輪）→ 秘書收尾
+4. 依模式分支：見 SKILL.md「四等級流程圖」區段。
 
 ### 子循環拆分（模式確認後）
 
@@ -100,13 +94,7 @@ clarify(question="請確認本次執行模式：", choices=[
 
 ### 通訊目錄規則
 
-1. **主管先建**：部門主管在派工前建立完整目錄結構
-2. **雙層寫入**：
-   - 主管寫：`task.md`、`consensus.md`、`conclusion.md`、`failure-notice.md`
-   - CLI 員工寫：自己子目錄的 `proposal.md`、`result.md`（員工的分析產出）
-   - 秘書寫：`meta.md`
-3. **CLI 不可跨寫**：CLI 只能寫自己子目錄，不能寫其他 CLI 的子目錄，不能寫 task.md/consensus.md 等主管檔
-4. **標準結構**：每個部門每輪任務遵循 `<DEPT>/<00x>/` 結構，編號三位數遞增
+見 SKILL.md「通訊目錄結構」區段的寫入權限矩陣。補充操作規則：主管在派工前建立完整目錄結構（`mkdir -p` 含各 CLI 子目錄），每個部門每輪任務遵循 `<DEPT>/<NNN>/` 結構，編號三位數遞增。
 
 ### 寫入權限限制
 
@@ -471,9 +459,14 @@ git worktree remove .shiftblame/<slug>/worktree
 
 ```bash
 # 歸檔閘門
-# 最後一部門必為執行部門（DEV/QC/EXP），產出 consensus.md
+# 最後一部門必為執行部門（DEV/QC/EXP），產出 consensus.md + result.md
 if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/consensus.md ]]; then
   echo "ERROR: 最後部門 consensus.md 不存在或為空，拒絕歸檔。" >&2
+  exit 1
+fi
+# 同時確認至少一名 CLI 員工的 result.md 非空（主管已完成閘門檢查）
+if ! compgen -G ".shiftblame/<slug>/<LAST_DEPT>/<NNN>/*/result.md" | xargs -I{} test -s {}; then
+  echo "ERROR: 所有 CLI 員工 result.md 均為空，拒絕歸檔。" >&2
   exit 1
 fi
 
@@ -534,4 +527,4 @@ sudo -S <command> < <(secret-tool lookup service sudo-pwd)
 
 ## 11. 日常運作模式
 
-主管專用模式（即 L1），用於安裝、部署、版本修改等作業。適用場景：框架安裝/更新、版本號更新、設定檔調整等。L1 模式下秘書獨立研究和修改檔案，不呼叫 CLI 員工。與 L2 的區別：L2 走 PRD → DEV 管線，秘書轉為部門主管角色協調 CLI 員工。
+L1 模式（秘書獨立執行），用於安裝、部署、版本修改等作業。適用場景：框架安裝/更新、版本號更新、設定檔調整等。L1 模式下秘書維持秘書身分（不轉為部門主管），獨立研究和修改檔案，不呼叫 CLI 員工。與 L2 的區別：L2 走 PRD → DEV 管線，秘書轉為部門主管角色協調 CLI 員工。
