@@ -28,7 +28,7 @@
 
 - **L2**：PRD → DEV → QC
 - **L3**：QA → PRD → DEV → QC
-- **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門固定指派：claude 主導 DEV（不再動態輪替）。QC 由管理者直接驗證，不派工 CLI
+- **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門主執行者由公平序列輪替決定（claude → codex → gemini → claude → ...）。QC 由管理者直接驗證，不派工 CLI
 
 ## 2. 執行模型
 
@@ -103,14 +103,14 @@ QC 採管理者直接驗證，不進入執行部門循環機制。
 2. **slug 命名**：kebab-case（如 `feat-login-flow`）
 3. **REPO.md 讀取**：`read_file()` 讀取現狀
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
-5. **主執行者選定**（僅執行部門）：固定指派（claude → DEV），寫入 meta.md。研究部門三方平等，不指定主執行者
+主執行者由公平序列輪替決定（claude → codex → gemini → claude → ...），寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
 7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 各 CLI 子目錄下空白 proposal.md（執行部門 002+ 不建 proposal.md）。執行部門額外在主執行者子目錄建立空白 result.md，在監督者子目錄建立空白 review.md
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
 11. **上游產出驗證**：讀取上游 conclusion.md（非第一個部門時）
-12. **固定指派確認**（僅執行部門）：DEV=claude
+主執行者由公平序列輪替決定（claude → codex → gemini → claude → ...），寫入 meta.md。
 13. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
 
 ### 嗅探機制（派工後監控）
@@ -269,10 +269,9 @@ CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.
 
 ### 監督者職責
 
-每個 CLI 在非主執行者的執行部門中擔任監督者：
-- claude → DEV 主執行者
-- codex → DEV 監督者
-- gemini → DEV 監督者
+每個 CLI 在非主執行者的執行部門中擔任監督者（由公平序列輪替決定主執行者，其餘兩方為監督者）：
+- 主執行者 → DEV 執行（依輪替序列）
+- 監督者 ×2 → DEV 監督者（依輪替序列）
 
 QC 由管理者直接驗證，無 CLI 監督者角色。
 
@@ -321,7 +320,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
 ### 退回增量記錄
 
 - L3/L4：退回時部門文件增量填寫（不替換）
-- 退回後主執行者仍依固定指派（DEV=claude），不重新選定
+- 退回後主執行者依公平序列輪替更新（同 slug 連續退回時輪到下一位），寫入 meta.md
 - 退回紀錄格式：
   ```
   ## 退回紀錄
