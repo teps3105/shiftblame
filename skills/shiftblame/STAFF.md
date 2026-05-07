@@ -106,42 +106,77 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 - .shiftblame/ 下的檔案一律用 cat 讀取
 ```
 
-### Result 階段（依共識執行，僅執行部門）
+### Result 階段 — 主執行者（依共識執行，僅執行部門）
 
 ```text
-你是 <DEPT> 部門的 <cli> 員工。
+你是 <DEPT> 部門的 <cli> 員工（主執行者）。
 
 【步驟 1】讀取以下檔案：
-- 用 cat 讀取 <通訊目錄>/task.md
-- 用 cat 讀取 <通訊目錄>/consensus.md
-- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
-- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
-- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
+|- 用 cat 讀取 <通訊目錄>/task.md
+|- 用 cat 讀取 <通訊目錄>/consensus.md（001）/ 沿用 001 的 consensus.md（002+）
+|- 用 cat 讀取 <通訊目錄>/<cli>/review.md（002+ 時讀取上一輪 review 作為修正依據）
+|- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
+|- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
+|- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
+|- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
 
-【步驟 2】依 consensus.md 執行分工任務
+【步驟 2】依 consensus.md 執行分工任務（002+ 依 review.md 修正）
 
 【步驟 3】將結果寫入 <通訊目錄>/<cli>/result.md
 
 重要：
-- 用繁體中文產出
-- 用 write_file() 寫入自己子目錄的 result.md
-- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
-- worktree 權限依 task.md 與 MANAGER.md 規則判定（僅 DEV 可修改 worktree）
-- .shiftblame/ 下的檔案一律用 cat 讀取
+|- 用繁體中文產出
+|- 用 write_file() 寫入自己子目錄的 result.md
+|- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
+|- worktree 權限依 task.md 與 MANAGER.md 規則判定（僅 DEV 可修改 worktree）
+|- .shiftblame/ 下的檔案一律用 cat 讀取
+|- result.md 必須包含實際執行成果（完成的檔案、測試結果、驗證證據）
+```
+
+### Review 階段 — 輔助者（檢視不修改，僅執行部門 001+）
+
+```text
+你是 <DEPT> 部門的 <cli> 員工（輔助者）。
+
+【步驟 1】讀取以下檔案：
+|- 用 cat 讀取 <通訊目錄>/task.md
+|- 用 cat 讀取 <通訊目錄>/consensus.md
+|- 用 cat 讀取 <通訊目錄>/<主執行者>/result.md（主執行者的實際成果）
+|- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
+|- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
+|- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
+|- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
+
+【步驟 2】檢視主執行者的 result.md，對照 consensus.md 驗證：
+|- 任務完成度：所有 AT 是否已實作
+|- 測試結果：是否全綠、數量是否達標
+|- 安全對照：SA 斷言是否全部滿足
+|- 規格一致性：是否符合 DEPT 定義的產出規格
+
+【步驟 3】將檢視結果寫入 <通訊目錄>/<cli>/review.md
+
+重要：
+|- 用繁體中文產出
+|- 用 write_file() 寫入自己子目錄的 review.md
+|- review.md 只檢視不修改：發現問題列出來，不直接修改 worktree
+|- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
+|- .shiftblame/ 下的檔案一律用 cat 讀取
+|- review.md 格式：通過項目 / 問題清單（附具體證據）/ 判定建議（PASS 或 NEEDS_FIX）
 ```
 
 ### 各員工讀取補充
 
-**claude / codex：** task.md 和定義檔用 cat 讀取，write_file() 寫入 proposal.md / result.md。
+**claude / codex：** task.md 和定義檔用 cat 讀取，write_file() 寫入 proposal.md / result.md / review.md。
 
 **gemini：** `.shiftblame/` 下檔案一律用 cat 讀取（不要用 read_file），框架定義檔可直接用 read_file，write_file() 寫入。
 
 ### 管理者 Poll 流程
 
 1. 派工三方 background process（notify_on_complete=true）
-2. 每 30 秒 poll 各子目錄 proposal.md 是否有內容（嗅探機制）
+2. 每 30 秒 poll 各子目錄 proposal.md / result.md / review.md 是否有內容（嗅探機制）
 3. 研究部門：三方 proposal.md 完成 → 管理者彙整 conclusion.md
-4. 執行部門：階段 0 三方 proposal.md → 管理者寫 consensus.md；階段 1 三方 result.md → 管理者確認
+4. 執行部門 001：三方 proposal.md → 管理者寫 consensus.md → 主執行者 result.md + 輔助者 review.md → 管理者判定
+5. 執行部門 002+：主執行者 result.md + 輔助者 review.md → 管理者判定（通過或開新 NNN）
 
 管理者不代寫員工的 proposal.md / result.md。權限問題時診斷根因並修復參數。
 

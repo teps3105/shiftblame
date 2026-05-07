@@ -163,12 +163,13 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 ├── worktree/            # 單一共用 worktree
 └── <DEPT>/<NNN>/
     ├── task.md              # 管理者寫入
-    ├── consensus.md         # 管理者寫入（執行部門）
+    ├── consensus.md         # 管理者寫入（執行部門 001）
     ├── conclusion.md        # 管理者寫入（研究部門）
     ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
-        ├── proposal.md
-        └── result.md        # 僅執行部門
+        ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）
+        ├── result.md            # 僅主執行者寫入（執行部門）
+        └── review.md            # 僅輔助者寫入（執行部門 001+）
 ```
 
 ### 寫入權限
@@ -177,10 +178,11 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 |------|------|
 | 秘書 | meta.md（L1 模式除外，具完整權限） |
 | 管理者 | task.md、consensus.md、conclusion.md、failure-notice.md、meta.md |
-| CLI 員工 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
+| 主執行者 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
+| 輔助者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
 
-- worktree 修改權僅限 DEV 部門的 CLI
-- 管理者不可代寫 CLI 的 proposal.md / result.md
+- worktree 修改權僅限 DEV 部門的主執行者（claude）
+- 管理者不可代寫 CLI 的 proposal.md / result.md / review.md
 - L2+ 管線期間秘書不編輯 worktree 內容與通訊目錄文件
 
 ## 7. meta.md 格式
