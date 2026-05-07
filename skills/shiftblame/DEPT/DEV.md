@@ -15,17 +15,26 @@
 ## 執行模型
 
 開發部門。execution_model: lead_executor。
-主執行者固定為 claude，codex 與 gemini 固定擔任監督者。001 三方 proposal → 管理者寫 conclusion（純規劃）→ 002 管理者發布 task.md → claude 實作 → codex 與 gemini 擔任監督者。
+主執行者固定為 claude，codex 與 gemini 固定擔任監督者（各從不同面向）。001 三方 proposal → 管理者寫 conclusion（純規劃）→ 002 管理者發布 task.md → claude 實作 → codex 與 gemini 各從不同面向監督。
 003+ 修正循環：管理者重新發布 task.md → claude 依 review.md 修正 → codex 與 gemini 重新檢視。退回時仍由 claude 擔任主執行者。
 **主執行者獨佔 worktree 編輯權與 Git 操作權。**
 監督者寫 review.md 檢視成果，不修改 worktree。具備受限寫入權（限 typo、版本號不一致、小規格偏差），修正後由主執行者 commit。
+
+### 監督者面向分工
+
+兩位監督者從不同面向檢視主執行者成果：
+
+| 監督者 | 面向 | 檢視重點 |
+|--------|------|----------|
+| codex | 邏輯正確性 + 測試覆蓋度 | 靜態分析、代碼審查、邏輯分支完整性、測試覆蓋度、邊界條件處理 |
+| gemini | 功能完整性 + 規格一致性 | 對照 PRD 驗證需求覆蓋、功能端到端完整性、規格偏差、遺漏功能 |
 
 ## 產出規格
 
 路徑：`.shiftblame/<slug>/DEV/<NNN>/`
 - `claude/result.md` — claude 寫入（固定主執行者）
-- `codex/review.md` — codex 寫入（固定監督者）
-- `gemini/review.md` — gemini 寫入（固定監督者）
+- `codex/review.md` — codex 寫入（固定監督者，面向：邏輯正確性 + 測試覆蓋度）
+- `gemini/review.md` — gemini 寫入（固定監督者，面向：功能完整性 + 規格一致性）
 
 ### devlog 必備
 1. 實作檔案清單與路徑（按職能分組）
@@ -80,7 +89,7 @@ L2/L3/L4 模式皆依 DAG 常規執行，按模組拓撲順序落地。
 
 ## 管理者 E2E 實際驗證閘門
 
-DEV 部門監督者 review 通過後，進入 QC 之前，**管理者必須親自執行 E2E 實際驗證**。
+DEV 部門監督者 review 通過後，進入 QC 之前，**管理者必須親自執行 E2E 實際驗證，通過後交由老闆覆核**。
 
 ### 驗證流程
 
@@ -91,21 +100,25 @@ DEV 部門監督者 review 通過後，進入 QC 之前，**管理者必須親�
    - 前端介面實際可操作（Web SPA 透過 chrome-devtools-mcp）
    - QA 斷言覆蓋的核心場景可重現
 4. 管理者寫入 E2E 驗證結果到 DEV conclusion.md（追加段落）
-5. 判定：
-   - 通過 → 推進 QC
+5. 管理者 E2E 判定：
    - 不通過 → 退回 DEV 開新 NNN 修正，修正後管理者再次 E2E 驗證
+   - 通過 → 呈報老闆覆核（`clarify`）
+6. **老闆覆核**：管理者呈報 E2E 驗證結果，老闆判定：
+   - 確認通過 → 推進 QC
+   - 不通過或有疑慮 → 退回 DEV 開新 NNN 修正，修正後重新走 E2E + 老闆覆核
 
 ### QC 退回 DEV 後的 E2E
 
-QC 退回 DEV 修正完成後，管理者**必須再次執行 E2E 實際驗證**，通過後才可重新進入 QC。不可跳過。
+QC 退回 DEV 修正完成後，管理者**必須再次執行 E2E 實際驗證 + 老闆覆核**，通過後才可重新進入 QC。不可跳過。
 
 ### 最低證據
 
 - 應用啟動 terminal() 輸出
 - 端到端操作步驟紀錄（含截圖路徑或 console logs）
 - 管理者判定結論（PASS / FAIL）
+- 老闆覆核結果
 
 ## 認知模型
 
-**品質基線**：主執行者產出須通過監督者 review.md 逐條驗證，再通過管理者 E2E 實際驗證，才可進入 QC。
+**品質基線**：主執行者產出須通過監督者 review.md 逐條驗證（codex 面向邏輯正確性+測試覆蓋度、gemini 面向功能完整性+規格一致性），再通過管理者 E2E 實際驗證 + 老闆覆核，才可進入 QC。
 **執行隔離改變除錯**：除錯依賴 stdout/stderr 而非斷點。每個步驟都必須有可觀察的 terminal() 輸出。
