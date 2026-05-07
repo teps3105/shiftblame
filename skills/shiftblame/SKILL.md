@@ -118,7 +118,7 @@ description: >-
 
 - **僅 DEV 部門**的 CLI 可修改 worktree
 - 其餘部門（SEC/QA/PRD/QC/EXP）的 CLI 禁止修改 worktree
-- CLI 的唯一寫入權限就是 worktree（僅限 DEV）
+- CLI 在通訊目錄的寫入權限為 proposal.md / result.md；在 worktree 的寫入權限僅限 DEV
 
 ## 部門執行模型
 

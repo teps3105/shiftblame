@@ -15,7 +15,7 @@ EXP 屬執行部門，execution_model 為 lead_executor。全體均無 worktree 
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/EXP/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
+產出路徑：`.shiftblame/<slug>/EXP/<NNN>/`（consensus.md + 各 CLI 員工 proposal.md、result.md）
 
 必備內容：
 1. 用戶旅程地圖（操作路徑視角）。
@@ -32,7 +32,7 @@ EXP 從用戶視角驗證，不從技術視角驗證。不驗證程式碼邏輯�
 EXP 執行者無 worktree 編輯權（僅執行測試）。發現問題僅記錄於報告，禁止直接修改。
 
 ### R3：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
+本部門屬執行部門。見 SKILL.md「部門執行模型」區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
 
 ### R4：可重現的操作步驟
 EXP 必須提供可重現的操作步驟與佐證，讓其他 CLI 員工 能獨立確認發現。

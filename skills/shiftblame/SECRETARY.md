@@ -462,7 +462,7 @@ git worktree remove .shiftblame/<slug>/worktree
 ```
 
 **Worktree 規範：**
-- worktree 建立權歸屬主管（派工階段），清理由秘書執行（收尾階段）。僅主執行者（lead_executor）擁有 worktree 的寫入權。
+- worktree 由秘書在 L1→L2+ 過渡時建立，清理由秘書在收尾階段執行。僅主執行者（lead_executor）擁有 worktree 的寫入權。
 - **單一共用**：所有部門共用同一個位於 slug 層級的 worktree。
 - **主執行者獨佔**：在實作階段，僅主執行者有權在 worktree 上進行編輯與 Git 操作。
 - **禁止內建**：明確禁止使用內建 worktree 管理方式。

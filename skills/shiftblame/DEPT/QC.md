@@ -18,7 +18,7 @@ QC 屬執行部門，execution_model 為 lead_executor。全體均無 worktree �
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/QC/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
+產出路徑：`.shiftblame/<slug>/QC/<NNN>/`（consensus.md + 各 CLI 員工 proposal.md、result.md）
 
 必備內容：
 1. 開發環境端到端測試結果（含操作佐證）。
@@ -63,7 +63,7 @@ QC 的操作步驟必須可被其他 CLI 員工 在同一 worktree 上重現。�
 跑測試前檢查後台有沒有類似測試正在跑（不同 CLI 員工 同時跑相同測試會互相干擾），避免重複執行。
 
 ### R13：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
+本部門屬執行部門。見 SKILL.md「部門執行模型」區段。全體均無 worktree 編輯權（僅執行測試），全體均無 Git 操作權。
 
 ### R14：README.md / `.shiftblame/REPO.md` 品質檢閱
 QC 在所有模式（L2/L3/L4）的驗證範圍應包含 README.md 與 `.shiftblame/REPO.md` 的品質檢閱：

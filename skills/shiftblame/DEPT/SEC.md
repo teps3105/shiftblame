@@ -41,7 +41,7 @@ SEC 規則不綁定特定技術棧或框架。安全基線必須具備跨專案�
 ### R7：分歧處置：安全爭議內部化
 CLI 員工 對「某操作是否安全」的技術爭議，以安全工具掃描結果為準進行內部辯論。若涉及規則理解分歧，標記 [TBD: 安全邊界待定] 由秘書裁定。
 ### R8：研究部門執行模型
-本部門屬研究部門，execution_model 為 equal_consensus。本部門執行模型詳見上方 execution_model 區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
+本部門屬研究部門，execution_model 為 equal_consensus。見 SKILL.md「部門執行模型」區段。不接觸 worktree（研究階段 task prompt 不含 worktree 路徑）。
 
 SEC 與 EXP 為鏡像對應部門（資安研究 ↔ 用戶體驗驗證），遵循 4:4 鏡像原則。
 

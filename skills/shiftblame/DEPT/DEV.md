@@ -17,7 +17,7 @@ DEV 屬執行部門，execution_model 為 lead_executor。主執行者獨佔 wor
 
 ## 產出規格
 
-產出路徑：`.shiftblame/<slug>/DEV/<NNN>/`（consensus.md + 各 CLI 員工 result.md）
+產出路徑：`.shiftblame/<slug>/DEV/<NNN>/`（consensus.md + 各 CLI 員工 proposal.md、result.md）
 
 devlog 必備內容：
 1. 實作檔案清單與路徑（按職能分組）。
@@ -63,7 +63,7 @@ DEV 的三個 CLI 員工 透過 terminal() 在 worktree 上執行任務，所有
 全量測試時一次只跑一條線（sequential），不要 parallel，避免多條測試線同時搶 mock 服務導致 flaky。
 
 ### R11：執行部門執行模型
-本部門屬執行部門。本部門執行模型詳見上方 execution_model 區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權，實作/執行/測試並寫入實作報告。輔助者具備受限寫入權，可在檢閱過程中主動修正 worktree 上發現的錯誤（限 typo、版本號不一致、小規格偏差）。所有修正必須在 result.md 中明確紀錄（檔案、行號、修改前後、原因）。輔助者不具 Git 操作權，修正後由主執行者 commit。
+本部門屬執行部門。見 SKILL.md「部門執行模型」區段。主執行者獨佔單一 worktree 的編輯權與 Git 操作權。輔助者具備受限寫入權（限 typo、版本號不一致、小規格偏差），不具 Git 操作權，修正後由主執行者 commit。
 
 ### R12：L4 模式原子化執行
 L4 模式中，DEV 依 PRD 的原子任務清單執行。每個原子任務為獨立派工單位，主執行者採公平序列輪替決定。原子任務之間的前置依賴由 PRD 定義，DEV 依序執行。L2/L3 模式不受此規則影響，DEV 依 PRD DAG 常規執行。
