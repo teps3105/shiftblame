@@ -13,7 +13,7 @@
 ## 執行模型
 
 執行部門。execution_model: lead_executor。
-階段 0 三方共識 → 管理者指定主執行者 → 輔助者檢視。
+固定主執行者：**gemini**。階段 0 三方共識 → gemini 主導驗證 → 輔助者（claude、codex）檢視。
 **全體無 worktree 編輯權（僅執行測試），全體無 Git 操作權。**
 
 ## 產出規格
