@@ -74,7 +74,7 @@ clarify(question="請確認本次執行模式：", choices=[
 L2+ 確認後，秘書確認以下項目：
 
 1. L1 研究已完成（專案現狀釐清、執行準則確立、問題診斷）
-2. 主執行者已選定並寫入 meta.md（首次由老闆指定，後續由公平序列輪替；僅開發部門；研究部門三方平等，不需指定）
+2. 主執行者角色已確認並寫入 meta.md（開發部門固定 claude 為主執行者、codex 與 gemini 為監督者；研究部門三方平等，不需指定）
 3. 單一共用 worktree 已建立在 slug 層級
 4. 任一不滿足 → 補齊後重新確認
 5. `clarify` 確認研究產出可接受 → 交給管理者
@@ -184,7 +184,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅開發部門） |
 | 監督者 | 自己子目錄的 proposal.md、review.md（僅開發部門） |
 
-- worktree 修改權僅限 DEV 部門的輪替主執行者
+- worktree 修改權僅限 DEV 部門的主執行者（claude）
 - 管理者不可代寫 CLI 的 proposal.md / result.md / review.md
 - L2+ 管線期間秘書不編輯 worktree 內容與通訊目錄文件
 
@@ -197,12 +197,12 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 部門 | 主執行者 | 監督者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
 | PRD | 三方平等 | — | L4 | 1 | 2026-01-01T00:00:00Z |
-| DEV | <輪替主執行者> | <監督者×2> | L4 | 1 | 2026-01-01T00:00:00Z |
+| DEV | claude | codex, gemini | L4 | 1 | 2026-01-01T00:00:00Z |
 
 ## 當前狀態
 - current_mode: L3
 - 上次派工部門：QA
-- 首次由老闆指定主執行者並寫入 meta.md，後續由公平序列輪替決定
+- 開發部門固定 claude 為主執行者、codex 與 gemini 為監督者
 
 ## 模式變更紀錄
 - 2026-01-01T02:00:00Z：降級 L4（原因：範圍縮小）

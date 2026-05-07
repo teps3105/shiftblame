@@ -54,7 +54,7 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 | 主執行者 | result.md | 002+ 實際執行成果 |
 | 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
 
-主執行者首次由老闆指定並寫入 meta.md 作為序列起點，後續由公平序列輪替決定（claude → codex → gemini → claude → ...），其餘兩方擔任監督者。QC 由管理者直接驗證，不派工 CLI。
+主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 由管理者直接驗證，不派工 CLI。
 
 - 001: proposal → conclusion（純規劃，和研究部門結構相同）
 - 002: 管理者發布 task.md → result + review → 管理者寫 conclusion → 判定（首次執行）
