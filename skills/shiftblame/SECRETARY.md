@@ -163,8 +163,8 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 ├── worktree/            # 單一共用 worktree
 └── <DEPT>/<NNN>/
     ├── task.md              # 001 管理者寫入；002+ 管理者每次重新發布
-    ├── consensus.md         # 管理者寫入（執行部門 001 規劃）
-    ├── conclusion.md        # 管理者寫入（研究部門）
+    ├── conclusion.md        # 管理者寫入（001 規劃結論，研究與執行部門共用）
+    ├── consensus.md         # 管理者寫入（002+ 當次執行共識）
     ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）

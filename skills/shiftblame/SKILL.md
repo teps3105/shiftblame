@@ -40,7 +40,7 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 | 類型 | 部門 | 產出 |
 |------|------|------|
 | 研究部門 | SEC / QA / PRD | proposal.md → 管理者寫 conclusion.md |
-| 執行部門 | DEV / QC / EXP | proposal.md + consensus.md + result.md + review.md |
+| 執行部門 | DEV / QC / EXP | proposal.md → conclusion.md (001) / consensus.md + result.md + review.md (002+) |
 
 ## 執行部門循環機制
 
@@ -49,7 +49,8 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 | 角色 | 寫入 | 說明 |
 |------|------|------|
 | 三方 CLI | proposal.md | 001 各自分析寫入提案（含四項開工準則） |
-| 管理者 | consensus.md | 001 彙整三方提案為共識 |
+| 管理者 | conclusion.md | 001 彙整三方提案為規劃結論 |
+| 管理者 | consensus.md | 002+ 彙整當次執行 result + review 為共識 |
 | 主執行者 | result.md | 002+ 實際執行成果 |
 | 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
 

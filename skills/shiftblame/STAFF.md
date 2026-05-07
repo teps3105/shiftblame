@@ -113,21 +113,21 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 【步驟 1】讀取以下檔案：
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/task.md（管理者為本次循環重新發布的版本）
-|- 用 cat 讀取 <001 通訊目錄>/consensus.md
+|- 用 cat 讀取 <001 通訊目錄>/conclusion.md
 |- 用 cat 讀取 <上一輪通訊目錄>/<cli>/review.md（003+ 時讀取上一輪 review 作為修正依據）
 |- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
 |- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
 |- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
 |- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
 
-【步驟 2】依 task.md（本次循環版本）與 consensus.md 執行分工任務（003+ 依上一輪 review.md 修正）
+【步驟 2】依 task.md（本次循環版本）與 conclusion.md 執行分工任務（003+ 依上一輪 review.md 修正）
 
 【步驟 3】將結果寫入 <當前 NNN 通訊目錄>/<cli>/result.md
 
 重要：
 |- 用繁體中文產出
 |- 用 write_file() 寫入自己子目錄的 result.md
-|- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
+|- 禁止寫入其他員工子目錄、task.md、conclusion.md、consensus.md 等管理者文件
 |- worktree 權限依 task.md 與 MANAGER.md 規則判定（僅 DEV 可修改 worktree）
 |- .shiftblame/ 下的檔案一律用 cat 讀取
 |- result.md 必須包含實際執行成果（完成的檔案、測試結果、驗證證據）
@@ -140,7 +140,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 【步驟 1】讀取以下檔案：
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/task.md（管理者為本次循環重新發布的版本）
-|- 用 cat 讀取 <001 通訊目錄>/consensus.md
+|- 用 cat 讀取 <001 通訊目錄>/conclusion.md
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/<主執行者>/result.md（主執行者的實際成果）
 |- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
 |- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
@@ -160,7 +160,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 |- 用繁體中文產出
 |- 用 write_file() 寫入自己子目錄的 review.md
 |- review.md 只檢視不修改：發現問題列出來，不直接修改 worktree
-|- 禁止寫入其他員工子目錄、task.md、consensus.md 等管理者文件
+|- 禁止寫入其他員工子目錄、task.md、conclusion.md、consensus.md 等管理者文件
 |- .shiftblame/ 下的檔案一律用 cat 讀取
 |- review.md 格式：逐條驗證 result.md 項目（已完成 / 未完成 / 不符聲稱）/ 問題清單（附具體證據）/ 判定建議（PASS 或 NEEDS_FIX）
 ```
@@ -176,7 +176,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 1. 派工三方 background process（notify_on_complete=true）
 2. 每 30 秒 poll 各子目錄 proposal.md / result.md / review.md 是否有內容（嗅探機制）
 3. 研究部門：三方 proposal.md 完成 → 管理者彙整 conclusion.md
-4. 執行部門 001：三方 proposal.md → 管理者寫 consensus.md（純規劃，不執行）
+4. 執行部門 001：三方 proposal.md → 管理者寫 conclusion.md（純規劃，不執行）
 5. 執行部門 002：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定
 6. 執行部門 003+：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定（通過或開新 NNN）
 
