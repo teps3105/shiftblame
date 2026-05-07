@@ -15,7 +15,7 @@
 ## 執行模型
 
 執行部門。execution_model: lead_executor。
-主執行者由公平序列輪替決定（claude → codex → gemini → claude → ...）。001 三方 proposal → 管理者寫 conclusion（純規劃）→ 002 管理者發布 task.md → 主執行者依輪替實作 → 其餘兩方擔任監督者。
+主執行者首次由老闆指定並寫入 meta.md 作為序列起點，後續依公平序列輪替（claude → codex → gemini → claude → ...）。001 三方 proposal → 管理者寫 conclusion（純規劃）→ 002 管理者發布 task.md → 主執行者依輪替實作 → 其餘兩方擔任監督者。
 003+ 修正循環：管理者重新發布 task.md → 主執行者依 review.md 修正 → 監督者重新檢視。退回時輪替更新主執行者（輪到下一位），寫入 meta.md。
 **主執行者獨佔 worktree 編輯權與 Git 操作權。**
 監督者寫 review.md 檢視成果，不修改 worktree。具備受限寫入權（限 typo、版本號不一致、小規格偏差），修正後由主執行者 commit。
