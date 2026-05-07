@@ -34,3 +34,35 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 | `DEPT/DEV.md` | 開發部門定義 |
 | `DEPT/QC.md` | 品管部門定義 |
 | `DEPT/EXP.md` | 體驗部門定義 |
+
+## 部門分類
+
+| 類型 | 部門 | 產出 |
+|------|------|------|
+| 研究部門 | SEC / QA / PRD | proposal.md → 管理者寫 conclusion.md |
+| 執行部門 | DEV / QC / EXP | proposal.md + consensus.md + result.md + review.md |
+
+## 執行部門循環機制
+
+執行部門採循環推進（001 規劃 → 002 首次執行 → 003+ 修正）：
+
+| 角色 | 寫入 | 說明 |
+|------|------|------|
+| 三方 CLI | proposal.md | 001 各自分析寫入提案（含四項開工準則） |
+| 管理者 | consensus.md | 001 彙整三方提案為共識 |
+| 主執行者 | result.md | 002+ 實際執行成果 |
+| 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
+
+固定指派：claude=DEV、codex=QC、gemini=EXP。每個 CLI 在非主執行者的執行部門中擔任監督者。
+
+- 001: proposal → consensus（純規劃，和研究部門結構相同）
+- 002: 沿用 consensus → result + review → 判定（首次執行）
+- 003+: 沿用 consensus → result + review → 判定（修正循環）
+- review 通過 → 完成；有問題 → 開新 NNN
+- 同一部門最多 5 個子循環（001~005），超過退回上游
+
+## 主執行者向上請求支援
+
+主執行者在 result.md 寫入 `[SUPPORT_REQUEST: TOOL/ASSIST]`：
+- TOOL：管理者增加工具後重新派工
+- ASSIST：管理者代為處理受阻任務

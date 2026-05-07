@@ -14,8 +14,8 @@
 ## 執行模型
 
 執行部門。execution_model: lead_executor。
-固定主執行者：**codex**。001 三方共識 → codex 主導驗證 → 監督者（claude、gemini）檢視。
-002+ 純修正循環：codex 依 review.md 修正 → 監督者重新檢視。
+固定主執行者：**codex**。001 三方 proposal → 管理者寫 consensus（純規劃）→ 002 管理者發布 task.md → codex 主導驗證 → 監督者（claude、gemini）檢視。
+003+ 修正循環：管理者重新發布 task.md → codex 依 review.md 修正 → 監督者重新檢視。
 **全體無 worktree 編輯權（僅執行測試），全體無 Git 操作權。**
 監督者寫 review.md 檢視 codex 驗證成果，不修改 worktree。
 

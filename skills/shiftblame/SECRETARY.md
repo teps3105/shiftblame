@@ -162,14 +162,14 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 ├── meta.md              # 秘書建立，管理者維護
 ├── worktree/            # 單一共用 worktree
 └── <DEPT>/<NNN>/
-    ├── task.md              # 管理者寫入
-    ├── consensus.md         # 管理者寫入（執行部門 001）
+    ├── task.md              # 001 管理者寫入；002+ 管理者每次重新發布
+    ├── consensus.md         # 管理者寫入（執行部門 001 規劃）
     ├── conclusion.md        # 管理者寫入（研究部門）
     ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）
-        ├── result.md            # 僅主執行者寫入（執行部門）
-        └── review.md            # 僅監督者寫入（執行部門 001+）
+        ├── result.md            # 僅主執行者寫入（執行部門 002+）
+        └── review.md            # 僅監督者寫入（執行部門 002+）
 ```
 
 ### 寫入權限

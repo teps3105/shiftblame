@@ -41,18 +41,22 @@
 
 ### 執行部門循環機制
 
-執行部門（DEV / QC / EXP）採循環推進：001 首次共識+執行，002+ 純修正循環。
+執行部門（DEV / QC / EXP）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
 
-**001（首次循環）：**
+**001（規劃循環）：**
 1. 三方各自分析 task.md → 各自寫入 proposal.md（含四項開工準則）
 2. 管理者讀取三方 proposal.md → 寫入 consensus.md
-3. 主執行者依 consensus.md 執行 → 寫入 result.md（實際成果）
-4. 監督者檢視主執行者成果 → 各自寫入 review.md（只檢視不修改）
-5. 管理者讀取 result.md + review.md 判定：
-   - 通過 → 部門完成，推進下一部門
-   - 有問題 → 開啟 002 子循環
+3. 001 完成，進入 002 執行
 
-**002+（修正循環）：**
+**002（首次執行）：**
+1. 不重新生成 proposal.md，沿用 001 的 consensus.md 作為基準
+2. 主執行者依 consensus.md 執行 → 寫入 result.md（實際成果）
+3. 監督者檢視主執行者成果 → 各自寫入 review.md（只檢視不修改）
+4. 管理者讀取 result.md + review.md 判定：
+   - 通過 → 部門完成，推進下一部門
+   - 有問題 → 開啟 003 子循環
+
+**003+（修正循環）：**
 1. 不重新生成 proposal.md，沿用 001 的 consensus.md 作為基準
 2. 主執行者依 review.md 反饋修正 → 寫入 result.md（覆蓋更新）
 3. 監督者重新檢視 → 各自寫入 review.md（覆蓋更新）
@@ -61,8 +65,8 @@
 **上游判定：** 循環的上游是上一個執行部門（或研究部門結論）。每次開新 NNN 時，主執行者讀取上一個執行部門的 result.md 作為輸入。
 
 **產出歸屬：**
-- result.md：僅主執行者寫入，含實際執行成果
-- review.md：僅監督者寫入，含檢視結果與問題清單（不修改 worktree）
+- result.md：僅主執行者寫入（002+），含實際執行成果
+- review.md：僅監督者寫入（002+），含檢視結果與問題清單（不修改 worktree）
 - proposal.md：僅 001 生成，002+ 不重複
 
 ### 四項開工準則
@@ -77,8 +81,8 @@
 | 項目 | 研究部門 | 執行部門 |
 |------|----------|----------|
 | worktree | 無（唯讀） | 主執行者獨佔 |
-| 派工方式 | 三方同時 | 001 階段 0→1，002+ 循環修正 |
-| 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md + consensus.md + result.md + review.md |
+| 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 |
+| 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md + consensus.md（純規劃） |
 | 002+ 產出 | — | result.md + review.md（不重複 proposal） |
 | result.md | 不需要 | 僅主執行者寫入 |
 | review.md | 不需要 | 僅監督者寫入 |
@@ -136,12 +140,15 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 
 ### 執行部門派工
 
-**001（首次循環）：**
-- 階段 0：三方分析 task.md → 各自寫 proposal.md（含四項開工準則）
+**001（規劃循環）：**
+- 三方分析 task.md → 各自寫 proposal.md（含四項開工準則）
 - 管理者：讀取三方 proposal.md → 寫入 consensus.md
-- 階段 1：主執行者依 consensus.md 執行 → 寫 result.md；監督者檢視 → 寫 review.md
+- 001 完成，進入 002 執行
 
-**002+（修正循環）：**
+**002（首次執行）：**
+- 主執行者依 consensus.md 執行 → 寫 result.md；監督者檢視 → 寫 review.md
+
+**003+（修正循環）：**
 - 不重跑 proposal，沿用 001 consensus.md
 - 主執行者依 review.md 修正 → 寫 result.md
 - 監督者重新檢視 → 寫 review.md
@@ -153,8 +160,9 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - CLI 自行讀取 DEPT/<DEPT>.md、確認任務、執行分工
 - 研究部門：管理者寫 conclusion.md，不寫 consensus.md
-- 執行部門 001：管理者寫 consensus.md，主執行者寫 result.md，監督者寫 review.md
-- 執行部門 002+：不重跑 proposal，主執行者寫 result.md，監督者寫 review.md
+- 執行部門 001：三方 proposal → 管理者寫 consensus.md（純規劃，不執行）
+- 執行部門 002：主執行者寫 result.md，監督者寫 review.md（首次執行）
+- 執行部門 003+：不重跑 proposal，主執行者寫 result.md，監督者寫 review.md
 
 ## 4. 閘門流程
 
@@ -177,6 +185,12 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 ### 研究部門閘門
 
 三方 proposal.md 完成 → 管理者彙整寫入 conclusion.md → `clarify` 呈報老闆判定。
+
+### 執行部門 001 規劃閘門
+
+三方 proposal.md 完成 → 管理者彙整寫入 consensus.md → 001 完成，自動進入 002 執行。
+
+### 執行部門 002+ 執行閘門
 
 ### 模式升降閘門
 
@@ -319,7 +333,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
 ### 部門多輪迭代（執行部門循環）
 
 - 通訊目錄：每個子循環建立新的 `<NNN>`（001 → 002 → 003...）
-- task.md：所有子循環共用，不更新
+- task.md：001 管理者寫入，002 起每次執行循環管理者重新發布（納入共識與 review 反饋）
 - consensus.md：001 生成，002+ 沿用（不重新共識）
 - proposal.md：僅 001 生成，002+ 不重複
 - result.md：每個 NNN 由主執行者覆蓋寫入
