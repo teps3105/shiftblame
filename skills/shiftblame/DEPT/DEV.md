@@ -23,6 +23,9 @@
 ## 產出規格
 
 路徑：`.shiftblame/<slug>/DEV/<NNN>/`
+- `claude/result.md` — 主執行者寫入（固定：DEV=claude、QC=codex、EXP=gemini）
+- `codex/review.md` — 監督者寫入
+- `gemini/review.md` — 監督者寫入
 
 ### devlog 必備
 1. 實作檔案清單與路徑（按職能分組）

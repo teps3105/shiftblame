@@ -22,6 +22,9 @@
 ## 產出規格
 
 路徑：`.shiftblame/<slug>/QC/<NNN>/`
+- `codex/result.md` — 主執行者寫入（固定：DEV=claude、QC=codex、EXP=gemini）
+- `claude/review.md` — 監督者寫入
+- `gemini/review.md` — 監督者寫入
 
 必備內容：
 1. 端到端測試結果（含操作佐證）

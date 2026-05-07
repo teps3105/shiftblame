@@ -21,6 +21,9 @@
 ## 產出規格
 
 路徑：`.shiftblame/<slug>/EXP/<NNN>/`
+- `gemini/result.md` — 主執行者寫入（固定：DEV=claude、QC=codex、EXP=gemini）
+- `claude/review.md` — 監督者寫入
+- `codex/review.md` — 監督者寫入
 
 必備內容：
 1. 用戶旅程地圖（操作路徑視角）
