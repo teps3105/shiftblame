@@ -33,14 +33,14 @@
 - 不在 QC 部門內開修正循環
 - conclusion.md 記載失敗根因與具體退回項目
 - 退回 DEV 後，DEV 依退回項目開新 NNN 修正
-- 修正完成後，管理者必須再次執行 E2E 實際驗證，通過後才可重新進入 QC
+- 修正完成後，管理者必須再次執行 E2E 實際驗證 + 老闆覆核，通過後才可重新進入 QC
 - 同一 slug 下 QC 退回 DEV 最多 5 次，超過向上退回至 PRD
 
 **CLI 介入：** 三方 CLI 各自寫入 review.md，管理者彙整寫 conclusion.md。
 
 ## 產出規格
 
-路徑：`.shiftblame/<slug>/QC/`
+路徑：`.shiftblame/<slug>/QC/<NNN>/`
 - `claude/review.md` — claude 寫入（穩健性 + 邊緣案例）
 - `codex/review.md` — codex 寫入（紅隊攻擊）
 - `gemini/review.md` — gemini 寫入（藍隊防禦 + 紅藍對照）
@@ -110,7 +110,7 @@ PASS → 部署指引。FAIL → 根因分析 + 退回建議（退回 DEV）。
 QC 驗證標準：三方各自至少一個邊緣案例或攻擊路徑實際跑通。最低證據：完整測試執行輸出 + 操作步驟紀錄。
 
 **R10 QC 退回後管理者重新 E2E**
-QC 不通過退回 DEV，DEV 修正完成後，管理者必須再次執行 E2E 實際驗證。通過後才可重新進入 QC。不可跳過此閘門。
+QC 不通過退回 DEV，DEV 修正完成後，管理者必須再次執行 E2E 實際驗證 + 老闆覆核。通過後才可重新進入 QC。不可跳過此閘門。
 
 ## 認知模型
 

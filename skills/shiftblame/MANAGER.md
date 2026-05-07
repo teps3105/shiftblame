@@ -103,15 +103,14 @@ QC 採三方獨立驗證（equal_consensus），三方 CLI 平行派工，各自
 2. **slug 命名**：kebab-case（如 `feat-login-flow`）
 3. **REPO.md 讀取**：`read_file()` 讀取現狀
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
-5. **主執行者確認**（僅開發部門）：主執行者固定為 claude，codex 與 gemini 固定擔任監督者，寫入 meta.md。研究部門三方平等，不指定主執行者
+5. **角色確認**（僅開發部門）：主執行者固定為 claude，codex 與 gemini 固定擔任監督者，寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
 7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 各 CLI 子目錄下空白 proposal.md（開發部門 002+ 不建 proposal.md）。開發部門額外在主執行者子目錄建立空白 result.md，在監督者子目錄建立空白 review.md
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
 11. **上游產出驗證**：讀取上游 conclusion.md（非第一個部門時）
-12. **角色確認**（僅開發部門）：確認 claude 為主執行者、codex 與 gemini 為監督者，寫入 meta.md
-13. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
+12. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
 
 ### 嗅探機制（派工後監控）
 
@@ -133,6 +132,7 @@ done
 - 嗅探 ≠ 超時檢測：CLI 可能正常執行但尚未寫檔
 - process 結束但檔案仍為空 → 判定失敗
 - 長時間（>10 分鐘）無新輸出 → 管理者主動介入診斷
+- **部門切換時清理**：推進到下一部門前，必須終止前一個部門的嗅探程序（`process(action='kill')`），避免殘留程序干擾
 
 ### 研究部門同時派工
 
@@ -308,14 +308,23 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（開�
 
 DEV 監督者 review 通過後，管理者執行 E2E 實際驗證閘門：
 
+**前置條件**：專案必須具備實際可 E2E 驗證的框架（如 chrome-devtools-mcp 適用於 Web SPA、其他對應自動化框架適用於其技術棧）。E2E 驗證要求實際開啟程式在實體螢幕上執行，不可僅以 API 呼叫或 headless 模式替代。若無可用的 E2E 驗證框架，管理者：
+1. 搜尋是否有可用的 MCP 或自動化框架適用於該技術棧
+2. 以 `clarify()` 呈報老闆覆核，建議安裝方案或退回 DEV 自行建置
+3. 老闆判定：
+   - 安裝既有框架 → 安裝後進行 E2E 測試
+   - 退回 DEV 自行建置 → DEV 開新 NNN 建置 E2E 驗證環境
+不可跳過此閘門進入 QC。
+
 1. 管理者讀取 DEV 最終 conclusion.md + claude/result.md
 2. 管理者實際啟動應用，以使用者身份操作端到端流程
-3. 驗證核心功能路徑端到端走通（Web SPA 透過 chrome-devtools-mcp）
+3. 驗證核心功能路徑端到端走通（Web SPA 透過 chrome-devtools-mcp；其他技術棧透過對應自動化框架）
 4. 管理者寫入 E2E 驗證結果到 DEV conclusion.md（追加段落）
 5. E2E 通過後，管理者以 `clarify()` 呈報 E2E 驗證結果，等待老闆覆核
 6. 老闆判定：
    - 通過 → 推進 QC
    - 不通過 → 退回 DEV 開新 NNN 修正，重新走 E2E + 老闆覆核
+   - 同一 slug 下 QC 退回 DEV 最多 5 次，超過退回 PRD
 
 同步執行：
 1. `terminal("cd .shiftblame/<slug>/worktree && pytest <paths> -v 2>&1 | tail -20")`
@@ -335,7 +344,7 @@ QC 三方 CLI 各自完成 review.md 後，管理者彙整判定：
    - 不通過 → 退回 DEV 開新 NNN 修正
 5. 管理者寫入 QC 的 conclusion.md
 
-QC 退回 DEV 後，DEV 修正完成，管理者**必須再次執行 E2E 實際驗證**，通過後才可重新進入 QC。同一 slug 下 QC 退回 DEV 最多 5 次，超過退回 PRD。
+QC 退回 DEV 後，DEV 修正完成，管理者**必須再次執行 E2E 實際驗證 + 老闆覆核**，通過後才可重新進入 QC。同一 slug 下 QC 退回 DEV 最多 5 次，超過退回 PRD。
 
 驗證不通過不問老闆，直接退回 DEV。
 

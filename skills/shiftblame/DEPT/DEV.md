@@ -18,7 +18,7 @@
 主執行者固定為 claude，codex 與 gemini 固定擔任監督者（各從不同面向）。001 三方 proposal → 管理者寫 conclusion（純規劃）→ 002 管理者發布 task.md → claude 實作 → codex 與 gemini 各從不同面向監督。
 003+ 修正循環：管理者重新發布 task.md → claude 依 review.md 修正 → codex 與 gemini 重新檢視。退回時仍由 claude 擔任主執行者。
 **主執行者獨佔 worktree 編輯權與 Git 操作權。**
-監督者寫 review.md 檢視成果，不修改 worktree。具備受限寫入權（限 typo、版本號不一致、小規格偏差），修正後由主執行者 commit。
+監督者寫 review.md 檢視成果，不修改 worktree，不具備任何 worktree 寫入權限。
 
 ### 監督者面向分工
 
@@ -91,13 +91,21 @@ L2/L3/L4 模式皆依 DAG 常規執行，按模組拓撲順序落地。
 
 DEV 部門監督者 review 通過後，進入 QC 之前，**管理者必須親自執行 E2E 實際驗證，通過後交由老闆覆核**。
 
+**前置條件**：專案必須具備實際可 E2E 驗證的框架（如 chrome-devtools-mcp 適用於 Web SPA、其他對應自動化框架適用於其技術棧）。E2E 驗證要求實際開啟程式在實體螢幕上執行，不可僅以 API 呼叫或 headless 模式替代。若無可用的 E2E 驗證框架，管理者：
+1. 搜尋是否有可用的 MCP 或自動化框架適用於該技術棧
+2. 以 `clarify()` 呈報老闆覆核，建議安裝方案或退回 DEV 自行建置
+3. 老闆判定：
+   - 安裝既有框架 → 安裝後進行 E2E 測試
+   - 退回 DEV 自行建置 → DEV 開新 NNN 建置 E2E 驗證環境
+不可跳過此閘門進入 QC。
+
 ### 驗證流程
 
 1. 管理者讀取 DEV 最終 conclusion.md + claude/result.md
 2. 管理者實際啟動應用，以使用者身份操作端到端流程
 3. 管理者驗證：
    - 核心功能路徑端到端走通（非單一功能點）
-   - 前端介面實際可操作（Web SPA 透過 chrome-devtools-mcp）
+   - 前端介面實際可操作（Web SPA 透過 chrome-devtools-mcp；其他技術棧透過對應自動化框架）
    - QA 斷言覆蓋的核心場景可重現
 4. 管理者寫入 E2E 驗證結果到 DEV conclusion.md（追加段落）
 5. 管理者 E2E 判定：

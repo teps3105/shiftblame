@@ -54,11 +54,18 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 | 主執行者 | result.md | 002+ 實際執行成果 |
 | 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
 
-主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 為三方獨立驗證（equal_consensus），三方各寫 review.md，管理者彙整 conclusion.md。DEV→QC 間有管理者 E2E 實際驗證閘門。
+主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 為三方獨立驗證（equal_consensus），三方各寫 review.md，管理者彙整 conclusion.md。DEV→QC 間有管理者 E2E 實際驗證閘門 + 老闆覆核（clarify 呈報）。QC 退回 DEV 修正後需再次 E2E + 老闆覆核。
+
+### 監督者面向分工
+
+| 監督者 | 面向 | 檢視重點 |
+|--------|------|----------|
+| codex | 邏輯正確性 + 測試覆蓋度 | 靜態分析、代碼審查、邏輯分支完整性、測試覆蓋度、邊界條件處理 |
+| gemini | 功能完整性 + 規格一致性 | 對照 PRD 驗證需求覆蓋、功能端到端完整性、規格偏差、遺漏功能 |
 
 - 001: proposal → conclusion（純規劃，和研究部門結構相同）
-- 002: 管理者發布 task.md → result + review → 管理者寫 conclusion → 判定（首次執行）
-- 003+: 管理者發布 task.md → result + review → 管理者寫 conclusion → 判定（修正循環）
+- 002: 管理者發布 task.md（老闆覆核後派工）→ result + review → 管理者寫 conclusion → 判定（首次執行）
+- 003+: 管理者發布 task.md（老闆覆核後派工）→ result + review → 管理者寫 conclusion → 判定（修正循環）
 - review 通過 → 完成；有問題 → 開新 NNN
 - 同一部門最多 5 個子循環（001~005），超過退回上游
 
