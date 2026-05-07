@@ -175,7 +175,6 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 └── <DEPT>/<NNN>/
     ├── task.md              # 001 管理者寫入；002+ 管理者每次重新發布
     ├── conclusion.md        # 管理者寫入（每次循環：001 規劃結論，002+ 執行結論）
-    ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；開發部門 002+ 不重複）
         ├── result.md            # 僅主執行者寫入（開發部門 002+）
@@ -187,7 +186,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 角色 | 可寫 |
 |------|------|
 | 秘書 | meta.md（L1 模式除外，具完整權限） |
-| 管理者 | task.md、conclusion.md、failure-notice.md、meta.md |
+| 管理者 | task.md、conclusion.md、meta.md |
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅開發部門） |
 | 監督者 | 自己子目錄的 proposal.md、review.md（僅開發部門） |
 | QC 驗證者 | 自己子目錄的 review.md（QC 部門三方各自寫入） |

@@ -218,65 +218,17 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 
 每個部門閘門開啟時，管理者向老闆匯報：
 - 分工執行：誰完成了哪些份額
-- 風險吸收：單點失效時誰吸收了誰的份額
-- 降級紀錄：是否有降級為單體或技術分歧多數決
 
-## 5. 失敗通知
-
-CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.md：
-
-```markdown
-# 失敗通知
-- **CLI 員工**：<claude/codex/gemini>
-- **回報代碼**：<CLI_UNAVAILABLE/RATE_LIMITED/QUOTA_EXCEEDED/AUTH_FAILURE/SERVICE_OVERLOADED/TIMEOUT/EXEC_FAILED/EMPTY_OUTPUT>
-- **已完成**：<已完成清單>
-- **未完成**：<未完成清單>
-- **時間**：<ISO 8601 timestamp>
-```
-
-## 6. 合作式失敗處理
-
-同一部門三個 CLI 各司其職：主執行者獨立執行，監督者獨立驗證。
-
-### 單點失效
-
-| 情境 | 處理 |
-|------|------|
-| 單一 CLI 失敗 | 其他 CLI 讀取 failure-notice.md，吸收份額 |
-| 單一 CLI 達限額 | 管理者寫入 failure-notice.md + 記錄 |
-| 兩個 CLI 失敗 | 剩餘獨立完成，降級為單體 |
-| 全部失敗 | 回報管理者暫停 |
-| 共識含技術分歧 | 重新辯論；無法收斂採多數決，記錄少數意見 |
-
-### 權限錯誤
-
-若失敗原因是權限錯誤（非限額），管理者排查並修改呼叫參數。**不得因權限問題實施降級**。權限問題屬於派工設定失誤。
-
-### 部分完成失敗
-
-| 情境 | 處理 |
-|------|------|
-| 連續兩次超時（proposal 已寫入） | 停止重試，改用單體彙整模式 |
-| 全部失敗（連 proposal 都沒寫） | 回報管理者暫停 |
-
-### 單體彙整模式（管理者觸發）
-
-研究部門連續超時但三方 proposal 已完整時，管理者派工**單一 CLI** 彙整：
-- 讀取三份 proposal.md + 上游報告 + DEPT 定義
-- 研究部門：寫入 conclusion.md
-- 開發部門：寫入 conclusion.md、主執行者的 result.md、監督者的 review.md
-- meta.md 記錄：「共識收斂階段連續超時，降級為單體彙整」
-
-### 監督者職責
+## 5. CLI 角色與支援機制
 
 每個 CLI 在非主執行者的開發部門中擔任監督者（主執行者固定為 claude，codex 與 gemini 固定為監督者）：
 - claude → DEV 主執行者（固定）
-- codex → DEV 監督者（固定）
-- gemini → DEV 監督者（固定）
+- codex → DEV 監督者（固定）— **面向：邏輯正確性 + 測試覆蓋度**（靜態分析、代碼審查、邏輯分支完整性、測試覆蓋度、邊界條件處理）
+- gemini → DEV 監督者（固定）— **面向：功能完整性 + 規格一致性**（對照 PRD 驗證需求覆蓋、功能端到端完整性、規格偏差、遺漏功能）
 
 QC 部門中三方皆為獨立驗證者（equal_consensus），無主執行者/監督者之分。
 
-監督者的唯一職責：對照主執行者的 result.md 中列出的項目，逐一驗證是否確實完成。監督者不修改 worktree，不修正代碼，只寫 review.md 記錄驗證結果。
+監督者的唯一職責：對照主執行者的 result.md 中列出的項目，**各從自身面向**逐一驗證是否確實完成。監督者不修改 worktree，不修正代碼，只寫 review.md 記錄驗證結果。
 
 ### 限額偵測
 
@@ -302,7 +254,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（開�
 2. 禁止靜默降級，必須透過 `clarify()` 向老闆報告
 3. 處理完畢後更新 meta.md 記錄
 
-## 7. 退回機制
+## 6. 退回機制
 
 ### 觸發條件
 
@@ -350,7 +302,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（開�
 - meta.md：記錄各 NNN 的循環狀態與判定結果
 - 管線最後一部門不適用多輪，由秘書收尾閘門處理
 
-## 8. 驗證 SOP
+## 7. 驗證 SOP
 
 ### DEV 報告後：管理者 E2E 實際驗證 + 無過濾 pytest + 業務 sanity check
 
@@ -360,9 +312,10 @@ DEV 監督者 review 通過後，管理者執行 E2E 實際驗證閘門：
 2. 管理者實際啟動應用，以使用者身份操作端到端流程
 3. 驗證核心功能路徑端到端走通（Web SPA 透過 chrome-devtools-mcp）
 4. 管理者寫入 E2E 驗證結果到 DEV conclusion.md（追加段落）
-5. 判定：
+5. E2E 通過後，管理者以 `clarify()` 呈報 E2E 驗證結果，等待老闆覆核
+6. 老闆判定：
    - 通過 → 推進 QC
-   - 不通過 → 退回 DEV 開新 NNN 修正
+   - 不通過 → 退回 DEV 開新 NNN 修正，重新走 E2E + 老闆覆核
 
 同步執行：
 1. `terminal("cd .shiftblame/<slug>/worktree && pytest <paths> -v 2>&1 | tail -20")`
@@ -394,26 +347,26 @@ QC 退回 DEV 後，DEV 修正完成，管理者**必須再次執行 E2E 實際�
 
 `terminal("cd <worktree> && git status && git branch --show-current")`，確認分支正確、主 repo 未切離 main。
 
-## 9. 開發部門桌面驗證
+## 8. 開發部門桌面驗證
 
 所有開發部門完成後必須實際跑通。
 
 | 部門 | 驗證標準 | 最低證據 |
 |------|----------|----------|
 | DEV | 應用成功啟動，核心功能可操作 | 啟動日誌 + health check |
-| DEV→QC 閘門 | 管理者 E2E 實際驗證端到端走通 | 啟動日誌 + 操作步驟紀錄 + 截圖/console logs |
+| DEV→QC 閘門 | 管理者 E2E 實際驗證端到端走通 + 老闆覆核通過 | 啟動日誌 + 操作步驟紀錄 + 截圖/console logs + 老闆覆核結果 |
 | QC | 三方各自至少一個邊緣案例或攻擊路徑跑通 | 測試輸出 + 操作步驟 |
 
 禁止文字描述替代 `terminal()` 輸出。
 
-## 10. 版本號制度
+## 9. 版本號制度
 
 - 格式：major.minor.build，預設升 build
 - 不主動升 minor/major，除非老闆指示
 - 同一 slug 首次實作輪升 build，退回修正不重複升版
 - 版本號由管理者在 squash merge 前確認
 
-## 11. 操作慣例
+## 10. 操作慣例
 
 - **CLI 直接寫入 proposal.md / result.md / review.md**：派工 prompt 指示 CLI 用 write_file() 直接寫入，不透過 stdout 中轉
 - **研究部門不寫 result.md / review.md**：研究部門 CLI 只寫 proposal.md，管理者彙整寫 conclusion.md
