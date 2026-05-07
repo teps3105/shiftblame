@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型的協作流程。三名員工（claude / codex / gemini）透過 `terminal()` 直接呼叫，各自使用獨立模型，在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌研究、派工與收尾。
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型的協作流程。三名員工（claude / codex / gemini）透過 `terminal()` 直接呼叫，各自使用獨立模型，在同一個 worktree 上透過固定角色分工機制協作：claude 固定為開發部門主執行者，codex 與 gemini 固定擔任監督者。由秘書統籌研究、派工與收尾，管理者協調部門管線。
 
 框架以通用 Markdown 定義檔形式發布，可被任何支援 Skill 載入機制的 AI Agent 調度器使用。載入後自動注入秘書系統提示，使用者直接對話即可啟動開發流程。
 
@@ -34,21 +34,21 @@ _「這不是我的鍋。」_
 - **L1 模式**：秘書獨立研究和修改檔案，不呼叫員工。適用日常維護、簡單修改。
 - **L2+ 模式**：秘書完成研究後交給管理者協調部門管線，管線結束後交回秘書收尾。
 
-### 自組織分工
+### 三種部門執行模型
 
-秘書定義「目標 + 約束」，不指定分工與做法。員工讀取任務後各自提案，經辯論收斂為共識後各自執行：
-
-```
-讀取任務 → 三員工各自提案 → 辯論收斂 → 共識 → 各自執行 → 回報結果
-```
+| 類型 | 部門 | 機制 |
+|:---:|:---:|---|
+| 研究部門（equal_consensus） | SEC / QA / PRD | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
+| 開發部門（lead_executor） | DEV | claude 固定為主執行者獨佔 worktree，codex 與 gemini 固定為監督者 |
+| 管理者驗證（manager_direct） | QC | 管理者直接驗證，不派工 CLI |
 
 ### 合作式失敗處理
 
 | 機制 | 說明 |
 |:---:|---|
 | failure-notice.md | 失敗員工由管理者建立標準化失敗通知 |
-| 雙軌吸收 | 其餘員工主動吸收失敗者份額；三方全失敗回報管理者暫停 |
-| 降級彙整 | 共識連續超時但三方 proposal 已完整時，降級為單體彙整 |
+| 吸收策略 | 其餘員工主動吸收失敗者份額；三方全失敗回報管理者暫停 |
+| 降級彙整 | 連續超時但三方 proposal 已完整時，降級為單體彙整 |
 
 ---
 
@@ -59,24 +59,21 @@ _「這不是我的鍋。」_
 | 等級 | 名稱 | 流程 | 適用情境 |
 |:---:|:---:|---|---|
 | L1 | 日常維護 | 秘書直接執行 | 安裝、部署、版本修改、日常運維 |
-| L2 | 標準 | PRD → DEV | 功能開發、bug 修復 |
+| L2 | 標準 | PRD → DEV → QC | 功能開發、bug 修復 |
 | L3 | 完整 | QA → PRD → DEV → QC | 需品保驗證的功能開發 |
-| L4 | 高等 | SEC → QA → PRD → DEV → QC → EXP | 資安 + 用戶體驗完整流程 |
+| L4 | 高等 | SEC → QA → PRD → DEV → QC | 資安完整流程 |
 
 > 模式可升級也可降級，降級不可逆轉。收尾操作由秘書執行。
 
-## 六部門
+## 五部門
 
 | 部門 | 類型 | 職能 |
 |:---:|:---:|---|
 | SEC | 研究 | 資安稽核、CVE 搜尋、工具篩選、環境規範 |
 | QA | 研究 | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | PRD | 研究 | 架構設計、DAG、測試區分、實作計畫 |
-| DEV | 執行 | TDD 開發 → 全綠 + 啟動驗證（主執行者獨佔 worktree）|
-| QC | 執行 | 品管驗證：穩健性攻擊、邊緣案例、紅藍隊 |
-| EXP | 執行 | 用戶體驗：用戶視角驗證操作路徑 |
-
-> 研究部門（equal_consensus）：三方各自分析，管理者彙整。執行部門（lead_executor）：主執行者獨佔 worktree，輔助者檢視。僅 DEV 可修改 worktree。
+| DEV | 開發 | TDD 開發 → 全綠 + 啟動驗證（claude 主執行者獨佔 worktree，codex/gemini 監督） |
+| QC | 管理者驗證 | 品管驗證：穩健性攻擊、邊緣案例、紅藍隊（管理者直接驗證） |
 
 ---
 
@@ -92,7 +89,7 @@ skills/shiftblame/
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
     ├── SEC.md · QA.md · PRD.md
-    └── DEV.md · QC.md · EXP.md
+    └── DEV.md · QC.md
 ```
 
 ### 運行時結構
@@ -102,15 +99,21 @@ skills/shiftblame/
 ├── REPO.md                        # 專案現狀（本地私密，不納入版本控制）
 ├── archive/<slug>/                 # 歸檔
 └── <slug>/
-    ├── meta.md                     # 秘書寫入：slug 級別狀態
-    ├── worktree/                   # 隔離工作區
+    ├── meta.md                     # 秘書建立，管理者維護
+    ├── worktree/                   # 隔離工作區（單一共用）
     └── <DEPT>/<NNN>/
         ├── task.md                 # 目標 + 約束
-        ├── consensus.md            # 執行部門共識
-        ├── conclusion.md           # 研究部門結論
-        ├── claude/{proposal,result}.md
-        ├── codex/{proposal,result}.md
-        └── gemini/{proposal,result}.md
+        ├── conclusion.md           # 管理者彙整結論
+        ├── failure-notice.md       # 失敗通知（僅失敗時）
+        ├── claude/
+        │   ├── proposal.md         # 001 分析提案
+        │   └── result.md           # 002+ 執行成果（DEV 主執行者）
+        ├── codex/
+        │   ├── proposal.md         # 001 分析提案
+        │   └── review.md           # 002+ 監督檢視（DEV 監督者）
+        └── gemini/
+            ├── proposal.md         # 001 分析提案
+            └── review.md           # 002+ 監督檢視（DEV 監督者）
 ```
 
 ---
