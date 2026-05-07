@@ -72,14 +72,14 @@
 2. **slug 命名**：kebab-case（如 `feat-login-flow`）
 3. **REPO.md 讀取**：`read_file()` 讀取現狀
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
-5. **主執行者選定**：公平序列輪替（claude → codex → gemini → ...），寫入 meta.md
+5. **主執行者選定**（僅執行部門）：公平序列輪替（claude → codex → gemini → ...），寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
-7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 空白 proposal.md / result.md
+7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 空白 proposal.md。執行部門額外建立空白 result.md
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
 11. **上游產出驗證**：讀取上游 conclusion.md（非第一個部門時）
-12. **公平序列確認**：主執行者與上次不同（除非三方中已有兩方完成輪替）
+12. **公平序列確認**（僅執行部門）：主執行者與上次不同（除非三方中已有兩方完成輪替）
 13. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
 
 ### 嗅探機制（派工後監控）
