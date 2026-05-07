@@ -14,7 +14,7 @@
 |------|------|-----------------|------|
 | 研究部門 | SEC / QA / PRD | equal_consensus | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
 | 開發部門 | DEV | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
-| 管理者驗證 | QC | manager_direct | 管理者直接驗證，不派工 CLI |
+| 三方驗證 | QC | equal_consensus | 三方 CLI 獨立驗證穩健性/邊緣案例/紅藍隊，管理者彙整 conclusion.md |
 
 ### 部門流水線
 
@@ -24,11 +24,11 @@
 | 1 | QA | 行為斷言 | QA 報告 | L3 + L4 |
 | 2 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 報告 | L2 + L3 + L4 |
 | 3 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 報告 + worktree | L2 + L3 + L4 |
-| 4 | QC | 穩健性攻擊 + 業務邏輯驗證（管理者直接驗證） | QC 報告 | L2 + L3 + L4 |
+| 4 | QC | 三方獨立驗證穩健性/邊緣案例/紅藍隊 | QC 報告（三方 review.md + 管理者 conclusion.md） | L2 + L3 + L4 |
 
 - **L2**：PRD → DEV → QC
 - **L3**：QA → PRD → DEV → QC
-- **L4**：SEC → QA → PRD → DEV → QC。開發部門主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 由管理者直接驗證，不派工 CLI
+- **L4**：SEC → QA → PRD → DEV → QC。開發部門主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 為三方獨立驗證（equal_consensus），管理者彙整結論
 
 ## 2. 執行模型
 
@@ -43,7 +43,7 @@
 
 開發部門（DEV）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
 
-QC 採管理者直接驗證，不進入開發部門循環機制。
+QC 採三方獨立驗證（equal_consensus），三方 CLI 平行派工，各自寫入 review.md，管理者彙整 conclusion.md。
 
 **001（規劃循環）：**
 1. 三方各自分析 task.md → 各自寫入 proposal.md（含四項開工準則）
@@ -83,17 +83,17 @@ QC 採管理者直接驗證，不進入開發部門循環機制。
 3. **工作樹路徑** — 在哪改
 4. **隔離環境建置** — 怎麼建
 
-### 研究 vs 開發 vs 管理者驗證 差異速查
+### 研究 vs 開發 vs 三方驗證 差異速查
 
-| 項目 | 研究部門 | 開發部門 | 管理者驗證（QC） |
-|------|----------|----------|------------------|
-| worktree | 無（唯讀） | 主執行者獨佔 | 無（管理者只讀取） |
-| 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 | 不派工，管理者直接驗證 |
+| 項目 | 研究部門 | 開發部門 | 三方驗證（QC） |
+|------|----------|----------|----------------|
+| worktree | 無（唯讀） | 主執行者獨佔 | 無（唯讀，不修改 worktree） |
+| 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 | 三方同時派工，各自獨立驗證 |
 | 001 產出 | proposal.md → 管理者寫 conclusion.md | proposal.md → 管理者寫 conclusion.md（純規劃） | 無 001 循環 |
-| 002+ 產出 | — | result.md + review.md（不重複 proposal） | 無 002+ 循環 |
+| 002+ 產出 | — | result.md + review.md（不重複 proposal） | review.md（三方各自寫入） |
 | result.md | 不需要 | 僅主執行者寫入 | 不需要 |
-| review.md | 不需要 | 僅監督者寫入 | 不需要 |
-| conclusion.md | 管理者彙整 | 管理者彙整 | 管理者直接寫入 |
+| review.md | 不需要 | 僅監督者寫入 | 三方各自寫入 |
+| conclusion.md | 管理者彙整 | 管理者彙整 | 管理者彙整三方 review |
 
 ## 3. 派工執行
 
@@ -274,7 +274,7 @@ CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.
 - codex → DEV 監督者（固定）
 - gemini → DEV 監督者（固定）
 
-QC 由管理者直接驗證，無 CLI 監督者角色。
+QC 部門中三方皆為獨立驗證者（equal_consensus），無主執行者/監督者之分。
 
 監督者的唯一職責：對照主執行者的 result.md 中列出的項目，逐一驗證是否確實完成。監督者不修改 worktree，不修正代碼，只寫 review.md 記錄驗證結果。
 
@@ -352,26 +352,39 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（開�
 
 ## 8. 驗證 SOP
 
-### QC 報告後：管理者直接驗證
+### DEV 報告後：管理者 E2E 實際驗證 + 無過濾 pytest + 業務 sanity check
 
-QC 不派工 CLI，由管理者直接驗證。流程：
+DEV 監督者 review 通過後，管理者執行 E2E 實際驗證閘門：
 
-1. 弱斷言關鍵字掃描（`pixel diff` / `ratio` / `source=\"game\"` fallback 等）
-2. QA 斷言條目逐條判讀
-3. 確認至少一條業務行為斷言用 video/state 級
-4. 管理者判定：
-   - 通過 → QC 完成，推進下一階段（秘書收尾）
-   - 不通過 → 直接退回 DEV 開新 task，同一 slug 下最多退回 3 次，超過退回 PRD
-5. 管理者寫入 QC 的 conclusion.md（僅結論，無 CLI 產出）
+1. 管理者讀取 DEV 最終 conclusion.md + claude/result.md
+2. 管理者實際啟動應用，以使用者身份操作端到端流程
+3. 驗證核心功能路徑端到端走通（Web SPA 透過 chrome-devtools-mcp）
+4. 管理者寫入 E2E 驗證結果到 DEV conclusion.md（追加段落）
+5. 判定：
+   - 通過 → 推進 QC
+   - 不通過 → 退回 DEV 開新 NNN 修正
 
-驗證不通過不問老闆，直接退回 DEV。
-
-### DEV 報告後：無過濾 pytest + 業務 sanity check
-
+同步執行：
 1. `terminal("cd .shiftblame/<slug>/worktree && pytest <paths> -v 2>&1 | tail -20")`
 2. 業務 sanity check（read-only）
 
 不一致或失敗 → 退 DEV。
+
+### QC 報告後：管理者彙整三方驗證結論
+
+QC 三方 CLI 各自完成 review.md 後，管理者彙整判定：
+
+1. 讀取三方 review.md（claude：穩健性+邊緣案例，codex：紅隊攻擊，gemini：藍隊防禦+紅藍對照）
+2. 彙整問題總覽（BUG、邊緣案例、邏輯斷裂、安全問題數量）
+3. 確認紅藍對照完整性（攻擊項 vs 防禦驗證）
+4. 管理者判定：
+   - 通過 → QC 完成，推進下一階段（秘書收尾）
+   - 不通過 → 退回 DEV 開新 NNN 修正
+5. 管理者寫入 QC 的 conclusion.md
+
+QC 退回 DEV 後，DEV 修正完成，管理者**必須再次執行 E2E 實際驗證**，通過後才可重新進入 QC。同一 slug 下 QC 退回 DEV 最多 5 次，超過退回 PRD。
+
+驗證不通過不問老闆，直接退回 DEV。
 
 ### PRD 報告後：測試數量驗證
 
@@ -388,7 +401,8 @@ QC 不派工 CLI，由管理者直接驗證。流程：
 | 部門 | 驗證標準 | 最低證據 |
 |------|----------|----------|
 | DEV | 應用成功啟動，核心功能可操作 | 啟動日誌 + health check |
-| QC | Happy Path + 邊緣案例跑通（管理者直接驗證） | 測試輸出 + 操作步驟 |
+| DEV→QC 閘門 | 管理者 E2E 實際驗證端到端走通 | 啟動日誌 + 操作步驟紀錄 + 截圖/console logs |
+| QC | 三方各自至少一個邊緣案例或攻擊路徑跑通 | 測試輸出 + 操作步驟 |
 
 禁止文字描述替代 `terminal()` 輸出。
 
@@ -407,4 +421,6 @@ QC 不派工 CLI，由管理者直接驗證。流程：
 - **開發部門 002+ 寫 conclusion.md**：管理者彙整當次執行 result + review 為執行結論
 - **開發部門主執行者寫 result.md**：含實際執行成果
 - **開發部門監督者寫 review.md**：檢視主執行者成果，不修改 worktree
+- **QC 部門三方各寫 review.md**：claude 穩健性+邊緣案例，codex 紅隊攻擊，gemini 藍隊防禦+紅藍對照
+- **QC 部門管理者寫 conclusion.md**：彙整三方 review.md 為驗證結論
 - **模式升級時已完成部門的處置**：升級時若已完成部門的產出會被新插入部門影響，必須和老闆確認是否作廢重走。作廢時 `git checkout -- . && git clean -fd`，更新 meta.md

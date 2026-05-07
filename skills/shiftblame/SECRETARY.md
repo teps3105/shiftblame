@@ -85,7 +85,7 @@ L2+ 確認後，秘書確認以下項目：
 
 ### 收尾閘門
 
-1. 讀取最後一部門結論（QC 為管理者 conclusion.md；其他開發部門為主執行者 result.md + 監督者 review.md），確認產出完整
+1. 讀取最後一部門結論（QC 為三方 review.md + 管理者 conclusion.md；其他開發部門為主執行者 result.md + 監督者 review.md），確認產出完整
 2. 確認項目：最後部門報告完整性、worktree 變更與 task.md 一致、產出具備回報
 3. `clarify` 呈報收尾結果：
 
@@ -132,9 +132,16 @@ clarify(question="收尾確認。主執行者（<Name>）：<完成項目>\\n監
 if [[ ! -s .shiftblame/<slug>/<LAST_DEPT>/<NNN>/conclusion.md ]]; then
   echo "ERROR: conclusion.md 不存在或為空，拒絕歸檔。" >&2; exit 1
 fi
-# manager_direct 部門（如 QC）無 CLI result.md，僅檢查 conclusion.md
-# lead_executor 部門需檢查 result.md
-if [[ "<LAST_DEPT>" != "QC" ]]; then
+# manager_direct 註解已移除，QC 為 equal_consensus
+# 所有部門皆需檢查 conclusion.md
+# equal_consensus 部門（如 QC）需檢查三方 review.md
+if [[ "<LAST_DEPT>" == "QC" ]]; then
+  for cli in claude codex gemini; do
+    if [[ ! -s ".shiftblame/<slug>/QC/<NNN>/$cli/review.md" ]]; then
+      echo "ERROR: $cli/review.md 不存在或為空，拒絕歸檔。" >&2; exit 1
+    fi
+  done
+else
   if ! compgen -G ".shiftblame/<slug>/<LAST_DEPT>/<NNN>/*/result.md" | xargs -I{} test -s {}; then
     echo "ERROR: 所有 result.md 均為空，拒絕歸檔。" >&2; exit 1
   fi
@@ -172,7 +179,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
     └── {claude,codex,gemini}/
         ├── proposal.md          # CLI 寫入（所有部門 001；開發部門 002+ 不重複）
         ├── result.md            # 僅主執行者寫入（開發部門 002+）
-        └── review.md            # 僅監督者寫入（開發部門 002+）
+        └── review.md            # 監督者寫入（開發部門 002+）；三方各自寫入（QC 部門）
 ```
 
 ### 寫入權限
@@ -183,6 +190,7 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 | 管理者 | task.md、conclusion.md、failure-notice.md、meta.md |
 | 主執行者 | 自己子目錄的 proposal.md、result.md（僅開發部門） |
 | 監督者 | 自己子目錄的 proposal.md、review.md（僅開發部門） |
+| QC 驗證者 | 自己子目錄的 review.md（QC 部門三方各自寫入） |
 
 - worktree 修改權僅限 DEV 部門的主執行者（claude）
 - 管理者不可代寫 CLI 的 proposal.md / result.md / review.md
@@ -196,8 +204,9 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 ## 派工紀錄
 | 部門 | 主執行者 | 監督者 | 模式 | 輪次 | 時間 |
 |------|---------|--------|------|------|------|
-| PRD | 三方平等 | — | L4 | 1 | 2026-01-01T00:00:00Z |
-| DEV | claude | codex, gemini | L4 | 1 | 2026-01-01T00:00:00Z |
+|| PRD | 三方平等 | — | L4 | 1 | 2026-01-01T00:00:00Z |
+|| DEV | claude | codex, gemini | L4 | 1 | 2026-01-01T00:00:00Z |
+|| QC | 三方獨立驗證 | — | L4 | 1 | 2026-01-01T00:00:00Z |
 
 ## 當前狀態
 - current_mode: L3
@@ -221,7 +230,7 @@ task.md 只含**目標**和**約束**。
 
 ```markdown
 ---
-execution_model: <equal_consensus / lead_executor / manager_direct>
+execution_model: <equal_consensus / lead_executor>
 current_mode: <L2 / L3 / L4>
 task_type: <research / implementation>
 worktree_path: <.shiftblame/<slug>/worktree/>  # 研究部門設為 none

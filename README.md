@@ -40,7 +40,7 @@ _「這不是我的鍋。」_
 |:---:|:---:|---|
 | 研究部門（equal_consensus） | SEC / QA / PRD | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
 | 開發部門（lead_executor） | DEV | claude 固定為主執行者獨佔 worktree，codex 與 gemini 固定為監督者 |
-| 管理者驗證（manager_direct） | QC | 管理者直接驗證，不派工 CLI |
+| 三方驗證（equal_consensus） | QC | 三方 CLI 獨立驗證穩健性/邊緣案例/紅藍隊，管理者彙整 conclusion.md |
 
 ### 合作式失敗處理
 
@@ -73,7 +73,7 @@ _「這不是我的鍋。」_
 | QA | 研究 | 定義用戶業務邏輯的行為斷言（X→Y→Z） |
 | PRD | 研究 | 架構設計、DAG、測試區分、實作計畫 |
 | DEV | 開發 | TDD 開發 → 全綠 + 啟動驗證（claude 主執行者獨佔 worktree，codex/gemini 監督） |
-| QC | 管理者驗證 | 品管驗證：穩健性攻擊、邊緣案例、紅藍隊（管理者直接驗證） |
+| QC | 三方驗證 | 品管驗證：三方獨立驗證穩健性攻擊、邊緣案例、紅藍隊（claude 穩健性+邊緣案例，codex 紅隊攻擊，gemini 藍隊防禦+紅藍對照） |
 
 ---
 
