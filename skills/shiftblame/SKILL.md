@@ -39,12 +39,12 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 | 類型 | 部門 | 產出 |
 |------|------|------|
 | 研究部門 | SEC / QA / PRD | proposal.md → 管理者寫 conclusion.md |
-| 執行部門 | DEV | proposal.md → conclusion.md (001) / conclusion.md + result.md + review.md (002+) |
+| 開發部門 | DEV | proposal.md → conclusion.md (001) / conclusion.md + result.md + review.md (002+) |
 | 管理者驗證 | QC | 管理者直接驗證 → conclusion.md（不通過直接退回 DEV） |
 
-## 執行部門循環機制
+## 開發部門循環機制
 
-執行部門採循環推進（001 規劃 → 002 首次執行 → 003+ 修正）：
+開發部門採循環推進（001 規劃 → 002 首次執行 → 003+ 修正）：
 
 | 角色 | 寫入 | 說明 |
 |------|------|------|

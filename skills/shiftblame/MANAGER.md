@@ -13,7 +13,7 @@
 | 類型 | 部門 | execution_model | 特徵 |
 |------|------|-----------------|------|
 | 研究部門 | SEC / QA / PRD | equal_consensus | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
-| 執行部門 | DEV | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
+| 開發部門 | DEV | lead_executor | 主執行者獨佔 worktree，監督者驗證 |
 | 管理者驗證 | QC | manager_direct | 管理者直接驗證，不派工 CLI |
 
 ### 部門流水線
@@ -28,7 +28,7 @@
 
 - **L2**：PRD → DEV → QC
 - **L3**：QA → PRD → DEV → QC
-- **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門主執行者首次由老闆指定，後續由公平序列輪替決定（claude → codex → gemini → claude → ...）。QC 由管理者直接驗證，不派工 CLI
+- **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。開發部門主執行者首次由老闆指定，後續由公平序列輪替決定（claude → codex → gemini → claude → ...）。QC 由管理者直接驗證，不派工 CLI
 
 ## 2. 執行模型
 
@@ -39,11 +39,11 @@
 3. 管理者讀取三方 proposal.md，彙整寫入 conclusion.md
 4. 不需要 result.md，分析完成即結束
 
-### 執行部門循環機制
+### 開發部門循環機制
 
-執行部門（DEV）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
+開發部門（DEV）採循環推進：001 純規劃，002 首次執行，003+ 修正循環。
 
-QC 採管理者直接驗證，不進入執行部門循環機制。
+QC 採管理者直接驗證，不進入開發部門循環機制。
 
 **001（規劃循環）：**
 1. 三方各自分析 task.md → 各自寫入 proposal.md（含四項開工準則）
@@ -68,7 +68,7 @@ QC 採管理者直接驗證，不進入執行部門循環機制。
 5. 管理者讀取 result.md + review.md → 寫入 conclusion.md（當次執行結論）
 6. 管理者判定：通過 → 完成 / 有問題 → 開啟下一個 NNN
 
-**上游判定：** 循環的上游是上一個執行部門（或研究部門結論）。每次開新 NNN 時，主執行者讀取上一個執行部門的 result.md 作為輸入。
+**上游判定：** 循環的上游是上一個開發部門（或研究部門結論）。每次開新 NNN 時，主執行者讀取上一個開發部門的 result.md 作為輸入。
 
 **產出歸屬：**
 - conclusion.md：每次循環管理者寫入（001 規劃結論，002+ 當次執行結論）
@@ -85,7 +85,7 @@ QC 採管理者直接驗證，不進入執行部門循環機制。
 
 ### 研究 vs 執行 vs 管理者驗證 差異速查
 
-| 項目 | 研究部門 | 執行部門 | 管理者驗證（QC） |
+| 項目 | 研究部門 | 開發部門 | 管理者驗證（QC） |
 |------|----------|----------|------------------|
 | worktree | 無（唯讀） | 主執行者獨佔 | 無（管理者只讀取） |
 | 派工方式 | 三方同時 | 001 三方規劃，002+ 循環執行 | 不派工，管理者直接驗證 |
@@ -103,14 +103,14 @@ QC 採管理者直接驗證，不進入執行部門循環機制。
 2. **slug 命名**：kebab-case（如 `feat-login-flow`）
 3. **REPO.md 讀取**：`read_file()` 讀取現狀
 4. **模式確認**：current_mode 已寫入 task.md frontmatter
-5. **主執行者選定**（僅執行部門）：首次由老闆指定並寫入 meta.md 作為序列起點，後續由公平序列輪替決定（claude → codex → gemini → claude → ...），寫入 meta.md。研究部門三方平等，不指定主執行者
+5. **主執行者選定**（僅開發部門）：首次由老闆指定並寫入 meta.md 作為序列起點，後續由公平序列輪替決定（claude → codex → gemini → claude → ...），寫入 meta.md。研究部門三方平等，不指定主執行者
 6. **worktree 確認**：slug 層級共用 worktree 已建立
-7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 各 CLI 子目錄下空白 proposal.md（執行部門 002+ 不建 proposal.md）。執行部門額外在主執行者子目錄建立空白 result.md，在監督者子目錄建立空白 review.md
+7. **通訊目錄建立**：`mkdir -p ".shiftblame/$SLUG/$DEPT/$NNN/"{claude,codex,gemini}` + 各 CLI 子目錄下空白 proposal.md（開發部門 002+ 不建 proposal.md）。開發部門額外在主執行者子目錄建立空白 result.md，在監督者子目錄建立空白 review.md
 8. **task.md 寫入**：目標 + 約束 + YAML frontmatter（不含做法/分工）
 9. **meta.md 更新**：派工紀錄表
 10. **部門定義確認**：`DEPT/<DEPT>.md` 存在（管理者不注入，CLI 自行讀取）
 11. **上游產出驗證**：讀取上游 conclusion.md（非第一個部門時）
-12. **輪替確認**（僅執行部門）：首次由老闆指定，後續依公平序列輪替決定，寫入 meta.md
+12. **輪替確認**（僅開發部門）：首次由老闆指定，後續依公平序列輪替決定，寫入 meta.md
 13. **老闆覆核 task.md**：呈報任務內容，等待確認後才派工
 
 ### 嗅探機制（派工後監控）
@@ -146,7 +146,7 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 
 派工後管理者：等待三方 proposal.md（嗅探確認），讀取彙整寫入 conclusion.md。
 
-### 執行部門派工
+### 開發部門派工
 
 **001（規劃循環）：**
 - 三方分析 task.md → 各自寫 proposal.md（含四項開工準則）
@@ -165,17 +165,17 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 
 ### 派工規則速記
 
-- 研究部門三方同時派工，執行部門管理者協調三方
+- 研究部門三方同時派工，開發部門管理者協調三方
 - task.md 只寫目標和約束，**不寫分工、做法、產出格式**（違規）
 - CLI 自行讀取 DEPT/<DEPT>.md、確認任務、執行分工
 - 研究部門：管理者寫 conclusion.md
-- 執行部門 001：三方 proposal → 管理者寫 conclusion.md（純規劃，不執行）
-- 執行部門 002：管理者重新發布 task.md → 主執行者寫 result.md，監督者寫 review.md → 管理者寫 conclusion.md
-- 執行部門 003+：管理者重新發布 task.md → 不重跑 proposal，沿用 001 conclusion.md → 主執行者寫 result.md，監督者寫 review.md → 管理者寫 conclusion.md
+- 開發部門 001：三方 proposal → 管理者寫 conclusion.md（純規劃，不執行）
+- 開發部門 002：管理者重新發布 task.md → 主執行者寫 result.md，監督者寫 review.md → 管理者寫 conclusion.md
+- 開發部門 003+：管理者重新發布 task.md → 不重跑 proposal，沿用 001 conclusion.md → 主執行者寫 result.md，監督者寫 review.md → 管理者寫 conclusion.md
 
 ## 4. 閘門流程
 
-### 執行部門 002+ 執行閘門
+### 開發部門 002+ 執行閘門
 
 **檢查點 1：主執行者完成**
 1. 讀取主執行者 result.md，確認完成
@@ -195,7 +195,7 @@ CLI 透過 `terminal()` 直接呼叫，不用 delegate_task、ACP 或 MCP wrappe
 
 三方 proposal.md 完成 → 管理者彙整寫入 conclusion.md → `clarify` 呈報老闆判定。
 
-### 執行部門 001 規劃閘門
+### 開發部門 001 規劃閘門
 
 三方 proposal.md 完成 → 管理者彙整寫入 conclusion.md → 001 完成，自動進入 002 執行。
 
@@ -264,12 +264,12 @@ CLI 員工執行失敗後，管理者在通訊目錄根層建立 failure-notice.
 研究部門連續超時但三方 proposal 已完整時，管理者派工**單一 CLI** 彙整：
 - 讀取三份 proposal.md + 上游報告 + DEPT 定義
 - 研究部門：寫入 conclusion.md
-- 執行部門：寫入 conclusion.md、主執行者的 result.md、監督者的 review.md
+- 開發部門：寫入 conclusion.md、主執行者的 result.md、監督者的 review.md
 - meta.md 記錄：「共識收斂階段連續超時，降級為單體彙整」
 
 ### 監督者職責
 
-每個 CLI 在非主執行者的執行部門中擔任監督者（主執行者首次由老闆指定，後續由公平序列輪替決定，其餘兩方為監督者）：
+每個 CLI 在非主執行者的開發部門中擔任監督者（主執行者首次由老闆指定，後續由公平序列輪替決定，其餘兩方為監督者）：
 - 主執行者 → DEV 執行（依輪替序列）
 - 監督者 ×2 → DEV 監督者（依輪替序列）
 
@@ -338,7 +338,7 @@ CLI 偵測到 HTTP 429/503/529，在 proposal.md（研究）或 result.md（執�
   ```
 - 「退回」= 完整重做（開新 NNN 循環）；「退回修正」= 輕微修正（同 NNN 內主執行者直接修正，不重新派工監督者）
 
-### 部門多輪迭代（執行部門循環）
+### 部門多輪迭代（開發部門循環）
 
 - 通訊目錄：每個子循環建立新的 `<NNN>`（001 → 002 → 003...）
 - task.md：001 管理者寫入，002 起每次執行循環管理者重新發布（納入共識與 review 反饋）
@@ -380,9 +380,9 @@ QC 不派工 CLI，由管理者直接驗證。流程：
 
 `terminal("cd <worktree> && git status && git branch --show-current")`，確認分支正確、主 repo 未切離 main。
 
-## 9. 執行部門桌面驗證
+## 9. 開發部門桌面驗證
 
-所有執行部門完成後必須實際跑通。
+所有開發部門完成後必須實際跑通。
 
 | 部門 | 驗證標準 | 最低證據 |
 |------|----------|----------|
@@ -402,8 +402,8 @@ QC 不派工 CLI，由管理者直接驗證。流程：
 
 - **CLI 直接寫入 proposal.md / result.md / review.md**：派工 prompt 指示 CLI 用 write_file() 直接寫入，不透過 stdout 中轉
 - **研究部門不寫 result.md / review.md**：研究部門 CLI 只寫 proposal.md，管理者彙整寫 conclusion.md
-- **執行部門 001 寫 conclusion.md**：管理者彙整三方 proposal 為規劃結論（不執行）
-- **執行部門 002+ 寫 conclusion.md**：管理者彙整當次執行 result + review 為執行結論
-- **執行部門主執行者寫 result.md**：含實際執行成果
-- **執行部門監督者寫 review.md**：檢視主執行者成果，不修改 worktree
+- **開發部門 001 寫 conclusion.md**：管理者彙整三方 proposal 為規劃結論（不執行）
+- **開發部門 002+ 寫 conclusion.md**：管理者彙整當次執行 result + review 為執行結論
+- **開發部門主執行者寫 result.md**：含實際執行成果
+- **開發部門監督者寫 review.md**：檢視主執行者成果，不修改 worktree
 - **模式升級時已完成部門的處置**：升級時若已完成部門的產出會被新插入部門影響，必須和老闆確認是否作廢重走。作廢時 `git checkout -- . && git clean -fd`，更新 meta.md

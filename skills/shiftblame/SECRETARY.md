@@ -74,7 +74,7 @@ clarify(question="請確認本次執行模式：", choices=[
 L2+ 確認後，秘書確認以下項目：
 
 1. L1 研究已完成（專案現狀釐清、執行準則確立、問題診斷）
-2. 主執行者已選定並寫入 meta.md（首次由老闆指定，後續由公平序列輪替；僅執行部門；研究部門三方平等，不需指定）
+2. 主執行者已選定並寫入 meta.md（首次由老闆指定，後續由公平序列輪替；僅開發部門；研究部門三方平等，不需指定）
 3. 單一共用 worktree 已建立在 slug 層級
 4. 任一不滿足 → 補齊後重新確認
 5. `clarify` 確認研究產出可接受 → 交給管理者
@@ -85,7 +85,7 @@ L2+ 確認後，秘書確認以下項目：
 
 ### 收尾閘門
 
-1. 讀取最後一部門結論（QC 為管理者 conclusion.md；其他執行部門為主執行者 result.md + 監督者 review.md），確認產出完整
+1. 讀取最後一部門結論（QC 為管理者 conclusion.md；其他開發部門為主執行者 result.md + 監督者 review.md），確認產出完整
 2. 確認項目：最後部門報告完整性、worktree 變更與 task.md 一致、產出具備回報
 3. `clarify` 呈報收尾結果：
 
@@ -170,9 +170,9 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
     ├── conclusion.md        # 管理者寫入（每次循環：001 規劃結論，002+ 執行結論）
     ├── failure-notice.md    # 管理者寫入
     └── {claude,codex,gemini}/
-        ├── proposal.md          # CLI 寫入（所有部門 001；執行部門 002+ 不重複）
-        ├── result.md            # 僅主執行者寫入（執行部門 002+）
-        └── review.md            # 僅監督者寫入（執行部門 002+）
+        ├── proposal.md          # CLI 寫入（所有部門 001；開發部門 002+ 不重複）
+        ├── result.md            # 僅主執行者寫入（開發部門 002+）
+        └── review.md            # 僅監督者寫入（開發部門 002+）
 ```
 
 ### 寫入權限
@@ -181,8 +181,8 @@ test ! -e .shiftblame/<slug>/ || echo "WARN: 原 slug 路徑仍存在"
 |------|------|
 | 秘書 | meta.md（L1 模式除外，具完整權限） |
 | 管理者 | task.md、conclusion.md、failure-notice.md、meta.md |
-| 主執行者 | 自己子目錄的 proposal.md、result.md（僅執行部門） |
-| 監督者 | 自己子目錄的 proposal.md、review.md（僅執行部門） |
+| 主執行者 | 自己子目錄的 proposal.md、result.md（僅開發部門） |
+| 監督者 | 自己子目錄的 proposal.md、review.md（僅開發部門） |
 
 - worktree 修改權僅限 DEV 部門的輪替主執行者
 - 管理者不可代寫 CLI 的 proposal.md / result.md / review.md

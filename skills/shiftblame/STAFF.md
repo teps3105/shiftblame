@@ -106,7 +106,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 - .shiftblame/ 下的檔案一律用 cat 讀取
 ```
 
-### Result 階段 — 主執行者（依共識執行，僅執行部門 002+）
+### Result 階段 — 主執行者（依共識執行，僅開發部門 002+）
 
 ```text
 你是 <DEPT> 部門的 <cli> 員工（主執行者）。
@@ -115,7 +115,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/task.md（管理者為本次循環重新發布的版本）
 |- 用 cat 讀取 <001 通訊目錄>/conclusion.md
 |- 用 cat 讀取 <上一輪通訊目錄>/<cli>/review.md（003+ 時讀取上一輪 review 作為修正依據）
-|- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
+|- 用 cat 讀取上一個開發部門的 result.md（循環上游輸入）
 |- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
 |- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
 |- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
@@ -133,7 +133,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 |- result.md 必須包含實際執行成果（完成的檔案、測試結果、驗證證據）
 ```
 
-### Review 階段 — 監督者（檢視不修改，僅執行部門 002+）
+### Review 階段 — 監督者（檢視不修改，僅開發部門 002+）
 
 ```text
 你是 <DEPT> 部門的 <cli> 員工（監督者）。
@@ -142,7 +142,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/task.md（管理者為本次循環重新發布的版本）
 |- 用 cat 讀取 <001 通訊目錄>/conclusion.md
 |- 用 cat 讀取 <當前 NNN 通訊目錄>/<主執行者>/result.md（主執行者的實際成果）
-|- 用 cat 讀取上一個執行部門的 result.md（循環上游輸入）
+|- 用 cat 讀取上一個開發部門的 result.md（循環上游輸入）
 |- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
 |- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
 |- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
@@ -176,9 +176,9 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 1. 派工三方 background process（notify_on_complete=true）
 2. 每 30 秒 poll 各子目錄 proposal.md / result.md / review.md 是否有內容（嗅探機制）
 3. 研究部門：三方 proposal.md 完成 → 管理者彙整 conclusion.md
-4. 執行部門 001：三方 proposal.md → 管理者寫 conclusion.md（純規劃，不執行）
-5. 執行部門 002：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定
-6. 執行部門 003+：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定（通過或開新 NNN）
+4. 開發部門 001：三方 proposal.md → 管理者寫 conclusion.md（純規劃，不執行）
+5. 開發部門 002：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定
+6. 開發部門 003+：管理者重新發布 task.md → 主執行者 result.md + 監督者 review.md → 管理者判定（通過或開新 NNN）
 
 管理者不代寫員工的 proposal.md / result.md。權限問題時診斷根因並修復參數。
 
