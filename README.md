@@ -9,7 +9,7 @@ _「這不是我的鍋。」_
 **AI Agents 協作開發框架 — 流程協議與定義檔**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Hermes Agent Skill](https://img.shields.io/badge/Hermes%20Agent-skill-8a2be2.svg)](https://hermes-agent.nousresearch.com)
+[![AI Agent Skill](https://img.shields.io/badge/AI%20Agent-skill-8a2be2.svg)]()
 
 </div>
 
@@ -19,7 +19,7 @@ _「這不是我的鍋。」_
 
 `shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型的協作流程。三名員工（claude / codex / gemini）透過 `terminal()` 直接呼叫，各自使用獨立模型，在同一個 worktree 上透過自組織分工機制共議分工、自主執行、互相辯論，由秘書統籌研究、派工與收尾。
 
-框架以 Hermes Agent Skill 形式發布，載入後 Skill 自動注入秘書系統提示，使用者直接對話即可啟動開發流程。
+框架以通用 Markdown 定義檔形式發布，可被任何支援 Skill 載入機制的 AI Agent 調度器使用。載入後自動注入秘書系統提示，使用者直接對話即可啟動開發流程。
 
 ---
 
@@ -82,7 +82,7 @@ _「這不是我的鍋。」_
 
 ## 檔案結構
 
-### Skill 定義檔
+### 框架定義檔
 
 ```
 skills/shiftblame/
@@ -117,11 +117,13 @@ skills/shiftblame/
 
 ## 安裝
 
+將框架定義檔複製到調度器的 Skill 目錄：
+
 ```bash
-cp -r shiftblame-hermes/ ~/.hermes/skills/shiftblame/
+cp -r skills/shiftblame/ <調度器 Skill 目錄>/shiftblame/
 ```
 
-Hermes 載入 Skill 時自動初始化：秘書系統提示透過 Skill 載入，確認 `.shiftblame/` 目錄存在、`.gitignore` 包含 `.shiftblame/`。
+調度器載入 Skill 時自動初始化：秘書系統提示透過 Skill 載入，確認 `.shiftblame/` 目錄存在、`.gitignore` 包含 `.shiftblame/`。
 
 ## 使用
 

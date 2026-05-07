@@ -40,7 +40,7 @@ codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
 - **exit_code 124**：偶發
 - **禁止 pipe 到 tail/head**：pipe buffer 64KB 塞滿會卡死
 
-**Hermes MCP 不相容：** Codex MCP server 發送非標準 `codex/event` 通知，Hermes MCP client Pydantic 驗證失敗 → 恆定 timeout。結論：`terminal()` 直接呼叫。
+**MCP 不相容：** Codex MCP server 發送非標準 `codex/event` 通知，MCP client 驗證失敗 → 恆定 timeout。結論：`terminal()` 直接呼叫。
 
 ## gemini — Gemini CLI
 
@@ -56,16 +56,16 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
 
 > `--approval-mode` 必須在 `-p` 之前，否則解析失敗。
 
-**讀取 skill 目錄：**
+**讀取框架定義檔：**
 ```bash
 GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
-  --include-directories="/home/derek/.hermes/skills/shiftblame" \
+  --include-directories="<框架定義檔路徑>" \
   -p "prompt"
 ```
 
 **Workspace 存取限制：**
 - `read_file` 拒絕 `.gitignore` 內路徑（如 `.shiftblame/`）→ prompt 中指示用 `cat` 讀取
-- `~/.hermes/skills/` 不在 workspace → 需 `--include-directories`
+- 框架定義檔不在 workspace → 需 `--include-directories` 指定路徑
 
 **Approval Mode 與工具：**
 
@@ -89,9 +89,9 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 【步驟 1】讀取以下檔案：
 - 用 cat 讀取 <通訊目錄>/task.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/DEPT/<DEPT>.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/MANAGER.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/STAFF.md
+- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
+- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
+- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
 
 【步驟 2】根據 task.md 進行分析
 
@@ -114,9 +114,9 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 【步驟 1】讀取以下檔案：
 - 用 cat 讀取 <通訊目錄>/task.md
 - 用 cat 讀取 <通訊目錄>/consensus.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/DEPT/<DEPT>.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/MANAGER.md
-- 用 cat 讀取 ~/.hermes/skills/shiftblame/STAFF.md
+- 用 cat 讀取 <框架定義檔路徑>/DEPT/<DEPT>.md
+- 用 cat 讀取 <框架定義檔路徑>/MANAGER.md
+- 用 cat 讀取 <框架定義檔路徑>/STAFF.md
 
 【步驟 2】依 consensus.md 執行分工任務
 
@@ -134,7 +134,7 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 **claude / codex：** task.md 和定義檔用 cat 讀取，write_file() 寫入 proposal.md / result.md。
 
-**gemini：** `.shiftblame/` 下檔案一律用 cat 讀取（不要用 read_file），skill 目錄檔案可直接用 read_file，write_file() 寫入。
+**gemini：** `.shiftblame/` 下檔案一律用 cat 讀取（不要用 read_file），框架定義檔可直接用 read_file，write_file() 寫入。
 
 ### 管理者 Poll 流程
 
@@ -171,7 +171,7 @@ gemini mcp list
 | searxng（SEARXNG_URL=localhost:30045） | ✓ | ✓ | ✓ |
 | chrome-devtools-mcp | ✓（plugin） | ✓ | ✓ |
 
-### Hermes MCP Server 註冊狀態
+### MCP Server 註冊狀態（透過調度器）
 
 | Server | Command | Tools | 狀態 |
 |--------|---------|-------|------|
@@ -182,11 +182,11 @@ gemini mcp list
 
 ### MCP 除錯
 
-**Circuit Breaker：** 3 次連續失敗，60 秒冷卻，半開探測。重設：`hermes mcp remove <name>` + `hermes mcp add <name>`
+**Circuit Breaker：** 3 次連續失敗，60 秒冷卻，半開探測。依調度器指令重設 MCP 連線。
 
-**Timeout：** 預設 120 秒。`~/.hermes/config.yaml` 可設 `timeout` 和 `connect_timeout`。
+**Timeout：** 預設 120 秒。依調度器配置調整。
 
-**MCP 通知：** Hermes 只處理 ToolListChanged / PromptListChanged / ResourceListChanged。未知類型忽略。
+**MCP 通知：** 調度器只處理 ToolListChanged / PromptListChanged / ResourceListChanged。未知類型忽略。
 
 ## 失敗處理
 
@@ -212,9 +212,9 @@ gemini mcp list
 ## 已知問題
 
 - **background process 禁止 pipe 到 tail/head/awk**：輸出量大時 pipe buffer 64KB 塞滿卡死
-- **api_max_retries 影響併發**：低於 3 時三方併發容易失敗。`hermes config set agent.api_max_retries 3`，修改後重啟
+- **併發重試**：三方併發容易失敗時，確認調度器重試次數 ≥ 3
 
 ## 用語
 
 - **CLI = 員工本人**：不用 Proxy 或 subagent 稱呼
-- **搜尋一律用 searxng MCP**：員工需要搜尋時用 `mcp_searxng_*`，禁止 web_search
+- **搜尋一律用 searxng MCP**：員工需要搜尋時用 searxng 工具，禁止 web_search

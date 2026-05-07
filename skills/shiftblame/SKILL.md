@@ -20,7 +20,7 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → EXP → 秘書收尾
 
 ## 框架定義檔
 
-所有框架定義檔存放在 **skill 目錄** `skills/shiftblame/`
+所有框架定義檔存放在 **框架定義檔目錄** `skills/shiftblame/`
 
 | 檔案 | 內容 |
 |------|------|
