@@ -40,7 +40,7 @@
 ```
 clarify(question="請確認本次執行模式：", choices=[
   "L1（日常維護）— 秘書直接執行",
-  "L2（標準）— PRD → DEV",
+  "L2（標準）— PRD → DEV → QC",
   "L3（完整）— QA → PRD → DEV → QC",
   "L4（高等）— SEC → QA → PRD → DEV → QC",
 ])

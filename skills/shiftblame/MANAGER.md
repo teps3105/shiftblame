@@ -24,9 +24,9 @@
 | 1 | QA | 行為斷言 | QA 報告 | L3 + L4 |
 | 2 | PRD | 架構 + 測試區分 + 實作計畫 | PRD 報告 | L2 + L3 + L4 |
 | 3 | DEV | TDD 開發 → 全綠 + 啟動驗證 | DEV 報告 + worktree | L2 + L3 + L4 |
-| 4 | QC | 穩健性攻擊 + 業務邏輯驗證（管理者直接驗證） | QC 報告 | L3 + L4 |
+| 4 | QC | 穩健性攻擊 + 業務邏輯驗證（管理者直接驗證） | QC 報告 | L2 + L3 + L4 |
 
-- **L2**：PRD → DEV
+- **L2**：PRD → DEV → QC
 - **L3**：QA → PRD → DEV → QC
 - **L4**：SEC → QA → PRD → DEV → QC。DEV 執行 PRD 的原子任務清單，每個原子任務獨立派工。執行部門固定指派：claude 主導 DEV（不再動態輪替）。QC 由管理者直接驗證，不派工 CLI
 

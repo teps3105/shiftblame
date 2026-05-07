@@ -13,7 +13,7 @@ description: >-
 
 ```
 L1: 秘書研究 → 秘書收尾
-L2: 秘書研究 → PRD → DEV → 秘書收尾
+L2: 秘書研究 → PRD → DEV → QC → 秘書收尾
 L3: 秘書研究 → QA → PRD → DEV → QC → 秘書收尾
 L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 ```
