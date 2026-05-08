@@ -34,7 +34,7 @@
 
 ## task.md
 
-YAML frontmatter（execution_model / current_mode / task_type / worktree_path）+ 目標 + 上游輸入 + 約束。員工自行決定分工、做法、格式。
+YAML frontmatter（execution_model / current_mode / task_type / worktree_path）+ 目標 + 上游輸入 + 約束。員工自行決定分工、做法、格式。以 50 行為上限，超過的項目拆為 todo list 排入下個 NNN。
 
 ## 部署
 

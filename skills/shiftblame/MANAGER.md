@@ -41,3 +41,7 @@
 ## 支援與版本
 
 result.md 含 `[SUPPORT_REQUEST]` 時管理者介入（TOOL→增換工具；ASSIST→代處理），`clarify()` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
+
+## 文件篇幅限制
+
+task.md 與 conclusion.md 各以 50 行為上限。超過 50 行的項目拆為 todo list 排入下一個 NNN 的 task.md。
