@@ -1,5 +1,3 @@
-<div align="center">
-
 # shiftblame
 
 ### 推鍋
@@ -8,51 +6,41 @@ _「這不是我的鍋。」_
 
 **AI Agents 協作開發框架 — 流程協議與定義檔**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![AI Agent Skill](https://img.shields.io/badge/AI%20Agent-skill-8a2be2.svg)]()
-
-</div>
-
 ---
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。claude 直接執行或透過 Agent 子代理承擔所有角色（秘書/管理者/開發者/驗證者）；codex 與 gemini 透過 CLI 承擔研究與監督角色。三名員工在同一個 worktree 上透過固定角色分工協作，由秘書統籌研究與收尾，管理者協調部門管線。
-
-框架以通用 Markdown 定義檔形式發布，可被任何支援 Skill 載入機制的 AI Agent 調度器使用。
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者（主 session）協調；執行者/驗證者（子代理）透過 CLI 執行。三名員工在同一個 worktree 上透過固定角色分工協作，由管理者統籌派工、管線、閘門、收尾。
 
 ---
 
-## 核心機制
+## 角色與流程
 
-### 員工與角色
+| 員工 | 身份 | 職責 |
+|------|------|------|
+| 管理者 | 主 session | 協調、派工、管線、閘門、收尾 |
+| 執行者 | 子代理（claude） | 獨佔 worktree，產出 result.md |
+| 驗證者 | 子代理（codex/gemini） | 產出 review.md（紅隊/藍隊） |
 
-| 員工 | 呼叫方式 | 角色 |
-|------|----------|------|
-| claude | 直接執行 / Agent 子代理 | 主執行者（秘書/管理者/開發/驗證） |
-| codex | `Bash` + CLI | 研究者 + 監督者（邏輯正確性 + 測試覆蓋度） |
-| gemini | `Bash` + CLI | 研究者 + 監督者（功能完整性 + 規格一致性） |
+```
+L1: 執行 → 收尾
+L2: 執行 → PRD → QA → DEV → QC → 收尾
+```
 
-### 四等級模式
+## 部門
 
-| 等級 | 流程 | 適用 |
-|:---:|---|---|
-| L1 | 研究 → 收尾 | 日常維護、安裝、部署 |
-| L2 | 研究 → PRD → DEV → QC → 收尾 | 功能開發、bug 修復 |
-| L3 | 研究 → PRD → SEC → QA → DEV → QC → 收尾 | 需品保驗證的功能 |
+| # | 部門 | 類型 | 執行者產出 | 驗證者產出 |
+|:-:|:----:|:----:|------------|------------|
+| 0 | PRD | 規劃 | 產品目標/DAG 實作計畫 | 紅隊風險分析/藍隊完整性 |
+| 1 | QA | 標準 | E2E 操作介面標準 | 紅隊標準漏洞/藍隊覆蓋度 |
+| 2 | DEV | 開發 | 實作成果/commit hash | 紅隊邏輯/藍隊功能完整性 |
+| 3 | QC | 驗證 | E2E 操作（chrome-devtools-mcp） | 紅隊攻擊/藍隊防禦掃描 |
 
-### 部門
+## 閘門
 
-| 類型 | 部門 | 機制 |
-|:---:|:---:|---|
-| 研究 | SEC/QA/PRD | 三方各寫 proposal → 管理者 conclusion.md |
-| 開發 | DEV | claude 主執行 + codex/gemini 監督 review |
-| 驗證 | QC | 三方各自獨立驗證（穩健性/紅藍隊）→ conclusion.md |
-
-### 閘門
-
-- **DEV→QC**：管理者 E2E 實際驗證 + 老闆覆核（前端介面操作在 E2E 閘門完成，QC 以 API/CLI 驗證）
-- **QC 退回 DEV**：修正後再 E2E + 老闆覆核
+- **PRD/QA**：執行者/驗證者 result/review → `AskUserQuestion` 老闆確認
+- **DEV→QC**：QC 執行者 E2E（chrome-devtools-mcp）+ 老闆覆核
+- **QC→DEV**：QC 退回 → 上游新 NNN
 
 ---
 
@@ -60,12 +48,11 @@ _「這不是我的鍋。」_
 
 ```
 skills/shiftblame/
-├── SKILL.md          # 框架入口（≤50 行）
-├── SECRETARY.md      # 秘書準則
-├── MANAGER.md        # 管理者定義
+├── SKILL.md          # 框架入口
+├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
-    ├── SEC.md · QA.md · PRD.md
+    ├── PRD.md · QA.md
     └── DEV.md · QC.md
 ```
 

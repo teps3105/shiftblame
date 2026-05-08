@@ -1,49 +1,45 @@
 # STAFF — 員工呼叫規格
 
-claude 直接執行或 Agent 子代理；codex 與 gemini 透過 CLI 呼叫，僅承擔研究與監督。
+管理者（主 session）協調；執行者/驗證者（子代理）透過 CLI 呼叫。
 
 | 別名 | 角色 | 呼叫路徑 |
 |------|------|---------|
-| claude | 主執行者 | 直接執行或 Agent 子代理 |
-| codex | 研究者 + 監督者 | `Bash` + `codex exec` |
-| gemini | 研究者 + 監督者 | `Bash` + `gemini -p` |
+| 管理者 | 主 session | 直接執行 |
+| 執行者 | 子代理（claude） | Agent 子代理 |
+| 驗證者 | 子代理（codex/gemini） | `Bash` + CLI |
 
-## claude
+## 管理者
 
-所有角色（秘書/管理者/開發者/驗證者）由當前 session 直接執行。需要隔離上下文或並行處理時使用 Agent 子代理。
+主 session，直接執行。需要隔離上下文或並行處理時，執行者以 Agent 子代理派工。
 
-## codex
+## 執行者（claude 子代理）
 
 ```bash
-codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
+# Agent 子代理派工
+Agent(subagent_type="general-purpose", prompt="...")
 ```
 
-PTY 模式（Bash 帶 `pty: true` 環境變數）。exit_code 124 偶發。pipe 到 tail/head 會卡死（64KB buffer）。
-
-## gemini
+## 驗證者（codex/gemini 子代理）
 
 ```bash
-# 一般派工
+# codex
+codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
+# gemini
 GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
-# 含框架定義檔
-GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
-  --include-directories="<定義檔路徑>" -p "prompt"
 ```
 
 `--approval-mode` 在 `-p` 之前。`.shiftblame/` 用 `cat` 讀取（`read_file` 拒絕 `.gitignore` 路徑）。
 
-## Prompt 模板（codex/gemini 適用）
+## Prompt 模板
 
-所有產出檔案（proposal.md / result.md / review.md / conclusion.md）以 50 行為上限，超過的部分排入下個 NNN 的 task.md。
+**Result**：讀取 task.md + DEPT/*.md → 依部門定義執行 → 寫入 `<cli>/result.md`。繁體中文產出。
 
-**Proposal**：讀取 task.md + DEPT 定義檔 → 分析 → 寫入 `<cli>/proposal.md`（claude 用 Write/Edit；codex/gemini 用原生 write_file）。繁體中文產出。
+**Review**：讀取 task.md + DEPT/*.md + 執行者 result.md → 依部門定義的紅隊/藍隊面向逐一驗證 → 寫入 `<cli>/review.md`。
 
-**Review**：讀取 task.md + conclusion.md + 主執行者 result.md → 從自身面向逐一驗證 → 寫入 `<cli>/review.md`。
-- codex 面向：邏輯正確性 + 測試覆蓋度
-- gemini 面向：功能完整性 + 規格一致性
+所有產出（result.md / review.md）以 50 為上限。
 
 ## Poll 流程
 
-1. claude 直接執行；codex/gemini 以 background process 派工
-2. 每 30 秒 poll codex/gemini 子目錄的 proposal.md / review.md
-3. claude 產出由管理者直接確認
+1. 管理者（主 session）直接執行；驗證者以 background process 派工
+2. 每 30 秒 poll 驗證者 子目錄的 result.md / review.md
+3. 管理者產出由管理者直接確認
