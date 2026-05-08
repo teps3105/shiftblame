@@ -44,4 +44,4 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
 
 **Blue**：讀取 task.md + result.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。
 
-所有產出（task.md / result.md / red.md / blue.md）以 50 為上限，繁體中文產出。
+所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。
