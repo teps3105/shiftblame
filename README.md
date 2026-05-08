@@ -84,7 +84,7 @@ claude plugin marketplace add https://github.com/teps3105/shiftblame.git
 claude plugin install shiftblame@shiftblame-plugins
 
 # 升級
-claude plugin update shiftblame
+claude plugin update shiftblame@shiftblame-plugins
 ```
 
 ## 自訂
