@@ -34,6 +34,8 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 ## Prompt 模板（codex/gemini 適用）
 
+所有產出檔案（proposal.md / result.md / review.md / conclusion.md）以 50 行為上限，超過的部分排入下個 NNN 的 task.md。
+
 **Proposal**：讀取 task.md + DEPT 定義檔 → 分析 → `write_file()` 寫入 `<cli>/proposal.md`。繁體中文產出。
 
 **Review**：讀取 task.md + conclusion.md + 主執行者 result.md → 從自身面向逐一驗證 → `write_file()` 寫入 `<cli>/review.md`。
