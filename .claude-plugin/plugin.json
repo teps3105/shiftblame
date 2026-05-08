@@ -1,5 +1,5 @@
 {
   "name": "shiftblame",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI Agents 協作開發框架 — 流程協議與定義檔。三名員工（claude/codex/gemini）透過 terminal() 直接呼叫，在同一個 worktree 上透過固定角色分工機制協作。支援四等級流程（L1~L4）與五部門分工（SEC/QA/PRD/DEV/QC）。"
 }
