@@ -37,6 +37,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 ```
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
+├── archive/              # 歷史紀錄（已完成任務）   
 └── <slug>/
     ├── worktree/          # git worktree（協作工作目錄）
     └── <DEPT>/<NNN>/
