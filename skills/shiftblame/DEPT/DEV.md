@@ -1,6 +1,6 @@
 # DEV — 開發部門
 
-執行者（claude 子代理）主執行（獨佔 worktree），驗證者（codex/gemini 子代理）紅藍隊 review。
+執行者（claude 子代理）主執行，驗證者（codex/gemini 子代理）紅藍隊 review。
 
 路徑：`.shiftblame/<slug>/DEV/<NNN>/`
 
