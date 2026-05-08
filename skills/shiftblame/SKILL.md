@@ -30,7 +30,7 @@ L4: 研究 → SEC → QA → PRD → DEV → QC → 收尾
 ```
 ## 閘門
 - **DEV→QC**：E2E 驗證 + 老闆覆核
-- **QC→DEV**：修正後再 E2E + 老闆覆核（最多 5 次）
+- **QC→DEV**：修正後再 E2E + 老闆覆核
 - **部門完成**：review.md 均通過
 ## 篇幅限制
 所有產出（task.md / conclusion.md / proposal.md / result.md / review.md）各以 50 行為上限，超過拆入下個 NNN。
