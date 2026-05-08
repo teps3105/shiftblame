@@ -21,7 +21,7 @@ L2: 執行 → PRD → QA → DEV → QC → 收尾
 | 規劃 | PRD | 執行者 result + 驗證者 review |
 | 標準 | QA | 執行者 result + 驗證者 review |
 | 開發 | DEV | 執行者 result + 驗證者 review |
-| 驗證 | QC | 執行者 E2E + 驗證者 review |
+| 驗證 | QC | 執行者 result + 驗證者 review |
 
 ## 通訊目錄
 ```
@@ -30,7 +30,7 @@ L2: 執行 → PRD → QA → DEV → QC → 收尾
 ```
 ## 閘門
 - **PRD/QA**：執行者/驗證者 result/review → `AskUserQuestion` 老闆確認
-- **DEV→QC**：QC 執行者 E2E（chrome-devtools-mcp）+ 老闆覆核
+- **DEV→QC**：QC 執行者端到端驗證 + 老闆覆核
 - **QC→DEV**：QC 退回 → 上游新 NNN
 
 ## 篇幅限制
