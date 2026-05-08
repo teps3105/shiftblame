@@ -1,13 +1,21 @@
 ---
 name: shiftblame
-description: >-
-  框架入口。五部門四等級單向流程開發框架的調度核心。
-  Use this skill when: the user says  "開始", "start", "開工", "let's go",
-  "開始吧", "來吧", "動工", "起動", "開幹", "go", "begin", "go ahead",
-  or any phrase signaling the start of a task/work/session.
+description: "AI Agents 協作開發框架 — 流程協議與定義檔。適用於有多名 AI 員工（claude/codex/gemini）需分工合作的開發專案。Use this skill when: user says '開始', 'start', '開工', 'let's go', '來吧', '動工', 'go', 'begin'; or when a multi-agent development workflow is needed; or when coordinating claude, codex, and gemini agents for software development tasks."
 ---
 
-> 所有路徑基於專案根目錄解析，執行時由 task.md 提供絕對路徑。
+# shiftblame — AI Agents 協作開發框架
+
+## 框架定位
+
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型的協作流程。三名員工（claude / codex / gemini）透過 `terminal()` 直接呼叫，各自使用獨立模型，在同一個 worktree 上透過固定角色分工機制協作。
+
+## 核心角色
+
+| 員工 | 身份 | 職責 |
+|------|------|------|
+| claude | 主執行者（固定） | 獨佔 worktree 編輯權與 Git 操作權，執行實際開發 |
+| codex | 監督者（固定） | 面向：邏輯正確性 + 測試覆蓋度 |
+| gemini | 監督者（固定） | 面向：功能完整性 + 規格一致性 |
 
 ## 四等級流程
 
@@ -18,15 +26,20 @@ L3: 秘書研究 → QA → PRD → DEV → QC → 秘書收尾
 L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 ```
 
-## 框架定義檔
+## 部門分類
 
-所有框架定義檔存放在 **框架定義檔目錄** `skills/shiftblame/`
+| 類型 | 部門 | 機制 |
+|:---:|:---:|---|
+| 研究部門 | SEC / QA / PRD | 三方各自分析寫 proposal.md，管理者彙整 conclusion.md |
+| 開發部門 | DEV | claude 固定為主執行者獨佔 worktree，codex 與 gemini 固定為監督者 |
+| 三方驗證 | QC | 三方 CLI 獨立驗證穩健性/邊緣案例/紅藍隊，管理者彙整 conclusion.md |
+
+## 框架定義檔
 
 | 檔案 | 內容 |
 |------|------|
-| `SKILL.md` | 框架入口 |
 | `SECRETARY.md` | 秘書準則 |
-| `MANAGER.md` | 管理者定義|
+| `MANAGER.md` | 管理者定義 |
 | `STAFF.md` | 員工呼叫規格 |
 | `DEPT/SEC.md` | 資安部門定義 |
 | `DEPT/QA.md` | 品保部門定義 |
@@ -34,43 +47,63 @@ L4: 秘書研究 → SEC → QA → PRD → DEV → QC → 秘書收尾
 | `DEPT/DEV.md` | 開發部門定義 |
 | `DEPT/QC.md` | 品管部門定義 |
 
-## 部門分類
+## 使用方式
 
-| 類型 | 部門 | 產出 |
-|------|------|------|
-| 研究部門 | SEC / QA / PRD | proposal.md → 管理者寫 conclusion.md |
-| 開發部門 | DEV | proposal.md → conclusion.md (001) / conclusion.md + result.md + review.md (002+) |
-| 三方驗證 | QC | 三方 review.md（claude 穩健性+邊緣案例，codex 紅隊攻擊，gemini 藍隊防禦+紅藍對照）→ 管理者寫 conclusion.md |
+### 初始化專案
+
+1. 確認專案根目錄存在 `.shiftblame/REPO.md`（框架現況定義）
+2. 若不存在，向老闆報告「專案尚未初始化」
+
+### 啟動開發流程
+
+使用者說「開始」/「start」/「開工」等關鍵字時，載入此 skill 並啟動對應模式的流程。
+
+### CLI 員工呼叫方式
+
+```bash
+# claude — Claude Code
+claude -p "<prompt>" --dangerously-skip-permissions --output-format text
+
+# codex — Codex (需要 pty: true)
+codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
+
+# gemini — Gemini CLI
+GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
+```
+
+## 通訊目錄結構
+
+```
+.shiftblame/<slug>/
+├── meta.md              # 秘書建立，管理者維護
+├── worktree/            # 單一共用 worktree
+└── <DEPT>/<NNN>/
+    ├── task.md              # 001 管理者寫入；002+ 管理者每次重新發布
+    ├── conclusion.md        # 管理者寫入
+    └── {claude,codex,gemini}/
+        ├── proposal.md      # CLI 寫入（001）
+        ├── result.md        # 主執行者寫入（002+）
+        └── review.md        # 監督者寫入（002+）
+```
 
 ## 開發部門循環機制
 
-開發部門採循環推進（001 規劃 → 002 首次執行 → 003+ 修正）：
+| 循環 | 內容 |
+|------|------|
+| 001 | 三方 proposal → 管理者寫 conclusion（純規劃） |
+| 002 | 主執行者 result + 監督者 review → 管理者 conclusion |
+| 003+ | 修正循環：依 review 反饋修正 → result + review → conclusion |
 
-| 角色 | 寫入 | 說明 |
-|------|------|------|
-| 三方 CLI | proposal.md | 001 各自分析寫入提案（含四項開工準則） |
-| 管理者 | conclusion.md | 001 彙整三方提案為規劃結論 |
-| 管理者 | conclusion.md | 002+ 彙整當次執行 result + review 為結論 |
-| 主執行者 | result.md | 002+ 實際執行成果 |
-| 監督者 | review.md | 002+ 逐條驗證 result.md 項目是否確實完成 |
+## 閘門機制
 
-主執行者固定為 claude，codex 與 gemini 固定擔任監督者。QC 為三方獨立驗證（equal_consensus），三方各寫 review.md，管理者彙整 conclusion.md。DEV→QC 間有管理者 E2E 實際驗證閘門 + 老闆覆核（clarify 呈報）。QC 退回 DEV 修正後需再次 E2E + 老闆覆核。
+- **DEV→QC 閘門**：管理者 E2E 實際驗證 + 老闆覆核
+- **QC 退回 DEV**：需再次 E2E + 老闆覆核
+- **部門閘門**：監督者 review.md 均通過 → 部門完成
 
-### 監督者面向分工
+## 主要規則
 
-| 監督者 | 面向 | 檢視重點 |
-|--------|------|----------|
-| codex | 邏輯正確性 + 測試覆蓋度 | 靜態分析、代碼審查、邏輯分支完整性、測試覆蓋度、邊界條件處理 |
-| gemini | 功能完整性 + 規格一致性 | 對照 PRD 驗證需求覆蓋、功能端到端完整性、規格偏差、遺漏功能 |
-
-- 001: proposal → conclusion（純規劃，和研究部門結構相同）
-- 002: 管理者發布 task.md（老闆覆核後派工）→ result + review → 管理者寫 conclusion → 判定（首次執行）
-- 003+: 管理者發布 task.md（老闆覆核後派工）→ result + review → 管理者寫 conclusion → 判定（修正循環）
-- review 通過 → 完成；有問題 → 開新 NNN
-- 同一部門最多 5 個子循環（001~005），超過退回上游
-
-## 主執行者向上請求支援
-
-主執行者在 result.md 寫入 `[SUPPORT_REQUEST: TOOL/ASSIST]`：
-- TOOL：管理者增加工具後重新派工
-- ASSIST：管理者代為處理受阻任務
+1. **主執行者獨佔 worktree**：僅 claude 有權在 worktree 編輯
+2. **監督者不修改 worktree**：只寫 review.md 檢視驗證
+3. **task.md 只含目標和約束**：不寫分工、做法、產出格式
+4. **限額偵測**：HTTP 429/503/529 時在 result.md 記錄詳情
+5. **單一共用 worktree**：所有部門共用同一 slug 層級 worktree
