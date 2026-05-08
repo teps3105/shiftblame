@@ -6,11 +6,12 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 三名員工在同一 worktree 協作。管理者（主 session）協調；執行者/驗證者（子代理）透過 CLI。
 
 ## 角色
-| 員工 | 身份 |
+| 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 主 session | 協調、派工、管線、閘門、收尾 |
+| 管理者 | 主 session | task.md |
 | 執行者 | 子代理（claude） | result.md |
-| 驗證者 | 子代理（codex/gemini） | review.md |
+| 紅隊 | 子代理（codex） | red.md |
+| 藍隊 | 子代理（gemini） | blue.md |
 
 詳見 `MANAGER.md` `STAFF.md`。
 
