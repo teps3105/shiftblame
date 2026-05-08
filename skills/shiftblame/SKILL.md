@@ -14,8 +14,8 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 ```
 L1: 研究 → 收尾
 L2: 研究 → PRD → DEV → QC → 收尾
-L3: 研究 → QA → PRD → DEV → QC → 收尾
-L4: 研究 → SEC → QA → PRD → DEV → QC → 收尾
+L3: 研究 → PRD → QA → DEV → QC → 收尾
+L4: 研究 → PRD → SEC → QA → DEV → QC → 收尾
 ```
 ## 部門
 | 類型 | 部門 | 機制 |
