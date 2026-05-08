@@ -76,9 +76,13 @@ skills/shiftblame/
 
 ## 安裝
 
-```bash
-cp -r skills/shiftblame/ <調度器 Skill 目錄>/shiftblame/
+透過 Claude Code Marketplace 安裝：
+
 ```
+/install-plugin shiftblame
+```
+
+升級時重新安裝即可覆蓋舊版。
 
 ## 自訂
 
