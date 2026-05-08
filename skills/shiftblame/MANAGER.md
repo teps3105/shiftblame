@@ -21,13 +21,14 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PRD→QA | result/red/blue → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
-| QA→DEV | result/red/blue → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
-| DEV→QC | result/red/blue → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
+| PRD→QA | result/red/blue → `AskUserQuestion` 老闆確認 |
+| QA→DEV | result/red/blue → `AskUserQuestion` 老闆確認 |
+| DEV→QC | result/red/blue → `AskUserQuestion` 老闆確認 |
 
 ## 退回
 
-同部門 → 新 NNN 補強。上游退回 → 上游新 NNN。
+退回同部門 →  同部門 NNN + 1 修正 。
+退回上游部門 → 上游部門 NNN + 1 修正。
 
 ## 收尾
 
