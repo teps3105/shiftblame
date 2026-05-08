@@ -22,7 +22,7 @@
 
 **DEV 002**：管理者重發 task.md → claude result + codex/gemini review → conclusion
 
-**DEV 003+**：重發 task.md（納入 review 反饋）→ 依 conclusion.md 修正。最多 5 個子循環，超過退回上游。
+**DEV 003+**：重發 task.md（納入 review 反饋）→ 依 conclusion.md 修正。
 
 ## 嗅探
 
