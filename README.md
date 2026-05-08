@@ -76,13 +76,16 @@ skills/shiftblame/
 
 ## 安裝
 
-透過 Claude Code Marketplace 安裝：
+```bash
+# 新增 marketplace（首次）
+claude plugin marketplace add https://github.com/teps3105/shiftblame.git
 
-```
-/install-plugin shiftblame
-```
+# 安裝 plugin
+claude plugin install shiftblame@shiftblame-plugins
 
-升級時重新安裝即可覆蓋舊版。
+# 升級
+claude plugin update shiftblame
+```
 
 ## 自訂
 
