@@ -13,16 +13,15 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 | gemini | 監督者（固定） | 功能完整性 + 規格一致性 |
 ```
 L1: 研究 → 收尾
-L2: 研究 → PRD → DEV → QC → 收尾
-L3: 研究 → PRD → QA → DEV → QC → 收尾
-L4: 研究 → PRD → SEC → QA → DEV → QC → 收尾
+L2: 研究 → PRD → DEV → 收尾
+L3: 研究 → PRD → SEC → QA → DEV → QC → 收尾
 ```
 ## 部門
 | 類型 | 部門 | 機制 |
 |:---:|:---:|---|
 | 研究 | SEC/QA/PRD | 三方各寫 proposal → conclusion.md |
 | 開發 | DEV | claude 主執行 + codex/gemini 監督 review |
-| 驗證 | QC | 三方各自獨立驗證 → conclusion.md |
+| 驗證 | QC（L3） | 三方各自獨立驗證 → conclusion.md |
 ## 通訊目錄
 ```
 .shiftblame/<slug>/{meta.md, worktree/, <DEPT>/<NNN>/
