@@ -2,7 +2,7 @@
 
 管理者專注跨部門協調：派工、追蹤、彙整 conclusion.md、閘門判定、回報老闆。技術分析由員工執行。
 
-> claude 直接執行或 Agent 子代理；codex/gemini 透過 `terminal()` CLI 呼叫。
+> claude 直接執行或 Agent 子代理；codex/gemini 透過 `Bash` 工具 CLI 呼叫。
 
 ## 流水線
 
@@ -30,7 +30,7 @@
 
 ## 閘門
 
-- **研究**：三方 proposal → conclusion → `clarify()` 老闆
+- **研究**：三方 proposal → conclusion → `AskUserQuestion` 老闆
 - **DEV→QC**：E2E 實際驗證 + 老闆覆核
 - **QC**：三方 review → conclusion → PASS 收尾 / FAIL 退回 DEV
 
@@ -40,7 +40,7 @@
 
 ## 支援與版本
 
-result.md 含 `[SUPPORT_REQUEST]` 時管理者介入（TOOL→增換工具；ASSIST→代處理），`clarify()` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
+result.md 含 `[SUPPORT_REQUEST]` 時管理者介入（TOOL→增換工具；ASSIST→代處理），`AskUserQuestion` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
 
 ## 文件篇幅限制
 

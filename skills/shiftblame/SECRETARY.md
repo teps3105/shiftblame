@@ -18,7 +18,7 @@
 
 ## L2+
 
-1. L1 研究分析 → 呈報需求理解 → 等老闆「派工」→ `clarify()` 確認模式
+1. L1 研究分析 → 呈報需求理解 → 等老闆「派工」→ `AskUserQuestion` 確認模式
 2. 建 worktree：`git worktree add .shiftblame/$SLUG/worktree -b feat/$SLUG`
 3. 寫 meta.md → 研究閘門確認 → 載入 MANAGER.md，管理者接管
 4. 管線結束 → 秘書收尾
@@ -28,7 +28,7 @@
 ## 收尾
 
 1. 讀取最後部門結論 → 確認產出完整
-2. `clarify()` 呈報（歸檔 / 退回修正 / 暫停）
+2. `AskUserQuestion` 呈報（歸檔 / 退回修正 / 暫停）
 3. 秘書復判：worktree 就緒、系統正確運作
 4. 歸檔：squash merge → push → 更新 REPO.md → 刪 worktree → 歸檔 → 刪分支
 

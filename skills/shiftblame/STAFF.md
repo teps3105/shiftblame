@@ -5,8 +5,8 @@ claude 直接執行或 Agent 子代理；codex 與 gemini 透過 CLI 呼叫，�
 | 別名 | 角色 | 呼叫路徑 |
 |------|------|---------|
 | claude | 主執行者 | 直接執行或 Agent 子代理 |
-| codex | 研究者 + 監督者 | `terminal(pty:true)` + `codex exec` |
-| gemini | 研究者 + 監督者 | `terminal()` + `gemini -p` |
+| codex | 研究者 + 監督者 | `Bash` + `codex exec` |
+| gemini | 研究者 + 監督者 | `Bash` + `gemini -p` |
 
 ## claude
 
@@ -18,7 +18,7 @@ claude 直接執行或 Agent 子代理；codex 與 gemini 透過 CLI 呼叫，�
 codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
 ```
 
-PTY 模式（`pty: true`）。exit_code 124 偶發。pipe 到 tail/head 會卡死（64KB buffer）。
+PTY 模式（Bash 帶 `pty: true` 環境變數）。exit_code 124 偶發。pipe 到 tail/head 會卡死（64KB buffer）。
 
 ## gemini
 
@@ -36,9 +36,9 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text \
 
 所有產出檔案（proposal.md / result.md / review.md / conclusion.md）以 50 行為上限，超過的部分排入下個 NNN 的 task.md。
 
-**Proposal**：讀取 task.md + DEPT 定義檔 → 分析 → `write_file()` 寫入 `<cli>/proposal.md`。繁體中文產出。
+**Proposal**：讀取 task.md + DEPT 定義檔 → 分析 → 寫入 `<cli>/proposal.md`（claude 用 Write/Edit；codex/gemini 用原生 write_file）。繁體中文產出。
 
-**Review**：讀取 task.md + conclusion.md + 主執行者 result.md → 從自身面向逐一驗證 → `write_file()` 寫入 `<cli>/review.md`。
+**Review**：讀取 task.md + conclusion.md + 主執行者 result.md → 從自身面向逐一驗證 → 寫入 `<cli>/review.md`。
 - codex 面向：邏輯正確性 + 測試覆蓋度
 - gemini 面向：功能完整性 + 規格一致性
 

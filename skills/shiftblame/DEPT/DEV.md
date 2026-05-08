@@ -26,4 +26,4 @@
 
 ## 管理者 E2E 閘門（DEV→QC）
 
-監督者 review 通過後，管理者實際啟動應用以使用者身份端到端操作（Web SPA 用 chrome-devtools-mcp）。通過後 `clarify()` 呈報老闆覆核，確認後推進 QC。QC 退回 DEV 修正後需再次 E2E + 老闆覆核。
+監督者 review 通過後，管理者實際啟動應用以使用者身份端到端操作（Web SPA 用 chrome-devtools-mcp）。通過後 `AskUserQuestion` 呈報老闆覆核，確認後推進 QC。QC 退回 DEV 修正後需再次 E2E + 老闆覆核。
