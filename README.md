@@ -17,17 +17,18 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者（主 session）協調；執行者/驗證者（子代理）透過 CLI 執行。三名員工在同一個 worktree 上透過固定角色分工，由管理者統籌派工、管線、閘門、收尾。
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者（主 session）協調；執行者/紅隊/藍隊（子代理）執行。
 
 ---
 
-## 角色與流程
+## 角色
 
-| 員工 | 身份 | 職責 |
+| 員工 | 身份 | 產出 |
 |------|------|------|
 | 管理者 | 主 session | 協調、派工、管線、閘門、收尾 |
-| 執行者 | 子代理（claude） | 獨佔 worktree，產出 result.md |
-| 驗證者 | 子代理（codex/gemini） | 產出 review.md（紅隊/藍隊） |
+| 執行者 | 子代理（claude） | result.md |
+| 紅隊 | 子代理（codex） | red.md |
+| 藍隊 | 子代理（gemini） | blue.md |
 
 ```
 L1: 執行 → 收尾
@@ -49,9 +50,9 @@ L2: 執行 → PRD → QA → DEV → QC → 收尾
 
 | 閘門 | 條件 |
 |:----:|------|
-| PRD→QA | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
-| QA→DEV | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
-| DEV→QC | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
+| PRD→QA | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
+| QA→DEV | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
+| DEV→QC | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
 
 ---
 
@@ -76,10 +77,11 @@ skills/shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
 └── <slug>/<DEPT>/<NNN>/
     ├── task.md
-    ├── claude/result.md  # claude 子代理
-    ├── codex/review.md   # codex 子代理
-    └── gemini/review.md  # gemini 子代理
+    ├── result.md        # 執行者
+    ├── red.md          # 紅隊
+    └── blue.md         # 藍隊
 ```
+
 ---
 
 ## 安裝

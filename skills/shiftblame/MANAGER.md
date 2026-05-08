@@ -3,7 +3,7 @@
 管理者（主 session）統一協調：派工、管線、閘門、收尾。
 
 > 管理者直接執行
-> 執行者/驗證者以子代理派工
+> 執行者/紅隊/藍隊以子代理派工
 
 ## 決策
 
@@ -15,18 +15,19 @@
 
 ## 派工
 
-所有部門皆從 001 開始：執行者子代理 result + 驗證者子代理 review。
+所有部門皆從 001 開始：執行者 result + 紅隊 red + 藍隊 blue。
 
 ## 管線
 
-- **PRD→QA**：執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN
-- **QA→DEV**：執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN
-- **DEV→QC**：執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN
+| 閘門 | 條件 |
+|:----:|------|
+| PRD→QA | result/red/blue → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
+| QA→DEV | result/red/blue → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
+| DEV→QC | result/red/blue → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
 
 ## 退回
 
-同部門 → 新 NNN 補強。
-上游退回 → 上游新 NNN。
+同部門 → 新 NNN 補強。上游退回 → 上游新 NNN。
 
 ## 收尾
 

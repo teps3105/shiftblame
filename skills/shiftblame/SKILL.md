@@ -37,8 +37,8 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
 └── <slug>/<DEPT>/<NNN>/
-    ├── task.md
-    ├── claude/result.md  # claude 子代理
-    ├── codex/review.md   # codex 子代理
-    └── gemini/review.md  # gemini 子代理
+    ├── task.md          # 任務定義
+    ├── result.md        # 執行結果
+    ├── red.md           # 紅隊驗證
+    └── blue.md          # 藍隊驗證
 ```
