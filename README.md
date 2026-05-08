@@ -51,7 +51,7 @@ L2: 執行 → PRD → QA → DEV → QC → 收尾
 |:----:|------|
 | PRD→QA | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
 | QA→DEV | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
-| DEV→QC | QC 執行者端到端驗證 + 老闆覆核，QC 退回 → 上游新 NNN |
+| DEV→QC | 執行者/驗證者 result/review → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
 
 ---
 
