@@ -1,31 +1,31 @@
 {
   "scripts": {
-    "skillTriggerCheck": "bash scripts/skill-trigger-check.sh",
-    "taskDispatchCheck": "bash scripts/task-dispatch-check.sh",
-    "gatePrereqCheck": "bash scripts/gate-prereq-check.sh",
-    "subagentOutputCheck": "bash scripts/subagent-output-check.sh",
-    "taskInit": "bash scripts/task-init.sh",
-    "slugArchive": "bash scripts/slug-archive.sh"
+    "skillTriggerCheck": "bash ~/.codex/skills/shiftblame/scripts/skill-trigger-check.sh",
+    "taskDispatchCheck": "bash ~/.codex/skills/shiftblame/scripts/task-dispatch-check.sh",
+    "gatePrereqCheck": "bash ~/.codex/skills/shiftblame/scripts/gate-prereq-check.sh",
+    "subagentOutputCheck": "bash ~/.codex/skills/shiftblame/scripts/subagent-output-check.sh",
+    "taskInit": "bash ~/.codex/skills/shiftblame/scripts/task-init.sh",
+    "slugArchive": "bash ~/.codex/skills/shiftblame/scripts/slug-archive.sh"
   },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Skill",
-        "command": "bash scripts/skill-trigger-check.sh"
+        "command": "bash ~/.codex/skills/shiftblame/scripts/skill-trigger-check.sh"
       },
       {
         "matcher": "spawn_agent",
-        "command": "bash scripts/task-dispatch-check.sh"
+        "command": "bash ~/.codex/skills/shiftblame/scripts/task-dispatch-check.sh"
       },
       {
         "matcher": "request_user_input",
-        "command": "bash scripts/gate-prereq-check.sh"
+        "command": "bash ~/.codex/skills/shiftblame/scripts/gate-prereq-check.sh"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "spawn_agent",
-        "command": "bash scripts/subagent-output-check.sh"
+        "command": "bash ~/.codex/skills/shiftblame/scripts/subagent-output-check.sh"
       }
     ]
   }

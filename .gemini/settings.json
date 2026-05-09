@@ -1,31 +1,31 @@
 {
   "scripts": {
-    "skillTriggerCheck": "bash scripts/skill-trigger-check.sh",
-    "taskDispatchCheck": "bash scripts/task-dispatch-check.sh",
-    "gatePrereqCheck": "bash scripts/gate-prereq-check.sh",
-    "subagentOutputCheck": "bash scripts/subagent-output-check.sh",
-    "taskInit": "bash scripts/task-init.sh",
-    "slugArchive": "bash scripts/slug-archive.sh"
+    "skillTriggerCheck": "bash ~/.gemini/skills/shiftblame/scripts/skill-trigger-check.sh",
+    "taskDispatchCheck": "bash ~/.gemini/skills/shiftblame/scripts/task-dispatch-check.sh",
+    "gatePrereqCheck": "bash ~/.gemini/skills/shiftblame/scripts/gate-prereq-check.sh",
+    "subagentOutputCheck": "bash ~/.gemini/skills/shiftblame/scripts/subagent-output-check.sh",
+    "taskInit": "bash ~/.gemini/skills/shiftblame/scripts/task-init.sh",
+    "slugArchive": "bash ~/.gemini/skills/shiftblame/scripts/slug-archive.sh"
   },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Skill",
-        "command": "bash scripts/skill-trigger-check.sh"
+        "command": "bash ~/.gemini/skills/shiftblame/scripts/skill-trigger-check.sh"
       },
       {
         "matcher": "subagent",
-        "command": "bash scripts/task-dispatch-check.sh"
+        "command": "bash ~/.gemini/skills/shiftblame/scripts/task-dispatch-check.sh"
       },
       {
         "matcher": "ask_user",
-        "command": "bash scripts/gate-prereq-check.sh"
+        "command": "bash ~/.gemini/skills/shiftblame/scripts/gate-prereq-check.sh"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "subagent",
-        "command": "bash scripts/subagent-output-check.sh"
+        "command": "bash ~/.gemini/skills/shiftblame/scripts/subagent-output-check.sh"
       }
     ]
   }

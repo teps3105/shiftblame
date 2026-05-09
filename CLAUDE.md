@@ -12,6 +12,6 @@
 
 遵循 `skills/shiftblame/SKILL.md`、`MANAGER.md`、`STAFF.md` 與 `DEPT/*.md`。`.shiftblame/` 工作結構不得因 CLI 環境改變。
 
-Claude hooks 設定位於 `.claude/settings.json`，並呼叫共用的 `scripts/*.sh`。
+Claude hooks 設定位於 `.claude/settings.json`，並呼叫共用的 `~/.claude/skills/shiftblame/scripts/*.sh`。
 
 所有產出使用繁體中文。

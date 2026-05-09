@@ -12,6 +12,6 @@
 
 遵循 `skills/shiftblame/SKILL.md`、`MANAGER.md`、`STAFF.md` 與 `DEPT/*.md`。`.shiftblame/` 工作結構不得因 CLI 環境改變。
 
-可呼叫 scripts 載入設定位於 `.codex/settings.json`；需要初始化、派工檢查、閘門檢查或收尾歸檔時，依該檔呼叫 `scripts/*.sh`。
+可呼叫 scripts 載入設定位於 `.codex/settings.json`；需要初始化、派工檢查、閘門檢查或收尾歸檔時，依該檔呼叫 `~/.codex/skills/shiftblame/scripts/*.sh`。
 
 所有產出使用繁體中文。

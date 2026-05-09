@@ -86,11 +86,11 @@ GEMINI.md               # Gemini 入口
 .claude/settings.json   # Claude scripts hooks
 .codex/settings.json    # Codex 可呼叫 scripts 載入設定
 .gemini/settings.json   # Gemini 可呼叫 scripts 載入設定
-scripts/                # 三方 CLI 共用檢查與流程腳本
 skills/shiftblame/
 ├── SKILL.md          # 框架入口
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
+├── scripts/          # 三方 CLI 共用檢查與流程腳本
 └── DEPT/
     ├── PRD.md        # 產品部門
     ├── QA.md         # 品保部門
@@ -134,7 +134,7 @@ ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
 
 ## Scripts 設定
 
-Claude 使用 `.claude/settings.json` 載入 hooks。Codex 與 Gemini 對應使用 `.codex/settings.json`、`.gemini/settings.json`，提供相同的 `scripts/*.sh` 指令清單與 hook 對應，讓三方共用同一套檢查腳本。
+Claude 使用 `.claude/settings.json` 載入 hooks。Codex 與 Gemini 對應使用 `.codex/settings.json`、`.gemini/settings.json`，提供相同的 `~/.<cli>/skills/shiftblame/scripts/*.sh` 指令清單與 hook 對應。腳本放在 skill 目錄內，透過 symlink 安裝技能時會一起載入。
 
 ## 自訂
 

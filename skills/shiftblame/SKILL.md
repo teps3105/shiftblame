@@ -38,6 +38,8 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。
 
+共用檢查腳本位於本技能目錄的 `scripts/*.sh`，必須隨 `skills/shiftblame` symlink 一起載入；不得依賴 repo 根目錄另有 `scripts/`。
+
 ## 權限 / ignore 規則
 
 `.shiftblame/` 通常會被 `.gitignore` 排除，因此部分 CLI 的檔案工具（例如 `read_file`、內建檔案讀取器）會拒絕讀取其中內容。所有管理者與跨 CLI 員工在讀寫 `.shiftblame/` 時必須使用 shell 指令：
@@ -63,4 +65,13 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
         ├── result.md     # 執行結果
         ├── red.md        # 紅隊驗證
         └── blue.md       # 藍隊驗證
+```
+
+```
+skills/shiftblame/
+├── SKILL.md
+├── MANAGER.md
+├── STAFF.md
+├── scripts/              # hooks / 檢查 / 初始化 / 歸檔腳本
+└── DEPT/
 ```

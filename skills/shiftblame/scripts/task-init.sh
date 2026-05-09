@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shiftblame task initializer
-# Usage: bash scripts/task-init.sh <slug> <dept> [nnn]
+# Usage: bash skills/shiftblame/scripts/task-init.sh <slug> <dept> [nnn]
 # Creates DEPT/NNN directory and writes task.md template
 # If nnn omitted, auto-increments from existing directories
 

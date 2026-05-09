@@ -41,7 +41,7 @@ if [[ -n "$NO_TASK" ]]; then
   slug_name=$(basename "$(dirname "$(dirname "$NO_TASK")")")
   dept_name=$(basename "$(dirname "$NO_TASK")")
   task_num=$(basename "$NO_TASK")
-  echo "BLOCK: task.md 不存在 — 請先執行: bash scripts/task-init.sh $slug_name $dept_name $task_num"
+  echo "BLOCK: task.md 不存在 — 請先執行: bash skills/shiftblame/scripts/task-init.sh $slug_name $dept_name $task_num"
   exit 2
 fi
 

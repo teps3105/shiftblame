@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shiftblame slug archiver
-# Usage: bash scripts/slug-archive.sh [slug]
+# Usage: bash skills/shiftblame/scripts/slug-archive.sh [slug]
 # Moves completed slug to .shiftblame/archive/
 # If slug omitted, archives the currently active slug
 

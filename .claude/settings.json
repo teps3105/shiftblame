@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/skill-trigger-check.sh"
+            "command": "bash ~/.claude/skills/shiftblame/scripts/skill-trigger-check.sh"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/task-dispatch-check.sh"
+            "command": "bash ~/.claude/skills/shiftblame/scripts/task-dispatch-check.sh"
           }
         ]
       },
@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/gate-prereq-check.sh"
+            "command": "bash ~/.claude/skills/shiftblame/scripts/gate-prereq-check.sh"
           }
         ]
       }
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/subagent-output-check.sh"
+            "command": "bash ~/.claude/skills/shiftblame/scripts/subagent-output-check.sh"
           }
         ]
       }
