@@ -56,6 +56,9 @@ Agent(subagent_type="general-purpose", prompt="...")
 # claude
 mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && claude --bare --dangerously-skip-permissions --no-session-persistence --output-format text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
 
+# claude（OAuth 登入但 --bare 回報 Not logged in 時）
+mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && claude --bare --settings '{"apiKeyHelper":"node -e \"const fs=require(\\\"fs\\\"); const p=process.env.HOME+\\\"/.claude/.credentials.json\\\"; const c=JSON.parse(fs.readFileSync(p,\\\"utf8\\\")); process.stdout.write(c.claudeAiOauth && c.claudeAiOauth.accessToken || \\\"\\\");\""}' --dangerously-skip-permissions --no-session-persistence --output-format text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
+
 # codex
 mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && codex exec --dangerously-bypass-approvals-and-sandbox "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
 
@@ -67,11 +70,11 @@ mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && GEMINI_CLI_TRUST_WORKSPACE=true gemi
 
 CLI 旗標規範：
 
-- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。
+- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。注意：`--bare` 不讀 OAuth / keychain，只讀 `ANTHROPIC_API_KEY` 或 `--settings` 內的 `apiKeyHelper`。若一般 `claude auth status` 顯示已登入，但 `claude --bare ... -p` 回報 `Not logged in`，管理者必須先用上方「OAuth 登入但 --bare 回報 Not logged in 時」的 `apiKeyHelper` 指令重派；只有 `apiKeyHelper` 重派仍失敗、限額、或 120 秒卡住時，才依降級策略補位。
 - **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
-跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。
+跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。Claude 的 `Not logged in` 若發生於 `--bare` 模式，不得直接視為 Claude 不可用；需先檢查 `claude auth status`，並用 `apiKeyHelper` 重派一次。
 
 ## 限額 / 單點降級策略
 
