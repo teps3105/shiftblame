@@ -47,11 +47,11 @@ CLI 旗標規範：
 - **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
-跨 CLI 呼叫若 60 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。
+跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。Claude 寫入與工具規劃時間通常較長，timeout 不得低於 120 秒。
 
 ## 限額 / 單點降級策略
 
-外部 CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或 60 秒內無輸出且重派後仍無法產生目標檔案時，視為該 CLI 本輪不可用。
+外部 CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或 120 秒內無輸出且重派後仍無法產生目標檔案時，視為該 CLI 本輪不可用。
 
 降級順序：
 
