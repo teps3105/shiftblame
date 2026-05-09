@@ -77,7 +77,11 @@ CLI 旗標規範：
 
 若員工回報 `.shiftblame/` 檔案被 ignore/permission 拒絕，管理者不得等待其自行修復；立即中止該員工程序，改用上述硬性指示重派，或由管理者代讀內容後以 prompt 摘要提供。
 
-## Worktree 工作規範
+## 工作區規範
+
+task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任務沿用相同模式。
+
+### worktree 模式（預設）
 
 所有部門的 Demo、開發、測試等產物一律寫入 `<slug>/worktree/`，不得寫入主分支工作目錄。
 
@@ -87,6 +91,14 @@ CLI 旗標規範：
 - **QC**：驗證腳本與結果寫入 worktree
 
 收尾 squash merge 時，僅合併正式程式碼。Demo 原型、測試腳本、測試產物等不隨 merge 進入主分支。
+
+### direct 模式
+
+直接在主 repo 的功能分支上開發，不額外建工作樹。管理者建立分支 `feat/<slug>` 後切換，所有產物直接寫入 repo 工作目錄。收尾時 squash merge → push → 刪分支（無 worktree 需清理）。
+
+- 僅切分支，不建 worktree
+- 產物直接在 repo 工作目錄中產生
+- 收尾時無需刪 worktree，僅刪分支
 
 ## Prompt 模板
 

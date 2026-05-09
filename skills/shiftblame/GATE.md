@@ -57,6 +57,15 @@ REPO.md 模板：
 
 **檢查**：目標目錄 `<slug>/<DEPT>/<NNN>/task.md` 是否存在。
 
+**工作區模式**：建立新 slug 的第一個 task.md 時，管理者以 `AskUserQuestion` 詢問老闆選擇工作區模式：
+
+| 模式 | 說明 |
+|------|------|
+| `worktree` | 建立 git worktree，所有產物寫入 `<slug>/worktree/`（預設） |
+| `direct` | 直接在主 repo 切分支開發，不額外建工作樹 |
+
+選定後寫入 task.md 的 `workspace` 欄位，同一 slug 後續任務沿用相同模式。
+
 | 情境 | 動作 |
 |------|------|
 | `task.md` 存在 | 通過 |
@@ -72,6 +81,7 @@ dept: <DEPT>
 task: <NNN>
 version: 0.1.0
 status: pending
+workspace: worktree | direct
 created: <ISO timestamp>
 ---
 
@@ -109,7 +119,7 @@ created: <ISO timestamp>
 | 情境 | 動作 |
 |------|------|
 | 歸檔目錄已有同名 slug | 附加時間戳：`<slug>_<YYYYMMDDTHHMMSS>` |
-| git worktree 分支仍存在 | 警告但允許繼續歸檔 |
+| git worktree 分支仍存在 | 僅 worktree 模式：警告但允許繼續歸檔；direct 模式不適用 |
 
 ## 管理者職責
 
