@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者（主 session）協調；目前所在 CLI 擔任執行者，另外兩個 CLI 擔任紅隊/藍隊。
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者與執行者同樣由目前所在 CLI 擔任，另外兩個 CLI 預設擔任紅隊/藍隊；外部 CLI 限額或 429 時依降級策略補位。
 
 ---
 
@@ -25,7 +25,7 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 主 session | 協調、派工、管線、閘門、收尾 |
+| 管理者 | 目前 CLI（claude/codex/gemini） | 協調、派工、管線、閘門、收尾 |
 | 執行者 | 目前 CLI（claude/codex/gemini） | result.md |
 | 紅隊 | 非目前 CLI 之一 | red.md |
 | 藍隊 | 非目前 CLI 之一 | blue.md |
@@ -35,6 +35,8 @@ _「這不是我的鍋。」_
 | Claude CLI | claude | codex | gemini |
 | Codex CLI | codex | claude | gemini |
 | Gemini CLI | gemini | claude | codex |
+
+外部 CLI 若遇到 `429`、rate limit、quota exceeded、billing limit、暫時不可用或重派後仍無輸出，先由另一個外部 CLI 補上缺少的紅/藍產出；若只剩目前 CLI 可用，管理者改開兩個本環境子代理分別產出 `red.md`、`blue.md`。
 
 ```
 L1: 執行 → 收尾
@@ -78,6 +80,13 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 ## 檔案結構
 
 ```
+AGENTS.md               # Codex 入口
+CLAUDE.md               # Claude 入口
+GEMINI.md               # Gemini 入口
+.claude/settings.json   # Claude scripts hooks
+.codex/settings.json    # Codex 可呼叫 scripts 載入設定
+.gemini/settings.json   # Gemini 可呼叫 scripts 載入設定
+scripts/                # 三方 CLI 共用檢查與流程腳本
 skills/shiftblame/
 ├── SKILL.md          # 框架入口
 ├── MANAGER.md        # 管理者定義（≤50 行）
@@ -105,41 +114,27 @@ skills/shiftblame/
 
 ## 安裝
 
-### Claude CLI
+三方 CLI 統一使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到各 CLI 的 skills 目錄。
 
 ```bash
-# 新增 marketplace（首次）
-claude plugin marketplace add https://github.com/teps3105/shiftblame.git
+# Claude CLI
+mkdir -p ~/.claude/skills
+ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
 
-# 安裝 plugin
-claude plugin install shiftblame@shiftblame-plugins
-
-# 升級
-claude plugin update shiftblame@shiftblame-plugins
-```
-
-### Codex CLI
-
-在 Codex 內用 prompt 安裝：
-
-```text
-$skill-installer install https://github.com/teps3105/shiftblame/tree/main/skills/shiftblame
-```
-
-安裝後重啟 Codex，讓新技能被載入。
-
-本機開發版可用 symlink：
-
-```bash
+# Codex CLI
 mkdir -p ~/.codex/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
+
+# Gemini CLI
+mkdir -p ~/.gemini/skills
+ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
 ```
 
-Codex 也會讀取 repo 根目錄的 `AGENTS.md`。
+安裝後重啟對應 CLI，讓新技能被載入。各 CLI 仍會讀取 repo 根目錄的進入檔：Claude 使用 `CLAUDE.md`，Codex 使用 `AGENTS.md`，Gemini 使用 `GEMINI.md`。
 
-### Gemini CLI
+## Scripts 設定
 
-Gemini 讀取 repo 根目錄的 `GEMINI.md`，並使用同一套 `skills/shiftblame/` 定義。
+Claude 使用 `.claude/settings.json` 載入 hooks。Codex 與 Gemini 對應使用 `.codex/settings.json`、`.gemini/settings.json`，提供相同的 `scripts/*.sh` 指令清單與 hook 對應，讓三方共用同一套檢查腳本。
 
 ## 自訂
 
