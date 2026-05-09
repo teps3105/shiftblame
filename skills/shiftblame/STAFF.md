@@ -3,27 +3,43 @@
 | 別名 | 角色 | 呼叫路徑 |
 |------|------|---------|
 | 管理者 | 主 session | 直接執行 |
-| 執行者 | 子代理（claude） | Agent 子代理 |
-| 紅隊 | 子代理（codex） | `Bash` + CLI |
-| 藍隊 | 子代理（gemini） | `Bash` + CLI |
+| 執行者 | 目前 CLI | 直接執行或本環境子代理 |
+| 紅隊 | 非目前 CLI 之一 | `Bash` + CLI |
+| 藍隊 | 非目前 CLI 之一 | `Bash` + CLI |
 
-## 執行者
+## 環境角色映射
+
+| 目前環境 | 執行者 | 紅隊 | 藍隊 |
+|----------|--------|------|------|
+| Claude CLI | claude | codex | gemini |
+| Codex CLI | codex | claude | gemini |
+| Gemini CLI | gemini | claude | codex |
+
+固定原則：目前 CLI 永遠是執行者，寫入 `result.md`。另外兩個 CLI 才能寫入 `red.md`、`blue.md`。檔案結構與管線語意不得因環境改變。
+
+## 執行者呼叫
 
 ```bash
-# Agent 子代理派工
+# Claude CLI 可用 Agent 子代理派工
 Agent(subagent_type="general-purpose", prompt="...")
+
+# Codex CLI 由目前 Codex session 直接執行，或使用 worker subagent
+
+# Gemini CLI 由目前 Gemini session 直接執行
 ```
 
-## 紅隊 / 藍隊
+## 跨 CLI 呼叫
 
 ```bash
-# codex（紅隊）
+# claude
+claude -p "prompt"
+# codex
 codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
-# gemini（藍隊）
+# gemini
 GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
 ```
 
-`--approval-mode` 在 `-p` 之前。`.shiftblame/` 用 `cat` 讀取（`read_file` 拒絕 `.gitignore` 路徑）。
+依「環境角色映射」選擇紅隊/藍隊實際命令，不得把目前 CLI 再派成紅隊或藍隊。`--approval-mode` 在 `-p` 之前。`.shiftblame/` 用 `cat` 讀取（`read_file` 可能拒絕 `.gitignore` 路徑）。
 
 ## Worktree 工作規範
 

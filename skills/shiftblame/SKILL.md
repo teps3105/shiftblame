@@ -3,15 +3,23 @@ name: shiftblame
 description: "AI Agents 協作框架。Use when: '開始','start','開工','動工','go','begin'; or multi-agent workflow."
 ---
 # shiftblame — AI Agents 協作框架
-三名員工在同一 worktree 協作。管理者（主 session）協調；執行者/驗證者（子代理）透過 CLI。
+三名員工在同一 worktree 協作。管理者（主 session）協調；執行者為目前所在 CLI 環境，紅隊/藍隊由另外兩個 CLI 擔任。
 
 ## 角色
 | 員工 | 身份 | 產出 |
 |------|------|------|
 | 管理者 | 主 session | task.md |
-| 執行者 | 子代理（claude） | result.md |
-| 紅隊 | 子代理（codex） | red.md |
-| 藍隊 | 子代理（gemini） | blue.md |
+| 執行者 | 目前 CLI（claude/codex/gemini） | result.md |
+| 紅隊 | 非目前 CLI 之一 | red.md |
+| 藍隊 | 非目前 CLI 之一 | blue.md |
+
+角色映射依環境自動決定：
+
+| 目前環境 | 執行者 | 紅隊 | 藍隊 |
+|----------|--------|------|------|
+| Claude CLI | claude | codex | gemini |
+| Codex CLI | codex | claude | gemini |
+| Gemini CLI | gemini | claude | codex |
 
 詳見 `MANAGER.md` `STAFF.md`。
 

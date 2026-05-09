@@ -1,6 +1,6 @@
 # QA — 品保部門
 
-執行者（claude 子代理）主執行，驗證者（codex/gemini 子代理）紅藍隊 review。
+執行者由目前 CLI 環境擔任，驗證者由另外兩個 CLI 擔任紅藍隊 review。角色映射依 `STAFF.md`。
 
 路徑：`.shiftblame/<slug>/QA/<NNN>/`
 

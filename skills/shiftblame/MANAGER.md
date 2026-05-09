@@ -24,6 +24,7 @@
 | PRD→QA | result/red/blue → `AskUserQuestion` 老闆確認 |
 | QA→DEV | result/red/blue → `AskUserQuestion` 老闆確認 |
 | DEV→QC | result/red/blue → `AskUserQuestion` 老闆確認 |
+| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `AskUserQuestion` 老闆確認現況；通過後收尾並自動歸檔 slug |
 
 ## 退回
 
@@ -32,7 +33,9 @@
 
 ## 收尾
 
-squash merge 前更新 README.md 和 REPO.md → squash merge → push → 刪 worktree → 刪分支 → 搬移 slug 至 .shiftblame/archive/。`AskUserQuestion` 呈報老闆（歸檔/退回修正/暫停）。
+QC→收尾閘門通過後，執行收尾檢查 → squash merge 前更新 README.md 和 REPO.md → squash merge → push → 刪 worktree → 刪分支 → 搬移 slug 至 .shiftblame/archive/。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回 DEV 或 QC 新 NNN。
+
+收尾檢查清單：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留進入主分支；無非正式測試文件或測試產物進入主分支；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、worktree 專用產物、本地私密設定不納入版本控制；README.md 與 REPO.md 已反映最終現況。
 
 ## task.md / 支援與版本
 
