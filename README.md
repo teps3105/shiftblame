@@ -87,9 +87,15 @@ GEMINI.md               # Gemini 入口
 .codex/settings.json    # Codex 可呼叫 scripts 載入設定
 .gemini/settings.json   # Gemini 可呼叫 scripts 載入設定
 skills/shiftblame/
+├── AGENTS.md         # Codex 入口 canonical copy
+├── CLAUDE.md         # Claude 入口 canonical copy
+├── GEMINI.md         # Gemini 入口 canonical copy
 ├── SKILL.md          # 框架入口
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
+├── .claude/          # Claude 設定 canonical copy
+├── .codex/           # Codex 設定 canonical copy
+├── .gemini/          # Gemini 設定 canonical copy
 ├── scripts/          # 三方 CLI 共用檢查與流程腳本
 └── DEPT/
     ├── PRD.md        # 產品部門
@@ -130,11 +136,11 @@ mkdir -p ~/.gemini/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
 ```
 
-安裝後重啟對應 CLI，讓新技能被載入。各 CLI 仍會讀取 repo 根目錄的進入檔：Claude 使用 `CLAUDE.md`，Codex 使用 `AGENTS.md`，Gemini 使用 `GEMINI.md`。
+安裝後重啟對應 CLI，讓新技能被載入。入口檔與 settings 的 canonical copy 位於 `skills/shiftblame/` 內；本 repo 根目錄的 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 與 `.claude/.codex/.gemini/settings.json` 只是指向 skill 內檔案的 symlink，供本 repo 直接開啟時相容使用。
 
 ## Scripts 設定
 
-Claude 使用 `.claude/settings.json` 載入 hooks。Codex 與 Gemini 對應使用 `.codex/settings.json`、`.gemini/settings.json`，提供相同的 `~/.<cli>/skills/shiftblame/scripts/*.sh` 指令清單與 hook 對應。腳本放在 skill 目錄內，透過 symlink 安裝技能時會一起載入。
+Claude 使用 `~/.claude/skills/shiftblame/.claude/settings.json`，Codex 使用 `~/.codex/skills/shiftblame/.codex/settings.json`，Gemini 使用 `~/.gemini/skills/shiftblame/.gemini/settings.json`。三者提供相同的 `~/.<cli>/skills/shiftblame/scripts/*.sh` 指令清單與 hook 對應；settings 與腳本都放在 skill 目錄內，透過 symlink 安裝技能時會一起載入。
 
 ## 自訂
 
