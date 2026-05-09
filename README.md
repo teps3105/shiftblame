@@ -80,19 +80,10 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 ## 檔案結構
 
 ```
-.claude/settings.json   # Claude scripts hooks
-.codex/settings.json    # Codex 可呼叫 scripts 載入設定
-.gemini/settings.json   # Gemini 可呼叫 scripts 載入設定
 skills/shiftblame/
-├── AGENTS.md         # Codex 入口 canonical copy
-├── CLAUDE.md         # Claude 入口 canonical copy
-├── GEMINI.md         # Gemini 入口 canonical copy
 ├── SKILL.md          # 框架入口
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
-├── .claude/          # Claude 設定 canonical copy
-├── .codex/           # Codex 設定 canonical copy
-├── .gemini/          # Gemini 設定 canonical copy
 ├── scripts/          # 三方 CLI 共用檢查與流程腳本
 └── DEPT/
     ├── PRD.md        # 產品部門
@@ -131,13 +122,16 @@ ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
 # Gemini CLI
 mkdir -p ~/.gemini/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
+
+# 寫入 / 更新全域入口檔
+bash ~/shiftblame/skills/shiftblame/scripts/install-global-entrypoints.sh
 ```
 
-安裝後重啟對應 CLI，讓新技能被載入。入口檔與 settings 位於 `skills/shiftblame/` 內，會隨 skill symlink 一起載入。
+安裝腳本會以 managed block 寫入或更新全域入口檔：`~/.codex/AGENTS.md`、`~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`。安裝後重啟對應 CLI，讓新技能被載入。
 
-## Scripts 設定
+## Scripts 呼叫
 
-Claude 使用 `~/.claude/skills/shiftblame/.claude/settings.json`，Codex 使用 `~/.codex/skills/shiftblame/.codex/settings.json`，Gemini 使用 `~/.gemini/skills/shiftblame/.gemini/settings.json`。三者提供相同的 `~/.<cli>/skills/shiftblame/scripts/*.sh` 指令清單與 hook 對應；settings 與腳本都放在 skill 目錄內，透過 symlink 安裝技能時會一起載入。
+不使用 `.claude/.codex/.gemini/settings.json`。何時呼叫哪些 `scripts/*.sh` 直接寫在 `skills/shiftblame/SKILL.md` 的 Scripts 呼叫規則。全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 由 `install-global-entrypoints.sh` 生成，用於自動載入 skill。
 
 ## 自訂
 
