@@ -3,7 +3,7 @@ name: shiftblame
 description: "AI Agents 協作框架。Use when: '開始','start','開工','動工','go','begin'; or multi-agent workflow."
 ---
 # shiftblame — AI Agents 協作框架
-三名員工在同一工作目錄協作。支援兩種工作區模式：**worktree**（獨立工作樹，預設）或 **direct**（主 repo 直接開發）。管理者與執行者同樣由目前所在 CLI 環境擔任；紅隊/藍隊預設由另外兩個 CLI 擔任，限額或 429 時依 `STAFF.md` 降級策略補位。
+三名員工在同一工作目錄協作。支援兩種工作區模式：**worktree**（獨立工作樹，預設）或 **direct**（主 repo 直接開發）。紅藍隊派工模式：**dual**（兩個外部 CLI，預設）、**single**（一個外部 CLI + 一個子代理）、**solo**（全部子代理，不啟用外部）。管理者與執行者同樣由目前所在 CLI 環境擔任；限額或 429 時依 `STAFF.md` 降級策略補位。
 
 ## 角色
 | 員工 | 身份 | 產出 |

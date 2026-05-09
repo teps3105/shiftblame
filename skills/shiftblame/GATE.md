@@ -64,7 +64,15 @@ REPO.md 模板：
 | `worktree` | 建立 git worktree，所有產物寫入 `<slug>/worktree/`（預設） |
 | `direct` | 直接在主 repo 切分支開發，不額外建工作樹 |
 
-選定後寫入 task.md 的 `workspace` 欄位，同一 slug 後續任務沿用相同模式。
+**紅藍隊模式**：同時詢問紅藍隊派工方式：
+
+| 模式 | 紅隊 | 藍隊 |
+|------|------|------|
+| `dual` | 外部 CLI | 外部 CLI（預設） |
+| `single` | 外部 CLI | 本環境子代理 |
+| `solo` | 本環境子代理 | 本環境子代理 |
+
+選定後寫入 task.md 的 `workspace` 與 `review` 欄位，同一 slug 後續任務沿用相同模式。
 
 | 情境 | 動作 |
 |------|------|
@@ -82,6 +90,7 @@ task: <NNN>
 version: 0.1.0
 status: pending
 workspace: worktree | direct
+review: dual | single | solo
 created: <ISO timestamp>
 ---
 
