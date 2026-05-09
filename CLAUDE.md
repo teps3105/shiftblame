@@ -1,1 +1,0 @@
-skills/shiftblame/CLAUDE.md

@@ -80,9 +80,6 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 ## 檔案結構
 
 ```
-AGENTS.md               # Codex 入口
-CLAUDE.md               # Claude 入口
-GEMINI.md               # Gemini 入口
 .claude/settings.json   # Claude scripts hooks
 .codex/settings.json    # Codex 可呼叫 scripts 載入設定
 .gemini/settings.json   # Gemini 可呼叫 scripts 載入設定
@@ -136,7 +133,7 @@ mkdir -p ~/.gemini/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
 ```
 
-安裝後重啟對應 CLI，讓新技能被載入。入口檔與 settings 的 canonical copy 位於 `skills/shiftblame/` 內；本 repo 根目錄的 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 與 `.claude/.codex/.gemini/settings.json` 只是指向 skill 內檔案的 symlink，供本 repo 直接開啟時相容使用。
+安裝後重啟對應 CLI，讓新技能被載入。入口檔與 settings 位於 `skills/shiftblame/` 內，會隨 skill symlink 一起載入。
 
 ## Scripts 設定
 

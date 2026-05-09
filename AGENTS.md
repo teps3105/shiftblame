@@ -1,1 +1,0 @@
-skills/shiftblame/AGENTS.md
