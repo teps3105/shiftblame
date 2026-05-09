@@ -32,7 +32,7 @@ Agent(subagent_type="general-purpose", prompt="...")
 
 ```bash
 # claude
-claude --dangerously-skip-permissions --output-format text -p "prompt"
+claude --bare --dangerously-skip-permissions --output-format text --no-session-persistence --tools Bash,Write -p "prompt"
 # codex
 codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
 # gemini
@@ -43,11 +43,11 @@ GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
 
 CLI 旗標規範：
 
-- **Claude CLI**：必須使用 `--dangerously-skip-permissions --output-format text -p`，不得只用 `claude -p`，也不得只用 `--permission-mode bypassPermissions`。單純 `claude -p` 或 permission-mode 可能在工具執行、寫檔或權限確認時卡住，無法穩定產出 `red.md` / `blue.md`。
+- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --output-format text --no-session-persistence --tools Bash,Write -p`，不得只用 `claude -p`，也不得只用 `--permission-mode bypassPermissions`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--no-session-persistence` 避免續用舊 session；`--tools Bash,Write` 限制工具集，強制使用 shell 讀取與明確寫檔。
 - **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
-跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。Claude 寫入與工具規劃時間通常較長，timeout 不得低於 120 秒。
+跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。
 
 ## 限額 / 單點降級策略
 

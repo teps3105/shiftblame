@@ -21,7 +21,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 | Codex CLI | codex | claude | gemini |
 | Gemini CLI | gemini | claude | codex |
 
-詳見 `MANAGER.md` `STAFF.md`。跨 CLI 必須使用 `STAFF.md` 定義的完整非互動指令；Claude 不可只用 `claude -p`，必須帶 `--dangerously-skip-permissions --output-format text -p`。
+詳見 `MANAGER.md` `STAFF.md`。跨 CLI 必須使用 `STAFF.md` 定義的完整非互動指令。
 
 ## 部門
 | # | 部門 | 類型 |
@@ -42,7 +42,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 ## Scripts 呼叫規則
 
-不使用 settings.json。管理者依下列時機直接呼叫本技能目錄內 scripts：
+管理者依下列時機直接呼叫本技能目錄內 scripts：
 
 - 載入或觸發 shiftblame 技能前：`bash <skill>/scripts/skill-trigger-check.sh`
 - 建立任務：`bash <skill>/scripts/task-init.sh <slug> <DEPT> [NNN]`
