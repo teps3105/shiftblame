@@ -32,18 +32,20 @@ Agent(subagent_type="general-purpose", prompt="...")
 
 ```bash
 # claude
-claude --bare --dangerously-skip-permissions --output-format text --no-session-persistence --tools Bash,Write -p "prompt"
+mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && claude --bare --dangerously-skip-permissions --no-session-persistence --output-format text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
+
 # codex
-codex exec --dangerously-bypass-approvals-and-sandbox "prompt"
+mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && codex exec --dangerously-bypass-approvals-and-sandbox "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
+
 # gemini
-GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt"
+mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
 ```
 
-依「環境角色映射」選擇紅隊/藍隊實際命令；除限額 / 單點降級策略外，不得把目前 CLI 再派成紅隊或藍隊。
+依「環境角色映射」選擇紅隊/藍隊實際命令；除限額 / 單點降級策略外，不得把目前 CLI 再派成紅隊或藍隊。必須先執行 `mkdir -p` 確保目錄存在，並透過 `| cat >` 轉向寫入檔案，這在某些限制環境下比直接 `>` 更能穩定寫入 `.gitignore` 排除的目錄。
 
 CLI 旗標規範：
 
-- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --output-format text --no-session-persistence --tools Bash,Write -p`，不得只用 `claude -p`，也不得只用 `--permission-mode bypassPermissions`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--no-session-persistence` 避免續用舊 session；`--tools Bash,Write` 限制工具集，強制使用 shell 讀取與明確寫檔。
+- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。
 - **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
@@ -66,12 +68,11 @@ CLI 旗標規範：
 跨 CLI 派工時，prompt 必須包含以下硬性指示：
 
 ```text
-重要權限規則：
+重要產出規則：
 - .shiftblame/ 已被 .gitignore 排除。
 - 讀取 .shiftblame/ 內檔案時，只能使用 shell 指令，例如 cat、sed -n、test -f、find。
-- 不要使用 read_file、Read、內建檔案讀取工具或任何會遵守 .gitignore 而拒絕讀取的工具讀 .shiftblame/。
-- 若需檢查產品程式碼，可讀取 <slug>/worktree/ 內檔案；若需讀取協作文件，仍用 shell/cat/sed。
-- 最終只寫入本次角色負責的 result.md、red.md 或 blue.md，不修改其他檔案。
+- 你的輸出將被直接導向到目標檔案（如 red.md），因此請「僅輸出報告的 Markdown 內容」，不要包含任何前言、後記、確認訊息或工具呼叫的原始輸出。
+- 報告必須包含完整的 YAML frontmatter 與繁體中文內容。
 ```
 
 若員工回報 `.shiftblame/` 檔案被 ignore/permission 拒絕，管理者不得等待其自行修復；立即中止該員工程序，改用上述硬性指示重派，或由管理者代讀內容後以 prompt 摘要提供。
