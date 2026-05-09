@@ -38,7 +38,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。
 
-入口文件、settings 與共用檢查腳本都位於本技能目錄，必須隨 `skills/shiftblame` symlink 一起載入；不得依賴 repo 根目錄另有 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`、settings 或 `scripts/`。
+技能包必須自含入口文件、settings 與共用檢查腳本；安裝後只要 `skills/shiftblame` symlink 存在，即可從該技能目錄載入這些檔案。repo 根目錄若有 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 或 settings，只是本 repo 直接開啟時的相容入口，不能作為技能安裝後的必要來源。
 
 ## 權限 / ignore 規則
 
