@@ -38,21 +38,11 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。
 
-技能包必須自含共用檢查腳本；全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 不存放於技能定義檔，必須由 `scripts/install-global-entrypoints.sh` 寫入或更新。安裝後只要 `skills/shiftblame` symlink 存在，即可從該技能目錄載入 scripts。不得依賴 `.claude/.codex/.gemini/settings.json` 觸發流程。
+全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴 `.claude/.codex/.gemini/settings.json` 觸發流程。
 
-## Scripts 呼叫規則
+## 閘門狀態機
 
-管理者依下列時機直接呼叫本技能目錄內 scripts：
-
-- 載入或觸發 shiftblame 技能前：`bash <skill>/scripts/skill-trigger-check.sh`
-- 建立任務：`bash <skill>/scripts/task-init.sh <slug> <DEPT> [NNN]`
-- 派工給子代理或外部 CLI 前：`bash <skill>/scripts/task-dispatch-check.sh`
-- 閘門詢問老闆前：`bash <skill>/scripts/gate-prereq-check.sh`
-- 子代理或外部 CLI 回來後：`bash <skill>/scripts/subagent-output-check.sh`
-- QC 通過並收尾後：`bash <skill>/scripts/slug-archive.sh [slug]`
-- 安裝或更新全域入口檔：`bash <skill>/scripts/install-global-entrypoints.sh`
-
-`<skill>` 為目前 CLI 的技能 symlink 目錄，例如 `~/.codex/skills/shiftblame`、`~/.claude/skills/shiftblame` 或 `~/.gemini/skills/shiftblame`。
+管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → G2 審查 → G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
 
 ## 權限 / ignore 規則
 
@@ -84,8 +74,8 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 ```
 skills/shiftblame/
 ├── SKILL.md
+├── GATE.md               # 狀態機閘門定義
 ├── MANAGER.md
 ├── STAFF.md
-├── scripts/              # hooks / 檢查 / 初始化 / 歸檔 / 全域入口寫入腳本
 └── DEPT/
 ```

@@ -82,9 +82,9 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 ```
 skills/shiftblame/
 ├── SKILL.md          # 框架入口
+├── GATE.md           # 狀態機閘門定義
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
-├── scripts/          # 三方 CLI 共用檢查與流程腳本
 └── DEPT/
     ├── PRD.md        # 產品部門
     ├── QA.md         # 品保部門
@@ -122,16 +122,9 @@ ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
 # Gemini CLI
 mkdir -p ~/.gemini/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
-
-# 寫入 / 更新全域入口檔
-bash ~/shiftblame/skills/shiftblame/scripts/install-global-entrypoints.sh
 ```
 
-安裝腳本會以 managed block 寫入或更新全域入口檔：`~/.codex/AGENTS.md`、`~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`。安裝後重啟對應 CLI，讓新技能被載入。
-
-## Scripts 呼叫
-
-何時呼叫哪些 `scripts/*.sh` 直接寫在 `skills/shiftblame/SKILL.md` 的 Scripts 呼叫規則。全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 由 `install-global-entrypoints.sh` 生成，用於自動載入 skill。
+安裝後，管理者依 `GATE.md` 全域入口安裝段落在各 CLI 全域入口檔寫入 managed block。重啟對應 CLI 讓新技能被載入。
 
 ## 自訂
 
