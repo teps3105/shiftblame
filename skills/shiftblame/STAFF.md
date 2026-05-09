@@ -70,15 +70,20 @@ mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && GEMINI_CLI_TRUST_WORKSPACE=true gemi
 
 CLI 旗標規範：
 
-- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。注意：`--bare` 不讀 OAuth / keychain，只讀 `ANTHROPIC_API_KEY` 或 `--settings` 內的 `apiKeyHelper`。若一般 `claude auth status` 顯示已登入，但 `claude --bare ... -p` 回報 `Not logged in`，管理者必須先用上方「OAuth 登入但 --bare 回報 Not logged in 時」的 `apiKeyHelper` 指令重派；只有 `apiKeyHelper` 重派仍失敗、限額、或 120 秒卡住時，才依降級策略補位。
+- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。注意：`--bare` 不讀 OAuth / keychain，只讀 `ANTHROPIC_API_KEY` 或 `--settings` 內的 `apiKeyHelper`。若一般 `claude auth status` 顯示已登入，但 `claude --bare ... -p` 回報 `Not logged in`，管理者必須先用上方「OAuth 登入但 --bare 回報 Not logged in 時」的 `apiKeyHelper` 指令重派；只有 `apiKeyHelper` 重派仍失敗、限額、或達到下方 timeout 規則後仍卡住 / 無有效輸出時，才依降級策略補位。
 - **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
-跨 CLI 呼叫若 120 秒內無輸出且目標檔案未產生，視為卡住；管理者應中止程序並用正確旗標重派。Claude 的 `Not logged in` 若發生於 `--bare` 模式，不得直接視為 Claude 不可用；需先檢查 `claude auth status`，並用 `apiKeyHelper` 重派一次。
+跨 CLI 呼叫 timeout 規則：
+
+- 一般短任務可用 120 秒作為首次卡住判斷。
+- 紅隊 / 藍隊審查、需要讀取多份 `.shiftblame/` 文件、或預期輸出完整報告的任務，timeout 必須至少 300 秒；Claude 審查預設使用 300 秒。
+- 若程序 exit 0 但目標檔案為空、只含空白、或缺 YAML frontmatter，視為產物缺件，不得視為 PASS；管理者需以 300 秒 timeout 重派，必要時改用 `--output-format json` 或 `--output-format stream-json --verbose` 觀察並抽取 `result`。
+- Claude 的 `Not logged in` 若發生於 `--bare` 模式，不得直接視為 Claude 不可用；需先檢查 `claude auth status`，並用 `apiKeyHelper` 重派一次。
 
 ## 限額 / 單點降級策略
 
-外部 CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或 120 秒內無輸出且重派後仍無法產生目標檔案時，視為該 CLI 本輪不可用。降級僅影響 `review=dual` 或 `review=single` 模式中預定使用外部 CLI 的角色。
+外部 CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或依 timeout 規則重派後仍無法產生非空且格式有效的目標檔案時，視為該 CLI 本輪不可用。降級僅影響 `review=dual` 或 `review=single` 模式中預定使用外部 CLI 的角色。
 
 降級順序：
 
