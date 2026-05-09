@@ -131,7 +131,7 @@ bash ~/shiftblame/skills/shiftblame/scripts/install-global-entrypoints.sh
 
 ## Scripts 呼叫
 
-不使用 `.claude/.codex/.gemini/settings.json`。何時呼叫哪些 `scripts/*.sh` 直接寫在 `skills/shiftblame/SKILL.md` 的 Scripts 呼叫規則。全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 由 `install-global-entrypoints.sh` 生成，用於自動載入 skill。
+何時呼叫哪些 `scripts/*.sh` 直接寫在 `skills/shiftblame/SKILL.md` 的 Scripts 呼叫規則。全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 由 `install-global-entrypoints.sh` 生成，用於自動載入 skill。
 
 ## 自訂
 
