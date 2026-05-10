@@ -166,9 +166,12 @@ created: <ISO timestamp>
 
 管理者依上述閘門在每次狀態轉移前執行檢查。檢查方式：
 
-- **讀取**：`cat`、`test -f`、`find`、`ls`
+- **讀取（Linux/macOS/Git Bash）**：`cat`、`sed -n`
+- **讀取（Windows PowerShell）**：`Get-Content -Encoding UTF8`
+- **檢查/列檔**：`test -f`、`find`、`ls`、`Test-Path`、`Get-ChildItem`
 - **寫入**：shell heredoc、CLI 檔案寫入工具
 - **禁止**：使用 `read_file` 或內建檔案讀取器讀取 `.shiftblame/` 內檔案
+- **禁止**：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
 
 所有檔案路徑以 `.shiftblame/` 為根，相對於 repo root。
 
@@ -181,4 +184,4 @@ created: <ISO timestamp>
 | Codex | `~/.codex/AGENTS.md` | `<!-- BEGIN shiftblame:codex-entry -->` |
 | Claude Code | `~/.claude/CLAUDE.md` | `<!-- BEGIN shiftblame:claude-entry -->` |
 
-每個 block 包含：觸發關鍵字、技能入口路徑、角色映射表。以 `<!-- BEGIN/END shiftblame:<label> -->` 標記，更新時只替換標記內容，不動其他區段。
+每個 block 包含：觸發關鍵字、技能入口路徑、角色映射表、讀取規則（Windows PowerShell 讀取技能與 `.shiftblame/` Markdown 時必須使用 `Get-Content -Encoding UTF8`）。以 `<!-- BEGIN/END shiftblame:<label> -->` 標記，更新時只替換標記內容，不動其他區段。

@@ -45,13 +45,16 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 ## 權限 / ignore 規則
 
-`.shiftblame/` 通常會被 `.gitignore` 排除，因此部分 CLI 的檔案工具（例如 `read_file`、內建檔案讀取器）會拒絕讀取其中內容。所有管理者與跨 CLI 員工在讀寫 `.shiftblame/` 時必須使用 shell 指令：
+`.shiftblame/` 通常會被 `.gitignore` 排除，因此部分 CLI 的檔案工具（例如 `read_file`、內建檔案讀取器）會拒絕讀取其中內容。所有管理者與跨 CLI 員工在讀寫 `.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案時必須使用 shell 指令，且讀取 Markdown 一律明確指定 UTF-8：
 
-- 讀取：`cat`、`sed -n`、`test -f`、`find`
+- 讀取（Linux/macOS/Git Bash）：`cat`、`sed -n`
+- 讀取（Windows PowerShell）：`Get-Content -Encoding UTF8`
+- 檢查/列檔：`test -f`、`find`、`Test-Path`、`Get-ChildItem`
 - 寫入：shell heredoc、CLI 自身檔案寫入、或目前環境允許的 patch/write 工具
 - 禁止：要求員工用 `read_file` 讀 `.shiftblame/` 內檔案
+- 禁止：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
 
-派工 prompt 必須明確寫入：「`.shiftblame/` 檔案只能用 shell/cat/sed 讀取，不要使用 read_file 或內建檔案讀取工具」。
+派工 prompt 必須明確寫入：「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案只能用 shell 讀取，不要使用 read_file 或內建檔案讀取工具；Windows PowerShell 必須使用 `Get-Content -Encoding UTF8`，Linux/macOS/Git Bash 可用 `cat` 或 `sed -n`」。
 
 確認 `.shiftblame/REPO.md` 存在，不存在 → 報告「尚未初始化」。關鍵字觸發流程。
 

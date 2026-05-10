@@ -148,6 +148,17 @@ ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
 
 安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發 CLI 全域入口檔寫入 managed block。重啟對應 CLI 讓新技能被載入。
 
+## Windows 編碼
+
+本技能與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存。Windows PowerShell 讀取含中文檔案時必須明確指定 UTF-8，例如：
+
+```powershell
+Get-Content -Encoding UTF8 .\skills\shiftblame\SKILL.md
+Get-Content -Encoding UTF8 .\.shiftblame\<slug>\<DEPT>\<NNN>\task.md
+```
+
+不要在 Windows PowerShell 使用未指定 `-Encoding UTF8` 的 `Get-Content`、`type` 或 `cat` 讀取含中文 Markdown；部分環境會依系統預設編碼解讀，導致繁體中文亂碼。
+
 ## 自訂
 
 本專案不接受外部貢獻。如需微調，請 fork 後調整。
