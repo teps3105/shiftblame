@@ -3,25 +3,24 @@ name: shiftblame
 description: "AI Agents 協作框架。Use when: '開始','start','開工','動工','go','begin'; or multi-agent workflow."
 ---
 # shiftblame — AI Agents 協作框架
-三名員工在同一工作目錄協作。支援兩種工作區模式：**worktree**（獨立工作樹，預設）或 **direct**（主 repo 直接開發）。紅藍隊派工模式：**dual**（兩個外部 CLI，預設）、**single**（一個外部 CLI + 一個子代理）、**solo**（全部子代理，不啟用外部）。管理者與執行者同樣由目前所在 CLI 環境擔任；限額或 429 時依 `STAFF.md` 降級策略補位。
+三名員工在同一工作目錄協作。主開發環境只支援 Claude Code 或 Codex CLI，不使用 Gemini 做主開發。支援兩種工作區模式：**worktree**（獨立工作樹，預設）或 **direct**（主 repo 直接開發）。紅藍隊派工模式只支援 **gemini**（Gemini 依序產出紅隊與藍隊，預設）與 **solo**（全部子代理，不啟用 Gemini）。管理者與執行者同樣由目前所在 CLI 環境擔任；Gemini 限額或 429 時依 `STAFF.md` 降級策略補位。
 
 ## 角色
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前 CLI（claude/codex/gemini） | task.md |
-| 執行者 | 目前 CLI（claude/codex/gemini） | result.md |
-| 紅隊 | 非目前 CLI 之一 | red.md |
-| 藍隊 | 非目前 CLI 之一 | blue.md |
+| 管理者 | 目前 CLI（claude/codex） | task.md |
+| 執行者 | 目前 CLI（claude/codex） | result.md |
+| 紅隊 | Gemini 或本環境子代理 | red.md |
+| 藍隊 | Gemini 或本環境子代理 | blue.md |
 
-角色映射依環境自動決定：
+固定呼叫映射：
 
 | 目前環境 | 執行者 | 紅隊 | 藍隊 |
 |----------|--------|------|------|
-| Claude CLI | claude | codex | gemini |
-| Codex CLI | codex | claude | gemini |
-| Gemini CLI | gemini | claude | codex |
+| Claude Code | claude | gemini 或本環境子代理 | gemini 或本環境子代理 |
+| Codex CLI | codex | gemini 或本環境子代理 | gemini 或本環境子代理 |
 
-詳見 `MANAGER.md` `STAFF.md`。跨 CLI 必須使用 `STAFF.md` 定義的完整非互動指令。
+詳見 `MANAGER.md` `STAFF.md`。跨 CLI 紅藍隊只允許使用 `STAFF.md` 定義的 Gemini 非互動指令，不得呼叫 Claude Code 或 Codex 作為紅隊 / 藍隊。
 
 ## 部門
 | # | 部門 | 類型 |
@@ -38,7 +37,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。
 
-全域 `AGENTS.md`、`CLAUDE.md`、`GEMINI.md` 的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴 `.claude/.codex/.gemini/settings.json` 觸發流程。
+全域 `AGENTS.md`、`CLAUDE.md` 的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴 `.claude/.codex/settings.json` 觸發流程。
 
 ## 閘門狀態機
 

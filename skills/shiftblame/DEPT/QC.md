@@ -1,6 +1,6 @@
 # QC — 品管部門
 
-執行者由目前 CLI 環境擔任，驗證者由另外兩個 CLI 擔任紅藍隊 review。角色映射依 `STAFF.md`。
+執行者由目前 CLI 環境擔任，紅藍隊由 Gemini 或本環境子代理擔任。呼叫模式依 `STAFF.md`。
 
 路徑：`.shiftblame/<slug>/QC/<NNN>/`
 

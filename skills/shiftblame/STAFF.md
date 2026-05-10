@@ -4,94 +4,77 @@
 |------|------|---------|
 | 管理者 | 目前 CLI | 直接執行 |
 | 執行者 | 目前 CLI | 直接執行或本環境子代理 |
-| 紅隊 | 依 `review` 模式 | 外部 CLI 或本環境子代理 |
-| 藍隊 | 依 `review` 模式 | 外部 CLI 或本環境子代理 |
+| 紅隊 | 依 `review` 模式 | Gemini CLI 或本環境子代理 |
+| 藍隊 | 依 `review` 模式 | Gemini CLI 或本環境子代理 |
 
-## 環境角色映射
+## 固定呼叫映射
 
 | 目前環境 | 執行者 | 紅隊 | 藍隊 |
 |----------|--------|------|------|
-| Claude CLI | claude | codex | gemini |
-| Codex CLI | codex | claude | gemini |
-| Gemini CLI | gemini | claude | codex |
+| Claude Code | claude | gemini 或本環境子代理 | gemini 或本環境子代理 |
+| Codex CLI | codex | gemini 或本環境子代理 | gemini 或本環境子代理 |
 
-固定原則：目前 CLI 永遠同時是管理者與執行者。管理者負責寫入 `task.md`、發布任務與協調；執行者負責寫入 `result.md`。紅藍隊的派工方式由 task.md 的 `review` 欄位決定；外部 CLI 限額或 429 時依降級策略補位。檔案結構與管線語意不得因環境改變。
+固定原則：目前 CLI 永遠同時是管理者與執行者，且目前環境只支援 Claude Code 或 Codex CLI；不使用 Gemini 做主開發。管理者負責寫入 `task.md`、發布任務與協調；執行者負責寫入 `result.md`。紅藍隊外部呼叫只使用 Gemini CLI；不得呼叫 Claude Code 或 Codex 作為紅隊或藍隊。外部 Gemini 限額或 429 時依降級策略補位。檔案結構與管線語意不得因環境改變。
 
 ## 紅藍隊派工模式
 
-task.md 的 `review` 欄位決定紅隊/藍隊的派工方式。同一 slug 內所有任務沿用相同模式。
+task.md 的 `review` 欄位決定紅隊/藍隊的派工方式。同一 slug 內所有任務沿用相同模式。只支援 `gemini` 與 `solo` 兩種模式，預設 `gemini`。
 
-### dual（預設）
+同一任務的攻防順序固定為 `result.md` → `red.md` → `blue.md`。管理者必須先確認 `result.md` 存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊。紅隊與藍隊不得並行啟動。
 
-紅隊與藍隊皆由外部 CLI 派工。依「環境角色映射」選擇紅隊/藍隊實際命令。
+### gemini（預設）
 
-### single
-
-紅隊由外部 CLI 派工，藍隊由本環境子代理擔任。適用於僅需一個外部視角、或某個外部 CLI 不可用的情境。
+紅隊與藍隊皆由 Gemini CLI 派工，且依序分兩次呼叫。
 
 ### solo
 
-紅隊與藍隊皆由本環境子代理擔任，不啟用任何外部 CLI。適用於所有外部 CLI 皆不可用、或需快速迭代不需跨模型驗證的情境。
+紅隊與藍隊皆由本環境子代理擔任，不啟用 Gemini CLI。適用於 Gemini 不可用、或需快速迭代不需跨模型驗證的情境。
 
-| 模式 | 紅隊 | 藍隊 | 外部 CLI 數 |
+| 模式 | 紅隊 | 藍隊 | Gemini CLI 數 |
 |------|------|------|:-----------:|
-| `dual` | 外部 CLI | 外部 CLI | 2 |
-| `single` | 外部 CLI | 本環境子代理 | 1 |
+| `gemini` | Gemini CLI | Gemini CLI | 1 |
 | `solo` | 本環境子代理 | 本環境子代理 | 0 |
 
 ## 執行者呼叫
 
 ```bash
-# Claude CLI 可用 Agent 子代理派工
+# Claude Code 可用 Agent 子代理派工
 Agent(subagent_type="general-purpose", prompt="...")
 
 # Codex CLI 由目前 Codex session 直接執行，或使用 worker subagent
 
-# Gemini CLI 由目前 Gemini session 直接執行
 ```
 
 ## 跨 CLI 呼叫
 
 ```bash
-# claude
-mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && claude --bare --dangerously-skip-permissions --no-session-persistence --output-format text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
-
-# claude（OAuth 登入但 --bare 回報 Not logged in 時）
-mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && claude --bare --settings '{"apiKeyHelper":"node -e \"const fs=require(\\\"fs\\\"); const p=process.env.HOME+\\\"/.claude/.credentials.json\\\"; const c=JSON.parse(fs.readFileSync(p,\\\"utf8\\\")); process.stdout.write(c.claudeAiOauth && c.claudeAiOauth.accessToken || \\\"\\\");\""}' --dangerously-skip-permissions --no-session-persistence --output-format text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
-
-# codex
-mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && codex exec --dangerously-bypass-approvals-and-sandbox "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
-
 # gemini
 mkdir -p .shiftblame/<slug>/<DEPT>/<NNN> && GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p "prompt" | cat > .shiftblame/<slug>/<DEPT>/<NNN>/<file>.md
 ```
 
-依「環境角色映射」選擇紅隊/藍隊實際命令；除限額 / 單點降級策略外，不得把目前 CLI 再派成紅隊或藍隊。必須先執行 `mkdir -p` 確保目錄存在，並透過 `| cat >` 轉向寫入檔案，這在某些限制環境下比直接 `>` 更能穩定寫入 `.gitignore` 排除的目錄。
+跨 CLI 紅藍隊只允許使用 Gemini CLI。必須先執行 `mkdir -p` 確保目錄存在，並透過 `| cat >` 轉向寫入檔案，這在某些限制環境下比直接 `>` 更能穩定寫入 `.gitignore` 排除的目錄。
 
 CLI 旗標規範：
 
-- **Claude CLI**：必須使用 `--bare --dangerously-skip-permissions --no-session-persistence --output-format text -p`。`--bare` 避免 hooks / LSP / plugin sync / memory / CLAUDE.md 自動探索造成批次派工卡住；`--dangerously-skip-permissions` 確保非互動自動化執行；`--no-session-persistence` 避免續用舊 session。注意：`--bare` 不讀 OAuth / keychain，只讀 `ANTHROPIC_API_KEY` 或 `--settings` 內的 `apiKeyHelper`。若一般 `claude auth status` 顯示已登入，但 `claude --bare ... -p` 回報 `Not logged in`，管理者必須先用上方「OAuth 登入但 --bare 回報 Not logged in 時」的 `apiKeyHelper` 指令重派；只有 `apiKeyHelper` 重派仍失敗、限額、或達到下方 timeout 規則後仍卡住 / 無有效輸出時，才依降級策略補位。
-- **Codex CLI**：必須使用 `codex exec --dangerously-bypass-approvals-and-sandbox`，確保非互動執行。
 - **Gemini CLI**：必須使用 `GEMINI_CLI_TRUST_WORKSPACE=true gemini --approval-mode yolo -o text -p`。`--approval-mode` 在 `-p` 之前。
 
 跨 CLI 呼叫 timeout 規則：
 
 - 一般短任務可用 120 秒作為首次卡住判斷。
-- 紅隊 / 藍隊審查、需要讀取多份 `.shiftblame/` 文件、或預期輸出完整報告的任務，timeout 必須至少 300 秒；Claude 審查預設使用 300 秒。
+- 紅隊 / 藍隊審查、需要讀取多份 `.shiftblame/` 文件、或預期輸出完整報告的任務，Gemini timeout 必須至少 300 秒。
 - 若程序 exit 0 但目標檔案為空、只含空白、或缺 YAML frontmatter，視為產物缺件，不得視為 PASS；管理者需以 300 秒 timeout 重派，必要時改用 `--output-format json` 或 `--output-format stream-json --verbose` 觀察並抽取 `result`。
-- Claude 的 `Not logged in` 若發生於 `--bare` 模式，不得直接視為 Claude 不可用；需先檢查 `claude auth status`，並用 `apiKeyHelper` 重派一次。
 
 ## 限額 / 單點降級策略
 
-外部 CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或依 timeout 規則重派後仍無法產生非空且格式有效的目標檔案時，視為該 CLI 本輪不可用。降級僅影響 `review=dual` 或 `review=single` 模式中預定使用外部 CLI 的角色。
+Gemini CLI 回報 429、rate limit、quota exceeded、billing limit、暫時不可用，或依 timeout 規則重派後仍無法產生非空且格式有效的目標檔案時，視為 Gemini 本輪不可用。降級僅影響 `review=gemini` 模式。
 
 降級順序：
 
-1. **dual 模式** — 單一外部 CLI 不可用：由另一個可用的外部 CLI 補上缺少的 `red.md` 或 `blue.md`。同一外部 CLI 可在本輪同時產出紅隊與藍隊，但兩份檔案必須分兩次呼叫、使用不同 prompt，且各自遵守紅隊/藍隊部門規則。
-2. **dual 模式** — 兩個外部 CLI 都不可用，或 **single 模式** — 唯一外部 CLI 不可用：自動降級為 `solo` 模式，管理者改用目前 CLI 開兩個本環境子代理，分別扮演紅隊與藍隊並寫入 `red.md`、`blue.md`。
-3. 使用子代理補位時，prompt 必須明確標示「限額降級補位」，並要求只寫入指定檔案，不修改 `task.md`、`result.md` 或其他輸出。
+1. **gemini 模式** — Gemini 可用：同一個 Gemini CLI 依序產出 `red.md` 與 `blue.md`，兩份檔案必須分兩次呼叫、使用不同 prompt，且先完成 `red.md` 才能啟動 `blue.md`。
+2. **gemini 模式** — Gemini 不可用：自動降級為 `solo` 模式，管理者改用目前 CLI 開兩個本環境子代理，分別扮演紅隊與藍隊並寫入 `red.md`、`blue.md`。
+3. 使用子代理補位時，prompt 必須明確標示「Gemini 不可用降級補位」，並要求只寫入指定檔案，不修改 `task.md`、`result.md` 或其他輸出。
 
-降級不得跳過閘門；`result.md`、`red.md`、`blue.md` 三份產出仍必須齊全後才能進入 `AskUserQuestion`。
+降級不得跳過閘門；`result.md`、`red.md`、`blue.md` 三份產出仍必須齊全後才能進入 `BossConfirm`。
 
 ### `.shiftblame/` 讀寫權限規則
 
@@ -134,10 +117,10 @@ task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任�
 
 所有模板都必須包含「`.shiftblame/` 只能用 shell/cat/sed 讀取，不得用 read_file」。
 
-**Result**：用 shell/cat/sed 讀取 task.md + DEPT/*.md → 依部門執行者規則執行 → 寫入 `result.md`
+**Result**：用 shell/cat/sed 讀取 task.md + DEPT/*.md → 依部門執行者規則執行 → 寫入 `result.md`。完成前不得呼叫紅隊或藍隊。
 
-**Red**：用 shell/cat/sed 讀取 task.md + result.md → 依部門紅隊規則攻擊 → 寫入 `red.md`。
+**Red**：確認 `result.md` 已存在且格式有效 → 用 shell/cat/sed 讀取 task.md + result.md + DEPT/*.md → 依部門紅隊規則攻擊 → 寫入 `red.md`。完成前不得呼叫藍隊。
 
-**Blue**：用 shell/cat/sed 讀取 task.md + result.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。
+**Blue**：確認 `red.md` 已存在且格式有效 → 用 shell/cat/sed 讀取 task.md + result.md + red.md + DEPT/*.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。
 
 所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。

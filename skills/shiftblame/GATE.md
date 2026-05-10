@@ -5,7 +5,7 @@
 ## 狀態與轉移
 
 ```
-UNINIT ──G0──→ READY ──G1──→ TASK ──dispatch──→ EXECUTING ──G2──→ GATE ──confirm──→ PASSED ──G3──→ ARCHIVED
+UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESULT ──red──→ RED ──blue──→ GATE ──confirm──→ PASSED ──next/archive──→ READY/ARCHIVED
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -13,12 +13,35 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──dispatch──→ EX
 | UNINIT | 尚未初始化 | 無 |
 | READY | 可開始任務 | `.shiftblame/REPO.md` |
 | TASK | 任務已建立 | `<slug>/<DEPT>/<NNN>/task.md` |
-| EXECUTING | 子代理執行中 | — |
+| RESULT | 執行者產出完成，等待紅隊 | `result.md` |
+| RED | 紅隊產出完成，等待藍隊 | `result.md` + `red.md` |
 | GATE | 三方產出齊全，待老闆確認 | `result.md` + `red.md` + `blue.md` |
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
 ## 閘門定義
+
+### BossConfirm — 老闆確認
+
+`BossConfirm` 是跨主開發環境的老闆確認機制：
+
+| 目前環境 | 確認方式 |
+|----------|----------|
+| Claude Code | `AskUserQuestion` |
+| Codex CLI | 在目前對話中提出明確確認問題，等待使用者回覆後再繼續 |
+
+凡文件寫 `BossConfirm`，皆代表必須等待老闆明確回覆通過、退回或調整方向；不得自行假設通過。
+
+### PublishConfirm — 任務發布前確認
+
+重新發布任務前，若符合下列任一觸發閘門，管理者必須先說明「接下來要做什麼、為什麼要這樣做、將建立哪個 `<DEPT>/<NNN>` 任務」，並經 `BossConfirm` 後才可繼續：
+
+| 觸發閘門 | 需要說明與 BossConfirm |
+|----------|------------------------|
+| 同部門任務起始閘門 | 需要 |
+| 進入下游部門閘門 | 需要 |
+| 退回上游部門閘門 | 需要 |
+| 同部門迭代（同部門 `NNN + 1` 修正） | 不需要 |
 
 ### G0 — 初始化
 
@@ -53,11 +76,11 @@ REPO.md 模板：
 
 ### G1 — 派工
 
-**時機**：派工給子代理或外部 CLI 前。
+**時機**：派工給子代理或 Gemini CLI 前。
 
 **檢查**：目標目錄 `<slug>/<DEPT>/<NNN>/task.md` 是否存在。
 
-**工作區模式**：建立新 slug 的第一個 task.md 時，管理者以 `AskUserQuestion` 詢問老闆選擇工作區模式：
+**工作區模式**：建立新 slug 的第一個 task.md 時，管理者以 `BossConfirm` 詢問老闆選擇工作區模式：
 
 | 模式 | 說明 |
 |------|------|
@@ -68,8 +91,7 @@ REPO.md 模板：
 
 | 模式 | 紅隊 | 藍隊 |
 |------|------|------|
-| `dual` | 外部 CLI | 外部 CLI（預設） |
-| `single` | 外部 CLI | 本環境子代理 |
+| `gemini` | Gemini CLI | Gemini CLI（預設，依序分兩次呼叫） |
 | `solo` | 本環境子代理 | 本環境子代理 |
 
 選定後寫入 task.md 的 `workspace` 與 `review` 欄位，同一 slug 後續任務沿用相同模式。
@@ -90,7 +112,7 @@ task: <NNN>
 version: 0.1.0
 status: pending
 workspace: worktree | direct
-review: dual | single | solo
+review: gemini | solo
 created: <ISO timestamp>
 ---
 
@@ -110,14 +132,24 @@ created: <ISO timestamp>
 
 ### G2 — 閘門審查
 
-**時機**：向老闆 `AskUserQuestion` 確認前。
+**時機**：向老闆 `BossConfirm` 確認前。
 
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在。
+**順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
+
+1. 管理者或執行者完成 `result.md`。
+2. `result.md` 存在且格式有效後，才呼叫紅隊產出 `red.md`。
+3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`result.md`、`red.md` 後寫出攻防對照報告。
+4. `result.md`、`red.md`、`blue.md` 三檔皆存在且格式有效後，才進入 GATE 並詢問老闆。
+
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。
 
 | 情境 | 動作 |
 |------|------|
 | 三檔皆存在 | 通過，可詢問老闆 |
-| 有缺件 | BLOCK：列出缺少檔案，等待對應員工完成 |
+| 缺 `result.md` | BLOCK：先完成執行者產出，不得呼叫紅隊或藍隊 |
+| 缺 `red.md` | BLOCK：先呼叫紅隊，不得呼叫藍隊 |
+| 缺 `blue.md` | BLOCK：先呼叫藍隊 |
+| 檔案為空、無 YAML frontmatter、或格式無效 | BLOCK：重派對應員工，不得跳過該輪 |
 
 ### G3 — 歸檔
 
@@ -142,12 +174,11 @@ created: <ISO timestamp>
 
 ## 全域入口安裝
 
-安裝 shiftblame 技能後，在各 CLI 的全域入口檔寫入 managed block：
+安裝 shiftblame 技能後，在主開發 CLI 的全域入口檔寫入 managed block：
 
 | CLI | 檔案 | 標記 |
 |-----|------|------|
 | Codex | `~/.codex/AGENTS.md` | `<!-- BEGIN shiftblame:codex-entry -->` |
-| Claude | `~/.claude/CLAUDE.md` | `<!-- BEGIN shiftblame:claude-entry -->` |
-| Gemini | `~/.gemini/GEMINI.md` | `<!-- BEGIN shiftblame:gemini-entry -->` |
+| Claude Code | `~/.claude/CLAUDE.md` | `<!-- BEGIN shiftblame:claude-entry -->` |
 
 每個 block 包含：觸發關鍵字、技能入口路徑、角色映射表。以 `<!-- BEGIN/END shiftblame:<label> -->` 標記，更新時只替換標記內容，不動其他區段。

@@ -3,7 +3,7 @@
 管理者由目前 CLI 環境擔任，統一協調：派工、管線、閘門、收尾。
 
 > 管理者直接執行
-> 執行者/紅隊/藍隊以子代理派工
+> 執行者由目前 CLI 執行；紅藍隊依 STAFF.md 使用 Gemini 或本環境子代理
 
 ## 決策
 
@@ -13,18 +13,22 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-## 派工
+## 派工順序
 
-所有部門皆從 001 開始：執行者 result + 紅隊 red + 藍隊 blue。
+所有部門皆從 001 開始，同一任務固定序列為：執行者 `result.md` → 呼叫紅隊 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 進入閘門確認。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
+
+任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
 ## 管線
 
 | 閘門 | 條件 |
 |:----:|------|
-| PRD→QA | result/red/blue → `AskUserQuestion` 老闆確認 |
-| QA→DEV | result/red/blue → `AskUserQuestion` 老闆確認 |
-| DEV→QC | result/red/blue → `AskUserQuestion` 老闆確認 |
-| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `AskUserQuestion` 老闆確認現況；通過後收尾並自動歸檔 slug |
+| PRD→QA | result → red → blue → `BossConfirm` 老闆確認 |
+| QA→DEV | result → red → blue → `BossConfirm` 老闆確認 |
+| DEV→QC | result → red → blue → `BossConfirm` 老闆確認 |
+| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況；通過後收尾並自動歸檔 slug |
+
+每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 `result.md` 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或 QC 收尾。
 
 ## 退回
 
@@ -39,8 +43,8 @@ QC→收尾閘門通過後，執行收尾檢查 → squash merge 前更新 READM
 
 ## task.md / 支援與版本
 
-task.md：YAML frontmatter + 目標 + 上游輸入 + 約束，50 為上限。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），`AskUserQuestion` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
+task.md：YAML frontmatter + 目標 + 上游輸入 + 約束。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
 
 ## 部署
 
-`sudo -S <command> < <(secret-tool lookup service sudo-pwd)`
+依目標環境執行，不預設平台限制；Linux/macOS 可用 `sudo -S <command> < <(secret-tool lookup service sudo-pwd)` 取 sudo 密碼，Windows 可用 PowerShell / winget / 服務管理工具；需權限時先走 `BossConfirm`。

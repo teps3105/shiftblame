@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。管理者與執行者同樣由目前所在 CLI 擔任；紅藍隊可選擇 `dual`（兩個外部 CLI）、`single`（一個外部 CLI + 一個子代理）或 `solo`（全部子代理）模式派工。外部 CLI 限額或 429 時依降級策略補位。
+`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。
 
 ---
 
@@ -25,18 +25,19 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前 CLI（claude/codex/gemini） | 協調、派工、管線、閘門、收尾 |
-| 執行者 | 目前 CLI（claude/codex/gemini） | result.md |
+| 管理者 | 目前 CLI（claude/codex） | 協調、派工、管線、閘門、收尾 |
+| 執行者 | 目前 CLI（claude/codex） | result.md |
 | 紅隊 | 依 `review` 模式 | red.md |
 | 藍隊 | 依 `review` 模式 | blue.md |
 
 | 目前環境 | 執行者 | 紅隊 | 藍隊 |
 |----------|--------|------|------|
-| Claude CLI | claude | codex | gemini |
-| Codex CLI | codex | claude | gemini |
-| Gemini CLI | gemini | claude | codex |
+| Claude Code | claude | gemini 或本環境子代理 | gemini 或本環境子代理 |
+| Codex CLI | codex | gemini 或本環境子代理 | gemini 或本環境子代理 |
 
-外部 CLI 若遇到 `429`、rate limit、quota exceeded、billing limit、暫時不可用或重派後仍無輸出，先由另一個外部 CLI 補上缺少的紅/藍產出；若只剩目前 CLI 可用，管理者改開兩個本環境子代理分別產出 `red.md`、`blue.md`。
+紅藍隊跨 CLI 呼叫使用 Gemini。Gemini 若遇到 `429`、rate limit、quota exceeded、billing limit、暫時不可用或重派後仍無輸出，管理者改開本環境子代理產出缺少的 `red.md`、`blue.md`。
+
+同一任務的攻防流程固定序列為：執行者完成 `result.md` → 管理者呼叫紅隊 → 紅隊寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，重新從 `result.md` 開始，直到閘門收斂通過。
 
 ```
 L1: 執行 → 收尾
@@ -60,18 +61,17 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 
 | 模式 | 紅隊 | 藍隊 | 說明 |
 |------|------|------|------|
-| `dual` | 外部 CLI | 外部 CLI | 兩個外部 CLI 各自產出（預設） |
-| `single` | 外部 CLI | 本環境子代理 | 僅啟用一個外部 CLI |
-| `solo` | 本環境子代理 | 本環境子代理 | 不啟用外部 CLI |
+| `gemini` | Gemini CLI | Gemini CLI | 同一個 Gemini 依序產出紅隊與藍隊（預設） |
+| `solo` | 本環境子代理 | 本環境子代理 | 不啟用 Gemini |
 
 ## 部門
 
-| # | 部門 | 類型 |
-|:-:|:----:|:----:|
-| 0 | PRD | 產品 |
-| 1 | QA | 品保 |
-| 2 | DEV | 開發 |
-| 3 | QC | 品管 |
+| # | 部門 | 類型 | 建議主開發環境 |
+|:-:|:----:|:----:|:----------------|
+| 0 | PRD | 產品 | Claude Code |
+| 1 | QA | 品保 | Claude Code |
+| 2 | DEV | 開發 | Codex CLI |
+| 3 | QC | 品管 | Codex CLI |
 
 詳見 `DEPT/*.md`。
 
@@ -79,10 +79,14 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 
 | 閘門 | 條件 |
 |:----:|------|
-| PRD→QA | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，QA 退回 → 上游新 NNN |
-| QA→DEV | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，DEV 退回 → 上游新 NNN |
-| DEV→QC | 執行者/紅隊/藍隊 result/red/blue → `AskUserQuestion` 老闆確認，QC 退回 → 上游新 NNN |
-| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `AskUserQuestion` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
+| PRD→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → 上游新 NNN |
+| QA→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
+| DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
+| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
+
+`BossConfirm` 為跨環境老闆確認機制：Claude Code 使用 `AskUserQuestion`；Codex CLI 在目前對話中提出明確確認問題並等待使用者回覆。
+
+任務發布前若為同部門任務起始、進入下游部門或退回上游部門，管理者必須先說明接下來要做什麼，經 `BossConfirm` 後才可繼續；同部門 `NNN + 1` 迭代不需說明。
 
 ## 收尾檢查
 
@@ -94,7 +98,7 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 - 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔。
 - `.shiftblame/`、worktree 專用產物、本地私密設定不納入版本控制。
 - README.md 與 REPO.md 已反映最終現況。
-- QC→收尾確認通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`，不再詢問是否歸檔。
+- QC→收尾確認通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
 ---
 
@@ -129,10 +133,10 @@ skills/shiftblame/
 
 ## 安裝
 
-三方 CLI 統一使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到各 CLI 的 skills 目錄。
+主開發 CLI 使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到 Claude Code 或 Codex 的 skills 目錄。Gemini 僅作為紅藍隊外部審查器，不作為主開發環境安裝此技能。
 
 ```bash
-# Claude CLI
+# Claude Code
 mkdir -p ~/.claude/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
 
@@ -140,12 +144,9 @@ ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
 mkdir -p ~/.codex/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
 
-# Gemini CLI
-mkdir -p ~/.gemini/skills
-ln -s ~/shiftblame/skills/shiftblame ~/.gemini/skills/shiftblame
 ```
 
-安裝後，管理者依 `GATE.md` 全域入口安裝段落在各 CLI 全域入口檔寫入 managed block。重啟對應 CLI 讓新技能被載入。
+安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發 CLI 全域入口檔寫入 managed block。重啟對應 CLI 讓新技能被載入。
 
 ## 自訂
 
