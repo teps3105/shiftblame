@@ -25,23 +25,24 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前 CLI（claude/codex） | 協調、派工、管線、閘門、收尾 |
-| 執行者 | 目前 CLI（claude/codex） | result.md |
-| 紅隊 | 依 `review` 模式 | red.md |
-| 藍隊 | 依 `review` 模式 | blue.md |
+| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾 |
+| 執行者 | 目前環境 | result.md |
+| 紅隊 | 本環境子代理 | red.md |
+| 藍隊 | 本環境子代理 | blue.md |
 
 | 目前環境 | 執行者 | 紅隊 | 藍隊 |
 |----------|--------|------|------|
-| Claude Code | claude | gemini 或本環境子代理 | gemini 或本環境子代理 |
-| Codex CLI | codex | gemini 或本環境子代理 | gemini 或本環境子代理 |
+| 主開發環境 | 目前環境 | 本環境子代理 | 本環境子代理 |
 
-紅藍隊跨 CLI 呼叫使用 Gemini。Gemini 若遇到 `429`、rate limit、quota exceeded、billing limit、暫時不可用或重派後仍無輸出，管理者改開本環境子代理產出缺少的 `red.md`、`blue.md`。
+紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
 同一任務的攻防流程固定序列為：執行者完成 `result.md` → 管理者呼叫紅隊 → 紅隊寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，重新從 `result.md` 開始，直到閘門收斂通過。
 
+全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
+
 ```
 L1: 執行 → 收尾
-L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
+L2: 研究 → QA → PRD → DEV → QC → 產品現況確認 → 收尾
 ```
 
 ## 工作區模式
@@ -50,41 +51,43 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 
 | 模式 | 說明 |
 |------|------|
-| `worktree` | 建立獨立 git worktree，產物寫入 `<slug>/worktree/`（預設） |
-| `direct` | 直接在主 repo 切分支開發，不額外建工作樹 |
+| `direct` | 直接在主 repo 切分支開發，不額外建工作樹（預設） |
+| `worktree` | 建立獨立 git worktree，產物寫入 `<slug>/worktree/` |
 
 兩種模式皆會建立功能分支，差異僅在是否有獨立工作目錄。
 
 ## 紅藍隊模式
 
-建立任務時選擇紅藍隊派工方式：
+紅藍隊派工方式固定為本環境子代理：
 
 | 模式 | 紅隊 | 藍隊 | 說明 |
 |------|------|------|------|
-| `gemini` | Gemini CLI | Gemini CLI | 同一個 Gemini 依序產出紅隊與藍隊（預設） |
-| `solo` | 本環境子代理 | 本環境子代理 | 不啟用 Gemini |
+| `local` | 本環境子代理 | 本環境子代理 | 固定模式，依序產出紅隊與藍隊 |
 
 ## 部門
 
-| # | 部門 | 類型 | 建議主開發環境 |
-|:-:|:----:|:----:|:----------------|
-| 0 | PRD | 產品 | Claude Code |
-| 1 | QA | 品保 | Claude Code |
-| 2 | DEV | 開發 | Codex CLI |
-| 3 | QC | 品管 | Codex CLI |
+| # | 部門 | 類型 |
+|:-:|:----:|:----:|
+| 0 | QA | 品保 |
+| 1 | PRD | 產品 |
+| 2 | DEV | 開發 |
+| 3 | QC | 品管 |
 
-詳見 `DEPT/*.md`。
+詳見 `DEPT/*.md`。功能開發必須先完成研究，確認本輪使用者想實現的功能後才能開 QA；QA 先定義驗收與介面標準，PRD 再依 QA 標準產出產品與實作規格。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| PRD→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → 上游新 NNN |
-| QA→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
+| 研究→QA | 研究完成並寫入 QA task.md → `BossConfirm` 老闆確認 |
+| QA→PRD | result → red → blue → `BossConfirm` 老闆確認，PRD 退回 → 上游新 NNN |
+| PRD→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
 | QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
 
-`BossConfirm` 為跨環境老闆確認機制：Claude Code 使用 `AskUserQuestion`；Codex CLI 在目前對話中提出明確確認問題並等待使用者回覆。
+`BossConfirm` 為跨環境老闆確認機制：支援內建提問工具時使用內建提問工具；一般對話環境則在目前對話中提出明確確認問題並等待使用者回覆。
+
+DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗證結果或下一個想調整的效果；管理者提供 URL/指令/截圖/操作證據與中文摘要。`BossPreview` 不取代正式 `BossConfirm`，也不代表 DEV 閘門通過。
 
 任務發布前若為同部門任務起始、進入下游部門或退回上游部門，管理者必須先說明接下來要做什麼，經 `BossConfirm` 後才可繼續；同部門 `NNN + 1` 迭代不需說明。
 
@@ -97,6 +100,7 @@ L2: 執行 → PRD → QA → DEV → QC → 產品現況確認 → 收尾
 - 無測試文件或測試產物進入主分支，除非它們是正式測試資產。
 - 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔。
 - `.shiftblame/`、worktree 專用產物、本地私密設定不納入版本控制。
+- 待辦事項與未來開發路線圖只維護於 `.shiftblame/ROADMAP.md`，且只記錄本輪使用者要求衍生出的完成項、未完成事項與後續候選；不得建立 `docs/` 或其他會推送到遠端的計畫文件。
 - README.md 與 REPO.md 已反映最終現況。
 - QC→收尾確認通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
@@ -111,8 +115,8 @@ skills/shiftblame/
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
-    ├── PRD.md        # 產品部門
     ├── QA.md         # 品保部門
+    ├── PRD.md        # 產品部門
     ├── DEV.md        # 開發部門
     └── QC.md         # 品管部門
 ```
@@ -122,6 +126,7 @@ skills/shiftblame/
 ```
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
+├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
 └── <slug>/<DEPT>/<NNN>/
     ├── task.md
     ├── result.md        # 執行者
@@ -133,20 +138,16 @@ skills/shiftblame/
 
 ## 安裝
 
-主開發 CLI 使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到 Claude Code 或 Codex 的 skills 目錄。Gemini 僅作為紅藍隊外部審查器，不作為主開發環境安裝此技能。
+主開發環境使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到主開發環境的 skills 目錄。
 
 ```bash
-# Claude Code
-mkdir -p ~/.claude/skills
-ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
-
-# Codex CLI
-mkdir -p ~/.codex/skills
-ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
+# 範例：將技能連結到主開發環境的 skills 目錄
+mkdir -p ~/.local/share/agent-skills
+ln -s ~/shiftblame/skills/shiftblame ~/.local/share/agent-skills/shiftblame
 
 ```
 
-安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發 CLI 全域入口檔寫入 managed block。重啟對應 CLI 讓新技能被載入。
+安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發環境的全域入口檔寫入 managed block。重啟對應環境讓新技能被載入。
 
 ## Windows 編碼
 
