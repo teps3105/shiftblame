@@ -42,7 +42,7 @@ _「這不是我的鍋。」_
 
 ```
 L1: 執行 → 收尾
-L2: 研究 → QA → PRD → DEV → QC → 產品現況確認 → 收尾
+L2: RES → QA → PRD → DEV → QC → 產品現況確認 → 收尾
 ```
 
 ## 工作區模式
@@ -68,18 +68,19 @@ L2: 研究 → QA → PRD → DEV → QC → 產品現況確認 → 收尾
 
 | # | 部門 | 類型 |
 |:-:|:----:|:----:|
-| 0 | QA | 品保 |
-| 1 | PRD | 產品 |
-| 2 | DEV | 開發 |
-| 3 | QC | 品管 |
+| 0 | RES | 研究 |
+| 1 | QA | 品保 |
+| 2 | PRD | 產品 |
+| 3 | DEV | 開發 |
+| 4 | QC | 品管 |
 
-詳見 `DEPT/*.md`。功能開發必須先完成研究，確認本輪使用者想實現的功能後才能開 QA；QA 先定義驗收與介面標準，PRD 再依 QA 標準產出產品與實作規格。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
+詳見 `DEPT/*.md`。功能開發必須先經 RES 完成研究，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 RES 結果定義驗收與介面標準，PRD 依 QA 標準產出產品與實作規格。市場調查不得延後到 PRD 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| 研究→QA | 研究完成並寫入 QA task.md → `BossConfirm` 老闆確認 |
+| RES→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → RES 新 NNN |
 | QA→PRD | result → red → blue → `BossConfirm` 老闆確認，PRD 退回 → 上游新 NNN |
 | PRD→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
@@ -115,6 +116,7 @@ skills/shiftblame/
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
+    ├── RES.md        # 研究部門
     ├── QA.md         # 品保部門
     ├── PRD.md        # 產品部門
     ├── DEV.md        # 開發部門

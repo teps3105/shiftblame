@@ -17,7 +17,7 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-功能開發/需求必須先完成研究，再開 QA。研究包含：釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項。ROADMAP 只能作為背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求。
+功能開發/需求必須先開 RES，再開 QA。RES 研究包含：釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；市場調查不得延後到 PRD 才開始。
 
 ## 派工順序
 
@@ -31,7 +31,7 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 研究→QA | 研究完成並寫入 QA task.md → `BossConfirm` 老闆確認 |
+| RES→QA | result → red → blue → `BossConfirm` 老闆確認 |
 | QA→PRD | result → red → blue → `BossConfirm` 老闆確認 |
 | PRD→DEV | result → red → blue → `BossConfirm` 老闆確認 |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認 |

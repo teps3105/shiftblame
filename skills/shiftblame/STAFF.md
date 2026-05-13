@@ -59,6 +59,7 @@ task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任�
 
 所有部門的 Demo、開發、測試等產物一律寫入 `<slug>/worktree/`，不得寫入主分支工作目錄。
 
+- **RES**：研究筆記、來源摘錄與比較表寫入 worktree
 - **PRD**：Demo 原型寫入 worktree
 - **QA**：測試腳本與測試產物寫入 worktree
 - **DEV**：程式碼實作與測試寫入 worktree
