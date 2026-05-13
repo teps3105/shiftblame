@@ -123,7 +123,7 @@ skills/shiftblame/
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
-    ├── PM.md         # 產品管理部門
+    ├── PM.md         # 產品部門
     ├── QA.md         # 品保部門
     ├── DEV.md        # 開發部門
     └── QC.md         # 品管部門
