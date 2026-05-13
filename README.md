@@ -77,14 +77,14 @@ L2: RES → QA → PM → DEV → QC → 產品現況確認 → 收尾
 | 部門 | `result.md` 內容型別 |
 |:----:|:----------------------:|
 | RES | MRD |
-| QA | SOP |
-| PM | PRD |
+| QA | SRS |
+| PM | SDD |
 | DEV | TDD |
 | QC | STD |
 
-MRD/SOP/PRD/TDD/STD 皆不是額外檔名，而是各部門 `result.md` 承載的內容型別；不得建立 `MRD.md`、`SOP.md`、`PRD.md`、`TDD.md` 或 `STD.md` 作為替代產物。
+MRD/SRS/SDD/TDD/STD 皆不是額外檔名，而是各部門 `result.md` 承載的內容型別；不得建立 `MRD.md`、`SRS.md`、`SDD.md`、`TDD.md` 或 `STD.md` 作為替代產物。
 
-詳見 `DEPT/*.md`。功能開發必須先經 RES 在 `result.md` 產出 MRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 MRD 在 `result.md` 產出 SOP，PM 依 SOP 在 `result.md` 產出 PRD。市場調查不得延後到 PM 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
+詳見 `DEPT/*.md`。功能開發必須先經 RES 在 `result.md` 產出 MRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 MRD 在 `result.md` 產出 SRS，PM 依 SRS 在 `result.md` 產出 SDD。市場調查不得延後到 PM 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 SDD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能；DEV 必須先在 `result.md` 建立 TDD，再依 TDD 開發。
 
 ## 閘門
 
@@ -141,7 +141,7 @@ skills/shiftblame/
 ├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
 └── <slug>/<DEPT>/<NNN>/
     ├── task.md
-    ├── result.md        # 執行者，依部門承載 MRD/SOP/PRD/TDD/STD
+    ├── result.md        # 執行者，依部門承載 MRD/SRS/SDD/TDD/STD
     ├── red.md          # 紅隊
     └── blue.md         # 藍隊
 ```

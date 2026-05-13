@@ -51,7 +51,7 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESU
 
 建立 QA 任務前另有 RES 前置條件：RES 必須已通過閘門，且 QA task.md 的「上游輸入」必須引用或摘要 RES result.md / red.md / blue.md 的結論。未完成 RES 不得建立 QA task.md。
 
-建立 DEV 任務前另有選擇前置條件：管理者必須先詢問老闆想先完成 PM 產出的 PRD 中哪個可見功能，並以作品效果列出候選項。老闆選定後才能建立 DEV task.md；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
+建立 DEV 任務前另有選擇前置條件：管理者必須先詢問老闆想先完成 PM 產出的 SDD 中哪個可見功能，並以作品效果列出候選項。老闆選定後才能建立 DEV task.md；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
 
 ### G0 — 初始化
 
@@ -122,7 +122,7 @@ ROADMAP.md 模板：
 - ROADMAP 中可參考但不得自動納入本輪的項目。
 - 建立 QA 標準前需要採納或排除的市場研究、通用方法、設計模式、CVE 或版本差異。
 
-**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 PM 產出的 PRD 中選擇的功能，並把「本回合實際開發的可見功能」寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
+**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 PM 產出的 SDD 中選擇的功能，並把「本回合實際開發的可見功能」寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
 **工作區模式**：建立新 slug 的第一個 task.md 時，管理者以 `BossConfirm` 詢問老闆選擇工作區模式；若老闆沒有特別指定，預設使用 `direct`。
 
@@ -182,7 +182,7 @@ created: <ISO timestamp>
 3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`result.md`、`red.md` 後寫出攻防對照報告。
 4. `result.md`、`red.md`、`blue.md` 三檔皆存在且格式有效後，才進入 GATE 並詢問老闆。
 
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門內容型別：RES/MRD、QA/SOP、PM/PRD、DEV/TDD、QC/STD；不得以 `MRD.md`、`SOP.md`、`PRD.md`、`TDD.md` 或 `STD.md` 替代。
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門內容型別：RES/MRD、QA/SRS、PM/SDD、DEV/TDD、QC/STD；不得以 `MRD.md`、`SRS.md`、`SDD.md`、`TDD.md` 或 `STD.md` 替代。DEV 的 `result.md` 必須顯示 TDD 先於實作建立，否則不得進入審查。
 
 | 情境 | 動作 |
 |------|------|

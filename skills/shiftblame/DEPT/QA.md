@@ -6,13 +6,13 @@
 
 ## 執行者規則
 
-QA 只能在 RES 通過後啟動。根據 task.md 的 RES 結論，聚焦「本輪使用者想實現的功能」定義驗收與介面標準，不得把 ROADMAP 既有規劃擴張成本輪需求。QA 必須吸收 RES 對市場研究、通用方法、設計模式、CVE 或版本差異的結論，先決定哪些會成為標準、哪些明確排除，再定義 API 端點（method / path / request body / response schema / 錯誤碼）、CLI 命令（usage / 必要參數 / 輸出格式 / 範例）、UI 操作（如適用：操作序列 / 預期結果 / 截圖或 DOM 定位）。每條標準附 Given/When/Then 斷言格式，確保可測試性。
+QA 只能在 RES 通過後啟動。根據 task.md 的 RES 結論，聚焦「本輪使用者想實現的功能」定義系統需求與驗收標準，不得把 ROADMAP 既有規劃擴張成本輪需求。QA 必須吸收 RES 對市場研究、通用方法、設計模式、CVE 或版本差異的結論，先決定哪些會成為需求與標準、哪些明確排除，再定義 API 端點（method / path / request body / response schema / 錯誤碼）、CLI 命令（usage / 必要參數 / 輸出格式 / 範例）、UI 操作（如適用：操作序列 / 預期結果 / 截圖或 DOM 定位）。每條標準附 Given/When/Then 斷言格式，確保可測試性。
 
-`result.md` 的內容型別為 SOP。不得建立 `SOP.md`；SOP 必須讓 PM 能依此產出 PRD，也讓 DEV/QC 後續可驗證。
+`result.md` 的內容型別為 SRS。不得建立 `SRS.md`；SRS 必須讓 PM 能依此產出 SDD，也讓 DEV/QC 後續可驗證。
 
 ## 紅隊規則
 
-挖掘標準漏洞：挑戰本輪功能範圍是否被誤解或膨脹，檢驗 API 錯誤碼、邊界條件、CLI 輸出格式與 UI 操作是否足夠明確。特別攻擊「忽略 MRD」、「SOP 無法支撐 PM 產出 PRD」、「把市場研究延後到 PM」與「把 ROADMAP 規劃當成本輪需求」的風險。
+挖掘標準漏洞：挑戰本輪功能範圍是否被誤解或膨脹，檢驗 API 錯誤碼、邊界條件、CLI 輸出格式與 UI 操作是否足夠明確。特別攻擊「忽略 MRD」、「SRS 無法支撐 PM 產出 SDD」、「把市場研究延後到 PM」與「把 ROADMAP 規劃當成本輪需求」的風險。
 
 ## 藍隊規則
 
