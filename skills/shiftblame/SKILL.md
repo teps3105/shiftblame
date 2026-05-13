@@ -30,18 +30,20 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 |:-:|:----:|:----:|
 | 0 | RES | 研究 |
 | 1 | QA | 品保 |
-| 2 | PRD | 產品 |
+| 2 | PM | 產品管理 |
 | 3 | DEV | 開發 |
 | 4 | QC | 品管 |
 
 詳見 `DEPT/*.md`。
 
-功能開發管線以本輪使用者明確想實現的功能為中心：先開 RES 完成建立標準前的研究，包含市場調查、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的背景；QA 再依 RES 結果定義驗收與介面標準，PRD 依 QA 標準產出產品與實作規格。市場調查不得延後到 PRD 才開始。不得把 `.shiftblame/ROADMAP.md` 內的既有規劃當成本輪必做內容，除非使用者本輪明確要求。
+部門產物皆寫入該部門任務目錄的 `result.md`：RES 的 `result.md` 內容型別為 MRD，QA 為 SOP，PM 為 PRD，DEV 為 TDD，QC 為 STD。MRD/SOP/PRD/TDD/STD 不是額外檔名，不得建立 `MRD.md`、`SOP.md`、`PRD.md`、`TDD.md` 或 `STD.md` 作為替代產物。
+
+功能開發管線以本輪使用者明確想實現的功能為中心：先開 RES 在 `result.md` 產出 MRD，完成建立標準前的研究，包含市場調查、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的背景；QA 再依 MRD 在 `result.md` 產出 SOP，PM 依 SOP 在 `result.md` 產出 PRD。市場調查不得延後到 PM 才開始。不得把 `.shiftblame/ROADMAP.md` 內的既有規劃當成本輪必做內容，除非使用者本輪明確要求。
 
 進入 DEV 前，管理者必須先用中文詢問老闆想先完成 PRD 中哪個可見功能，並把本回合要實際開發的功能寫成非技術描述。DEV 期間允許老闆多次提出「想看目前變化」或「下一步想調整什麼」；管理者提供可操作 URL、畫面、截圖或驗證結果，這類即時預覽不取代正式閘門。
 
 ## 定義檔 / gitignore
-`MANAGER.md` `STAFF.md` `DEPT/{RES,QA,PRD,DEV,QC}.md`
+`MANAGER.md` `STAFF.md` `DEPT/{RES,QA,PM,DEV,QC}.md`
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。所有待辦事項、開發計畫與未來路線圖一律維護在 `.shiftblame/ROADMAP.md`；不得建立 `docs/`、公開 roadmap 或其他會推送到遠端的計畫文件。ROADMAP 只記錄本輪使用者要求衍生出的待辦與後續候選，不得改寫成本輪「按照規劃應該要實現」的功能來源。
 
@@ -77,7 +79,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
     ├── worktree/          # git worktree（worktree 模式專用；direct 模式無此目錄）
     └── <DEPT>/<NNN>/
         ├── task.md       # 任務定義
-        ├── result.md     # 執行結果
+        ├── result.md     # 執行結果，依部門承載 MRD/SOP/PRD/TDD/STD
         ├── red.md        # 紅隊驗證
         └── blue.md       # 藍隊驗證
 ```

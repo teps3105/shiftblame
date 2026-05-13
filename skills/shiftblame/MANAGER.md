@@ -17,7 +17,7 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-功能開發/需求必須先開 RES，再開 QA。RES 研究包含：釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；市場調查不得延後到 PRD 才開始。
+功能開發/需求必須先開 RES，再開 QA。部門產物對應為 RES→MRD、QA→SOP、PM→PRD、DEV→TDD、QC→STD，且全部寫入該部門的 `result.md`，不得另建同名產物檔。RES 研究包含：釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；市場調查不得延後到 PM 才開始。
 
 ## 派工順序
 
@@ -25,15 +25,15 @@
 
 任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
-進入 DEV 前，管理者必須先詢問老闆：「PRD 裡面你想先看到哪個功能被做出來？」並提供 2-5 個以作品效果描述的候選功能。老闆選定後，DEV task.md 的目標必須用中文寫成本回合實際開發的可見功能，不得只寫模組、技術工作或內部重構。
+進入 DEV 前，管理者必須先詢問老闆：「PM 產出的 PRD 裡面，你想先看到哪個功能被做出來？」並提供 2-5 個以作品效果描述的候選功能。老闆選定後，DEV task.md 的目標必須用中文寫成本回合實際開發的可見功能，不得只寫模組、技術工作或內部重構。
 
 ## 管線
 
 | 閘門 | 條件 |
 |:----:|------|
 | RES→QA | result → red → blue → `BossConfirm` 老闆確認 |
-| QA→PRD | result → red → blue → `BossConfirm` 老闆確認 |
-| PRD→DEV | result → red → blue → `BossConfirm` 老闆確認 |
+| QA→PM | result → red → blue → `BossConfirm` 老闆確認 |
+| PM→DEV | result → red → blue → `BossConfirm` 老闆確認 |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認 |
 | QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況；通過後收尾並自動歸檔 slug |
 

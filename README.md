@@ -42,7 +42,7 @@ _「這不是我的鍋。」_
 
 ```
 L1: 執行 → 收尾
-L2: RES → QA → PRD → DEV → QC → 產品現況確認 → 收尾
+L2: RES → QA → PM → DEV → QC → 產品現況確認 → 收尾
 ```
 
 ## 工作區模式
@@ -70,19 +70,29 @@ L2: RES → QA → PRD → DEV → QC → 產品現況確認 → 收尾
 |:-:|:----:|:----:|
 | 0 | RES | 研究 |
 | 1 | QA | 品保 |
-| 2 | PRD | 產品 |
+| 2 | PM | 產品管理 |
 | 3 | DEV | 開發 |
 | 4 | QC | 品管 |
 
-詳見 `DEPT/*.md`。功能開發必須先經 RES 完成研究，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 RES 結果定義驗收與介面標準，PRD 依 QA 標準產出產品與實作規格。市場調查不得延後到 PRD 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
+| 部門 | `result.md` 內容型別 |
+|:----:|:----------------------:|
+| RES | MRD |
+| QA | SOP |
+| PM | PRD |
+| DEV | TDD |
+| QC | STD |
+
+MRD/SOP/PRD/TDD/STD 皆不是額外檔名，而是各部門 `result.md` 承載的內容型別；不得建立 `MRD.md`、`SOP.md`、`PRD.md`、`TDD.md` 或 `STD.md` 作為替代產物。
+
+詳見 `DEPT/*.md`。功能開發必須先經 RES 在 `result.md` 產出 MRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 MRD 在 `result.md` 產出 SOP，PM 依 SOP 在 `result.md` 產出 PRD。市場調查不得延後到 PM 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 PRD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
 | RES→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → RES 新 NNN |
-| QA→PRD | result → red → blue → `BossConfirm` 老闆確認，PRD 退回 → 上游新 NNN |
-| PRD→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
+| QA→PM | result → red → blue → `BossConfirm` 老闆確認，PM 退回 → 上游新 NNN |
+| PM→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
 | QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
 
@@ -118,7 +128,7 @@ skills/shiftblame/
 └── DEPT/
     ├── RES.md        # 研究部門
     ├── QA.md         # 品保部門
-    ├── PRD.md        # 產品部門
+    ├── PM.md         # 產品管理部門
     ├── DEV.md        # 開發部門
     └── QC.md         # 品管部門
 ```
@@ -131,7 +141,7 @@ skills/shiftblame/
 ├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
 └── <slug>/<DEPT>/<NNN>/
     ├── task.md
-    ├── result.md        # 執行者
+    ├── result.md        # 執行者，依部門承載 MRD/SOP/PRD/TDD/STD
     ├── red.md          # 紅隊
     └── blue.md         # 藍隊
 ```
