@@ -42,7 +42,7 @@ _「這不是我的鍋。」_
 
 ```
 L1: 執行 → 收尾
-L2: RES → QA → PM → DEV → QC → 產品現況確認 → 收尾
+L2: PM → QA → DEV → QC → 產品現況確認 → 收尾
 ```
 
 ## 工作區模式
@@ -68,31 +68,28 @@ L2: RES → QA → PM → DEV → QC → 產品現況確認 → 收尾
 
 | # | 部門 | 類型 |
 |:-:|:----:|:----:|
-| 0 | RES | 研究 |
+| 0 | PM | 產品管理 |
 | 1 | QA | 品保 |
-| 2 | PM | 產品管理 |
-| 3 | DEV | 開發 |
-| 4 | QC | 品管 |
+| 2 | DEV | 開發 |
+| 3 | QC | 品管 |
 
 | 部門 | `result.md` 內容型別 |
 |:----:|:----------------------:|
-| RES | MRD |
-| QA | SRS |
-| PM | SDD |
-| DEV | TDD |
-| QC | STD |
+| PM | BRD + MRD + PRD |
+| QA | SEC + SOP + SRS |
+| DEV | TPD + TDD + TIR |
+| QC | ATP + ATR + ACR |
 
-MRD/SRS/SDD/TDD/STD 皆不是額外檔名，而是各部門 `result.md` 承載的內容型別；不得建立 `MRD.md`、`SRS.md`、`SDD.md`、`TDD.md` 或 `STD.md` 作為替代產物。
+BRD/MRD/PRD、SEC/SOP/SRS、TPD/TDD/TIR、ATP/ATR/ACR 皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
 
-詳見 `DEPT/*.md`。功能開發必須先經 RES 在 `result.md` 產出 MRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景；QA 再依 MRD 在 `result.md` 產出 SRS，PM 依 SRS 在 `result.md` 產出 SDD。市場調查不得延後到 PM 才開始。進入 DEV 前，管理者必須詢問老闆想先看到 SDD 中哪個功能被做出來，並用中文寫明本回合實際開發的可見功能；DEV 必須先在 `result.md` 建立 TDD，再依 TDD 開發。
+詳見 `DEPT/*.md`。功能開發必須先經 PM 在 `result.md` 產出 BRD、MRD、PRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。QA 再依 PM 結果產出 SEC、SOP、SRS，並承擔原 PM 的產品規格、任務拆解與實作規劃職責。進入 DEV 前，管理者必須詢問老闆想先看到 QA 結果中的哪個功能被做出來，並用中文寫明本回合實際開發的可見功能；DEV 必須先在 `result.md` 建立 TPD、TDD、TIR 的前置內容，再依此開發。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| RES→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → RES 新 NNN |
-| QA→PM | result → red → blue → `BossConfirm` 老闆確認，PM 退回 → 上游新 NNN |
-| PM→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
+| PM→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → PM 新 NNN |
+| QA→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
 | DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
 | QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
 
@@ -126,9 +123,8 @@ skills/shiftblame/
 ├── MANAGER.md        # 管理者定義（≤50 行）
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
-    ├── RES.md        # 研究部門
-    ├── QA.md         # 品保部門
     ├── PM.md         # 產品管理部門
+    ├── QA.md         # 品保部門
     ├── DEV.md        # 開發部門
     └── QC.md         # 品管部門
 ```
@@ -141,7 +137,7 @@ skills/shiftblame/
 ├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
 └── <slug>/<DEPT>/<NNN>/
     ├── task.md
-    ├── result.md        # 執行者，依部門承載 MRD/SRS/SDD/TDD/STD
+    ├── result.md        # 執行者，依部門承載三段式文件章節
     ├── red.md          # 紅隊
     └── blue.md         # 藍隊
 ```

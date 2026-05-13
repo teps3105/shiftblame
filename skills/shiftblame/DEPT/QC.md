@@ -6,7 +6,7 @@
 
 ## 執行者規則
 
-執行端到端驗證，工具選擇依實際環境決定（CLI / API / chrome-devtools-mcp 等）。主導驗證流程，協調紅隊與藍隊的攻擊與防禦驗證。確認三方至少各有一個邊緣案例或攻擊路徑實際跑通。`result.md` 的內容型別為 STD，不得建立 `STD.md`；內容必須彙整驗證標準、實測證據與 PASS/FAIL 判定。
+執行端到端驗證，工具選擇依實際環境決定（CLI / API / chrome-devtools-mcp 等）。主導驗證流程，協調紅隊與藍隊的攻擊與防禦驗證。確認三方至少各有一個邊緣案例或攻擊路徑實際跑通。`result.md` 必須包含三段：ATP（Acceptance Test Plan）、ATR（Acceptance Test Report）、ACR（Acceptance Completion Record）。不得建立 `ATP.md`、`ATR.md` 或 `ACR.md`；內容必須彙整驗收計畫、實測證據、完成紀錄與 PASS/FAIL 判定。
 
 ## 紅隊規則
 

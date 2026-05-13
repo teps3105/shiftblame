@@ -59,9 +59,8 @@ task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任�
 
 所有部門的 Demo、開發、測試等產物一律寫入 `<slug>/worktree/`，不得寫入主分支工作目錄。
 
-- **RES**：研究筆記、來源摘錄與比較表寫入 worktree
+- **PM**：研究筆記、來源摘錄、需求與產品規格寫入 worktree
 - **QA**：測試腳本與測試產物寫入 worktree
-- **PM**：Demo 原型寫入 worktree
 - **DEV**：程式碼實作與測試寫入 worktree
 - **QC**：驗證腳本與結果寫入 worktree
 
@@ -73,7 +72,7 @@ task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任�
 
 所有面向老闆的內容都必須預設老闆不懂技術：用繁體中文、作品效果、可操作步驟與驗證結果描述，不得用技術術語包裝。技術細節可放在「內部備註」或「實作紀錄」，不可取代功能描述。
 
-**Result**：用 UTF-8 shell 讀取 task.md + DEPT/*.md → 依部門執行者規則執行 → 只寫入 `result.md`。`result.md` 內容必須承載該部門產物：RES/MRD、QA/SRS、PM/SDD、DEV/TDD、QC/STD。不得建立 `MRD.md`、`SRS.md`、`SDD.md`、`TDD.md` 或 `STD.md` 替代 `result.md`。完成前不得呼叫紅隊或藍隊。DEV 例外要求更嚴：必須先把 TDD 寫入 `result.md`，再開始程式碼實作。
+**Result**：用 UTF-8 shell 讀取 task.md + DEPT/*.md → 依部門執行者規則執行 → 只寫入 `result.md`。`result.md` 內容必須承載該部門三段式產物：PM/BRD+MRD+PRD、QA/SEC+SOP+SRS、DEV/TPD+TDD+TIR、QC/ATP+ATR+ACR。不得建立同名 `.md` 檔替代 `result.md`。完成前不得呼叫紅隊或藍隊。DEV 例外要求更嚴：必須先把 TPD、TDD、TIR 的前置內容寫入 `result.md`，再開始程式碼實作。
 
 **Red**：確認 `result.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 task.md + result.md + DEPT/*.md → 依部門紅隊規則攻擊 → 寫入 `red.md`。完成前不得呼叫藍隊。
 
