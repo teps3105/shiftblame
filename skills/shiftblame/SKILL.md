@@ -44,7 +44,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 ## 定義檔 / gitignore
 `MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}.md`
 
-`.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。所有待辦事項、開發計畫與未來路線圖一律維護在 `.shiftblame/ROADMAP.md`；不得建立 `docs/`、公開 roadmap 或其他會推送到遠端的計畫文件。ROADMAP 只記錄本輪使用者要求衍生出的待辦與後續候選，不得改寫成本輪「按照規劃應該要實現」的功能來源。
+`.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。開發中的工作筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策一律維護在 `.shiftblame/<slug>/SLUG.md`；不得寫入 `.shiftblame/ROADMAP.md`。ROADMAP 只在每輪收尾時，依 `SLUG.md` 與實際完成結果整理成穩定產品路線、完成摘要與後續候選；不得作為邊開發邊寫的工作日誌，也不得改寫成本輪「按照規劃應該要實現」的功能來源。
 
 全域入口檔的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴工具專屬設定檔觸發流程。
 
@@ -72,9 +72,10 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 ```
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
-├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
+├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅收尾整理）
 ├── archive/              # 歷史紀錄（已完成任務）   
 └── <slug>/
+    ├── SLUG.md            # 本輪開發筆記（開發中唯一工作日誌）
     ├── worktree/          # git worktree（worktree 模式專用；direct 模式無此目錄）
     └── <DEPT>/<NNN>/
         ├── task.md       # 任務定義

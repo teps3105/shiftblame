@@ -37,6 +37,7 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 - 讀取 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，只能使用 shell 指令；Linux/macOS/Git Bash 使用 cat 或 sed -n，Windows PowerShell 必須使用 Get-Content -Encoding UTF8。
 - 檢查檔案存在與列檔可使用 test -f、find、Test-Path、Get-ChildItem。
 - 禁止使用 read_file、內建檔案讀取器，或在 Windows PowerShell 以未指定 -Encoding UTF8 的 Get-Content/type/cat 讀取含中文 Markdown。
+- 開發中筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策只可記錄在 .shiftblame/<slug>/SLUG.md，不得寫入 ROADMAP.md。
 - 你的輸出將被直接導向到目標檔案（如 red.md），因此請「僅輸出報告的 Markdown 內容」，不要包含任何前言、後記、確認訊息或工具呼叫的原始輸出。
 - 報告必須包含完整的 YAML frontmatter 與繁體中文內容。
 ```
@@ -72,10 +73,10 @@ task.md 的 `workspace` 欄位決定工作區模式。同一 slug 內所有任�
 
 所有面向老闆的內容都必須預設老闆不懂技術：用繁體中文、作品效果、可操作步驟與驗證結果描述，不得用技術術語包裝。技術細節可放在「內部備註」或「實作紀錄」，不可取代功能描述。
 
-**Result**：用 UTF-8 shell 讀取 task.md + DEPT/*.md → 依部門執行者規則執行 → 只寫入 `result.md`。`result.md` 內容必須承載該部門三段式產物：PM/BRD+MRD+PRD、QA/SEC+SOP+SRS、DEV/TPD+TDD+TIR、QC/ATP+ATR+ACR。不得建立同名 `.md` 檔替代 `result.md`。完成前不得呼叫紅隊或藍隊。DEV 例外要求更嚴：必須先把 TPD、TDD、TIR 的前置內容寫入 `result.md`，再開始程式碼實作。
+**Result**：用 UTF-8 shell 讀取 `SLUG.md` + task.md + DEPT/*.md → 依部門執行者規則執行 → 主要正式產出只寫入 `result.md`；必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。`result.md` 內容必須承載該部門三段式產物：PM/BRD+MRD+PRD、QA/SEC+SOP+SRS、DEV/TPD+TDD+TIR、QC/ATP+ATR+ACR。不得建立同名 `.md` 檔替代 `result.md`。完成前不得呼叫紅隊或藍隊。DEV 例外要求更嚴：必須先把 TPD、TDD、TIR 的前置內容寫入 `result.md`，再開始程式碼實作。
 
-**Red**：確認 `result.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 task.md + result.md + DEPT/*.md → 依部門紅隊規則攻擊 → 寫入 `red.md`。完成前不得呼叫藍隊。
+**Red**：確認 `result.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + result.md + DEPT/*.md → 依部門紅隊規則攻擊 → 寫入 `red.md`。完成前不得呼叫藍隊。
 
-**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 task.md + result.md + red.md + DEPT/*.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。
+**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + result.md + red.md + DEPT/*.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。
 
 所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。

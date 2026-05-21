@@ -36,7 +36,7 @@ _「這不是我的鍋。」_
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者完成 `result.md` → 管理者呼叫紅隊 → 紅隊寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，重新從 `result.md` 開始，直到閘門收斂通過。
+同一任務的攻防流程固定序列為：執行者完成 `result.md` → 管理者呼叫紅隊 → 紅隊寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `SLUG.md`、`task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，重新從 `result.md` 開始，直到閘門收斂通過。
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
 
@@ -108,7 +108,8 @@ DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗�
 - 無測試文件或測試產物進入主分支，除非它們是正式測試資產。
 - 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔。
 - `.shiftblame/`、worktree 專用產物、本地私密設定不納入版本控制。
-- 待辦事項與未來開發路線圖只維護於 `.shiftblame/ROADMAP.md`，且只記錄本輪使用者要求衍生出的完成項、未完成事項與後續候選；不得建立 `docs/` 或其他會推送到遠端的計畫文件。
+- 開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`。
+- `.shiftblame/ROADMAP.md` 只在收尾時更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成 PM/QA/DEV/QC 的工作日誌。
 - README.md 與 REPO.md 已反映最終現況。
 - QC→收尾確認通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
@@ -134,12 +135,14 @@ skills/shiftblame/
 ```
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
-├── ROADMAP.md            # 待辦事項與未來開發路線圖（本地私密）
-└── <slug>/<DEPT>/<NNN>/
-    ├── task.md
-    ├── result.md        # 執行者，依部門承載三段式文件章節
-    ├── red.md          # 紅隊
-    └── blue.md         # 藍隊
+├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅收尾整理）
+└── <slug>/
+    ├── SLUG.md           # 本輪開發筆記（開發中唯一工作日誌）
+    └── <DEPT>/<NNN>/
+        ├── task.md
+        ├── result.md    # 執行者，依部門承載三段式文件章節
+        ├── red.md       # 紅隊
+        └── blue.md      # 藍隊
 ```
 
 ---

@@ -17,7 +17,13 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→BRD+MRD+PRD、QA→SEC+SOP+SRS、DEV→TPD+TDD+TIR、QC→ATP+ATR+ACR，且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求。
+功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→BRD+MRD+PRD、QA→SEC+SOP+SRS、DEV→TPD+TDD+TIR、QC→ATP+ATR+ACR，且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+
+## 本輪筆記
+
+建立新 slug 時，管理者必須先建立 `.shiftblame/<slug>/SLUG.md`，再建立第一份 `task.md`。`SLUG.md` 是本輪開發中的唯一工作日誌，用來記錄本輪目標、開發中筆記、BossPreview 回饋、退回原因、跨部門遺留事項與收尾時需要整理到 REPO.md 或 ROADMAP.md 的候選內容。
+
+`SLUG.md` 不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`。部門正式產物仍寫入各自任務目錄；但任何還沒完成、還在爭議中、只屬於本輪流程的待辦，不得寫入 ROADMAP。ROADMAP 只能在 QC 收尾通過後，從 `SLUG.md` 與實際完成結果整理成穩定產品路線。
 
 ## 派工順序
 
@@ -47,9 +53,9 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 收尾
 
-QC→收尾閘門通過後，執行收尾檢查 → squash merge 前更新 README.md、REPO.md 和 ROADMAP.md → squash merge → push → 若 workspace=worktree 則刪 worktree → 刪分支 → 搬移 slug 至 .shiftblame/archive/。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回 DEV 或 QC 新 NNN。
+QC→收尾閘門通過後，執行收尾檢查 → squash merge 前整理 `SLUG.md` 並更新 README.md、REPO.md 和 ROADMAP.md → squash merge → push → 若 workspace=worktree 則刪 worktree → 刪分支 → 搬移 slug 至 .shiftblame/archive/。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回 DEV 或 QC 新 NNN。
 
-收尾檢查清單：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留進入主分支；無非正式測試文件或測試產物進入主分支；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、worktree 專用產物（worktree 模式）、本地私密設定不納入版本控制；README.md 與 REPO.md 已反映最終現況；所有待辦事項、未來功能與開發路線圖已維護於 `.shiftblame/ROADMAP.md`，且 ROADMAP 只記錄本輪使用者要求衍生出的完成項、未完成事項與後續候選，不得建立 `docs/` 或其他會推送到遠端的計畫文件。
+收尾檢查清單：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留進入主分支；無非正式測試文件或測試產物進入主分支；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、worktree 專用產物（worktree 模式）、本地私密設定不納入版本控制；README.md 與 REPO.md 已反映最終現況；`SLUG.md` 的開發中筆記、BossPreview 回饋、退回原因與本輪臨時待辦已完成整理；ROADMAP 只記錄收尾後仍成立的完成摘要、穩定產品路線與後續候選，不包含 PM/QA/DEV/QC 流程待辦，不得建立 `docs/` 或其他會推送到遠端的計畫文件。
 
 ## task.md / 支援與版本
 

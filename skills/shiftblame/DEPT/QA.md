@@ -6,7 +6,7 @@
 
 ## 執行者規則
 
-QA 只能在 PM 通過後啟動。根據 PM 的 BRD、MRD、PRD，聚焦「本輪使用者想實現的功能」定義安全要求、操作/驗收標準、系統需求與實作規格，不得把 ROADMAP 既有規劃擴張成本輪需求。QA 承擔原 QA 與原 PM 的職責：吸收 PM 的研究結論，定義 API 端點（method / path / request body / response schema / 錯誤碼）、CLI 命令（usage / 必要參數 / 輸出格式 / 範例）、UI 操作（如適用：操作序列 / 預期結果 / 截圖或 DOM 定位）、功能清單、成功指標、Out of Scope、任務拆解與實作計畫。每條標準附 Given/When/Then 斷言格式，確保可測試性。
+QA 只能在 PM 通過後啟動。根據 `SLUG.md` 與 PM 的 BRD、MRD、PRD，聚焦「本輪使用者想實現的功能」定義安全要求、操作/驗收標準、系統需求與實作規格，不得把 ROADMAP 既有規劃擴張成本輪需求，也不得把本輪流程待辦寫入 ROADMAP。QA 承擔原 QA 與原 PM 的職責：吸收 PM 的研究結論，定義 API 端點（method / path / request body / response schema / 錯誤碼）、CLI 命令（usage / 必要參數 / 輸出格式 / 範例）、UI 操作（如適用：操作序列 / 預期結果 / 截圖或 DOM 定位）、功能清單、成功指標、Out of Scope、任務拆解與實作計畫。每條標準附 Given/When/Then 斷言格式，確保可測試性。
 
 `result.md` 必須包含三段：SEC（Security Requirements）、SOP（Standard Operating Procedure / 標準操作與驗收程序）、SRS（System Requirements Specification）。不得建立 `SEC.md`、`SOP.md` 或 `SRS.md`；三段都必須寫在同一份 `result.md`。SRS 必須讓 DEV 能依此建立 TPD、TDD、TIR，也讓 QC 後續可驗證。
 

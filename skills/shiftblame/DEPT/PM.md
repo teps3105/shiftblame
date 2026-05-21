@@ -6,7 +6,7 @@
 
 ## 執行者規則
 
-PM 是功能開發管線的第一個部門。根據 task.md，釐清本輪使用者真正想實現的功能、現有 repo/REPO.md/ROADMAP.md 的相關背景、本輪範圍與非本輪事項，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異。`result.md` 必須包含三段：BRD（Business Requirements Document）、MRD（Market Requirements Document）、PRD（Product Requirements Document）。不得建立 `BRD.md`、`MRD.md` 或 `PRD.md`；三段都必須寫在同一份 `result.md`。ROADMAP 只能列為背景或後續候選，不得自動納入本輪。
+PM 是功能開發管線的第一個部門。根據 `SLUG.md` 與 task.md，釐清本輪使用者真正想實現的功能、現有 repo/REPO.md/ROADMAP.md 的相關背景、本輪範圍與非本輪事項，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異。`result.md` 必須包含三段：BRD（Business Requirements Document）、MRD（Market Requirements Document）、PRD（Product Requirements Document）。不得建立 `BRD.md`、`MRD.md` 或 `PRD.md`；三段都必須寫在同一份 `result.md`。ROADMAP 只能列為收尾後的穩定背景或後續候選，不得自動納入本輪；本輪流程待辦與開發中判斷只寫入 `SLUG.md`。
 
 ## 紅隊規則
 

@@ -8,7 +8,7 @@
 
 DEV 開始前，管理者必須先詢問老闆想先達成 QA 結果裡哪個可見功能；若尚未取得選擇，不得開始實作。DEV task.md 的目標必須用繁體中文描述本回合要實際做出的作品效果，不得只寫技術項目。
 
-依老闆選定的可見功能實作，內部可參考 QA 的 SEC、SOP、SRS，但對老闆回報時只說作品變化與可操作結果。`result.md` 必須包含三段：TPD（Technical Plan Document）、TDD（Technical Design Document）、TIR（Technical Implementation Record）。不得建立 `TPD.md`、`TDD.md` 或 `TIR.md`。DEV 必須先在 `result.md` 建立 TPD、TDD、TIR 的前置內容，明確定義本回合可見功能、測試情境、驗收方式與預期證據，才能開始修改程式碼；後續實作結果與驗證證據也持續記錄在同一份 `result.md`。每完成一個可觀看片段，實際啟動作品並提供 URL、指令、截圖或操作證據；老闆可在 DEV 中多次要求觀看變化、追加小調整或指定下一個想看到的效果。這些 `BossPreview` 回合不需要紅藍隊，但必須把已完成、已驗證、待調整事項記錄到 `result.md`。
+依老闆選定的可見功能實作，內部可參考 QA 的 SEC、SOP、SRS，但對老闆回報時只說作品變化與可操作結果。`result.md` 必須包含三段：TPD（Technical Plan Document）、TDD（Technical Design Document）、TIR（Technical Implementation Record）。不得建立 `TPD.md`、`TDD.md` 或 `TIR.md`。DEV 必須先在 `result.md` 建立 TPD、TDD、TIR 的前置內容，明確定義本回合可見功能、測試情境、驗收方式與預期證據，才能開始修改程式碼；後續實作結果與驗證證據也持續記錄在同一份 `result.md`。每完成一個可觀看片段，實際啟動作品並提供 URL、指令、截圖或操作證據；老闆可在 DEV 中多次要求觀看變化、追加小調整或指定下一個想看到的效果。這些 `BossPreview` 回合不需要紅藍隊；正式實作與驗證證據寫入 `result.md`，開發中待調整事項、退回脈絡與跨輪筆記寫入 `.shiftblame/<slug>/SLUG.md`，不得寫入 ROADMAP。
 
 實作時保留必要工程品質：先定義可驗證行為，再完成程式碼與測試；完成前執行語法檢查、測試或等效驗證。驗證結果回報給老闆時，使用「可以新增並看見卡片」「按下儲存後資料還在」這類功能語言，不用測試框架或技術術語包裝。
 

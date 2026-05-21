@@ -12,7 +12,7 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESU
 |------|------|----------|
 | UNINIT | 尚未初始化 | 無 |
 | READY | 可開始任務 | `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md` |
-| TASK | 任務已建立 | `<slug>/<DEPT>/<NNN>/task.md` |
+| TASK | 任務已建立 | `<slug>/SLUG.md` + `<slug>/<DEPT>/<NNN>/task.md` |
 | RESULT | 執行者產出完成，等待紅隊 | `result.md` |
 | RED | 紅隊產出完成，等待藍隊 | `result.md` + `red.md` |
 | GATE | 三方產出齊全，待老闆確認 | `result.md` + `red.md` + `blue.md` |
@@ -87,19 +87,17 @@ REPO.md 模板：
 ROADMAP.md 模板：
 
 ```markdown
-# ROADMAP — 待辦事項與未來開發路線圖
+# ROADMAP — 穩定產品路線圖
 
 > 本地私密，不納入版本控制；不得改以 docs/ 或其他會推送到遠端的文件維護。
 
 ## 原則
 
-- 所有待辦事項、未來功能、開發順序與長期規劃只維護於本檔。
-- ROADMAP 只記錄本輪使用者要求衍生出的待辦、完成項與後續候選。
+- ROADMAP 只在功能收尾時更新，記錄穩定產品路線、完成摘要與後續候選。
+- 開發中的工作筆記、臨時待辦、退回原因、BossPreview 回饋與本輪決策一律寫入 `.shiftblame/<slug>/SLUG.md`。
+- 不得邊開發邊把 PM/QA/DEV/QC 流程待辦寫進 ROADMAP。
 - 不得把 ROADMAP 內容當成本輪必做功能來源；本輪範圍永遠以使用者本輪明確想實現的功能為準。
 - 遠端倉庫只保留正式文件與已完成現況，不推送開發計畫。
-
-## 本輪待辦
-
 
 ## 後續候選
 
@@ -112,7 +110,9 @@ ROADMAP.md 模板：
 
 **時機**：派工給子代理前。
 
-**檢查**：目標目錄 `<slug>/<DEPT>/<NNN>/task.md` 是否存在。
+**檢查**：目標目錄 `<slug>/SLUG.md` 與 `<slug>/<DEPT>/<NNN>/task.md` 是否存在。
+
+`SLUG.md` 是本輪開發筆記，建立新 slug 的第一個 `task.md` 前必須存在。它只承載開發中的工作日誌，不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`，也不得在收尾前整理進 ROADMAP。
 
 **QA 前置 PM**：若目標部門為 QA，管理者必須先確認同 slug 的 PM 已通過，並把 PM 結論寫入 `task.md` 的「上游輸入」。PM 結論至少包含：
 
@@ -135,9 +135,37 @@ ROADMAP.md 模板：
 
 | 情境 | 動作 |
 |------|------|
-| `task.md` 存在 | 通過 |
+| `SLUG.md` 與 `task.md` 存在 | 通過 |
+| 缺 `SLUG.md` | BLOCK：先建立 `<slug>/SLUG.md` |
 | 目錄存在但無 `task.md` | BLOCK：先建立 task.md（見下方模板） |
-| 無對應目錄 | BLOCK：先建立目錄結構與 task.md |
+| 無對應目錄 | BLOCK：先建立目錄結構、SLUG.md 與 task.md |
+
+SLUG.md 模板：
+
+```markdown
+---
+slug: <slug>
+status: in_progress
+created: <ISO timestamp>
+updated: <ISO timestamp>
+---
+
+# <slug> — 本輪開發筆記
+
+## 本輪目標
+
+
+## 開發中筆記
+
+
+## BossPreview / 退回紀錄
+
+
+## 待收尾整理
+
+- REPO.md：
+- ROADMAP.md：
+```
 
 task.md 模板：
 
@@ -204,7 +232,7 @@ created: <ISO timestamp>
 | 歸檔目錄已有同名 slug | 附加時間戳：`<slug>_<YYYYMMDDTHHMMSS>` |
 | git worktree 分支仍存在 | 僅 worktree 模式：警告但允許繼續歸檔；direct 模式不適用 |
 
-歸檔前必須更新 `.shiftblame/ROADMAP.md`：只依本輪使用者要求與實際完成結果移除或標記已完成待辦，補上本輪發現但未做的後續候選；不得把既有 ROADMAP 規劃重寫成本輪已實現或本輪必做內容。禁止把待辦事項或未來路線圖寫入 `docs/`、README 的未來計畫章節，或其他會推送到遠端的文件。
+歸檔前必須先整理 `.shiftblame/<slug>/SLUG.md`：將本輪實際完成結果寫入 `.shiftblame/REPO.md`，只把確認仍有效的後續候選與完成摘要整理進 `.shiftblame/ROADMAP.md`。ROADMAP 只能在收尾時更新，不得收納 PM/QA/DEV/QC 流程待辦、開發中筆記、退回原因或臨時檢查清單；也不得把既有 ROADMAP 規劃重寫成本輪已實現或本輪必做內容。禁止把待辦事項或未來路線圖寫入 `docs/`、README 的未來計畫章節，或其他會推送到遠端的文件。
 
 ## 管理者職責
 
