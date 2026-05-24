@@ -21,10 +21,10 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──exec──→ EXECUT
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
-工程收尾狀態機：
+合併歸檔狀態機（品管閘門通過後）：
 
 ```
-DEV_PASSED ──QC任務──→ QC_PASSED ──merge──→ MERGED ──push──→ PUSHED ──archive──→ ARCHIVED ──update──→ UPDATED
+MERGED ──push──→ PUSHED ──archive──→ ARCHIVED ──update──→ UPDATED
 ```
 
 ## 閘門定義
