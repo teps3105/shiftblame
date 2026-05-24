@@ -50,7 +50,7 @@ description: "AI Agents 協作框架。Use when: '開始','start','開工','動�
 
 ## 閘門狀態機
 
-管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → G2 審查 → G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
+管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → G2 審查（EXECUTED → RED → BLUE → RESULT → CHECKED → PASSED）→ G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
 
 ## 格式檢查
 

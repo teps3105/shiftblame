@@ -19,7 +19,7 @@
 
 task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律由本環境子代理依序產出 `red.md` 與 `blue.md`。
 
-同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md`。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊。紅隊與藍隊不得並行啟動。
+同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊。紅隊與藍隊不得並行啟動。
 
 ## 執行者呼叫
 
@@ -62,7 +62,7 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄、（3）殘餘風險與交接事項、（4）BossPreview / 退回紀錄、（5）待收尾整理。分類規則見 GATE.md SLUG.md 模板。執行者不得將這些內容寫入 REPO.md 或 ROADMAP.md。
 
-工作結論寫入 task.md（狀態 EXECUTED）→ 紅隊攻擊 task.md 工作結論並產出 red.md → 藍隊讀取 task.md + red.md 並產出 blue.md → 執行者依紅藍回饋寫入 result.md。紅隊與藍隊期間不得修改 task.md、result.md 或其他輸出。
+工作結論寫入 task.md（狀態 EXECUTED）→ 紅隊攻擊 task.md 工作結論並產出 red.md → 藍隊讀取 task.md + red.md 並產出 blue.md → 執行者依紅藍回饋寫入 result.md（狀態 RESULT）→ 管理者 Result Check（狀態 CHECKED）→ BossConfirm（狀態 PASSED）。紅隊與藍隊期間不得修改 task.md、result.md 或其他輸出。
 
 **Red**：確認 `task.md` 工作結論已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + DEPT/*.md → 依部門紅隊規則攻擊工作結論 → 寫入 `red.md`。完成前不得呼叫藍隊。
 

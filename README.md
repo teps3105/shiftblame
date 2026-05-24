@@ -36,7 +36,7 @@ _「這不是我的鍋。」_
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，直到閘門收斂通過。
+同一任務的攻防流程固定序列為：執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，直到閘門收斂通過。
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
 
@@ -85,11 +85,11 @@ L2: 產品管理 → 品保 → 開發 → 工程收尾 → 品管 → 收尾
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→QA | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
-| QA→DEV | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
-| DEV→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| PM→QA | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
+| QA→DEV | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
+| DEV→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
 | 工程收尾→品管 | 管理者確認清理無殘留 → 建立品管任務（邏輯驗證+部署+E2E） |
-| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |

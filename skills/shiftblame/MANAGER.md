@@ -29,7 +29,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → 進入閘門確認。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
+所有部門皆從 001 開始，同一任務固定序列為：執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
 
 任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
@@ -39,16 +39,16 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 產品管理→品保 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
-| 品保→開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
-| 開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 產品管理→品保 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
+| 品保→開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
+| 開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
 | 工程收尾→品管 | 管理者確認清理無殘留 → 建立品管任務（邏輯驗證+部署+E2E） |
-| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 `result.md` 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或品管收尾。
+每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 task.md 開始跑完整序列（工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED）。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或品管收尾。
 
 工程收尾狀態機（開發閘門通過後）：開發通過 → 品管任務（邏輯驗證+部署+E2E）→ 品管通過 → merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
