@@ -25,7 +25,7 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾 |
+| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾（不寫入部門正式產物） |
 | 執行者 | 目前環境 | result.md |
 | 紅隊 | 本環境子代理 | red.md |
 | 藍隊 | 本環境子代理 | blue.md |
@@ -36,25 +36,22 @@ _「這不是我的鍋。」_
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者完成 `result.md` → 管理者呼叫紅隊 → 紅隊寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `SLUG.md`、`task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，重新從 `result.md` 開始，直到閘門收斂通過。
+同一任務的攻防流程固定序列為：執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → 閘門確認。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，直到閘門收斂通過。
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
 
 ```
 L1: 執行 → 收尾
-L2: PM → QA → DEV → QC → 產品現況確認 → 收尾
+L2: 產品管理 → 品保 → 開發 → 工程收尾 → 品管 → 收尾
 ```
 
-## 工作區模式
+## 功能分支
 
-建立任務時選擇工作區模式：
+管理者在第一次進入開發時建立 `feat/<slug>` 功能分支，產品管理和品保不使用功能分支。
 
-| 模式 | 說明 |
-|------|------|
-| `direct` | 直接在主 repo 切分支開發，不額外建工作樹（預設） |
-| `worktree` | 建立獨立 git worktree，產物寫入 `<slug>/worktree/` |
-
-兩種模式皆會建立功能分支，差異僅在是否有獨立工作目錄。
+- 功能分支生命週期：開發開始時建立 → 品管通過後 merge --no-ff 到主分支 → push → 刪除
+- 所有程式碼變更、README.md 更新都在功能分支上
+- `.shiftblame/` 產物不受分支管理（已被 .gitignore 排除）
 
 ## 紅藍隊模式
 
@@ -75,29 +72,33 @@ L2: PM → QA → DEV → QC → 產品現況確認 → 收尾
 
 | 部門 | `result.md` 內容型別 |
 |:----:|:----------------------:|
-| PM | BRD + MRD + PRD |
-| QA | SEC + SOP + SRS |
-| DEV | TPD + TDD + TIR |
-| QC | ATP + ATR + ACR |
+| PM | 需求釐清 + 市場研究 + 產品規格 |
+| QA | 安全標準 + 操作標準 + 系統規格 |
+| DEV | 技術規劃 + 技術設計 + 技術實作 |
+| QC | 驗收計畫 + 驗收報告 + 驗收結論 |
 
-BRD/MRD/PRD、SEC/SOP/SRS、TPD/TDD/TIR、ATP/ATR/ACR 皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
+需求釐清/市場研究/產品規格、安全標準/操作標準/系統規格、技術規劃/技術設計/技術實作、驗收計畫/驗收報告/驗收結論皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
 
-詳見 `DEPT/*.md`。功能開發必須先經 PM 在 `result.md` 產出 BRD、MRD、PRD，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。QA 再依 PM 結果產出 SEC、SOP、SRS，並承擔原 PM 的產品規格、任務拆解與實作規劃職責。進入 DEV 前，管理者必須詢問老闆想先看到 QA 結果中的哪個功能被做出來，並用中文寫明本回合實際開發的可見功能；DEV 必須先在 `result.md` 建立 TPD、TDD、TIR 的前置內容，再依此開發。
+詳見 `DEPT/*.md`。功能開發必須先經產品管理在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品保再依產品管理結果產出安全標準、操作標準、系統規格，並承擔原產品管理的產品規格、任務拆解與實作規劃職責。進入開發前，管理者必須詢問老闆想先看到品保結果中的哪個功能被做出來，並用中文寫明本回合實際開發的可見功能；開發必須先在 `result.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→QA | result → red → blue → `BossConfirm` 老闆確認，QA 退回 → PM 新 NNN |
-| QA→DEV | result → red → blue → `BossConfirm` 老闆確認，DEV 退回 → 上游新 NNN |
-| DEV→QC | result → red → blue → `BossConfirm` 老闆確認，QC 退回 → 上游新 NNN |
-| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況，未通過 → 退回 DEV 或 QC 新 NNN；通過 → 收尾後自動歸檔 slug |
+| PM→QA | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| QA→DEV | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| DEV→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| 工程收尾→品管 | 管理者確認清理無殘留 → 建立品管任務（邏輯驗證+部署+E2E） |
+| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → `BossConfirm` 老闆確認 |
+| 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
+| 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
+| 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
 `BossConfirm` 為跨環境老闆確認機制：支援內建提問工具時使用內建提問工具；一般對話環境則在目前對話中提出明確確認問題並等待使用者回覆。
 
 DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗證結果或下一個想調整的效果；管理者提供 URL/指令/截圖/操作證據與中文摘要。`BossPreview` 不取代正式 `BossConfirm`，也不代表 DEV 閘門通過。
 
-任務發布前若為同部門任務起始、進入下游部門或退回上游部門，管理者必須先說明接下來要做什麼，經 `BossConfirm` 後才可繼續；同部門 `NNN + 1` 迭代不需說明。
+任務發布前若為同部門任務起始、進入下游部門或退回上游部門，管理者必須先說明接下來要做什麼（`PublishConfirm`），經 `BossConfirm` 後才可繼續；同部門 `NNN + 1` 迭代不需說明。
 
 ## 收尾檢查
 
@@ -107,11 +108,11 @@ DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗�
 - 無開發殘留檔案進入主分支，例如 scratch、demo、prototype、debug output、臨時設定。
 - 無測試文件或測試產物進入主分支，除非它們是正式測試資產。
 - 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔。
-- `.shiftblame/`、worktree 專用產物、本地私密設定不納入版本控制。
+- `.shiftblame/`、本地私密設定不納入版本控制。
 - 開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`。
-- `.shiftblame/ROADMAP.md` 只在收尾時更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成 PM/QA/DEV/QC 的工作日誌。
-- README.md 與 REPO.md 已反映最終現況。
-- QC→收尾確認通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
+- `.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌。
+- README.md 已在開發任務中更新並通過紅藍隊審查。
+- 品管閘門通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
 ---
 
@@ -121,7 +122,7 @@ DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗�
 skills/shiftblame/
 ├── SKILL.md          # 框架入口
 ├── GATE.md           # 狀態機閘門定義
-├── MANAGER.md        # 管理者定義（≤50 行）
+├── MANAGER.md        # 管理者定義
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
     ├── PM.md         # 產品部門
@@ -135,7 +136,8 @@ skills/shiftblame/
 ```
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
-├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅收尾整理）
+├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅歸檔後更新）
+├── archive/              # 歷史紀錄（已完成任務）
 └── <slug>/
     ├── SLUG.md           # 本輪開發筆記（開發中唯一工作日誌）
     └── <DEPT>/<NNN>/

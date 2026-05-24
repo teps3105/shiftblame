@@ -21,7 +21,7 @@
 
 ## 本輪筆記
 
-建立新 slug 時，管理者必須先建立 `.shiftblame/<slug>/SLUG.md`，再建立第一份 `task.md`。`SLUG.md` 為結構化流程紀錄，包含五個分類：本輪目標、管線狀態紀錄、殘餘風險與交接事項、BossPreview/退回紀錄、待收尾整理。記錄者為管理者，內容只能追加不得修改或刪除。
+建立新 slug 時，管理者協調建立 `.shiftblame/<slug>/SLUG.md`，再由執行者建立第一份 `task.md`。`SLUG.md` 為結構化流程紀錄，包含五個分類：本輪目標、管線狀態紀錄、殘餘風險與交接事項、BossPreview/退回紀錄、待收尾整理。記錄者為管理者，內容只能追加不得修改或刪除。
 
 `SLUG.md` 的生命週期：建立時產生 → 開發中持續追加 → 歸檔後作為歷史紀錄保留。
 
@@ -29,7 +29,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：執行者 `result.md` → 呼叫紅隊 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`result.md`、`red.md` 並寫出 `blue.md` → 進入閘門確認。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
+所有部門皆從 001 開始，同一任務固定序列為：執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → 進入閘門確認。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
 
 任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
@@ -42,7 +42,7 @@
 | 產品管理→品保 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
 | 品保→開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
 | 開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
-| 工程收尾→品管 | 管理者確認：(1) 部署已執行或已記錄跳過原因 (2) 清理無殘留清單全部通過 → 建立品管任務 |
+| 工程收尾→品管 | 管理者確認清理無殘留 → 建立品管任務（邏輯驗證+部署+E2E） |
 | 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
@@ -50,7 +50,7 @@
 
 每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 `result.md` 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或品管收尾。
 
-工程收尾狀態機（開發閘門通過後）：開發通過 → 部署（若涉及可執行程式或 Web 服務則部署，否則跳過並記錄）→ 清理（確認無殘留）→ 品管任務（含 README.md 更新）→ 品管通過 → merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
+工程收尾狀態機（開發閘門通過後）：開發通過 → 品管任務（邏輯驗證+部署+E2E）→ 品管通過 → merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
 DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，老闆可要求觀看目前變化、追加小調整或指定下一個想看的功能。管理者需即時啟動或更新可操作作品，提供 URL/指令/截圖/操作結果與簡短驗證結論；若老闆提出新方向，先用中文確認本回合新增或改動的可見效果，再繼續 DEV。`BossPreview` 不需要紅藍隊，也不代表 DEV 閘門通過。
 
@@ -69,9 +69,9 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 收尾
 
-品管閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 14、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回開發或品管新 NNN。
+品管閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回開發或品管新 NNN。
 
-收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/` 不納入版本控制；README.md 已在品管任務中更新並通過紅藍隊審查。
+收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/` 不納入版本控制；README.md 已在開發任務中更新並通過紅藍隊審查。
 
 ## task.md / 支援與版本
 

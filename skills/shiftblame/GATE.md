@@ -24,7 +24,7 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──exec──→ EXECUT
 工程收尾狀態機：
 
 ```
-DEV_PASSED ──deploy──→ DEPLOYED ──cleanup──→ CLEANED ──QC任務──→ QC_PASSED ──merge──→ MERGED ──push──→ PUSHED ──archive──→ ARCHIVED ──update──→ UPDATED
+DEV_PASSED ──QC任務──→ QC_PASSED ──merge──→ MERGED ──push──→ PUSHED ──archive──→ ARCHIVED ──update──→ UPDATED
 ```
 
 ## 閘門定義
@@ -133,7 +133,7 @@ ROADMAP.md 模板：
 
 `SLUG.md` 是本輪開發筆記，建立新 slug 的第一個 `task.md` 前必須存在。它只承載開發中的工作日誌，不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`，也不得在收尾前整理進 ROADMAP。
 
-**QA 前置 PM**：若目標部門為 QA，管理者必須先確認同 slug 的 PM 已通過，並把 PM 結論寫入 `task.md` 的「上游輸入」。PM 結論至少包含：
+**QA 前置 PM**：若目標部門為 QA，管理者必須先確認同 slug 的 PM 已通過，並以 prompt 提供 PM 結論摘要，由執行者寫入 `task.md` 的「上游輸入」。PM 結論至少包含：
 
 - 本輪使用者想實現的功能。
 - 現有 repo、REPO.md、ROADMAP.md 中與本輪相關的背景。
@@ -141,9 +141,9 @@ ROADMAP.md 模板：
 - ROADMAP 中可參考但不得自動納入本輪的項目。
 - 建立 QA 標準前需要採納或排除的市場研究、通用方法、設計模式、CVE 或版本差異。
 
-**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 QA 結果中選擇的功能，並把「本回合實際開發的可見功能」寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
+**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 QA 結果中選擇的功能，由執行者寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
-**功能分支**：功能分支在第一次進入開發時建立（見操作標準 15）。管理者建立第一個開發 task.md 後、開發執行者開始工作前，執行 `git checkout -b feat/<slug>` 建立功能分支並切換。產品管理和品保階段不需要功能分支。
+**功能分支**：功能分支在第一次進入開發時建立（見操作標準 15）。執行者建立第一個開發 task.md 後、管理者執行 `git checkout -b feat/<slug>` 建立功能分支並切換。產品管理和品保階段不需要功能分支。
 
 **紅藍隊模式**：固定使用本環境子代理。建立 task.md 時將 `review` 寫為 `local`，同一 slug 後續任務沿用此值。
 
@@ -233,10 +233,10 @@ created: <ISO timestamp>
 
 **順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
 
-1. 管理者或執行者完成 `result.md`。EXECUTED 狀態代表工作結論已寫入 task.md，等待紅隊。紅隊攻擊的對象是 task.md 中的工作結論，不是 result.md。
-2. `result.md` 存在且格式有效後，才呼叫紅隊產出 `red.md`。
-3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`result.md`、`red.md` 後寫出攻防對照報告。
-4. `result.md`、`red.md`、`blue.md` 三檔皆存在且格式有效後，才進入 RESULT 並詢問老闆。
+1. 執行者完成工作結論並寫入 task.md（狀態 EXECUTED）。紅隊攻擊的對象是 task.md 中的工作結論。
+2. task.md 工作結論存在且格式有效後，才呼叫紅隊產出 `red.md`。紅隊攻擊 task.md 工作結論。
+3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`red.md` 後寫出攻防對照報告。藍隊不讀取 result.md（尚未產出）。
+4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 result.md，進入 RESULT 並詢問老闆。
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。
 
