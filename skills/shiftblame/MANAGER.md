@@ -58,6 +58,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 退回同部門 → 同部門 NNN + 1 修正。
 退回上游部門 → 上游部門 NNN + 1 修正。
+品管例外 → 品管一律退回開發新 NNN（品管不修改程式碼）。
 
 合併衝突處理：
 - 文件衝突（README.md 等）→ 管理者直接解決，不需重新品管
@@ -71,7 +72,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 品管閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回開發新 NNN（品管不修改程式碼）。
 
-收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/` 不納入版本控制；README.md 已在開發任務中更新並通過紅藍隊審查。
+收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在開發任務中更新並通過紅藍隊審查；品管閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
 ## task.md / 支援與版本
 
