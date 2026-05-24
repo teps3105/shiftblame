@@ -16,8 +16,8 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──exec──→ EXECUT
 | EXECUTED | 執行者工作結論已寫入 task.md，等待紅隊 | `<slug>/<DEPT>/<NNN>/task.md`（含工作結論） |
 | RED | 紅隊產出完成，等待藍隊 | `task.md`（含工作結論）+ `red.md` |
 | BLUE | 藍隊產出完成，等待結果彙整 | `task.md`（含工作結論）+ `red.md` + `blue.md` |
-| RESULT | 三方產出齊全，待品管檢查 | `task.md`（含工作結論）+ `result.md` + `red.md` + `blue.md` |
-| CHECKED | 品管檢查完成，待老闆確認 | — |
+| RESULT | 三方產出齊全，待閘門確認 | `task.md`（含工作結論）+ `result.md` + `red.md` + `blue.md` |
+| CHECKED | 閘門檢查完成，待老闆確認 | — |
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
@@ -236,7 +236,9 @@ created: <ISO timestamp>
 1. 執行者完成工作結論並寫入 task.md（狀態 EXECUTED）。紅隊攻擊的對象是 task.md 中的工作結論。
 2. task.md 工作結論存在且格式有效後，才呼叫紅隊產出 `red.md`。紅隊攻擊 task.md 工作結論。
 3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`red.md` 後寫出攻防對照報告。藍隊不讀取 result.md（尚未產出）。
-4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 result.md，進入 RESULT 並詢問老闆。
+4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 result.md，進入 RESULT。
+5. 管理者執行 Result Check（檢查三檔齊全且格式有效），通過後進入 CHECKED。
+6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。
 
@@ -264,6 +266,7 @@ created: <ISO timestamp>
 
 - 退回同部門：同部門 NNN + 1 修正
 - 退回上游部門：上游部門 NNN + 1 修正
+- 品管例外：品管一律退回開發新 NNN（品管不修改程式碼）
 - 不得自行修改 result.md、red.md 或 blue.md
 - 退回確認必須與閘門確認分離，不得合併
 - 藍隊判定 FAIL 時，歸屬判斷由紅隊攻擊點和藍隊分析共同決定退回目標部門
