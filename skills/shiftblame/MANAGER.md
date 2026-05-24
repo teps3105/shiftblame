@@ -68,6 +68,36 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 - 選項 A：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → 驗收上線任務 → 驗收上線通過後 merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。驗收上線退回則老闆再次選擇。
 - 選項 B：全部捨棄。放棄功能分支上的所有變更。
 
+## 流程保護
+
+### 跳步防護
+
+管理者在狀態機轉移時，必須驗證前一狀態的產物存在且格式有效。驗證不通過則中止轉移。
+
+**EXECUTED → RED**：驗證 task.md 包含工作結論段落（標題存在且內容非空）。不通過 → 要求執行者先完成工作結論。
+
+**RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊產出 red.md。
+
+**BLUE → RESULT**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊產出 blue.md。
+
+**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 result.md 產出、Result Check、BossConfirm 直接建立 NNN+1 任務。必須走完 result.md → Result Check → BossConfirm 流程，退回與否由 BossConfirm 決定。
+
+### Commit 閘門
+
+DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾淨：不存在未追蹤檔案、已追蹤但未暫存修改、已暫存但未提交。驗證不通過 → 中止紅隊呼叫，要求 DEV 執行者先 commit 所有變更。PM 和 QA 階段不適用此閘門。
+
+### 工作目錄鎖定
+
+紅藍隊期間（EXECUTED → RED 轉移至 BLUE 完成），管理者不得進行任何會修改工作目錄中已追蹤檔案的操作。唯一例外：更新 SLUG.md 的「管線狀態紀錄」段落和「BossPreview / 退回紀錄」段落。
+
+紅隊子代理只可寫入 red.md，藍隊子代理只可寫入 blue.md，不得建立、修改、追加或覆蓋任何其他檔案（無論是否已追蹤）。
+
+紅隊報告中發現問題時，管理者不得直接修復。必須繼續藍隊流程。若需修復，開新 NNN。
+
+### 派工隔離
+
+管理者在派工 prompt 中不得引用 GATE.md 狀態定義表（該表包含 RESULT 狀態和 result.md 字樣）。GATE.md 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
+
 ## 收尾
 
 驗收上線閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回產品開發新 NNN（驗收上線不修改程式碼）。
