@@ -102,7 +102,7 @@ DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗�
 
 ## 收尾檢查
 
-收尾前必須確認下列項目，不符合則退回 DEV 或 QC 新 NNN：
+收尾前必須確認下列項目，不符合則退回開發新 NNN（品管不修改程式碼）：
 
 - 無殭屍程序、背景 dev server、測試服務或未關閉的 watcher。
 - 無開發殘留檔案進入主分支，例如 scratch、demo、prototype、debug output、臨時設定。

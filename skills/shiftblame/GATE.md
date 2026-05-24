@@ -14,9 +14,9 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──exec──→ EXECUT
 | READY | 可開始任務 | `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md` |
 | TASK | 任務已建立 | `<slug>/SLUG.md` + `<slug>/<DEPT>/<NNN>/task.md` |
 | EXECUTED | 執行者工作結論已寫入 task.md，等待紅隊 | `<slug>/<DEPT>/<NNN>/task.md`（含工作結論） |
-| RED | 紅隊產出完成，等待藍隊 | `result.md` + `red.md` |
-| BLUE | 藍隊產出完成，等待結果彙整 | `result.md` + `red.md` + `blue.md` |
-| RESULT | 三方產出齊全，待品管檢查 | `result.md` + `red.md` + `blue.md` |
+| RED | 紅隊產出完成，等待藍隊 | `task.md`（含工作結論）+ `red.md` |
+| BLUE | 藍隊產出完成，等待結果彙整 | `task.md`（含工作結論）+ `red.md` + `blue.md` |
+| RESULT | 三方產出齊全，待品管檢查 | `task.md`（含工作結論）+ `result.md` + `red.md` + `blue.md` |
 | CHECKED | 品管檢查完成，待老闆確認 | — |
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
