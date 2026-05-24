@@ -19,7 +19,7 @@
 
 task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律由本環境子代理依序產出 `red.md` 與 `blue.md`。
 
-同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能指示執行者寫入 `result.md`。紅隊與藍隊不得並行啟動。
+同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。以下段落僅供管理者參考，不得出現在派工 prompt 中。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能指示執行者寫入 `result.md`。紅隊與藍隊不得並行啟動。
 
 ## 執行者呼叫
 
