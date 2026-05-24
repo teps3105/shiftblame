@@ -7,7 +7,7 @@
 
 ## 溝通
 
-全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。對老闆說明時必須使用繁體中文、具體、可感知的作品語言；優先描述「這回合會做出什麼、老闆會看到什麼、可以怎麼試、哪裡已經驗證」。不得用 DAG、API、TPD、lint、schema、refactor 等技術術語包裝成確認內容；若必須提及，放在次要補充。
+全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。對老闆說明時必須使用繁體中文、具體、可感知的作品語言；優先描述「這回合會做出什麼、老闆會看到什麼、可以怎麼試、哪裡已經驗證」。不得用 DAG、API、技術規劃文件、lint、schema、refactor 等技術術語包裝成確認內容；若必須提及，放在次要補充。
 
 ## 決策
 
@@ -17,11 +17,13 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→BRD+MRD+PRD、QA→SEC+SOP+SRS、DEV→TPD+TDD+TIR、QC→ATP+ATR+ACR，且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格、QA→安全標準+操作標準+系統規格、DEV→技術規劃+技術設計+技術實作、QC→驗收計畫+驗收報告+驗收結論，且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
 
 ## 本輪筆記
 
-建立新 slug 時，管理者必須先建立 `.shiftblame/<slug>/SLUG.md`，再建立第一份 `task.md`。`SLUG.md` 是本輪開發中的唯一工作日誌，用來記錄本輪目標、開發中筆記、BossPreview 回饋、退回原因、跨部門遺留事項與收尾時需要整理到 REPO.md 或 ROADMAP.md 的候選內容。
+建立新 slug 時，管理者必須先建立 `.shiftblame/<slug>/SLUG.md`，再建立第一份 `task.md`。`SLUG.md` 為結構化流程紀錄，包含五個分類：本輪目標、管線狀態紀錄、殘餘風險與交接事項、BossPreview/退回紀錄、待收尾整理。記錄者為管理者，內容只能追加不得修改或刪除。
+
+`SLUG.md` 的生命週期：建立時產生 → 開發中持續追加 → 歸檔後作為歷史紀錄保留。
 
 `SLUG.md` 不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`。部門正式產物仍寫入各自任務目錄；但任何還沒完成、還在爭議中、只屬於本輪流程的待辦，不得寫入 ROADMAP。ROADMAP 只能在 QC 收尾通過後，從 `SLUG.md` 與實際完成結果整理成穩定產品路線。
 
@@ -31,31 +33,45 @@
 
 任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
-進入 DEV 前，管理者必須先詢問老闆：「QA 結果裡面，你想先看到哪個功能被做出來？」並提供 2-5 個以作品效果描述的候選功能。老闆選定後，DEV task.md 的目標必須用中文寫成本回合實際開發的可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `result.md` 建立 TPD、TDD、TIR 的前置內容，才能開始修改程式碼。
+進入 DEV 前，管理者必須先詢問老闆：「QA 結果裡面，你想先看到哪個功能被做出來？」並提供 2-5 個以作品效果描述的候選功能。老闆選定後，DEV task.md 的目標必須用中文寫成本回合實際開發的可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `result.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
 ## 管線
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→QA | result → red → blue → `BossConfirm` 老闆確認 |
-| QA→DEV | result → red → blue → `BossConfirm` 老闆確認 |
-| DEV→QC | result → red → blue → `BossConfirm` 老闆確認 |
-| QC→收尾 | 實際啟動產品，提供 URL/指令/截圖或操作證據 → `BossConfirm` 老闆確認現況；通過後收尾並自動歸檔 slug |
+| 產品管理→品保 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 品保→開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 工程收尾→品管 | 管理者確認：(1) 部署已執行或已記錄跳過原因 (2) 清理無殘留清單全部通過 → 建立品管任務 |
+| 品管→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → BossConfirm |
+| 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
+| 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
+| 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 `result.md` 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或 QC 收尾。
+每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 `result.md` 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或品管收尾。
+
+工程收尾狀態機（開發閘門通過後）：開發通過 → 部署（若涉及可執行程式或 Web 服務則部署，否則跳過並記錄）→ 清理（確認無殘留）→ 品管任務（含 README.md 更新）→ 品管通過 → merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
 DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，老闆可要求觀看目前變化、追加小調整或指定下一個想看的功能。管理者需即時啟動或更新可操作作品，提供 URL/指令/截圖/操作結果與簡短驗證結論；若老闆提出新方向，先用中文確認本回合新增或改動的可見效果，再繼續 DEV。`BossPreview` 不需要紅藍隊，也不代表 DEV 閘門通過。
 
 ## 退回
 
-退回同部門 →  同部門 NNN + 1 修正 。
+退回同部門 → 同部門 NNN + 1 修正。
 退回上游部門 → 上游部門 NNN + 1 修正。
+
+合併衝突處理：
+- 文件衝突（README.md 等）→ 管理者直接解決，不需重新品管
+- 程式碼邏輯衝突 → 中止 merge，退回開發新 NNN，解決衝突後重新走工程收尾+品管
+
+老闆強制停止：
+- 選項 A：commit 後強制收尾。跳過尚未完成的管線步驟，直接進入工程收尾（部署→清理）→ 品管任務 → 品管通過後 merge → push → 歸檔 → 更新 REPO.md/ROADMAP.md。品管退回則老闆再次選擇。
+- 選項 B：全部捨棄。放棄功能分支上的所有變更。
 
 ## 收尾
 
-QC→收尾閘門通過後，執行收尾檢查 → squash merge 前整理 `SLUG.md` 並更新 README.md、REPO.md 和 ROADMAP.md → squash merge → push → 若 workspace=worktree 則刪 worktree → 刪分支 → 搬移 slug 至 .shiftblame/archive/。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回 DEV 或 QC 新 NNN。
+品管閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 14、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回開發或品管新 NNN。
 
-收尾檢查清單：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留進入主分支；無非正式測試文件或測試產物進入主分支；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、worktree 專用產物（worktree 模式）、本地私密設定不納入版本控制；README.md 與 REPO.md 已反映最終現況；`SLUG.md` 的開發中筆記、BossPreview 回饋、退回原因與本輪臨時待辦已完成整理；ROADMAP 只記錄收尾後仍成立的完成摘要、穩定產品路線與後續候選，不包含 PM/QA/DEV/QC 流程待辦，不得建立 `docs/` 或其他會推送到遠端的計畫文件。
+收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/` 不納入版本控制；README.md 已在品管任務中更新並通過紅藍隊審查。
 
 ## task.md / 支援與版本
 

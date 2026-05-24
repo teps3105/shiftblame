@@ -5,7 +5,7 @@
 ## 狀態與轉移
 
 ```
-UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESULT ──red──→ RED ──blue──→ GATE ──confirm──→ PASSED ──next/archive──→ READY/ARCHIVED
+UNINIT ──G0──→ READY ──G1──→ TASK ──exec──→ EXECUTED ──red──→ RED ──blue──→ BLUE ──result──→ RESULT ──check──→ CHECKED ──confirm──→ PASSED ──next/archive──→ READY/ARCHIVED
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -13,11 +13,19 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESU
 | UNINIT | 尚未初始化 | 無 |
 | READY | 可開始任務 | `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md` |
 | TASK | 任務已建立 | `<slug>/SLUG.md` + `<slug>/<DEPT>/<NNN>/task.md` |
-| RESULT | 執行者產出完成，等待紅隊 | `result.md` |
+| EXECUTED | 執行者工作結論已寫入 task.md，等待紅隊 | `<slug>/<DEPT>/<NNN>/task.md`（含工作結論） |
 | RED | 紅隊產出完成，等待藍隊 | `result.md` + `red.md` |
-| GATE | 三方產出齊全，待老闆確認 | `result.md` + `red.md` + `blue.md` |
+| BLUE | 藍隊產出完成，等待結果彙整 | `result.md` + `red.md` + `blue.md` |
+| RESULT | 三方產出齊全，待品管檢查 | `result.md` + `red.md` + `blue.md` |
+| CHECKED | 品管檢查完成，待老闆確認 | — |
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
+
+工程收尾狀態機：
+
+```
+DEV_PASSED ──deploy──→ DEPLOYED ──cleanup──→ CLEANED ──QC任務──→ QC_PASSED ──merge──→ MERGED ──push──→ PUSHED ──archive──→ ARCHIVED ──update──→ UPDATED
+```
 
 ## 閘門定義
 
@@ -67,6 +75,8 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──result──→ RESU
 | 空目錄（無檔案） | 先 `git init`，再自動建立 |
 | 非 git repo 且非空 | BLOCK：請先執行 `git init` |
 
+確認 REPO.md 和 ROADMAP.md 格式。若任一文件不符合標準格式（見操作標準 17），管理者整理為標準格式後繼續。REPO.md 標準格式：專案現狀、已完成功能、技術棧、架構演進。ROADMAP.md 標準格式：產品方向、後續計畫、已知問題、待改進項目。模板見系統規格 31 和系統規格 32。
+
 REPO.md 模板：
 
 ```markdown
@@ -74,13 +84,16 @@ REPO.md 模板：
 
 > 本地私密，不納入版本控制
 
-## 概述
+## 專案現狀
+
+
+## 已完成功能
 
 
 ## 技術棧
 
 
-## 已知問題
+## 架構演進
 
 ```
 
@@ -93,16 +106,22 @@ ROADMAP.md 模板：
 
 ## 原則
 
-- ROADMAP 只在功能收尾時更新，記錄穩定產品路線、完成摘要與後續候選。
+- ROADMAP 只在歸檔後更新，記錄穩定產品路線、後續候選與待改進項目。
+- REPO.md 記錄「完成了什麼」，ROADMAP.md 記錄「未來預計要做什麼」。語意不可交叉。
 - 開發中的工作筆記、臨時待辦、退回原因、BossPreview 回饋與本輪決策一律寫入 `.shiftblame/<slug>/SLUG.md`。
 - 不得邊開發邊把 PM/QA/DEV/QC 流程待辦寫進 ROADMAP。
 - 不得把 ROADMAP 內容當成本輪必做功能來源；本輪範圍永遠以使用者本輪明確想實現的功能為準。
-- 遠端倉庫只保留正式文件與已完成現況，不推送開發計畫。
 
-## 後續候選
+## 產品方向
 
 
-## 已完成
+## 後續計畫
+
+
+## 已知問題
+
+
+## 待改進項目
 
 ```
 
@@ -124,12 +143,7 @@ ROADMAP.md 模板：
 
 **DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 QA 結果中選擇的功能，並把「本回合實際開發的可見功能」寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
-**工作區模式**：建立新 slug 的第一個 task.md 時，管理者以 `BossConfirm` 詢問老闆選擇工作區模式；若老闆沒有特別指定，預設使用 `direct`。
-
-| 模式 | 說明 |
-|------|------|
-| `direct` | 直接在主 repo 切分支開發，不額外建工作樹（預設） |
-| `worktree` | 建立 git worktree，所有產物寫入 `<slug>/worktree/` |
+**功能分支**：功能分支在第一次進入開發時建立（見操作標準 15）。管理者建立第一個開發 task.md 後、開發執行者開始工作前，執行 `git checkout -b feat/<slug>` 建立功能分支並切換。產品管理和品保階段不需要功能分支。
 
 **紅藍隊模式**：固定使用本環境子代理。建立 task.md 時將 `review` 寫為 `local`，同一 slug 後續任務沿用此值。
 
@@ -152,20 +166,35 @@ updated: <ISO timestamp>
 
 # <slug> — 本輪開發筆記
 
-## 本輪目標
+## 1. 本輪目標
 
 
-## 開發中筆記
+## 2. 管線狀態紀錄
 
 
-## BossPreview / 退回紀錄
+## 3. 殘餘風險與交接事項
 
 
-## 待收尾整理
+## 4. BossPreview / 退回紀錄
+
+
+## 5. 待收尾整理
 
 - REPO.md：
 - ROADMAP.md：
 ```
+
+SLUG.md 分類規則：
+
+| 分類 | 記錄時機 | 記錄者 |
+|------|----------|--------|
+| 1. 本輪目標 | 建立 slug 時 | 管理者 |
+| 2. 管線狀態紀錄 | 各部門閘門通過後 | 管理者 |
+| 3. 殘餘風險與交接事項 | 各部門閘門通過後、管理者整理殘餘風險時 | 管理者 |
+| 4. BossPreview / 退回紀錄 | BossPreview 回饋或退回事件發生時 | 管理者 |
+| 5. 待收尾整理 | 各部門閘門通過後、管理者整理候選內容時 | 管理者 |
+
+待收尾整理歸檔後從此分類轉移至 REPO.md/ROADMAP.md，轉移完成的項目標註「→ 已整理」。
 
 task.md 模板：
 
@@ -176,7 +205,6 @@ dept: <DEPT>
 task: <NNN>
 version: 0.1.0
 status: pending
-workspace: direct | worktree
 review: local
 created: <ISO timestamp>
 ---
@@ -205,12 +233,12 @@ created: <ISO timestamp>
 
 **順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
 
-1. 管理者或執行者完成 `result.md`。
+1. 管理者或執行者完成 `result.md`。EXECUTED 狀態代表工作結論已寫入 task.md，等待紅隊。紅隊攻擊的對象是 task.md 中的工作結論，不是 result.md。
 2. `result.md` 存在且格式有效後，才呼叫紅隊產出 `red.md`。
 3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`result.md`、`red.md` 後寫出攻防對照報告。
-4. `result.md`、`red.md`、`blue.md` 三檔皆存在且格式有效後，才進入 GATE 並詢問老闆。
+4. `result.md`、`red.md`、`blue.md` 三檔皆存在且格式有效後，才進入 RESULT 並詢問老闆。
 
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/BRD+MRD+PRD、QA/SEC+SOP+SRS、DEV/TPD+TDD+TIR、QC/ATP+ATR+ACR；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示 TPD、TDD、TIR 的前置內容先於實作建立，否則不得進入審查。
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。
 
 | 情境 | 動作 |
 |------|------|
@@ -221,18 +249,44 @@ created: <ISO timestamp>
 | 缺對應內容型別或另建產物檔替代 `result.md` | BLOCK：重寫 `result.md`，不得跳過該輪 |
 | 檔案為空、無 YAML frontmatter、或格式無效 | BLOCK：重派對應員工，不得跳過該輪 |
 
+### 退回觸發條款
+
+各部門退回觸發條件：
+
+| 部門 | 退回觸發條款 |
+|------|------------|
+| 產品管理 | 研究結論不足以支撐品保建標準 |
+| 品保 | 標準或規格不明確、無法支撐開發建立技術規劃/設計/實作 |
+| 開發 | 功能不符合規格、存在功能性錯誤、安全漏洞、效能不達標 |
+| 品管 | 功能性錯誤、安全漏洞、規格不一致 |
+
+退回規則：
+
+- 退回同部門：同部門 NNN + 1 修正
+- 退回上游部門：上游部門 NNN + 1 修正
+- 不得自行修改 result.md、red.md 或 blue.md
+- 退回確認必須與閘門確認分離，不得合併
+- 藍隊判定 FAIL 時，歸屬判斷由紅隊攻擊點和藍隊分析共同決定退回目標部門
+
 ### G3 — 歸檔
 
 **時機**：QC 閘門通過並收尾後。
 
-**動作**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
+歸檔前必須確認：merge --no-ff 已完成、push 完成、功能分支已刪除。
+
+歸檔動作：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
 
 | 情境 | 動作 |
 |------|------|
 | 歸檔目錄已有同名 slug | 附加時間戳：`<slug>_<YYYYMMDDTHHMMSS>` |
-| git worktree 分支仍存在 | 僅 worktree 模式：警告但允許繼續歸檔；direct 模式不適用 |
 
-歸檔前必須先整理 `.shiftblame/<slug>/SLUG.md`：將本輪實際完成結果寫入 `.shiftblame/REPO.md`，只把確認仍有效的後續候選與完成摘要整理進 `.shiftblame/ROADMAP.md`。ROADMAP 只能在收尾時更新，不得收納 PM/QA/DEV/QC 流程待辦、開發中筆記、退回原因或臨時檢查清單；也不得把既有 ROADMAP 規劃重寫成本輪已實現或本輪必做內容。禁止把待辦事項或未來路線圖寫入 `docs/`、README 的未來計畫章節，或其他會推送到遠端的文件。
+歸檔後更新 REPO.md 和 ROADMAP.md（見操作標準 13、安全標準 16、安全標準 20）。管理者從 `.shiftblame/archive/<slug>/SLUG.md` 提取「待收尾整理」內容：
+
+- REPO.md 加入已完成功能、架構變更、技術棧更新
+- ROADMAP.md 加入後續計畫、已知問題、待改進項目
+- 兩份文件語意不可交叉，只在歸檔後更新
+
+禁止把待辦事項或未來路線圖寫入 `docs/`、README 的未來計畫章節，或其他會推送到遠端的文件。
 
 ## 管理者職責
 

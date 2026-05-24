@@ -6,7 +6,11 @@
 
 ## 執行者規則
 
-執行端到端驗證，工具選擇依實際環境決定（CLI / API / chrome-devtools-mcp 等）。主導驗證流程，協調紅隊與藍隊的攻擊與防禦驗證。確認三方至少各有一個邊緣案例或攻擊路徑實際跑通。`result.md` 必須包含三段：ATP（Acceptance Test Plan）、ATR（Acceptance Test Report）、ACR（Acceptance Completion Record）。不得建立 `ATP.md`、`ATR.md` 或 `ACR.md`；內容必須彙整驗收計畫、實測證據、完成紀錄與 PASS/FAIL 判定。
+執行端到端驗證，工具選擇依實際環境決定（CLI / API / chrome-devtools-mcp 等）。主導驗證流程，協調紅隊與藍隊的攻擊與防禦驗證。確認三方至少各有一個邊緣案例或攻擊路徑實際跑通。`result.md` 必須包含三段：驗收計畫、驗收報告、驗收結論。不得建立 `驗收計畫.md`、`驗收報告.md` 或 `驗收結論.md`；內容必須彙整驗收計畫、實測證據、完成紀錄與 PASS/FAIL 判定。
+
+品管同時負責在功能分支上更新 README.md，使 README.md 反映本輪功能的最終現況。README.md 屬於專案說明文件，不屬於品管退回觸發條款中的「實作產物」。README.md 的更新是品管工作的正式產出，與程式碼驗證同等重要，納入紅藍隊審查範圍（見安全標準 19、操作標準 16）。
+
+品管退回觸發條款：不得自行修改程式碼、設定檔或任何實作產物（README.md 除外）。README.md 的修改在退回時保留在功能分支上，不做還原。
 
 ## 紅隊規則
 
