@@ -19,7 +19,7 @@
 
 task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律由本環境子代理依序產出 `red.md` 與 `blue.md`。
 
-同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊。紅隊與藍隊不得並行啟動。
+同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能指示執行者寫入 `result.md`。紅隊與藍隊不得並行啟動。
 
 ## 執行者呼叫
 
@@ -58,14 +58,14 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 所有面向老闆的內容都必須預設老闆不懂技術：用繁體中文、作品效果、可操作步驟與驗證結果描述，不得用技術術語包裝。技術細節可放在「內部備註」或「實作紀錄」，不可取代功能描述。
 
-**Result**：用 UTF-8 shell 讀取 `SLUG.md` + task.md + DEPT/*.md → 依部門執行者規則執行 → 主要正式產出只寫入 `result.md`；必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。`result.md` 內容必須承載該部門三段式產物：專案計畫/需求釐清+市場研究+產品規格、品質保證/安全標準+操作標準+系統規格、產品開發/技術規劃+技術設計+技術實作、驗收上線/驗收計畫+驗收報告+驗收結論。不得建立同名 `.md` 檔替代 `result.md`。完成前不得呼叫紅隊或藍隊。產品開發例外要求更嚴：必須先把技術規劃、技術設計、技術實作的前置內容寫入 `task.md`，再開始程式碼實作。
+**Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/executor-task.md` → 依部門執行者工作結論規則執行 → 寫入 task.md 工作結論（狀態 EXECUTED）。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。產品開發要求更嚴：必須先把技術規劃、技術設計、技術實作的前置內容寫入 `task.md`，再開始程式碼實作。
 
 SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄、（3）殘餘風險與交接事項、（4）BossPreview / 退回紀錄、（5）待收尾整理。分類規則見 GATE.md SLUG.md 模板。執行者不得將這些內容寫入 REPO.md 或 ROADMAP.md。
 
-工作結論寫入 task.md（狀態 EXECUTED）→ 紅隊攻擊 task.md 工作結論並產出 red.md → 藍隊讀取 task.md + red.md 並產出 blue.md → 執行者依紅藍回饋寫入 result.md（狀態 RESULT）→ 管理者 Result Check（狀態 CHECKED）→ BossConfirm（狀態 PASSED）。紅隊與藍隊期間不得修改 task.md、result.md 或其他輸出。
+**Red**：確認 `task.md` 工作結論已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/red.md` → 依部門紅隊規則攻擊工作結論 → 寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 red.md，不得修改其他已追蹤檔案。
 
-**Red**：確認 `task.md` 工作結論已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + DEPT/*.md → 依部門紅隊規則攻擊工作結論 → 寫入 `red.md`。完成前不得呼叫藍隊。
+**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + `DEPT/<DEPT>/blue.md` → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 blue.md，不得修改其他已追蹤檔案。
 
-**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + DEPT/*.md → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。
+**Executor Result**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/executor-result.md` → 依部門執行者結果產出規則執行 → 寫入 `result.md`（狀態 RESULT）。不得建立同名 `.md` 檔替代 `result.md`。
 
 所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。

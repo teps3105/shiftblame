@@ -308,4 +308,4 @@ created: <ISO timestamp>
 
 安裝 shiftblame 技能後，在主開發環境的全域入口檔寫入 managed block。
 
-每個 block 包含：觸發關鍵字、技能入口路徑、角色映射表、讀取規則（Windows PowerShell 讀取技能與 `.shiftblame/` Markdown 時必須使用 `Get-Content -Encoding UTF8`）。以 `<!-- BEGIN/END shiftblame:<label> -->` 標記，更新時只替換標記內容，不動其他區段。
+每個 block 僅包含一行：載入技能的指令（如 `load shiftblame skills` 或等價觸發語句）。角色映射、讀取規則等資訊全部由 SKILL.md 承載。以 `<!-- BEGIN/END shiftblame:<label> -->` 標記，更新時只替換標記內容，不動其他區段。
