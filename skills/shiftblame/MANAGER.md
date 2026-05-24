@@ -41,7 +41,7 @@
 |:----:|------|
 | 專案計畫→品質保證 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
 | 品質保證→產品開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
-| 開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
+| 產品開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
 | 驗收上線→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
