@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: '開始','start','開工','動工','go','begin'; or multi-agent workflow."
+description: "AI Agents 協作框架。Use when: any shiftblame keyword detected (開始/start/開工/動工/go/begin, PM/QA/DEV/QC, 專案計畫/品質保證/產品開發/驗收上線, 管理者/執行者/紅隊/藍隊, BossConfirm/BossPreview/PublishConfirm, 閘門/攻防/退回/歸檔, task.md/result.md/red.md/blue.md/SLUG.md, EXECUTED/RED/BLUE/RESULT/CHECKED/PASSED)."
 ---
 # shiftblame — AI Agents 協作框架
 使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
