@@ -157,7 +157,24 @@ skills/shiftblame/
 # 範例：將技能連結到主開發環境的 skills 目錄
 mkdir -p ~/.local/share/agent-skills
 ln -s ~/shiftblame/skills/shiftblame ~/.local/share/agent-skills/shiftblame
+```
 
+### 指令安裝
+
+框架提供三個指令：`/fail`、`/pass`、`/clean`，定義於 `commands/` 目錄。透過 symlink 連結到各 AI 環境的指令目錄即可使用。
+
+**Claude**：
+
+```bash
+# Claude 使用 commands/ 目錄
+ln -s ~/shiftblame/commands/ ~/.claude/commands/shiftblame
+```
+
+**Codex**：
+
+```bash
+# Codex 使用 prompts/ 目錄
+ln -s ~/shiftblame/commands/ ~/codex/prompts/shiftblame
 ```
 
 安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發環境的全域入口檔寫入 managed block。重啟對應環境讓新技能被載入。
