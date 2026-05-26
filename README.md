@@ -81,7 +81,7 @@ L2: 專案計畫 → 品質保證 → 產品開發 → 工程收尾 → 驗收�
 
 需求釐清/市場研究/產品規格、安全標準/操作標準/系統規格、技術規劃/技術設計/技術實作、驗收計畫/驗收報告/驗收結論皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
 
-詳見 `DEPT/*.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
+詳見 `DEPT/<DEPT>/L1-L4.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
 
 `DEV/001` 只能建立實作前計畫與影響範圍，不得修改程式碼、正式文件、設定、部署或 git 狀態。`QC/001` 只能建立驗收前計畫與驗收範圍，不得直接開始測試或驗收。
 
@@ -129,10 +129,26 @@ skills/shiftblame/
 ├── MANAGER.md        # 管理者定義
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
-    ├── PM.md         # 專案計畫部門
-    ├── QA.md         # 品質保證部門
-    ├── DEV.md        # 產品開發部門
-    └── QC.md         # 驗收上線部門
+    ├── PM/
+    │   ├── L1.md     # 專案計畫執行者工作結論
+    │   ├── L2.md     # 專案計畫紅隊
+    │   ├── L3.md     # 專案計畫藍隊
+    │   └── L4.md     # 專案計畫執行者結果產出
+    ├── QA/
+    │   ├── L1.md     # 品質保證執行者工作結論
+    │   ├── L2.md     # 品質保證紅隊
+    │   ├── L3.md     # 品質保證藍隊
+    │   └── L4.md     # 品質保證執行者結果產出
+    ├── DEV/
+    │   ├── L1.md     # 產品開發執行者工作結論
+    │   ├── L2.md     # 產品開發紅隊
+    │   ├── L3.md     # 產品開發藍隊
+    │   └── L4.md     # 產品開發執行者結果產出
+    └── QC/
+        ├── L1.md     # 驗收上線執行者工作結論
+        ├── L2.md     # 驗收上線紅隊
+        ├── L3.md     # 驗收上線藍隊
+        └── L4.md     # 驗收上線執行者結果產出
 ```
 
 ## 文件結構
@@ -155,30 +171,106 @@ skills/shiftblame/
 
 ## 安裝
 
-主開發環境使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到主開發環境的 skills 目錄。
+主開發環境使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到各 AI 環境的 skills 目錄。
+
+**Claude**：
 
 ```bash
-# 範例：將技能連結到主開發環境的 skills 目錄
-mkdir -p ~/.local/share/agent-skills
-ln -s ~/shiftblame/skills/shiftblame ~/.local/share/agent-skills/shiftblame
+# Claude 使用 skills/ 目錄
+mkdir -p ~/.claude/skills
+ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
+```
+
+Windows PowerShell 可用 junction，不需要系統管理員權限：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
+cmd /c mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftblame"
+```
+
+**Codex**：
+
+```bash
+# Codex 使用 skills/ 目錄
+mkdir -p ~/.codex/skills
+ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
+```
+
+Windows PowerShell 可用 junction，不需要系統管理員權限：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
+cmd /c mklink /J "%USERPROFILE%\.codex\skills\shiftblame" "D:\shiftblame\skills\shiftblame"
+```
+
+也可以直接複製到專案目錄內，讓該專案自行攜帶技能設定：
+
+```bash
+# 在目標專案根目錄執行
+mkdir -p .claude/skills .codex/skills
+cp -R ~/shiftblame/skills/shiftblame .claude/skills/shiftblame
+cp -R ~/shiftblame/skills/shiftblame .codex/skills/shiftblame
+```
+
+Windows PowerShell：
+
+```powershell
+# 在目標專案根目錄執行
+New-Item -ItemType Directory -Force .claude\skills, .codex\skills | Out-Null
+Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .claude\skills\shiftblame
+Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .codex\skills\shiftblame
 ```
 
 ### 指令安裝
 
-框架提供三個指令：`/fail`、`/pass`、`/clean`，定義於 `commands/` 目錄。透過 symlink 連結到各 AI 環境的指令目錄即可使用。
+框架提供三個指令：`/fail`、`/pass`、`/clean`，定義於 `commands/` 目錄。透過 symlink 或 junction 將 `commands/` 直接連結為各 AI 環境的指令目錄即可使用；不要再建立第二層 `shiftblame/` 子目錄。
 
 **Claude**：
 
 ```bash
 # Claude 使用 commands/ 目錄
-ln -s ~/shiftblame/commands/ ~/.claude/commands/shiftblame
+mkdir -p ~/.claude
+ln -s ~/shiftblame/commands ~/.claude/commands
+```
+
+Windows PowerShell 可用 junction 將 commands 暴露成 Claude commands：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude" | Out-Null
+cmd /c mklink /J "%USERPROFILE%\.claude\commands" "D:\shiftblame\commands"
 ```
 
 **Codex**：
 
 ```bash
 # Codex 使用 prompts/ 目錄
-ln -s ~/shiftblame/commands/ ~/codex/prompts/shiftblame
+mkdir -p ~/.codex
+ln -s ~/shiftblame/commands ~/.codex/prompts
+```
+
+Windows PowerShell 可用 junction 將 commands 直接暴露成 Codex prompts：
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex" | Out-Null
+cmd /c mklink /J "%USERPROFILE%\.codex\prompts" "D:\shiftblame\commands"
+```
+
+也可以直接複製到專案目錄內，讓該專案自行攜帶指令設定：
+
+```bash
+# 在目標專案根目錄執行
+mkdir -p .claude .codex
+cp -R ~/shiftblame/commands .claude/commands
+cp -R ~/shiftblame/commands .codex/prompts
+```
+
+Windows PowerShell：
+
+```powershell
+# 在目標專案根目錄執行
+New-Item -ItemType Directory -Force .claude, .codex | Out-Null
+Copy-Item -Recurse -Force D:\shiftblame\commands .claude\commands
+Copy-Item -Recurse -Force D:\shiftblame\commands .codex\prompts
 ```
 
 安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發環境的全域入口檔寫入 managed block。重啟對應環境讓新技能被載入。
