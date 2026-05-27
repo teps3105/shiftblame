@@ -38,7 +38,7 @@ _「這不是我的鍋。」_
 
 同一任務的攻防流程固定序列為：執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，直到閘門收斂通過。
 
-同一 slug、同一部門最多只能到 `005`；攻防延伸、退回修正與補充釐清都計入同一個五輪上限，不得建立 `006`。若到 `005` 仍未收斂，必須先對該部門刪檔聚合：保留有效結論，刪除或合併過度展開、互相衝突、已失效的中間檔。任一部門 `001` 不得作為下一部門正式輸入；至少完成 `002` 循環並通過 Result Check 與 BossConfirm 後，才能推進到下一部門。
+同一 slug、同一部門最多只能到 `005`；補強、打回與回溯都計入同一個五輪上限，不得建立 `006`。若到 `005` 仍未收斂，必須先聚合該部門：重寫 `DEPT/001/task.md`，刪除所有舊的攻防產物與中間文件。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。聚合後不受最低門檻限制。
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
 
@@ -219,58 +219,6 @@ Windows PowerShell：
 New-Item -ItemType Directory -Force .claude\skills, .codex\skills | Out-Null
 Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .claude\skills\shiftblame
 Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .codex\skills\shiftblame
-```
-
-### 指令安裝
-
-框架提供三個指令：`/fail`、`/pass`、`/clean`，定義於 `commands/` 目錄。透過 symlink 或 junction 將 `commands/` 直接連結為各 AI 環境的指令目錄即可使用；不要再建立第二層 `shiftblame/` 子目錄。
-
-**Claude**：
-
-```bash
-# Claude 使用 commands/ 目錄
-mkdir -p ~/.claude
-ln -s ~/shiftblame/commands ~/.claude/commands
-```
-
-Windows PowerShell 可用 junction 將 commands 暴露成 Claude commands：
-
-```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude" | Out-Null
-cmd /c mklink /J "%USERPROFILE%\.claude\commands" "D:\shiftblame\commands"
-```
-
-**Codex**：
-
-```bash
-# Codex 使用 prompts/ 目錄
-mkdir -p ~/.codex
-ln -s ~/shiftblame/commands ~/.codex/prompts
-```
-
-Windows PowerShell 可用 junction 將 commands 直接暴露成 Codex prompts：
-
-```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex" | Out-Null
-cmd /c mklink /J "%USERPROFILE%\.codex\prompts" "D:\shiftblame\commands"
-```
-
-也可以直接複製到專案目錄內，讓該專案自行攜帶指令設定：
-
-```bash
-# 在目標專案根目錄執行
-mkdir -p .claude .codex
-cp -R ~/shiftblame/commands .claude/commands
-cp -R ~/shiftblame/commands .codex/prompts
-```
-
-Windows PowerShell：
-
-```powershell
-# 在目標專案根目錄執行
-New-Item -ItemType Directory -Force .claude, .codex | Out-Null
-Copy-Item -Recurse -Force D:\shiftblame\commands .claude\commands
-Copy-Item -Recurse -Force D:\shiftblame\commands .codex\prompts
 ```
 
 安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發環境的全域入口檔寫入 managed block。重啟對應環境讓新技能被載入。

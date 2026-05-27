@@ -21,7 +21,7 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 同一任務的攻防順序固定為 `task.md` 工作結論 → `red.md` → `blue.md` → `result.md` → Result Check → CHECKED → BossConfirm → PASSED。以下段落僅供管理者參考，不得出現在派工 prompt 中。管理者必須先確認 `task.md` 工作結論已存在且格式有效，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能指示執行者寫入 `result.md`。紅隊與藍隊不得並行啟動。
 
-同一 slug、同一部門最多只能到 `005`，攻防延伸、退回修正與補充釐清都計入同一個五輪上限；不得建立 `006`，已到 `005` 仍未收斂時必須先由管理者執行該部門刪檔聚合。任一部門 `001` 不得作為下一部門正式輸入；至少完成 `002` 循環並通過 Result Check 與 BossConfirm 後，才可推進到下一部門。
+同一 slug、同一部門最多只能到 `005`，補強、打回與回溯都計入同一個五輪上限；不得建立 `006`，已到 `005` 仍未收斂時必須先聚合該部門（重寫 `DEPT/001/task.md`，刪除所有舊的攻防產物與中間文件）。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才可推進。聚合後不受最低門檻限制。
 
 ## 執行者呼叫
 
@@ -68,6 +68,6 @@ SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄�
 
 **Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + `DEPT/<DEPT>/L3.md` → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 blue.md，不得修改其他已追蹤檔案。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。修復一律延後到 result.md 產出後的 NNN+1。」
 
-**Executor Result**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L4.md` → 依部門執行者結果產出規則執行 → 寫入 `result.md`（狀態 RESULT）。不得建立同名 `.md` 檔替代 `result.md`。禁止在 result.md 中立即修復紅隊指出的問題；result.md 記錄本輪結論與紅藍隊評估結果，修復一律延後到 NNN+1。若本輪閘門通過並推進至下游部門，result.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為 NNN+1 退回修正，result.md 須包含退回修正聲明：「本輪為 NNN+1 修正。不得沿用上一輪的 red.md 或 blue.md。」
+**Executor Result**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L4.md` → 依部門執行者結果產出規則執行 → 寫入 `result.md`（狀態 RESULT）。不得建立同名 `.md` 檔替代 `result.md`。禁止在 result.md 中立即修復紅隊指出的問題；result.md 記錄本輪結論與紅藍隊評估結果，修復一律延後到 NNN+1。若本輪閘門通過並推進至下游部門，result.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為 NNN+1 補強，result.md 須包含補強聲明：「本輪為 NNN+1 修正。不得沿用上一輪的 red.md 或 blue.md。」
 
 所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。

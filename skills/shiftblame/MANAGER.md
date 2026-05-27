@@ -33,7 +33,7 @@
 
 任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
 
-管理者建立任務前必須先檢查同一 slug、同一部門的輪次：最多只能到 `005`，退回修正與補充釐清也計入同一個五輪上限；已存在 `005` 時不得建立 `006`，必須先做該部門刪檔聚合。任一部門 `001` 不得作為下一部門正式輸入；至少完成 `002` 循環並通過 Result Check 與 BossConfirm 後，才能推進到下一部門。
+管理者建立任務前必須先檢查同一 slug、同一部門的輪次：最多只能到 `005`，補強、打回與回溯都計入同一個五輪上限；已存在 `005` 時不得建立 `006`，必須先聚合該部門（重寫 `DEPT/001/task.md`，刪除所有舊的攻防產物與中間文件）。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。聚合後不受最低門檻限制。
 
 進入 DEV 前，管理者必須先詢問老闆：「QA 結果裡面，你想先看到哪個功能被做出來？」並提供 2-5 個以作品效果描述的候選功能。老闆選定後，DEV task.md 的目標必須用中文寫成本回合實際開發的可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -58,9 +58,9 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 退回
 
-退回同部門 → 同部門 NNN + 1 修正。
-退回上游部門 → 上游部門 NNN + 1 修正。
-退回修正仍計入同部門同 slug 的五輪上限；已到 `005` 不得建立 `006`，先對該部門刪檔聚合。
+退回同部門（補強）→ 同部門 NNN + 1 修正。
+退回上游部門（打回）→ 上游部門 NNN + 1 修正。
+補強仍計入同部門同 slug 的五輪上限；已到 `005` 不得建立 `006`，先聚合該部門。
 驗收上線例外 → 驗收上線一律退回產品開發新 NNN（驗收上線不修改程式碼）。
 
 合併衝突處理：
@@ -107,9 +107,9 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
-## task.md / 支援與版本
+## task.md / 支援
 
-task.md：YAML frontmatter + 目標 + 上游輸入 + 約束。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。版本 major.minor.build，首次實作升 build，退回修正不重複升版。
+task.md：YAML frontmatter + 宣告 + 結果。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。
 
 ## 部署
 
