@@ -60,7 +60,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 退回同部門（補強）→ 同部門 NNN + 1 修正。
 退回上游部門（打回）→ 上游部門 NNN + 1 修正。
-退回修正仍計入同部門同 slug 的五輪上限；已到 `005` 不得建立 `006`，先聚合該部門。
+補強仍計入同部門同 slug 的五輪上限；已到 `005` 不得建立 `006`，先聚合該部門。
 驗收上線例外 → 驗收上線一律退回產品開發新 NNN（驗收上線不修改程式碼）。
 
 合併衝突處理：
@@ -107,7 +107,7 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
-## task.md / 支援與版本
+## task.md / 支援
 
 task.md：YAML frontmatter + 宣告 + 結果。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。
 
