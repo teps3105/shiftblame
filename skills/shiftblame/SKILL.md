@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: any shiftblame keyword detected (開始/start/開工/動工/go/begin, PM/QA/DEV/QC, 專案計畫/品質保證/產品開發/驗收上線, 管理者/執行者/紅隊/藍隊, BossConfirm/BossPreview/PublishConfirm, 閘門/攻防/退回/歸檔, task.md/result.md/red.md/blue.md/SLUG.md, EXECUTED/RED/BLUE/RESULT/CHECKED/PASSED)."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin), 恢復(恢復/restore/resume), 推進(推進/advance), 補強(補強/reinforce), 打回(打回/reject), 回溯(回溯/rollback), 收尾(收尾/finalize), 歸檔(歸檔/archive), 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/PublishConfirm/閘門/攻防/task.md/result.md/red.md/blue.md/SLUG.md/EXECUTED/RED/BLUE/RESULT/CHECKED/PASSED)."
 ---
 # shiftblame — AI Agents 協作框架
 使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
@@ -46,7 +46,7 @@ description: "AI Agents 協作框架。Use when: any shiftblame keyword detected
 
 管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → G2 審查（EXECUTED → RED → BLUE → RESULT → CHECKED → PASSED）→ G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
 
-同一 slug、同一部門最多只能到 `005`；補強、打回與回溯都計入同一個五輪上限，不得建立 `006`。若到 `005` 仍未收斂，必須先聚合該部門：重寫 `DEPT/001/task.md`，刪除所有舊的攻防產物與中間文件。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。聚合後不受最低門檻限制。`DEV/001` 不得修改程式碼、正式文件、設定、部署或 git 狀態；`QC/001` 不得直接開始測試或驗收。
+同一 slug、同一部門 `005` 為軟上限；補強、打回與回溯都計入同一個五輪計數。到 005 時管理者向老闆發出警告，由老闆決定後續方向；實務上若需要突破可追加，但行為應傾向於收斂。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。`DEV/001` 不得修改程式碼、正式文件、設定、部署或 git 狀態；`QC/001` 不得直接開始測試或驗收。
 
 ## 格式檢查
 
