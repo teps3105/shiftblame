@@ -9,6 +9,8 @@
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。對老闆說明時必須使用繁體中文、具體、可感知的作品語言；優先描述「這回合會做出什麼、老闆會看到什麼、可以怎麼試、哪裡已經驗證」。不得用 DAG、API、技術規劃文件、lint、schema、refactor 等技術術語包裝成確認內容；若必須提及，放在次要補充。
 
+面向老闆的所有詢問語言必須使用繁體中文。選項文字不得使用英文狀態機值。參考選項文字（非封閉列舉）：「同意」「不同意」「調整」「退回」「通過」「原地重做」「推進」「補強」。狀態機值（AGREE、DECLARED、APPROVED 等）僅作為內部狀態記錄，不出現在老闆互動中。
+
 ## 決策
 
 | # | 輸入 | 處理 |
@@ -29,11 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
-
-任務發布前依 `GATE.md` 的 `PublishConfirm` 判斷：同部門起始、進入下游、退回上游須先說明接下來要做什麼並經 `BossConfirm`；同部門 `NNN + 1` 迭代免說明。
-
-管理者建立任務前必須先檢查同一 slug、同一部門的輪次：`005` 為軟上限，補強、打回與回溯都計入同一個五輪計數；到 005 時管理者須警告老闆，由老闆決定是否繼續；實務上若需要突破可追加，但行為應傾向於收斂。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -41,16 +39,16 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 專案計畫→品質保證 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
-| 品質保證→產品開發 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
-| 產品開發→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
+| 專案計畫→品質保證 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
+| 品質保證→產品開發 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
+| 產品開發→工程收尾 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED |
+| 驗收上線→合併 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依退回規則建立下一輪 `NNN + 1` 任務，重新從 task.md 開始跑完整序列（工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → BossConfirm → PASSED）。不得沿用上一輪的 `red.md` 或 `blue.md` 直接進入閘門；直到老闆確認該部門閘門通過，才前進到下一部門或驗收上線收尾。
+每個閘門未通過時，FAIL 原地重做同一 NNN（刪除 RED/BLUE/RESULT，重置 task.md 狀態為 PENDING），重新從宣告開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或本部門補強（NNN+1）。
 
 合併歸檔狀態機（驗收上線閘門通過後）：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
@@ -58,28 +56,29 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 退回
 
-退回同部門（補強）→ 同部門 NNN + 1 修正。
-退回上游部門（打回）→ 上游部門 NNN + 1 修正。
-補強仍計入同部門同 slug 的五輪計數；到 `005` 為軟上限，管理者須警告老闆，突破需老闆同意。
-驗收上線例外 → 驗收上線一律退回產品開發新 NNN（驗收上線不修改程式碼）。
+- FAIL（原地重做）→ 同部門 NNN 不變，刪除 RED/BLUE/RESULT，清除宣告段落，重置狀態為 PENDING。
+- 補強 → PASS 後同部門 NNN+1。
+- 打回 → 上游部門 NNN+1。
+- 回溯 → 撤回該部門所有變更，回到 001。
+- 驗收上線例外 → 驗收上線一律退回產品開發新 NNN（驗收上線不修改程式碼）。
 
-計畫更動判定：執行部門 002+ 發現需要更動 001 計畫時，管理者判定是否屬於計畫更動（功能範圍增減、架構決策變更）。若是，提供老闆兩選項：
+計畫更動判定：任何輪次發現需要更動已 PASSED 的前輪計畫時，管理者判定是否屬於計畫更動（功能範圍增減、架構決策變更）。若是，提供老闆兩選項：
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態重新規劃。僅限觸發部門，不影響其他已通過閘門的部門。需 BossConfirm。
 - 進路線圖：將更動項目記錄至 ROADMAP.md，不在本輪執行。
 
 ## 上游讀取
 
-所有部門讀取指令時，預設只讀取直接上游部門的最後一份 result.md：
-- QA → 讀 PM 最後 result.md
-- DEV → 讀 QA 最後 result.md
-- QC → 讀 DEV 最後 result.md
+所有部門讀取指令時，預設讀取所有上游部門的所有已 PASS 的 result.md：
+- QA → 讀 PM 所有已 PASS 的 result.md
+- DEV → 讀 QA 所有已 PASS 的 result.md
+- QC → 讀 DEV 所有已 PASS 的 result.md
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
 
-過時文件結論僅為參考資料，除非老闆明確指定，管理者與員工不得主動讀取。
+管理者派工時提供上游所有已 PASS 的 result.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
 
 合併衝突處理：
 - 文件衝突（README.md 等）→ 管理者直接解決，不需重新驗收上線
-- 程式碼邏輯衝突 → 中止 merge，退回產品開發新 NNN，解決衝突後重新走工程收尾+驗收上線
+- 程式碼邏輯衝突 → 中止 merge，FAIL 原地重做 DEV，解決衝突後重新走工程收尾+驗收上線
 
 老闆強制停止：
 - 選項 A：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → 驗收上線任務 → 驗收上線通過後 merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。驗收上線退回則老闆再次選擇。
@@ -91,13 +90,19 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 管理者在狀態機轉移時，必須驗證前一狀態的產物存在且格式有效。驗證不通過則中止轉移。
 
+**TASK → DECLARED**：驗證 task.md「## 宣告」段落非空。不通過 → 要求執行者先寫入宣告。
+
+**DECLARED → APPROVED**：驗證 BossConfirm 已完成（老闆已明確同意）。不通過 → 中止，等待老闆確認。
+
+**APPROVED → EXECUTED**：驗證老闆已同意宣告且 task.md status 為 APPROVED。不通過 → 中止。
+
 **EXECUTED → RED**：驗證 task.md 包含工作結論段落（標題存在且內容非空）。不通過 → 要求執行者先完成工作結論。
 
 **RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊產出 red.md。
 
 **BLUE → RESULT**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊產出 blue.md。
 
-**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 result.md 產出、Result Check、BossConfirm 直接建立 NNN+1 任務。必須走完 result.md → Result Check → BossConfirm 流程，退回與否由 BossConfirm 決定。
+**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 result.md 產出、Result Check、BossConfirm 直接 FAIL 原地重做。必須走完 result.md → Result Check → BossConfirm 流程，退回與否由 BossConfirm 決定。
 
 ### Commit 閘門
 
@@ -105,11 +110,11 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 ### 工作目錄鎖定
 
-紅藍隊期間（EXECUTED → RED 轉移至 BLUE 完成），管理者不得進行任何會修改工作目錄中已追蹤檔案的操作。唯一例外：更新 SLUG.md 的「管線狀態紀錄」段落和「BossPreview / 退回紀錄」段落。
+紅藍隊期間（EXECUTED → RED 轉移至 BLUE 完成）以及 DECLARED → APPROVED 期間，管理者不得進行任何會修改工作目錄中已追蹤檔案的操作。唯一例外：更新 SLUG.md 的「管線狀態紀錄」段落和「BossPreview / 退回紀錄」段落。
 
 紅隊子代理只可寫入 red.md，藍隊子代理只可寫入 blue.md，不得建立、修改、追加或覆蓋任何其他檔案（無論是否已追蹤）。
 
-紅隊報告中發現問題時，管理者不得直接修復。必須繼續藍隊流程。若需修復，開新 NNN。
+紅隊報告中發現問題時，管理者不得直接修復。必須繼續藍隊流程。若需修復，FAIL 原地重做。
 
 ### 派工隔離
 
@@ -117,7 +122,7 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 ## 收尾
 
-驗收上線閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則退回產品開發新 NNN（驗收上線不修改程式碼）。
+驗收上線閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則 FAIL 原地重做（驗收上線不修改程式碼）。
 
 收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 

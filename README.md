@@ -36,11 +36,11 @@ _「這不是我的鍋。」_
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；每次退回都建立下一輪 `NNN + 1`，直到閘門收斂通過。
+同一任務的攻防流程固定序列為：執行者寫入宣告 → 管理者向老闆確認宣告（宣告-確認-執行閘門）→ 老闆同意後執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行。FAIL 時原地重做同一 NNN（不建立新 NNN）；PASS 後管理者判斷分支：推進下一部門或本部門補強（NNN+1）。
 
-同一 slug、同一部門最多只能到 `005`；補強、打回與回溯都計入同一個五輪上限，不得建立 `006`。若到 `005` 仍未收斂，必須先聚合該部門：重寫 `DEPT/001/task.md`，刪除所有舊的攻防產物與中間文件。研究部門（PM/QA）001 經紅藍攻防通過後可作為下游輸入；執行部門（DEV/QC）至少完成 002 並通過 Result Check 與 BossConfirm 後才能推進。聚合後不受最低門檻限制。
+每一輪任務開始前，管理者必須向老闆確認宣告內容，老闆同意後才能開始執行。全部門、每一輪都適用。
 
-全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。
+全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。面向老闆的詢問語言必須使用繁體中文，不得使用英文狀態機值作為選項文字。
 
 ```
 L1: 執行 → 收尾
@@ -83,17 +83,15 @@ L2: 專案計畫 → 品質保證 → 產品開發 → 工程收尾 → 驗收�
 
 詳見 `DEPT/<DEPT>/L1-L4.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
 
-`DEV/001` 只能建立實作前計畫與影響範圍，不得修改程式碼、正式文件、設定、部署或 git 狀態。`QC/001` 只能建立驗收前計畫與驗收範圍，不得直接開始測試或驗收。
-
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→QA | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
-| QA→DEV | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
-| DEV→工程收尾 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
+| PM→QA | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
+| QA→DEV | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
+| DEV→工程收尾 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 工作結論 → 紅隊 → 藍隊 → result → Result Check → CHECKED → `BossConfirm` → PASSED |
+| 驗收上線→合併 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
@@ -102,11 +100,11 @@ L2: 專案計畫 → 品質保證 → 產品開發 → 工程收尾 → 驗收�
 
 DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗證結果或下一個想調整的效果；管理者提供 URL/指令/截圖/操作證據與中文摘要。`BossPreview` 不取代正式 `BossConfirm`，也不代表 DEV 閘門通過。
 
-任務發布前若為同部門任務起始、進入下游部門或退回上游部門，管理者必須先說明接下來要做什麼（`PublishConfirm`），經 `BossConfirm` 後才可繼續；同部門 `NNN + 1` 迭代不需說明。
+任務發布前管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才可繼續。每一輪、全部門都適用。
 
 ## 收尾檢查
 
-收尾前必須確認下列項目，不符合則退回產品開發新 NNN（驗收上線不修改程式碼）：
+收尾前必須確認下列項目，不符合則 FAIL 原地重做（驗收上線不修改程式碼）：
 
 - 無殭屍程序、背景 dev server、測試服務或未關閉的 watcher。
 - 無開發殘留檔案進入主分支，例如 scratch、demo、prototype、debug output、臨時設定。
