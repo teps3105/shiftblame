@@ -50,6 +50,8 @@
 
 每個閘門未通過時，FAIL 原地修復同一 NNN（修改 result.md、red.md、blue.md、conclusion.md，不刪除，保留完整追溯紀錄），task.md 回到 APPROVED（宣告段落不變），重新從 result.md 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
+管理者在推進完成後輸出以下 compact 提醒（執行性質，管理者在推進完成後輸出此提醒）：
+
 本部門回合已完成。建議執行 /compact 壓縮上下文以利後續部門推進。
 compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
 
