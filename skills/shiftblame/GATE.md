@@ -5,8 +5,8 @@
 ## 狀態與轉移
 
 ```
-UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLARED ──AGREE──→ APPROVED ──EXEC──→ EXECUTED ──RED──→ RED ──BLUE──→ BLUE ──RESULT──→ RESULT ──CHECK──→ CHECKED ──FAIL──→ TASK（原地重做）
-                                                                                                                                                                      └──CONFIRM──→ PASSED ──BRANCH──→ 下一部門/補強
+UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLARED ──AGREE──→ APPROVED ──EXEC──→ EXECUTED ──RED──→ RED ──BLUE──→ BLUE ──RESULT──→ RESULT ──CHECK──→ CHECKED ──FAIL──→ TASK（原地修復或打回上游）
+                                                                                                                                                                      └──CONFIRM──→ PASSED ──BRANCH──→ 推進下一部門/同部門新執行切片
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -268,24 +268,24 @@ upstream:
 
 退回規則：
 
-- FAIL（原地重做）：同部門 NNN 不變，刪除 RED/BLUE/RESULT，清除宣告段落，重置 task.md 狀態為 PENDING。task.md「## 結果」段落保留前次工作結論供參考。
-- 補強：PASS 後同部門 NNN+1
-- 打回：上游部門 NNN+1
+- FAIL（原地修復）：同部門 NNN 不變，刪除 RED/BLUE/RESULT，清除宣告段落，重置 task.md 狀態為 PENDING。task.md「## 結果」段落保留前次工作結論供參考。一個 NNN 可以多次提交。FAIL 必須回到 task.md 重寫工作結論，重新走完整紅隊→藍隊→RESULT 攻防流程，不得跳過攻防直接產出 result.md。
+- FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做（不開新 NNN）。
+- 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。不是用來修正或補強。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門，不影響其他已通過閘門的部門。需 BossConfirm。
 
 計畫不可更動：任何輪次不得更動已 PASSED 的前輪計畫範圍（功能範圍、架構決策、技術選型等）。若需更動，管理者判定是否屬計畫更動（功能範圍增減或架構決策變更），若是則提供老闆兩選項：回溯（限該部門）或進入路線圖（記錄至 ROADMAP.md，不在本輪執行）。實作方式、邊界處理、錯誤處理等不改變功能範圍的調整屬執行細節，不觸發回溯。
 
 恢復：讀取未歸檔的 SLUG.md 恢復該 slug 的工作狀態。不適用已歸檔的 slug；適用於環境重啟後接續進度。
-- 驗收上線例外：驗收上線一律退回產品開發新 NNN（驗收上線不修改程式碼）
+- 驗收上線例外：驗收上線一律退回產品開發（驗收上線不修改程式碼），直接回到原本被打回的 DEV NNN 重做
 - 不得自行修改 result.md、red.md 或 blue.md
 - 退回確認必須與閘門確認分離，不得合併
 - 藍隊判定 FAIL 時，歸屬判斷由紅隊攻擊點和藍隊分析共同決定退回目標部門
 
 未達門檻補強節點：
 
-所有未達門檻的情況均改為 FAIL 原地重做（不自動建立 NNN+1）：
-- PM/QA 結論判定研究/標準不足 → FAIL 原地重做同一 NNN
-- DEV/QC 結論判定規劃/執行不足 → FAIL 原地重做同一 NNN
+所有未達門檻的情況均改為 FAIL 原地修復（不自動建立 NNN+1）：
+- PM/QA 結論判定研究/標準不足 → FAIL 原地修復同一 NNN
+- DEV/QC 結論判定規劃/執行不足 → FAIL 原地修復同一 NNN
 
 ### G3 — 歸檔
 

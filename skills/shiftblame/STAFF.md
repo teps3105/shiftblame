@@ -64,10 +64,10 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄、（3）殘餘風險與交接事項、（4）BossPreview / 退回紀錄、（5）待收尾整理。分類規則見 GATE.md SLUG.md 模板。執行者不得將這些內容寫入 REPO.md 或 ROADMAP.md。
 
-**Red**：確認 `task.md` 工作結論已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L2.md` → 依部門紅隊規則攻擊工作結論 → 寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 red.md，不得修改其他已追蹤檔案。red.md 末尾必須包含流程合規聲明：「紅隊攻擊完成。任何角色不得依據本報告立即修復問題。必須繼續藍隊流程。修復一律延後到 FAIL 原地重做或 PASS 補強。」
+**Red**：確認 `task.md` 工作結論已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L2.md` → 依部門紅隊規則攻擊工作結論 → 寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 red.md，不得修改其他已追蹤檔案。red.md 末尾必須包含流程合規聲明：「紅隊攻擊完成。任何角色不得依據本報告立即修復問題。必須繼續藍隊流程。修復一律延後到 FAIL 原地修復或打回上游。」
 
-**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + `DEPT/<DEPT>/L3.md` → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 blue.md，不得修改其他已追蹤檔案。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。修復一律延後到 RESULT 產出後的 FAIL 原地重做或 PASS 補強。」
+**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + `DEPT/<DEPT>/L3.md` → 依部門藍隊規則檢視 → 寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 blue.md，不得修改其他已追蹤檔案。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。修復一律延後到 RESULT 產出後的 FAIL 原地修復或打回上游。」
 
-**Executor Result**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L4.md` → 依部門執行者結果產出規則執行 → 寫入 `result.md`（狀態 RESULT）。不得建立同名 `.md` 檔替代 `result.md`。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。禁止在 result.md 中立即修復紅隊指出的問題；result.md 記錄本輪結論與紅藍隊評估結果，修復一律延後到 FAIL 原地重做或 PASS 補強。若本輪閘門通過並推進至下游部門，result.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為 NNN+1 補強，result.md 須包含補強聲明：「本輪為 NNN+1 補強。不得沿用上一輪的 red.md 或 blue.md。」若本輪為 FAIL 後原地重做，result.md 須包含聲明：「本輪為 FAIL 後原地重做。前次工作結論保留供參考，不得沿用前次的 red.md 或 blue.md。」
+**Executor Result**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L4.md` → 依部門執行者結果產出規則執行 → 寫入 `result.md`（狀態 RESULT）。不得建立同名 `.md` 檔替代 `result.md`。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。禁止在 result.md 中立即修復紅隊指出的問題；result.md 記錄本輪結論與紅藍隊評估結果，修復一律延後到 FAIL 原地修復或打回上游。若本輪閘門通過並推進至下游部門，result.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為打回上游新執行切片，result.md 須包含聲明：「本輪為打回上游新執行切片。不得沿用上一輪的 red.md 或 blue.md。」若本輪為 FAIL 後原地修復，result.md 須包含聲明：「本輪為 FAIL 後原地修復。前次工作結論保留供參考，不得沿用前次的 red.md 或 blue.md。」
 
 所有產出（task.md / result.md / red.md / blue.md）使用繁體中文產出。
