@@ -92,3 +92,16 @@ skills/shiftblame/
     ├── DEV/
     └── QC/
 ```
+
+## 初始化設定
+
+首次使用 shiftblame 時，需執行初始化腳本設定用戶級配置：
+
+- **Windows**：`powershell -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1`
+- **Unix**：`bash scripts/setup-hooks.sh`
+
+腳本設定兩項用戶級配置：
+1. `~/.claude/CLAUDE.md`（managed block：提供初始載入與關鍵字觸發）
+2. `~/.claude/settings.json`（SessionStart hook：提供 compact 後恢復）
+
+CLAUDE.md 與 Hook 互補，不可互相取代：CLAUDE.md 為系統提示詞（每個 session 持續存在），Hook matcher 為 "compact"（僅 compact 後觸發）。腳本冪等，重複執行不變更已正確設定的配置。

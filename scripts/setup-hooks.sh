@@ -117,7 +117,7 @@ else
         "hooks": [
           {
             "type": "command",
-            "command": "$hook_command",
+            "command": "echo load shiftblame skills. On any shiftblame keyword reload shiftblame skills.",
             "timeout": 5
           }
         ]
