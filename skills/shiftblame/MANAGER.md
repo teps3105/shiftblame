@@ -31,7 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 task.md 工作結論 → 呼叫紅隊攻擊 task.md 工作結論 → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -39,16 +39,19 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 專案計畫→品質保證 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
-| 品質保證→產品開發 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
-| 產品開發→工程收尾 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
+| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → BossConfirm → PASSED |
+| 驗收上線→合併 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，FAIL 原地修復同一 NNN（刪除 RED/BLUE/RESULT，重置 task.md 狀態為 PENDING），重新從宣告開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每個閘門未通過時，FAIL 原地修復同一 NNN（修改 result.md、red.md、blue.md、conclusion.md，不刪除，保留完整追溯紀錄），task.md 回到 APPROVED（宣告段落不變），重新從 result.md 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+
+本部門回合已完成。建議執行 /compact 壓縮上下文以利後續部門推進。
+compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
 
 合併歸檔狀態機（驗收上線閘門通過後）：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
@@ -56,7 +59,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 退回
 
-- FAIL（原地修復）→ 同部門 NNN 不變，刪除 RED/BLUE/RESULT，清除宣告段落，重置狀態為 PENDING。必須回到 task.md 重寫工作結論，重新走完整紅隊→藍隊→RESULT 攻防流程。
+- FAIL（原地修復）→ 同部門 NNN 不變，修改 result.md、red.md、blue.md、conclusion.md（不刪除，保留完整追溯紀錄），task.md 回到 APPROVED（宣告段落不變）。必須回到 result.md 重寫工作成果，重新走完整紅隊→藍隊→conclusion 攻防流程。
 - FAIL（打回上游）→ 問題在上游定義，上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。
 - 同部門新執行切片 → PASS 後需要新的工作範圍時建立同部門新 NNN。不是用來修正或補強。
 - 回溯 → 撤回該部門所有變更，回到 001。
@@ -68,13 +71,13 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 上游讀取
 
-所有部門讀取指令時，預設讀取所有上游部門的所有已 PASS 的 result.md：
-- QA → 讀 PM 所有已 PASS 的 result.md
-- DEV → 讀 QA 所有已 PASS 的 result.md
-- QC → 讀 DEV 所有已 PASS 的 result.md
+所有部門讀取指令時，預設讀取所有上游部門的所有已 PASS 的 conclusion.md：
+- QA → 讀 PM 所有已 PASS 的 conclusion.md
+- DEV → 讀 QA 所有已 PASS 的 conclusion.md
+- QC → 讀 DEV 所有已 PASS 的 conclusion.md
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
 
-管理者派工時提供上游所有已 PASS 的 result.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
+管理者派工時提供上游所有已 PASS 的 conclusion.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
 
 合併衝突處理：
 - 文件衝突（README.md 等）→ 管理者直接解決，不需重新驗收上線
@@ -96,13 +99,15 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 **APPROVED → EXECUTED**：驗證老闆已同意宣告且 task.md status 為 APPROVED。不通過 → 中止。
 
-**EXECUTED → RED**：驗證 task.md 包含工作結論段落（標題存在且內容非空）。不通過 → 要求執行者先完成工作結論。
+**EXECUTED → RED**：驗證 result.md 存在且格式有效（包含 YAML frontmatter 與繁體中文工作成果）。不通過 → 要求執行者先完成工作成果。
 
 **RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊產出 red.md。
 
-**BLUE → RESULT**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊產出 blue.md。
+**BLUE → CONCLUSION**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊產出 blue.md。驗證 conclusion.md 存在、包含 YAML frontmatter、包含繁體中文結論內容。不通過 → 要求執行者先完成結論產出。
 
-**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 result.md 產出、Result Check、BossConfirm 直接 FAIL 原地重做。必須走完 result.md → Result Check → BossConfirm 流程，退回與否由 BossConfirm 決定。
+**CONCLUSION → CHECKED**：驗證五檔齊全（task.md + result.md + red.md + blue.md + conclusion.md），每檔含 YAML frontmatter 與繁體中文內容。不通過 → 要求補齊缺件。
+
+**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 conclusion.md 產出、Result Check、BossConfirm 直接 FAIL 原地重做。必須走完 conclusion.md → Result Check（五檔）→ BossConfirm 流程，退回與否由 BossConfirm 決定。
 
 ### Commit 閘門
 
@@ -118,7 +123,7 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 ### 派工隔離
 
-管理者在派工 prompt 中不得引用 GATE.md 狀態定義表（該表包含 RESULT 狀態和 result.md 字樣）。GATE.md 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
+管理者在派工 prompt 中不得引用 GATE.md 狀態定義表。GATE.md 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
 
 ## 收尾
 

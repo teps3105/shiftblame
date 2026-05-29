@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/SLUG.md/EXECUTED/RED/BLUE/RESULT/CHECKED/PASSED)→載入技能."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
 # shiftblame — AI Agents 協作框架
 使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
@@ -9,7 +9,7 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 | 員工 | 身份 | 產出 |
 |------|------|------|
 | 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾（不寫入部門正式產物） |
-| 執行者 | 目前環境 | result.md |
+| 執行者 | 目前環境 | result.md、conclusion.md |
 | 紅隊 | 本環境子代理 | red.md |
 | 藍隊 | 本環境子代理 | blue.md |
 
@@ -36,7 +36,7 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 詳見 `DEPT/` 各部門子目錄。
 
 ## 定義檔 / gitignore
-`MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}/`
+`MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}/`（每部門 L1-L5）
 
 `.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。開發中的工作筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策一律維護在 `.shiftblame/<slug>/SLUG.md`；不得寫入 `.shiftblame/ROADMAP.md`。REPO.md 記錄「完成了什麼」（已完成功能詳情、技術棧、架構演進），本地私密。ROADMAP.md 記錄「未來預計要做什麼」（後續計畫、已知問題、待改進項目），本地私密。兩份文件語意不可交叉，只在歸檔後更新。
 
@@ -44,9 +44,9 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 ## 閘門狀態機
 
-管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → 宣告-確認-執行閘門（TASK → DECLARED → APPROVED）→ G2 審查（EXECUTED → RED → BLUE → RESULT → CHECKED → PASSED）→ G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
+管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → 宣告-確認-執行閘門（TASK → DECLARED → APPROVED）→ G2 審查（EXECUTED → RED → BLUE → CONCLUSION → CHECKED → PASSED）→ G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。FAIL 時原地修復同一 NNN（不建立新 NNN，回到 task.md 重寫結論並重新走完整攻防流程）。PASS 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。FAIL 時原地修復同一 NNN（不建立新 NNN，修改 result.md/red.md/blue.md/conclusion.md 不刪除，task.md 回到 APPROVED，宣告段落不變，重新走完整攻防流程）。BossConfirm FAIL 時老闆可選擇新切片（新 NNN 從階段 1 開始）或原地修復（同 NNN 修改 result.md/red.md/blue.md/conclusion.md 從階段 2 重做）。PASS 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN），並輸出 compact 提醒。一個 NNN 可以多次提交。
 
 ## 格式檢查
 
