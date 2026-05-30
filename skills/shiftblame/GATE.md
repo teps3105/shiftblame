@@ -17,7 +17,7 @@ L3 紅隊:   EXECUTED ──→ 紅隊寫入 red.md ──→ 管理者驗證 �
 L4 藍隊:   RED ──→ 藍隊寫入 blue.md ──→ 管理者驗證 ──→ BLUE
                 └──FAIL──→ APPROVED（返回 L2 修復 result.md，重跑 L3→L4）
 
-L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ compact ──→ CHECKED ──BossConfirm──→ PASSED
+L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ CHECKED ──BossConfirm──→ PASSED ──→ compact（FEATURE 阻塞式，MAIN 條件式）
 ```
 
 FAIL 規則：
@@ -46,6 +46,7 @@ MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
 - conclusion.md 須包含最終結論與紅藍整合摘要（無跨部門推進聲明）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
 - L4 藍隊 FAIL 無打回上游選項（無上游）
+- compact 為條件式（僅上下文過長時才要求 /compact，非阻塞式），時機在 PASSED 後
 
 MAIN 模式收尾狀態機：
 
@@ -327,9 +328,9 @@ upstream:
 2. result.md 存在且格式有效後，才呼叫紅隊。紅隊攻擊 result.md 並將報告寫入 `red.md`。管理者驗證 `red.md` 已產出且格式有效；若未產出，重新呼叫紅隊。
 3. `red.md` 存在且格式有效後，才呼叫藍隊。藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後將攻防對照報告寫入 `blue.md`。管理者驗證 `blue.md` 已產出且格式有效；若未產出，重新呼叫藍隊。
 4. `red.md`、`blue.md` 皆存在且格式有效後，管理者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
-5. 管理者輸出 compact 提醒（阻塞式）：結論已產出，老闆必須執行 /compact 後才能繼續 Result Check。
-6. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
-7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
+5. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
+6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
+7. 管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 
@@ -400,11 +401,12 @@ upstream:
 
 管理者依上述閘門在每次狀態轉移前執行檢查。檢查方式：
 
-- **讀取（Linux/macOS/Git Bash）**：`cat`、`sed -n`
-- **讀取（Windows PowerShell）**：`Get-Content -Encoding UTF8`
+- **讀取（優先）**：Read Tool（內建檔案讀取工具）
+- **讀取（備援，Linux/macOS/Git Bash）**：`cat`、`sed -n`
+- **讀取（備援，Windows PowerShell）**：`Get-Content -Encoding UTF8`
 - **檢查/列檔**：`test -f`、`find`、`ls`、`Test-Path`、`Get-ChildItem`
-- **寫入**：shell heredoc、目前環境檔案寫入工具
-- **禁止**：使用 `read_file` 或內建檔案讀取器讀取 `.shiftblame/` 內檔案
+- **寫入（優先）**：Write/Edit Tool（內建檔案寫入/編輯工具）
+- **寫入（備援）**：shell heredoc 或目前環境允許的 patch/write 工具
 - **禁止**：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
 
 所有檔案路徑以 `.shiftblame/` 為根，相對於 repo root。

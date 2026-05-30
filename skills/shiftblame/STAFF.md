@@ -34,9 +34,10 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 ```text
 重要產出規則：
 - .shiftblame/ 已被 .gitignore 排除。
-- 讀取 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，只能使用 shell 指令；Linux/macOS/Git Bash 使用 cat 或 sed -n，Windows PowerShell 必須使用 Get-Content -Encoding UTF8。
+- 讀取 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，優先使用 Read Tool（內建檔案讀取工具），若無法讀取再使用 shell 指令；Linux/macOS/Git Bash 使用 cat 或 sed -n，Windows PowerShell 必須使用 Get-Content -Encoding UTF8。
+- 寫入 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，優先使用 Write/Edit Tool（內建檔案寫入/編輯工具），若無法使用再以 shell heredoc 或目前環境允許的 patch/write 工具處理。
 - 檢查檔案存在與列檔可使用 test -f、find、Test-Path、Get-ChildItem。
-- 禁止使用 read_file、內建檔案讀取器，或在 Windows PowerShell 以未指定 -Encoding UTF8 的 Get-Content/type/cat 讀取含中文 Markdown。
+- 禁止在 Windows PowerShell 以未指定 -Encoding UTF8 的 Get-Content/type/cat 讀取含中文 Markdown。
 - 開發中筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策只可記錄在 .shiftblame/<slug>/SLUG.md，不得寫入 ROADMAP.md。
 - 你的輸出必須直接寫入指定的目標檔案（如 red.md / blue.md），請使用寫入工具將完整報告寫入該檔案。不要只輸出到對話中。
 - 報告必須包含完整的 YAML frontmatter 與繁體中文內容。
@@ -54,25 +55,29 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 ## Prompt 模板
 
-所有模板都必須包含「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案只能用 shell 讀取，不得用 read_file；Windows PowerShell 必須使用 `Get-Content -Encoding UTF8`」。
+所有模板都必須包含「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案優先使用 Read Tool 讀取、Write/Edit Tool 寫入，若無法使用再以 shell 指令處理；Windows PowerShell 備援時必須使用 `Get-Content -Encoding UTF8`」。
 
 所有面向老闆的內容都必須預設老闆不懂技術：用繁體中文、作品效果、可操作步驟與驗證結果描述，不得用技術術語包裝。技術細節可放在「內部備註」或「實作紀錄」，不可取代功能描述。
 
 面向老闆的互動必須使用繁體中文。選項文字不得使用英文狀態機值（如 AGREE、DECLARED、APPROVED 等）。參考選項文字（非封閉列舉）：「同意」「不同意」「調整」。狀態機值全部大寫（YAML frontmatter、狀態描述）。
 
-conclusion.md 產出後、Result Check 前，管理者輸出以下 compact 提醒（阻塞式，老闆必須執行 compact 後才能繼續。此段落供管理者參考，不包含在派工 prompt 中）：
+BossConfirm PASSED 後，管理者輸出 compact 提醒（此段落供管理者參考，不包含在派工 prompt 中）：
 
-conclusion.md 已產出。請執行 /compact 壓縮上下文後繼續 Result Check。
+FEATURE 模式（阻塞式，閘門已通過，執行 compact 後繼續收尾或推進）：
+閘門已通過。請執行 /compact 壓縮上下文後繼續收尾或推進下一部門。
 compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
 
-**Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L1.md` → 執行者先在「## 宣告」段落寫入本輪計畫 → 管理者向老闆確認宣告（用繁體中文）→ 老闆同意後依部門執行者產出規則（L2.md）執行 → 寫入 result.md（狀態 EXECUTED）。派工時提供上游所有部門的所有已 PASS 的 conclusion.md 完整內容，不指示員工自行讀取歷史文件。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。產品開發要求更嚴：必須先把技術規劃、技術設計、技術實作的前置內容寫入 `task.md`，再開始程式碼實作。工作成果寫入 result.md 後，不得跳過紅隊直接產出 conclusion.md 或進入下一部門。
+MAIN 模式（條件式，僅上下文過長時才要求 compact）：
+閘門已通過。若上下文過長，請執行 /compact 壓縮上下文後繼續收尾。
+
+**Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L1.md`（優先 Read Tool，備援 shell UTF-8）→ 執行者先在「## 宣告」段落寫入本輪計畫 → 管理者向老闆確認宣告（用繁體中文）→ 老闆同意後依部門執行者產出規則（L2.md）執行 → 寫入 result.md（狀態 EXECUTED）。派工時提供上游所有部門的所有已 PASS 的 conclusion.md 完整內容，不指示員工自行讀取歷史文件。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。產品開發要求更嚴：必須先把技術規劃、技術設計、技術實作的前置內容寫入 `task.md`，再開始程式碼實作。工作成果寫入 result.md 後，不得跳過紅隊直接產出 conclusion.md 或進入下一部門。
 
 SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄、（3）殘餘風險與交接事項、（4）BossPreview / 退回紀錄、（5）待收尾整理。分類規則見 GATE.md SLUG.md 模板。執行者不得將這些內容寫入 REPO.md 或 ROADMAP.md。
 
-**Red**：確認 `result.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + `DEPT/<DEPT>/L3.md` → 依部門紅隊規則攻擊 result.md → 將紅隊報告寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 `red.md`，不得修改其他已追蹤檔案。管理者在紅隊回傳後驗證 `red.md` 是否已產出且格式有效；若未產出，重新呼叫紅隊。FAIL 重跑時不得刪除既有攻防紀錄，在既有內容後追加新回合（以 `---` 與 `## 第 N 次攻擊` 分隔）。red.md 末尾必須包含流程合規聲明：「紅隊攻擊完成。任何角色不得依據本報告立即修復問題。必須繼續藍隊流程。修復一律延後到 FAIL 原地修復或打回上游。」
+**Red**：確認 `result.md` 已存在且格式有效 → 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + `DEPT/<DEPT>/L3.md`（優先 Read Tool，備援 shell UTF-8）→ 依部門紅隊規則攻擊 result.md → 將紅隊報告寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 `red.md`，不得修改其他已追蹤檔案。管理者在紅隊回傳後驗證 `red.md` 是否已產出且格式有效；若未產出，重新呼叫紅隊。FAIL 重跑時不得刪除既有攻防紀錄，在既有內容後追加新回合（以 `---` 與 `## 第 N 次攻擊` 分隔）。red.md 末尾必須包含流程合規聲明：「紅隊攻擊完成。任何角色不得依據本報告立即修復問題。必須繼續藍隊流程。修復一律延後到 FAIL 原地修復或打回上游。」
 
-**Blue**：確認 `red.md` 已存在且格式有效 → 用 UTF-8 shell 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + red.md + `DEPT/<DEPT>/L4.md` → 依部門藍隊規則檢視 → 將藍隊報告寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 `blue.md`，不得修改其他已追蹤檔案。管理者在藍隊回傳後驗證 `blue.md` 是否已產出且格式有效；若未產出，重新呼叫藍隊。FAIL 重跑時不得刪除既有攻防紀錄，在既有內容後追加新回合（以 `---` 與 `## 第 N 次防禦` 分隔）。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。修復一律延後到 conclusion.md 產出後的 FAIL 原地修復或打回上游。」
+**Blue**：確認 `red.md` 已存在且格式有效 → 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + red.md + `DEPT/<DEPT>/L4.md`（優先 Read Tool，備援 shell UTF-8）→ 依部門藍隊規則檢視 → 將藍隊報告寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 `blue.md`，不得修改其他已追蹤檔案。管理者在藍隊回傳後驗證 `blue.md` 是否已產出且格式有效；若未產出，重新呼叫藍隊。FAIL 重跑時不得刪除既有攻防紀錄，在既有內容後追加新回合（以 `---` 與 `## 第 N 次防禦` 分隔）。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。修復一律延後到 conclusion.md 產出後的 FAIL 原地修復或打回上游。」
 
-**Executor Conclusion**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 管理者用 UTF-8 shell 讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L5.md` → 管理者依紅藍回饋寫入 `conclusion.md`。不得建立同名 `.md` 檔替代 `conclusion.md`。研究部門（PM/QA）conclusion.md 必須 self-contained：完整寫入有效結論，無引用其他文件。若本輪閘門通過並推進至下游部門，conclusion.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為打回上游新執行切片，conclusion.md 須包含聲明：「本輪為打回上游新執行切片。不得沿用上一輪的 red.md 或 blue.md。」若本輪為 FAIL 後原地修復，conclusion.md 須包含聲明：「本輪為 FAIL 後原地修復。前次工作成果保留供參考，不得沿用前次的 red.md 或 blue.md。」
+**Executor Conclusion**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 管理者讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L5.md`（優先 Read Tool，備援 shell UTF-8）→ 管理者依紅藍回饋寫入 `conclusion.md`。不得建立同名 `.md` 檔替代 `conclusion.md`。研究部門（PM/QA）conclusion.md 必須 self-contained：完整寫入有效結論，無引用其他文件。若本輪閘門通過並推進至下游部門，conclusion.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為打回上游新執行切片，conclusion.md 須包含聲明：「本輪為打回上游新執行切片。不得沿用上一輪的 red.md 或 blue.md。」若本輪為 FAIL 後原地修復，conclusion.md 須包含聲明：「本輪為 FAIL 後原地修復。前次工作成果保留供參考，不得沿用前次的 red.md 或 blue.md。」
 
 所有產出（task.md / result.md / red.md / blue.md / conclusion.md）使用繁體中文產出。
