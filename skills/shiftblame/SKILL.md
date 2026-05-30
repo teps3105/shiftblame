@@ -95,13 +95,39 @@ skills/shiftblame/
 
 ## 初始化設定
 
-首次使用 shiftblame 時，需執行初始化腳本設定用戶級配置：
+首次使用 shiftblame 時，需手動設定兩項用戶級配置：
 
-- **Windows**：`powershell -ExecutionPolicy Bypass -File scripts/setup-hooks.ps1`
-- **Unix**：`bash scripts/setup-hooks.sh`
+### 1. `~/.claude/CLAUDE.md`（managed block）
 
-腳本設定兩項用戶級配置：
-1. `~/.claude/CLAUDE.md`（managed block：提供初始載入與關鍵字觸發）
-2. `~/.claude/settings.json`（SessionStart hook：提供 compact 後恢復）
+在 `~/.claude/CLAUDE.md` 中加入以下 managed block：
 
-CLAUDE.md 與 Hook 互補，不可互相取代：CLAUDE.md 為系統提示詞（每個 session 持續存在），Hook matcher 為 "compact"（僅 compact 後觸發）。腳本冪等，重複執行不變更已正確設定的配置。
+```
+<!-- BEGIN shiftblame:global-entry -->
+load shiftblame skills. On any shiftblame keyword reload shiftblame skills.
+<!-- END shiftblame:global-entry -->
+```
+
+若檔案已含 managed block 則跳過；若含裸文字 `load shiftblame skills...` 則替換為上述 managed block。
+
+### 2. `~/.claude/settings.json`（SessionStart hook）
+
+在用戶級 `~/.claude/settings.json` 的 `hooks.SessionStart` 陣列中加入：
+
+```json
+{
+  "matcher": "compact",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "echo load shiftblame skills. On any shiftblame keyword reload shiftblame skills.",
+      "timeout": 5
+    }
+  ]
+}
+```
+
+若 `hooks.SessionStart` 已含 matcher 為 `"compact"` 的項目則跳過。若 settings.json 不存在則建立新檔。
+
+### 互補關係
+
+CLAUDE.md 與 Hook 互補，不可互相取代：CLAUDE.md 為系統提示詞（每個 session 持續存在），Hook matcher 為 "compact"（僅 compact 後觸發）。
