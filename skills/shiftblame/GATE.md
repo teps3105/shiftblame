@@ -5,8 +5,8 @@
 ## 狀態與轉移
 
 ```
-UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLARED ──AGREE──→ APPROVED ──EXEC──→ EXECUTED ──RED──→ RED ──BLUE──→ BLUE ──RESULT──→ RESULT ──CHECK──→ CHECKED ──FAIL──→ TASK（原地修復或打回上游）
-                                                                                                                                                                      └──CONFIRM──→ PASSED ──BRANCH──→ 推進下一部門/同部門新執行切片
+UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLARED ──AGREE──→ APPROVED ──EXEC──→ EXECUTED ──RED──→ RED ──BLUE──→ BLUE ──CONC──→ CONCLUSION ──CHECK──→ CHECKED ──FAIL──→ APPROVED（原地修復或打回上游）
+                                                                                                                                                                             └──CONFIRM──→ PASSED（輸出 compact 提醒）──BRANCH──→ 推進下一部門/同部門新執行切片
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -16,11 +16,11 @@ UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLAR
 | TASK | 任務已建立 | `<slug>/SLUG.md` + `<slug>/<DEPT>/<NNN>/task.md` |
 | DECLARED | 執行者已寫入宣告，等待老闆確認 | `task.md`（含非空「## 宣告」段落） |
 | APPROVED | 老闆已同意宣告，可開始執行 | `task.md` |
-| EXECUTED | 執行者工作結論已寫入 task.md，等待紅隊 | `task.md`（含工作結論） |
-| RED | 紅隊產出完成，等待藍隊 | `task.md`（含工作結論）+ `red.md` |
-| BLUE | 藍隊產出完成，等待結果彙整 | `task.md`（含工作結論）+ `red.md` + `blue.md` |
-| RESULT | 三方產出齊全，待閘門確認 | `task.md`（含工作結論）+ `result.md` + `red.md` + `blue.md` |
-| CHECKED | 閘門檢查完成，待老闆確認 | — |
+| EXECUTED | result.md 已產出 | `task.md` + `result.md` |
+| RED | red.md 已產出 | `task.md` + `result.md` + `red.md` |
+| BLUE | blue.md 已產出 | `task.md` + `result.md` + `red.md` + `blue.md` |
+| CONCLUSION | conclusion.md 已產出 | `task.md` + `result.md` + `red.md` + `blue.md` + `conclusion.md` |
+| CHECKED | 閘門檢查完成（五檔齊全），待老闆確認 | — |
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
@@ -63,7 +63,7 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 適用範圍：全部門（PM/QA/DEV/QC），每一輪。
 
-建立 QA 任務前另有 PM 前置條件：PM 必須已通過閘門，且 QA task.md 的「上游輸入」必須引用或摘要 PM result.md / red.md / blue.md 的結論。未完成 PM 不得建立 QA task.md。
+建立 QA 任務前另有 PM 前置條件：PM 必須已通過閘門，且 QA task.md 的「上游輸入」必須引用或摘要 PM conclusion.md 的結論。未完成 PM 不得建立 QA task.md。
 
 建立 DEV 任務前：管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
 
@@ -221,9 +221,6 @@ upstream:
 
 ## 宣告
 
-
-## 結果
-
 ```
 
 建立規則：
@@ -237,21 +234,22 @@ upstream:
 
 **順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
 
-1. 執行者完成工作結論並寫入 task.md（狀態 EXECUTED）。紅隊攻擊的對象是 task.md 中的工作結論。
-2. task.md 工作結論存在且格式有效後，才呼叫紅隊產出 `red.md`。紅隊攻擊 task.md 工作結論。
-3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`、`red.md` 後寫出攻防對照報告。藍隊不讀取 result.md（尚未產出）。
-4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 result.md，進入 RESULT。
-5. 管理者執行 Result Check（檢查三檔齊全且格式有效），通過後進入 CHECKED。
-6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
+1. 執行者完成工作成果並寫入 result.md（狀態 EXECUTED）。
+2. result.md 存在且格式有效後，才呼叫紅隊產出 `red.md`。紅隊攻擊 result.md。
+3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後寫出攻防對照報告。
+4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
+5. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
+6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED，輸出 compact 提醒。
 
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 
 | 情境 | 動作 |
 |------|------|
-| 三檔皆存在 | 通過，可詢問老闆 |
+| 五檔皆存在 | 通過，可詢問老闆 |
 | 缺 `result.md` | BLOCK：先完成執行者產出，不得呼叫紅隊或藍隊 |
 | 缺 `red.md` | BLOCK：先呼叫紅隊，不得呼叫藍隊 |
 | 缺 `blue.md` | BLOCK：先呼叫藍隊 |
+| 缺 `conclusion.md` | BLOCK：先完成結論產出 |
 | 缺對應內容型別或另建產物檔替代 `result.md` | BLOCK：重寫 `result.md`，不得跳過該輪 |
 | 檔案為空、無 YAML frontmatter、或格式無效 | BLOCK：重派對應員工，不得跳過該輪 |
 
@@ -268,7 +266,7 @@ upstream:
 
 退回規則：
 
-- FAIL（原地修復）：同部門 NNN 不變，刪除 RED/BLUE/RESULT，清除宣告段落，重置 task.md 狀態為 PENDING。task.md「## 結果」段落保留前次工作結論供參考。一個 NNN 可以多次提交。FAIL 必須回到 task.md 重寫工作結論，重新走完整紅隊→藍隊→RESULT 攻防流程，不得跳過攻防直接產出 result.md。
+- FAIL（原地修復）：同部門 NNN 不變，修改 result.md、red.md、blue.md（不刪除，保留完整追溯紀錄），若 conclusion.md 已存在一併覆寫；task.md 回到 APPROVED（宣告段落不變）。一個 NNN 可以多次提交。FAIL 必須回到 result.md 重寫工作成果，重新走完整紅隊→藍隊→conclusion 攻防流程，不得跳過攻防直接產出 conclusion.md。
 - FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做（不開新 NNN）。
 - 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。不是用來修正或補強。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門，不影響其他已通過閘門的部門。需 BossConfirm。
