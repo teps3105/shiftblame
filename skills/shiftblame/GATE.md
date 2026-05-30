@@ -4,10 +4,97 @@
 
 ## 狀態與轉移
 
+五階段 FAIL 狀態機：
+
 ```
-UNINIT ──G0──→ READY ──G1──→ TASK ──DECL──→ DECLARED ──AGREE──→ APPROVED ──EXEC──→ EXECUTED ──RED──→ RED ──BLUE──→ BLUE ──CONC──→ CONCLUSION ──CHECK──→ CHECKED ──FAIL──→ APPROVED（原地修復或打回上游）
-                                                                                                                                                                             └──CONFIRM──→ PASSED（輸出 compact 提醒）──BRANCH──→ 推進下一部門/同部門新執行切片
+L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED（重新宣告）
+                └──agree──→ APPROVED
+
+L2 產出:   APPROVED ──→ EXECUTED（result.md）
+
+L3 紅隊:   EXECUTED ──→ RED（red.md）
+
+L4 藍隊:   RED ──→ BLUE（blue.md）
+                └──FAIL──→ APPROVED（返回 L2 修復 result.md，重跑 L3→L4）
+
+L5 結論:   BLUE ──PASS──→ CONCLUSION（conclusion.md）──→ CHECKED ──BossConfirm──→ PASSED
 ```
+
+FAIL 規則：
+- L1 BossConfirm FAIL → 返回 L1 重新宣告
+- L4 藍隊 FAIL → 返回 L2（修改 result.md），重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS
+- FAIL 修改不刪除（保留完整追溯紀錄），task.md 宣告段落不變
+- L4 藍隊 FAIL 另有打回上游選項（問題在上游定義，退回上游修正）
+
+合併歸檔狀態機（驗收上線閘門通過後）：
+
+```
+MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
+```
+
+### MAIN 模式
+
+MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型修復、文件更新與配置變更。
+
+MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
+
+- 目錄結構：`.shiftblame/<slug>/<NNN>/`（扁平，無 DEPT 層級）
+- 無部門前置條件、無上游讀取、無功能分支
+- result.md 無部門三段式內容要求，直接描述工作成果
+- conclusion.md 須包含最終結論與紅藍整合摘要（無跨部門推進聲明）
+- task.md 使用 `mode: main` 欄位取代 `department` 欄位
+- L4 藍隊 FAIL 無打回上游選項（無上游）
+
+MAIN 模式收尾狀態機：
+
+```
+PASSED ──COMMIT──→ COMMITTED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
+```
+
+MAIN 模式退回規則：
+- L1 BossConfirm FAIL → 返回 L1 重新宣告
+- L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS
+- 回溯：撤回該 slug 所有變更（git 與 .shiftblame/），回到 001。需 BossConfirm
+
+MAIN 模式 task.md 模板：
+
+```markdown
+---
+slug: <slug>
+mode: main
+round: <NNN>
+status: PENDING
+created_at: <ISO 8601>
+trigger: <觸發原因>
+review: local
+---
+
+# <NNN> <觸發原因>任務：<標題>
+
+## 宣告
+
+```
+
+#### G1-MAIN — 派工（MAIN 模式）
+
+**檢查**：`<slug>/SLUG.md` 與 `<slug>/<NNN>/task.md` 是否存在。
+
+| 情境 | 動作 |
+|------|------|
+| `SLUG.md` 與 `task.md` 存在 | 通過 |
+| 缺 `SLUG.md` | BLOCK：先建立 `<slug>/SLUG.md` |
+| 目錄存在但無 `task.md` | BLOCK：先建立 task.md |
+| 無對應目錄 | BLOCK：先建立目錄結構 |
+
+#### G2-MAIN — 閘門審查（MAIN 模式）
+
+與 G2 相同的五階段序列。差異：result.md 無部門三段式內容要求、無上游結論讀取、conclusion.md 無跨部門推進聲明。
+
+MAIN 模式 commit 在 BossConfirm PASS 之後才執行，因此 L3 紅隊檢視變更時所有變更均為未提交狀態。紅隊應使用 `git diff`（未提交變更）檢視，不得使用 `git diff HEAD~1`（上一個 commit 的範圍）。
+
+#### G3-MAIN — 歸檔（MAIN 模式）
+
+PASSED 後：commit 到 main → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
@@ -264,12 +351,13 @@ upstream:
 | 產品開發 | 功能不符合規格、存在功能性錯誤、安全漏洞、效能不達標 |
 | 驗收上線 | 功能性錯誤、安全漏洞、規格不一致 |
 
-退回規則：
+退回規則（五階段 FAIL 狀態機）：
 
-- FAIL（原地修復）：同部門 NNN 不變，修改 result.md、red.md、blue.md（不刪除，保留完整追溯紀錄），若 conclusion.md 已存在一併覆寫；task.md 回到 APPROVED（宣告段落不變）。一個 NNN 可以多次提交。FAIL 必須回到 result.md 重寫工作成果，重新走完整紅隊→藍隊→conclusion 攻防流程，不得跳過攻防直接產出 conclusion.md。
-- FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做（不開新 NNN）。
-- 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。不是用來修正或補強。
-- 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門，不影響其他已通過閘門的部門。需 BossConfirm。
+- L1 BossConfirm FAIL：宣告不被接受 → 返回 L1 重新宣告。
+- L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。一個 NNN 可以多次提交。
+- L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。
+- 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。
+- 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門。需 BossConfirm。
 
 計畫不可更動：任何輪次不得更動已 PASSED 的前輪計畫範圍（功能範圍、架構決策、技術選型等）。若需更動，管理者判定是否屬計畫更動（功能範圍增減或架構決策變更），若是則提供老闆兩選項：回溯（限該部門）或進入路線圖（記錄至 ROADMAP.md，不在本輪執行）。實作方式、邊界處理、錯誤處理等不改變功能範圍的調整屬執行細節，不觸發回溯。
 

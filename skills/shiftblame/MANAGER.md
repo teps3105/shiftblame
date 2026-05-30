@@ -48,7 +48,7 @@
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，FAIL 原地修復同一 NNN（修改 result.md、red.md、blue.md、conclusion.md，不刪除，保留完整追溯紀錄），task.md 回到 APPROVED（宣告段落不變），重新從 result.md 開始跑完整序列。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修改 result.md，重跑 L3→L4 直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），宣告段落不變。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
 管理者在推進完成後輸出以下 compact 提醒（執行性質，管理者在推進完成後輸出此提醒）：
 
@@ -61,10 +61,13 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 ## 退回
 
-- FAIL（原地修復）→ 同部門 NNN 不變，修改 result.md、red.md、blue.md、conclusion.md（不刪除，保留完整追溯紀錄），task.md 回到 APPROVED（宣告段落不變）。必須回到 result.md 重寫工作成果，重新走完整紅隊→藍隊→conclusion 攻防流程。
-- FAIL（打回上游）→ 問題在上游定義，上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。
-- 同部門新執行切片 → PASS 後需要新的工作範圍時建立同部門新 NNN。不是用來修正或補強。
-- 回溯 → 撤回該部門所有變更，回到 001。
+五階段 FAIL 狀態機：
+
+- L1 BossConfirm FAIL → 宣告不被接受，返回 L1 重新宣告。
+- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。
+- L4 藍隊 FAIL（打回上游）→ 問題在上游定義，上游開新 NNN，上游通過後直接回到原本被打回的 NNN 重做。
+- 同部門新執行切片 → PASS 後需要新的工作範圍時建立同部門新 NNN。
+- 回溯 → 撤回該部門所有變更，回到 001。需 BossConfirm。
 - 驗收上線例外 → 驗收上線一律退回產品開發（驗收上線不修改程式碼），直接回到原本被打回的 DEV NNN 重做。
 
 計畫更動判定：任何輪次發現需要更動已 PASSED 的前輪計畫時，管理者判定是否屬於計畫更動（功能範圍增減、架構決策變更）。若是，提供老闆兩選項：
@@ -126,6 +129,24 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 ### 派工隔離
 
 管理者在派工 prompt 中不得引用 GATE.md 狀態定義表。GATE.md 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
+
+## MAIN 模式
+
+MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型修復、文件更新與配置變更。
+
+特徵：
+- 直接在主分支工作，不建立功能分支
+- 簡化目錄（`.shiftblame/<slug>/<NNN>/`，無 DEPT 層級）
+- 仍跑五階段流程（task→result→red→blue→conclusion）
+- 無部門管線（不走 PM→QA→DEV→QC）
+- 無上游/下游概念
+- result.md 無部門三段式內容要求，直接描述工作成果
+
+派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED
+
+退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
+
+收尾（MAIN 模式）：PASSED 後 commit 到 main → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。
 
 ## 收尾
 

@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
 # shiftblame — AI Agents 協作框架
 使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
@@ -35,6 +35,25 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 詳見 `DEPT/` 各部門子目錄。
 
+## 模式
+
+| 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
+|------|------|----------|------|----------|
+| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 新功能開發 |
+| MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
+
+FEATURE 模式為預設。MAIN 模式由老闆明確指定。
+
+MAIN 模式特徵：
+- 直接在主分支工作，不建立功能分支
+- 簡化目錄結構（無 DEPT 層級，扁平 `<slug>/<NNN>/`）
+- 仍跑五階段流程（task→result→red→blue→conclusion）
+- 無部門管線（不走 PM→QA→DEV→QC）
+- 無上游/下游概念
+- result.md 無部門三段式內容要求，直接描述工作成果
+- 收尾：commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md
+- task.md 使用 `mode: main` 欄位取代 `department` 欄位
+
 ## 定義檔 / gitignore
 `MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}/`（每部門 L1-L5）
 
@@ -44,9 +63,9 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 ## 閘門狀態機
 
-管理者依 `GATE.md` 定義的狀態機執行閘門檢查：G0 初始化 → G1 派工 → 宣告-確認-執行閘門（TASK → DECLARED → APPROVED）→ G2 審查（EXECUTED → RED → BLUE → CONCLUSION → CHECKED → PASSED）→ G3 歸檔。每次狀態轉移前驗證必要檔案，不通過則中止並報告缺件。詳見 `GATE.md`。
+管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L4 藍隊 FAIL→返回 L2 修復 result.md，重跑 L3→L4 直到 PASS。詳見 `GATE.md`。
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。FAIL 時原地修復同一 NNN（不建立新 NNN，修改 result.md/red.md/blue.md/conclusion.md 不刪除，task.md 回到 APPROVED，宣告段落不變，重新走完整攻防流程）。BossConfirm FAIL 時老闆可選擇新切片（新 NNN 從階段 1 開始）或原地修復（同 NNN 修改 result.md/red.md/blue.md/conclusion.md 從階段 2 重做）。PASS 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN），並輸出 compact 提醒。一個 NNN 可以多次提交。
+每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。FAIL 修改不刪除，宣告段落不變。PASS 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN），並輸出 compact 提醒。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
 
 ## 格式檢查
 
@@ -78,6 +97,18 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
     ├── SLUG.md            # 本輪開發筆記（開發中唯一工作日誌）
     └── <DEPT>/
         └── <NNN>/
+```
+
+MAIN 模式目錄結構：
+
+```
+.shiftblame/
+├── REPO.md
+├── ROADMAP.md
+├── archive/
+└── <slug>/
+    ├── SLUG.md
+    └── <NNN>/
 ```
 
 ```

@@ -26,7 +26,7 @@ _「這不是我的鍋。」_
 | 員工 | 身份 | 產出 |
 |------|------|------|
 | 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾（不寫入部門正式產物） |
-| 執行者 | 目前環境 | result.md |
+| 執行者 | 目前環境 | result.md、conclusion.md |
 | 紅隊 | 本環境子代理 | red.md |
 | 藍隊 | 本環境子代理 | blue.md |
 
@@ -36,18 +36,27 @@ _「這不是我的鍋。」_
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者寫入宣告 → 管理者向老闆確認宣告（宣告-確認-執行閘門）→ 老闆同意後執行者寫入 task.md 工作結論 → 管理者呼叫紅隊 → 紅隊攻擊 task.md 工作結論並寫出 `red.md` → 管理者呼叫藍隊 → 藍隊讀取 `task.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `result.md` → Result Check → CHECKED → BossConfirm → PASSED。紅藍隊不得並行。FAIL 時原地修復同一 NNN（不建立新 NNN，回到 task.md 重寫結論並重新走完整攻防流程）；PASS 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+同一任務的攻防流程固定序列為：執行者寫入宣告 → 管理者向老闆確認宣告（L1 宣告-確認-執行閘門）→ 老闆同意後執行者寫入 result.md 工作成果（L2 產出）→ 管理者呼叫紅隊攻擊 result.md 並寫出 `red.md`（L3 紅隊）→ 管理者呼叫藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫出 `blue.md`（L4 藍隊）→ 藍隊 PASS 後執行者依紅藍回饋寫入 `conclusion.md`（L5 結論）→ Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行。
+
+五階段 FAIL 狀態機：
+- L1 BossConfirm FAIL → 返回 L1 重新宣告
+- L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS
+- FAIL 修改不刪除，宣告段落不變
 
 每一輪任務開始前，管理者必須向老闆確認宣告內容，老闆同意後才能開始執行。全部門、每一輪都適用。
 
 全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。面向老闆的詢問語言必須使用繁體中文，不得使用英文狀態機值作為選項文字。
 
-```
-L1: 執行 → 收尾
-L2: 專案計畫 → 品質保證 → 產品開發 → 工程收尾 → 驗收上線 → 收尾
-```
+## 模式
 
-## 功能分支
+| 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
+|------|------|----------|------|----------|
+| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 新功能開發（預設） |
+| MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
+
+FEATURE 模式為預設，走完整 PM→QA→DEV→QC 部門管線。MAIN 模式由老闆明確指定，直接在主分支上工作，不走部門管線，但仍跑五階段流程（task→result→red→blue→conclusion）。MAIN 模式的 slug 目錄為扁平結構（無 DEPT 層級），收尾流程簡化為 commit → push → 歸檔 → 更新。MAIN 模式的五階段 FAIL 狀態機與 FEATURE 模式一致。
+
+## 功能分支（FEATURE 模式）
 
 管理者在第一次進入產品開發時建立 `feat/<slug>` 功能分支，專案計畫和品質保證不使用功能分支。
 
@@ -81,17 +90,17 @@ L2: 專案計畫 → 品質保證 → 產品開發 → 工程收尾 → 驗收�
 
 需求釐清/市場研究/產品規格、安全標準/操作標準/系統規格、技術規劃/技術設計/技術實作、驗收計畫/驗收報告/驗收結論皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
 
-詳見 `DEPT/<DEPT>/L1-L4.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
+詳見 `DEPT/<DEPT>/L1-L5.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
 
 ## 閘門
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→QA | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
-| QA→DEV | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
-| DEV→工程收尾 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
+| PM→QA | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
+| QA→DEV | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
+| DEV→工程收尾 | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 宣告 → BossConfirm → 工作結論 → 紅隊 → 藍隊 → RESULT → RESULT Check → CHECKED → `BossConfirm` → PASSED |
+| 驗收上線→合併 | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
@@ -128,28 +137,34 @@ skills/shiftblame/
 ├── STAFF.md          # 員工呼叫規格
 └── DEPT/
     ├── PM/
-    │   ├── L1.md     # 專案計畫執行者工作結論
-    │   ├── L2.md     # 專案計畫紅隊
-    │   ├── L3.md     # 專案計畫藍隊
-    │   └── L4.md     # 專案計畫執行者結果產出
+    │   ├── L1.md     # 專案計畫執行者工作宣告
+    │   ├── L2.md     # 專案計畫執行者結果產出
+    │   ├── L3.md     # 專案計畫紅隊攻擊
+    │   ├── L4.md     # 專案計畫藍隊防禦
+    │   └── L5.md     # 專案計畫執行者結論
     ├── QA/
-    │   ├── L1.md     # 品質保證執行者工作結論
-    │   ├── L2.md     # 品質保證紅隊
-    │   ├── L3.md     # 品質保證藍隊
-    │   └── L4.md     # 品質保證執行者結果產出
+    │   ├── L1.md     # 品質保證執行者工作宣告
+    │   ├── L2.md     # 品質保證執行者結果產出
+    │   ├── L3.md     # 品質保證紅隊攻擊
+    │   ├── L4.md     # 品質保證藍隊防禦
+    │   └── L5.md     # 品質保證執行者結論
     ├── DEV/
-    │   ├── L1.md     # 產品開發執行者工作結論
-    │   ├── L2.md     # 產品開發紅隊
-    │   ├── L3.md     # 產品開發藍隊
-    │   └── L4.md     # 產品開發執行者結果產出
+    │   ├── L1.md     # 產品開發執行者工作宣告
+    │   ├── L2.md     # 產品開發執行者結果產出
+    │   ├── L3.md     # 產品開發紅隊攻擊
+    │   ├── L4.md     # 產品開發藍隊防禦
+    │   └── L5.md     # 產品開發執行者結論
     └── QC/
-        ├── L1.md     # 驗收上線執行者工作結論
-        ├── L2.md     # 驗收上線紅隊
-        ├── L3.md     # 驗收上線藍隊
-        └── L4.md     # 驗收上線執行者結果產出
+        ├── L1.md     # 驗收上線執行者工作宣告
+        ├── L2.md     # 驗收上線執行者結果產出
+        ├── L3.md     # 驗收上線紅隊攻擊
+        ├── L4.md     # 驗收上線藍隊防禦
+        └── L5.md     # 驗收上線執行者結論
 ```
 
 ## 文件結構
+
+FEATURE 模式：
 
 ```
 .shiftblame/
@@ -160,9 +175,27 @@ skills/shiftblame/
     ├── SLUG.md           # 本輪開發筆記（開發中唯一工作日誌）
     └── <DEPT>/<NNN>/
         ├── task.md
-        ├── result.md    # 執行者，依部門承載三段式文件章節
-        ├── red.md       # 紅隊
-        └── blue.md      # 藍隊
+        ├── result.md     # 執行者，依部門承載三段式文件章節
+        ├── red.md        # 紅隊
+        ├── blue.md       # 藍隊
+        └── conclusion.md # 執行者，依紅藍回饋寫入結論
+```
+
+MAIN 模式：
+
+```
+.shiftblame/
+├── REPO.md
+├── ROADMAP.md
+├── archive/
+└── <slug>/
+    ├── SLUG.md
+    └── <NNN>/
+        ├── task.md
+        ├── result.md     # 執行者，直接描述工作成果
+        ├── red.md        # 紅隊
+        ├── blue.md       # 藍隊
+        └── conclusion.md # 執行者，依紅藍回饋寫入結論
 ```
 
 ---
