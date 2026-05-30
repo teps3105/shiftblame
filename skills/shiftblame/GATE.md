@@ -10,19 +10,25 @@
 L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED（重新宣告）
                 └──agree──→ APPROVED
 
-L2 產出:   APPROVED ──→ EXECUTED（result.md）
+L2 產出:   APPROVED ──→ EXECUTED（result.md）──BossConfirm──→（繼續 L3）
+                └──老闆要求修改──→ APPROVED（修改 result.md，重新 EXECUTED 後再 BossConfirm）
 
-L3 紅隊:   EXECUTED ──→ 紅隊寫入 red.md ──→ 管理者驗證 ──→ RED
+L3 紅隊:   L2 BossConfirm 通過後 ──→ 紅隊寫入 red.md ──→ 管理者驗證 ──→ RED
 
 L4 藍隊:   RED ──→ 藍隊寫入 blue.md ──→ 管理者驗證 ──→ BLUE
-                └──FAIL──→ APPROVED（返回 L2 修復 result.md，重跑 L3→L4）
+                └──FAIL──→ APPROVED（自動退回 L2，不需 BossConfirm）
 
-L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ CHECKED ──BossConfirm──→ PASSED ──→ compact（FEATURE 阻塞式，MAIN 條件式）
+L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ CHECKED ──BossConfirm FAIL──→ DECLARED（退回 L1 重新宣告）
+                                                                └──BossConfirm PASSED──→ PASSED ──→ compact（FEATURE 阻塞式，MAIN 條件式）
 ```
 
 FAIL 規則：
 - L1 BossConfirm FAIL → 返回 L1 重新宣告
-- L4 藍隊 FAIL → 返回 L2（修改 result.md），重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS
+- L2 BossConfirm（result 確認）→ 老闆要求修改則返回 APPROVED，修改 result.md 後重新 EXECUTED 再 BossConfirm
+- L4 藍隊 FAIL → 自動退回 L2（不需 BossConfirm），修改 result.md 後重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS
+- L5 BossConfirm FAIL → 退回 L1 重新宣告（DECLARED），需重新走 BossConfirm
+- 需 BossConfirm 的 FAIL：L1 宣告確認、L2 result 確認、L5 結論確認
+- 不需 BossConfirm 的 FAIL：L4 藍隊 FAIL（自動退回 L2）
 - FAIL 修改不刪除（保留完整追溯紀錄），task.md 宣告段落不變
 - 不得刪除既有攻防紀錄；FAIL 重跑時在既有內容後追加新回合（以 `---` 與回合標題分隔）
 - L4 藍隊 FAIL 另有打回上游選項（問題在上游定義，退回上游修正）
@@ -36,19 +42,21 @@ DEV（產品開發）和 QC（驗收上線）的每個執行切片（NNN）包�
 計畫循環：
 L1 宣告(plan): DECLARED ──BossConfirm FAIL──→ DECLARED
                   └──agree──→ APPROVED
-L2 產出(plan): APPROVED → EXECUTED（result.md 計畫部分）
-L3 紅隊(plan): EXECUTED → RED
+L2 產出(plan): APPROVED → EXECUTED（result.md 計畫部分）──BossConfirm──→（繼續 L3）
+                  └──老闆要求修改──→ APPROVED（修改後重新 EXECUTED 再 BossConfirm）
+L3 紅隊(plan): BossConfirm 通過後 → RED
 L4 藍隊(plan): RED → BLUE
-                  └──FAIL──→ APPROVED（返回 L2 修復計畫，重跑 L3→L4）
+                  └──FAIL──→ APPROVED（自動退回 L2，不需 BossConfirm）
 L5 結論(plan): BLUE → CONCLUSION → CHECKED → Boss Plan Pass → PLAN_PASSED（不 compact）
 
 實作循環（同 NNN，接續 PLAN_PASSED）：
 L1 宣告(impl): PLAN_PASSED → DECLARED ──BossConfirm FAIL──→ DECLARED
                   └──agree──→ APPROVED
-L2 產出(impl): APPROVED → EXECUTED（result.md 完整：計畫+實作）
-L3 紅隊(impl): EXECUTED → RED
+L2 產出(impl): APPROVED → EXECUTED（result.md 完整：計畫+實作）──BossConfirm──→（繼續 L3）
+                  └──老闆要求修改──→ APPROVED（修改後重新 EXECUTED 再 BossConfirm）
+L3 紅隊(impl): BossConfirm 通過後 → RED
 L4 藍隊(impl): RED → BLUE
-                  └──FAIL──→ APPROVED（返回 L2 修復實作，重跑 L3→L4）
+                  └──FAIL──→ APPROVED（自動退回 L2，不需 BossConfirm）
                   └──計畫重做──→ 刪除實作循環五檔，計畫循環回到 APPROVED，修改 result.md 計畫部分後重跑完整五階段（需 BossConfirm）
 L5 結論(impl): BLUE → CONCLUSION → CHECKED → Boss Gate Pass → PASSED → compact
 ```
@@ -91,8 +99,10 @@ PASSED ──COMMIT──→ COMMITTED ──PUSH──→ PUSHED ──ARCHIVE�
 ```
 
 MAIN 模式退回規則：
-- L1 BossConfirm FAIL → 返回 L1 重新宣告
-- L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS
+- L1 BossConfirm FAIL → 返回 L1 重新宣告。需 BossConfirm。
+- L2 BossConfirm FAIL（result 確認）→ 返回 APPROVED 修改 result.md，重新 EXECUTED 後再 BossConfirm。需 BossConfirm。
+- L4 藍隊 FAIL → 自動退回 L2 修復 result.md，採增量攻防重跑 L3→L4 直到 PASS（不得刪除既有攻防紀錄，新回合追加在既有紀錄之後）。不需 BossConfirm。
+- L5 BossConfirm FAIL → 退回 L1 重新宣告。需 BossConfirm。
 - 回溯：撤回該 slug 所有變更（git 與 .shiftblame/），回到 001。需 BossConfirm
 
 MAIN 模式 task.md 模板：
@@ -368,12 +378,13 @@ upstream:
 **順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
 
 1. 執行者完成工作成果並寫入 result.md（狀態 EXECUTED）。
-2. result.md 存在且格式有效後，才呼叫紅隊。紅隊攻擊 result.md 並將報告寫入 `red.md`。管理者驗證 `red.md` 已產出且格式有效；若未產出，重新呼叫紅隊。
-3. `red.md` 存在且格式有效後，才呼叫藍隊。藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後將攻防對照報告寫入 `blue.md`。管理者驗證 `blue.md` 已產出且格式有效；若未產出，重新呼叫藍隊。
-4. `red.md`、`blue.md` 皆存在且格式有效後，管理者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
-5. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
-6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
-7. 管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。
+2. 管理者向老闆 BossConfirm（確認 result.md 無需修改）。通過 → 繼續；老闆要求修改 → 返回 APPROVED，修改 result.md 後重新 EXECUTED 再 BossConfirm。
+3. L2 BossConfirm 通過後，才呼叫紅隊。紅隊攻擊 result.md 並將報告寫入 `red.md`。管理者驗證 `red.md` 已產出且格式有效；若未產出，重新呼叫紅隊。
+4. `red.md` 存在且格式有效後，才呼叫藍隊。藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後將攻防對照報告寫入 `blue.md`。管理者驗證 `blue.md` 已產出且格式有效；若未產出，重新呼叫藍隊。
+5. `red.md`、`blue.md` 皆存在且格式有效後，管理者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
+6. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
+7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED；FAIL → 退回 L1 重新宣告（DECLARED）。
+8. 管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。
 
 **DEV/QC 雙循環**：DEV 和 QC 的每個 NNN 跑兩次上述序列。第一次為計畫循環（result.md 只含計畫部分），通過 Boss Plan Pass（PLAN_PASSED）後不 compact，直接進入實作循環。第二次為實作循環（result.md 追加實作部分），通過 Boss Gate Pass（PASSED）後才 compact。兩次循環的五檔內容以 `---` 分隔追加，不覆蓋。
 
@@ -402,9 +413,11 @@ upstream:
 
 退回規則（五階段 FAIL 狀態機）：
 
-- L1 BossConfirm FAIL：宣告不被接受 → 返回 L1 重新宣告。
-- L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。一個 NNN 可以多次提交。不得刪除既有 red.md / blue.md 紀錄。
-- L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。
+- L1 BossConfirm FAIL：宣告不被接受 → 返回 L1 重新宣告。需 BossConfirm。
+- L2 BossConfirm FAIL（result 確認）：老闆要求修改 result.md → 返回 APPROVED，修改後重新 EXECUTED 再 BossConfirm。需 BossConfirm。
+- L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。一個 NNN 可以多次提交。採增量攻防：不得刪除既有 red.md / blue.md 紀錄，新回合攻防內容追加在既有紀錄之後（以 `---` 與 `## 第 N 次攻擊` / `## 第 N 次防禦` 分隔），保留完整追溯。不需 BossConfirm，自動退回。
+- L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。不需 BossConfirm，自動退回。
+- L5 BossConfirm FAIL：結論不被接受 → 退回 L1 重新宣告（DECLARED）。需 BossConfirm。
 - 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門。需 BossConfirm。
 

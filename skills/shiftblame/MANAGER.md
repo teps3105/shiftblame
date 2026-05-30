@@ -31,7 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED → compact 提醒（FEATURE 阻塞式，MAIN 條件式）。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV 和 QC 跑兩次此序列（計畫循環 → Boss Plan Pass → PLAN_PASSED → 實作循環 → Boss Gate Pass → PASSED），見 GATE.md 雙循環定義。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED → compact 提醒（FEATURE 阻塞式，MAIN 條件式）。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時老闆可要求修改 result.md，修改後重新確認；L4 藍隊 FAIL 自動退回 L2 不需 BossConfirm；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV 和 QC 跑兩次此序列（計畫循環 → Boss Plan Pass → PLAN_PASSED → 實作循環 → Boss Gate Pass → PASSED），見 GATE.md 雙循環定義。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -39,11 +39,11 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
-| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
-| 產品開發→工程收尾 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
+| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 產品開發→工程收尾 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
+| 驗收上線→合併 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
@@ -70,9 +70,11 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 五階段 FAIL 狀態機：
 
-- L1 BossConfirm FAIL → 宣告不被接受，返回 L1 重新宣告。
-- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。
-- L4 藍隊 FAIL（打回上游）→ 問題在上游定義，上游開新 NNN，上游通過後直接回到原本被打回的 NNN 重做。
+- L1 BossConfirm FAIL → 宣告不被接受，返回 L1 重新宣告。需 BossConfirm。
+- L2 BossConfirm FAIL（result 確認）→ 老闆要求修改 result.md，返回 APPROVED 修改後重新 EXECUTED 再 BossConfirm。需 BossConfirm。
+- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，採增量攻防重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後。不需 BossConfirm，自動退回。
+- L4 藍隊 FAIL（打回上游）→ 問題在上游定義，上游開新 NNN，上游通過後直接回到原本被打回的 NNN 重做。不需 BossConfirm，自動退回。
+- L5 BossConfirm FAIL → 結論不被接受，退回 L1 重新宣告。需 BossConfirm。
 - 同部門新執行切片 → PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯 → 撤回該部門所有變更，回到 001。需 BossConfirm。
 - 驗收上線例外 → 驗收上線一律退回產品開發（驗收上線不修改程式碼），直接回到原本被打回的 DEV NNN 重做。
@@ -121,7 +123,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 **CONCLUSION → CHECKED**：驗證五檔齊全（task.md + result.md + red.md + blue.md + conclusion.md），每檔含 YAML frontmatter 與繁體中文內容。不通過 → 要求補齊缺件。
 
-**不可跳步**：藍隊判定 FAIL 時，管理者直接回到 L2（APPROVED）修改 result.md，重跑 L3→L4，不產出 conclusion.md。只有藍隊 PASS 才進入 L5 產出 conclusion.md。
+**不可跳步**：藍隊判定 FAIL 時，管理者直接回到 L2（APPROVED）修改 result.md，重跑 L3→L4，不產出 conclusion.md。只有藍隊 PASS 才進入 L5 產出 conclusion.md。L2 BossConfirm 不可跳過：result.md 產出後必須經老闆確認才能呼叫紅隊。L5 BossConfirm FAIL 時退回 L1 重新宣告（DECLARED）。
 
 ### Commit 閘門
 
@@ -151,9 +153,9 @@ MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型
 - 無上游/下游概念
 - result.md 無部門三段式內容要求，直接描述工作成果
 
-派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED → compact 提醒（條件式，僅上下文過長時）
+派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED → compact 提醒（條件式，僅上下文過長時）
 
-退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
+退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 APPROVED 修改 result.md 後重新確認；L4 藍隊 FAIL → 自動退回 L2 修復 result.md，採增量攻防重跑 L3→L4，不需 BossConfirm；L5 BossConfirm FAIL → 退回 L1 重新宣告；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
 
 收尾（MAIN 模式）：PASSED 後 commit 到 main → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。
 
