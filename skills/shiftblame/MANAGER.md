@@ -31,7 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED → compact 提醒（FEATURE 阻塞式，MAIN 條件式）。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。管理者驗證紅藍隊產出，未產出則重跑該子代理。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED → compact 提醒（FEATURE 阻塞式，MAIN 條件式）。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV 和 QC 跑兩次此序列（計畫循環 → Boss Plan Pass → PLAN_PASSED → 實作循環 → Boss Gate Pass → PASSED），見 GATE.md 雙循環定義。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -41,20 +41,23 @@
 |:----:|------|
 | 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
 | 品質保證→產品開發 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
-| 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 產品開發→工程收尾 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 驗收上線→合併 | 計畫循環：宣告 → BossConfirm → result.md（計畫）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Plan Pass → PLAN_PASSED；實作循環（同 NNN）：宣告 → BossConfirm → result.md（完整）→ 紅隊 → 藍隊 → conclusion.md → Check → Boss Gate Pass → PASSED → compact |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
 每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修改 result.md，重跑 L3→L4 直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），宣告段落不變。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
-管理者在 BossConfirm PASSED 後輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 compact）。
+管理者在 BossConfirm PASSED 後輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 compact）。DEV/QC 計畫循環通過（PLAN_PASSED）不 compact，保持上下文連續性直到實作循環也 PASSED。
 
-FEATURE 模式：
+FEATURE 模式（PM/QA PASSED 或 DEV/QC 實作循環 PASSED）：
 閘門已通過。請執行 /compact 壓縮上下文後繼續收尾或推進下一部門。
 compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
+
+FEATURE 模式（DEV/QC 計畫循環 PLAN_PASSED）：
+計畫循環已通過。不執行 compact，直接進入實作循環。
 
 MAIN 模式：
 閘門已通過。若上下文過長，請執行 /compact 壓縮上下文後繼續收尾。
