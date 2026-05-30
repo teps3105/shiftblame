@@ -1,4 +1,4 @@
----
+﻿---
 name: shiftblame
 description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
@@ -75,15 +75,17 @@ MAIN 模式特徵：
 
 所有管理者與員工在讀寫 `.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案時，讀寫皆優先使用內建工具，若無法使用再退回 shell 指令：
 
-- 讀取（優先）：Read Tool（內建檔案讀取工具）
+- 讀取（優先，Claude）：Read Tool（內建檔案讀取工具）
+- 讀取（優先，Codex 桌面環境）：`Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS/Git Bash）
 - 讀取（備援，Linux/macOS/Git Bash）：`cat`、`sed -n`
 - 讀取（備援，Windows PowerShell）：`Get-Content -Encoding UTF8`
 - 檢查/列檔：`test -f`、`find`、`Test-Path`、`Get-ChildItem`
-- 寫入（優先）：Write/Edit Tool（內建檔案寫入/編輯工具）
+- 寫入（優先，Claude）：Write/Edit Tool（內建檔案寫入/編輯工具）
+- 寫入（優先，Codex 桌面環境）：`apply_patch` 系列工具（`apply_patch_add_file` / `apply_patch_update_file` / `apply_patch_replace_file` / `apply_patch_batch`），或 `Out-File -Encoding UTF8`（PowerShell）
 - 寫入（備援）：shell heredoc 或目前環境允許的 patch/write 工具
 - 禁止：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
 
-派工 prompt 必須明確寫入：「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案優先使用 Read Tool 讀取、Write/Edit Tool 寫入，若無法使用再以 shell 指令處理；Windows PowerShell 備援時必須使用 `Get-Content -Encoding UTF8` 讀取，Linux/macOS/Git Bash 可用 `cat` 或 `sed -n`」。
+派工 prompt 必須明確寫入讀寫規則（環境自適應）：Claude 環境優先使用 Read Tool 讀取、Write/Edit Tool 寫入；Codex 桌面環境使用 `Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS）讀取，`apply_patch` 系列工具或 `Out-File -Encoding UTF8` 寫入。若內建工具無法使用，再以 shell 指令處理。
 
 確認 `.shiftblame/REPO.md` 與 `.shiftblame/ROADMAP.md` 存在，不存在 → 依 `GATE.md` 初始化或報告「尚未初始化」。關鍵字觸發流程。
 
@@ -134,6 +136,17 @@ skills/shiftblame/
 ## 初始化設定
 
 首次使用 shiftblame 時，需手動設定兩項用戶級配置：
+### 3. Codex 桌面環境（`AGENTS.md`）
+
+在用戶級 `$CODEX_HOME/AGENTS.md` 中加入以下 managed block（格式與 Claude 的 CLAUDE.md 相同）：
+
+```
+<!-- BEGIN shiftblame:global-entry -->
+load shiftblame skills. On any shiftblame keyword reload shiftblame skills.
+<!-- END shiftblame:global-entry -->
+```
+
+Codex 桌面環境在每次對話載入時自動讀取用戶級 `AGENTS.md`，無需額外的 SessionStart hook。與 Claude 的 `~/.claude/CLAUDE.md` 同為用戶級一次性設定，兩邊的 managed block 內容相同。
 
 ### 1. `~/.claude/CLAUDE.md`（managed block）
 

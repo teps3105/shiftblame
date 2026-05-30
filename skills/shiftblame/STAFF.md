@@ -1,4 +1,4 @@
-# STAFF — 員工呼叫規格
+﻿# STAFF — 員工呼叫規格
 
 | 別名 | 角色 | 呼叫路徑 |
 |------|------|---------|
@@ -32,10 +32,10 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 派工時，prompt 必須包含以下硬性指示：
 
 ```text
-重要產出規則：
+重要產出規則（環境自適應）：
 - .shiftblame/ 已被 .gitignore 排除。
-- 讀取 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，優先使用 Read Tool（內建檔案讀取工具），若無法讀取再使用 shell 指令；Linux/macOS/Git Bash 使用 cat 或 sed -n，Windows PowerShell 必須使用 Get-Content -Encoding UTF8。
-- 寫入 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時，優先使用 Write/Edit Tool（內建檔案寫入/編輯工具），若無法使用再以 shell heredoc 或目前環境允許的 patch/write 工具處理。
+- 讀取 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時：Claude 環境優先使用 Read Tool（內建檔案讀取工具）；Codex 桌面環境使用 `Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS/Git Bash）。若內建工具無法使用再以 shell 指令處理。
+- 寫入 .shiftblame/ 與 skills/shiftblame/ 內 Markdown 檔案時：Claude 環境優先使用 Write/Edit Tool（內建檔案寫入/編輯工具）；Codex 桌面環境使用 `apply_patch` 系列工具（apply_patch_add_file / apply_patch_update_file / apply_patch_replace_file / apply_patch_batch），或 `Out-File -Encoding UTF8`（PowerShell）。若內建工具無法使用再以 shell heredoc 處理。
 - 檢查檔案存在與列檔可使用 test -f、find、Test-Path、Get-ChildItem。
 - 禁止在 Windows PowerShell 以未指定 -Encoding UTF8 的 Get-Content/type/cat 讀取含中文 Markdown。
 - 開發中筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策只可記錄在 .shiftblame/<slug>/SLUG.md，不得寫入 ROADMAP.md。
@@ -60,7 +60,7 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 ## Prompt 模板
 
-所有模板都必須包含「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案優先使用 Read Tool 讀取、Write/Edit Tool 寫入，若無法使用再以 shell 指令處理；Windows PowerShell 備援時必須使用 `Get-Content -Encoding UTF8`」。
+所有模板都必須包含「`.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案讀取與寫入規則：Claude 環境優先使用 Read Tool / Write/Edit Tool；Codex 桌面環境使用 `Get-Content -Encoding UTF8`（讀取）與 `apply_patch` 系列或 `Out-File -Encoding UTF8`（寫入）。若內建工具無法使用，再以 shell 指令處理」。
 
 所有面向老闆的內容都必須預設老闆不懂技術：用繁體中文、作品效果、可操作步驟與驗證結果描述，不得用技術術語包裝。技術細節可放在「內部備註」或「實作紀錄」，不可取代功能描述。
 

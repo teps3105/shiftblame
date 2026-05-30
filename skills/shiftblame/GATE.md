@@ -1,4 +1,4 @@
-# shiftblame — 狀態機閘門
+﻿# shiftblame — 狀態機閘門
 
 統一閘門檢查定義。管理者在每次狀態轉移前，依下表驗證必要條件；不通過則中止並報告缺件。
 
@@ -459,11 +459,13 @@ upstream:
 
 管理者依上述閘門在每次狀態轉移前執行檢查。檢查方式：
 
-- **讀取（優先）**：Read Tool（內建檔案讀取工具）
+- **讀取（優先，Claude）**：Read Tool（內建檔案讀取工具）
+- **讀取（優先，Codex 桌面環境）**：`Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS/Git Bash）
 - **讀取（備援，Linux/macOS/Git Bash）**：`cat`、`sed -n`
 - **讀取（備援，Windows PowerShell）**：`Get-Content -Encoding UTF8`
 - **檢查/列檔**：`test -f`、`find`、`ls`、`Test-Path`、`Get-ChildItem`
-- **寫入（優先）**：Write/Edit Tool（內建檔案寫入/編輯工具）
+- **寫入（優先，Claude）**：Write/Edit Tool（內建檔案寫入/編輯工具）
+- **寫入（優先，Codex 桌面環境）**：`apply_patch` 系列工具（`apply_patch_add_file` / `apply_patch_update_file` / `apply_patch_replace_file` / `apply_patch_batch`），或 `Out-File -Encoding UTF8`（PowerShell）
 - **寫入（備援）**：shell heredoc 或目前環境允許的 patch/write 工具
 - **禁止**：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
 
