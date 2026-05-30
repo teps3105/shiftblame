@@ -161,7 +161,7 @@ MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型
 
 驗收上線閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則 FAIL 原地重做（驗收上線不修改程式碼）。
 
-收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
+收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；臨時檔案應存放於 `.shiftblame/tmp/`（由老闆自行清理，非管理者責任）；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
 
 task.md：YAML frontmatter + 宣告 + 結果。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。
 
