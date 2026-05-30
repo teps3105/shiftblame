@@ -1,9 +1,9 @@
 # MANAGER — 管理者
 
-管理者由目前主開發環境擔任，統一協調：派工、管線、閘門、收尾。
+管理者由目前主開發環境擔任，統一協調：派工、管線、閘門、收尾、寫入 conclusion.md。
 
 > 管理者直接執行
-> 執行者由目前環境執行；紅藍隊依 STAFF.md 使用本環境子代理
+> 執行者預設使用本環境子代理（管理者可根據上下文使用情況隨時調整為目前環境直接執行）；紅藍隊固定使用本環境子代理
 
 ## 溝通
 
@@ -31,7 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md → 紅隊寫出 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫出 `blue.md` → 執行者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → compact 提醒（阻塞式）→ Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。管理者驗證紅藍隊產出，未產出則重跑該子代理。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -48,11 +48,11 @@
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修改 result.md，重跑 L3→L4 直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），宣告段落不變。不得沿用上一輪的 `red.md` 或 `blue.md`；直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修改 result.md，重跑 L3→L4 直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），宣告段落不變。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
-管理者在推進完成後輸出以下 compact 提醒（執行性質，管理者在推進完成後輸出此提醒）：
+管理者在 conclusion.md 產出後、Result Check 前輸出以下 compact 提醒（阻塞式，老闆必須執行 compact 後才能繼續後續流程）：
 
-本部門回合已完成。建議執行 /compact 壓縮上下文以利後續部門推進。
+conclusion.md 已產出。請執行 /compact 壓縮上下文後繼續 Result Check。
 compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
 
 合併歸檔狀態機（驗收上線閘門通過後）：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
@@ -98,6 +98,8 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 管理者在狀態機轉移時，必須驗證前一狀態的產物存在且格式有效。驗證不通過則中止轉移。
 
+**宣告更新規則**：若執行者在 BossConfirm 前更新了宣告內容（無論是否已進入 DECLARED），狀態回到 DECLARED，必須重新走完整宣告流程（BossConfirm），不得視為自動 APPROVED。
+
 **TASK → DECLARED**：驗證 task.md「## 宣告」段落非空。不通過 → 要求執行者先寫入宣告。
 
 **DECLARED → APPROVED**：驗證 BossConfirm 已完成（老闆已明確同意）。不通過 → 中止，等待老闆確認。
@@ -106,13 +108,13 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 **EXECUTED → RED**：驗證 result.md 存在且格式有效（包含 YAML frontmatter 與繁體中文工作成果）。不通過 → 要求執行者先完成工作成果。
 
-**RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊產出 red.md。
+**RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊。
 
-**BLUE → CONCLUSION**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊產出 blue.md。驗證 conclusion.md 存在、包含 YAML frontmatter、包含繁體中文結論內容。不通過 → 要求執行者先完成結論產出。
+**BLUE → CONCLUSION**：驗證 blue.md 存在、包含 YAML frontmatter、包含繁體中文檢視內容。不通過 → 重新呼叫藍隊。驗證 conclusion.md 存在、包含 YAML frontmatter、包含繁體中文結論內容。不通過 → 管理者先完成結論產出。
 
 **CONCLUSION → CHECKED**：驗證五檔齊全（task.md + result.md + red.md + blue.md + conclusion.md），每檔含 YAML frontmatter 與繁體中文內容。不通過 → 要求補齊缺件。
 
-**不可跳步**：藍隊判定 FAIL 時，管理者不得跳過 conclusion.md 產出、Result Check、BossConfirm 直接 FAIL 原地重做。必須走完 conclusion.md → Result Check（五檔）→ BossConfirm 流程，退回與否由 BossConfirm 決定。
+**不可跳步**：藍隊判定 FAIL 時，管理者直接回到 L2（APPROVED）修改 result.md，重跑 L3→L4，不產出 conclusion.md。只有藍隊 PASS 才進入 L5 產出 conclusion.md。
 
 ### Commit 閘門
 
@@ -122,7 +124,7 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 紅藍隊期間（EXECUTED → RED 轉移至 BLUE 完成）以及 DECLARED → APPROVED 期間，管理者不得進行任何會修改工作目錄中已追蹤檔案的操作。唯一例外：更新 SLUG.md 的「管線狀態紀錄」段落和「BossPreview / 退回紀錄」段落。
 
-紅隊子代理只可寫入 red.md，藍隊子代理只可寫入 blue.md，不得建立、修改、追加或覆蓋任何其他檔案（無論是否已追蹤）。
+紅隊子代理將報告寫入 `red.md`，藍隊子代理將報告寫入 `blue.md`。管理者在子代理回傳後驗證檔案是否已產出且格式有效；若未產出，重新呼叫該子代理。管理者寫入 `conclusion.md`，不得刪除既有攻防紀錄。
 
 紅隊報告中發現問題時，管理者不得直接修復。必須繼續藍隊流程。若需修復，FAIL 原地修復或打回上游。
 
@@ -142,7 +144,7 @@ MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型
 - 無上游/下游概念
 - result.md 無部門三段式內容要求，直接描述工作成果
 
-派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED
+派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → 紅隊 → 藍隊 → conclusion.md → compact 提醒（阻塞式）→ Result Check → CHECKED → BossConfirm → PASSED
 
 退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
 

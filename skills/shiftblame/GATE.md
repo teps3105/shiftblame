@@ -12,19 +12,21 @@ L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED（重新宣告）
 
 L2 產出:   APPROVED ──→ EXECUTED（result.md）
 
-L3 紅隊:   EXECUTED ──→ RED（red.md）
+L3 紅隊:   EXECUTED ──→ 紅隊寫入 red.md ──→ 管理者驗證 ──→ RED
 
-L4 藍隊:   RED ──→ BLUE（blue.md）
+L4 藍隊:   RED ──→ 藍隊寫入 blue.md ──→ 管理者驗證 ──→ BLUE
                 └──FAIL──→ APPROVED（返回 L2 修復 result.md，重跑 L3→L4）
 
-L5 結論:   BLUE ──PASS──→ CONCLUSION（conclusion.md）──→ CHECKED ──BossConfirm──→ PASSED
+L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ compact ──→ CHECKED ──BossConfirm──→ PASSED
 ```
 
 FAIL 規則：
 - L1 BossConfirm FAIL → 返回 L1 重新宣告
 - L4 藍隊 FAIL → 返回 L2（修改 result.md），重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS
 - FAIL 修改不刪除（保留完整追溯紀錄），task.md 宣告段落不變
+- 不得刪除既有攻防紀錄；FAIL 重跑時在既有內容後追加新回合（以 `---` 與回合標題分隔）
 - L4 藍隊 FAIL 另有打回上游選項（問題在上游定義，退回上游修正）
+- 宣告更新：更新宣告內容後狀態回到 DECLARED，必須重新走 BossConfirm，不得視為自動 APPROVED
 
 合併歸檔狀態機（驗收上線閘門通過後）：
 
@@ -234,7 +236,7 @@ ROADMAP.md 模板：
 - ROADMAP 中可參考但不得自動納入本輪的項目。
 - 建立 QA 標準前需要採納或排除的市場研究、通用方法、設計模式、CVE 或版本差異。
 
-**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 QA 結果中選擇的功能，由執行者寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
+**DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆從 QA 結果中選擇的功能，由管理者寫入 `task.md` 的「目標」。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
 **功能分支**：功能分支在第一次進入產品開發時建立（見操作標準 15）。執行者建立第一個產品開發 task.md 後、管理者執行 `git checkout -b feat/<slug>` 建立功能分支並切換。專案計畫和品質保證階段不需要功能分支。
 
@@ -322,11 +324,12 @@ upstream:
 **順序**：同一任務必須嚴格序列執行，不得並行紅藍隊：
 
 1. 執行者完成工作成果並寫入 result.md（狀態 EXECUTED）。
-2. result.md 存在且格式有效後，才呼叫紅隊產出 `red.md`。紅隊攻擊 result.md。
-3. `red.md` 存在且格式有效後，才呼叫藍隊產出 `blue.md`；藍隊必須讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後寫出攻防對照報告。
-4. `red.md`、`blue.md` 皆存在且格式有效後，執行者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
-5. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
-6. 管理者向老闆 `BossConfirm`，通過後進入 PASSED，輸出 compact 提醒。
+2. result.md 存在且格式有效後，才呼叫紅隊。紅隊攻擊 result.md 並將報告寫入 `red.md`。管理者驗證 `red.md` 已產出且格式有效；若未產出，重新呼叫紅隊。
+3. `red.md` 存在且格式有效後，才呼叫藍隊。藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 後將攻防對照報告寫入 `blue.md`。管理者驗證 `blue.md` 已產出且格式有效；若未產出，重新呼叫藍隊。
+4. `red.md`、`blue.md` 皆存在且格式有效後，管理者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
+5. 管理者輸出 compact 提醒（阻塞式）：結論已產出，老闆必須執行 /compact 後才能繼續 Result Check。
+6. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
+7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED。
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計、技術實作的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 
@@ -354,7 +357,7 @@ upstream:
 退回規則（五階段 FAIL 狀態機）：
 
 - L1 BossConfirm FAIL：宣告不被接受 → 返回 L1 重新宣告。
-- L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。一個 NNN 可以多次提交。
+- L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，修改 result.md（不刪除），task.md 回到 APPROVED，重跑 L3 紅隊 → L4 藍隊，直到藍隊 PASS。一個 NNN 可以多次提交。不得刪除既有 red.md / blue.md 紀錄。
 - L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後直接回到原本被打回的 NNN 重做。
 - 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門。需 BossConfirm。
