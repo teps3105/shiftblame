@@ -65,7 +65,7 @@ MAIN 模式特徵：
 
 管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L2 BossConfirm FAIL（result 確認）→返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL→退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄）；L5 BossConfirm FAIL→退回 L1 重新宣告。詳見 `GATE.md`。
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復觸發 DECLARED 狀態轉移時，必須更新 task.md 宣告段落後重新 BossConfirm；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 每個 NNN 跑計畫-實作雙循環（計畫循環 PASSED→PLAN_PASSED，不 compact；實作循環 PASSED→PASSED→compact）。PM/QA 為單循環。BossConfirm PASSED 後管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
+每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復觸發 DECLARED 狀態轉移時，必須更新 task.md 宣告段落後重新 BossConfirm；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
 
 ## 格式檢查
 

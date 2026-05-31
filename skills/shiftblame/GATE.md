@@ -34,43 +34,9 @@ FAIL 規則：
 - L4 藍隊 FAIL 另有打回上游選項（問題在上游定義，退回上游修正）
 - 宣告更新：更新宣告內容後狀態回到 DECLARED，必須重新走 BossConfirm，不得視為自動 APPROVED
 
-### DEV/QC 計畫-實作雙循環（FEATURE 模式）
+### DEV/QC 單循環（FEATURE 模式）
 
-DEV（產品開發）和 QC（驗收上線）的每個執行切片（NNN）包含計畫循環與實作循環。計畫循環先跑完整 L1→L5 五階段，通過 Boss Plan Pass（PLAN_PASSED）後，同一 NNN 回到 L1 進行實作循環。兩個循環獨立跑完整五階段流程。PM（專案計畫）和 QA（品質保證）適用單循環，不適用雙循環。
-
-```
-計畫循環：
-L1 宣告(plan): DECLARED ──BossConfirm FAIL──→ DECLARED
-                  └──agree──→ APPROVED
-L2 產出(plan): APPROVED → EXECUTED（result.md 計畫部分）──BossConfirm──→（繼續 L3）
-                  └──老闆要求修改──→ DECLARED（重新宣告，BossConfirm 後再 APPROVED → EXECUTED → BossConfirm）
-L3 紅隊(plan): BossConfirm 通過後 → RED
-L4 藍隊(plan): RED → BLUE
-                  └──FAIL──→ DECLARED（退回 L1 重新宣告，需 BossConfirm）
-L5 結論(plan): BLUE → CONCLUSION → CHECKED → Boss Plan Pass → PLAN_PASSED（不 compact）
-
-實作循環（同 NNN，接續 PLAN_PASSED）：
-L1 宣告(impl): PLAN_PASSED → DECLARED ──BossConfirm FAIL──→ DECLARED
-                  └──agree──→ APPROVED
-L2 產出(impl): APPROVED → EXECUTED（result.md 完整：計畫+實作）──BossConfirm──→（繼續 L3）
-                  └──老闆要求修改──→ DECLARED（重新宣告，BossConfirm 後再 APPROVED → EXECUTED → BossConfirm）
-L3 紅隊(impl): BossConfirm 通過後 → RED
-L4 藍隊(impl): RED → BLUE
-                  └──FAIL──→ DECLARED（退回 L1 重新宣告，需 BossConfirm）
-                  └──計畫重做──→ 刪除實作循環五檔，計畫循環回到 DECLARED，更新 task.md 宣告段落後重跑完整五階段（需 BossConfirm）
-L5 結論(impl): BLUE → CONCLUSION → CHECKED → Boss Gate Pass → PASSED → compact
-```
-
-雙循環特殊路徑：
-- **打回上游**：雙循環 NNN 被打回上游後，不論當時處於計畫循環或實作循環，恢復時一律回到計畫循環 L1 重新宣告（上游結論可能影響計畫內容）。已產出的計畫循環五檔保留不刪除，實作循環五檔若已存在則刪除。
-- **計畫重做**：實作循環中發現計畫有根本性問題時，刪除實作循環五檔，計畫循環回到 DECLARED，更新 task.md 宣告段落後重跑完整五階段。需 BossConfirm。與回溯的區別：回溯撤回所有變更（含 git），計畫重做只撤回實作循環且不影響 git 歷史。
-- **計畫循環 FAIL 原地修復**：宣告段落不變。若紅藍隊建議涉及計畫範圍變更，依「計畫不可更動」規則處理（管理者判定是否觸發回溯或進路線圖）。
-
-雙循環檔案規則：
-- 計畫循環五檔產出後保留不刪除，實作循環在既有內容後追加（以 `---` 與 `## 計畫循環` / `## 實作循環` 作為循環標題分隔；FAIL 重跑使用 `## 第 N 次攻擊` / `## 第 N 次防禦`，兩種追加格式語義不同）
-- task.md 宣告段落擴充為「### 計畫循環」與「### 實作循環」兩個子段落
-- result.md：計畫循環產出計畫部分（DEV：技術規劃+技術設計；QC：驗收計畫），實作循環追加實作部分（DEV：技術實作；QC：驗收報告+驗收結論）
-- compact 只在 Boss Gate Pass（PASSED）後觸發；Boss Plan Pass（PLAN_PASSED）不 compact，保持上下文連續性
+DEV（產品開發）和 QC（驗收上線）適用單循環，與 PM/QA 一致。L1 即為計畫宣告（對標研究部門的 L1 行為），L2 產出含技術規劃+技術設計+技術實作的完整 result.md，L3-L5 跑紅藍攻防。L1↔L2 迭代循環：L2 BossConfirm FAIL → DECLARED，反覆宣告-執行直到老闆滿意才進入紅藍。PM（專案計畫）和 QA（品質保證）同樣適用單循環。
 
 合併歸檔狀態機（驗收上線閘門通過後）：
 
@@ -157,8 +123,7 @@ PASSED 後：commit 到 main → push → 歸檔 → 更新 REPO.md/ROADMAP.md�
 | BLUE | blue.md 已產出 | `task.md` + `result.md` + `red.md` + `blue.md` |
 | CONCLUSION | conclusion.md 已產出 | `task.md` + `result.md` + `red.md` + `blue.md` + `conclusion.md` |
 | CHECKED | 閘門檢查完成（五檔齊全），待老闆確認 | — |
-| PLAN_PASSED | 計畫循環通過（僅 DEV/QC FEATURE 模式），待進入實作循環 | — |
-| PASSED | 老闆確認通過（DEV/QC 為實作循環通過） | — |
+| PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
 合併歸檔狀態機（驗收上線閘門通過後）：
@@ -358,18 +323,12 @@ upstream:
 
 ## 宣告
 
-<!-- DEV/QC（FEATURE 模式）適用雙循環子段落：
-### 計畫循環
-
-### 實作循環
--->
-
 ```
 
 建立規則：
 - `NNN` 為三位數零填充（001, 002, …），省略時自動遞增。
 - 已存在 `task.md` 時不覆寫。
-- STATUS 合法值：PENDING、DECLARED、APPROVED、EXECUTED、PLAN_PASSED（全部大寫；PLAN_PASSED 僅 DEV/QC FEATURE 模式）。
+- STATUS 合法值：PENDING、DECLARED、APPROVED、EXECUTED（全部大寫）。
 
 ### G2 — 閘門審查
 
@@ -386,9 +345,7 @@ upstream:
 7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED；FAIL → 退回 L1 重新宣告（DECLARED）。
 8. 管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。
 
-**DEV/QC 雙循環**：DEV 和 QC 的每個 NNN 跑兩次上述序列。第一次為計畫循環（result.md 只含計畫部分），通過 Boss Plan Pass（PLAN_PASSED）後不 compact，直接進入實作循環。第二次為實作循環（result.md 追加實作部分），通過 Boss Gate Pass（PASSED）後才 compact。兩次循環的五檔內容以 `---` 分隔追加，不覆蓋。
-
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV/QC 適用雙循環：計畫循環 result.md 含前段（DEV：技術規劃+技術設計；QC：驗收計畫），實作循環追加後段（DEV：技術實作；QC：驗收報告+驗收結論）。DEV 的 `result.md` 必須顯示技術規劃、技術設計的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門三段式內容：PM/需求釐清+市場研究+產品規格、QA/安全標準+操作標準+系統規格、DEV/技術規劃+技術設計+技術實作、QC/驗收計畫+驗收報告+驗收結論；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 
 | 情境 | 動作 |
 |------|------|
