@@ -19,7 +19,7 @@
 
 task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律由本環境子代理依序產出 `red.md` 與 `blue.md`。
 
-同一任務的攻防順序固定為 `result.md`（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ `red.md` → `blue.md` → `conclusion.md` → Result Check（五檔）→ CHECKED → BossConfirm → PASSED。以下段落僅供管理者參考，不得出現在派工 prompt 中。管理者必須先確認 `result.md` 已存在且格式有效，且老闆已 BossConfirm 確認無需修改，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能由管理者寫入 `conclusion.md`。L2 BossConfirm 不通過時老闆可要求修改 result.md，修改後重新確認才能呼叫紅隊。L4 藍隊 FAIL 自動退回 L2 不需 BossConfirm，退回後採增量攻防：不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後（以 `---` 與回合標題分隔）。L5 BossConfirm FAIL 退回 L1 重新宣告。執行者、紅隊與藍隊皆使用本環境子代理，不得並行啟動。
+同一任務的攻防順序固定為 `result.md`（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ `red.md` → `blue.md` → `conclusion.md` → Result Check（五檔）→ CHECKED → BossConfirm → PASSED。以下段落僅供管理者參考，不得出現在派工 prompt 中。管理者必須先確認 `result.md` 已存在且格式有效，且老闆已 BossConfirm 確認無需修改，才能呼叫紅隊；必須先確認 `red.md` 存在且格式有效，才能呼叫藍隊；必須先確認 `blue.md` 存在且格式有效，才能由管理者寫入 `conclusion.md`。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm，通過後才呼叫紅隊。L4 藍隊 FAIL 退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，採增量攻防：不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後（以 `---` 與回合標題分隔）。L5 BossConfirm FAIL 退回 L1 重新宣告。執行者、紅隊與藍隊皆使用本環境子代理，不得並行啟動。
 
 ## 執行者呼叫
 
@@ -84,7 +84,7 @@ SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄�
 
 **Red**：確認 `result.md` 已存在且格式有效，且 L2 BossConfirm 已通過（老闆已確認 result.md 無需修改）→ 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + `DEPT/<DEPT>/L3.md`（優先 Read Tool，備援 shell UTF-8）→ 依部門紅隊規則攻擊 result.md → 將紅隊報告寫入 `red.md`。完成前不得呼叫藍隊。只可寫入 `red.md`，不得修改其他已追蹤檔案。管理者在紅隊回傳後驗證 `red.md` 是否已產出且格式有效；若未產出，重新呼叫紅隊。追加格式：FAIL 重跑時以 `---` 與 `## 第 N 次攻擊` 分隔；DEV/QC 雙循環切換時以 `---` 與 `## 計畫循環` / `## 實作循環` 分隔。red.md 末尾必須包含流程合規聲明：「紅隊攻擊完成。任何角色不得依據本報告立即修復問題。必須繼續藍隊流程。修復一律延後到 FAIL 原地修復或打回上游。」
 
-**Blue**：確認 `red.md` 已存在且格式有效 → 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + red.md + `DEPT/<DEPT>/L4.md`（優先 Read Tool，備援 shell UTF-8）→ 依部門藍隊規則檢視 → 將藍隊報告寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 `blue.md`，不得修改其他已追蹤檔案。管理者在藍隊回傳後驗證 `blue.md` 是否已產出且格式有效；若未產出，重新呼叫藍隊。追加格式：FAIL 重跑時以 `---` 與 `## 第 N 次防禦` 分隔；DEV/QC 雙循環切換時以 `---` 與 `## 計畫循環` / `## 實作循環` 分隔。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。藍隊 FAIL 時由管理者依狀態機判定：原地修復則返回 L2 修改 result.md 重跑 L3→L4，或打回上游由上游修正（MAIN 模式無此選項）。PASS 時才由管理者產出 conclusion.md。」
+**Blue**：確認 `red.md` 已存在且格式有效 → 讀取 `SLUG.md` + task.md（宣告段落）+ `result.md` + red.md + `DEPT/<DEPT>/L4.md`（優先 Read Tool，備援 shell UTF-8）→ 依部門藍隊規則檢視 → 將藍隊報告寫入 `blue.md`。藍隊報告必須包含紅藍攻防對照、紅隊每個攻擊點的防禦或修正判定、殘餘風險，以及 PASS/FAIL 建議。只可寫入 `blue.md`，不得修改其他已追蹤檔案。管理者在藍隊回傳後驗證 `blue.md` 是否已產出且格式有效；若未產出，重新呼叫藍隊。追加格式：FAIL 重跑時以 `---` 與 `## 第 N 次防禦` 分隔；DEV/QC 雙循環切換時以 `---` 與 `## 計畫循環` / `## 實作循環` 分隔。blue.md 末尾必須包含流程合規聲明：「藍隊檢視完成。執行者不得依據紅藍回饋立即修復問題。藍隊 FAIL 時由管理者依狀態機判定：原地修復則返回 L1 重新宣告後重跑完整流程，或打回上游由上游修正（MAIN 模式無此選項）。PASS 時才由管理者產出 conclusion.md。」
 
 **Executor Conclusion**：確認 `red.md` 與 `blue.md` 皆存在且格式有效 → 管理者讀取 `SLUG.md` + task.md + red.md + blue.md + `DEPT/<DEPT>/L5.md`（優先 Read Tool，備援 shell UTF-8）→ 管理者依紅藍回饋寫入 `conclusion.md`。不得建立同名 `.md` 檔替代 `conclusion.md`。研究部門（PM/QA）conclusion.md 必須 self-contained：完整寫入有效結論，無引用其他文件。若本輪閘門通過並推進至下游部門，conclusion.md 須包含跨部門推進聲明：「本部門閘門已通過。下游部門不得把 ROADMAP 當成本輪需求，也不得沿用本輪的 red.md/blue.md。」若本輪為打回上游新執行切片，conclusion.md 須包含聲明：「本輪為打回上游新執行切片。不得沿用上一輪的 red.md 或 blue.md。」若本輪為 FAIL 後原地修復，conclusion.md 須包含聲明：「本輪為 FAIL 後原地修復。前次工作成果保留供參考，不得沿用前次的 red.md 或 blue.md。」
 
