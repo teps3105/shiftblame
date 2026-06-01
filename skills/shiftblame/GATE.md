@@ -19,7 +19,7 @@ L4 藍隊:   RED ──→ 藍隊寫入 blue.md ──→ 管理者驗證 ──
                 └──FAIL──→ DECLARED（退回 L1 重新宣告，需 BossConfirm）
 
 L5 結論:   BLUE ──PASS──→ CONCLUSION（管理者寫入 conclusion.md）──→ CHECKED ──BossConfirm FAIL──→ DECLARED（退回 L1 重新宣告）
-                                                                └──BossConfirm PASSED──→ PASSED ──→ compact（FEATURE 阻塞式，MAIN 條件式）
+                                                                └──BossConfirm PASSED──→ PASSED
 ```
 
 FAIL 規則：
@@ -56,7 +56,6 @@ MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
 - conclusion.md 須包含最終結論與紅藍整合摘要（無跨部門推進聲明）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
 - L4 藍隊 FAIL 無打回上游選項（無上游）
-- compact 為條件式（僅上下文過長時才要求 /compact，非阻塞式），時機在 PASSED 後
 
 MAIN 模式收尾狀態機：
 
@@ -169,6 +168,18 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 建立 DEV 任務前：管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
 
+
+### 上下文監控與壓縮
+
+管理者在全流程中持續監控上下文用量。監控時機：
+
+- 狀態轉移前（特別是準備呼叫子代理前）
+- 大量文件讀寫後（result.md、red.md、blue.md 產出後）
+- BossConfirm 前
+- 跨部門推進前
+- 任何可能大幅增加上下文的操作前
+
+上下文用量過高時，管理者直接強制觸發環境的壓縮上下文機制（非建議老闆執行），避免工作到一半因上下文爆炸而中斷。壓縮後 SessionStart hook 會自動重新載入 shiftblame 技能。compact hook 用於壓縮後恢復技能，非閘門觸發。
 ### G0 — 初始化
 
 **時機**：觸發 shiftblame 技能時。
@@ -343,7 +354,7 @@ upstream:
 5. `red.md`、`blue.md` 皆存在且格式有效後，管理者依紅藍回饋寫入 conclusion.md，進入 CONCLUSION。
 6. 管理者執行 Result Check（檢查五檔齊全且格式有效），通過後進入 CHECKED。
 7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED；FAIL → 退回 L1 重新宣告（DECLARED）。
-8. 管理者輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 /compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 /compact）。
+8. 管理者依「上下文監控與壓縮」規則，在流程中持續監控上下文用量，於適當時機強制觸發壓縮。
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門對應段式內容：PM/四段式（需求釐清+市場研究+產品規格+前端設計與視覺規格）、QA/四段式（安全標準+操作標準+系統規格+設計驗證標準）、DEV/三段式（技術規劃+技術設計+技術實作）、QC/三段式（驗收計畫+驗收報告+驗收結論）；不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 

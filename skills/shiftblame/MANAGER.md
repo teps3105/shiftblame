@@ -31,7 +31,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED → compact 提醒（FEATURE 阻塞式，MAIN 條件式）。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L1 重新宣告（DECLARED），需 BossConfirm；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
+所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L1 重新宣告（DECLARED），需 BossConfirm；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
 
@@ -39,30 +39,36 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
-| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
-| 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED → compact |
+| 驗收上線→合併 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
 每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），採增量攻防。L2 BossConfirm FAIL 與 L4 藍隊 FAIL 皆必須更新宣告段落。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
-管理者在 BossConfirm PASSED 後輸出 compact 提醒：FEATURE 模式為阻塞式（閘門已通過，執行 compact 後繼續收尾或推進），MAIN 模式為條件式（僅上下文過長時才要求 compact）。
+管理者在全流程中持續監控上下文用量（見「上下文監控與壓縮」段落）。上下文用量過高時直接強制觸發壓縮，避免工作到一半因上下文爆炸而中斷。
 
-FEATURE 模式（PM/QA/DEV/QC PASSED）：
-閘門已通過。請執行 /compact 壓縮上下文後繼續收尾或推進下一部門。
-compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
-
-MAIN 模式：
-閘門已通過。若上下文過長，請執行 /compact 壓縮上下文後繼續收尾。
 
 合併歸檔狀態機（驗收上線閘門通過後）：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
 DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，老闆可要求觀看目前變化、追加小調整或指定下一個想看的功能。管理者需即時啟動或更新可操作作品，提供 URL/指令/截圖/操作結果與簡短驗證結論；若老闆提出新方向，先用中文確認本回合新增或改動的可見效果，再繼續 DEV。`BossPreview` 不需要紅藍隊，也不代表 DEV 閘門通過。
 
+
+## 上下文監控與壓縮
+
+管理者在全流程中持續監控上下文用量。監控時機：
+
+- 狀態轉移前（特別是準備呼叫子代理前）
+- 大量文件讀寫後（result.md、red.md、blue.md 產出後）
+- BossConfirm 前
+- 跨部門推進前
+- 任何可能大幅增加上下文的操作前
+
+上下文用量過高時，管理者直接強制觸發環境的壓縮上下文機制（非建議老闆執行），避免工作到一半因上下文爆炸而中斷。壓縮後 SessionStart hook 會自動重新載入 shiftblame 技能。compact hook 用於壓縮後恢復技能，非閘門觸發。
 ## 退回
 
 五階段 FAIL 狀態機：
@@ -150,7 +156,7 @@ MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型
 - 無上游/下游概念
 - result.md 無部門三段式內容要求，直接描述工作成果
 
-派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED → compact 提醒（條件式，僅上下文過長時）
+派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED
 
 退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，採增量攻防，需 BossConfirm；L5 BossConfirm FAIL → 退回 L1 重新宣告；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
 

@@ -66,14 +66,9 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 面向老闆的互動必須使用繁體中文。選項文字不得使用英文狀態機值（如 AGREE、DECLARED、APPROVED 等）。參考選項文字（非封閉列舉）：「同意」「不同意」「調整」。狀態機值全部大寫（YAML frontmatter、狀態描述）。
 
-BossConfirm PASSED 後，管理者輸出 compact 提醒（此段落供管理者參考，不包含在派工 prompt 中）：
+上下文監控與壓縮（此段落供管理者參考，不包含在派工 prompt 中）：
 
-FEATURE 模式（阻塞式，閘門已通過，執行 compact 後繼續收尾或推進）：
-閘門已通過。請執行 /compact 壓縮上下文後繼續收尾或推進下一部門。
-compact 後 SessionStart hook 會自動重新載入 shiftblame 技能。
-
-MAIN 模式（條件式，僅上下文過長時才要求 compact）：
-閘門已通過。若上下文過長，請執行 /compact 壓縮上下文後繼續收尾。
+管理者在全流程中持續監控上下文用量。上下文過高時直接強制觸發環境的壓縮上下文機制（非建議老闆執行），避免工作到一半因上下文爆炸而中斷。壓縮後 SessionStart hook 會自動重新載入 shiftblame 技能。compact hook 用於壓縮後恢復技能，非閘門觸發。
 
 **Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L1.md`（優先 Read Tool，備援 shell UTF-8）→ 執行者先在「## 宣告」段落寫入本輪計畫 → 管理者向老闆確認宣告（用繁體中文）→ 老闆同意後依部門執行者產出規則（L2.md）執行 → 寫入 result.md（狀態 EXECUTED）→ 管理者向老闆 BossConfirm 確認 result.md 無需修改 → 通過後才呼叫紅隊。派工時提供上游所有部門的所有已 PASS 的 conclusion.md 完整內容，不指示員工自行讀取歷史文件。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。DEV/QC 適用單循環，與 PM/QA 一致：L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。工作成果寫入 result.md 並通過 BossConfirm 後，不得跳過紅隊直接產出 conclusion.md 或進入下一部門。
 
