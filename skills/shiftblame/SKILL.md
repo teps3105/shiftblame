@@ -39,7 +39,7 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 | 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
 |------|------|----------|------|----------|
-| RAPID | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→DEV→PM→DEV→收尾 | 功能開發（預設）、快速迭代、原型驗證 |
+| RAPID | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾 | 功能開發（預設）、快速迭代、原型驗證 |
 | FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 需要完整 QA/QC 流程（由老闆指定） |
 | MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
 
@@ -58,11 +58,12 @@ MAIN 模式特徵：
 RAPID 模式特徵：
 - 使用功能分支（`feat/<slug>`）
 - 目錄結構同 FEATURE（`<slug>/<DEPT>/<NNN>/`），但僅使用 PM 和 DEV 目錄
-- 簡化管線：PM→DEV→PM→DEV→收尾，跳過 QA 和 QC
+- 簡化管線：PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾，PM 吸收 QA 職責、DEV 吸收 QC 職責
 - PM 和 DEV 各自跑完整五階段流程（task→result→red→blue→conclusion）
 - PM 與 DEV 交替迭代，直到老闆確認成品滿意才進入收尾
-- PM result.md 為四段式（需求釐清+市場研究+產品規格+前端設計與視覺規格）
-- DEV result.md 為三段式（技術規劃+技術設計+技術實作）
+- PM 吸收 QA：負責品質定義、測試標準、驗收條件，一併寫入 result.md
+- DEV 吸收 QC：負責自行驗收、功能驗證，依 PM 定義的品質標準逐條確認
+- 目標導向文件：RAPID 模式不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，不追求流於形式的模板填寫
 - 收尾：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md
 - task.md 使用 `mode: rapid` 欄位
 

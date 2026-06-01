@@ -19,10 +19,10 @@
 |---|------|------|
 | 1 | 日常操作/文件維護/部署/修復 | 使用 MAIN 模式執行（走五階段流程，無部門管線） |
 | 2 | 提問/答詢 | 直接回答 |
-| 3 | 功能開發/需求/快速迭代 | RAPID 模式（預設，PM→DEV→PM→DEV→收尾） |
+| 3 | 功能開發/需求/快速迭代 | RAPID 模式（預設，PM 含品質定義→DEV 含自行驗收→PM→DEV→收尾） |
 | 4 | 需要完整 QA/QC 流程 | FEATURE 模式（PM→QA→DEV→QC，由老闆指定） |
 
-功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格+前端設計與視覺規格、QA→安全標準+操作標準+系統規格+設計驗證標準+GWT 測試案例、DEV→技術規劃+技術設計+技術實作（後端與 API+前端接線與資源管理）、QC→驗收計畫+驗收報告+驗收結論（按 QA GWT 逐條端到端驗收+邊界測試），且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+功能開發/需求：FEATURE 模式先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格+前端設計與視覺規格、QA→安全標準+操作標準+系統規格+設計驗證標準+GWT 測試案例、DEV→技術規劃+技術設計+技術實作（後端與 API+前端接線與資源管理）、QC→驗收計畫+驗收報告+驗收結論（按 QA GWT 逐條端到端驗收+邊界測試），且全部寫入該部門的 `result.md`，不得另建同名產物檔。RAPID 模式不要求固定段式，PM 吸收 QA（品質定義、測試標準、驗收條件），DEV 吸收 QC（自行驗收、功能驗證），result.md 以目標導向產出。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
 
 ## 本輪筆記
 
@@ -36,7 +36,7 @@
 
 所有部門皆從 001 開始，同一任務固定序列為：L1 宣告 → BossConfirm → L2 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ L3 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → L4 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → L5 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
 
-進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據 QA 產出的 GWT 測試案例逐條驗證通過，作為技術實作的完成條件。
+進入 DEV 時，管理者依上游定義的功能列表建立 DEV task.md（FEATURE 模式依 QA result.md；RAPID 模式依 PM result.md 的品質標準與功能定義）。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據品質標準逐條驗證通過（FEATURE 模式依 QA 產出的 GWT 測試案例；RAPID 模式依 PM 定義的驗收條件自行驗收），作為技術實作的完成條件。
 
 ## 管線
 
@@ -99,6 +99,10 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 - DEV → 讀 QA 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
 - QC → 讀 DEV 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
+
+RAPID 模式上游讀取：
+- PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
+- DEV → 讀 PM 所有已 PASS 的 conclusion.md（PM 結論含品質標準與驗收條件）
 
 管理者派工時提供上游所有已 PASS 的 conclusion.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
 
@@ -172,14 +176,17 @@ MAIN 模式（管理者直接執行時）：管理者自己在產出 result.md �
 
 ## RAPID 模式
 
-RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發或小型功能迭代。跳過 QA 和 QC，簡化管線為 PM→DEV→PM→DEV→收尾。
+RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發或小型功能迭代。PM 吸收 QA 職責（品質定義、測試標準、驗收條件），DEV 吸收 QC 職責（自行驗收、功能驗證）。簡化管線為 PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾。
 
 特徵：
 - 使用功能分支（`feat/<slug>`），功能分支在第一次進入產品開發時建立
 - 目錄結構同 FEATURE（`.shiftblame/<slug>/<DEPT>/<NNN>/`），但僅使用 PM 和 DEV 目錄
+- PM 吸收 QA：PM 負責品質定義、測試標準、驗收條件，一併產出於 result.md，DEV 直接依 PM 定義的品質標準實作與驗證
+- DEV 吸收 QC：DEV 負責依 PM 品質標準自行驗收、功能驗證，不需要獨立的 QC 部門
 - 簡化管線：PM 與 DEV 交替迭代，不經 QA 和 QC
 - PM 和 DEV 各自跑完整五階段流程（L1 宣告→L2 產出→L3 紅隊→L4 藍隊→L5 結論）
 - PM 與 DEV 交替時，下游讀取上游已 PASS 的 conclusion.md
+- 目標導向文件：RAPID 模式不要求固定段式格式（不要求 PM 四段式或 DEV 三段式），result.md 專注於「本輪達成什麼、怎麼驗證」，避免流於形式的模板填寫
 - 管線推進由老闆決定：每輪 PASSED 後，管理者詢問老闆「繼續迭代（交給對方）或進入收尾」
 - 收尾：merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md
 - DEV 被退回時，退回前先 commit。紅藍隊判定退回原因分類：定義問題（需求、規格或前端設計有誤）→退回 PM；實作問題（功能不符合規格、錯誤、效能）→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。RAPID 模式無 QA 部門，「標準問題→退回 QA」路徑不適用。
