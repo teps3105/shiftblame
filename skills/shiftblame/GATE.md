@@ -96,7 +96,7 @@ RAPID 模式退回規則：
 - L1 BossConfirm FAIL → 返回 L1 重新宣告。需 BossConfirm。
 - L2 BossConfirm FAIL（result 確認）→ 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
 - L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，退回 L1 重新宣告。需 BossConfirm。
-- L4 藍隊 FAIL（退回對方部門）→ PM→DEV 或 DEV→PM，退回前先 commit，紅藍隊判定退回原因，老闆覆核確認退回目標後才執行。需 BossConfirm。
+- L4 藍隊 FAIL（退回對方部門）→ PM→DEV 或 DEV→PM，退回前先 commit。紅藍隊判定退回原因：定義問題（需求、規格或前端設計有誤）→退回 PM；實作問題（功能不符合規格、錯誤、效能）→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核確認後才執行。需 BossConfirm。RAPID 模式無 QA 部門，「標準問題→退回 QA」路徑不適用。
 - L5 BossConfirm FAIL → 退回 L1 重新宣告。需 BossConfirm。
 - 回溯：撤回該 slug 所有變更，回到 001。需 BossConfirm。
 

@@ -182,7 +182,7 @@ RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發�
 - PM 與 DEV 交替時，下游讀取上游已 PASS 的 conclusion.md
 - 管線推進由老闆決定：每輪 PASSED 後，管理者詢問老闆「繼續迭代（交給對方）或進入收尾」
 - 收尾：merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md
-- DEV 被退回時適用 DEV 退回機制規則（退回前先 commit、紅藍隊判定標準問題/定義問題、老闆覆核）
+- DEV 被退回時，退回前先 commit。紅藍隊判定退回原因分類：定義問題（需求、規格或前端設計有誤）→退回 PM；實作問題（功能不符合規格、錯誤、效能）→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。RAPID 模式無 QA 部門，「標準問題→退回 QA」路徑不適用。
 
 派工順序（RAPID 模式）：
 
@@ -192,7 +192,7 @@ RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發�
 | DEV→PM | DEV PASSED → 管理者詢問老闆：繼續迭代或收尾 → PM 讀取 DEV conclusion.md → 同上五階段流程 → PASSED |
 | PM/DEV→收尾 | 老闆確認成品滿意 → 收尾流程 |
 
-退回（RAPID 模式）：僅限 PM↔DEV 之間退回。L4 藍隊 FAIL 原地修復或退回對方部門（PM→DEV 或 DEV→PM），退回前先 commit、紅藍隊判定原因、老闆覆核。L1/L2/L5 BossConfirm FAIL 退回 L1 重新宣告。無 QA/QC 退回路徑。
+退回（RAPID 模式）：僅限 PM↔DEV 之間退回。退回前先 commit。紅藍隊判定退回原因：定義問題→退回 PM，實作問題→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。L1/L2/L5 BossConfirm FAIL 退回 L1 重新宣告。無 QA/QC 退回路徑。
 
 收尾（RAPID 模式）：老闆確認成品滿意後，執行 merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
