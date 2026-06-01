@@ -1,6 +1,6 @@
 ﻿---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, RAPID(RAPID模式/快速迭代/快速模式/原型)→使用RAPID模式PM→DEV→PM→DEV→收尾, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
 # shiftblame — AI Agents 協作框架
 使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
@@ -40,9 +40,10 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 | 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
 |------|------|----------|------|----------|
 | FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 新功能開發 |
+| RAPID | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→DEV→PM→DEV→收尾 | 快速迭代、原型驗證 |
 | MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
 
-FEATURE 模式僅用於新功能開發。日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。
+FEATURE 模式僅用於新功能開發。日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。RAPID 模式用於需要快速驗證想法、原型開發或小型功能迭代的情境，由老闆指定啟動。
 
 MAIN 模式特徵：
 - 直接在主分支工作，不建立功能分支
@@ -51,8 +52,19 @@ MAIN 模式特徵：
 - 無部門管線（不走 PM→QA→DEV→QC）
 - 無上游/下游概念
 - result.md 無部門三段式內容要求，直接描述工作成果
-- 收尾：commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md
+- 收尾：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md（首次 commit 在 result.md 產出前完成）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
+
+RAPID 模式特徵：
+- 使用功能分支（`feat/<slug>`）
+- 目錄結構同 FEATURE（`<slug>/<DEPT>/<NNN>/`），但僅使用 PM 和 DEV 目錄
+- 簡化管線：PM→DEV→PM→DEV→收尾，跳過 QA 和 QC
+- PM 和 DEV 各自跑完整五階段流程（task→result→red→blue→conclusion）
+- PM 與 DEV 交替迭代，直到老闆確認成品滿意才進入收尾
+- PM result.md 為四段式（需求釐清+市場研究+產品規格+前端設計與視覺規格）
+- DEV result.md 為三段式（技術規劃+技術設計+技術實作）
+- 收尾：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md
+- task.md 使用 `mode: rapid` 欄位
 
 ## 定義檔 / gitignore
 `MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}/`（每部門 L1-L5）
@@ -64,6 +76,8 @@ MAIN 模式特徵：
 ## 閘門狀態機
 
 管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L2 BossConfirm FAIL（result 確認）→返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL→退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄）；L5 BossConfirm FAIL→退回 L1 重新宣告。詳見 `GATE.md`。
+
+**階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
 
 每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復觸發 DECLARED 狀態轉移時，必須更新 task.md 宣告段落後重新 BossConfirm；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
 

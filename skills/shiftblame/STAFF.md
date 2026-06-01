@@ -15,6 +15,8 @@
 
 固定原則：管理者負責協調、派工、管線管理、閘門檢查、收尾、寫入 `conclusion.md` 與 `task.md` 宣告段落；執行者預設由本環境子代理擔任，負責寫入 `result.md`，管理者可根據上下文使用情況隨時調整為目前環境直接執行。SLUG.md 由管理者維護（流程紀錄，非部門正式產物）。git 操作由管理者執行。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
+**階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
+
 ## 紅藍隊派工
 
 task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律由本環境子代理依序產出 `red.md` 與 `blue.md`。
@@ -70,7 +72,7 @@ task.md 的 `review` 欄位固定為 `local`。同一 slug 內所有任務一律
 
 管理者在全流程中持續監控上下文用量。上下文過高時直接強制觸發環境的壓縮上下文機制（非建議老闆執行），避免工作到一半因上下文爆炸而中斷。壓縮後 SessionStart hook 會自動重新載入 shiftblame 技能。compact hook 用於壓縮後恢復技能，非閘門觸發。
 
-**Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L1.md`（優先 Read Tool，備援 shell UTF-8）→ 執行者先在「## 宣告」段落寫入本輪計畫 → 管理者向老闆確認宣告（用繁體中文）→ 老闆同意後依部門執行者產出規則（L2.md）執行 → 寫入 result.md（狀態 EXECUTED）→ 管理者向老闆 BossConfirm 確認 result.md 無需修改 → 通過後才呼叫紅隊。派工時提供上游所有部門的所有已 PASS 的 conclusion.md 完整內容，不指示員工自行讀取歷史文件。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。DEV/QC 適用單循環，與 PM/QA 一致：L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。工作成果寫入 result.md 並通過 BossConfirm 後，不得跳過紅隊直接產出 conclusion.md 或進入下一部門。
+**Executor Task**：確認 `SLUG.md` 與 task.md 存在 → 讀取 `SLUG.md` + task.md + `DEPT/<DEPT>/L1.md`（優先 Read Tool，備援 shell UTF-8）→ 執行者先在「## 宣告」段落寫入本輪計畫 → 管理者向老闆確認宣告（用繁體中文）→ 老闆同意後依部門執行者產出規則（L2.md）執行 → commit 所有工作變更 → 寫入 result.md（狀態 EXECUTED）→ 管理者向老闆 BossConfirm 確認 result.md 無需修改 → 通過後才呼叫紅隊。派工時提供上游所有部門的所有已 PASS 的 conclusion.md 完整內容，不指示員工自行讀取歷史文件。研究部門（PM/QA）result.md 必須 self-contained：完整寫入前輪仍然有效的結論，已被修正的以修正後版本呈現，禁止引用其他文件。必要時同步把開發中筆記、臨時待辦、BossPreview 回饋或退回原因追加到 `SLUG.md`。DEV/QC 適用單循環，與 PM/QA 一致：L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。工作成果寫入 result.md 並通過 BossConfirm 後，不得跳過紅隊直接產出 conclusion.md 或進入下一部門。
 
 SLUG.md 維持五分類結構：（1）本輪目標、（2）管線狀態紀錄、（3）殘餘風險與交接事項、（4）BossPreview / 退回紀錄、（5）待收尾整理。分類規則見 GATE.md SLUG.md 模板。執行者不得將這些內容寫入 REPO.md 或 ROADMAP.md。
 

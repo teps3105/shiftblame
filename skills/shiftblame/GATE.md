@@ -46,7 +46,7 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 ### MAIN 模式
 
-日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。FEATURE 模式僅用於新功能開發。
+日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。FEATURE 模式僅用於新功能開發。RAPID 模式用於快速驗證想法、原型開發或小型功能迭代，由老闆指定啟動。
 
 MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
 
@@ -63,12 +63,42 @@ MAIN 模式收尾狀態機：
 PASSED ──COMMIT──→ COMMITTED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
 ```
 
+MAIN 模式中 COMMIT 步驟為確認閘門（驗證所有變更已 commit），非首次 commit。首次 commit 在 result.md 產出前完成（見 Commit 閘門）。
+
 MAIN 模式退回規則：
 - L1 BossConfirm FAIL → 返回 L1 重新宣告。需 BossConfirm。
 - L2 BossConfirm FAIL（result 確認）→ 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
 - L4 藍隊 FAIL → 退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，直到藍隊 PASS。採增量攻防（不得刪除既有攻防紀錄，新回合追加在既有紀錄之後）。需 BossConfirm。
 - L5 BossConfirm FAIL → 退回 L1 重新宣告。需 BossConfirm。
 - 回溯：撤回該 slug 所有變更（git 與 .shiftblame/），回到 001。需 BossConfirm
+
+### RAPID 模式
+
+RAPID 模式用於快速驗證想法、原型開發或小型功能迭代，由老闆指定啟動。跳過 QA 和 QC，簡化管線為 PM→DEV→PM→DEV→收尾。
+
+RAPID 模式五階段 FAIL 狀態機與 FEATURE 模式一致（各部門內部五階段不變）。差異：
+
+- 使用功能分支（`feat/<slug>`），目錄結構同 FEATURE（`.shiftblame/<slug>/<DEPT>/<NNN>/`）
+- 僅使用 PM 和 DEV 目錄，不走 QA 和 QC
+- PM 與 DEV 交替迭代，每輪 PASSED 後管理者詢問老闆「繼續迭代（交給對方）或進入收尾」
+- 下游讀取上游已 PASS 的 conclusion.md
+- result.md 段式要求同 FEATURE（PM 四段式、DEV 三段式）
+- task.md 使用 `mode: rapid` 欄位
+- L4 藍隊 FAIL 退回僅限 PM↔DEV 之間（退回前先 commit、紅藍隊判定原因、老闆覆核）
+
+RAPID 模式收尾狀態機：
+
+```
+PASSED ──COMMIT──→ COMMITTED ──MERGE──→ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
+```
+
+RAPID 模式退回規則：
+- L1 BossConfirm FAIL → 返回 L1 重新宣告。需 BossConfirm。
+- L2 BossConfirm FAIL（result 確認）→ 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
+- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，退回 L1 重新宣告。需 BossConfirm。
+- L4 藍隊 FAIL（退回對方部門）→ PM→DEV 或 DEV→PM，退回前先 commit，紅藍隊判定退回原因，老闆覆核確認退回目標後才執行。需 BossConfirm。
+- L5 BossConfirm FAIL → 退回 L1 重新宣告。需 BossConfirm。
+- 回溯：撤回該 slug 所有變更，回到 001。需 BossConfirm。
 
 MAIN 模式 task.md 模板：
 
@@ -104,11 +134,11 @@ review: local
 
 與 G2 相同的五階段序列。差異：result.md 無部門三段式內容要求、無上游結論讀取、conclusion.md 無跨部門推進聲明。
 
-MAIN 模式 commit 在 BossConfirm PASS 之後才執行，因此 L3 紅隊檢視變更時所有變更均為未提交狀態。紅隊應使用 `git diff`（未提交變更）檢視，不得使用 `git diff HEAD~1`（上一個 commit 的範圍）。
+MAIN 模式 commit 在 result.md 產出前執行（與 FEATURE 模式一致），紅隊使用 `git diff HEAD`（上一個 commit 以來的差異）檢視。不得使用 `git diff HEAD~1`（上上個 commit 的範圍）。
 
 #### G3-MAIN — 歸檔（MAIN 模式）
 
-PASSED 後：commit 到 main → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。
+PASSED 後：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。首次 commit 在 result.md 產出前完成。
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
@@ -148,6 +178,8 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 面向老闆的所有詢問語言必須使用繁體中文。選項文字不得使用英文狀態機值（如 AGREE、DECLARED、APPROVED 等）。參考選項文字（非封閉列舉）：「同意」「不同意」「調整」「退回」「通過」「原地修復」「推進」「新執行切片」。狀態機值僅作為內部狀態記錄，不出現在老闆互動中。
 
+**階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
+
 ### BossPreview — DEV 即時預覽
 
 `BossPreview` 是 DEV 期間的即時觀看與調整機制，不是正式閘門，不取代 `BossConfirm`。老闆可在 DEV 中多次要求觀看目前作品、驗證結果或下一個想調整的效果。管理者必須用中文提供可操作 URL/指令/截圖/畫面結果，並用一句話說明「目前作品已經能做到什麼」。若老闆提出下一個請求，管理者先用非技術語言確認「本回合要做出的可見功能」，再繼續 DEV。
@@ -158,7 +190,7 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 1. 執行者在 task.md「## 宣告」段落寫入本輪計畫（最低必要欄位：本輪目標、預期產出）
 2. 管理者讀取宣告內容
-3. 管理者向老闆 BossConfirm：用繁體中文說明本輪要做什麼、預期產出什麼、這是本部門第幾輪
+3. 管理者向老闆 BossConfirm：用繁體中文說明「現在是 L1 階段（宣告）」、本輪要做什麼、預期產出什麼、這是本部門第幾輪
 4. 老闆同意 → 狀態從 PENDING → APPROVED，開始執行
 5. 老闆不同意 → 執行者調整宣告，重新確認
 
@@ -376,7 +408,7 @@ upstream:
 |------|------------|
 | 專案計畫 | 研究結論不足以支撐品質保證建標準 |
 | 品質保證 | 標準或規格不明確、無法支撐產品開發建立技術規劃/設計/實作 |
-| 產品開發 | 功能不符合規格、存在功能性錯誤、安全漏洞、效能不達標 |
+| 產品開發 | 功能不符合規格、存在功能性錯誤、安全漏洞、效能不達標。退回時依退回原因分類：標準問題→退回 QA，定義問題→退回 PM，經老闆覆核後執行。退回前必須先 commit 所有工作變更。 |
 | 驗收上線 | 功能性錯誤、安全漏洞、規格不一致 |
 
 退回規則（五階段 FAIL 狀態機）：
@@ -385,6 +417,7 @@ upstream:
 - L2 BossConfirm FAIL（result 確認）：老闆要求修改 result.md → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
 - L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，task.md 回到 DECLARED，更新宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，直到藍隊 PASS。一個 NNN 可以多次提交。採增量攻防（不得刪除既有 red.md / blue.md 紀錄，新回合攻防內容追加在既有紀錄之後，以 `---` 與 `## 第 N 次攻擊` / `## 第 N 次防禦` 分隔），保留完整追溯。需 BossConfirm。
 - L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後回到原本被打回的 NNN，從 L1 重新宣告開始。本 NNN 的 L4 FAIL 不需 BossConfirm（上游自行走完整流程）。
+- DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：標準問題（QA 標準或規格不明確、不完整、有矛盾）→ 退回 QA；定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
 - L5 BossConfirm FAIL：結論不被接受 → 退回 L1 重新宣告（DECLARED）。需 BossConfirm。
 - 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門。需 BossConfirm。
