@@ -75,11 +75,11 @@ RAPID 模式特徵：
 
 ## 閘門狀態機
 
-管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L2 BossConfirm FAIL（result 確認）→返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL→退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄）；L5 BossConfirm FAIL→退回 L1 重新宣告。詳見 `GATE.md`。
+管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L2 BossConfirm FAIL（result 確認）→返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL→退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL→退回 L1 重新宣告。詳見 `GATE.md`。
 
 **階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復觸發 DECLARED 狀態轉移時，必須更新 task.md 宣告段落後重新 BossConfirm；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
+每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復不觸發 DECLARED 狀態轉移，不更新 task.md 宣告段落，執行者修正 result.md 後 BossConfirm → L3→L4→L5；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
 
 ## 格式檢查
 

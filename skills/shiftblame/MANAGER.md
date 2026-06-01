@@ -34,7 +34,7 @@
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：L1 宣告 → BossConfirm → L2 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ L3 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → L4 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → L5 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L1 重新宣告（DECLARED），需 BossConfirm；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
+所有部門皆從 001 開始，同一任務固定序列為：L1 宣告 → BossConfirm → L2 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ L3 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → L4 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → L5 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
 
 進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據 QA 產出的 GWT 測試案例逐條驗證通過，作為技術實作的完成條件。
 
@@ -51,7 +51,7 @@
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），採增量攻防。L2 BossConfirm FAIL 與 L4 藍隊 FAIL 皆必須更新宣告段落。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 EXECUTED，執行者修正 result.md → BossConfirm → L3→L4→L5，直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），採增量攻防（不得刪除既有攻防紀錄，新回合追加在既有紀錄之後）。L2 BossConfirm FAIL 必須更新宣告段落。L4 藍隊 FAIL 不更新宣告段落（見 L4 FAIL 修復閘門）。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
 管理者在全流程中持續監控上下文用量（見「上下文監控與壓縮」段落）。上下文用量過高時直接強制觸發壓縮，避免工作到一半因上下文爆炸而中斷。
 
@@ -78,7 +78,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 - L1 BossConfirm FAIL → 宣告不被接受，返回 L1 重新宣告。需 BossConfirm。
 - L2 BossConfirm FAIL（result 確認）→ 老闆要求修改 result.md，返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
-- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，task.md 回到 DECLARED，更新宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，直到藍隊 PASS。採增量攻防（不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後）。需 BossConfirm。
+- L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，退回 L2 原地修復（EXECUTED），執行者修正 result.md → BossConfirm → L3→L4→L5，直到藍隊 PASS。採增量攻防（不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後）。L4 FAIL 修復後 BossConfirm FAIL 仍留在 EXECUTED 繼續修改（見 L4 FAIL 修復閘門）。
 - L4 藍隊 FAIL（打回上游）→ 問題在上游定義，上游開新 NNN，上游通過後回到原本被打回的 NNN，從 L1 重新宣告開始。本 NNN 的 L4 FAIL 不需 BossConfirm（上游自行走完整流程）。
 - DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：標準問題（QA 標準或規格不明確、不完整、有矛盾）→ 退回 QA；定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
 - L5 BossConfirm FAIL → 結論不被接受，退回 L1 重新宣告。需 BossConfirm。
@@ -132,7 +132,7 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 
 **CONCLUSION → CHECKED**：驗證五檔齊全（task.md + result.md + red.md + blue.md + conclusion.md），每檔含 YAML frontmatter 與繁體中文內容。不通過 → 要求補齊缺件。
 
-**不可跳步**：藍隊判定 FAIL 時，管理者回到 L1（DECLARED），更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，不產出 conclusion.md。只有藍隊 PASS 才進入 L5 產出 conclusion.md。L2 BossConfirm 不可跳過：result.md 產出後必須經老闆確認才能呼叫紅隊。L5 BossConfirm FAIL 時退回 L1 重新宣告（DECLARED）。
+**不可跳步**：藍隊判定 FAIL 時，管理者回到 L2（EXECUTED），執行者原地修復 result.md → BossConfirm → L3→L4→L5，不產出 conclusion.md。只有藍隊 PASS 才進入 L5 產出 conclusion.md。L2 BossConfirm 不可跳過：result.md 產出後必須經老闆確認才能呼叫紅隊。L5 BossConfirm FAIL 時退回 L1 重新宣告（DECLARED）。
 
 ### Commit 閘門
 
@@ -166,7 +166,7 @@ MAIN 模式（管理者直接執行時）：管理者自己在產出 result.md �
 
 派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED
 
-退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 L1 重新宣告（DECLARED），更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → red.md → blue.md，採增量攻防，需 BossConfirm；L5 BossConfirm FAIL → 退回 L1 重新宣告；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
+退回（MAIN 模式）：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL → 退回 L1 重新宣告；回溯 → 撤回該 slug 所有變更，回到 001。需 BossConfirm。
 
 收尾（MAIN 模式）：PASSED 後確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md。無功能分支、無 merge。首次 commit 在 result.md 產出前完成。
 
@@ -192,7 +192,7 @@ RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發�
 | DEV→PM | DEV PASSED → 管理者詢問老闆：繼續迭代或收尾 → PM 讀取 DEV conclusion.md → 同上五階段流程 → PASSED |
 | PM/DEV→收尾 | 老闆確認成品滿意 → 收尾流程 |
 
-退回（RAPID 模式）：僅限 PM↔DEV 之間退回。退回前先 commit。紅藍隊判定退回原因：定義問題→退回 PM，實作問題→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。L1/L2/L5 BossConfirm FAIL 退回 L1 重新宣告。無 QA/QC 退回路徑。
+退回（RAPID 模式）：僅限 PM↔DEV 之間退回。退回前先 commit。紅藍隊判定退回原因：定義問題→退回 PM，實作問題→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。L1/L2/L5 BossConfirm FAIL 退回 L1 重新宣告。L4 藍隊 FAIL（原地修復）→ 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5（見 L4 FAIL 修復閘門）。無 QA/QC 退回路徑。
 
 收尾（RAPID 模式）：老闆確認成品滿意後，執行 merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
