@@ -126,6 +126,9 @@ skills/shiftblame/
 ├── GATE.md               # 狀態機閘門定義
 ├── MANAGER.md
 ├── STAFF.md
+├── TOOLS/                 # 工具包（各領域工具箱）
+│   ├── OPEN-DESIGN.md     # Open Design 設計工具包
+│   └── NEXGAME.md         # Nexgame 遊戲開發工具包
 └── DEPT/
     ├── PM/
     ├── QA/
