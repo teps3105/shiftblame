@@ -15,11 +15,11 @@
 
 | # | 輸入 | 處理 |
 |---|------|------|
-| 1 | 日常操作/文件維護/部署/修復 | 直接執行 |
+| 1 | 日常操作/文件維護/部署/修復 | 使用 MAIN 模式執行（走五階段流程，無部門管線） |
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求 | 派工管線 |
 
-功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格+前端設計與視覺規格、QA→安全標準+操作標準+系統規格+設計驗證標準、DEV→技術規劃+技術設計+技術實作、QC→驗收計畫+驗收報告+驗收結論，且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+功能開發/需求必須先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格+前端設計與視覺規格、QA→安全標準+操作標準+系統規格+設計驗證標準+GWT 測試案例、DEV→技術規劃+技術設計+技術實作（後端與 API+前端接線與資源管理）、QC→驗收計畫+驗收報告+驗收結論（按 QA GWT 逐條端到端驗收+邊界測試），且全部寫入該部門的 `result.md`，不得另建同名產物檔。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
 
 ## 本輪筆記
 
@@ -33,7 +33,7 @@
 
 所有部門皆從 001 開始，同一任務固定序列為：宣告 → BossConfirm → 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L1 重新宣告（DECLARED），需 BossConfirm；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
 
-進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 執行者必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。
+進入 DEV 時，管理者直接依 QA result.md 定義的完整功能列表建立 DEV task.md。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據 QA 產出的 GWT 測試案例逐條驗證通過，作為技術實作的完成條件。
 
 ## 管線
 
@@ -42,7 +42,7 @@
 | 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 品質保證→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
-| 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
+| 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+按 QA GWT 逐條端到端驗收+邊界測試） |
 | 驗收上線→合併 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
@@ -91,7 +91,9 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 所有部門讀取指令時，預設讀取所有上游部門的所有已 PASS 的 conclusion.md：
 - QA → 讀 PM 所有已 PASS 的 conclusion.md
 - DEV → 讀 QA 所有已 PASS 的 conclusion.md
-- QC → 讀 DEV 所有已 PASS 的 conclusion.md
+
+- DEV → 讀 QA 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
+- QC → 讀 DEV 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
 
 管理者派工時提供上游所有已 PASS 的 conclusion.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
@@ -146,7 +148,7 @@ DEV 階段的 EXECUTED → RED 轉移前，管理者必須驗證工作目錄乾�
 
 ## MAIN 模式
 
-MAIN 模式由老闆明確指定，用於不需要跑完整部門管線的小型修復、文件更新與配置變更。
+日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。FEATURE 模式僅用於新功能開發。
 
 特徵：
 - 直接在主分支工作，不建立功能分支

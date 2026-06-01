@@ -1,4 +1,4 @@
----
+﻿---
 name: shiftblame
 description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM, 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
@@ -42,7 +42,7 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 | FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 新功能開發 |
 | MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
 
-FEATURE 模式為預設。MAIN 模式由老闆明確指定。
+FEATURE 模式僅用於新功能開發。日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。
 
 MAIN 模式特徵：
 - 直接在主分支工作，不建立功能分支
