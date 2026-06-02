@@ -1,4 +1,4 @@
-﻿---
+---
 name: shiftblame
 description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM(預設RAPID模式), 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, RAPID(RAPID模式/快速迭代/快速模式/原型)→使用RAPID模式PM→DEV→PM→DEV→收尾(預設), FEATURE(FEATURE模式/完整流程/完整管線)→使用FEATURE模式PM→QA→DEV→QC(由老闆指定), 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
@@ -35,6 +35,17 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 詳見 `DEPT/` 各部門子目錄。
 
+## PRD 與 SOP
+
+`.shiftblame/PRD/` 存放產品需求文件（Product Requirements Document），`.shiftblame/SOP/` 存放標準作業程序（Standard Operating Procedure）。兩個目錄為本地私密，不納入版本控制。
+
+PRD/SOP 的來源不限：用戶可自行撰寫，管理者可協助整理，PM/QA/DEV/QC 在流程中也可依需求產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
+
+| 目錄 | 用途 | 讀取者 | 寫入者 |
+|------|------|--------|--------|
+| `.shiftblame/PRD/` | 產品需求文件、功能規格、市場研究、使用者需求 | PM、QA（研究需求、制定規範時參照） | 用戶、管理者、PM、QA |
+| `.shiftblame/SOP/` | 標準作業程序、開發規範、測試流程、部署流程 | DEV、QC（開發、測試時必須遵循） | 用戶、管理者、PM、QA、DEV、QC |
+
 ## 模式
 
 | 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
@@ -51,7 +62,7 @@ MAIN 模式特徵：
 - 仍跑五階段流程（task→result→red→blue→conclusion）
 - 無部門管線（不走 PM→QA→DEV→QC）
 - 無上游/下游概念
-- result.md 無部門三段式內容要求，直接描述工作成果
+- result.md 無固定段式內容要求，直接描述工作成果
 - 收尾：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md（首次 commit 在 result.md 產出前完成）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
 
@@ -63,7 +74,7 @@ RAPID 模式特徵：
 - PM 與 DEV 交替迭代，直到老闆確認成品滿意才進入收尾
 - PM 吸收 QA：負責品質定義、測試標準、驗收條件，一併寫入 result.md
 - DEV 吸收 QC：負責自行驗收、功能驗證，依 PM 定義的品質標準逐條確認
-- 目標導向文件：RAPID 模式不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，不追求流於形式的模板填寫
+- 目標導向文件：不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，不追求流於形式的模板填寫
 - 收尾：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md
 - task.md 使用 `mode: rapid` 欄位
 
@@ -110,6 +121,8 @@ RAPID 模式特徵：
 .shiftblame/
 ├── REPO.md               # 專案現狀（本地私密）
 ├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅收尾整理）
+├── PRD/                  # 產品需求文件（本地私密，用戶可自行撰寫）
+├── SOP/                  # 標準作業程序（本地私密，用戶可自行撰寫）
 ├── archive/              # 歷史紀錄（已完成任務）
 ├── tmp/                  # 臨時工作目錄（老闆自行清理）
 └── <slug>/
@@ -124,6 +137,8 @@ MAIN 模式目錄結構：
 .shiftblame/
 ├── REPO.md
 ├── ROADMAP.md
+├── PRD/
+├── SOP/
 ├── archive/
 ├── tmp/
 └── <slug>/

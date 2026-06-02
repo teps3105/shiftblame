@@ -55,7 +55,7 @@ MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
 
 - 目錄結構：`.shiftblame/<slug>/<NNN>/`（扁平，無 DEPT 層級）
 - 無部門前置條件、無上游讀取、無功能分支
-- result.md 無部門三段式內容要求，直接描述工作成果
+- result.md 無固定段式內容要求，直接描述工作成果
 - conclusion.md 須包含最終結論與紅藍整合摘要（無跨部門推進聲明）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
 - L4 藍隊 FAIL 無打回上游選項（無上游）
@@ -83,11 +83,11 @@ RAPID 模式五階段 FAIL 狀態機與 FEATURE 模式一致（各部門內部�
 
 - 使用功能分支（`feat/<slug>`），目錄結構同 FEATURE（`.shiftblame/<slug>/<DEPT>/<NNN>/`）
 - 僅使用 PM 和 DEV 目錄，不走 QA 和 QC
-- PM 吸收 QA：PM result.md 包含品質定義、測試標準、驗收條件（取代 QA 五段式），DEV 直接依 PM 品質標準實作與驗證
-- DEV 吸收 QC：DEV result.md 包含自行驗收紀錄（取代 QC 三段式），依 PM 品質標準逐條確認通過
+- PM 吸收 QA：PM result.md 包含品質定義、測試標準、驗收條件，DEV 直接依 PM 品質標準實作與驗證
+- DEV 吸收 QC：DEV result.md 包含自行驗收紀錄，依 PM 品質標準逐條確認通過
 - PM 與 DEV 交替迭代，每輪 PASSED 後管理者詢問老闆「繼續迭代（交給對方）或進入收尾」
 - 下游讀取上游已 PASS 的 conclusion.md
-- 目標導向文件：RAPID 模式不要求固定段式格式（不要求 PM 四段式或 DEV 三段式），result.md 專注於「本輪達成什麼、怎麼驗證」
+- 目標導向文件：不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」
 - task.md 使用 `mode: rapid` 欄位
 - L4 藍隊 FAIL 退回僅限 PM↔DEV 之間（退回前先 commit、紅藍隊判定原因、老闆覆核）
 
@@ -137,7 +137,7 @@ review: local
 
 #### G2-MAIN — 閘門審查（MAIN 模式）
 
-與 G2 相同的五階段序列。差異：result.md 無部門三段式內容要求、無上游結論讀取、conclusion.md 無跨部門推進聲明。
+與 G2 相同的五階段序列。差異：result.md 無固定段式內容要求、無上游結論讀取、conclusion.md 無跨部門推進聲明。
 
 MAIN 模式 commit 在 result.md 產出前執行（與 FEATURE 模式一致），紅隊使用 `git diff HEAD`（上一個 commit 以來的差異）檢視。不得使用 `git diff HEAD~1`（上上個 commit 的範圍）。
 
@@ -297,6 +297,8 @@ ROADMAP.md 模板：
 - ROADMAP 中可參考但不得自動納入本輪的項目。
 - 建立 QA 標準前需要採納或排除的市場研究、通用方法、設計模式、CVE 或版本差異。
 
+**PRD/SOP 參照**：若 `.shiftblame/PRD/` 中存在與本輪相關的 PRD 文件，管理者在派工給 PM/QA 時應一併提供 PRD 內容作為需求參照。若 `.shiftblame/SOP/` 中存在與本輪相關的 SOP 文件，管理者在派工給 DEV/QC 時應一併提供 SOP 內容，並在 prompt 中明確要求遵循。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
+
 **DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆選擇的功能，由管理者寫入 `task.md` 的「目標」（FEATURE 模式依 QA 結果；RAPID 模式依 PM result.md 的品質標準與功能定義）。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
 **功能分支**：功能分支在第一次進入產品開發時建立（見操作標準 15）。執行者建立第一個產品開發 task.md 後、管理者執行 `git checkout -b feat/<slug>` 建立功能分支並切換。專案計畫和品質保證階段不需要功能分支。
@@ -393,7 +395,9 @@ upstream:
 7. 管理者向老闆 `BossConfirm`，通過後進入 PASSED；FAIL → 退回 L1 重新宣告（DECLARED）。
 8. 管理者依「上下文監控與壓縮」規則，在流程中持續監控上下文用量，於適當時機強制觸發壓縮。
 
-**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門對應段式內容：PM/四段式（需求釐清+市場研究+產品規格+前端設計與視覺規格）、QA/五段式（安全標準+操作標準+系統規格+設計驗證標準+GWT 測試案例）、DEV/三段式（技術規劃+技術設計+技術實作；其中技術實作區分為後端與 API、前端接線與資源管理）、QC/三段式（驗收計畫+驗收報告+驗收結論；驗收方式為按 QA GWT 逐條端到端驗收+邊界測試）。RAPID 模式不要求固定段式，result.md 以目標導向產出即可（見 RAPID 模式段落）。不得以同名 `.md` 檔替代。DEV 的 `result.md` 必須顯示技術規劃、技術設計的前置內容先於實作建立，否則不得進入審查。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
+**檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門的工作成果，以目標導向產出（不要求固定段式格式）。不得以同名 `.md` 檔替代。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
+
+**PRD/SOP 參照檢查**：PM/QA 部門若存在相關 PRD 文件，應已參照 PRD 研究需求與制定規範；DEV/QC 部門若存在相關 SOP 文件，必須已按照 SOP 執行開發與測試。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
 
 | 情境 | 動作 |
 |------|------|

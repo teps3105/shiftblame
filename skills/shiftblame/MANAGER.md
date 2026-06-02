@@ -22,7 +22,9 @@
 | 3 | 功能開發/需求/快速迭代 | RAPID 模式（預設，PM 含品質定義→DEV 含自行驗收→PM→DEV→收尾） |
 | 4 | 需要完整 QA/QC 流程 | FEATURE 模式（PM→QA→DEV→QC，由老闆指定） |
 
-功能開發/需求：FEATURE 模式先開 PM，再開 QA。部門產物對應為 PM→需求釐清+市場研究+產品規格+前端設計與視覺規格、QA→安全標準+操作標準+系統規格+設計驗證標準+GWT 測試案例、DEV→技術規劃+技術設計+技術實作（後端與 API+前端接線與資源管理）、QC→驗收計畫+驗收報告+驗收結論（按 QA GWT 逐條端到端驗收+邊界測試），且全部寫入該部門的 `result.md`，不得另建同名產物檔。RAPID 模式不要求固定段式，PM 吸收 QA（品質定義、測試標準、驗收條件），DEV 吸收 QC（自行驗收、功能驗證），result.md 以目標導向產出。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立 QA 標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+功能開發/需求：FEATURE 模式先開 PM，再開 QA。各部門 result.md 以目標導向產出，不要求固定段式格式。PM 負責需求釐清、市場研究、產品規格與前端設計，可參照 PRD 研究需求；QA 負責品質標準與 GWT 測試案例，可參照 PRD 制定規範；DEV 負責技術規劃、技術設計與技術實作（後端與 API+前端接線與資源管理），必須按照 SOP 執行開發；QC 負責端到端驗收與邊界測試，必須按照 SOP 執行測試。全部門產物寫入各部門的 `result.md`，不得另建同名產物檔。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+
+PRD 與 SOP：`.shiftblame/PRD/` 存放產品需求文件，PM/QA 可參照 PRD 研究需求與制定規範。`.shiftblame/SOP/` 存放標準作業程序，DEV/QC 開發與測試必須按照 SOP 執行。用戶可自行撰寫 PRD/SOP，也可由管理者或各部門在流程中產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
 
 ## 本輪筆記
 
@@ -100,6 +102,8 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 - QC → 讀 DEV 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
 
+PRD/SOP 參照：管理者在派工時應檢查 `.shiftblame/PRD/` 與 `.shiftblame/SOP/` 中是否有相關文件，一併提供給對應部門。PM/QA 派工時提供相關 PRD（若存在），DEV/QC 派工時提供相關 SOP（若存在）。
+
 RAPID 模式上游讀取：
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
 - DEV → 讀 PM 所有已 PASS 的 conclusion.md（PM 結論含品質標準與驗收條件）
@@ -128,7 +132,7 @@ RAPID 模式上游讀取：
 
 **APPROVED → EXECUTED**：驗證老闆已同意宣告且 task.md status 為 APPROVED。不通過 → 中止。
 
-**EXECUTED → RED**：驗證 result.md 存在且格式有效（包含 YAML frontmatter 與繁體中文工作成果）。不通過 → 要求執行者先完成工作成果。
+**EXECUTED → RED**：驗證 result.md 存在且格式有效（包含 YAML frontmatter 與繁體中文工作成果）。不通過 → 要求執行者先完成工作成果。PRD/SOP 參照為非強制（不存在不阻塞）。
 
 **RED → BLUE**：驗證 red.md 存在、包含 YAML frontmatter、包含繁體中文攻擊內容。不通過 → 重新呼叫紅隊。
 
@@ -166,7 +170,7 @@ MAIN 模式（管理者直接執行時）：管理者自己在產出 result.md �
 - 仍跑五階段流程（task→result→red→blue→conclusion）
 - 無部門管線（不走 PM→QA→DEV→QC）
 - 無上游/下游概念
-- result.md 無部門三段式內容要求，直接描述工作成果
+- result.md 無固定段式內容要求，直接描述工作成果
 
 派工順序（MAIN 模式）：宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Result Check → CHECKED → BossConfirm → PASSED
 
@@ -186,7 +190,7 @@ RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發�
 - 簡化管線：PM 與 DEV 交替迭代，不經 QA 和 QC
 - PM 和 DEV 各自跑完整五階段流程（L1 宣告→L2 產出→L3 紅隊→L4 藍隊→L5 結論）
 - PM 與 DEV 交替時，下游讀取上游已 PASS 的 conclusion.md
-- 目標導向文件：RAPID 模式不要求固定段式格式（不要求 PM 四段式或 DEV 三段式），result.md 專注於「本輪達成什麼、怎麼驗證」，避免流於形式的模板填寫
+- 目標導向文件：不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，避免流於形式的模板填寫
 - 管線推進由老闆決定：每輪 PASSED 後，管理者詢問老闆「繼續迭代（交給對方）或進入收尾」
 - 收尾：merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md
 - DEV 被退回時，退回前先 commit。紅藍隊判定退回原因分類：定義問題（需求、規格或前端設計有誤）→退回 PM；實作問題（功能不符合規格、錯誤、效能）→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。RAPID 模式無 QA 部門，「標準問題→退回 QA」路徑不適用。
