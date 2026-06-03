@@ -20,11 +20,11 @@
 | 1 | 日常操作/文件維護/部署/修復 | 使用 MAIN 模式執行（走五階段流程，無部門管線） |
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求/快速迭代 | RAPID 模式（預設，PM 含品質定義→DEV 含自行驗收→PM→DEV→收尾） |
-| 4 | 需要完整 QA/QC 流程 | FEATURE 模式（PM→QA→DEV→QC，由老闆指定） |
+| 4 | 需要討論確認的功能開發 | FEATURE 模式（PM 含品質定義→DEV 含自行驗收→PM→DEV→收尾，BossConfirm 手動確認） |
 
-功能開發/需求：FEATURE 模式先開 PM，再開 QA。各部門 result.md 以目標導向產出，不要求固定段式格式。PM 負責需求釐清、市場研究、產品規格與前端設計，可參照 PRD 研究需求；QA 負責品質標準與 GWT 測試案例，可參照 PRD 制定規範；DEV 負責技術規劃、技術設計與技術實作（後端與 API+前端接線與資源管理），必須按照 SOP 執行開發；QC 負責端到端驗收與邊界測試，必須按照 SOP 執行測試。全部門產物寫入各部門的 `result.md`，不得另建同名產物檔。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
+功能開發/需求：PM 負責需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、設計驗證標準與前端設計（PM 吸收 QA 職責）；DEV 負責技術規劃、設計、實作與自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收、效能與安全跨領域驗證）（DEV 吸收 QC 職責）。全部門 result.md 以目標導向產出，不要求固定段式格式。PM 是前端設計的唯一權威，負責釐清本輪使用者想實現的功能、檢查現有 repo/REPO.md/ROADMAP.md 的相關背景、列出本輪範圍與非本輪事項，並在建立標準前調查市場研究、通用方法、設計模式、CVE 或版本差異等與本輪功能相關的資料。PM 同時負責前端、UI/UX 設計與視覺效果，依老闆之 Open-design 環境操作（使用 MCP 工具或 HTTP API）產出設計成果。DEV 不得自行決定前端設計，只能依 PM 規格實作前端接線與資源管理。ROADMAP 只能作為收尾後的穩定背景與後續候選來源，不得把「既有規劃應該做什麼」替代成本輪使用者要求；開發中的判斷、臨時待辦與退回脈絡一律維護在 `.shiftblame/<slug>/SLUG.md`。
 
-PRD 與 SOP：`.shiftblame/PRD/` 存放產品需求文件，PM/QA 可參照 PRD 研究需求與制定規範。`.shiftblame/SOP/` 存放標準作業程序，DEV/QC 開發與測試必須按照 SOP 執行。用戶可自行撰寫 PRD/SOP，也可由管理者或各部門在流程中產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
+PRD 與 SOP：`.shiftblame/PRD/` 存放產品需求文件，PM 可參照 PRD 研究需求與制定規範。`.shiftblame/SOP/` 存放標準作業程序，DEV 開發必須按照 SOP 執行。用戶可自行撰寫 PRD/SOP，也可由管理者或各部門在流程中產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
 
 ## 本輪筆記
 
@@ -32,33 +32,31 @@ PRD 與 SOP：`.shiftblame/PRD/` 存放產品需求文件，PM/QA 可參照 PRD 
 
 `SLUG.md` 的生命週期：建立時產生 → 開發中持續追加 → 歸檔後作為歷史紀錄保留。
 
-`SLUG.md` 不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`。部門正式產物仍寫入各自任務目錄；但任何還沒完成、還在爭議中、只屬於本輪流程的待辦，不得寫入 ROADMAP。ROADMAP 只能在 QC 收尾通過後，從 `SLUG.md` 與實際完成結果整理成穩定產品路線。
+`SLUG.md` 不替代 `task.md`、`result.md`、`red.md` 或 `blue.md`。部門正式產物仍寫入各自任務目錄；但任何還沒完成、還在爭議中、只屬於本輪流程的待辦，不得寫入 ROADMAP。ROADMAP 只能在歸檔後更新，從 `SLUG.md` 與實際完成結果整理成穩定產品路線。
 
 ## 派工順序
 
-所有部門皆從 001 開始，同一任務固定序列為：L1 宣告 → BossConfirm → L2 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ L3 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → L4 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → L5 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
+所有部門皆從 001 開始，同一任務固定序列為：L1 宣告 → BossConfirm → L2 執行者寫入 result.md（工作成果）→ BossConfirm（老闆確認 result.md 無需修改）→ L3 紅隊攻擊 result.md 並寫入 `red.md` → 管理者驗證 `red.md` → L4 呼叫藍隊 → 藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫入 `blue.md` → 管理者驗證 `blue.md` → L5 管理者依紅藍回饋寫入 `conclusion.md` → Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行；藍隊不得在 `red.md` 完成前啟動。L2 BossConfirm 不通過時返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL 退回 L1 重新宣告。管理者驗證紅藍隊產出，未產出則重跑該子代理。DEV 適用單循環，與 PM 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。
 
-進入 DEV 時，管理者依上游定義的功能列表建立 DEV task.md（FEATURE 模式依 QA result.md；RAPID 模式依 PM result.md 的品質標準與功能定義）。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據品質標準逐條驗證通過（FEATURE 模式依 QA 產出的 GWT 測試案例；RAPID 模式依 PM 定義的驗收條件自行驗收），作為技術實作的完成條件。
+進入 DEV 時，管理者依上游定義的功能列表建立 DEV task.md（依 PM result.md 的品質標準與功能定義）。DEV task.md 的目標必須用中文寫成本回合實際開發的全部可見功能，不得只寫模組、技術工作或內部重構。DEV 負責後端+API+依 PM 設計規格實作前端接線與資源管理，不得自行決定前端設計。DEV 執行者必須先在 ``task.md`` 建立技術規劃、技術設計、技術實作的前置內容，才能開始修改程式碼。DEV 必須根據品質標準逐條驗證通過（依 PM 定義的 GWT 測試案例自行驗收），作為技術實作的完成條件。
 
 ## 管線
 
 | 閘門 | 條件 |
 |:----:|------|
-| 專案計畫→品質保證 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
-| 品質保證→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
-| 產品開發→工程收尾 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
-| 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+按 QA GWT 逐條端到端驗收+邊界測試） |
-| 驗收上線→合併 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 專案計畫→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| 產品開發→專案計畫 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
+| PM/DEV→收尾 | 老闆確認成品滿意 → merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
 
-每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 EXECUTED，執行者修正 result.md → BossConfirm → L3→L4→L5，直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），採增量攻防（不得刪除既有攻防紀錄，新回合追加在既有紀錄之後）。L2 BossConfirm FAIL 必須更新宣告段落。L4 藍隊 FAIL 不更新宣告段落（見 L4 FAIL 修復閘門）。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或驗收上線收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
+每個閘門未通過時，依五階段 FAIL 狀態機處理：L1 BossConfirm FAIL → 返回 L1 重新宣告；L2 BossConfirm FAIL → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL → 退回 EXECUTED，執行者修正 result.md → BossConfirm → L3→L4→L5，直到藍隊 PASS。修改不刪除（保留完整追溯紀錄），採增量攻防（不得刪除既有攻防紀錄，新回合追加在既有紀錄之後）。L2 BossConfirm FAIL 必須更新宣告段落。L4 藍隊 FAIL 不更新宣告段落（見 L4 FAIL 修復閘門）。不得沿用上一輪的 `red.md` 或 `blue.md`；管理者寫入新的 red.md / blue.md 時不得刪除既有攻防紀錄，必須在既有內容後追加新回合（以 `---` 與回合標題分隔）。直到老闆確認該部門閘門通過（PASSED），才前進到下一部門或收尾。PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。一個 NNN 可以多次提交。
 
 管理者在全流程中持續監控上下文用量（見「上下文監控與壓縮」段落）。上下文用量過高時直接強制觸發壓縮，避免工作到一半因上下文爆炸而中斷。
 
 
-合併歸檔狀態機（驗收上線閘門通過後）：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。
+合併歸檔狀態機（PM/DEV 皆 PASSED 後）：merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md。
 
 DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，老闆可要求觀看目前變化、追加小調整或指定下一個想看的功能。管理者需即時啟動或更新可操作作品，提供 URL/指令/截圖/操作結果與簡短驗證結論；若老闆提出新方向，先用中文確認本回合新增或改動的可見效果，再繼續 DEV。`BossPreview` 不需要紅藍隊，也不代表 DEV 閘門通過。
 
@@ -82,11 +80,10 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 - L2 BossConfirm FAIL（result 確認）→ 老闆要求修改 result.md，返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
 - L4 藍隊 FAIL（原地修復）→ 同部門 NNN 不變，退回 L2 原地修復（EXECUTED），執行者修正 result.md → BossConfirm → L3→L4→L5，直到藍隊 PASS。採增量攻防（不得刪除既有 red.md / blue.md 紀錄，新回合攻防追加在既有紀錄之後）。L4 FAIL 修復後 BossConfirm FAIL 仍留在 EXECUTED 繼續修改（見 L4 FAIL 修復閘門）。
 - L4 藍隊 FAIL（打回上游）→ 問題在上游定義，上游開新 NNN，上游通過後回到原本被打回的 NNN，從 L1 重新宣告開始。本 NNN 的 L4 FAIL 不需 BossConfirm（上游自行走完整流程）。
-- DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：標準問題（QA 標準或規格不明確、不完整、有矛盾）→ 退回 QA；定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
+- DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM；實作問題（功能不符合規格、錯誤、效能）→ 原地修復。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
 - L5 BossConfirm FAIL → 結論不被接受，退回 L1 重新宣告。需 BossConfirm。
 - 同部門新執行切片 → PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯 → 撤回該部門所有變更，回到 001。需 BossConfirm。
-- 驗收上線例外 → 驗收上線一律退回產品開發（驗收上線不修改程式碼），直接回到原本被打回的 DEV NNN 重做。DEV 被退回前必須先 commit 所有工作變更。
 
 計畫更動判定：任何輪次發現需要更動已 PASSED 的前輪計畫時，管理者判定是否屬於計畫更動（功能範圍增減、架構決策變更）。若是，提供老闆兩選項：
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態重新規劃。僅限觸發部門，不影響其他已通過閘門的部門。需 BossConfirm。
@@ -95,14 +92,10 @@ DEV 期間可反覆執行 `BossPreview`：在尚未進入 G2 正式審查前，�
 ## 上游讀取
 
 所有部門讀取指令時，預設讀取所有上游部門的所有已 PASS 的 conclusion.md：
-- QA → 讀 PM 所有已 PASS 的 conclusion.md
-- DEV → 讀 QA 所有已 PASS 的 conclusion.md
-
-- DEV → 讀 QA 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
-- QC → 讀 DEV 所有已 PASS 的 conclusion.md，管理者必須額外提供 QA result.md 的 GWT 測試案例段落全文
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
+- DEV → 讀 PM 所有已 PASS 的 conclusion.md（PM 結論含品質標準與驗收條件）
 
-PRD/SOP 參照：管理者在派工時應檢查 `.shiftblame/PRD/` 與 `.shiftblame/SOP/` 中是否有相關文件，一併提供給對應部門。PM/QA 派工時提供相關 PRD（若存在），DEV/QC 派工時提供相關 SOP（若存在）。
+PRD/SOP 參照：管理者在派工時應檢查 `.shiftblame/PRD/` 與 `.shiftblame/SOP/` 中是否有相關文件，一併提供給對應部門。PM 派工時提供相關 PRD（若存在），DEV 派工時提供相關 SOP（若存在）。
 
 RAPID 模式上游讀取：
 - PM 為第一部門，無上游，僅讀 SLUG.md + task.md + REPO.md + ROADMAP.md
@@ -111,11 +104,11 @@ RAPID 模式上游讀取：
 管理者派工時提供上游所有已 PASS 的 conclusion.md 完整內容。預設一律提供全文，僅在超出派工 prompt 可容納範圍時才提供摘要。摘要最低保留欄位：每段結論的核心判定。
 
 合併衝突處理：
-- 文件衝突（README.md 等）→ 管理者直接解決，不需重新驗收上線
-- 程式碼邏輯衝突 → 中止 merge，FAIL 原地修復 DEV，解決衝突後重新走工程收尾+驗收上線
+- 文件衝突（README.md 等）→ 管理者直接解決，不需重新走退回流程
+- 程式碼邏輯衝突 → 中止 merge，FAIL 原地修復 DEV，解決衝突後重新走收尾流程
 
 老闆強制停止：
-- 選項 A：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → 驗收上線任務 → 驗收上線通過後 merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md。驗收上線退回則老闆再次選擇。
+- 選項 A：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md。
 - 選項 B：全部捨棄。放棄功能分支上的所有變更。
 
 ## 流程保護
@@ -168,7 +161,7 @@ MAIN 模式（管理者直接執行時）：管理者自己在產出 result.md �
 - 直接在主分支工作，不建立功能分支
 - 簡化目錄（`.shiftblame/<slug>/<NNN>/`，無 DEPT 層級）
 - 仍跑五階段流程（task→result→red→blue→conclusion）
-- 無部門管線（不走 PM→QA→DEV→QC）
+- 無部門管線（不走 PM→DEV 部門管線）
 - 無上游/下游概念
 - result.md 無固定段式內容要求，直接描述工作成果
 
@@ -205,13 +198,60 @@ RAPID 模式用於功能開發（預設）、快速驗證想法、原型開發�
 
 退回（RAPID 模式）：僅限 PM↔DEV 之間退回。退回前先 commit。紅藍隊判定退回原因：定義問題→退回 PM，實作問題→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核後執行。L1/L2/L5 BossConfirm FAIL 退回 L1 重新宣告。L4 藍隊 FAIL（原地修復）→ 退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5（見 L4 FAIL 修復閘門）。無 QA/QC 退回路徑。
 
-收尾（RAPID 模式）：老闆確認成品滿意後，執行 merge --no-ff → push → 刪除功能分支 → 歸檔 → 更新 REPO.md/ROADMAP.md。
+收尾（RAPID 模式）：老闆確認成品滿意後，執行 merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md。
+
+### RAPID-AUTO 管理者操作差異
+
+RAPID-AUTO 子模式（`mode: rapid` + `auto: true`）下，管理者操作與標準 RAPID 的差異：
+
+- **自動通過品質判斷**：L1/L2/L5 BossConfirm 由管理者自行判斷品質是否足夠，不暫停等待老闆。品質不足時原地修正（不算迭代次數、不算退回），連續 3 次原地修正仍未通過 → BLOCK 報告老闆
+- **自動修復閘門操作**：L4 FAIL 時管理者依紅藍隊判定自動決定原地修復或退回對方部門，不暫停等待老闆
+- **攻防上限操作**：同一 NNN 紅藍攻防最多 3 輪，第 3 輪 FAIL → 記錄殘餘風險到 SLUG.md，強制通過進入 L5
+- **迭代上限判定**：達到 PM/002 + DEV/002 上限 → 記錄殘餘問題到 SLUG.md，強制收尾（自動通知老闆，不需等待回覆）
+- **PRD 固化操作**：收尾後自動執行 PRD 固化（若消耗了 PRD）
+- **壓縮提示輸出**：壓縮前輸出提示訊息，說明目前 slug 狀態與壓縮後恢復方向
+
+### worktree 管理
+
+管理者負責 worktree 的完整生命週期管理：
+
+- **建立**：slug 啟動時（第一次進入 DEV 前），在主工作目錄執行 `git worktree add <worktree-path> -b feat/<slug>`
+- **開發期間**：DEV 在 worktree 中工作、commit；紅隊在 worktree 中或透過 `git diff` 檢視程式碼
+- **收尾清理**：切回主工作目錄 → merge → push → `git worktree remove <path>` → `git branch -d feat/<slug>`
+- **異常處理**：merge 衝突 → 解決後重新 merge；worktree 移除失敗 → 檢查未 commit 變更；分支刪除失敗 → 確認已 merge 後使用 `-D` 強制刪除
+
+並行開發支援：git worktree 原生支援多個 worktree 同時存在，但由於「每個 slug 完成後開新對話」策略，實際上同一對話中通常只有一個活躍 slug。管理者應在新 slug 啟動前確認前一個 slug 已完成 merge 和清理。
+
+### 業務拓樑圖維護
+
+管理者負責維護業務拓樑圖（若使用）的準確性：
+
+- **維護位置建議**：`.shiftblame/GRAPH.md`（本地私密，不納入版本控制）
+- **更新時機**：每個 slug 收尾後、PRD 固化後、新 slug 建立時、新 PRD 建立後
+- **圖表類型**：執行序列全覽（graph TD）、Slug 依賴關係（graph TD）、PRD 消耗關係（graph LR）、進度統計（pie）
+- **非強制**：單一 slug 專案、小型修復、MAIN 模式操作無需建立業務拓樑圖
+
+### 開新對話提示
+
+每個 slug 完成收尾歸檔後：
+
+1. 管理者完成收尾流程（merge → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md）
+2. 管理者輸出提示訊息：「本 slug 已完成收尾。建議開啟新對話繼續下一個工作。」
+3. 管理者停止處理下一個 slug 的工作
+
+新對話恢復流程：讀取 ROADMAP.md → 讀取 REPO.md → 讀取前一個歸檔 slug 的 SLUG.md → PRD 再掃描 → 啟動下一個 slug。MAIN 模式下若上下文用量未達閾值，可選擇在同一對話中繼續。
 
 ## 收尾
 
-驗收上線閘門通過後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → 刪除功能分支 → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md（見操作標準 20、操作標準 13）。已確認收尾即直接歸檔 slug，不再詢問是否歸檔；若未通過則 FAIL 原地重做（驗收上線不修改程式碼）。
+PM/DEV 皆 PASSED 且老闆確認後，執行收尾 → merge --no-ff（保留 commit 歷史，禁止 squash）→ push → worktree remove → branch delete → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md。
 
-收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無非正式測試文件或測試產物；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；臨時檔案應存放於 `.shiftblame/tmp/`（由老闆自行清理，非管理者責任）；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；驗收上線閘門通過後 slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
+收尾檢查清單（清理步驟）：確認無殭屍程序、背景 dev server、測試服務或 watcher；無 scratch/demo/prototype/debug output/臨時設定等開發殘留；無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔；臨時檔案應存放於 `.shiftblame/tmp/`（由老闆自行清理，非管理者責任）；`.shiftblame/`、本地私密設定不納入版本控制；開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`；`.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌；README.md 已在產品開發任務中更新並通過紅藍隊審查；確認 worktree 已移除（`git worktree list` 不再出現）；確認功能分支已刪除（`git branch` 不再出現）；確認主工作目錄在 main 分支且乾淨。
+
+**PRD 固化**：收尾後若消耗了 PRD，執行 PRD 固化流程（提取已實作驗證的設計決策生成 SOP 文件至 `.shiftblame/SOP/`，記錄狀態至 `.shiftblame/PRD/STATUS.md`）。
+
+**業務拓樑圖更新**：若使用 GRAPH.md，在收尾後更新執行序列狀態與進度統計。
+
+**開新對話提示**：收尾完成後，管理者輸出提示訊息建議老闆開啟新對話。
 
 task.md：YAML frontmatter + 宣告 + 結果。result.md 含 `[SUPPORT_REQUEST]` → 管理者介入（TOOL→增換工具；ASSIST→代處理），用 `BossConfirm` 向老闆報告。
 
