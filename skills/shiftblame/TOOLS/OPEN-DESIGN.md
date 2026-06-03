@@ -109,7 +109,7 @@ PM 在整理「前端設計與視覺規格」時，可以優先寫：
 
 ## 本輪對 PM L1 / L2 的檢查結論
 
-本輪已檢查 `skills/shiftblame/DEPT/PM/L1.md` 與 `skills/shiftblame/DEPT/PM/L2.md`。
+本輪已檢查 `skills/shiftblame/ROLE.md`（PM 職責段落）。
 
 結論：**本輪不需要修改。**
 
