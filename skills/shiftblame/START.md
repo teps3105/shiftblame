@@ -23,7 +23,7 @@
 
 ## 4. 建立 SLUG.md
 
-管理者協調建立 `.shiftblame/<slug>/SLUG.md`（見 TEMPLATE/SLUG/SLUG.md 模板）。
+管理者協調建立 `.shiftblame/<slug>/SLUG.md`（見 TEMPLATES/SLUG/SLUG.md 模板）。
 
 ## 5. 建立功能分支（MANUAL/AUTO）
 
@@ -31,10 +31,10 @@
 - AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`
 - PLAN/MAIN：不建立分支，直接在 main
 
-## 6. 建立第一份 task.md
+## 6. 建立第一份 TASK.md
 
-管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/task.md`（見 TEMPLATE/SLUG/task.md 模板）。PLAN/MAIN 使用扁平目錄 `<slug>/<NNN>/`。
+管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/TASK.md`（見 TEMPLATES/SLUG/TASK.md 模板）。PLAN/MAIN 使用扁平目錄 `<slug>/<NNN>/`。
 
 ## 7. 進入 L1 宣告
 
-執行者在 task.md 寫入宣告 → 管理者向老闆 BossConfirm → APPROVED → 開始工作。
+執行者在 TASK.md 寫入宣告 → 管理者向老闆 BossConfirm → APPROVED → 開始工作。

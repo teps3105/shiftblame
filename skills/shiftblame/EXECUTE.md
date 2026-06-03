@@ -2,7 +2,7 @@
 
 ## 執行者呼叫
 
-執行者預設由本環境子代理擔任（管理者可調整為目前環境直接執行），紅隊藍隊固定由本環境子代理擔任。prompt 必須要求子代理寫入目標檔案（執行者→result.md、紅隊→red.md、藍隊→blue.md）。管理者驗證產出；未產出則重跑。
+執行者預設由本環境子代理擔任（管理者可調整為目前環境直接執行），紅隊藍隊固定由本環境子代理擔任。prompt 必須要求子代理寫入目標檔案（執行者→RESULT.md、紅隊→RED.md、藍隊→BLUE.md）。管理者驗證產出；未產出則重跑。
 
 若無法開子代理 → BLOCK，不得使用外部品牌工具。
 
@@ -11,15 +11,15 @@
 | 別名 | 角色 | 呼叫 |
 |------|------|------|
 | 管理者 | 目前環境 | 直接執行 |
-| 執行者 | 本環境子代理 | result.md |
-| 紅隊 | 本環境子代理 | red.md |
-| 藍隊 | 本環境子代理 | blue.md |
+| 執行者 | 本環境子代理 | RESULT.md |
+| 紅隊 | 本環境子代理 | RED.md |
+| 藍隊 | 本環境子代理 | BLUE.md |
 
 ## 紅藍隊派工
 
-task.md review 固定為 local。同一 slug 內依序產出 red.md 與 blue.md。
+TASK.md review 固定為 local。同一 slug 內依序產出 RED.md 與 BLUE.md。
 
-順序：result.md → BossConfirm（result 確認）→ red.md → blue.md → conclusion.md → CHECKED → BossConfirm → PASSED。紅藍不得並行。L4 FAIL 退回 L2 原地修復，採增量攻防。L5 FAIL 退回 L1 重新宣告。
+順序：RESULT.md → BossConfirm（result 確認）→ RED.md → BLUE.md → CONCLUSION.md → CHECKED → BossConfirm → PASSED。紅藍不得並行。L4 FAIL 退回 L2 原地修復，採增量攻防。L5 FAIL 退回 L1 重新宣告。
 
 ## 讀寫權限
 

@@ -25,10 +25,10 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md（不寫入其他部門正式產物） |
-| 執行者 | 本環境子代理 | result.md |
-| 紅隊 | 本環境子代理 | red.md |
-| 藍隊 | 本環境子代理 | blue.md |
+| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、CONCLUSION.md（不寫入其他部門正式產物） |
+| 執行者 | 本環境子代理 | RESULT.md |
+| 紅隊 | 本環境子代理 | RED.md |
+| 藍隊 | 本環境子代理 | BLUE.md |
 
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
@@ -36,19 +36,19 @@ _「這不是我的鍋。」_
 
 同一任務的攻防流程固定序列：
 
-1. **L1 宣告** — 管理者協調建立 task.md，向老闆確認（BossConfirm）
-2. **L2 產出** — 執行者寫入 result.md，向老闆確認（BossConfirm）
-3. **L3 紅隊** — 紅隊攻擊 result.md 並寫入 red.md
-4. **L4 藍隊** — 藍隊防禦並寫入 blue.md
-5. **L5 結論** — 管理者寫入 conclusion.md → Result Check（五檔齊全）→ BossConfirm → PASSED
+1. **L1 宣告** — 管理者協調建立 TASK.md，向老闆確認（BossConfirm）
+2. **L2 產出** — 執行者寫入 RESULT.md，向老闆確認（BossConfirm）
+3. **L3 紅隊** — 紅隊攻擊 RESULT.md 並寫入 RED.md
+4. **L4 藍隊** — 藍隊防禦並寫入 BLUE.md
+5. **L5 結論** — 管理者寫入 CONCLUSION.md → Result Check（五檔齊全）→ BossConfirm → PASSED
 
-紅藍隊不得並行；藍隊不得在 red.md 完成前啟動。
+紅藍隊不得並行；藍隊不得在 RED.md 完成前啟動。
 
 ### FAIL 狀態機
 
 - L1 BossConfirm FAIL → 返回 L1 重新宣告
 - L2 BossConfirm FAIL → 返回 DECLARED 更新宣告
-- L4 藍隊 FAIL → 返回 L2 原地修復 result.md，重跑 L3→L4（增量攻防，不刪除既有紀錄）
+- L4 藍隊 FAIL → 返回 L2 原地修復 RESULT.md，重跑 L3→L4（增量攻防，不刪除既有紀錄）
 - L5 BossConfirm FAIL → 退回 L1 重新宣告
 - FAIL 修改不刪除檔案，宣告段落鎖定不變
 
@@ -70,7 +70,7 @@ PLAN 為規劃模式，僅限修改 `.shiftblame/` 內的文件。MAIN 為 DEV-o
 | PM（專案計畫） | 需求研究、產品規格、品質定義、測試標準、驗收條件、前端設計（依 Open-design 環境操作） |
 | DEV（產品開發） | 技術實作、自行驗收、功能驗證、邊界測試 |
 
-PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion.md。result.md 為目標導向產出（不限固定段式格式）。
+PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 CONCLUSION.md。RESULT.md 為目標導向產出（不限固定段式格式）。
 
 ## 宣告-確認-執行閘門
 
@@ -116,18 +116,18 @@ skills/shiftblame/
 ├── ROLE.md               # 角色定義（PM + DEV）
 ├── START.md              # 流程開始定義
 ├── END.md                # 流程結束定義
-├── TEMPLATE/             # 文件模板
+├── TEMPLATES/             # 文件模板
 │   ├── REPO.md           # REPO.md 模板
 │   ├── ROADMAP.md        # ROADMAP.md 模板
 │   ├── GRAPH.md          # 業務拓樑圖模板
 │   ├── RAPID.md          # 快速功能配置模板（AUTO 前提）
 │   └── SLUG/             # slug 五流程模板
 │       ├── SLUG.md
-│       ├── task.md
-│       ├── result.md
-│       ├── red.md
-│       ├── blue.md
-│       └── conclusion.md
+│       ├── TASK.md
+│       ├── RESULT.md
+│       ├── RED.md
+│       ├── BLUE.md
+│       └── CONCLUSION.md
 └── TOOLS/                # 工具包
     ├── OPEN-DESIGN.md    # Open Design 操作指南
     └── NEXGAME.md        # Nexgame 遊戲開發資源
@@ -145,12 +145,12 @@ skills/shiftblame/
 ├── tmp/                  # 臨時檔案
 └── <slug>/
     ├── SLUG.md            # 開發筆記
-    └── <ROLE>/<NNN>/       # AUTO/MANUAL: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
-        ├── task.md         # L1 宣告
-        ├── result.md       # L2 產出
-        ├── red.md          # L3 紅隊攻擊
-        ├── blue.md         # L4 藍隊防禦
-        └── conclusion.md   # L5 結論
+    └── <ROLE>/<NNN>/       # MANUAL/AUTO: PM/DEV；PLAN/MAIN: 扁平
+        ├── TASK.md         # L1 宣告
+        ├── RESULT.md       # L2 產出
+        ├── RED.md          # L3 紅隊攻擊
+        ├── BLUE.md         # L4 藍隊防禦
+        └── CONCLUSION.md   # L5 結論
 
 .worktrees/                # git worktree 隔離目錄，.gitignore
 └── <slug>/                # feat/<slug> 分支的工作樹
