@@ -37,11 +37,11 @@ FAIL 規則：
 - 宣告更新：更新宣告內容後狀態回到 DECLARED，必須重新走 BossConfirm，不得視為自動 APPROVED
 - L4 FAIL 修復閘門：L4 藍隊 FAIL 退回 L2 原地修復後，BossConfirm 確認修復後的 result.md。此 BossConfirm FAIL 時仍留在 EXECUTED 繼續修改 result.md，不退回 DECLARED，不更新 task.md 宣告段落。僅在管理者判定需更新 task.md 宣告段落時，依 L2 BossConfirm FAIL 規則退回 DECLARED。適用 FEATURE/MAIN/RAPID 三種模式。
 
-### DEV/QC 單循環（FEATURE 模式）
+### DEV 單循環（RAPID/FEATURE 模式）
 
-DEV（產品開發）和 QC（驗收上線）適用單循環，與 PM/QA 一致。L1 即為計畫宣告（對標研究部門的 L1 行為），L2 產出含技術規劃+技術設計+技術實作的完整 result.md，L3-L5 跑紅藍攻防。L1↔L2 迭代循環：L2 BossConfirm FAIL → DECLARED，反覆宣告-執行直到老闆滿意才進入紅藍。PM（專案計畫）和 QA（品質保證）同樣適用單循環。
+DEV（產品開發）適用單循環，與 PM 一致。L1 即為計畫宣告（對標研究部門的 L1 行為），L2 產出含技術規劃+技術設計+技術實作的完整 result.md，L3-L5 跑紅藍攻防。L1↔L2 迭代循環：L2 BossConfirm FAIL → DECLARED，反覆宣告-執行直到老闆滿意才進入紅藍。PM（專案計畫）同樣適用單循環。
 
-合併歸檔狀態機（驗收上線閘門通過後）：
+合併歸檔狀態機（PM/DEV 皆 PASSED 後）：
 
 ```
 MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
@@ -49,7 +49,7 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 
 ### MAIN 模式
 
-日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。功能開發、快速迭代、原型驗證等操作一律使用 RAPID 模式（預設），不需老闆指定。僅在老闆明確指定需要完整 QA/QC 流程時使用 FEATURE 模式。
+日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。功能開發、快速迭代、原型驗證等操作一律使用 RAPID 模式（預設），不需老闆指定。僅在老闆明確指定需要討論確認的功能開發時使用 FEATURE 模式。
 
 MAIN 模式五階段 FAIL 狀態機與 FEATURE 模式一致。差異：
 
@@ -104,6 +104,48 @@ RAPID 模式退回規則：
 - L4 藍隊 FAIL（退回對方部門）→ PM→DEV 或 DEV→PM，退回前先 commit。紅藍隊判定退回原因：定義問題（需求、規格或前端設計有誤）→退回 PM；實作問題（功能不符合規格、錯誤、效能）→原地修復。管理者向老闆報告退回原因與目標部門，經老闆覆核確認後才執行。需 BossConfirm。RAPID 模式無 QA 部門，「標準問題→退回 QA」路徑不適用。
 - L5 BossConfirm FAIL → 退回 L1 重新宣告。需 BossConfirm。
 - 回溯：撤回該 slug 所有變更，回到 001。需 BossConfirm。
+
+### RAPID-AUTO 子模式閘門
+
+RAPID-AUTO 是 RAPID 模式的子模式（繼承 RAPID 的所有特徵），當「老闆完全授權」且「存在預定執行序列（RAPID.md）」同時滿足時觸發。管理者不得自行決定進入 RAPID-AUTO。task.md 標記：`mode: rapid` + `auto: true`。
+
+**BossConfirm 自動通過規則**：管理者自行判斷品質是否足夠進入下一階段，不暫停等待老闆。
+- L1 宣告自動通過：task.md「## 宣告」段落非空，包含本輪目標與預期產出
+- L2 產出自動通過：result.md 包含完整工作成果，格式有效
+- L5 結論自動通過：conclusion.md 包含最終結論，五檔齊全且格式有效
+- 品質不足時原地修正（不算迭代次數、不算退回）；連續 3 次原地修正仍未通過 → BLOCK 報告老闆
+
+**自動修復閘門**（L4 FAIL 處理）：
+- 原地修復（實作問題）→ 不暫停，自動進入 EXECUTED → BossConfirm（自動通過）→ L3→L4
+- 退回對方部門（定義問題）→ 退回 PM 或 DEV
+
+**紅藍攻防上限**：同一 NNN 最多 3 輪。第 3 輪 FAIL → 記錄為 SLUG.md 已知風險，強制通過進入 L5。強制通過必須在 conclusion.md 中明確標註殘餘風險。
+
+**迭代上限**：每個 slug 最多 PM/002 + DEV/002（2 輪完整迭代）。超過 2 輪 → 記錄殘餘問題到 SLUG.md，強制收尾。兩個計數器（攻防上限與迭代上限）完全獨立運作。
+
+**強制收尾流程**：迭代上限到達 → 記錄殘餘問題到 SLUG.md → 強制進入收尾流程（merge → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md）。
+
+### 開新對話閘門
+
+每個 slug 完成收尾歸檔後，管理者輸出完成摘要並建議老闆開啟新對話，停止處理下一個 slug 的工作。下一個 slug 在全新對話中啟動。
+
+**新對話恢復流程**：讀取 ROADMAP.md 確認進度 → 讀取 REPO.md 確認架構現狀 → 讀取前一個歸檔 slug 的 SLUG.md 確認殘餘風險與交接事項 → PRD 再掃描（檢查是否有新增/更新 PRD）。
+
+**適用模式**：RAPID（含 RAPID-AUTO）和 FEATURE 模式每個 slug 完成後都應開新對話。MAIN 模式下管理者評估上下文用量，若未達閾值可選擇不開新對話。
+
+**壓縮提示**：RAPID-AUTO 模式下，管理者在壓縮前輸出提示訊息，說明目前 slug 狀態與壓縮後恢復方向。
+
+### worktree 閘門
+
+**建立**：slug 啟動時（第一次進入 DEV 前），管理者在主工作目錄執行 `git worktree add <worktree-path> -b feat/<slug>`。worktree 路徑不得包含在版本控制範圍內。
+
+**Commit 閘門（worktree 環境）**：RAPID/FEATURE 模式下，管理者在 **worktree 路徑**下執行 `git status` 驗證工作目錄乾淨。MAIN 模式維持現有規則（在主工作目錄執行）。
+
+**紅隊存取**：管理者提供 `git diff`（在 worktree 路徑下執行）的輸出給紅隊子代理，或在派工 prompt 中指定 worktree 路徑讓紅隊在 worktree 中工作。
+
+**收尾清理**：管理者切回主工作目錄 → merge --no-ff → push → `git worktree remove <worktree-path>` → `git branch -d feat/<slug>` → 歸檔。
+
+**驗證**：`git worktree list` 確認 worktree 已移除；`git branch` 確認功能分支已刪除；主工作目錄在 main 分支且乾淨。
 
 MAIN 模式 task.md 模板：
 
@@ -160,7 +202,7 @@ PASSED 後：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md
 | PASSED | 老闆確認通過 | — |
 | ARCHIVED | 已歸檔 | （已搬移至 `archive/`） |
 
-合併歸檔狀態機（驗收上線閘門通過後）：
+合併歸檔狀態機（PM/DEV 皆 PASSED 後）：
 
 ```
 MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE──→ UPDATED
@@ -199,11 +241,9 @@ MERGED ──PUSH──→ PUSHED ──ARCHIVE──→ ARCHIVED ──UPDATE�
 4. 老闆同意 → 狀態從 PENDING → APPROVED，開始執行
 5. 老闆不同意 → 執行者調整宣告，重新確認
 
-適用範圍：全部門（PM/QA/DEV/QC），每一輪。
+適用範圍：全部門（PM/DEV），每一輪。
 
-建立 QA 任務前另有 PM 前置條件：PM 必須已通過閘門，且 QA task.md 的「上游輸入」必須引用或摘要 PM conclusion.md 的結論。未完成 PM 不得建立 QA task.md。
-
-建立 DEV 任務前：管理者依上游定義的功能列表建立 DEV task.md（FEATURE 模式依 QA result.md；RAPID 模式依 PM result.md 的品質標準與功能定義）；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
+建立 DEV 任務前：管理者依上游定義的功能列表建立 DEV task.md（依 PM result.md 的品質標準與功能定義）；task.md 不得只寫技術工作，必須明確寫出本回合要讓作品實際增加或改善的功能。
 
 
 ### 上下文監控與壓縮
@@ -265,7 +305,7 @@ ROADMAP.md 模板：
 - ROADMAP 只在歸檔後更新，記錄穩定產品路線、後續候選與待改進項目。
 - REPO.md 記錄「完成了什麼」，ROADMAP.md 記錄「未來預計要做什麼」。語意不可交叉。
 - 開發中的工作筆記、臨時待辦、退回原因、BossPreview 回饋與本輪決策一律寫入 `.shiftblame/<slug>/SLUG.md`。
-- 不得邊開發邊把 PM/QA/DEV/QC 流程待辦寫進 ROADMAP。
+- 不得邊開發邊把 PM/DEV 流程待辦寫進 ROADMAP。
 - 不得把 ROADMAP 內容當成本輪必做功能來源；本輪範圍永遠以使用者本輪明確想實現的功能為準。
 
 ## 產品方向
@@ -297,11 +337,11 @@ ROADMAP.md 模板：
 - ROADMAP 中可參考但不得自動納入本輪的項目。
 - 建立 QA 標準前需要採納或排除的市場研究、通用方法、設計模式、CVE 或版本差異。
 
-**PRD/SOP 參照**：若 `.shiftblame/PRD/` 中存在與本輪相關的 PRD 文件，管理者在派工給 PM/QA 時應一併提供 PRD 內容作為需求參照。若 `.shiftblame/SOP/` 中存在與本輪相關的 SOP 文件，管理者在派工給 DEV/QC 時應一併提供 SOP 內容，並在 prompt 中明確要求遵循。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
+**PRD/SOP 參照**：若 `.shiftblame/PRD/` 中存在與本輪相關的 PRD 文件，管理者在派工給 PM 時應一併提供 PRD 內容作為需求參照。若 `.shiftblame/SOP/` 中存在與本輪相關的 SOP 文件，管理者在派工給 DEV 時應一併提供 SOP 內容，並在 prompt 中明確要求遵循。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
 
 **DEV 前置選擇**：若目標部門為 DEV，管理者必須先取得老闆選擇的功能，由管理者寫入 `task.md` 的「目標」（FEATURE 模式依 QA 結果；RAPID 模式依 PM result.md 的品質標準與功能定義）。描述必須是老闆看得懂的作品效果，例如「讓使用者可以新增一張卡片並立刻在畫面上看到」，不得只寫「實作資料模型」或「串接 API」。
 
-**功能分支**：功能分支在第一次進入產品開發時建立（見操作標準 15）。執行者建立第一個產品開發 task.md 後、管理者執行 `git checkout -b feat/<slug>` 建立功能分支並切換。專案計畫和品質保證階段不需要功能分支。
+**功能分支**：功能分支在第一次進入產品開發時建立（見操作標準 15）。執行者建立第一個產品開發 task.md 後、管理者執行 `git worktree add <worktree-path> -b feat/<slug>` 建立 worktree 與功能分支。專案計畫階段不需要功能分支。僅適用 RAPID/FEATURE 模式；MAIN 模式不使用功能分支和 worktree。
 
 **紅藍隊模式**：固定使用本環境子代理。建立 task.md 時將 `review` 寫為 `local`，同一 slug 後續任務沿用此值。
 
@@ -397,7 +437,7 @@ upstream:
 
 **檢查**：目前任務目錄下 `result.md`、`red.md`、`blue.md`、`conclusion.md` 是否皆存在，且每檔皆含 YAML frontmatter 與繁體中文內容。`result.md` 必須承載該部門的工作成果，以目標導向產出（不要求固定段式格式）。不得以同名 `.md` 檔替代。`conclusion.md` 必須包含最終結論、紅藍整合摘要、跨部門推進聲明。
 
-**PRD/SOP 參照檢查**：PM/QA 部門若存在相關 PRD 文件，應已參照 PRD 研究需求與制定規範；DEV/QC 部門若存在相關 SOP 文件，必須已按照 SOP 執行開發與測試。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
+**PRD/SOP 參照檢查**：PM 部門若存在相關 PRD 文件，應已參照 PRD 研究需求與制定規範；DEV 部門若存在相關 SOP 文件，必須已按照 SOP 執行開發。PRD/SOP 為非強制參照（不存在時不阻塞閘門）。
 
 | 情境 | 動作 |
 |------|------|
@@ -415,10 +455,8 @@ upstream:
 
 | 部門 | 退回觸發條款 |
 |------|------------|
-| 專案計畫 | 研究結論不足以支撐品質保證建標準 |
-| 品質保證 | 標準或規格不明確、無法支撐產品開發建立技術規劃/設計/實作 |
-| 產品開發 | 功能不符合規格、存在功能性錯誤、安全漏洞、效能不達標。退回時依退回原因分類：標準問題→退回 QA，定義問題→退回 PM，經老闆覆核後執行。退回前必須先 commit 所有工作變更。 |
-| 驗收上線 | 功能性錯誤、安全漏洞、規格不一致 |
+| 專案計畫 | 研究結論不足以支撐下游 DEV 建立技術規劃/設計/實作 |
+| 產品開發 | 功能不符合規格、存在功能性錯誤。退回時依退回原因分類：規格不足→退回 PM 補充規格，定義問題→退回 PM，實作問題→原地修復。退回前必須先 commit 所有工作變更。 |
 
 退回規則（五階段 FAIL 狀態機）：
 
@@ -426,7 +464,7 @@ upstream:
 - L2 BossConfirm FAIL（result 確認）：老闆要求修改 result.md → 返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm。需 BossConfirm。
 - L4 藍隊 FAIL（原地修復）：同部門 NNN 不變，退回 L2 原地修復（EXECUTED），執行者修正 result.md → BossConfirm → L3 紅隊 → L4 藍隊 → L5 結論，直到藍隊 PASS。一個 NNN 可以多次提交。不觸發 DECLARED 狀態轉移，不更新 task.md 宣告段落。採增量攻防（不得刪除既有 red.md / blue.md 紀錄，新回合攻防內容追加在既有紀錄之後，以 `---` 與 `## 第 N 次攻擊` / `## 第 N 次防禦` 分隔），保留完整追溯。
 - L4 藍隊 FAIL（打回上游）：問題在上游定義，退回上游修正。上游開新 NNN（新執行切片），上游通過後回到原本被打回的 NNN，從 L1 重新宣告開始。本 NNN 的 L4 FAIL 不需 BossConfirm（上游自行走完整流程）。
-- DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：標準問題（QA 標準或規格不明確、不完整、有矛盾）→ 退回 QA；定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
+- DEV 被退回時必須先 commit 當前所有工作變更，才能執行退回。退回前紅藍隊必須判定退回原因類型：定義問題（PM 需求釐清、產品規格或前端設計有誤）→ 退回 PM；實作問題（功能不符合規格、錯誤、效能）→ 原地修復。管理者向老闆報告退回原因類型與目標部門，經老闆覆核確認後才執行退回。
 - L5 BossConfirm FAIL：結論不被接受 → 退回 L1 重新宣告（DECLARED）。需 BossConfirm。
 - 同部門新執行切片：PASS 後需要新的工作範圍時建立同部門新 NNN。
 - 回溯：撤回該部門所有變更（git 與 .shiftblame/），回到該部門 001 狀態。僅限觸發部門。需 BossConfirm。
@@ -434,7 +472,6 @@ upstream:
 計畫不可更動：任何輪次不得更動已 PASSED 的前輪計畫範圍（功能範圍、架構決策、技術選型等）。若需更動，管理者判定是否屬計畫更動（功能範圍增減或架構決策變更），若是則提供老闆兩選項：回溯（限該部門）或進入路線圖（記錄至 ROADMAP.md，不在本輪執行）。實作方式、邊界處理、錯誤處理等不改變功能範圍的調整屬執行細節，不觸發回溯。
 
 恢復：讀取未歸檔的 SLUG.md 恢復該 slug 的工作狀態。不適用已歸檔的 slug；適用於環境重啟後接續進度。
-- 驗收上線例外：驗收上線一律退回產品開發（驗收上線不修改程式碼），直接回到原本被打回的 DEV NNN 重做
 - 不得自行修改 result.md、red.md 或 blue.md
 - 退回確認必須與閘門確認分離，不得合併
 - 藍隊判定 FAIL 時，歸屬判斷由紅隊攻擊點和藍隊分析共同決定退回目標部門
@@ -442,14 +479,14 @@ upstream:
 未達門檻原地修復節點：
 
 所有未達門檻的情況均改為 FAIL 原地修復（不自動建立 NNN+1）：
-- PM/QA 結論判定研究/標準不足 → FAIL 原地修復同一 NNN
-- DEV/QC 結論判定規劃/執行不足 → FAIL 原地修復同一 NNN
+- PM 結論判定研究/品質標準不足 → FAIL 原地修復同一 NNN
+- DEV 結論判定規劃/執行不足 → FAIL 原地修復同一 NNN
 
 ### G3 — 歸檔
 
-**時機**：QC 閘門通過並收尾後。
+**時機**：PM/DEV 皆 PASSED 並收尾後。
 
-歸檔前必須確認：merge --no-ff 已完成、push 完成、功能分支已刪除。
+歸檔前必須確認：merge --no-ff 已完成、push 完成、worktree 已移除、功能分支已刪除。
 
 歸檔動作：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
 
