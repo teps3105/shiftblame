@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（RESULT.md/RED.md/BLUE.md），寫入 CONCLUSION.md 與 TASK.md 宣告段落。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md/red.md/blue.md），寫入 conclusion.md 與 task.md 宣告段落。
 
 ## 決策表
 
@@ -19,12 +19,12 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→DEV | 宣告 → BossConfirm → RESULT.md → BossConfirm → 紅隊 → 藍隊 → CONCLUSION.md → CHECKED → BossConfirm → PASSED |
+| PM→DEV | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → 藍隊 → conclusion.md → CHECKED → BossConfirm → PASSED |
 | DEV→收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告 → BossConfirm → L2 RESULT.md → BossConfirm → L3 紅隊 → L4 藍隊 → L5 CONCLUSION.md → CHECKED → BossConfirm → PASSED。
+派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → L4 藍隊 → L5 conclusion.md → CHECKED → BossConfirm → PASSED。
 
 ## 溝通原則
 
@@ -34,7 +34,7 @@
 
 **跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。宣告更新後必須重新 BossConfirm。
 
-**Commit 閘門**：所有模式、所有角色，RESULT.md 產出前必須先 commit。管理者在批准 L2 前執行 `git status` 驗證工作目錄乾淨。無例外。
+**Commit 閘門**：所有模式、所有角色，result.md 產出前必須先 commit。管理者在批准 L2 前執行 `git status` 驗證工作目錄乾淨。無例外。
 
 **工作目錄鎖定**：紅藍隊期間不得修改已追蹤檔案。管理者不得直接修復紅隊發現的問題。
 
