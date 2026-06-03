@@ -45,7 +45,7 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 2. 管理者向老闆 BossConfirm（繁體中文，L1 階段指標）
 3. 老闆同意 → DECLARED→APPROVED；不同意 → 調整重新確認
 
-**計畫不可更動**：不得更動已 PASSED 的前輪計畫範圍。需更動→回溯或進路線圖。宣告更新後狀態回到 DECLARED，必須重新 BossConfirm。
+**計畫不可更動**：不得更動已 PASSED 的前輪計畫範圍。需更動→回溯或進路線圖。計畫調整後狀態回到 DECLARED，必須重新 BossConfirm。
 
 ## BossConfirm
 
