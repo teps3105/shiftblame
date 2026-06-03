@@ -10,7 +10,7 @@
 - 結論 + 紅藍整合
 - 自行驗收聲明（GWT 驗證、邊界測試、端到端驗收）
 - 程式碼鎖定狀態
-- Self-contained（不引用其他文件）
+- conclusion.md 本身為 self-contained（結論段落不引用其他文件路徑；「歸檔時應更新」欄位為管理者歸檔指引，非角色引用）
 
 ## conclusion.md 產出格式
 

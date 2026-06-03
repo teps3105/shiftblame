@@ -9,7 +9,7 @@
 內容包含：
 - 最終結論 + 紅藍整合
 - 跨部門推進聲明（DEV 可接續的項目）
-- Self-contained（不引用其他文件）
+- conclusion.md 本身為 self-contained（結論段落不引用其他文件路徑；「歸檔時應更新」欄位為管理者歸檔指引，非角色引用）
 
 ## conclusion.md 產出格式
 
