@@ -66,6 +66,43 @@
 
 **派工隔離**：派工 prompt 不得引用 GATE.md 狀態定義。
 
+## 工作目錄結構
+
+所有產物一律放在 `.shiftblame/<slug>/` 下，按 NNN 切片目錄隔離。**禁止將 task.md / result.md 等產物直接放在 `<slug>/` 根目錄**（SLUG.md 除外）。
+
+### PM/DEV 模式（扁平目錄）
+
+```
+.shiftblame/<slug>/
+├── SLUG.md              ← 唯一允許在根目錄
+└── <NNN>/               ← 切片目錄（001, 002, ...）
+    ├── task.md
+    ├── result.md
+    ├── red.md
+    ├── blue.md
+    └── conclusion.md
+```
+
+### FEATURE/AUTO 模式（角色嵌套目錄）
+
+```
+.shiftblame/<slug>/
+├── SLUG.md              ← 唯一允許在根目錄
+└── <ROLE>/              ← PM / DEV
+    └── <NNN>/           ← 切片目錄（001, 002, ...）
+        ├── task.md
+        ├── result.md
+        ├── red.md
+        ├── blue.md
+        └── conclusion.md
+```
+
+### 建立順序（硬性）
+
+1. **先建目錄**（`mkdir -p`），再寫入檔案
+2. 第一份產物永遠從 `<NNN> = 001` 開始
+3. 任何產物不得出現在 `<slug>/` 根目錄（SLUG.md 除外）
+
 ## 流程開始
 
 1. **初始化**：觸發技能時檢查 `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md`。缺任一 → BLOCK 或自動建立模板。
@@ -74,7 +111,7 @@
 3. **模式選擇**：依決策表判定模式。
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
 5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
-6. **建立第一份 task.md**：管理者協調建立。PM/DEV 使用扁平目錄 `<slug>/<NNN>/`；FEATURE/AUTO 使用 `<slug>/<ROLE>/<NNN>/`。
+6. **建立第一份 task.md**：管理者協調建立。**必須先建 NNN 切片目錄再寫檔案**（見「工作目錄結構」）。PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`。路徑錯誤即 BLOCK。
 7. **進入 L1 宣告**：依 `ROLE/<ROLE>/START.md` 建構上下文 → 寫入宣告 → BossConfirm → APPROVED。
 
 ## 流程結束

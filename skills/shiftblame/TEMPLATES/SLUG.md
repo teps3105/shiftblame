@@ -20,3 +20,10 @@ updated: <YYYY-MM-DD>
 ## 4. BossPreview/退回紀錄
 
 ## 5. 待收尾整理
+
+## 目錄結構參照
+
+PM/DEV（扁平）：`<slug>/<NNN>/task.md`
+FEATURE/AUTO（嵌套）：`<slug>/<ROLE>/<NNN>/task.md`
+
+禁止產物直接放在 `<slug>/` 根目錄（SLUG.md 除外）。先建目錄再寫檔案。

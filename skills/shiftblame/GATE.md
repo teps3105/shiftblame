@@ -69,7 +69,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 宣告`。上游結論由管理者提供。PRD/SOP 非強制參照。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 宣告`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
 
 ## Worktree 閘門
 
