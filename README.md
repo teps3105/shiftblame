@@ -56,12 +56,12 @@ _「這不是我的鍋。」_
 
 | 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
 |------|------|----------|------|:-----------:|----------|
-| AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 功能開發（預設）、快速迭代、原型驗證 |
-| MANUAL | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 需老闆明確確認的功能開發 |
+| MANUAL | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
+| AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代、原型驗證（由老闆指定） |
 | PLAN | `main` | `<slug>/<NNN>/` | PM only | Manual | 僅規劃、研究、文件整理 |
 | OPERATE | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 
-AUTO 為預設模式，BossConfirm 由管理者自行判斷品質不自動暫停。PLAN 和 OPERATE 直接在 main 分支工作，不建立功能分支和 worktree。MANUAL 和 AUTO 使用 `.worktrees/<slug>` 隔離功能分支。
+MANUAL 為預設新功能模式，未指定模式時自動選用。MANUAL 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。PLAN 和 OPERATE 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 
@@ -82,17 +82,14 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion
 
 `BossPreview`：老闆可多次要求觀看目前作品，管理者提供 URL/指令/截圖/操作證據與中文摘要。不取代正式 BossConfirm。
 
-## 功能分支（AUTO/MANUAL 模式）
+## 功能分支（MANUAL/AUTO 模式）
 
 管理者在第一次進入 DEV 前建立 `feat/<slug>` 功能分支：
 
-```
-git worktree add .worktrees/<slug> -b feat/<slug>
-```
+- **MANUAL**：`git checkout -b feat/<slug>`（主工作目錄內，不開 worktree）
+- **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
 
-- 功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → worktree remove → branch delete
-- 所有程式碼變更都在 `.worktrees/<slug>` 中的功能分支上
-- `.shiftblame/` 位於主工作目錄，不在 worktree 內
+功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。
 
 ## 收尾檢查
 

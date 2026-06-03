@@ -10,7 +10,7 @@ title: MANAGE/PIPELINE
 |:----:|------|
 | 專案計畫→產品開發 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
 | 產品開發→專案計畫 | 宣告 → BossConfirm → result.md → BossConfirm（result 確認）→ 紅隊 → 藍隊 → conclusion.md → Check（五檔）→ CHECKED → BossConfirm → PASSED |
-| PM/DEV→收尾 | 老闆確認成品滿意 → merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md |
+| PM/DEV→收尾 | 老闆確認成品滿意 → merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 REPO.md/ROADMAP.md |
 | 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
@@ -36,5 +36,5 @@ title: MANAGE/PIPELINE
 
 ## 老闆強制停止
 
-- **選項 A**：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md
+- **選項 A**：commit 後強制收尾。跳過尚未完成的管線步驟，先清理確認無殘留 → merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 REPO.md/ROADMAP.md
 - **選項 B**：全部捨棄。放棄功能分支上的所有變更

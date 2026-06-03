@@ -4,11 +4,11 @@ title: EXECUTE/MANUAL
 
 # MANUAL 模式形式定義
 
-討論確認模式。用於需老闆明確指定討論確認的功能開發。使用功能分支 + worktree 隔離。BossConfirm 需老闆手動確認。
+功能模式（預設新功能）。用於功能開發、快速迭代、原型驗證。使用功能分支（主工作目錄內，不開 worktree）。BossConfirm 需老闆手動確認。
 
 ## 適用情境
 
-需老闆明確指定討論確認的功能開發。非預設模式。
+功能開發（預設新功能）、快速迭代、原型驗證。未指定模式時自動選用。
 
 ## 形式參數
 
@@ -19,7 +19,7 @@ title: EXECUTE/MANUAL
 | BossConfirm | Manual |
 | 分支 | feat/\<slug\> |
 | 目錄 | .shiftblame/\<slug\>/\<ROLE\>/\<NNN\>/ |
-| worktree | 是 |
+| worktree | 否 |
 | 上游讀取 | 跨角色 CONCLUSION.md |
 | MaxIter | ∞ |
 
@@ -48,4 +48,4 @@ MANUAL 模式**不具備**以下 AUTO 模式的限制機制：
 
 ## 收尾
 
-PASSED → COMMITTED → MERGED → PUSHED → ARCHIVED → UPDATED。步驟：切回主工作目錄 → merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md。
+PASSED → COMMITTED → MERGED → PUSHED → ARCHIVED → UPDATED。步驟：切回 main → merge --no-ff → push → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md。

@@ -6,7 +6,7 @@ title: MANAGE/CLOSE
 
 PM/DEV 皆 PASSED 且老闆確認後，執行收尾流程：
 
-merge --no-ff（保留 commit 歷史，禁止 squash）→ push → worktree remove → branch delete → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md。
+merge --no-ff（保留 commit 歷史，禁止 squash）→ push → branch delete → 歸檔（搬移 slug 至 archive/）→ 從 archive/ 中讀取 SLUG.md 並更新 REPO.md 和 ROADMAP.md。AUTO 模式額外執行 worktree remove。
 
 ## 收尾檢查清單
 
@@ -18,7 +18,7 @@ merge --no-ff（保留 commit 歷史，禁止 squash）→ push → worktree rem
 - 開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`
 - `.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌
 - README.md 已在產品開發任務中更新並通過紅藍隊審查
-- 確認 worktree 已移除（`git worktree list` 不再出現）
+- AUTO 模式：確認 worktree 已移除（`git worktree list` 不再出現）；MANUAL 模式無需此步驟
 - 確認功能分支已刪除（`git branch` 不再出現）
 - 確認主工作目錄在 main 分支且乾淨
 

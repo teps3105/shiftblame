@@ -10,11 +10,11 @@ title: EXECUTE/TEMPLATE
 
 ## 工作區規範
 
-功能分支在第一次進入產品開發時建立。管理者執行 `git worktree add <worktree-path> -b feat/<slug>` 建立 worktree 與功能分支。僅適用 MANUAL/AUTO 模式；PLAN 模式不使用功能分支和 worktree。
+功能分支在第一次進入產品開發時建立。MANUAL 模式在主工作目錄執行 `git checkout -b feat/<slug>`；AUTO 模式執行 `git worktree add .worktrees/<slug> -b feat/<slug>`。僅適用 MANUAL/AUTO 模式；PLAN/OPERATE 模式不使用功能分支。
 
-- 功能分支生命週期：產品開發開始時在 worktree 中建立 → PM/DEV 皆 PASSED 後 merge --no-ff 到主分支 → push → worktree remove → branch delete
-- 所有程式碼變更都在 worktree 中的功能分支上
-- worktree 路徑為 `.worktrees/<slug>`，位於專案根目錄（非 gitignore 路徑內），`.shiftblame/` 位於主工作目錄中不在 worktree 內
+- 功能分支生命週期：產品開發開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff 到主分支 → push → branch delete（AUTO 額外 worktree remove）
+- MANUAL 模式所有程式碼變更在主工作目錄的功能分支上；AUTO 在 `.worktrees/<slug>` 中
+- `.shiftblame/` 位於主工作目錄中，不在 worktree 內
 
 ## Prompt 模板通用格式
 

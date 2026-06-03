@@ -4,7 +4,7 @@ title: EXECUTE/AUTO
 
 # AUTO 模式形式定義
 
-自動模式。用於功能開發（預設）、快速迭代、原型驗證。使用功能分支 + worktree 隔離。BossConfirm 由管理者自行判斷品質，不暫停等待老闆。
+自動模式。用於快速迭代、原型驗證。使用功能分支 + worktree 隔離。BossConfirm 由管理者自行判斷品質，不暫停等待老闆。
 
 ## 適用情境
 
