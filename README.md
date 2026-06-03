@@ -145,6 +145,18 @@ skills/shiftblame/
 ├── ROLE/                 # 角色定義（2 檔）
 │   ├── PM.md             # 專案計畫
 │   └── DEV.md            # 產品開發
+├── TEMPLATE/             # 文件模板
+│   ├── REPO.md           # REPO.md 模板
+│   ├── ROADMAP.md        # ROADMAP.md 模板
+│   ├── GRAPH.md          # 業務拓樑圖模板
+│   ├── RAPID.md          # 快速功能配置模板
+│   └── SLUG/             # slug 五流程模板
+│       ├── SLUG.md
+│       ├── task.md
+│       ├── result.md
+│       ├── red.md
+│       ├── blue.md
+│       └── conclusion.md
 └── TOOLS/                # 工具包
     ├── OPEN-DESIGN.md    # Open Design 操作指南
     └── NEXGAME.md        # Nexgame 遊戲開發資源

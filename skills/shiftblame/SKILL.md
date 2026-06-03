@@ -73,7 +73,7 @@ worktree 路徑：`.worktrees/<slug>/`，分支 `feat/<slug>`。僅 AUTO 使用�
 | MANAGE/ | 管理者協調與操作（9 檔） |
 | EXECUTE/ | 子代理派工 + 模式定義（9 檔） |
 | ROLE/ | 角色定義（PM.md, DEV.md） |
-| TEMPLATE/ | 執行模板（待建立） |
+| TEMPLATE/ | 文件模板（REPO/ROADMAP/GRAPH/RAPID + SLUG/ 五流程） |
 | TOOLS/ | 工具包 |
 
 ## 初始化設定
