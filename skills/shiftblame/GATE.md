@@ -13,13 +13,13 @@
 ## 狀態機
 
 ```
-L1 實作:    DECLARED ──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ APPROVED → 實作（依複雜度）→ commit
+L1 執行:    DECLARED ──BossConfirm FAIL──→ DECLARED
+                └──BossConfirm PASS──→ APPROVED → 執行（依複雜度）→ commit
 L2 驗收:    APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
-L3 外部攻擊: L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
+L3 攻擊:    L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L4
-L4 內部驗證: L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
+L4 防禦:    L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L5
 L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
                                                         └──BossConfirm PASS──→ PASSED
@@ -30,7 +30,7 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
 | DECLARED | 管理者已向老闆宣告（對話動作），等待確認 | task.md |
-| APPROVED | 老闆同意，L1 實作開始 | task.md（含「## 實作成果」） |
+| APPROVED | 老闆同意，L1 執行開始 | task.md（含「## 執行成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
@@ -63,9 +63,9 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 嚴格序列執行，L3/L4 不得並行：
 
-1. 依複雜度執行 L1 實作 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
-2. L2 通過 → 依複雜度執行 L3 外部攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
-3. L3 通過 → 依複雜度執行 L4 內部驗證 → 管理者驗證（攻擊回應完整 + 驗證項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
+1. 依複雜度執行 L1 執行 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
+2. L2 通過 → 依複雜度執行 L3 攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
+3. L3 通過 → 依複雜度執行 L4 防禦 → 管理者驗證（攻擊回應完整 + 防禦項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
 4. L4 通過 → 管理者寫入 conclusion.md
 5. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
 
@@ -73,7 +73,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 實作成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
 
 ## Worktree 閘門
 
@@ -96,7 +96,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 所有模式下，每個對話只能執行一個角色階段（PM 或 DEV）。該角色階段 PASSED 後，管理者必須停止處理並提醒老闆開新對話。PM 與 DEV 不得在同一對話內執行。
 
-階段內部流程不受影響：單一角色階段的 L1~L5 閘門、紅藍攻防、FAIL 重跑均在同一對話內完成。僅在該角色階段最終 PASSED 時才觸發對話邊界。
+階段內部流程不受影響：單一角色階段的 L1~L5 閘門、攻擊防禦、FAIL 重跑均在同一對話內完成。僅在該角色階段最終 PASSED 時才觸發對話邊界。
 
 SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。新對話啟動時，管理者讀取最後一筆紀錄判定下一角色：PM PASSED → DEV；DEV PASSED → PM 或收尾。
 
