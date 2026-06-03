@@ -46,7 +46,7 @@
 
 ## 收尾操作
 
-PM/DEV 皆 PASSED 後：merge --no-ff（禁止 squash）→ push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 REPO.md/ROADMAP.md。
+PM/DEV 皆 PASSED 後：FEATURE/AUTO merge --no-ff（禁止 squash）→ push → branch delete（AUTO 額外 worktree remove）；DOC/MAIN 為 push。共通步驟：歸檔 → 更新 REPO.md/ROADMAP.md。
 
 收尾檢查：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
 

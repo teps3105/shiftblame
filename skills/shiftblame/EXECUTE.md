@@ -83,4 +83,4 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | worktree | 是 |
 | MaxIter | ≤2 |
 
-僅在存在 `.shiftblame/RAPID.md` 時可用。BossConfirm 自動：L1 宣告非空→通過；L2 格式有效→通過；L5 五檔齊全→通過。攻防上限 3 輪。迭代上限 PM/002 + DEV/002。PASSED → MERGED → PUSHED → ARCHIVED → UPDATED。
+僅在存在 `.shiftblame/RAPID.md` 時可用。等同 FEATURE 模式但全閘門 BossConfirm 自動通過，使用 worktree 隔離。BossConfirm 自動：L1 宣告非空→通過；L2 格式有效→通過；L5 五檔齊全→通過。攻防上限 3 輪。迭代上限 PM/002 + DEV/002。PASSED → MERGED → PUSHED → WORKTREE REMOVE → ARCHIVED → UPDATED。
