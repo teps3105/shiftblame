@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, DOC(DOC模式/文件模式)→使用DOC模式僅PM在主分支僅修改.shiftblame/內文件, FEATURE(FEATURE模式/功能模式/功能/feature/新功能)→使用FEATURE模式PM→DEV→PM→DEV→收尾(預設新功能), MAIN(MAIN模式/維護/主分支)→使用MAIN模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→DEV→PM→DEV→收尾(需RAPID.md)."
+description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, PM(PM模式/規劃/文件)→使用PM模式僅PM在主分支僅修改.shiftblame/內文件, FEATURE(FEATURE模式/功能模式/功能/feature/新功能)→使用FEATURE模式PM→(開新對話)→DEV→收尾(預設新功能), DEV(DEV模式/維護/主分支)→使用DEV模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→(開新對話)→DEV→收尾(需RAPID.md)。每個對話只執行一個角色階段。"
 ---
 # shiftblame — AI Agents 協作框架
 
@@ -30,7 +30,7 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 
 ## 模式
 
-四模式：DOC（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設）、MAIN（DEV only）、AUTO（需 RAPID.md）。詳見 `EXECUTE.md`。
+四模式：PM（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設，每角色階段獨立對話）、DEV（DEV only）、AUTO（需 RAPID.md，每角色階段獨立對話）。每個對話只執行一個角色階段，PASSED 後開新對話。詳見 `EXECUTE.md`。
 
 ## 文件結構
 

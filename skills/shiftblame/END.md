@@ -1,5 +1,16 @@
 # END — 流程結束
 
+## 0. 階段結束（FEATURE/AUTO）
+
+每角色階段 PASSED 後，若尚有後續角色階段需執行（PM PASSED→DEV、DEV PASSED→PM），執行階段交接而非 slug 收尾：
+1. 更新 SLUG.md 管線狀態紀錄（記錄 `<ROLE>/<NNN> PASSED`）
+2. Commit 所有變更
+3. 輸出階段摘要（已完成的角色、建議的下一角色）
+4. 提醒老闆開新對話以繼續
+5. **停止處理**
+
+若該角色階段為最後一個（所有角色皆已完成），則進入下方 slug 收尾流程（步驟 1~9）。
+
 ## 1. 收尾確認
 
 所有角色皆 PASSED 且老闆確認後，執行收尾：
@@ -13,7 +24,7 @@
 ## 2. 合併
 
 - FEATURE/AUTO：切回 main → `git merge --no-ff feat/<slug>`（禁止 squash）
-- DOC/MAIN：已在 main，無需 merge
+- PM/DEV：已在 main，無需 merge
 - 合併衝突：文件衝突管理者直接解決；程式碼衝突中止 merge、FAIL 修復
 
 ## 3. 推送
@@ -24,7 +35,7 @@
 
 - FEATURE：`git branch -d feat/<slug>`
 - AUTO：`git worktree remove .worktrees/<slug>` → `git branch -d feat/<slug>`
-- DOC/MAIN：無需清理
+- PM/DEV：無需清理
 
 驗證：`git worktree list`（AUTO）、`git branch`、主工作目錄在 main 且乾淨。
 

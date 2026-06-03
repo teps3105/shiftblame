@@ -54,12 +54,12 @@ _「這不是我的鍋。」_
 
 | 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
 |------|------|----------|------|:-----------:|----------|
-| DOC | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
+| PM | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
+| DEV | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 | FEATURE | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
 | AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代（需 RAPID.md，等同 FEATURE 但全自動 + worktree 隔離） |
-| MAIN | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 
-DOC 為規劃模式，僅限修改 `.shiftblame/` 內的文件。MAIN 為 DEV-only 主分支操作模式。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門 BossConfirm 自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。DOC 和 MAIN 直接在 main 分支工作，不建立功能分支。
+四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門 BossConfirm 自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE/AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 
@@ -87,7 +87,7 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 CONCLUSION
 - **FEATURE**：`git checkout -b feat/<slug>`（主工作目錄內，不開 worktree）
 - **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
 
-功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。DOC 和 MAIN 不使用功能分支。
+功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。PM 和 DEV 不使用功能分支。
 
 ## 收尾檢查
 
@@ -143,7 +143,7 @@ skills/shiftblame/
 ├── tmp/                  # 臨時檔案
 └── <slug>/
     ├── SLUG.md            # 開發筆記
-    └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；DOC/MAIN: 扁平
+    └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；PM/DEV: 扁平
         ├── TASK.md         # L1 宣告
         ├── RESULT.md       # L2 產出
         ├── RED.md          # L3 紅隊攻擊

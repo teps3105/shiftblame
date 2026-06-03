@@ -6,10 +6,10 @@
 
 | # | 輸入 | 模式 |
 |---|------|:----:|
-| 1 | 日常操作/文件維護/部署/修復 | DOC |
+| 1 | 規劃/文件維護/部署/修復 | PM |
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求/快速迭代（預設） | FEATURE |
-| 4 | 需要討論確認的功能開發 | MAIN |
+| 4 | 維護/主分支/日常開發 | DEV |
 | 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
 
 **PM**：需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威（吸收 QA 職責）。
@@ -19,12 +19,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→DEV | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED |
-| DEV→收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
+| PM 階段 | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
+| DEV 階段 | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
+| 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → BossConfirm → L4 藍隊 → BossConfirm → L5 conclusion.md → CHECKED → BossConfirm → PASSED。
+派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → BossConfirm → L4 藍隊 → BossConfirm → L5 conclusion.md → CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 溝通原則
 
@@ -46,7 +47,7 @@
 
 ## 收尾操作
 
-PM/DEV 皆 PASSED 後：FEATURE/AUTO merge --no-ff（禁止 squash）→ push → branch delete（AUTO 額外 worktree remove）；DOC/MAIN 為 push。共通步驟：歸檔 → 更新 REPO.md/ROADMAP.md。
+PM/DEV 皆 PASSED 後：FEATURE/AUTO merge --no-ff（禁止 squash）→ push → branch delete（AUTO 額外 worktree remove）；PM/DEV 為 push。共通步驟：歸檔 → 更新 REPO.md/ROADMAP.md。
 
 收尾檢查：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
 
@@ -60,6 +61,17 @@ PRD 固化：收尾後若消耗 PRD，提取設計決策生成 SOP。
 ## 退回處理
 
 L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。計畫更動判定→回溯或進路線圖。
+
+## 階段交接
+
+FEATURE/AUTO 模式下，每角色階段 PASSED 後執行階段交接：
+1. 更新 SLUG.md 管線狀態紀錄（記錄 `<ROLE>/<NNN> PASSED`）
+2. Commit 所有變更
+3. 輸出階段摘要
+4. 提醒老闆開新對話以繼續下一角色階段
+5. **停止處理**，不得繼續下一角色
+
+新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色（PM→DEV→PM→…直到完成）。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。PM/DEV 模式不適用（本就單角色）。
 
 ## 業務拓樑圖
 

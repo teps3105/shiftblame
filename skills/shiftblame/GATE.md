@@ -24,7 +24,7 @@ L4 藍隊:   L3 通過 → blue.md → BLUE ──BossConfirm FAIL──→ DECL
 L5 結論:   L4 通過 → conclusion.md → CHECKED ──BossConfirm FAIL──→ DECLARED
                                                 └──BossConfirm PASS──→ PASSED
 
-全閘門 BossConfirm：MAIN/FEATURE/DOC 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。
+全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -88,11 +88,19 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 歸檔
 
-所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；DOC/MAIN：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/` → 更新 REPO.md + ROADMAP.md。
+所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；PM/DEV：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/` → 更新 REPO.md + ROADMAP.md。
+
+## 每角色階段對話隔離
+
+所有模式下，每個對話只能執行一個角色階段（PM 或 DEV）。該角色階段 PASSED 後，管理者必須停止處理並提醒老闆開新對話。PM 與 DEV 不得在同一對話內執行。
+
+階段內部流程不受影響：單一角色階段的 L1~L5 閘門、紅藍攻防、FAIL 重跑均在同一對話內完成。僅在該角色階段最終 PASSED 時才觸發對話邊界。
+
+SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。新對話啟動時，管理者讀取最後一筆紀錄判定下一角色：PM PASSED → DEV；DEV PASSED → PM 或收尾。
 
 ## 開新對話
 
-每個 slug 收尾後建議開新對話。恢復：ROADMAP.md → REPO.md → 前一歸檔 SLUG.md。
+FEATURE/AUTO：每角色階段 PASSED 後**強制**開新對話。PM/DEV：slug 收尾後建議開新對話。恢復：SLUG.md → ROADMAP.md → REPO.md。
 
 ## 上下文監控
 

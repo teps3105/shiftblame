@@ -27,7 +27,7 @@ task.md review 固定為 local。同一 slug 內依序產出 red.md 與 blue.md�
 
 ## 工作區規範
 
-FEATURE 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git worktree add .worktrees/<slug> -b feat/<slug>`。DOC/MAIN 不使用功能分支。
+FEATURE 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git worktree add .worktrees/<slug> -b feat/<slug>`。PM/DEV 不使用功能分支。
 
 功能分支生命週期：建立 → PM/DEV PASSED → merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。
 
@@ -37,7 +37,7 @@ FEATURE 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git work
 
 ## 四模式形式定義
 
-### DOC 模式
+### PM 模式
 
 | 屬性 | 值 |
 |------|-----|
@@ -47,7 +47,7 @@ FEATURE 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git work
 | worktree | 否 |
 | 修改範圍 | 僅 `.shiftblame/` 內文件 |
 
-PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（REPO.md、ROADMAP.md、PRD/、SOP/、GRAPH.md、SLUG.md 等）。用於規劃、制定規則、整理專案文件。不得修改 `.shiftblame/` 以外的檔案。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
+觸發詞：`PM/PM模式/規劃/文件`。PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（REPO.md、ROADMAP.md、PRD/、SOP/、GRAPH.md、SLUG.md 等）。用於規劃、制定規則、整理專案文件。不得修改 `.shiftblame/` 以外的檔案。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
 
 ### FEATURE 模式（功能模式，預設新功能）
 
@@ -59,9 +59,9 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | worktree | 否 |
 | MaxIter | ∞ |
 
-觸發詞：`功能/feature/新功能`。管線：PM→DEV→PM→DEV→收尾。PASSED → MERGED → PUSHED → ARCHIVED → UPDATED。
+觸發詞：`功能/feature/新功能`。管線：PM→（開新對話）→DEV→（開新對話）→PM→…→收尾。每角色階段獨立對話，PASSED 後強制停止並開新對話。PASSED → MERGED → PUSHED → ARCHIVED → UPDATED。
 
-### MAIN 模式
+### DEV 模式
 
 | 屬性 | 值 |
 |------|-----|
@@ -71,7 +71,7 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | worktree | 否 |
 | MaxIter | 1 |
 
-觸發詞：`MAIN/維護/主分支`。DEV only 主分支。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
+觸發詞：`DEV/DEV模式/維護/主分支`。DEV only 主分支。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
 
 ### AUTO 模式（需 RAPID.md）
 
@@ -83,4 +83,4 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | worktree | 是 |
 | MaxIter | ≤2 |
 
-僅在存在 `.shiftblame/RAPID.md` 時可用。等同 FEATURE 模式但全閘門 BossConfirm 自動通過，使用 worktree 隔離。BossConfirm 自動：L1 宣告非空→通過；L2 格式有效→通過；L5 五檔齊全→通過。攻防上限 3 輪。迭代上限 PM/002 + DEV/002。PASSED → MERGED → PUSHED → WORKTREE REMOVE → ARCHIVED → UPDATED。
+僅在存在 `.shiftblame/RAPID.md` 時可用。等同 FEATURE 模式但全閘門 BossConfirm 自動通過，使用 worktree 隔離。管線：PM→（開新對話）→DEV→（開新對話）→PM→…→收尾。每角色階段獨立對話。BossConfirm 自動：L1 宣告非空→通過；L2 格式有效→通過；L5 五檔齊全→通過。攻防上限 3 輪。迭代上限 PM/002 + DEV/002。PASSED → MERGED → PUSHED → WORKTREE REMOVE → ARCHIVED → UPDATED。
