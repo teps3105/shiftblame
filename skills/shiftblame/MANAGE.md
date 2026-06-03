@@ -19,13 +19,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → red.md（依複雜度）→ BossConfirm → blue.md（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
-| DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → red.md（依複雜度）→ BossConfirm → blue.md（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
+| PM 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → 外部攻擊（依複雜度）→ BossConfirm → 內部驗證（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
+| DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → 外部攻擊（依複雜度）→ BossConfirm → 內部驗證（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告（管理者）→ BossConfirm → L2 result.md（依複雜度）→ BossConfirm → L3 red.md（依複雜度）→ BossConfirm → L4 blue.md（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：L1 宣告（管理者）→ BossConfirm → L2 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 上下文隔離
 
@@ -35,8 +35,8 @@
 |:----:|--------|------|
 | L1 宣告 | 管理者（目前環境） | 直接處理 BossConfirm |
 | L2 產出 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
-| L3 紅隊 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
-| L4 藍隊 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L3 外部攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
+| L4 內部驗證 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
 | L5 結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + BossConfirm |
 
 ### 複雜度判定

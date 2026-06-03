@@ -38,11 +38,11 @@ _「這不是我的鍋。」_
 
 1. **L1 宣告** — 管理者協調建立 task.md，向老闆確認（BossConfirm）
 2. **L2 產出** — 依複雜度執行，寫入 result.md，管理者向老闆確認（BossConfirm）
-3. **L3 紅隊** — 依複雜度執行，攻擊 result.md 並寫入 red.md，管理者向老闆確認（BossConfirm）
-4. **L4 藍隊** — 依複雜度執行，防禦並寫入 blue.md，管理者向老闆確認（BossConfirm）
+3. **L3 外部攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
+4. **L4 內部驗證** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
 5. **L5 結論** — 管理者寫入 conclusion.md → Result Check（五檔齊全）→ BossConfirm → PASSED
 
-紅藍隊不得並行；藍隊不得在 L3 BossConfirm 通過前啟動。
+紅藍隊不得並行；L4 不得在 L3 BossConfirm 通過前啟動。L3 為外部攻擊（不限於攻擊 result.md），L4 為內部驗證（不限於逐項回應 L3）。
 
 ### FAIL 狀態機
 
