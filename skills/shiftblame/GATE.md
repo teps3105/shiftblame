@@ -13,9 +13,9 @@
 ## 狀態機
 
 ```
-L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ APPROVED
-L2 產出:   APPROVED → EXECUTED（result.md，依複雜度）──BossConfirm FAIL──→ DECLARED
+L1 宣告與實作: DECLARED ──BossConfirm FAIL──→ DECLARED
+                └──BossConfirm PASS──→ APPROVED → 實作（依複雜度）→ commit
+L2 驗收:    APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
 L3 外部攻擊: L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L4
@@ -30,8 +30,8 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
 | DECLARED | 宣告已寫入，等待老闆確認 | task.md（含「## 宣告」） |
-| APPROVED | 老闆同意宣告 | task.md |
-| EXECUTED | result.md 已產出（依複雜度） | task.md + result.md |
+| APPROVED | 老闆同意宣告，L1 實作開始 | task.md（含「## 宣告」+「## 實作成果」） |
+| EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
 | CHECKED | 五檔齊全，待老闆確認 | + conclusion.md |
@@ -59,7 +59,7 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 嚴格序列執行，L3/L4 不得並行：
 
-1. 依複雜度寫入 result.md（EXECUTED）→ 管理者驗證（frontmatter 齊全 + 宣告範圍涵蓋）→ BossConfirm（L2 閘門）
+1. 依複雜度執行 L1 實作 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 宣告範圍涵蓋）→ BossConfirm（L2 閘門）
 2. L2 通過 → 依複雜度執行 L3 外部攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
 3. L3 通過 → 依複雜度執行 L4 內部驗證 → 管理者驗證（攻擊回應完整 + 驗證項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
 4. L4 通過 → 管理者寫入 conclusion.md
