@@ -39,7 +39,7 @@ L1 為**執行任務**階段。BossConfirm 通過後，執行者直接執行所�
 2. **任務**：本輪計畫（管理者摘要）
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：前一輪 conclusion.md（若有）
-5. **讀寫規則**：Claude 環境優先使用 Read/Write/Edit Tool；Codex 使用 Get-Content/apply_patch/Out-File（均 -Encoding UTF8）。禁止未指定 UTF8 讀取中文 Markdown。臨時檔案存放 `.shiftblame/tmp/`。
+5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
 
 ## task.md 產出格式
 

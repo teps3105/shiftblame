@@ -217,11 +217,13 @@ cp -R ~/shiftblame/skills/shiftblame .codex/skills/shiftblame
 
 ## Windows 編碼
 
-本技能與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存。Windows PowerShell 讀取含中文檔案時必須明確指定 UTF-8：
+本技能與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存。Windows PowerShell 讀取含中文檔案時必須明確指定 UTF-8，不得依賴終端預設編碼：
 
 ```powershell
 Get-Content -Encoding UTF8 .\skills\shiftblame\SKILL.md
 ```
+
+代理執行時的完整讀寫規則以 `skills/shiftblame/MANAGE.md`「編碼規則」為準。
 
 ## 自訂
 

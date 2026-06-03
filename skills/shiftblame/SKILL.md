@@ -6,6 +6,10 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 
 管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。L3 紅隊攻擊與 L4 藍隊防禦依複雜度在對話內執行或開子代理。
 
+## 編碼規則
+
+本技能、`.shiftblame/` 文件與所有 Markdown 產物一律使用 UTF-8。讀取或寫入任何含中文文件時，必須使用明確 UTF-8 編碼；禁止依賴 Windows/PowerShell/終端預設編碼。具體操作規則見 `MANAGE.md`「編碼規則」。
+
 ## 角色與派工
 
 | 員工 | 身份 | 詳見 |

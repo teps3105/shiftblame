@@ -2,6 +2,17 @@
 
 管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告後 BossConfirm；自動模式開始前宣告一次，全閘門自動通過。
 
+## 編碼規則
+
+本技能、`.shiftblame/` 文件與所有 Markdown 產物一律使用 UTF-8。管理者與子代理讀取或寫入含中文文件時，必須明確指定 UTF-8；禁止依賴 Windows/PowerShell/終端預設編碼。
+
+- Codex / Windows PowerShell：讀取使用 `Get-Content -Encoding UTF8 <path>` 或等效 UTF-8 API；寫入使用 `apply_patch`，若需輸出檔案則使用 `Out-File -Encoding UTF8` / `Set-Content -Encoding UTF8`。
+- Claude：優先使用 Read / Write / Edit Tool；使用 shell 或腳本時必須指定 UTF-8。
+- Node.js：`fs.readFileSync(path, "utf8")` / `fs.writeFileSync(path, text, "utf8")`。
+- Python：`open(path, encoding="utf-8")`。
+
+派工 prompt 必須包含本段規則摘要，特別是「禁止未指定 UTF-8 讀取中文 Markdown」。臨時檔案存放 `.shiftblame/tmp/`。
+
 ## 決策表
 
 | # | 輸入 | 模式 |
@@ -12,7 +23,7 @@
 | 4 | 維護/主分支/日常開發 | DEV |
 | 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
 
-**PM**：需求釐清、品質定義、測試標準、驗譗條件、GWT 測試案例、前端設計唯一權威（履行品質保證職責）。
+**PM**：需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威（履行品質保證職責）。
 **DEV**：技術規劃、設計、執行、自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收）（履行品質控制職責）。
 
 ## 管線閘門表
