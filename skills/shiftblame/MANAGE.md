@@ -12,8 +12,8 @@
 | 4 | 維護/主分支/日常開發 | DEV |
 | 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
 
-**PM**：需求釐清、品質定義、測試標準、驗譗條件、GWT 測試案例、前端設計唯一權威（吸收 QA 職責）。
-**DEV**：技術規劃、設計、實作、自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收）（吸收 QC 職責）。
+**PM**：需求釐清、品質定義、測試標準、驗譗條件、GWT 測試案例、前端設計唯一權威（履行品質保證職責）。
+**DEV**：技術規劃、設計、實作、自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收）（履行品質控制職責）。
 
 ## 管線閘門表
 
@@ -21,7 +21,7 @@
 |:----:|------|
 | PM 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
 | DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
-| 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
+| 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
@@ -89,7 +89,8 @@
 4. **清理**：FEATURE：branch delete；AUTO：worktree remove + branch delete；PM/DEV：無需清理。
 5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → 附加時間戳。
 6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
-7. **PRD 固化**：若消耗 PRD，提取設計決策生成 SOP。
+7. **更新 RAPID.md（AUTO 模式）**：管理者從本次 AUTO 迭代中提取經驗，更新 `.shiftblame/RAPID.md`（已完成功能、待修正項目、下次迭代建議）。
+8. **PRD 固化**：若消耗 PRD，提取設計決策生成 SOP。
 8. **業務拓樑圖**：若 `.shiftblame/GRAPH.md` 存在，更新。
 9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
 
