@@ -15,7 +15,7 @@
 | 觸發 | 模式 |
 |------|:----:|
 | 未指定、功能/feature/新功能 | FEATURE（預設） |
-| PLAN/計畫模式 | PLAN |
+| DOC/文件模式 | DOC |
 | MAIN/維護/主分支/OPERATE | MAIN |
 | AUTO/自動模式 + RAPID.md 存在 | AUTO |
 

@@ -88,7 +88,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 歸檔
 
-所有角色 PASSED → merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/` → 更新 REPO.md + ROADMAP.md。
+所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；DOC/MAIN：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/` → 更新 REPO.md + ROADMAP.md。
 
 ## 開新對話
 

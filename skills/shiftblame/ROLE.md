@@ -25,7 +25,7 @@
 
 ### L4 藍隊
 
-防禦方向：可交接給下游 DEV 的完整性。逐項回應紅隊攻擊。BossConfirm：藍隊產出後老闆確認才推進結論或退回（AUTO 自動通過）。流程合規聲明：FAIL→原地修復或打回；PASS→管理者產出 conclusion.md。
+防禦方向：可交接給下游 DEV 的完整性。逐項回應紅隊攻擊。BossConfirm：藍隊產出後老闆確認才推進結論或退回（AUTO 自動通過）。流程合規聲明：FAIL→退回 DECLARED 重新宣告；PASS→管理者產出 conclusion.md。
 
 ### L5 結論
 

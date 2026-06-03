@@ -42,7 +42,7 @@ _「這不是我的鍋。」_
 4. **L4 藍隊** — 藍隊防禦並寫入 BLUE.md，向老闆確認（BossConfirm）
 5. **L5 結論** — 管理者寫入 CONCLUSION.md → Result Check（五檔齊全）→ BossConfirm → PASSED
 
-紅藍隊不得並行；藍隊不得在 RED.md 完成前啟動。
+紅藍隊不得並行；藍隊不得在 L3 BossConfirm 通過前啟動。
 
 ### FAIL 狀態機
 
