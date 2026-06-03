@@ -38,4 +38,4 @@ PLAN 模式（管理者直接執行時）：管理者自己在產出 result.md �
 
 ## 派工隔離
 
-管理者在派工 prompt 中不得引用 GATE.md 狀態定義表。GATE.md 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
+管理者在派工 prompt 中不得引用 GATE/STATE.md 狀態定義表。GATE/ 為管理者內部參考文件，不透過 prompt 傳遞給任何代理。
