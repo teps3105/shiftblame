@@ -58,13 +58,13 @@ DEV（產品開發）：`ROLE/DEV.md`
 ├── SOP/                  # 標準作業程序（非強制）
 ├── archive/              # 已歸檔 slug
 ├── tmp/                  # 臨時檔案
-├── worktree/<slug>/      # worktree 隔離目錄（feat/<slug> 分支）
+├── worktree/             # 已移除（路徑改為 .worktrees/）
 └── <slug>/
     ├── SLUG.md            # 開發筆記
     └── <ROLE>/<NNN>/       # MANUAL/AUTO: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
 ```
 
-worktree 路徑：`.shiftblame/worktree/<slug>/`，分支 `feat/<slug>`。僅 MANUAL/AUTO 使用；PLAN/OPERATE 不建立。詳見 `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md`。
+worktree 路徑：`.worktrees/<slug>/`，分支 `feat/<slug>`。僅 MANUAL/AUTO 使用；PLAN/OPERATE 不建立。詳見 `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md`。
 
 ## 定義檔
 

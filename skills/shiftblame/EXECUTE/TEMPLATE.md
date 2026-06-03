@@ -14,7 +14,7 @@ title: EXECUTE/TEMPLATE
 
 - 功能分支生命週期：產品開發開始時在 worktree 中建立 → PM/DEV 皆 PASSED 後 merge --no-ff 到主分支 → push → worktree remove → branch delete
 - 所有程式碼變更都在 worktree 中的功能分支上
-- `.shiftblame/` 位於主工作目錄中，不在 worktree 內
+- worktree 路徑為 `.worktrees/<slug>`，位於專案根目錄（非 gitignore 路徑內），`.shiftblame/` 位於主工作目錄中不在 worktree 內
 
 ## Prompt 模板通用格式
 

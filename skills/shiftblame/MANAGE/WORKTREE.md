@@ -8,7 +8,7 @@ title: MANAGE/WORKTREE
 
 ## 建立階段
 
-slug 啟動時（第一次進入 DEV 前），在主工作目錄執行 `git worktree add .shiftblame/worktree/<slug> -b feat/<slug>`
+slug 啟動時（第一次進入 DEV 前），在主工作目錄執行 `git worktree add .worktrees/<slug> -b feat/<slug>`
 
 ## 開發期間
 
@@ -17,7 +17,7 @@ slug 啟動時（第一次進入 DEV 前），在主工作目錄執行 `git work
 
 ## 收尾清理
 
-切回主工作目錄 → merge → push → `git worktree remove .shiftblame/worktree/<slug>` → `git branch -d feat/<slug>`
+切回主工作目錄 → merge → push → `git worktree remove .worktrees/<slug>` → `git branch -d feat/<slug>`
 
 ## 異常處理
 
