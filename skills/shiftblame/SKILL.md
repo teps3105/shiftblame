@@ -59,8 +59,8 @@ skills/shiftblame/
 │   ├── RAPID.md
 │   └── SLUG.md           # 管理者協調用模板
 └── TOOLS/                # 工具包
-    ├── RESEARCH.md       # 研究工具索引（前端設計、遊戲開發資源等）
-    └── E2E-VERIFY.md     # 端到端驗證工具索引（網頁驗證等）
+    ├── DESIGN.md         # 設計工具索引（前端設計等，必用）
+    └── E2E.md            # 端到端驗證工具索引（網頁驗證等）
 ```
 
 ## 四模式摘要
