@@ -1,9 +1,9 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM(預設RAPID模式), 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→QC通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, RAPID(RAPID模式/快速迭代/快速模式/原型)→使用RAPID模式PM→DEV→PM→DEV→收尾(預設), FEATURE(FEATURE模式/完整流程/完整管線)→使用FEATURE模式PM→QA→DEV→QC(由老闆指定), 載入(PM/QA/DEV/QC/專案計畫/品質保證/產品開發/驗收上線/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM(預設RAPID模式), 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→閘門通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, RAPID(RAPID模式/快速迭代/快速模式/原型)→使用RAPID模式PM→DEV→PM→DEV→收尾(預設), FEATURE(FEATURE模式/完整流程/完整管線)→使用FEATURE模式PM→DEV→PM→DEV→收尾(由老闆指定), RAPID-AUTO→RAPID模式全自動子模式, 業務拓樑圖→Mermaid圖表追蹤專案進度, worktree→功能分支隔離機制, 開新對話→slug收尾後開新對話恢復上下文, 載入(PM/DEV/專案計畫/產品開發/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
 # shiftblame — AI Agents 協作框架
-使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫和品質保證不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
+使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
 ## 角色
 | 員工 | 身份 | 產出 |
@@ -28,10 +28,8 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 ## 部門
 | # | 部門 | 類型 |
 |:-:|:----:|:----:|
-| 0 | PM | 專案計畫 |
-| 1 | QA | 品質保證 |
-| 2 | DEV | 產品開發 |
-| 3 | QC | 驗收上線 |
+| 0 | PM | 專案計畫（含品質定義） |
+| 1 | DEV | 產品開發（含自行驗收） |
 
 詳見 `DEPT/` 各部門子目錄。
 
@@ -39,35 +37,37 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 
 `.shiftblame/PRD/` 存放產品需求文件（Product Requirements Document），`.shiftblame/SOP/` 存放標準作業程序（Standard Operating Procedure）。兩個目錄為本地私密，不納入版本控制。
 
-PRD/SOP 的來源不限：用戶可自行撰寫，管理者可協助整理，PM/QA/DEV/QC 在流程中也可依需求產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
+PRD/SOP 的來源不限：用戶可自行撰寫，管理者可協助整理，PM/DEV 在流程中也可依需求產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
 
 | 目錄 | 用途 | 讀取者 | 寫入者 |
 |------|------|--------|--------|
-| `.shiftblame/PRD/` | 產品需求文件、功能規格、市場研究、使用者需求 | PM、QA（研究需求、制定規範時參照） | 用戶、管理者、PM、QA |
-| `.shiftblame/SOP/` | 標準作業程序、開發規範、測試流程、部署流程 | DEV、QC（開發、測試時必須遵循） | 用戶、管理者、PM、QA、DEV、QC |
+| `.shiftblame/PRD/` | 產品需求文件、功能規格、市場研究、使用者需求 | PM、DEV（研究需求、制定規範時參照） | 用戶、管理者、PM、DEV |
+| `.shiftblame/SOP/` | 標準作業程序、開發規範、測試流程、部署流程 | DEV（開發時必須遵循） | 用戶、管理者、PM、DEV |
 
 ## 模式
 
 | 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
 |------|------|----------|------|----------|
 | RAPID | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾 | 功能開發（預設）、快速迭代、原型驗證 |
-| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 需要完整 QA/QC 流程（由老闆指定） |
+| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾 | 需要討論確認的功能開發（由老闆指定） |
 | MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
 
-FEATURE 模式僅在老闆明確指定需要完整 QA/QC 流程時使用。功能開發、快速迭代、原型驗證等操作一律使用 RAPID 模式（預設），不需老闆指定。日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式，不需老闆指定。
+三模式選擇規則：功能開發一律預設使用 RAPID 模式（不需老闆指定）；僅在老闆明確指定需要討論確認的功能開發時使用 FEATURE 模式；日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式。
+
+RAPID 與 FEATURE 模式管線結構相同（PM→DEV），差異在於：RAPID 是預設模式，可包含 RAPID-AUTO 子模式（老闆完全授權 + 存在預定執行序列時自動觸發，BossConfirm 自動通過、自動修復閘門、攻防上限 3 輪、迭代上限 2 輪）；FEATURE 需要老闆明確指定，BossConfirm 手動確認，無迭代上限與自動修復閘門。詳見 GATE.md 各模式段落。
 
 MAIN 模式特徵：
 - 直接在主分支工作，不建立功能分支
 - 簡化目錄結構（無 DEPT 層級，扁平 `<slug>/<NNN>/`）
 - 仍跑五階段流程（task→result→red→blue→conclusion）
-- 無部門管線（不走 PM→QA→DEV→QC）
+- 無部門管線（不走 PM→DEV 部門管線）
 - 無上游/下游概念
 - result.md 無固定段式內容要求，直接描述工作成果
 - 收尾：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md（首次 commit 在 result.md 產出前完成）
 - task.md 使用 `mode: main` 欄位取代 `department` 欄位
 
 RAPID 模式特徵：
-- 使用功能分支（`feat/<slug>`）
+- 使用功能分支（`feat/<slug>`）+ worktree 隔離
 - 目錄結構同 FEATURE（`<slug>/<DEPT>/<NNN>/`），但僅使用 PM 和 DEV 目錄
 - 簡化管線：PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾，PM 吸收 QA 職責、DEV 吸收 QC 職責
 - PM 和 DEV 各自跑完整五階段流程（task→result→red→blue→conclusion）
@@ -75,13 +75,48 @@ RAPID 模式特徵：
 - PM 吸收 QA：負責品質定義、測試標準、驗收條件，一併寫入 result.md
 - DEV 吸收 QC：負責自行驗收、功能驗證，依 PM 定義的品質標準逐條確認
 - 目標導向文件：不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，不追求流於形式的模板填寫
-- 收尾：merge --no-ff → push → 歸檔 → 更新 REPO.md/ROADMAP.md
+- 收尾：merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md
 - task.md 使用 `mode: rapid` 欄位
+- RAPID-AUTO 子模式：當老闆完全授權且存在預定執行序列（RAPID.md）時觸發，BossConfirm 自動通過、自動修復閘門、紅藍攻防上限 3 輪、迭代上限 PM/002 + DEV/002。詳見 GATE.md RAPID-AUTO 段落。
+
+## 開新對話策略
+
+每個 slug 完成收尾歸檔後，管理者輸出完成摘要並停止處理下一個 slug 的工作，建議老闆開啟新對話。下一個 slug 在全新對話中啟動（透過 SLUG.md + REPO.md + ROADMAP.md 恢復上下文）。
+
+目的：避免長對話中上下文累積導致的品質下降；確保每個 slug 都有乾淨的上下文環境；透過文件恢復上下文，而非依賴對話歷史。
+
+適用模式：RAPID（含 RAPID-AUTO）和 FEATURE 模式每個 slug 完成後都應開新對話；MAIN 模式下管理者評估上下文用量，若未達閾值可選擇不開新對話。詳見 GATE.md「開新對話閘門」段落。
+
+## worktree 隔離
+
+使用功能分支 `feat/<slug>` + worktree 隔離。功能分支在第一次進入 DEV 時由管理者在 worktree 中建立。
+
+建立命令：`git worktree add <worktree-path> -b feat/<slug>`
+
+worktree 路徑建議與主 repo 同層級目錄（`../<slug>-worktree`），不得包含在版本控制範圍內。
+
+`.shiftblame/` 位於主工作目錄中，不在 worktree 內。所有 slug 的流程文件（SLUG.md、task.md、result.md、red.md、blue.md、conclusion.md）都存放在主工作目錄的 `.shiftblame/` 下。worktree 僅用於程式碼開發（`feat/<slug>` 分支）。
+
+適用模式：RAPID（含 RAPID-AUTO）和 FEATURE 模式必須使用 worktree；MAIN 模式不使用 worktree（直接在 main 分支工作）。詳見 GATE.md「worktree 閘門」段落。
+
+## 業務拓樑圖（可選）
+
+業務拓樑圖是一種以 Mermaid 圖表呈現專案中已完成與未完成 slug 整體關係的可選機制。追蹤三個維度：執行序列、依賴關係、PRD 消耗關係。
+
+維護位置建議為 `.shiftblame/GRAPH.md`（本地私密，不納入版本控制）。多 slug 專案建議使用；單一 slug 專案無需建立。管理者負責維護準確性，在收尾流程時一併更新。
+
+適用情境：RAPID-AUTO 有預定執行序列時（強烈建議）、大型專案有多個功能模組需追蹤進度時、需要向老闆展示專案全貌時。
+
+## PRD 固化流程
+
+每個 slug 收尾後，將其消耗的 PRD 設計決策固化為獨立 SOP 文件至 `.shiftblame/SOP/`。此流程主要適用於 RAPID-AUTO 子模式，但所有模式都可選擇執行。無 PRD 的專案不受此流程約束。
+
+固化步驟：識別消耗的 PRD → 提取已實作驗證的設計決策 → 生成 SOP 文件 → 不動原文件（PRD 保留完整需求歷史）→ 記錄狀態至 `.shiftblame/PRD/STATUS.md`。
 
 ## 定義檔 / gitignore
-`MANAGER.md` `STAFF.md` `DEPT/{PM,QA,DEV,QC}/`（每部門 L1-L5）
+`MANAGER.md` `STAFF.md` `DEPT/{PM,DEV}/`（每部門 L1-L5）
 
-`.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。開發中的工作筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策一律維護在 `.shiftblame/<slug>/SLUG.md`；不得寫入 `.shiftblame/ROADMAP.md`。REPO.md 記錄「完成了什麼」（已完成功能詳情、技術棧、架構演進），本地私密。ROADMAP.md 記錄「未來預計要做什麼」（後續計畫、已知問題、待改進項目），本地私密。兩份文件語意不可交叉，只在歸檔後更新。
+`.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。開發中的工作筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策一律維護在 `.shiftblame/<slug>/SLUG.md`；不得寫入 `.shiftblame/ROADMAP.md`。REPO.md 記錄「完成了什麼」（已完成功能詳情、技術棧、架構演進），本地私密。ROADMAP.md 記錄「未來預計要做什麼」（後續計畫、已知問題、待改進項目），本地私密。兩份文件語意不可交叉，只在歸檔後更新。`.shiftblame/GRAPH.md` 為業務拓樑圖（可選機制，追蹤 slug 執行序列、依賴關係、PRD 消耗關係），本地私密，不納入版本控制。
 
 全域入口檔的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴工具專屬設定檔觸發流程。
 
@@ -91,7 +126,7 @@ RAPID 模式特徵：
 
 **階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復不觸發 DECLARED 狀態轉移，不更新 task.md 宣告段落，執行者修正 result.md 後 BossConfirm → L3→L4→L5；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV/QC 適用單循環，與 PM/QA 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
+每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復不觸發 DECLARED 狀態轉移，不更新 task.md 宣告段落，執行者修正 result.md 後 BossConfirm → L3→L4→L5；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV 適用單循環，與 PM 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
 
 ## 格式檢查
 
@@ -161,9 +196,7 @@ skills/shiftblame/
 │   └── NEXGAME.md         # Nexgame 遊戲開發工具包
 └── DEPT/
     ├── PM/
-    ├── QA/
-    ├── DEV/
-    └── QC/
+    └── DEV/
 ```
 
 ## 初始化設定
