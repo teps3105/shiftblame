@@ -4,49 +4,33 @@ description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開�
 ---
 # shiftblame — AI Agents 協作框架
 
-管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。紅藍隊固定使用本環境子代理，不使用外部品牌工具。
+管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。紅藍隊固定使用本環境子代理。
 
 ## 角色與派工
 
 | 員工 | 身份 | 詳見 |
 |------|------|------|
-| 管理者 | 目前環境 | MANAGE/ |
-| 執行者 | 本環境子代理 | EXECUTE/MAPPING.md |
-| 紅隊 | 本環境子代理 | EXECUTE/DISPATCH.md |
-| 藍隊 | 本環境子代理 | EXECUTE/DISPATCH.md |
+| 管理者 | 目前環境 | MANAGE.md |
+| 執行者 | 本環境子代理 | EXECUTE.md |
+| 紅隊 | 本環境子代理 | EXECUTE.md |
+| 藍隊 | 本環境子代理 | EXECUTE.md |
 
-角色職責詳見 `ROLE/PM.md`、`ROLE/DEV.md`。派工規格詳見 `EXECUTE/MAPPING.md`。
+角色職責詳見 `ROLE.md`。派工規格詳見 `EXECUTE.md`。
 
 ## 入口導流
 
-Agent 載入後依狀態機與當前情境讀取所需檔案，不需一次讀取全部定義。
-
 | 情境 | 必讀 |
 |------|------|
-| 首次載入 / 初始化 | `GATE/INIT.md` → 確認 REPO.md/ROADMAP.md 存在 |
-| 啟動 slug | `MANAGE/SLUG.md`（建立筆記）→ `GATE/DISPATCH.md`（派工） |
-| 進入閘門 | `GATE/STATE.md`（狀態機）→ `GATE/BOSS.md`（BossConfirm） |
-| 執行階段 | L1→`GATE/DECLARE.md`、L2→對應角色檔、L3→`EXECUTE/DISPATCH.md`、L5→`GATE/ARCHIVE.md` |
-| 退回/異常 | `GATE/REVERT.md` + `MANAGE/REVERT.md` |
-| 收尾 | `MANAGE/CLOSE.md` + `GATE/ARCHIVE.md` |
-| 模式選擇 | `MANAGE/DECIDE.md`（PLAN/MANUAL/OPERATE/AUTO）→ `EXECUTE/<MODE>.md` |
-| worktree | `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md` |
-| 開新對話 | `MANAGE/CLOSE.md` + `GATE/NEWDIALOG.md` |
-| 讀寫權限 | `EXECUTE/PERMISSION.md` |
-| 業務拓樑圖 | `MANAGE/GRAPH.md` |
-
-## 角色定義
-
-PM（專案計畫）：`ROLE/PM.md`
-DEV（產品開發）：`ROLE/DEV.md`
+| 流程開始 | `START.md` |
+| 流程結束 | `END.md` |
+| 閘門/狀態機 | `GATE.md` |
+| 管理者操作 | `MANAGE.md` |
+| 派工/模式 | `EXECUTE.md` |
+| 角色定義 | `ROLE.md` |
 
 ## 模式
 
-四模式形式定義見 `EXECUTE/PLAN.md`、`EXECUTE/MANUAL.md`、`EXECUTE/OPERATE.md`、`EXECUTE/AUTO.md`。模式選擇見 `MANAGE/DECIDE.md`。
-
-## PRD / SOP
-
-`.shiftblame/PRD/` 存放產品需求文件（非強制參照）。`.shiftblame/SOP/` 存放標準作業程序（DEV 開發時遵循）。兩者為本地私密，不納入版本控制。PRD/SOP 不受閘門約束。
+四模式：PLAN（PM only）、MANUAL（功能模式，預設）、OPERATE（DEV only）、AUTO（需 RAPID.md）。詳見 `EXECUTE.md`。
 
 ## 文件結構
 
@@ -60,33 +44,18 @@ DEV（產品開發）：`ROLE/DEV.md`
 ├── tmp/                  # 臨時檔案
 └── <slug>/
     ├── SLUG.md            # 開發筆記
-    └── <ROLE>/<NNN>/       # MANUAL/AUTO: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
+    └── <ROLE>/<NNN>/       # MANUAL/AUTO: PM/DEV；PLAN/OPERATE: 扁平
 ```
-
-worktree 路徑：`.worktrees/<slug>/`，分支 `feat/<slug>`。僅 AUTO 使用；MANUAL 開分支不開 worktree；PLAN/OPERATE 不建立。詳見 `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md`。
 
 ## 定義檔
 
-| 目錄 | 說明 |
+| 檔案 | 說明 |
 |------|------|
-| GATE/ | 閘門檢查與狀態機（11 檔） |
-| MANAGE/ | 管理者協調與操作（9 檔） |
-| EXECUTE/ | 子代理派工 + 模式定義（9 檔） |
-| ROLE/ | 角色定義（PM.md, DEV.md） |
-| TEMPLATE/ | 文件模板（REPO/ROADMAP/GRAPH/RAPID + SLUG/ 五流程） |
+| GATE.md | 閘門檢查與狀態機 |
+| MANAGE.md | 管理者協調與操作 |
+| EXECUTE.md | 子代理派工 + 四模式定義 |
+| ROLE.md | 角色定義（PM + DEV） |
+| START.md | 流程開始定義 |
+| END.md | 流程結束定義 |
+| TEMPLATE/ | 文件模板 |
 | TOOLS/ | 工具包 |
-
-## 初始化設定
-
-首次使用需設定兩項用戶級配置：
-
-1. **CLAUDE.md**（`~/.claude/`）— 加入 managed block（見 CLAUDE.md 現有內容）
-2. **settings.json**（`~/.claude/`）— SessionStart hook（matcher: compact）
-
-CLAUDE.md 與 Hook 互補：CLAUDE.md 持續存在於 session，Hook 僅在 compact 後觸發。
-
-Codex 桌面環境在 `AGENTS.md` 中加入相同 managed block。
-
-## 臨時檔案 / gitignore
-
-臨時檔案存放在 `.shiftblame/tmp/`（不自動清理）。`.shiftblame/` 已列入 `.gitignore`。

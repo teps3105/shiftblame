@@ -110,46 +110,17 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion
 ```
 skills/shiftblame/
 ├── SKILL.md              # 框架入口（導流）
-├── GATE/                 # 閘門檢查與狀態機（11 檔）
-│   ├── INIT.md           # 初始化
-│   ├── DISPATCH.md       # 派工檢查
-│   ├── DECLARE.md        # 宣告規則
-│   ├── STATE.md          # 狀態機定義
-│   ├── BOSS.md           # BossConfirm 規則
-│   ├── REVIEW.md         # 紅藍隊審查
-│   ├── WORKTREE.md       # worktree 閘門
-│   ├── ARCHIVE.md        # 歸檔
-│   ├── NEWDIALOG.md      # 開新對話
-│   ├── REVERT.md         # 退回/回溯
-│   └── CONTEXT.md        # 上下文管理
-├── MANAGE/               # 管理者協調與操作（9 檔）
-│   ├── SLUG.md           # SLUG.md 維護
-│   ├── CLOSE.md          # 收尾操作
-│   ├── PIPELINE.md       # 管線閘門表
-│   ├── DECIDE.md         # 模式選擇
-│   ├── COMMUNICATE.md    # 溝通規範
-│   ├── PROTECT.md        # 流程保護
-│   ├── WORKTREE.md       # worktree 生命週期
-│   ├── GRAPH.md          # 業務拓樑圖
-│   └── REVERT.md         # 退回管理
-├── EXECUTE/              # 子代理派工 + 模式定義（9 檔）
-│   ├── AGENT.md          # 執行者呼叫規則
-│   ├── DISPATCH.md       # 紅藍隊派工
-│   ├── MAPPING.md        # 角色派工映射
-│   ├── PERMISSION.md     # 讀寫權限
-│   ├── TEMPLATE.md       # 模板與工作區規範
-│   ├── AUTO.md           # AUTO 模式定義
-│   ├── MANUAL.md         # MANUAL 模式定義
-│   ├── PLAN.md           # PLAN 模式定義
-│   └── OPERATE.md        # OPERATE 模式定義
-├── ROLE/                 # 角色定義（2 檔）
-│   ├── PM.md             # 專案計畫
-│   └── DEV.md            # 產品開發
+├── GATE.md               # 閘門檢查與狀態機
+├── MANAGE.md             # 管理者協調與操作
+├── EXECUTE.md            # 子代理派工 + 四模式定義
+├── ROLE.md               # 角色定義（PM + DEV）
+├── START.md              # 流程開始定義
+├── END.md                # 流程結束定義
 ├── TEMPLATE/             # 文件模板
 │   ├── REPO.md           # REPO.md 模板
 │   ├── ROADMAP.md        # ROADMAP.md 模板
 │   ├── GRAPH.md          # 業務拓樑圖模板
-│   ├── RAPID.md          # 快速功能配置模板
+│   ├── RAPID.md          # 快速功能配置模板（AUTO 前提）
 │   └── SLUG/             # slug 五流程模板
 │       ├── SLUG.md
 │       ├── task.md
