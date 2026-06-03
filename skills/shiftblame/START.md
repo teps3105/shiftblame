@@ -16,7 +16,7 @@
 |------|:----:|
 | 未指定、功能/feature/新功能 | MANUAL（預設） |
 | PLAN/計畫模式 | PLAN |
-| OPERATE/MAIN/維護/主分支 | OPERATE |
+| MAIN/維護/主分支/OPERATE | MAIN |
 | AUTO/自動模式 + RAPID.md 存在 | AUTO |
 
 無 RAPID.md 時不得使用 AUTO 模式。
@@ -29,11 +29,11 @@
 
 - MANUAL：`git checkout -b feat/<slug>`（主工作目錄）
 - AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`
-- PLAN/OPERATE：不建立分支，直接在 main
+- PLAN/MAIN：不建立分支，直接在 main
 
 ## 6. 建立第一份 task.md
 
-管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/task.md`（見 TEMPLATE/SLUG/task.md 模板）。PLAN/OPERATE 使用扁平目錄 `<slug>/<NNN>/`。
+管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/task.md`（見 TEMPLATE/SLUG/task.md 模板）。PLAN/MAIN 使用扁平目錄 `<slug>/<NNN>/`。
 
 ## 7. 進入 L1 宣告
 

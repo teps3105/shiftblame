@@ -56,12 +56,12 @@ _「這不是我的鍋。」_
 
 | 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
 |------|------|----------|------|:-----------:|----------|
+| PLAN | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
 | MANUAL | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
 | AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代、原型驗證（需 RAPID.md） |
-| PLAN | `main` | `<slug>/<NNN>/` | PM only | Manual | 僅規劃、研究、文件整理 |
-| OPERATE | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
+| MAIN | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 
-MANUAL 為預設新功能模式，未指定模式時自動選用。AUTO 僅在存在 `.shiftblame/RAPID.md` 時可用（由老闆指定）。MANUAL 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。PLAN 和 OPERATE 直接在 main 分支工作，不建立功能分支。
+PLAN 為規劃模式，僅限修改 `.shiftblame/` 內的文件。MAIN 為 DEV-only 主分支操作模式。MANUAL 為預設新功能模式，未指定模式時自動選用。AUTO 僅在存在 `.shiftblame/RAPID.md` 時可用（由老闆指定）。MANUAL 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。PLAN 和 MAIN 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 

@@ -13,7 +13,7 @@
 ## 2. 合併
 
 - MANUAL/AUTO：切回 main → `git merge --no-ff feat/<slug>`（禁止 squash）
-- PLAN/OPERATE：已在 main，無需 merge
+- PLAN/MAIN：已在 main，無需 merge
 - 合併衝突：文件衝突管理者直接解決；程式碼衝突中止 merge、FAIL 修復
 
 ## 3. 推送
@@ -24,7 +24,7 @@
 
 - MANUAL：`git branch -d feat/<slug>`
 - AUTO：`git worktree remove .worktrees/<slug>` → `git branch -d feat/<slug>`
-- PLAN/OPERATE：無需清理
+- PLAN/MAIN：無需清理
 
 驗證：`git worktree list`（AUTO）、`git branch`、主工作目錄在 main 且乾淨。
 

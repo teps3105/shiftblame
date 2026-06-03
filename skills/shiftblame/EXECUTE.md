@@ -27,7 +27,7 @@ task.md review 固定為 local。同一 slug 內依序產出 red.md 與 blue.md�
 
 ## 工作區規範
 
-MANUAL 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git worktree add .worktrees/<slug> -b feat/<slug>`。PLAN/OPERATE 不使用功能分支。
+MANUAL 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git worktree add .worktrees/<slug> -b feat/<slug>`。PLAN/MAIN 不使用功能分支。
 
 功能分支生命週期：建立 → PM/DEV PASSED → merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。
 
@@ -45,8 +45,9 @@ MANUAL 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git workt
 | BossConfirm | Manual |
 | 分支 | main |
 | worktree | 否 |
+| 修改範圍 | 僅 `.shiftblame/` 內文件 |
 
-PM only 主分支操作。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
+PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（REPO.md、ROADMAP.md、PRD/、SOP/、GRAPH.md、SLUG.md 等）。用於規劃、制定規則、整理專案文件。不得修改 `.shiftblame/` 以外的檔案。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
 
 ### MANUAL 模式（功能模式，預設新功能）
 
@@ -60,7 +61,7 @@ PM only 主分支操作。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDAT
 
 觸發詞：`功能/feature/新功能`。管線：PM→DEV→PM→DEV→收尾。PASSED → MERGED → PUSHED → ARCHIVED → UPDATED。
 
-### OPERATE 模式
+### MAIN 模式
 
 | 屬性 | 值 |
 |------|-----|
@@ -70,7 +71,7 @@ PM only 主分支操作。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDAT
 | worktree | 否 |
 | MaxIter | 1 |
 
-觸發詞：`MAIN/維護/主分支`。DEV only 主分支。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
+觸發詞：`MAIN/維護/主分支/OPERATE`（OPERATE 為舊別名）。DEV only 主分支。PASSED → COMMITTED → PUSHED → ARCHIVED → UPDATED。
 
 ### AUTO 模式（需 RAPID.md）
 

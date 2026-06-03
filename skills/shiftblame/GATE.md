@@ -68,7 +68,7 @@ L5 結論:   BLUE → conclusion.md → CHECKED ──BossConfirm FAIL──→ 
 
 ## Worktree 閘門
 
-僅 AUTO 模式使用 worktree（`.worktrees/<slug>`）。MANUAL 在主工作目錄開分支。PLAN/OPERATE 不使用功能分支。
+僅 AUTO 模式使用 worktree（`.worktrees/<slug>`）。MANUAL 在主工作目錄開分支。PLAN/MAIN 不使用功能分支。
 
 - **MANUAL**：`git checkout -b feat/<slug>`
 - **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`
