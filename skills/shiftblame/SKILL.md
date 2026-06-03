@@ -58,7 +58,6 @@ DEV（產品開發）：`ROLE/DEV.md`
 ├── SOP/                  # 標準作業程序（非強制）
 ├── archive/              # 已歸檔 slug
 ├── tmp/                  # 臨時檔案
-├── worktree/             # 已移除（路徑改為 .worktrees/）
 └── <slug>/
     ├── SLUG.md            # 開發筆記
     └── <ROLE>/<NNN>/       # MANUAL/AUTO: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
