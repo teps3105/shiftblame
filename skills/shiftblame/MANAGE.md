@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 宣告段落。L1 宣告由管理者直接處理，L1 實作依複雜度；L2 驗收/L3/L4 依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 實作成果段落。L1 實作/L2 驗收/L3/L4 依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告後 BossConfirm；自動模式開始前宣告一次，全閘門自動通過。
 
 ## 決策表
 
@@ -19,13 +19,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | 宣告（管理者）→ BossConfirm → 實作（依複雜度）→ commit → 驗收 result.md（依複雜度）→ BossConfirm → 外部攻擊（依複雜度）→ BossConfirm → 內部驗證（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
-| DEV 階段 | 宣告（管理者）→ BossConfirm → 實作（依複雜度）→ commit → 驗收 result.md（依複雜度）→ BossConfirm → 外部攻擊（依複雜度）→ BossConfirm → 內部驗證（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
+| PM 階段 | BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
+| DEV 階段 | BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告（管理者）→ BossConfirm → L1 實作（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 上下文隔離
 
@@ -33,8 +33,7 @@
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
-| L1 宣告 | 管理者（目前環境） | 直接處理 BossConfirm |
-| L1 實作 | 依複雜度 | 宣告通過後執行實作，低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L1 實作 | 依複雜度 | BossConfirm 通過後執行實作，低複雜度：對話內執行；高複雜度：子代理隔離 |
 | L2 驗收 | 依複雜度 | 驗收 L1 產出，產出驗收報告 result.md |
 | L3 外部攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
 | L4 內部驗證 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
@@ -113,7 +112,7 @@
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
 5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
 6. **建立第一份 task.md**：管理者協調建立。**必須先建 NNN 切片目錄再寫檔案**（見「工作目錄結構」）。PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`。路徑錯誤即 BLOCK。
-7. **進入 L1 宣告與實作**：依 `ROLE/<ROLE>/START.md` 建構上下文 → 寫入宣告 → BossConfirm → APPROVED → 依複雜度執行實作 → commit。
+7. **進入 L1**：管理者向老闆宣告本輪計畫（對話動作）→ BossConfirm → APPROVED → 依 `ROLE/<ROLE>/START.md` 依複雜度執行實作 → commit。
 
 ## 流程結束
 

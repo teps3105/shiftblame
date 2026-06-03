@@ -13,7 +13,7 @@
 ## 狀態機
 
 ```
-L1 宣告與實作: DECLARED ──BossConfirm FAIL──→ DECLARED
+L1 實作:    DECLARED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ APPROVED → 實作（依複雜度）→ commit
 L2 驗收:    APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
@@ -29,8 +29,8 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
-| DECLARED | 宣告已寫入，等待老闆確認 | task.md（含「## 宣告」） |
-| APPROVED | 老闆同意宣告，L1 實作開始 | task.md（含「## 宣告」+「## 實作成果」） |
+| DECLARED | 管理者已向老闆宣告（對話動作），等待確認 | task.md |
+| APPROVED | 老闆同意，L1 實作開始 | task.md（含「## 實作成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
@@ -39,17 +39,19 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 ## 宣告-確認-執行閘門
 
-每一輪任務開始前，管理者必須向老闆確認宣告內容：
+每一輪任務開始前，管理者必須向老闆確認本輪計畫：
 
-1. 管理者在 task.md「## 宣告」寫入本輪計畫
+1. 管理者向老闆宣告本輪計畫（對話動作，不寫入文件）
 2. 管理者向老闆 BossConfirm（繁體中文，L1 階段指標）
-3. 老闆同意 → PENDING→APPROVED；不同意 → 調整重新確認
+3. 老闆同意 → DECLARED→APPROVED；不同意 → 調整重新確認
 
 **計畫不可更動**：不得更動已 PASSED 的前輪計畫範圍。需更動→回溯或進路線圖。宣告更新後狀態回到 DECLARED，必須重新 BossConfirm。
 
 ## BossConfirm
 
 `BossConfirm` 為老闆確認機制：必須等待老闆明確回覆通過、退回或調整；不得自行假設通過。
+
+**宣告（對話動作）**：手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告本階段內容；自動模式開始前宣告一次，全閘門自動通過。宣告為對話中的動作，不寫入文件。
 
 面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標規則：必須使用「現在是 L*階段（名稱）」，不得以檔名為指標。選項文字使用中文（「同意」「不同意」「調整」），不得使用英文狀態機值。
 
@@ -59,7 +61,7 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 嚴格序列執行，L3/L4 不得並行：
 
-1. 依複雜度執行 L1 實作 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 宣告範圍涵蓋）→ BossConfirm（L2 閘門）
+1. 依複雜度執行 L1 實作 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
 2. L2 通過 → 依複雜度執行 L3 外部攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
 3. L3 通過 → 依複雜度執行 L4 內部驗證 → 管理者驗證（攻擊回應完整 + 驗證項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
 4. L4 通過 → 管理者寫入 conclusion.md
@@ -69,7 +71,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 宣告`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 實作成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
 
 ## Worktree 閘門
 

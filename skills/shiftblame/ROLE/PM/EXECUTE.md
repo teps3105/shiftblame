@@ -7,7 +7,7 @@
 若判定為高複雜度需開子代理，派工 prompt 必須提供：
 
 1. **角色**：PM 驗收者（非實作者）
-2. **任務**：task.md 宣告+實作成果內容
+2. **任務**：task.md 實作成果內容
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：前一輪 conclusion.md（若有）
 5. **讀寫規則**：Claude 環境優先使用 Read/Write/Edit Tool；Codex 使用 Get-Content/apply_patch/Out-File（均 -Encoding UTF8）。禁止未指定 UTF8 讀取中文 Markdown。臨時檔案存放 `.shiftblame/tmp/`。
