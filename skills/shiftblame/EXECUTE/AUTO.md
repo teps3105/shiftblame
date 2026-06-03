@@ -4,11 +4,11 @@ title: EXECUTE/AUTO
 
 # AUTO 模式形式定義
 
-自動模式。用於快速迭代、原型驗證。使用功能分支 + worktree 隔離。BossConfirm 由管理者自行判斷品質，不暫停等待老闆。
+自動模式。僅在存在 RAPID.md 時可用。使用功能分支 + worktree 隔離。BossConfirm 由管理者自行判斷品質，不暫停等待老闆。
 
 ## 適用情境
 
-功能開發（預設）、快速迭代、原型驗證、小型功能開發。不需老闆指定。
+存在 `.shiftblame/RAPID.md` 時由老闆指定。無 RAPID.md 時不可使用 AUTO 模式。
 
 ## 形式參數
 
