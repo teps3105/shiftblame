@@ -6,9 +6,9 @@
 
 | # | 輸入 | 模式 |
 |---|------|:----:|
-| 1 | 日常操作/文件維護/部署/修復 | PLAN |
+| 1 | 日常操作/文件維護/部署/修復 | DOC |
 | 2 | 提問/答詢 | 直接回答 |
-| 3 | 功能開發/需求/快速迭代（預設） | MANUAL |
+| 3 | 功能開發/需求/快速迭代（預設） | FEATURE |
 | 4 | 需要討論確認的功能開發 | MAIN |
 | 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
 
@@ -54,7 +54,7 @@ PRD 固化：收尾後若消耗 PRD，提取設計決策生成 SOP。
 
 ## Worktree 管理
 
-- **MANUAL**：`git checkout -b feat/<slug>`（主工作目錄）
+- **FEATURE**：`git checkout -b feat/<slug>`（主工作目錄）
 - **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
 
 ## 退回處理

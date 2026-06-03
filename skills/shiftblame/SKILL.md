@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, PLAN(PLAN模式/計畫模式)→使用PLAN模式僅PM在主分支僅修改.shiftblame/內文件, MANUAL(MANUAL模式/手動模式/功能/feature/新功能)→使用MANUAL模式PM→DEV→PM→DEV→收尾(預設新功能), MAIN(MAIN模式/維護/主分支)→使用MAIN模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→DEV→PM→DEV→收尾(需RAPID.md)."
+description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, DOC(DOC模式/文件模式)→使用DOC模式僅PM在主分支僅修改.shiftblame/內文件, FEATURE(FEATURE模式/功能模式/功能/feature/新功能)→使用FEATURE模式PM→DEV→PM→DEV→收尾(預設新功能), MAIN(MAIN模式/維護/主分支)→使用MAIN模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→DEV→PM→DEV→收尾(需RAPID.md)."
 ---
 # shiftblame — AI Agents 協作框架
 
@@ -30,7 +30,7 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 
 ## 模式
 
-四模式：PLAN（PM only，僅 .shiftblame/）、MANUAL（功能模式，預設）、MAIN（DEV only）、AUTO（需 RAPID.md）。詳見 `EXECUTE.md`。
+四模式：DOC（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設）、MAIN（DEV only）、AUTO（需 RAPID.md）。詳見 `EXECUTE.md`。
 
 ## 文件結構
 
@@ -44,7 +44,7 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 ├── tmp/                  # 臨時檔案
 └── <slug>/
     ├── SLUG.md            # 開發筆記
-    └── <ROLE>/<NNN>/       # MANUAL/AUTO: PM/DEV；PLAN/MAIN: 扁平
+    └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；DOC/MAIN: 扁平
 ```
 
 ## 定義檔

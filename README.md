@@ -56,12 +56,12 @@ _「這不是我的鍋。」_
 
 | 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
 |------|------|----------|------|:-----------:|----------|
-| PLAN | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
-| MANUAL | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
+| DOC | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
+| FEATURE | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
 | AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代、原型驗證（需 RAPID.md） |
 | MAIN | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 
-PLAN 為規劃模式，僅限修改 `.shiftblame/` 內的文件。MAIN 為 DEV-only 主分支操作模式。MANUAL 為預設新功能模式，未指定模式時自動選用。AUTO 僅在存在 `.shiftblame/RAPID.md` 時可用（由老闆指定）。MANUAL 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。PLAN 和 MAIN 直接在 main 分支工作，不建立功能分支。
+DOC 為規劃模式，僅限修改 `.shiftblame/` 內的文件。MAIN 為 DEV-only 主分支操作模式。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 僅在存在 `.shiftblame/RAPID.md` 時可用（由老闆指定）。FEATURE 在主工作目錄內開 `feat/<slug>` 分支（不開 worktree）。AUTO 使用 `.worktrees/<slug>` worktree 隔離功能分支。DOC 和 MAIN 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 
@@ -82,11 +82,11 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 CONCLUSION
 
 `BossPreview`：老闆可多次要求觀看目前作品，管理者提供 URL/指令/截圖/操作證據與中文摘要。不取代正式 BossConfirm。
 
-## 功能分支（MANUAL/AUTO 模式）
+## 功能分支（FEATURE/AUTO 模式）
 
 管理者在第一次進入 DEV 前建立 `feat/<slug>` 功能分支：
 
-- **MANUAL**：`git checkout -b feat/<slug>`（主工作目錄內，不開 worktree）
+- **FEATURE**：`git checkout -b feat/<slug>`（主工作目錄內，不開 worktree）
 - **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
 
 功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → branch delete（AUTO 額外 worktree remove）。`.shiftblame/` 位於主工作目錄，不在 worktree 內。
@@ -145,7 +145,7 @@ skills/shiftblame/
 ├── tmp/                  # 臨時檔案
 └── <slug>/
     ├── SLUG.md            # 開發筆記
-    └── <ROLE>/<NNN>/       # MANUAL/AUTO: PM/DEV；PLAN/MAIN: 扁平
+    └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；DOC/MAIN: 扁平
         ├── TASK.md         # L1 宣告
         ├── RESULT.md       # L2 產出
         ├── RED.md          # L3 紅隊攻擊

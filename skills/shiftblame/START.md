@@ -14,7 +14,7 @@
 
 | 觸發 | 模式 |
 |------|:----:|
-| 未指定、功能/feature/新功能 | MANUAL（預設） |
+| 未指定、功能/feature/新功能 | FEATURE（預設） |
 | PLAN/計畫模式 | PLAN |
 | MAIN/維護/主分支/OPERATE | MAIN |
 | AUTO/自動模式 + RAPID.md 存在 | AUTO |
@@ -25,15 +25,15 @@
 
 管理者協調建立 `.shiftblame/<slug>/SLUG.md`（見 TEMPLATES/SLUG/SLUG.md 模板）。
 
-## 5. 建立功能分支（MANUAL/AUTO）
+## 5. 建立功能分支（FEATURE/AUTO）
 
-- MANUAL：`git checkout -b feat/<slug>`（主工作目錄）
+- FEATURE：`git checkout -b feat/<slug>`（主工作目錄）
 - AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`
-- PLAN/MAIN：不建立分支，直接在 main
+- DOC/MAIN：不建立分支，直接在 main
 
 ## 6. 建立第一份 TASK.md
 
-管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/TASK.md`（見 TEMPLATES/SLUG/TASK.md 模板）。PLAN/MAIN 使用扁平目錄 `<slug>/<NNN>/`。
+管理者協調建立第一份 `<slug>/<ROLE>/<NNN>/TASK.md`（見 TEMPLATES/SLUG/TASK.md 模板）。DOC/MAIN 使用扁平目錄 `<slug>/<NNN>/`。
 
 ## 7. 進入 L1 宣告
 
