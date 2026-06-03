@@ -13,8 +13,7 @@ PM 為第一部門，無上游。
 
 ## 工具鏈參照
 
-- 前端設計：`TOOLS/OPEN-DESIGN.md`（Open Design 操作指南）
-- 遊戲開發資源：`TOOLS/NEXGAME.md`（工具/素材索引）
+- 研究工具索引：`TOOLS/RESEARCH.md`（前端設計、遊戲開發資源等）
 
 ## 宣告上下文
 

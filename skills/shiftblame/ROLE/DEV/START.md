@@ -13,7 +13,8 @@ DEV 為第二部門，上游為 PM。
 
 ## 工具鏈參照
 
-- 遊戲開發資源：`TOOLS/NEXGAME.md`（工具/素材索引）
+- 研究工具索引：`TOOLS/RESEARCH.md`（前端設計、遊戲開發資源等）
+- 端到端驗證工具索引：`TOOLS/E2E-VERIFY.md`（網頁驗證等）
 
 ## 宣告上下文
 
