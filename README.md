@@ -48,7 +48,7 @@ _「這不是我的鍋。」_
 
 - L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式
 - AUTO 模式全閘門 BossConfirm 自動通過
-- FAIL 修改不刪除檔案，宣告段落鎖定不變
+- FAIL 不刪除檔案（保留歷史紀錄）；退回 DECLARED 後重新宣告
 
 ## 模式
 
