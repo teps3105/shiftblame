@@ -19,12 +19,12 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM→DEV | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → 藍隊 → conclusion.md → CHECKED → BossConfirm → PASSED |
+| PM→DEV | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED |
 | DEV→收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → L4 藍隊 → L5 conclusion.md → CHECKED → BossConfirm → PASSED。
+派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → BossConfirm → L4 藍隊 → BossConfirm → L5 conclusion.md → CHECKED → BossConfirm → PASSED。
 
 ## 溝通原則
 
@@ -59,7 +59,7 @@ PRD 固化：收尾後若消耗 PRD，提取設計決策生成 SOP。
 
 ## 退回處理
 
-L1 FAIL→重新宣告。L2 FAIL→DECLARED 更新宣告。L4 FAIL→原地修復（增量攻防）或打回上游。L5 FAIL→退回 L1。DEV 退回前先 commit。定義問題→退回 PM；實作問題→原地修復。回溯→撤回該角色所有變更回到 001。計畫更動判定→回溯或進路線圖。
+L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。計畫更動判定→回溯或進路線圖。
 
 ## 業務拓樑圖
 

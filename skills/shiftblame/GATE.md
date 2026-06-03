@@ -14,13 +14,17 @@
 
 ```
 L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED
-                └──agree──→ APPROVED
-L2 產出:   APPROVED → EXECUTED（result.md）──BossConfirm──→ L3
-                └──修改──→ DECLARED（更新宣告 + BossConfirm）
-L3 紅隊:   L2 通過 → red.md → RED
-L4 藍隊:   RED → blue.md → BLUE ──FAIL──→ EXECUTED（原地修復）
-L5 結論:   BLUE → conclusion.md → CHECKED ──BossConfirm FAIL──→ DECLARED
-                                                └──PASSED──→ 收尾
+                └──BossConfirm PASS──→ APPROVED
+L2 產出:   APPROVED → EXECUTED（result.md）──BossConfirm FAIL──→ DECLARED
+                └──BossConfirm PASS──→ L3
+L3 紅隊:   L2 通過 → red.md → RED ──BossConfirm FAIL──→ DECLARED
+                └──BossConfirm PASS──→ L4
+L4 藍隊:   L3 通過 → blue.md → BLUE ──BossConfirm FAIL──→ DECLARED
+                └──BossConfirm PASS──→ L5
+L5 結論:   L4 通過 → conclusion.md → CHECKED ──BossConfirm FAIL──→ DECLARED
+                                                └──BossConfirm PASS──→ PASSED
+
+全閘門 BossConfirm：MAIN/FEATURE/DOC 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -28,8 +32,8 @@ L5 結論:   BLUE → conclusion.md → CHECKED ──BossConfirm FAIL──→ 
 | DECLARED | 宣告已寫入，等待老闆確認 | task.md（含「## 宣告」） |
 | APPROVED | 老闆同意宣告 | task.md |
 | EXECUTED | result.md 已產出 | task.md + result.md |
-| RED | red.md 已產出 | + red.md |
-| BLUE | blue.md 已產出 | + blue.md |
+| RED | red.md 已產出，待 BossConfirm（AUTO 自動通過） | + red.md |
+| BLUE | blue.md 已產出，待 BossConfirm（AUTO 自動通過） | + blue.md |
 | CHECKED | 五檔齊全，待老闆確認 | + conclusion.md |
 | PASSED | 老闆確認通過 | — |
 
@@ -55,12 +59,15 @@ L5 結論:   BLUE → conclusion.md → CHECKED ──BossConfirm FAIL──→ 
 
 嚴格序列執行，紅藍不得並行：
 
-1. 執行者寫入 result.md（EXECUTED）→ BossConfirm
+1. 執行者寫入 result.md（EXECUTED）→ BossConfirm（L2 閘門）
 2. L2 通過 → 呼叫紅隊寫入 red.md → 管理者驗證
-3. red.md 有效 → 呼叫藍隊寫入 blue.md → 管理者驗證
-4. 藍隊 FAIL → 退回 L2 原地修復（增量攻防，不刪除既有紀錄）
-5. 藍隊 PASS → 管理者寫入 conclusion.md
-6. 五檔齊全 → CHECKED → BossConfirm → PASSED
+3. red.md 有效 → BossConfirm（L3 閘門）
+4. L3 通過 → 呼叫藍隊寫入 blue.md → 管理者驗證
+5. blue.md 有效 → BossConfirm（L4 閘門）
+6. L4 通過 → 管理者寫入 conclusion.md
+7. 五檔齊全 → CHECKED → BossConfirm（L5 閘門）→ PASSED
+
+L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
@@ -77,7 +84,7 @@ L5 結論:   BLUE → conclusion.md → CHECKED ──BossConfirm FAIL──→ 
 
 ## 退回規則
 
-- L1 FAIL → 重新宣告。L2 FAIL → 返回 DECLARED 更新宣告。L4 藍隊 FAIL → 原地修復（增量攻防）。L5 FAIL → 退回 L1。DEV 退回前先 commit。定義問題→退回 PM；實作問題→原地修復。回溯→撤回該角色所有變更回到 001。
+- L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。AUTO 模式全閘門自動通過。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。
 
 ## 歸檔
 

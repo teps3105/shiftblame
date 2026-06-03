@@ -19,7 +19,7 @@
 
 task.md review 固定為 local。同一 slug 內依序產出 red.md 與 blue.md。
 
-順序：result.md → BossConfirm（result 確認）→ red.md → blue.md → conclusion.md → CHECKED → BossConfirm → PASSED。紅藍不得並行。L4 FAIL 退回 L2 原地修復，採增量攻防。L5 FAIL 退回 L1 重新宣告。
+順序：result.md → BossConfirm（L2 閘門）→ red.md → BossConfirm（L3 閘門）→ blue.md → BossConfirm（L4 閘門）→ conclusion.md → CHECKED → BossConfirm（L5 閘門）→ PASSED。紅藍不得並行。L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。AUTO 模式全閘門 BossConfirm 自動通過。
 
 ## 讀寫權限
 
@@ -42,7 +42,7 @@ FEATURE 在主工作目錄 `git checkout -b feat/<slug>`；AUTO 執行 `git work
 | 屬性 | 值 |
 |------|-----|
 | Pass | 1（PM only） |
-| BossConfirm | Manual |
+| BossConfirm | Manual（全閘門 L1-L5） |
 | 分支 | main |
 | worktree | 否 |
 | 修改範圍 | 僅 `.shiftblame/` 內文件 |
@@ -54,7 +54,7 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | 屬性 | 值 |
 |------|-----|
 | Pass | 2（PM + DEV） |
-| BossConfirm | Manual |
+| BossConfirm | Manual（全閘門 L1-L5） |
 | 分支 | feat/\<slug\> |
 | worktree | 否 |
 | MaxIter | ∞ |
@@ -66,7 +66,7 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | 屬性 | 值 |
 |------|-----|
 | Pass | 1（DEV only） |
-| BossConfirm | Manual |
+| BossConfirm | Manual（全閘門 L1-L5） |
 | 分支 | main |
 | worktree | 否 |
 | MaxIter | 1 |
@@ -78,7 +78,7 @@ PM only 主分支操作。**限定只能修改 `.shiftblame/` 內的文件**（R
 | 屬性 | 值 |
 |------|-----|
 | Pass | 2（PM + DEV） |
-| BossConfirm | Auto |
+| BossConfirm | Auto（全閘門 L1-L5） |
 | 分支 | feat/\<slug\> |
 | worktree | 是 |
 | MaxIter | ≤2 |
