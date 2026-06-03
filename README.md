@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、外部攻擊者、內部驗證者四個角色，以及 PM→DEV 兩角色的閘門管線。
+`shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、攻擊者、防禦者四個角色，以及 PM→DEV 兩角色的閘門管線。
 
 ---
 
@@ -27,22 +27,22 @@ _「這不是我的鍋。」_
 |------|------|------|
 | 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md（不寫入其他部門正式產物） |
 | 執行者 | 依複雜度（對話內 / 子代理） | result.md |
-| 外部攻擊 | 依複雜度（對話內 / 子代理） | red.md |
-| 內部驗證 | 依複雜度（對話內 / 子代理） | blue.md |
+| 攻擊者 | 依複雜度（對話內 / 子代理） | red.md |
+| 防禦者 | 依複雜度（對話內 / 子代理） | blue.md |
 
-執行者、外部攻擊者、內部驗證者依複雜度彈性決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。不使用外部品牌工具或跨環境審查。
+執行者、攻擊者、防禦者依複雜度彈性決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。不使用外部品牌工具或跨環境審查。
 
 ## 五階段流程
 
 同一任務的攻防流程固定序列：
 
-1. **L1 宣告** — 管理者協調建立 task.md，向老闆確認（BossConfirm）
-2. **L2 產出** — 依複雜度執行，寫入 result.md，管理者向老闆確認（BossConfirm）
-3. **L3 外部攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
-4. **L4 內部驗證** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
-5. **L5 結論** — 管理者寫入 conclusion.md → Result Check（五檔齊全）→ BossConfirm → PASSED
+1. **L1 執行** — BossConfirm 通過後，執行者直接執行，產出 task.md 執行成果
+2. **L2 驗收** — 依複雜度驗收 L1 產出，寫入 result.md 驗收報告，管理者向老闆確認（BossConfirm）
+3. **L3 攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
+4. **L4 防禦** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
+5. **L5 結論** — 管理者寫入 conclusion.md → 五檔齊全 → BossConfirm → PASSED
 
-L3 外部攻擊與 L4 內部驗證不得並行；L4 不得在 L3 通過前啟動。L3/L4 發現問題一律退回 DECLARED 重新宣告，不就地修復。L3 為外部攻擊（滲透、攻擊、破壞），L4 為內部驗證（防禦、驗證、確認）。
+L3 攻擊與 L4 防禦不得並行；L4 不得在 L3 通過前啟動。L3/L4 發現問題一律退回 DECLARED 重新宣告，不就地修復。L3 為攻擊（滲透、攻擊、破壞），L4 為防禦（防禦、驗證、確認）。
 
 ### FAIL 狀態機
 
@@ -66,7 +66,7 @@ L3 外部攻擊與 L4 內部驗證不得並行；L4 不得在 L3 通過前啟動
 | 角色 | 職責 |
 |------|------|
 | PM（專案計畫） | 需求研究、產品規格、品質定義、測試標準、驗收條件、前端設計（依 Open-design 環境操作） |
-| DEV（產品開發） | 技術實作、自行驗收、功能驗證、邊界測試 |
+| DEV（產品開發） | 技術執行、自行驗收、功能驗證、邊界測試 |
 
 PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion.md。result.md 為目標導向產出（不限固定段式格式）。
 
@@ -112,17 +112,17 @@ skills/shiftblame/
 ├── MANAGE.md             # 管理者協調與操作
 ├── ROLE/                 # 角色上下文（含五階段產出格式）
 │   ├── PM/
-│   │   ├── START.md      # L1 宣告（管理者）
-│   │   ├── EXECUTE.md    # L2 產出（子代理）
-│   │   ├── ATTACK.md     # L3 外部攻擊
-│   │   ├── DEFEND.md     # L4 內部驗證
-│   │   └── END.md        # L5 結論（管理者）
+│   │   ├── TASK.md         # L1 執行
+│   │   ├── RESULT.md       # L2 驗收
+│   │   ├── RED.md          # L3 攻擊
+│   │   ├── BLUE.md         # L4 防禦
+│   │   └── CONCLUSION.md   # L5 結論（管理者）
 │   └── DEV/
-│       ├── START.md
-│       ├── EXECUTE.md
-│       ├── ATTACK.md
-│       ├── DEFEND.md
-│       └── END.md
+│       ├── TASK.md
+│       ├── RESULT.md
+│       ├── RED.md
+│       ├── BLUE.md
+│       └── CONCLUSION.md
 ├── TEMPLATES/             # 文件模板
 │   ├── REPO.md           # REPO.md 模板
 │   ├── ROADMAP.md        # ROADMAP.md 模板
@@ -130,8 +130,8 @@ skills/shiftblame/
 │   ├── RAPID.md          # 快速功能配置模板（AUTO 前提）
 │   └── SLUG.md           # 管理者協調用模板（管線狀態/交接紀錄）
 └── TOOLS/                # 工具包
-    ├── OPEN-DESIGN.md    # Open Design 操作指南
-    └── NEXGAME.md        # Nexgame 遊戲開發資源
+    ├── DESIGN.md         # 設計工具索引（前端設計等，必用）
+    └── E2E.md            # 端到端驗證工具索引（網頁驗證等）
 ```
 
 ## 工作目錄結構
@@ -147,10 +147,10 @@ skills/shiftblame/
 └── <slug>/
     ├── SLUG.md            # 開發筆記
     └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；PM/DEV: 扁平
-        ├── task.md         # L1 宣告
-        ├── result.md       # L2 產出
-        ├── red.md          # L3 外部攻擊
-        ├── blue.md         # L4 內部驗證
+        ├── task.md         # L1 執行
+        ├── result.md       # L2 驗收
+        ├── red.md          # L3 攻擊
+        ├── blue.md         # L4 防禦
         └── conclusion.md   # L5 結論
 
 .worktrees/                # git worktree 隔離目錄，.gitignore

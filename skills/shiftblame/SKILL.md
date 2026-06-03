@@ -12,8 +12,8 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 |------|------|------|
 | 管理者 | 目前環境 | MANAGE.md |
 | 執行者 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/RESULT.md |
-| 外部攻擊 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/RED.md |
-| 內部防禦 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/BLUE.md |
+| 攻擊者 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/RED.md |
+| 防禦者 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/BLUE.md |
 
 角色職責詳見 `ROLE/{PM,DEV}/TASK.md`。派工規格詳見 `MANAGE.md`。
 
