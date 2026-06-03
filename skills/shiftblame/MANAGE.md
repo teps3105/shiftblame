@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md/red.md/blue.md），寫入 conclusion.md 與 task.md 宣告段落。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 宣告段落。L2/L3/L4 強制由子代理執行，管理者僅處理 L1（宣告 + BossConfirm）與 L5（結論 + BossConfirm）。
 
 ## 決策表
 
@@ -12,20 +12,36 @@
 | 4 | 維護/主分支/日常開發 | DEV |
 | 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
 
-**PM**：需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威（吸收 QA 職責）。
+**PM**：需求釐清、品質定義、測試標準、驗譗條件、GWT 測試案例、前端設計唯一權威（吸收 QA 職責）。
 **DEV**：技術規劃、設計、實作、自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收）（吸收 QC 職責）。
 
 ## 管線閘門表
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
-| DEV 階段 | 宣告 → BossConfirm → result.md → BossConfirm → 紅隊 → BossConfirm → 藍隊 → BossConfirm → conclusion.md → CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
+| PM 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
+| DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告 → BossConfirm → L2 result.md → BossConfirm → L3 紅隊 → BossConfirm → L4 藍隊 → BossConfirm → L5 conclusion.md → CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：L1 宣告（管理者）→ BossConfirm → L2 result.md（子代理）→ BossConfirm → L3 red.md（子代理）→ BossConfirm → L4 blue.md（子代理）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+
+## 上下文隔離
+
+管理者與子代理的上下文權責劃分：
+
+| 階段 | 執行者 | 說明 |
+|:----:|--------|------|
+| L1 宣告 | 管理者（目前環境） | 高權重 — 直接處理 BossConfirm |
+| L2 產出 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 result.md |
+| L3 紅隊 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 red.md |
+| L4 藍隊 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 blue.md |
+| L5 結論 | 管理者（目前環境） | 高權重 — 彙整五檔寫入 conclusion.md + BossConfirm |
+
+**禁止**：管理者不得自行產出 result.md / red.md / blue.md。若無法開子代理 → BLOCK，不得使用外部品牌工具。
+
+角色上下文檔：`ROLE/<ROLE>/{START,EXECUTE,ATTACK,DEFEND,END}.md`。管理者依階段讀取對應檔案，建構派工 prompt。
 
 ## 溝通原則
 
@@ -41,17 +57,45 @@
 
 **派工隔離**：派工 prompt 不得引用 GATE.md 狀態定義。
 
+## 流程開始
+
+1. **初始化**：觸發技能時檢查 `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md`。缺任一 → BLOCK 或自動建立模板。
+2. **恢復**：若存在未歸檔的 `.shiftblame/<slug>/SLUG.md`，讀取並恢復該 slug 工作狀態。
+   - **階段恢復（FEATURE/AUTO）**：讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色階段。PM PASSED → 接續 DEV；DEV PASSED → 接續 PM 或進入收尾。
+3. **模式選擇**：依決策表判定模式。
+4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
+5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
+6. **建立第一份 task.md**：管理者協調建立。PM/DEV 使用扁平目錄 `<slug>/<NNN>/`；FEATURE/AUTO 使用 `<slug>/<ROLE>/<NNN>/`。
+7. **進入 L1 宣告**：依 `ROLE/<ROLE>/START.md` 建構上下文 → 寫入宣告 → BossConfirm → APPROVED。
+
+## 流程結束
+
+### 階段結束（FEATURE/AUTO）
+
+每角色階段 PASSED 後，若尚有後續角色階段需執行：
+1. 更新 SLUG.md 管線狀態紀錄
+2. Commit 所有變更
+3. 輸出階段摘要
+4. 提醒老闆開新對話以繼續
+5. **停止處理**
+
+若所有角色皆已完成 → 進入 slug 收尾。
+
+### Slug 收尾
+
+1. **收尾確認**：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
+2. **合併**：FEATURE/AUTO：`git merge --no-ff feat/<slug>`（禁止 squash）；PM/DEV：已在 main。
+3. **推送**：`git push`。
+4. **清理**：FEATURE：branch delete；AUTO：worktree remove + branch delete；PM/DEV：無需清理。
+5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → 附加時間戳。
+6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
+7. **PRD 固化**：若消耗 PRD，提取設計決策生成 SOP。
+8. **業務拓樑圖**：若 `.shiftblame/GRAPH.md` 存在，更新。
+9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
+
 ## SLUG.md 維護
 
 建立新 slug 時建立 `.shiftblame/<slug>/SLUG.md`。五分類：1.本輪目標 2.管線狀態紀錄 3.殘餘風險 4.BossPreview/退回紀錄 5.待收尾整理。只追加不修改。歸檔後作為歷史紀錄保留。
-
-## 收尾操作
-
-PM/DEV 皆 PASSED 後：FEATURE/AUTO merge --no-ff（禁止 squash）→ push → branch delete（AUTO 額外 worktree remove）；PM/DEV 為 push。共通步驟：歸檔 → 更新 REPO.md/ROADMAP.md。
-
-收尾檢查：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
-
-PRD 固化：收尾後若消耗 PRD，提取設計決策生成 SOP。
 
 ## Worktree 管理
 
@@ -71,11 +115,7 @@ FEATURE/AUTO 模式下，每角色階段 PASSED 後執行階段交接：
 4. 提醒老闆開新對話以繼續下一角色階段
 5. **停止處理**，不得繼續下一角色
 
-新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色（PM→DEV→PM→…直到完成）。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。PM/DEV 模式不適用（本就單角色）。
-
-## 業務拓樑圖
-
-可選機制。`.shiftblame/GRAPH.md`。每個 slug 收尾後更新。非強制。
+新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。PM/DEV 模式不適用（本就單角色）。
 
 ## PRD/SOP
 

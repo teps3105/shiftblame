@@ -1,0 +1,47 @@
+# DEV EXECUTE — L2 產出
+
+> 階段：L2 ｜ 執行者：子代理（強制）｜ 上下文：隔離
+
+## 子代理上下文需求
+
+派工 prompt 必須提供：
+
+1. **角色**：DEV 執行者
+2. **任務**：task.md 宣告內容
+3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
+4. **上游**：PM conclusion.md（下游必讀）
+5. **讀寫規則**：Claude 環境優先使用 Read/Write/Edit Tool；Codex 使用 Get-Content/apply_patch/Out-File（均 -Encoding UTF8）。禁止未指定 UTF8 讀取中文 Markdown。臨時檔案存放 `.shiftblame/tmp/`。
+
+## 產出規範
+
+- 目標導向 result.md（self-contained，禁止引用其他文件）
+- 自行驗收：GWT 逐條驗證、邊界測試、端到端驗收
+- 程式碼 EXECUTED 後鎖定，禁止立即修復紅隊問題
+
+## result.md 產出格式
+
+```markdown
+---
+slug: <slug>
+role: DEV
+round: <NNN>
+status: EXECUTED
+created_at: <ISO 8601>
+---
+
+# result.md — <slug> DEV/<NNN>
+
+## 變更摘要
+
+（執行者填入工作成果摘要）
+
+## 修改檔案清單
+
+| 檔案 | 變更內容 |
+|------|---------|
+| （路徑） | （描述） |
+
+## 驗證
+
+（執行者填入驗證方式與結果）
+```
