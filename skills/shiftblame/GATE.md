@@ -15,25 +15,25 @@
 ```
 L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ APPROVED
-L2 產出:   APPROVED → EXECUTED（result.md，子代理）──BossConfirm FAIL──→ DECLARED
+L2 產出:   APPROVED → EXECUTED（result.md，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
-L3 紅隊:   L2 通過 → red.md（子代理）→ RED ──BossConfirm FAIL──→ DECLARED
+L3 紅隊:   L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L4
-L4 藍隊:   L3 通過 → blue.md（子代理）→ BLUE ──BossConfirm FAIL──→ DECLARED
+L4 藍隊:   L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L5
 L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
                                                         └──BossConfirm PASS──→ PASSED
 
-全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。
+全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。L2/L3/L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
 ```
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
 | DECLARED | 宣告已寫入，等待老闆確認 | task.md（含「## 宣告」） |
 | APPROVED | 老闆同意宣告 | task.md |
-| EXECUTED | result.md 已產出（子代理） | task.md + result.md |
-| RED | red.md 已產出（子代理），待 BossConfirm | + red.md |
-| BLUE | blue.md 已產出（子代理），待 BossConfirm | + blue.md |
+| EXECUTED | result.md 已產出（依複雜度） | task.md + result.md |
+| RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
+| BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
 | CHECKED | 五檔齊全，待老闆確認 | + conclusion.md |
 | PASSED | 老闆確認通過 | — |
 
@@ -59,11 +59,11 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 嚴格序列執行，紅藍不得並行：
 
-1. 子代理寫入 result.md（EXECUTED）→ 管理者 BossConfirm（L2 閘門）
-2. L2 通過 → 子代理寫入 red.md → 管理者驗證
-3. red.md 有效 → 管理者 BossConfirm（L3 閘門）
-4. L3 通過 → 子代理寫入 blue.md → 管理者驗證
-5. blue.md 有效 → 管理者 BossConfirm（L4 閘門）
+1. 依複雜度寫入 result.md（EXECUTED）→ 管理者驗證（frontmatter 齊全 + 宣告範圍涵蓋）→ BossConfirm（L2 閘門）
+2. L2 通過 → 依複雜度寫入 red.md → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）
+3. red.md 有效 → BossConfirm（L3 閘門）
+4. L3 通過 → 依複雜度寫入 blue.md → 管理者驗證（逐項回應紅隊 + 結論明確）
+5. blue.md 有效 → BossConfirm（L4 閘門）
 6. L4 通過 → 管理者寫入 conclusion.md
 7. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
 

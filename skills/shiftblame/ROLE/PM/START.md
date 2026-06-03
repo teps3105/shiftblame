@@ -11,6 +11,11 @@ PM 為第一部門，無上游。
 - GWT 測試案例產出（Given-When-Then 格式）
 - 履行品質保證職責
 
+## 工具鏈參照
+
+- 前端設計：`TOOLS/OPEN-DESIGN.md`（Open Design 操作指南）
+- 遊戲開發資源：`TOOLS/NEXGAME.md`（工具/素材索引）
+
 ## 宣告上下文
 
 管理者協調建立宣告，內容包含：

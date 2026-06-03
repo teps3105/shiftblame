@@ -26,20 +26,20 @@ _「這不是我的鍋。」_
 | 員工 | 身份 | 產出 |
 |------|------|------|
 | 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md（不寫入其他部門正式產物） |
-| 執行者 | 本環境子代理 | result.md |
-| 紅隊 | 本環境子代理 | red.md |
-| 藍隊 | 本環境子代理 | blue.md |
+| 執行者 | 依複雜度（對話內 / 子代理） | result.md |
+| 紅隊 | 依複雜度（對話內 / 子代理） | red.md |
+| 藍隊 | 依複雜度（對話內 / 子代理） | blue.md |
 
-紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
+執行者、紅隊、藍隊依複雜度彈性決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。不使用外部品牌工具或跨環境審查。
 
 ## 五階段流程
 
 同一任務的攻防流程固定序列：
 
 1. **L1 宣告** — 管理者協調建立 task.md，向老闆確認（BossConfirm）
-2. **L2 產出** — 子代理寫入 result.md，管理者向老闆確認（BossConfirm）
-3. **L3 紅隊** — 子代理攻擊 result.md 並寫入 red.md，管理者向老闆確認（BossConfirm）
-4. **L4 藍隊** — 子代理防禦並寫入 blue.md，管理者向老闆確認（BossConfirm）
+2. **L2 產出** — 依複雜度執行，寫入 result.md，管理者向老闆確認（BossConfirm）
+3. **L3 紅隊** — 依複雜度執行，攻擊 result.md 並寫入 red.md，管理者向老闆確認（BossConfirm）
+4. **L4 藍隊** — 依複雜度執行，防禦並寫入 blue.md，管理者向老闆確認（BossConfirm）
 5. **L5 結論** — 管理者寫入 conclusion.md → Result Check（五檔齊全）→ BossConfirm → PASSED
 
 紅藍隊不得並行；藍隊不得在 L3 BossConfirm 通過前啟動。

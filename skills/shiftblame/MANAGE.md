@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 宣告段落。L2/L3/L4 強制由子代理執行，管理者僅處理 L1（宣告 + BossConfirm）與 L5（結論 + BossConfirm）。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 宣告段落。L1/L5 由管理者直接處理；L2/L3/L4 依複雜度彈性決定在對話內執行或開子代理隔離。
 
 ## 決策表
 
@@ -19,29 +19,38 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
-| DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（子代理）→ BossConfirm → red.md（子代理）→ BossConfirm → blue.md（子代理）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
+| PM 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → red.md（依複雜度）→ BossConfirm → blue.md（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話** |
+| DEV 階段 | 宣告（管理者）→ BossConfirm → result.md（依複雜度）→ BossConfirm → red.md（依複雜度）→ BossConfirm → blue.md（依複雜度）→ BossConfirm → conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **commit + 停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：L1 宣告（管理者）→ BossConfirm → L2 result.md（子代理）→ BossConfirm → L3 red.md（子代理）→ BossConfirm → L4 blue.md（子代理）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：L1 宣告（管理者）→ BossConfirm → L2 result.md（依複雜度）→ BossConfirm → L3 red.md（依複雜度）→ BossConfirm → L4 blue.md（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 上下文隔離
 
-管理者與子代理的上下文權責劃分：
+管理者依複雜度彈性決定 L2/L3/L4 的執行方式：
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
-| L1 宣告 | 管理者（目前環境） | 高權重 — 直接處理 BossConfirm |
-| L2 產出 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 result.md |
-| L3 紅隊 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 red.md |
-| L4 藍隊 | 子代理（強制） | 上下文隔離 — 子代理獨立產出 blue.md |
-| L5 結論 | 管理者（目前環境） | 高權重 — 彙整五檔寫入 conclusion.md + BossConfirm |
+| L1 宣告 | 管理者（目前環境） | 直接處理 BossConfirm |
+| L2 產出 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L3 紅隊 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L4 藍隊 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L5 結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + BossConfirm |
 
-**禁止**：管理者不得自行產出 result.md / red.md / blue.md。若無法開子代理 → BLOCK，不得使用外部品牌工具。
+### 複雜度判定
 
-角色上下文檔：`ROLE/<ROLE>/{START,EXECUTE,ATTACK,DEFEND,END}.md`。管理者依階段讀取對應檔案，建構派工 prompt。
+管理者在 L1 宣告時一併判定本輪複雜度：
+
+| 複雜度 | 判定條件 | 執行方式 |
+|--------|---------|----------|
+| 低 | 宣告 ≤ 3 項變更、且 ≤ 2 份文件受影響 | 管理者在對話內直接執行 L2/L3/L4 |
+| 高 | 宣告 > 3 項變更、或涉及多份文件交叉修改 | 開子代理隔離執行 L2/L3/L4 |
+
+判定後記錄於 task.md 宣告段落。低複雜度時管理者可直接產出 result.md / red.md / blue.md。若無法開子代理 → BLOCK，不得使用外部品牌工具。
+
+角色上下文檔：`ROLE/<ROLE>/{START,EXECUTE,ATTACK,DEFEND,END}.md`。管理者依階段讀取對應檔案，建構派工 prompt 或對話內執行指引。
 
 ## 溝通原則
 
@@ -89,10 +98,10 @@
 4. **清理**：FEATURE：branch delete；AUTO：worktree remove + branch delete；PM/DEV：無需清理。
 5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → 附加時間戳。
 6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
-7. **更新 RAPID.md（AUTO 模式）**：管理者從本次 AUTO 迭代中提取經驗，更新 `.shiftblame/RAPID.md`（已完成功能、待修正項目、下次迭代建議）。
-8. **PRD 固化**：若消耗 PRD，提取設計決策生成 SOP。
-8. **業務拓樑圖**：若 `.shiftblame/GRAPH.md` 存在，更新。
-9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
+7. **更新 RAPID.md（僅 AUTO 模式）**：管理者從本次 AUTO 迭代中提取經驗，更新 `.shiftblame/RAPID.md`（已完成功能、待修正項目、下次迭代建議）。非 AUTO 模式跳過此步驟。
+8. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。
+9. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。不存在則跳過。
+10. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
 
 ## SLUG.md 維護
 
