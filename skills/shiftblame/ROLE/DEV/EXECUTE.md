@@ -16,7 +16,7 @@
 
 - 目標導向 result.md（self-contained，禁止引用其他文件）
 - 自行驗收：GWT 逐條驗證、邊界測試、端到端驗收
-- 程式碼 EXECUTED 後鎖定，禁止立即修復紅隊問題
+- 程式碼 EXECUTED 後鎖定，L3/L4 期間不得修改（發現問題退回 DECLARED 重新宣告）
 
 ## result.md 產出格式
 

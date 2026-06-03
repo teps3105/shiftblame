@@ -17,9 +17,9 @@ L1 宣告:   DECLARED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ APPROVED
 L2 產出:   APPROVED → EXECUTED（result.md，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
-L3 紅隊:   L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
+L3 外部攻擊: L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L4
-L4 藍隊:   L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
+L4 內部驗證: L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L5
 L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
                                                         └──BossConfirm PASS──→ PASSED

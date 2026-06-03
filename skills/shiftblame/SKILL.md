@@ -4,16 +4,16 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 ---
 # shiftblame — AI Agents 協作框架
 
-管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。紅藍隊固定使用本環境子代理。
+管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。L3 外部攻擊與 L4 內部驗證依複雜度在對話內執行或開子代理。
 
 ## 角色與派工
 
 | 員工 | 身份 | 詳見 |
 |------|------|------|
 | 管理者 | 目前環境 | MANAGE.md |
-| 執行者 | 本環境子代理 | ROLE/{PM,DEV}/EXECUTE.md |
-| 紅隊 | 本環境子代理 | ROLE/{PM,DEV}/ATTACK.md |
-| 藍隊 | 本環境子代理 | ROLE/{PM,DEV}/DEFEND.md |
+| 執行者 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/EXECUTE.md |
+| 外部攻擊 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/ATTACK.md |
+| 內部驗證 | 依複雜度（對話內 / 子代理） | ROLE/{PM,DEV}/DEFEND.md |
 
 角色職責詳見 `ROLE/{PM,DEV}/START.md`。派工規格詳見 `MANAGE.md`。
 
@@ -43,8 +43,8 @@ skills/shiftblame/
 │   ├── PM/
 │   │   ├── START.md      # L1 宣告（管理者）
 │   │   ├── EXECUTE.md    # L2 產出（子代理）
-│   │   ├── ATTACK.md     # L3 紅隊（子代理）
-│   │   ├── DEFEND.md     # L4 藍隊（子代理）
+│   │   ├── ATTACK.md     # L3 外部攻擊
+│   │   ├── DEFEND.md     # L4 內部驗證
 │   │   └── END.md        # L5 結論（管理者）
 │   └── DEV/
 │       ├── START.md

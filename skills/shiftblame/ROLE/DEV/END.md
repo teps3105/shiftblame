@@ -33,7 +33,7 @@ PASS / FAIL
 
 ## 程式碼鎖定狀態
 
-（EXECUTED 後鎖定，紅藍隊期間未修改已追蹤檔案）
+（EXECUTED 後鎖定，L3/L4 期間未修改已追蹤檔案）
 
 ## Commit 紀錄
 
