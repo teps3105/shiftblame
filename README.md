@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、紅隊、藍隊四個角色，以及 PM→DEV 兩角色的閘門管線。
+`shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、外部攻擊者、內部驗證者四個角色，以及 PM→DEV 兩角色的閘門管線。
 
 ---
 
@@ -27,10 +27,10 @@ _「這不是我的鍋。」_
 |------|------|------|
 | 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md（不寫入其他部門正式產物） |
 | 執行者 | 依複雜度（對話內 / 子代理） | result.md |
-| 紅隊 | 依複雜度（對話內 / 子代理） | red.md |
-| 藍隊 | 依複雜度（對話內 / 子代理） | blue.md |
+| 外部攻擊 | 依複雜度（對話內 / 子代理） | red.md |
+| 內部驗證 | 依複雜度（對話內 / 子代理） | blue.md |
 
-執行者、紅隊、藍隊依複雜度彈性決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。不使用外部品牌工具或跨環境審查。
+執行者、外部攻擊者、內部驗證者依複雜度彈性決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。不使用外部品牌工具或跨環境審查。
 
 ## 五階段流程
 
@@ -99,7 +99,7 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion
 - 臨時檔案存放於 `.shiftblame/tmp/`（由老闆自行清理）
 - `.shiftblame/` 不納入版本控制
 - 開發中的筆記只維護於 `.shiftblame/<slug>/SLUG.md`
-- README.md 已更新並通過紅藍隊審查（開發任務中）
+- README.md 已更新並通過 L3 外部攻擊與 L4 內部驗證審查（開發任務中）
 
 ---
 
@@ -114,8 +114,8 @@ skills/shiftblame/
 │   ├── PM/
 │   │   ├── START.md      # L1 宣告（管理者）
 │   │   ├── EXECUTE.md    # L2 產出（子代理）
-│   │   ├── ATTACK.md     # L3 紅隊（子代理）
-│   │   ├── DEFEND.md     # L4 藍隊（子代理）
+│   │   ├── ATTACK.md     # L3 外部攻擊
+│   │   ├── DEFEND.md     # L4 內部驗證
 │   │   └── END.md        # L5 結論（管理者）
 │   └── DEV/
 │       ├── START.md
@@ -149,8 +149,8 @@ skills/shiftblame/
     └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；PM/DEV: 扁平
         ├── task.md         # L1 宣告
         ├── result.md       # L2 產出
-        ├── red.md          # L3 紅隊攻擊
-        ├── blue.md         # L4 藍隊防禦
+        ├── red.md          # L3 外部攻擊
+        ├── blue.md         # L4 內部驗證
         └── conclusion.md   # L5 結論
 
 .worktrees/                # git worktree 隔離目錄，.gitignore
