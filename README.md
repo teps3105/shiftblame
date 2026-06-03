@@ -17,7 +17,7 @@ _「這不是我的鍋。」_
 
 ## 簡介
 
-`shiftblame` 是一套 AI agents 流程定義框架，以純 Markdown 定義檔構建跨模型協作流程。
+`shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、紅隊、藍隊四個角色，以及 PM→DEV 兩角色的閘門管線。
 
 ---
 
@@ -25,216 +25,205 @@ _「這不是我的鍋。」_
 
 | 員工 | 身份 | 產出 |
 |------|------|------|
-| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾（不寫入部門正式產物） |
-| 執行者 | 目前環境 | result.md、conclusion.md |
+| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md（不寫入其他部門正式產物） |
+| 執行者 | 本環境子代理 | result.md |
 | 紅隊 | 本環境子代理 | red.md |
 | 藍隊 | 本環境子代理 | blue.md |
 
-| 目前環境 | 執行者 | 紅隊 | 藍隊 |
-|----------|--------|------|------|
-| 主開發環境 | 目前環境 | 本環境子代理 | 本環境子代理 |
-
 紅隊與藍隊一律使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-同一任務的攻防流程固定序列為：執行者寫入宣告 → 管理者向老闆確認宣告（L1 宣告-確認-執行閘門）→ 老闆同意後執行者寫入 result.md 工作成果（L2 產出）→ 管理者呼叫紅隊攻擊 result.md 並寫出 `red.md`（L3 紅隊）→ 管理者呼叫藍隊讀取 `task.md`（宣告段落）、`result.md`、`red.md` 並寫出 `blue.md`（L4 藍隊）→ 藍隊 PASS 後執行者依紅藍回饋寫入 `conclusion.md`（L5 結論）→ Result Check（五檔齊全）→ CHECKED → BossConfirm → PASSED。紅藍隊不得並行。
+## 五階段流程
 
-五階段 FAIL 狀態機：
+同一任務的攻防流程固定序列：
+
+1. **L1 宣告** — 管理者協調建立 task.md，向老闆確認（BossConfirm）
+2. **L2 產出** — 執行者寫入 result.md，向老闆確認（BossConfirm）
+3. **L3 紅隊** — 紅隊攻擊 result.md 並寫入 red.md
+4. **L4 藍隊** — 藍隊防禦並寫入 blue.md
+5. **L5 結論** — 管理者寫入 conclusion.md → Result Check（五檔齊全）→ BossConfirm → PASSED
+
+紅藍隊不得並行；藍隊不得在 red.md 完成前啟動。
+
+### FAIL 狀態機
+
 - L1 BossConfirm FAIL → 返回 L1 重新宣告
-- L4 藍隊 FAIL → 返回 L2 修復 result.md，重跑 L3→L4 直到 PASS
-- FAIL 修改不刪除，宣告段落不變
-
-每一輪任務開始前，管理者必須向老闆確認宣告內容，老闆同意後才能開始執行。全部門、每一輪都適用。
-
-全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。所有確認與回報都用繁體中文描述作品效果、可操作步驟與驗證結果，不用技術術語包裝成主要內容。面向老闆的詢問語言必須使用繁體中文，不得使用英文狀態機值作為選項文字。
+- L2 BossConfirm FAIL → 返回 DECLARED 更新宣告
+- L4 藍隊 FAIL → 返回 L2 原地修復 result.md，重跑 L3→L4（增量攻防，不刪除既有紀錄）
+- L5 BossConfirm FAIL → 退回 L1 重新宣告
+- FAIL 修改不刪除檔案，宣告段落鎖定不變
 
 ## 模式
 
-| 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
-|------|------|----------|------|----------|
-| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM→QA→DEV→QC | 新功能開發（預設） |
-| MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
+| 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
+|------|------|----------|------|:-----------:|----------|
+| AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 功能開發（預設）、快速迭代、原型驗證 |
+| MANUAL | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 需老闆明確確認的功能開發 |
+| PLAN | `main` | `<slug>/<NNN>/` | PM only | Manual | 僅規劃、研究、文件整理 |
+| OPERATE | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 
-FEATURE 模式為預設，走完整 PM→QA→DEV→QC 部門管線。MAIN 模式由老闆明確指定，直接在主分支上工作，不走部門管線，但仍跑五階段流程（task→result→red→blue→conclusion）。MAIN 模式的 slug 目錄為扁平結構（無 DEPT 層級），收尾流程簡化為 commit → push → 歸檔 → 更新。MAIN 模式的五階段 FAIL 狀態機與 FEATURE 模式一致。
+AUTO 為預設模式，BossConfirm 由管理者自行判斷品質不自動暫停。PLAN 和 OPERATE 直接在 main 分支工作，不建立功能分支和 worktree。MANUAL 和 AUTO 使用 `.worktrees/<slug>` 隔離功能分支。
 
-## 功能分支（FEATURE 模式）
+## PM 與 DEV
 
-管理者在第一次進入產品開發時建立 `feat/<slug>` 功能分支，專案計畫和品質保證不使用功能分支。
+| 角色 | 職責 |
+|------|------|
+| PM（專案計畫） | 需求研究、產品規格、品質定義、測試標準、驗收條件、前端設計（依 Open-design 環境操作） |
+| DEV（產品開發） | 技術實作、自行驗收、功能驗證、邊界測試 |
 
-- 功能分支生命週期：產品開發開始時建立 → 驗收上線通過後 merge --no-ff 到主分支 → push → 刪除
-- 所有程式碼變更、README.md 更新都在功能分支上
-- `.shiftblame/` 產物不受分支管理（已被 .gitignore 排除）
+PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion.md。result.md 為目標導向產出（不限固定段式格式）。
 
-## 紅藍隊模式
+## 宣告-確認-執行閘門
 
-紅藍隊派工方式固定為本環境子代理：
+每一輪任務開始前，管理者必須向老闆確認宣告內容，老闆同意後才能執行。全部門、每一輪都適用。
 
-| 模式 | 紅隊 | 藍隊 | 說明 |
-|------|------|------|------|
-| `local` | 本環境子代理 | 本環境子代理 | 固定模式，依序產出紅隊與藍隊 |
+## 面向老闆互動
 
-## 部門
+全流程預設老闆不懂技術。所有確認與回報使用繁體中文、作品效果、可操作步驟與驗證結果，不用技術術語。狀態機值全部大寫（YAML、狀態描述）。面向老闆的選項文字使用中文（「同意」「不同意」「調整」），不得使用英文狀態機值。
 
-| # | 部門 | 類型 |
-|:-:|:----:|:----:|
-| 0 | PM | 專案計畫 |
-| 1 | QA | 品質保證 |
-| 2 | DEV | 產品開發 |
-| 3 | QC | 驗收上線 |
+`BossPreview`：老闆可多次要求觀看目前作品，管理者提供 URL/指令/截圖/操作證據與中文摘要。不取代正式 BossConfirm。
 
-| 部門 | `result.md` 內容型別 |
-|:----:|:----------------------:|
-| PM | 需求釐清 + 市場研究 + 產品規格 |
-| QA | 安全標準 + 操作標準 + 系統規格 |
-| DEV | 技術規劃 + 技術設計 + 技術實作 |
-| QC | 驗收計畫 + 驗收報告 + 驗收結論 |
+## 功能分支（AUTO/MANUAL 模式）
 
-需求釐清/市場研究/產品規格、安全標準/操作標準/系統規格、技術規劃/技術設計/技術實作、驗收計畫/驗收報告/驗收結論皆不是額外檔名，而是各部門 `result.md` 承載的內容章節；不得建立同名 `.md` 檔作為替代產物。
+管理者在第一次進入 DEV 前建立 `feat/<slug>` 功能分支：
 
-詳見 `DEPT/<DEPT>/L1-L5.md`。功能開發必須先經專案計畫在 `result.md` 產出需求釐清、市場研究、產品規格，確認本輪使用者想實現的功能，並調查建立標準前需要知道的市場研究、通用方法、設計模式、CVE 或版本差異等背景。品質保證再依專案計畫結果產出安全標準、操作標準、系統規格，並承擔原專案計畫的產品規格、任務拆解與實作規劃職責。進入產品開發前，管理者必須詢問老闆想先看到品質保證結果中的哪個功能被做出來，並用中文寫明本回合實際產品開發的可見功能；產品開發必須先在 `task.md` 建立技術規劃、技術設計、技術實作的前置內容，再依此開發。
+```
+git worktree add .worktrees/<slug> -b feat/<slug>
+```
 
-## 閘門
-
-| 閘門 | 條件 |
-|:----:|------|
-| PM→QA | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
-| QA→DEV | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
-| DEV→工程收尾 | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
-| 工程收尾→驗收上線 | 管理者確認清理無殘留 → 建立驗收上線任務（邏輯驗證+部署+E2E） |
-| 驗收上線→合併 | L1 宣告 → BossConfirm → L2 result.md → L3 紅隊 → L4 藍隊 → L5 conclusion.md → Result Check → CHECKED → BossConfirm → PASSED |
-| 合併→歸檔 | merge --no-ff 完成 → push 完成 → 功能分支已刪除 → 歸檔 |
-| 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
-| 老闆強制停止 | 選項 A（commit 後強制收尾）/ 選項 B（全部捨棄） |
-
-`BossConfirm` 為跨環境老闆確認機制：支援內建提問工具時使用內建提問工具；一般對話環境則在目前對話中提出明確確認問題並等待使用者回覆。
-
-DEV 期間另有 `BossPreview`：老闆可多次要求觀看目前作品、驗證結果或下一個想調整的效果；管理者提供 URL/指令/截圖/操作證據與中文摘要。`BossPreview` 不取代正式 `BossConfirm`，也不代表 DEV 閘門通過。
-
-任務發布前管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才可繼續。每一輪、全部門都適用。
+- 功能分支生命週期：DEV 開始時建立 → PM/DEV 皆 PASSED 後 merge --no-ff → push → worktree remove → branch delete
+- 所有程式碼變更都在 `.worktrees/<slug>` 中的功能分支上
+- `.shiftblame/` 位於主工作目錄，不在 worktree 內
 
 ## 收尾檢查
 
-收尾前必須確認下列項目，不符合則 FAIL 原地重做（驗收上線不修改程式碼）：
+收尾前必須確認：
 
-- 無殭屍程序、背景 dev server、測試服務或未關閉的 watcher。
-- 無開發殘留檔案進入主分支，例如 scratch、demo、prototype、debug output、臨時設定。
-- 無測試文件或測試產物進入主分支，除非它們是正式測試資產。
-- 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔。
-- `.shiftblame/`、本地私密設定不納入版本控制。
-- 開發中的筆記、臨時待辦、預覽回饋與退回原因只維護於 `.shiftblame/<slug>/SLUG.md`。
-- `.shiftblame/ROADMAP.md` 只在歸檔後更新為穩定產品路線圖：記錄實際完成結果與後續候選，不得當成工作日誌。
-- README.md 已在開發任務中更新並通過紅藍隊審查。
-- 驗收上線閘門通過後，slug 通訊文件夾直接搬移至 `.shiftblame/archive/`。
+- 無殭屍程序、背景 dev server、測試服務或 watcher
+- 無開發殘留進入主分支（scratch、demo、prototype、debug output、臨時設定）
+- 無多餘 build artifact、coverage report、log、cache、截圖、錄影、下載檔
+- 臨時檔案存放於 `.shiftblame/tmp/`（由老闆自行清理）
+- `.shiftblame/` 不納入版本控制
+- 開發中的筆記只維護於 `.shiftblame/<slug>/SLUG.md`
+- README.md 已更新並通過紅藍隊審查（開發任務中）
 
 ---
 
-## 檔案結構
+## 定義檔結構
 
 ```
 skills/shiftblame/
-├── SKILL.md          # 框架入口
-├── GATE.md           # 狀態機閘門定義
-├── MANAGER.md        # 管理者定義
-├── STAFF.md          # 員工呼叫規格
-└── DEPT/
-    ├── PM/
-    │   ├── L1.md     # 專案計畫執行者工作宣告
-    │   ├── L2.md     # 專案計畫執行者結果產出
-    │   ├── L3.md     # 專案計畫紅隊攻擊
-    │   ├── L4.md     # 專案計畫藍隊防禦
-    │   └── L5.md     # 專案計畫執行者結論
-    ├── QA/
-    │   ├── L1.md     # 品質保證執行者工作宣告
-    │   ├── L2.md     # 品質保證執行者結果產出
-    │   ├── L3.md     # 品質保證紅隊攻擊
-    │   ├── L4.md     # 品質保證藍隊防禦
-    │   └── L5.md     # 品質保證執行者結論
-    ├── DEV/
-    │   ├── L1.md     # 產品開發執行者工作宣告
-    │   ├── L2.md     # 產品開發執行者結果產出
-    │   ├── L3.md     # 產品開發紅隊攻擊
-    │   ├── L4.md     # 產品開發藍隊防禦
-    │   └── L5.md     # 產品開發執行者結論
-    └── QC/
-        ├── L1.md     # 驗收上線執行者工作宣告
-        ├── L2.md     # 驗收上線執行者結果產出
-        ├── L3.md     # 驗收上線紅隊攻擊
-        ├── L4.md     # 驗收上線藍隊防禦
-        └── L5.md     # 驗收上線執行者結論
+├── SKILL.md              # 框架入口（導流）
+├── GATE/                 # 閘門檢查與狀態機（11 檔）
+│   ├── INIT.md           # 初始化
+│   ├── DISPATCH.md       # 派工檢查
+│   ├── DECLARE.md        # 宣告規則
+│   ├── STATE.md          # 狀態機定義
+│   ├── BOSS.md           # BossConfirm 規則
+│   ├── REVIEW.md         # 紅藍隊審查
+│   ├── WORKTREE.md       # worktree 閘門
+│   ├── ARCHIVE.md        # 歸檔
+│   ├── NEWDIALOG.md      # 開新對話
+│   ├── REVERT.md         # 退回/回溯
+│   └── CONTEXT.md        # 上下文管理
+├── MANAGE/               # 管理者協調與操作（9 檔）
+│   ├── SLUG.md           # SLUG.md 維護
+│   ├── CLOSE.md          # 收尾操作
+│   ├── PIPELINE.md       # 管線閘門表
+│   ├── DECIDE.md         # 模式選擇
+│   ├── COMMUNICATE.md    # 溝通規範
+│   ├── PROTECT.md        # 流程保護
+│   ├── WORKTREE.md       # worktree 生命週期
+│   ├── GRAPH.md          # 業務拓樑圖
+│   └── REVERT.md         # 退回管理
+├── EXECUTE/              # 子代理派工 + 模式定義（9 檔）
+│   ├── AGENT.md          # 執行者呼叫規則
+│   ├── DISPATCH.md       # 紅藍隊派工
+│   ├── MAPPING.md        # 角色派工映射
+│   ├── PERMISSION.md     # 讀寫權限
+│   ├── TEMPLATE.md       # 模板與工作區規範
+│   ├── AUTO.md           # AUTO 模式定義
+│   ├── MANUAL.md         # MANUAL 模式定義
+│   ├── PLAN.md           # PLAN 模式定義
+│   └── OPERATE.md        # OPERATE 模式定義
+├── ROLE/                 # 角色定義（2 檔）
+│   ├── PM.md             # 專案計畫
+│   └── DEV.md            # 產品開發
+└── TOOLS/                # 工具包
+    ├── OPEN-DESIGN.md    # Open Design 操作指南
+    └── NEXGAME.md        # Nexgame 遊戲開發資源
 ```
 
-## 文件結構
-
-FEATURE 模式：
+## 工作目錄結構
 
 ```
-.shiftblame/
-├── REPO.md               # 專案現狀（本地私密）
-├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅歸檔後更新）
-├── archive/              # 歷史紀錄（已完成任務）
+.shiftblame/               # 本地私密，.gitignore
+├── REPO.md               # 專案現狀
+├── ROADMAP.md            # 穩定產品路線圖（僅歸檔後更新）
+├── PRD/                  # 產品需求文件（非強制）
+├── SOP/                  # 標準作業程序（非強制）
+├── archive/              # 已歸檔 slug
+├── tmp/                  # 臨時檔案
 └── <slug>/
-    ├── SLUG.md           # 本輪開發筆記（開發中唯一工作日誌）
-    └── <DEPT>/<NNN>/
-        ├── task.md
-        ├── result.md     # 執行者，依部門承載三段式文件章節
-        ├── red.md        # 紅隊
-        ├── blue.md       # 藍隊
-        └── conclusion.md # 執行者，依紅藍回饋寫入結論
-```
+    ├── SLUG.md            # 開發筆記
+    └── <ROLE>/<NNN>/       # AUTO/MANUAL: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
+        ├── task.md         # L1 宣告
+        ├── result.md       # L2 產出
+        ├── red.md          # L3 紅隊攻擊
+        ├── blue.md         # L4 藍隊防禦
+        └── conclusion.md   # L5 結論
 
-MAIN 模式：
-
-```
-.shiftblame/
-├── REPO.md
-├── ROADMAP.md
-├── archive/
-└── <slug>/
-    ├── SLUG.md
-    └── <NNN>/
-        ├── task.md
-        ├── result.md     # 執行者，直接描述工作成果
-        ├── red.md        # 紅隊
-        ├── blue.md       # 藍隊
-        └── conclusion.md # 執行者，依紅藍回饋寫入結論
+.worktrees/                # git worktree 隔離目錄，.gitignore
+└── <slug>/                # feat/<slug> 分支的工作樹
 ```
 
 ---
 
 ## 安裝
 
+### Skills symlink
+
 主開發環境使用 skills symlink 安裝：將本 repo 的 `skills/shiftblame` 連結到各 AI 環境的 skills 目錄。
 
-**Claude**：
+**Claude（bash）**：
 
 ```bash
-# Claude 使用 skills/ 目錄
 mkdir -p ~/.claude/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.claude/skills/shiftblame
 ```
 
-Windows PowerShell 可用 junction，不需要系統管理員權限：
+**Claude（Windows PowerShell）**：
 
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
 cmd /c mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftblame"
 ```
 
-**Codex**：
+**Codex（bash）**：
 
 ```bash
-# Codex 使用 skills/ 目錄
 mkdir -p ~/.codex/skills
 ln -s ~/shiftblame/skills/shiftblame ~/.codex/skills/shiftblame
 ```
 
-Windows PowerShell 可用 junction，不需要系統管理員權限：
+**Codex（Windows PowerShell）**：
 
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills" | Out-Null
 cmd /c mklink /J "%USERPROFILE%\.codex\skills\shiftblame" "D:\shiftblame\skills\shiftblame"
 ```
 
-也可以直接複製到專案目錄內，讓該專案自行攜帶技能設定：
+### Managed block
+
+安裝後，管理者在全域入口檔寫入 managed block：
+
+- **Claude**：`~/.claude/CLAUDE.md`
+- **Codex**：`$CODEX_HOME/AGENTS.md`
+
+重啟對應環境讓新技能被載入。SKILL.md description 為 managed block 的唯一來源，三份檔案必須保持一致。
+
+### 專案內安裝（替代方案）
+
+也可直接複製到專案目錄內，讓該專案自行攜帶技能設定：
 
 ```bash
 # 在目標專案根目錄執行
@@ -243,27 +232,15 @@ cp -R ~/shiftblame/skills/shiftblame .claude/skills/shiftblame
 cp -R ~/shiftblame/skills/shiftblame .codex/skills/shiftblame
 ```
 
-Windows PowerShell：
-
-```powershell
-# 在目標專案根目錄執行
-New-Item -ItemType Directory -Force .claude\skills, .codex\skills | Out-Null
-Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .claude\skills\shiftblame
-Copy-Item -Recurse -Force D:\shiftblame\skills\shiftblame .codex\skills\shiftblame
-```
-
-安裝後，管理者依 `GATE.md` 全域入口安裝段落在主開發環境的全域入口檔寫入 managed block。重啟對應環境讓新技能被載入。
+---
 
 ## Windows 編碼
 
-本技能與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存。Windows PowerShell 讀取含中文檔案時必須明確指定 UTF-8，例如：
+本技能與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存。Windows PowerShell 讀取含中文檔案時必須明確指定 UTF-8：
 
 ```powershell
 Get-Content -Encoding UTF8 .\skills\shiftblame\SKILL.md
-Get-Content -Encoding UTF8 .\.shiftblame\<slug>\<DEPT>\<NNN>\task.md
 ```
-
-不要在 Windows PowerShell 使用未指定 `-Encoding UTF8` 的 `Get-Content`、`type` 或 `cat` 讀取含中文 Markdown；部分環境會依系統預設編碼解讀，導致繁體中文亂碼。
 
 ## 自訂
 
