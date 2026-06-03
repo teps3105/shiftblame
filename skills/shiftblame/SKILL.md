@@ -41,8 +41,8 @@ skills/shiftblame/
 ├── MANAGE.md             # 管理者協調與操作
 ├── ROLE/                 # 角色上下文（含五階段產出格式）
 │   ├── PM/
-│   │   ├── START.md      # L1 宣告（管理者）
-│   │   ├── EXECUTE.md    # L2 產出（子代理）
+│   │   ├── START.md      # L1 實作
+│   │   ├── EXECUTE.md    # L2 驗收
 │   │   ├── ATTACK.md     # L3 外部攻擊
 │   │   ├── DEFEND.md     # L4 內部驗證
 │   │   └── END.md        # L5 結論（管理者）
