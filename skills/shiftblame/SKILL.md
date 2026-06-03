@@ -1,250 +1,93 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM(預設RAPID模式), 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→閘門通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, MAIN(MAIN模式/主分支模式)→使用MAIN模式直接在主分支修復, RAPID(RAPID模式/快速迭代/快速模式/原型)→使用RAPID模式PM→DEV→PM→DEV→收尾(預設), FEATURE(FEATURE模式/完整流程/完整管線)→使用FEATURE模式PM→DEV→PM→DEV→收尾(由老闆指定), RAPID-AUTO→RAPID模式全自動子模式, 業務拓樑圖→Mermaid圖表追蹤專案進度, worktree→功能分支隔離機制, 開新對話→slug收尾後開新對話恢復上下文, 載入(PM/DEV/專案計畫/產品開發/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
+description: "AI Agents 協作框架。Use when: 功能創建(開始/start/開工/動工/go/begin)→建立新slug啟動PM(預設AUTO模式), 恢復(恢復/restore/resume)→讀取未歸檔SLUG.md恢復工作狀態, 推進(推進/advance)→執行閘門推進流程, 補強(補強/reinforce)→同部門原地修復, 打回(打回/reject)→退回上游部門, 回溯(回溯/rollback)→撤回該部門所有變更回到該部門001, 收尾(收尾/finalize)→閘門通過後執行收尾流程, 歸檔(歸檔/archive)→搬移slug至archive, 退回(退回)→依情境原地修復或打回, PLAN(PLAN模式/計畫模式)→使用PLAN模式僅PM在主分支執行, MANUAL(MANUAL模式/手動模式/完整流程/完整管線)→使用MANUAL模式PM→DEV→PM→DEV→收尾(由老闆指定), OPERATE(OPERATE模式/執行模式)→使用OPERATE模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→DEV→PM→DEV→收尾(預設), 業務拓樑圖→Mermaid圖表追蹤專案進度, worktree→功能分支隔離機制, 開新對話→slug收尾後開新對話恢復上下文, 載入(PM/DEV/專案計畫/產品開發/管理者/執行者/紅隊/藍隊/BossConfirm/BossPreview/閘門/攻防/task.md/result.md/red.md/blue.md/conclusion.md/SLUG.md/EXECUTED/RED/BLUE/CONCLUSION/CHECKED/PASSED)→載入技能."
 ---
 # shiftblame — AI Agents 協作框架
-使用功能分支模式：管理者在第一次進入產品開發時建立 `feat/<slug>` 分支，專案計畫不使用功能分支。紅隊與藍隊固定使用本環境子代理，不使用外部品牌工具或跨環境審查。
 
-## 角色
-| 員工 | 身份 | 產出 |
+管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。紅藍隊固定使用本環境子代理，不使用外部品牌工具。
+
+## 角色與派工
+
+| 員工 | 身份 | 詳見 |
 |------|------|------|
-| 管理者 | 目前環境 | 協調、派工、管線、閘門、收尾、conclusion.md、task.md 宣告 |
-| 執行者 | 本環境子代理（預設，管理者可根據上下文使用情況隨時調整為目前環境直接執行） | result.md |
-| 紅隊 | 本環境子代理 | red.md |
-| 藍隊 | 本環境子代理 | blue.md |
+| 管理者 | 目前環境 | MANAGE/ |
+| 執行者 | 本環境子代理 | EXECUTE/MAPPING.md |
+| 紅隊 | 本環境子代理 | EXECUTE/DISPATCH.md |
+| 藍隊 | 本環境子代理 | EXECUTE/DISPATCH.md |
 
-固定呼叫映射：
+角色職責詳見 `ROLE/PM.md`、`ROLE/DEV.md`。派工規格詳見 `EXECUTE/MAPPING.md`。
 
-| 目前環境 | 執行者 | 紅隊 | 藍隊 |
-|----------|--------|------|------|
-| 主開發環境 | 本環境子代理（預設，管理者可根據上下文使用情況隨時調整為目前環境直接執行） | 本環境子代理 | 本環境子代理 |
+## 入口導流
 
-詳見 `MANAGER.md` `STAFF.md`。執行者預設使用本環境子代理，管理者可根據上下文使用情況隨時調整為目前環境直接執行。紅藍隊固定使用本環境子代理，不得改用外部品牌工具。
+Agent 載入後依狀態機與當前情境讀取所需檔案，不需一次讀取全部定義。
 
-## 溝通原則
+| 情境 | 必讀 |
+|------|------|
+| 首次載入 / 初始化 | `GATE/INIT.md` → 確認 REPO.md/ROADMAP.md 存在 |
+| 啟動 slug | `MANAGE/SLUG.md`（建立筆記）→ `GATE/DISPATCH.md`（派工） |
+| 進入閘門 | `GATE/STATE.md`（狀態機）→ `GATE/BOSS.md`（BossConfirm） |
+| 執行階段 | L1→`GATE/DECLARE.md`、L2→對應角色檔、L3→`EXECUTE/DISPATCH.md`、L5→`GATE/ARCHIVE.md` |
+| 退回/異常 | `GATE/REVERT.md` + `MANAGE/REVERT.md` |
+| 收尾 | `MANAGE/CLOSE.md` + `GATE/ARCHIVE.md` |
+| 模式選擇 | `MANAGE/DECIDE.md`（PLAN/MANUAL/OPERATE/AUTO）→ `EXECUTE/<MODE>.md` |
+| worktree | `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md` |
+| 開新對話 | `MANAGE/CLOSE.md` + `GATE/NEWDIALOG.md` |
+| 讀寫權限 | `EXECUTE/PERMISSION.md` |
+| 業務拓樑圖 | `MANAGE/GRAPH.md` |
 
-全流程預設老闆不懂技術，只是一個想用 AI 實現作品的人。對老闆說明時必須使用繁體中文與作品語言，說清楚「現在會看到什麼、可以操作什麼、這回合要完成哪個功能、如何確認它有用」。技術名詞、架構名詞、測試名詞只能作為內部工作細節，不得包裝成給老闆確認的主要內容。
+## 角色定義
 
-## 部門
-| # | 部門 | 類型 |
-|:-:|:----:|:----:|
-| 0 | PM | 專案計畫（含品質定義） |
-| 1 | DEV | 產品開發（含自行驗收） |
-
-詳見 `DEPT/` 各部門子目錄。
-
-## PRD 與 SOP
-
-`.shiftblame/PRD/` 存放產品需求文件（Product Requirements Document），`.shiftblame/SOP/` 存放標準作業程序（Standard Operating Procedure）。兩個目錄為本地私密，不納入版本控制。
-
-PRD/SOP 的來源不限：用戶可自行撰寫，管理者可協助整理，PM/DEV 在流程中也可依需求產出寫入。PRD/SOP 不受部門管線閘門約束，不需走五階段流程。
-
-| 目錄 | 用途 | 讀取者 | 寫入者 |
-|------|------|--------|--------|
-| `.shiftblame/PRD/` | 產品需求文件、功能規格、市場研究、使用者需求 | PM、DEV（研究需求、制定規範時參照） | 用戶、管理者、PM、DEV |
-| `.shiftblame/SOP/` | 標準作業程序、開發規範、測試流程、部署流程 | DEV（開發時必須遵循） | 用戶、管理者、PM、DEV |
+PM（專案計畫）：`ROLE/PM.md`
+DEV（產品開發）：`ROLE/DEV.md`
 
 ## 模式
 
-| 模式 | 分支 | 目錄結構 | 管線 | 適用情境 |
-|------|------|----------|------|----------|
-| RAPID | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾 | 功能開發（預設）、快速迭代、原型驗證 |
-| FEATURE | `feat/<slug>` | `<slug>/<DEPT>/<NNN>/` | PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾 | 需要討論確認的功能開發（由老闆指定） |
-| MAIN | `main` | `<slug>/<NNN>/` | 無部門管線 | 小型修復、文件更新、配置變更 |
+四模式形式定義見 `EXECUTE/PLAN.md`、`EXECUTE/MANUAL.md`、`EXECUTE/OPERATE.md`、`EXECUTE/AUTO.md`。模式選擇見 `MANAGE/DECIDE.md`。
 
-三模式選擇規則：功能開發一律預設使用 RAPID 模式（不需老闆指定）；僅在老闆明確指定需要討論確認的功能開發時使用 FEATURE 模式；日常文件維護、生產環境部署、小型修復、配置變更等操作一律使用 MAIN 模式。
+## PRD / SOP
 
-RAPID 與 FEATURE 模式管線結構相同（PM→DEV），差異在於：RAPID 是預設模式，可包含 RAPID-AUTO 子模式（老闆完全授權 + 存在預定執行序列時自動觸發，BossConfirm 自動通過、自動修復閘門、攻防上限 3 輪、迭代上限 2 輪）；FEATURE 需要老闆明確指定，BossConfirm 手動確認，無迭代上限與自動修復閘門。詳見 GATE.md 各模式段落。
-
-MAIN 模式特徵：
-- 直接在主分支工作，不建立功能分支
-- 簡化目錄結構（無 DEPT 層級，扁平 `<slug>/<NNN>/`）
-- 仍跑五階段流程（task→result→red→blue→conclusion）
-- 無部門管線（不走 PM→DEV 部門管線）
-- 無上游/下游概念
-- result.md 無固定段式內容要求，直接描述工作成果
-- 收尾：確認所有變更已 commit → push → 歸檔 → 更新 REPO.md/ROADMAP.md（首次 commit 在 result.md 產出前完成）
-- task.md 使用 `mode: main` 欄位取代 `department` 欄位
-
-RAPID 模式特徵：
-- 使用功能分支（`feat/<slug>`）+ worktree 隔離
-- 目錄結構同 FEATURE（`<slug>/<DEPT>/<NNN>/`），但僅使用 PM 和 DEV 目錄
-- 簡化管線：PM（含品質定義）→DEV（含自行驗收）→PM→DEV→收尾，PM 吸收 QA 職責、DEV 吸收 QC 職責
-- PM 和 DEV 各自跑完整五階段流程（task→result→red→blue→conclusion）
-- PM 與 DEV 交替迭代，直到老闆確認成品滿意才進入收尾
-- PM 吸收 QA：負責品質定義、測試標準、驗收條件，一併寫入 result.md
-- DEV 吸收 QC：負責自行驗收、功能驗證，依 PM 定義的品質標準逐條確認
-- 目標導向文件：不要求固定段式格式，result.md 專注於「本輪達成什麼、怎麼驗證」，不追求流於形式的模板填寫
-- 收尾：merge --no-ff → push → worktree remove → branch delete → 歸檔 → 更新 REPO.md/ROADMAP.md
-- task.md 使用 `mode: rapid` 欄位
-- RAPID-AUTO 子模式：當老闆完全授權且存在預定執行序列（RAPID.md）時觸發，BossConfirm 自動通過、自動修復閘門、紅藍攻防上限 3 輪、迭代上限 PM/002 + DEV/002。詳見 GATE.md RAPID-AUTO 段落。
-
-## 開新對話策略
-
-每個 slug 完成收尾歸檔後，管理者輸出完成摘要並停止處理下一個 slug 的工作，建議老闆開啟新對話。下一個 slug 在全新對話中啟動（透過 SLUG.md + REPO.md + ROADMAP.md 恢復上下文）。
-
-目的：避免長對話中上下文累積導致的品質下降；確保每個 slug 都有乾淨的上下文環境；透過文件恢復上下文，而非依賴對話歷史。
-
-適用模式：RAPID（含 RAPID-AUTO）和 FEATURE 模式每個 slug 完成後都應開新對話；MAIN 模式下管理者評估上下文用量，若未達閾值可選擇不開新對話。詳見 GATE.md「開新對話閘門」段落。
-
-## worktree 隔離
-
-使用功能分支 `feat/<slug>` + worktree 隔離。功能分支在第一次進入 DEV 時由管理者在 worktree 中建立。
-
-建立命令：`git worktree add <worktree-path> -b feat/<slug>`
-
-worktree 路徑建議與主 repo 同層級目錄（`../<slug>-worktree`），不得包含在版本控制範圍內。
-
-`.shiftblame/` 位於主工作目錄中，不在 worktree 內。所有 slug 的流程文件（SLUG.md、task.md、result.md、red.md、blue.md、conclusion.md）都存放在主工作目錄的 `.shiftblame/` 下。worktree 僅用於程式碼開發（`feat/<slug>` 分支）。
-
-適用模式：RAPID（含 RAPID-AUTO）和 FEATURE 模式必須使用 worktree；MAIN 模式不使用 worktree（直接在 main 分支工作）。詳見 GATE.md「worktree 閘門」段落。
-
-## 業務拓樑圖（可選）
-
-業務拓樑圖是一種以 Mermaid 圖表呈現專案中已完成與未完成 slug 整體關係的可選機制。追蹤三個維度：執行序列、依賴關係、PRD 消耗關係。
-
-維護位置建議為 `.shiftblame/GRAPH.md`（本地私密，不納入版本控制）。多 slug 專案建議使用；單一 slug 專案無需建立。管理者負責維護準確性，在收尾流程時一併更新。
-
-適用情境：RAPID-AUTO 有預定執行序列時（強烈建議）、大型專案有多個功能模組需追蹤進度時、需要向老闆展示專案全貌時。
-
-## PRD 固化流程
-
-每個 slug 收尾後，將其消耗的 PRD 設計決策固化為獨立 SOP 文件至 `.shiftblame/SOP/`。此流程主要適用於 RAPID-AUTO 子模式，但所有模式都可選擇執行。無 PRD 的專案不受此流程約束。
-
-固化步驟：識別消耗的 PRD → 提取已實作驗證的設計決策 → 生成 SOP 文件 → 不動原文件（PRD 保留完整需求歷史）→ 記錄狀態至 `.shiftblame/PRD/STATUS.md`。
-
-## 定義檔 / gitignore
-`MANAGER.md` `STAFF.md` `DEPT/{PM,DEV}/`（每部門 L1-L5）
-
-`.shiftblame/` 為本地工作目錄，須列入 `.gitignore` 不納入版本控制。開發中的工作筆記、臨時待辦、BossPreview 回饋、退回原因與本輪決策一律維護在 `.shiftblame/<slug>/SLUG.md`；不得寫入 `.shiftblame/ROADMAP.md`。REPO.md 記錄「完成了什麼」（已完成功能詳情、技術棧、架構演進），本地私密。ROADMAP.md 記錄「未來預計要做什麼」（後續計畫、已知問題、待改進項目），本地私密。兩份文件語意不可交叉，只在歸檔後更新。`.shiftblame/GRAPH.md` 為業務拓樑圖（可選機制，追蹤 slug 執行序列、依賴關係、PRD 消耗關係），本地私密，不納入版本控制。
-
-全域入口檔的 managed block 由管理者依 `GATE.md` 全域入口安裝段落寫入或更新。不得依賴工具專屬設定檔觸發流程。
-
-## 閘門狀態機
-
-管理者依 `GATE.md` 定義的狀態機執行閘門檢查。五階段 FAIL 狀態機：L1 BossConfirm FAIL→返回 L1 重新宣告；L2 BossConfirm FAIL（result 確認）→返回 DECLARED，更新 task.md 宣告段落後重新 BossConfirm → APPROVED → EXECUTED → BossConfirm；L4 藍隊 FAIL→退回 L2 原地修復（EXECUTED），修復後 BossConfirm → L3→L4→L5，採增量攻防（新回合追加在既有紀錄之後，不得刪除原始攻防紀錄，見 L4 FAIL 修復閘門）；L5 BossConfirm FAIL→退回 L1 重新宣告。詳見 `GATE.md`。
-
-**階段指標規則**：管理者在所有面向老闆的宣告與狀態報告中，必須使用「現在是 L*階段（階段名稱）」作為唯一階段指標（L1 宣告、L2 產出、L3 紅隊攻擊、L4 藍隊防禦、L5 結論）。不得以文件名稱（task.md、result.md、red.md、blue.md、conclusion.md）作為階段指標。
-
-每一輪任務開始前，管理者必須向老闆確認宣告內容（宣告-確認-執行閘門），老闆同意後才能開始執行。全部門、每一輪都適用。result.md 產出後，管理者必須向老闆 BossConfirm 確認無需修改，通過後才呼叫紅隊。FAIL 修改不刪除。L4 藍隊 FAIL 原地修復不觸發 DECLARED 狀態轉移，不更新 task.md 宣告段落，執行者修正 result.md 後 BossConfirm → L3→L4→L5；L2 BossConfirm FAIL 時必須更新宣告段落。增量攻防機制（在既有 red.md/blue.md 後追加新回合）本身不要求修改宣告段落。DEV 適用單循環，與 PM 一致。L1 即為計畫宣告，L1↔L2 迭代循環直到老闆滿意才進入紅藍。BossConfirm PASSED 後管理者判斷分支：推進下一部門或同部門新執行切片（新 NNN）。管理者在全流程中持續監控上下文用量（見 GATE.md「上下文監控與壓縮」），於適當時機直接強制觸發壓縮上下文，避免工作到一半因上下文爆炸而中斷。一個 NNN 可以多次提交。MAIN 模式適用簡化閘門（見 `GATE.md` MAIN 模式段落）。
-
-## 格式檢查
-
-載入技能時，管理者必須依操作標準 17 檢查 REPO.md 和 ROADMAP.md 是否符合標準格式（模板定義於系統規格 31 和系統規格 32）。若不符合，管理者必須先整理為標準格式再繼續。不得在非標準格式的文件上執行其他操作。
-
-## 權限 / ignore 規則
-
-所有管理者與員工在讀寫 `.shiftblame/` 與 `skills/shiftblame/` 的 Markdown 檔案時，讀寫皆優先使用內建工具，若無法使用再退回 shell 指令：
-
-- 讀取（優先，Claude）：Read Tool（內建檔案讀取工具）
-- 讀取（優先，Codex 桌面環境）：`Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS/Git Bash）
-- 讀取（備援，Linux/macOS/Git Bash）：`cat`、`sed -n`
-- 讀取（備援，Windows PowerShell）：`Get-Content -Encoding UTF8`
-- 檢查/列檔：`test -f`、`find`、`Test-Path`、`Get-ChildItem`
-- 寫入（優先，Claude）：Write/Edit Tool（內建檔案寫入/編輯工具）
-- 寫入（優先，Codex 桌面環境）：`apply_patch` 系列工具（`apply_patch_add_file` / `apply_patch_update_file` / `apply_patch_replace_file` / `apply_patch_batch`），或 `Out-File -Encoding UTF8`（PowerShell）
-- 寫入（備援）：shell heredoc 或目前環境允許的 patch/write 工具
-- 禁止：在 Windows PowerShell 以未指定 `-Encoding UTF8` 的 `Get-Content`、`type`、`cat` 讀取含中文的 Markdown 檔案
-
-派工 prompt 必須明確寫入讀寫規則（環境自適應）：Claude 環境優先使用 Read Tool 讀取、Write/Edit Tool 寫入；Codex 桌面環境使用 `Get-Content -Encoding UTF8`（PowerShell）或 `cat`（Linux/macOS）讀取，`apply_patch` 系列工具或 `Out-File -Encoding UTF8` 寫入。若內建工具無法使用，再以 shell 指令處理。
-
-確認 `.shiftblame/REPO.md` 與 `.shiftblame/ROADMAP.md` 存在，不存在 → 依 `GATE.md` 初始化或報告「尚未初始化」。關鍵字觸發流程。
+`.shiftblame/PRD/` 存放產品需求文件（非強制參照）。`.shiftblame/SOP/` 存放標準作業程序（DEV 開發時遵循）。兩者為本地私密，不納入版本控制。PRD/SOP 不受閘門約束。
 
 ## 文件結構
 
 ```
-.shiftblame/
-├── REPO.md               # 專案現狀（本地私密）
-├── ROADMAP.md            # 穩定產品路線圖（本地私密，僅收尾整理）
-├── PRD/                  # 產品需求文件（本地私密，用戶可自行撰寫）
-├── SOP/                  # 標準作業程序（本地私密，用戶可自行撰寫）
-├── archive/              # 歷史紀錄（已完成任務）
-├── tmp/                  # 臨時工作目錄（老闆自行清理）
+.shiftblame/               # 本地私密，.gitignore
+├── REPO.md               # 專案現狀
+├── ROADMAP.md            # 穩定產品路線圖
+├── PRD/                  # 產品需求文件（非強制）
+├── SOP/                  # 標準作業程序（非強制）
+├── archive/              # 已歸檔 slug
+├── tmp/                  # 臨時檔案
+├── worktree/<slug>/      # worktree 隔離目錄（feat/<slug> 分支）
 └── <slug>/
-    ├── SLUG.md            # 本輪開發筆記（開發中唯一工作日誌）
-    └── <DEPT>/
-        └── <NNN>/
+    ├── SLUG.md            # 開發筆記
+    └── <ROLE>/<NNN>/       # MANUAL/AUTO: ROLE=PM 或 DEV；PLAN/OPERATE: 扁平
 ```
 
-MAIN 模式目錄結構：
+worktree 路徑：`.shiftblame/worktree/<slug>/`，分支 `feat/<slug>`。僅 MANUAL/AUTO 使用；PLAN/OPERATE 不建立。詳見 `GATE/WORKTREE.md` + `MANAGE/WORKTREE.md`。
 
-```
-.shiftblame/
-├── REPO.md
-├── ROADMAP.md
-├── PRD/
-├── SOP/
-├── archive/
-├── tmp/
-└── <slug>/
-    ├── SLUG.md
-    └── <NNN>/
-```
+## 定義檔
 
-## 臨時工作目錄
-
-所有流程中產生的臨時檔案（暫存、中間產物、除錯輸出、截圖、錄影、下載等）一律存放在 `.shiftblame/tmp/`，不得在專案根目錄建立臨時檔案。不自動清理，由老闆自行決定何時清理。
-
-```
-skills/shiftblame/
-├── SKILL.md
-├── GATE.md               # 狀態機閘門定義
-├── MANAGER.md
-├── STAFF.md
-├── TOOLS/                 # 工具包（各領域工具箱）
-│   ├── OPEN-DESIGN.md     # Open Design 設計工具包
-│   └── NEXGAME.md         # Nexgame 遊戲開發工具包
-└── DEPT/
-    ├── PM/
-    └── DEV/
-```
+| 目錄 | 說明 |
+|------|------|
+| GATE/ | 閘門檢查與狀態機（11 檔） |
+| MANAGE/ | 管理者協調與操作（9 檔） |
+| EXECUTE/ | 子代理派工 + 模式定義（9 檔） |
+| ROLE/ | 角色定義（PM.md, DEV.md） |
+| TEMPLATE/ | 執行模板（待建立） |
+| TOOLS/ | 工具包 |
 
 ## 初始化設定
 
-首次使用 shiftblame 時，需手動設定兩項用戶級配置：
-### 3. Codex 桌面環境（`AGENTS.md`）
+首次使用需設定兩項用戶級配置：
 
-在用戶級 `$CODEX_HOME/AGENTS.md` 中加入以下 managed block（格式與 Claude 的 CLAUDE.md 相同）：
+1. **CLAUDE.md**（`~/.claude/`）— 加入 managed block（見 CLAUDE.md 現有內容）
+2. **settings.json**（`~/.claude/`）— SessionStart hook（matcher: compact）
 
-```
-<!-- BEGIN shiftblame:global-entry -->
-load shiftblame skills. On any shiftblame keyword reload shiftblame skills.
-<!-- END shiftblame:global-entry -->
-```
+CLAUDE.md 與 Hook 互補：CLAUDE.md 持續存在於 session，Hook 僅在 compact 後觸發。
 
-Codex 桌面環境在每次對話載入時自動讀取用戶級 `AGENTS.md`，無需額外的 SessionStart hook。與 Claude 的 `~/.claude/CLAUDE.md` 同為用戶級一次性設定，兩邊的 managed block 內容相同。
+Codex 桌面環境在 `AGENTS.md` 中加入相同 managed block。
 
-### 1. `~/.claude/CLAUDE.md`（managed block）
+## 臨時檔案 / gitignore
 
-在 `~/.claude/CLAUDE.md` 中加入以下 managed block：
-
-```
-<!-- BEGIN shiftblame:global-entry -->
-load shiftblame skills. On any shiftblame keyword reload shiftblame skills.
-<!-- END shiftblame:global-entry -->
-```
-
-若檔案已含 managed block 則跳過；若含裸文字 `load shiftblame skills...` 則替換為上述 managed block。
-
-### 2. `~/.claude/settings.json`（SessionStart hook）
-
-在用戶級 `~/.claude/settings.json` 的 `hooks.SessionStart` 陣列中加入：
-
-```json
-{
-  "matcher": "compact",
-  "hooks": [
-    {
-      "type": "command",
-      "command": "echo load shiftblame skills. On any shiftblame keyword reload shiftblame skills.",
-      "timeout": 5
-    }
-  ]
-}
-```
-
-若 `hooks.SessionStart` 已含 matcher 為 `"compact"` 的項目則跳過。若 settings.json 不存在則建立新檔。
-
-### 互補關係
-
-CLAUDE.md 與 Hook 互補，不可互相取代：CLAUDE.md 為系統提示詞（每個 session 持續存在），Hook matcher 為 "compact"（僅 compact 後觸發）。
+臨時檔案存放在 `.shiftblame/tmp/`（不自動清理）。`.shiftblame/` 已列入 `.gitignore`。
