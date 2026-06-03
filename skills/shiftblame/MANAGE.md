@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行/L2 驗收/L3 攻擊/L4 防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告後 BossConfirm；自動模式開始前宣告一次，全閘門自動通過。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告後 BossConfirm；自動模式開始前宣告一次，全閘門自動通過。
 
 ## 決策表
 
@@ -19,25 +19,25 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | BossConfirm → L1 執行（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 攻擊（依複雜度）→ BossConfirm → L4 防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
-| DEV 階段 | BossConfirm → L1 執行（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 攻擊（依複雜度）→ BossConfirm → L4 防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
+| PM 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
+| DEV 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：BossConfirm → L1 執行（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 攻擊（依複雜度）→ BossConfirm → L4 防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 上下文隔離
 
-管理者依複雜度彈性決定 L1 執行/L2 驗收/L3 攻擊/L4 防禦的執行方式：
+管理者依複雜度彈性決定 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦的執行方式：
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
-| L1 執行 | 依複雜度 | BossConfirm 通過後執行，低複雜度：對話內執行；高複雜度：子代理隔離 |
-| L2 驗收 | 依複雜度 | 驗收 L1 產出，產出驗收報告 result.md |
-| L3 攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
-| L4 防禦 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
-| L5 結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + BossConfirm |
+| L1 執行任務 | 依複雜度 | BossConfirm 通過後執行，低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L2 驗收成果 | 依複雜度 | 驗收 L1 產出，產出驗收報告 result.md |
+| L3 紅隊攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
+| L4 藍隊防禦 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
+| L5 最終結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + BossConfirm |
 
 ### 複雜度判定
 
@@ -45,10 +45,10 @@
 
 | 複雜度 | 判定條件 | 執行方式 |
 |--------|---------|----------|
-| 低 | 計畫 ≤ 3 項變更、且 ≤ 2 份文件受影響 | 管理者在對話內直接執行 L1 執行/L2 驗收/L3 攻擊/L4 防禦 |
-| 高 | 計畫 > 3 項變更、或涉及多份文件交叉修改 | 開子代理隔離執行 L1 執行/L2 驗收/L3 攻擊/L4 防禦 |
+| 低 | 計畫 ≤ 3 項變更、且 ≤ 2 份文件受影響 | 管理者在對話內直接執行 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦 |
+| 高 | 計畫 > 3 項變更、或涉及多份文件交叉修改 | 開子代理隔離執行 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦 |
 
-判定後記錄於 task.md 末行，格式：`複雜度：低/高`。低複雜度時管理者可在對話內依序執行 L1 執行（產出 task.md）→ L2 驗收（產出 result.md）→ L3 攻擊（產出 red.md）→ L4 防禦（產出 blue.md）。若無法開子代理 → BLOCK，不得使用外部品牌工具。
+判定後記錄於 task.md 末行，格式：`複雜度：低/高`。低複雜度時管理者可在對話內依序執行 L1 執行任務（產出 task.md）→ L2 驗收成果（產出 result.md）→ L3 紅隊攻擊（產出 red.md）→ L4 藍隊防禦（產出 blue.md）。若無法開子代理 → BLOCK，不得使用外部品牌工具。
 
 角色上下文檔：`ROLE/<ROLE>/{TASK,RESULT,RED,BLUE,CONCLUSION}.md`。管理者依階段讀取對應檔案，建構派工 prompt 或對話內執行指引。
 
@@ -60,7 +60,7 @@
 
 **跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。計畫調整後必須重新 BossConfirm。
 
-**Commit 閘門**：所有模式、所有角色，L1 執行完成後、L2 驗收前必須先 commit。管理者在 L2 驗收前執行 `git status` 驗證工作目錄乾淨。無例外。
+**Commit 閘門**：所有模式、所有角色，L1 執行任務完成後、L2 驗收成果前必須先 commit。管理者在 L2 驗收成果前執行 `git status` 驗證工作目錄乾淨。無例外。
 
 **工作目錄鎖定**：L3/L4 期間不得修改已追蹤檔案。L3/L4 發現問題一律退回 DECLARED。
 

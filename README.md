@@ -36,13 +36,13 @@ _「這不是我的鍋。」_
 
 同一任務的攻防流程固定序列：
 
-1. **L1 執行** — BossConfirm 通過後，執行者直接執行，產出 task.md 執行成果
-2. **L2 驗收** — 依複雜度驗收 L1 產出，寫入 result.md 驗收報告，管理者向老闆確認（BossConfirm）
-3. **L3 攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
-4. **L4 防禦** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
-5. **L5 結論** — 管理者寫入 conclusion.md → 五檔齊全 → BossConfirm → PASSED
+1. **L1 執行任務** — BossConfirm 通過後，執行者直接執行，產出 task.md 執行成果
+2. **L2 驗收成果** — 依複雜度驗收 L1 產出，寫入 result.md 驗收報告，管理者向老闆確認（BossConfirm）
+3. **L3 紅隊攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
+4. **L4 藍隊防禦** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
+5. **L5 最終結論** — 管理者寫入 conclusion.md → 五檔齊全 → BossConfirm → PASSED
 
-L3 攻擊與 L4 防禦不得並行；L4 不得在 L3 通過前啟動。L3/L4 發現問題一律退回 DECLARED 重新宣告，不就地修復。L3 為攻擊（滲透、攻擊、破壞），L4 為防禦（防禦、驗證、確認）。
+L3 紅隊攻擊與 L4 藍隊防禦不得並行；L4 不得在 L3 通過前啟動。L3/L4 發現問題一律退回 DECLARED 重新宣告，不就地修復。L3 為紅隊攻擊（滲透、攻擊、破壞），L4 為藍隊防禦（防禦、驗證、確認）。
 
 ### FAIL 狀態機
 
@@ -112,11 +112,11 @@ skills/shiftblame/
 ├── MANAGE.md             # 管理者協調與操作
 ├── ROLE/                 # 角色上下文（含五階段產出格式）
 │   ├── PM/
-│   │   ├── TASK.md         # L1 執行
-│   │   ├── RESULT.md       # L2 驗收
-│   │   ├── RED.md          # L3 攻擊
-│   │   ├── BLUE.md         # L4 防禦
-│   │   └── CONCLUSION.md   # L5 結論（管理者）
+│   │   ├── TASK.md         # L1 執行任務
+│   │   ├── RESULT.md       # L2 驗收成果
+│   │   ├── RED.md          # L3 紅隊攻擊
+│   │   ├── BLUE.md         # L4 藍隊防禦
+│   │   └── CONCLUSION.md   # L5 最終結論（管理者）
 │   └── DEV/
 │       ├── TASK.md
 │       ├── RESULT.md
@@ -147,11 +147,11 @@ skills/shiftblame/
 └── <slug>/
     ├── SLUG.md            # 開發筆記
     └── <ROLE>/<NNN>/       # FEATURE/AUTO: PM/DEV；PM/DEV: 扁平
-        ├── task.md         # L1 執行
-        ├── result.md       # L2 驗收
-        ├── red.md          # L3 攻擊
-        ├── blue.md         # L4 防禦
-        └── conclusion.md   # L5 結論
+        ├── task.md         # L1 執行任務
+        ├── result.md       # L2 驗收成果
+        ├── red.md          # L3 紅隊攻擊
+        ├── blue.md         # L4 藍隊防禦
+        └── conclusion.md   # L5 最終結論
 
 .worktrees/                # git worktree 隔離目錄，.gitignore
 └── <slug>/                # feat/<slug> 分支的工作樹

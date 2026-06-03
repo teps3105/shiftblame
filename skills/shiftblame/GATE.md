@@ -13,15 +13,15 @@
 ## 狀態機
 
 ```
-L1 執行:    DECLARED ──BossConfirm FAIL──→ DECLARED
+L1 執行任務: DECLARED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ APPROVED → 執行（依複雜度）→ commit
-L2 驗收:    APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
+L2 驗收成果: APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L3
-L3 攻擊:    L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
+L3 紅隊攻擊: L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L4
-L4 防禦:    L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
+L4 藍隊防禦: L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
                 └──BossConfirm PASS──→ L5
-L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
+L5 最終結論: L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
                                                         └──BossConfirm PASS──→ PASSED
 
 全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。L1/L2/L3/L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
@@ -30,7 +30,7 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
 | DECLARED | 管理者已向老闆宣告（對話動作），等待確認 | task.md |
-| APPROVED | 老闆同意，L1 執行開始 | task.md（含「## 執行成果」） |
+| APPROVED | 老闆同意，L1 執行任務開始 | task.md（含「## 執行成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
@@ -63,9 +63,9 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 嚴格序列執行，L3/L4 不得並行：
 
-1. 依複雜度執行 L1 執行 → commit → L2 驗收 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
-2. L2 通過 → 依複雜度執行 L3 攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
-3. L3 通過 → 依複雜度執行 L4 防禦 → 管理者驗證（攻擊回應完整 + 防禦項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
+1. 依複雜度執行 L1 執行任務 → commit → L2 驗收成果 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
+2. L2 通過 → 依複雜度執行 L3 紅隊攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
+3. L3 通過 → 依複雜度執行 L4 藍隊防禦 → 管理者驗證（攻擊回應完整 + 防禦項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
 4. L4 通過 → 管理者寫入 conclusion.md
 5. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
 

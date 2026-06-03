@@ -4,7 +4,7 @@ description: "AI Agents 協作框架。Use when: 開始(開始/start)→載入�
 ---
 # shiftblame — AI Agents 協作框架
 
-管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。L3 攻擊與 L4 防禦依複雜度在對話內執行或開子代理。
+管理者由目前環境擔任，依狀態機閘門協調 PM 與 DEV 交替迭代。L3 紅隊攻擊與 L4 藍隊防禦依複雜度在對話內執行或開子代理。
 
 ## 角色與派工
 
@@ -41,11 +41,11 @@ skills/shiftblame/
 ├── MANAGE.md             # 管理者協調與操作
 ├── ROLE/                 # 角色上下文（含五階段產出格式）
 │   ├── PM/
-│   │   ├── TASK.md         # L1 執行
-│   │   ├── RESULT.md       # L2 驗收
-│   │   ├── RED.md          # L3 攻擊
-│   │   ├── BLUE.md         # L4 防禦
-│   │   └── CONCLUSION.md   # L5 結論（管理者）
+│   │   ├── TASK.md         # L1 執行任務
+│   │   ├── RESULT.md       # L2 驗收成果
+│   │   ├── RED.md          # L3 紅隊攻擊
+│   │   ├── BLUE.md         # L4 藍隊防禦
+│   │   └── CONCLUSION.md   # L5 最終結論（管理者）
 │   └── DEV/
 │       ├── TASK.md
 │       ├── RESULT.md

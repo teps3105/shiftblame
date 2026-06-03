@@ -1,4 +1,4 @@
-# PM CONCLUSION — L5 結論
+# PM CONCLUSION — L5 最終結論
 
 > 階段：L5 ｜ 執行者：管理者（目前環境）｜ 上下文：高權重
 
