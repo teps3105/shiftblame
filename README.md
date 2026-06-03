@@ -19,6 +19,8 @@ _「這不是我的鍋。」_
 
 `shiftblame` 是一套 AI agents 協作框架（Observable Workflow System, OWS），以純 Markdown 定義檔構建跨模型協作流程。定義管理者、執行者、攻擊者、防禦者四個角色，以及 PM→DEV 兩角色的閘門管線。
 
+所有技能定義檔與 `.shiftblame/` 產物皆以 UTF-8 Markdown 儲存；讀寫含中文文件時必須明確指定 UTF-8。
+
 ---
 
 ## 角色
