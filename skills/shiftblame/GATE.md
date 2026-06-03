@@ -57,15 +57,13 @@ L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossCon
 
 ## 審查序列
 
-嚴格序列執行，紅藍不得並行：
+嚴格序列執行，L3/L4 不得並行：
 
 1. 依複雜度寫入 result.md（EXECUTED）→ 管理者驗證（frontmatter 齊全 + 宣告範圍涵蓋）→ BossConfirm（L2 閘門）
-2. L2 通過 → 依複雜度寫入 red.md → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）
-3. red.md 有效 → BossConfirm（L3 閘門）
-4. L3 通過 → 依複雜度寫入 blue.md → 管理者驗證（逐項回應紅隊 + 結論明確）
-5. blue.md 有效 → BossConfirm（L4 閘門）
-6. L4 通過 → 管理者寫入 conclusion.md
-7. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
+2. L2 通過 → 依複雜度執行 L3 外部攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
+3. L3 通過 → 依複雜度執行 L4 內部驗證 → 管理者驗證（攻擊回應完整 + 驗證項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
+4. L4 通過 → 管理者寫入 conclusion.md
+5. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
 
 L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 

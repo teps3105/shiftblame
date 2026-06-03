@@ -35,6 +35,7 @@ DEV 特定驗證點：
 
 - FAIL → 退回 DECLARED 重新宣告
 - PASS → 管理者產出 conclusion.md
+- 驗證者發現問題一律退回，不就地修復
 
 ## blue.md 產出格式
 
