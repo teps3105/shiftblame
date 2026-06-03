@@ -24,7 +24,7 @@ L4 內部驗證: L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfi
 L5 結論:   L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
                                                         └──BossConfirm PASS──→ PASSED
 
-全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。L2/L3/L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
+全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。L1/L2/L3/L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
 ```
 
 | 狀態 | 意義 | 必要檔案 |

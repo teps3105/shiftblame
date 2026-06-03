@@ -19,13 +19,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
-| DEV 階段 | BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
+| PM 階段 | BossConfirm → L1 實作（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
+| DEV 階段 | BossConfirm → L1 實作（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：BossConfirm → L1 實作（依複雜度）→ commit → BossConfirm → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：BossConfirm → L1 實作（依複雜度）→ commit → L2 驗收 result.md（依複雜度）→ BossConfirm → L3 外部攻擊（依複雜度）→ BossConfirm → L4 內部驗證（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
 
 ## 上下文隔離
 
