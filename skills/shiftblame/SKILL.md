@@ -60,7 +60,7 @@ skills/shiftblame/
 │   ├── REPO.md
 │   ├── ROADMAP.md
 │   ├── GRAPH.md
-│   ├── RAPID.md
+│   ├── PID.md
 │   └── SLUG.md           # 管理者協調用模板
 └── TOOLS/                # 工具包
     ├── DESIGN.md         # 設計工具索引（前端設計等，必用）

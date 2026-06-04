@@ -59,9 +59,9 @@ L3 紅隊攻擊與 L4 藍隊防禦不得並行；L4 不得在 L3 通過前啟動
 | PM | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
 | DEV | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 | FEATURE | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
-| AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代（需 RAPID.md，等同 FEATURE 但全自動 + worktree 隔離） |
+| AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代（需 PID.md，等同 FEATURE 但全自動 + worktree 隔離） |
 
-四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門宣告通過自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE 每角色階段使用凍結/恢復機制切換持久對話（PM 與 DEV 各維持一個對話，避免上下文丟失）；AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
+四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門宣告通過自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/PID.md` 時可用。FEATURE 每角色階段使用凍結/恢復機制切換持久對話（PM 與 DEV 各維持一個對話，避免上下文丟失）；AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 
@@ -129,7 +129,7 @@ skills/shiftblame/
 │   ├── REPO.md           # REPO.md 模板
 │   ├── ROADMAP.md        # ROADMAP.md 模板
 │   ├── GRAPH.md          # 業務拓樑圖模板
-│   ├── RAPID.md          # 快速功能配置模板（AUTO 前提）
+│   ├── PID.md            # 專案範圍說明書模板
 │   └── SLUG.md           # 管理者協調用模板（管線狀態/交接紀錄）
 └── TOOLS/                # 工具包
     ├── DESIGN.md         # 設計工具索引（前端設計等，必用）
