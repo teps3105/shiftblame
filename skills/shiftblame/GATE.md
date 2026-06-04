@@ -48,9 +48,9 @@ L0 溝通階段: 管理者向老闆報告目前狀態與下一步計畫（不寫
 分流規則（L0 通過後，依當下狀態進入）：
 DECLARED → L1 / EXECUTED → L2 / APPROVED → L3 / RED → L4 / BLUE → L5
 
-L1 執行任務: L0 → 宣告開始 → APPROVED → 執行（依複雜度）→ commit → 宣告完成 → EXECUTED
+L1 執行任務: L0 → 宣告開始 → 執行（依複雜度）→ commit → 宣告完成 → EXECUTED
                  宣告通過 → L0 → 分流 L2 / 未通過 → 修改後重新宣告完成
-L2 驗收成果: L0 → 宣告開始 → 驗收（依複雜度）→ result.md → 宣告完成 → EXECUTED
+L2 驗收成果: L0 → 宣告開始 → 驗收（依複雜度）→ result.md → 宣告完成 → APPROVED
                  宣告通過 → L0 → 分流 L3
                  未通過 → 當前修復（驗收報告微調）/ 退回 L1（執行不完整）/ 退回 DECLARED（原則性問題）
 L3 紅隊攻擊: L0 → 宣告開始 → red.md（依複雜度）→ 宣告完成 → RED
@@ -70,8 +70,8 @@ L5 最終結論: L0 → 宣告開始 → conclusion.md（管理者）→ 宣告�
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
 | DECLARED | 管理者已寫入宣告開始，等待執行 | task.md |
-| APPROVED | 宣告通過(L1)，L1 執行任務開始 | task.md（含「## 執行成果」） |
-| EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
+| EXECUTED | L1 執行完成，已 commit | task.md（含「## 執行成果」） |
+| APPROVED | L2 驗收通過 | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待宣告通過 | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待宣告通過 | + blue.md |
 | CHECKED | 五檔齊全，待宣告通過 | + conclusion.md |
@@ -126,6 +126,8 @@ L5 最終結論: L0 → 宣告開始 → conclusion.md（管理者）→ 宣告�
 5. 老闆選擇動作 → 宣告通過或退回
 
 **自動通過流程**：L0 對話 → 老闆明確指示同意 → L1~L5 全自動執行 → PASSED。執行期間老闆可隨時喊停進入 L0，由當下狀態決定分流。
+
+**自動模式喊停規則**：老闆喊停時，管理者立即暫停當前工作。若當前 L(n) 已有部分產出，先 commit 暫存，再進入 L0 討論。L0 由當下已完成的最後狀態決定分流（忽略未完成的半成品）。
 
 `BossPreview`：DEV 期間即時觀看機制，不是正式閘門，不取代宣告通過。
 

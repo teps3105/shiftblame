@@ -334,9 +334,9 @@ git commit -m "fix(<slug>): 退回前暫存"
 
 ```bash
 # 回溯：撤回該角色所有變更回到 001
-# 找到該角色 001 對應的 commit hash
-git log --oneline --reverse | head -1  # 取得初始 hash
-git reset --hard <initial-hash>         # 撤回所有變更
+# 找到該角色 001 對應的 commit hash（搜尋 commit message 含角色+001）
+git log --oneline --grep="<ROLE>/001" | tail -1  # 取得該角色初始 hash
+git reset --hard <initial-hash>                   # 撤回所有變更
 ```
 
 ## 階段交接
