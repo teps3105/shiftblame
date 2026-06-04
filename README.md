@@ -38,30 +38,30 @@ _「這不是我的鍋。」_
 
 同一任務的攻防流程固定序列：
 
-1. **L1 執行任務** — BossConfirm 通過後，執行者直接執行，產出 task.md 執行成果
-2. **L2 驗收成果** — 依複雜度驗收 L1 產出，寫入 result.md 驗收報告，管理者向老闆確認（BossConfirm）
-3. **L3 紅隊攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，管理者向老闆確認（BossConfirm）
-4. **L4 藍隊防禦** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，管理者向老闆確認（BossConfirm）
-5. **L5 最終結論** — 管理者寫入 conclusion.md → 五檔齊全 → BossConfirm → PASSED
+1. **L1 執行任務** — 宣告通過後，執行者直接執行，產出 task.md 執行成果
+2. **L2 驗收成果** — 依複雜度驗收 L1 產出，寫入 result.md 驗收報告，宣告通過
+3. **L3 紅隊攻擊** — 依複雜度執行，滲透、攻擊、破壞（外部對手立場），寫入 red.md，宣告通過
+4. **L4 藍隊防禦** — 依複雜度執行，防禦、驗證、確認（內部品質團隊立場），寫入 blue.md，宣告通過
+5. **L5 最終結論** — 管理者寫入 conclusion.md → 五檔齊全 → 宣告通過 → PASSED
 
 L3 紅隊攻擊與 L4 藍隊防禦不得並行；L4 不得在 L3 通過前啟動。L3/L4 發現問題一律退回 DECLARED 重新宣告，不就地修復。L3 為紅隊攻擊（滲透、攻擊、破壞），L4 為藍隊防禦（防禦、驗證、確認）。
 
 ### FAIL 狀態機
 
-- L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式
-- AUTO 模式全閘門 BossConfirm 自動通過
+- L1~L5 宣告通過未通過一律退回 DECLARED 重新宣告，不分模式
+- AUTO 模式全閘門宣告通過自動通過
 - FAIL 不刪除檔案（保留歷史紀錄）；退回 DECLARED 後重新宣告
 
 ## 模式
 
-| 模式 | 分支 | 目錄結構 | 管線 | BossConfirm | 適用情境 |
+| 模式 | 分支 | 目錄結構 | 管線 | 宣告通過 | 適用情境 |
 |------|------|----------|------|:-----------:|----------|
 | PM | `main` | `<slug>/<NNN>/` | PM only | Manual | 規劃、制定規則、整理專案文件（僅修改 .shiftblame/） |
 | DEV | `main` | `<slug>/<NNN>/` | DEV only | Manual | 緊急修復、配置變更、單一角色操作 |
 | FEATURE | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
 | AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代（需 RAPID.md，等同 FEATURE 但全自動 + worktree 隔離） |
 
-四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門 BossConfirm 自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE 每角色階段使用凍結/恢復機制切換持久對話（PM 與 DEV 各維持一個對話，避免上下文丟失）；AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
+四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門宣告通過自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE 每角色階段使用凍結/恢復機制切換持久對話（PM 與 DEV 各維持一個對話，避免上下文丟失）；AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 
@@ -80,7 +80,7 @@ PM 和 DEV 各自跑完整 L1→L5。下游讀取上游已 PASSED 的 conclusion
 
 全流程預設老闆不懂技術。所有確認與回報使用繁體中文、作品效果、可操作步驟與驗證結果，不用技術術語。狀態機值全部大寫（YAML、狀態描述）。面向老闆的選項文字使用中文（「同意」「不同意」「調整」），不得使用英文狀態機值。
 
-`BossPreview`：老闆可多次要求觀看目前作品，管理者提供 URL/指令/截圖/操作證據與中文摘要。不取代正式 BossConfirm。
+`BossPreview`：老闆可多次要求觀看目前作品，管理者提供 URL/指令/截圖/操作證據與中文摘要。不取代正式宣告通過。
 
 ## 功能分支（FEATURE/AUTO 模式）
 

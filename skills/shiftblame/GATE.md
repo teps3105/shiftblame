@@ -13,18 +13,19 @@
 ## 狀態機
 
 ```
-L1 執行任務: DECLARED ──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ APPROVED → 執行（依複雜度）→ commit
-L2 驗收成果: APPROVED → EXECUTED（result.md 驗收報告，依複雜度）──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ L3
-L3 紅隊攻擊: L2 通過 → red.md（依複雜度）→ RED ──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ L4
-L4 藍隊防禦: L3 通過 → blue.md（依複雜度）→ BLUE ──BossConfirm FAIL──→ DECLARED
-                └──BossConfirm PASS──→ L5
-L5 最終結論: L4 通過 → conclusion.md（管理者）→ CHECKED ──BossConfirm FAIL──→ DECLARED
-                                                        └──BossConfirm PASS──→ PASSED
+L1 執行任務: 宣告開始 → APPROVED → 執行（依複雜度）→ commit → 宣告完成 → EXECUTED
+                宣告通過 → L2 / 未通過 → 修改後重新宣告完成
+L2 驗收成果: 宣告開始 → 驗收（依複雜度）→ result.md → 宣告完成 → EXECUTED
+                宣告通過 → L3 / 未通過 → 退回 DECLARED
+L3 紅隊攻擊: 宣告開始 → red.md（依複雜度）→ 宣告完成 → RED
+                宣告通過 → L4 / 未通過 → 退回 DECLARED
+L4 藍隊防禦: 宣告開始 → blue.md（依複雜度）→ 宣告完成 → BLUE
+                宣告通過 → L5 / 未通過 → 退回 DECLARED
+L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 → CHECKED
+                宣告通過 → PASSED → 宣告凍結（FEATURE）/ 收尾（其他模式）
+                未通過 → 退回 DECLARED
 
-全閘門 BossConfirm：DEV/FEATURE/PM 每個閘門均需老闆確認；AUTO 模式全閘門自動通過。L2~L5 FAIL 一律退回 DECLARED 重新宣告，不分模式。L1/L2/L3/L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
+全閘門宣告通過：DEV/FEATURE/PM 由老闆宣告通過；AUTO 模式自動通過。宣告寫入各階段文件。L2~L5 未通過一律退回 DECLARED。L1~L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
 ```
 
 | 狀態 | 意義 | 必要檔案 |
@@ -32,44 +33,60 @@ L5 最終結論: L4 通過 → conclusion.md（管理者）→ CHECKED ──Bos
 | DECLARED | 管理者已向老闆宣告（對話動作），等待確認 | task.md |
 | APPROVED | 老闆同意，L1 執行任務開始 | task.md（含「## 執行成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
-| RED | red.md 已產出（依複雜度），待 BossConfirm | + red.md |
-| BLUE | blue.md 已產出（依複雜度），待 BossConfirm | + blue.md |
+| RED | red.md 已產出（依複雜度），待宣告通過 | + red.md |
+| BLUE | blue.md 已產出（依複雜度），待宣告通過 | + blue.md |
 | CHECKED | 五檔齊全，待老闆確認 | + conclusion.md |
 | PASSED | 老闆確認通過 | — |
 
-## 宣告-確認-執行閘門
+## 宣告生命週期
 
-每一輪任務開始前，管理者必須向老闆確認本輪計畫：
+每個 L 階段（task.md / result.md / red.md / blue.md / conclusion.md）必須依序完成以下宣告，**寫入該階段文件**：
 
-1. 管理者向老闆宣告本輪計畫（對話動作，不寫入文件）
-2. 管理者向老闆 BossConfirm（繁體中文，L1 階段指標）
-3. 老闆同意 → DECLARED→APPROVED；不同意 → 調整重新確認
+| 宣告 | 寫入時機 | 寫入者 | 意義 |
+|------|---------|--------|------|
+| 宣告開始 | 階段啟動 | 管理者 | 本階段計畫內容，標誌階段開始 |
+| 宣告完成 | 工作完成 | 管理者 | 執行成果摘要，標誌工作結束 |
+| 宣告通過 | 審查通過 | 手動：老闆 / AUTO：自動 | 階段通過，可進入下一階段 |
+| 宣告凍結 | 角色階段結束（FEATURE） | 管理者 | 凍結狀態，等待老闆切換對話 |
+| 宣告恢復 | 角色恢復（FEATURE） | 管理者 | 恢復狀態，從 SLUG.md 接續 |
 
-**計畫不可更動**：不得更動已 PASSED 的前輪計畫範圍。需更動→回溯或進路線圖。計畫調整後狀態回到 DECLARED，必須重新 BossConfirm。
+**規則**：
+- 無「宣告通過」不得進入下一階段
+- AUTO 模式全閘門自動通過；PM/FEATURE/DEV 由老闆宣告通過
+- L1 未通過：修改後重新「宣告完成」，再次等待「宣告通過」
+- L2~L5 未通過：一律退回 DECLARED 重新宣告
+- 宣告凍結/宣告恢復僅適用於 FEATURE 模式角色切換
 
-## BossConfirm
+**階段文件格式**：每份階段文件含「## 階段生命週期」段落，以表格記錄各宣告的時間與狀態。管理者隨階段進展逐項填入。
 
-`BossConfirm` 為老闆確認機制：必須等待老闆明確回覆通過、退回或調整；不得自行假設通過。
+**計畫不可更動**：不得更動已宣告通過的前輪計畫範圍。需更動→回溯或進路線圖。計畫調整後狀態回到 DECLARED，必須重新宣告開始。
 
-**宣告（對話動作）**：手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告本階段內容；自動模式開始前宣告一次，全閘門自動通過。宣告為對話中的動作，不寫入文件。
+## 宣告通過
 
-**選項語意規則**：每個 BossConfirm 必須明確列出同意/不同意/調整各自會執行的動作，不得只問「同意/不同意/調整」。範例：「同意→修正 A1~A4 並 commit；不同意→退回 DECLARED；調整→重新計畫」。
+「宣告通過」為階段通過機制：管理者完成階段工作並寫入「宣告完成」後，向老闆呈現成果，老闆宣告通過後管理者將通過紀錄寫入該階段文件。不得自行假設通過。
 
-面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標規則：必須使用「現在是 L*階段（名稱）」，不得以檔名為指標。選項文字使用中文（「同意」「不同意」「調整」），不得使用英文狀態機值。
+**呈現規則**：面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標使用「現在是 L*階段（名稱）」。管理者呈現「宣告完成」內容與成果摘要，等待老闆回應。
 
-`BossPreview`：DEV 期間即時觀看機制，不是正式閘門，不取代 BossConfirm。
+**通過流程**：
+1. 管理者向老闆呈現本階段「宣告完成」內容（繁體中文）
+2. 老闆回應：
+   - 通過 → 管理者寫入「宣告通過」到該階段文件，進入下一階段
+   - 未通過 → 依退回規則處理（L1 修改重呈；L2~L5 退回 DECLARED）
+3. AUTO 模式：全閘門自動通過，管理者直接寫入「宣告通過」
+
+`BossPreview`：DEV 期間即時觀看機制，不是正式閘門，不取代宣告通過。
 
 ## 審查序列
 
 嚴格序列執行，L3/L4 不得並行：
 
-1. 依複雜度執行 L1 執行任務 → commit → L2 驗收成果 → 寫入 result.md（驗收報告，EXECUTED）→ 管理者驗證（frontmatter 齊全 + 計畫範圍涵蓋）→ BossConfirm（L2 閘門）
-2. L2 通過 → 依複雜度執行 L3 紅隊攻擊 → 管理者驗證（攻擊點具體 + 有證據 + 結論明確）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L3 閘門）
-3. L3 通過 → 依複雜度執行 L4 藍隊防禦 → 管理者驗證（攻擊回應完整 + 防禦項目通過）→ 發現問題即退回 DECLARED，無問題 → BossConfirm（L4 閘門）
-4. L4 通過 → 管理者寫入 conclusion.md
-5. 五檔齊全 → CHECKED → 管理者 BossConfirm（L5 閘門）→ PASSED
+1. 宣告開始(L1) → 依複雜度執行 → commit → 宣告完成(L1) → 宣告通過(L1)
+2. 宣告開始(L2) → 驗收（依複雜度）→ result.md → 宣告完成(L2) → 宣告通過(L2)
+3. 宣告開始(L3) → 紅隊攻擊（依複雜度）→ red.md → 宣告完成(L3) → 宣告通過(L3)
+4. 宣告開始(L4) → 藍隊防禦（依複雜度）→ blue.md → 宣告完成(L4) → 宣告通過(L4)
+5. 宣告開始(L5) → conclusion.md（管理者）→ 宣告完成(L5) → 宣告通過(L5) → PASSED
 
-L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
+L2~L5 宣告通過未通過一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
@@ -86,7 +103,7 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 退回規則
 
-- L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。AUTO 模式全閘門自動通過。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。
+- L1 宣告通過未通過：修改後重新宣告完成。L2~L5 宣告通過未通過：一律退回 DECLARED 重新宣告，不分模式。AUTO 模式全閘門自動通過。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。
 
 ## 歸檔
 
@@ -99,8 +116,8 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 PM 與 DEV 各維持一個持久對話，透過凍結/恢復機制切換。首次 PM PASSED 後老闆開啟新對話作為 DEV 對話；之後每次角色切換，老闆在兩個已存在的對話間切換。PM 與 DEV 不得在同一對話內執行。
 
 **凍結/恢復機制**：
-- **凍結**：角色階段結束時（PASSED 或需退回上游），管理者將狀態寫入 SLUG.md，輸出階段摘要，提醒老闆切換到另一個角色的對話，然後**停止處理**。
-- **恢復**：老闆回到該角色的對話時，管理者讀取 SLUG.md 判定最新狀態，接續執行。
+- **宣告凍結**：角色階段 PASSED 後，管理者寫入「宣告凍結」到該階段文件與 SLUG.md，輸出階段摘要，提醒老闆切換到另一個角色的對話，然後**停止處理**。
+- **宣告恢復**：老闆回到該角色的對話時，管理者讀取 SLUG.md 判定最新狀態，寫入「宣告恢復」到該階段文件，接續執行。
 
 SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。恢復時讀取最後一筆紀錄判定：PM PASSED → DEV；DEV PASSED → PM 或收尾。
 

@@ -34,7 +34,7 @@ description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when:
 
 ## 模式
 
-四模式：PM（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設，每角色階段獨立對話）、DEV（DEV only）、AUTO（需 RAPID.md，每角色階段獨立對話）。每個對話只執行一個角色階段，PASSED 後開新對話。詳見 `MANAGE.md`。
+四模式：PM（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設，角色對話持久化）、DEV（DEV only）、AUTO（需 RAPID.md，每角色階段獨立對話）。FEATURE 模式 PM 與 DEV 各維持一個持久對話，透過宣告凍結/宣告恢復切換；AUTO 每角色階段 PASSED 後開新對話。每個 L 階段依序執行宣告開始→宣告完成→宣告通過，宣告寫入該階段文件。詳見 `MANAGE.md`。
 
 ## 定義檔結構
 
@@ -71,7 +71,7 @@ skills/shiftblame/
 
 以下為四模式的簡要摘要，**權威定義見 MANAGE.md（管線閘門表、上下文隔離）與 GATE.md（狀態機、退回規則）**。
 
-| 模式 | Pass | BossConfirm | 分支 | worktree | 對話 |
+| 模式 | Pass | 宣告通過 | 分支 | worktree | 對話 |
 |------|:----:|:-----------:|------|:--------:|------|
 | PM | 1（PM only） | Manual | main | 否 | 單一 |
 | FEATURE | 2（PM + DEV） | Manual | feat/\<slug\> | 否 | 角色持久化（凍結/恢復） |

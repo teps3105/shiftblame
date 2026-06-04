@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘門由管理者向老闆宣告後 BossConfirm；自動模式開始前宣告一次，全閘門自動通過。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式（PM/FEATURE/DEV）每閘段由管理者寫入宣告並由老闆宣告通過；AUTO 模式全閘門自動通過。
 
 ## 編碼規則
 
@@ -30,13 +30,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **FEATURE: 凍結對話 / AUTO: 停止 + 開新對話** |
-| DEV 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **FEATURE: 凍結對話或收尾 / AUTO: 停止 + 開新對話或收尾** |
+| PM 階段 | 每階段：宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **FEATURE: 宣告凍結 / AUTO: 停止 + 開新對話** |
+| DEV 階段 | 每階段：宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **FEATURE: 宣告凍結或收尾 / AUTO: 停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後 FEATURE 凍結對話 / AUTO 開新對話。
+派工順序：每階段依序執行 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過 → 下一階段。L1→L2→L3→L4→L5→PASSED → FEATURE 宣告凍結 / AUTO 開新對話。
 
 ## 上下文隔離
 
@@ -44,11 +44,11 @@
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
-| L1 執行任務 | 依複雜度 | BossConfirm 通過後執行，低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L1 執行任務 | 依複雜度 | 宣告通過後執行，低複雜度：對話內執行；高複雜度：子代理隔離 |
 | L2 驗收成果 | 依複雜度 | 驗收 L1 產出，產出驗收報告 result.md |
 | L3 紅隊攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
 | L4 藍隊防禦 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
-| L5 最終結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + BossConfirm |
+| L5 最終結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + 宣告通過 |
 
 ### 複雜度判定
 
@@ -65,11 +65,11 @@
 
 ## 溝通原則
 
-全流程預設老闆不懂技術。使用繁體中文、作品效果、可操作步驟。不得用技術術語包裝。階段指標使用「現在是 L*階段（名稱）」。選項文字用中文。狀態機值僅作內部記錄。
+全流程預設老闆不懂技術。使用繁體中文、作品效果、可操作步驟。不得用技術術語包裝。階段指標使用「現在是 L*階段（名稱）」。宣告通過由老闆以中文回應（「通過」或提供修改意見）。狀態機值僅作內部記錄。
 
 ## 流程保護
 
-**跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。計畫調整後必須重新 BossConfirm。
+**跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。計畫調整後必須重新宣告開始。
 
 **Commit 閘門**：所有模式、所有角色，L1 執行任務完成後、L2 驗收成果前必須先 commit。管理者在 L2 驗收成果前執行 `git status` 驗證工作目錄乾淨。無例外。
 
@@ -124,7 +124,7 @@
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
 5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
 6. **建立第一份 task.md**：管理者協調建立。**必須先建 NNN 切片目錄再寫檔案**（見「工作目錄結構」）。PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`。路徑錯誤即 BLOCK。
-7. **進入 L1**：管理者向老闆宣告本輪計畫（對話動作）→ BossConfirm → APPROVED → 依 `ROLE/<ROLE>/TASK.md` 依複雜度執行 → commit。
+7. **進入 L1**：管理者寫入「宣告開始」到 task.md（含本輪計畫）→ 向老闆呈現 → 宣告通過 → APPROVED → 依 `ROLE/<ROLE>/TASK.md` 依複雜度執行 → commit → 寫入「宣告完成」。
 
 ## 流程結束
 
@@ -136,7 +136,7 @@
 1. 更新 SLUG.md 管線狀態紀錄
 2. Commit 所有變更
 3. 輸出階段摘要
-4. 凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
+4. 寫入「宣告凍結」到該階段文件，凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
 5. **停止處理**
 
 若所有角色皆已完成 → 進入 slug 收尾。
@@ -176,7 +176,7 @@
 
 ## 退回處理
 
-L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。計畫更動判定→回溯或進路線圖。
+L1~L5 宣告通過未通過一律退回 DECLARED 重新宣告，不分模式。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。計畫更動判定→回溯或進路線圖。
 
 ## 階段交接
 
@@ -186,7 +186,7 @@ L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。DEV �
 1. 更新 SLUG.md 管線狀態紀錄（記錄 `<ROLE>/<NNN> PASSED`）
 2. Commit 所有變更
 3. 輸出階段摘要
-4. 凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
+4. 寫入「宣告凍結」到該階段文件，凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
 5. **停止處理**，不得繼續下一角色
 
 恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最新狀態並接續執行。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。
