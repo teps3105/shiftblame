@@ -117,6 +117,8 @@ L5 最終結論: L5' → 宣告開始 → conclusion.md（管理者）→ 宣告
 **自動模式**（僅 L1'，全自動）：
 L1' → 宣告開始 → L1 → L2 → L3 → L4 → L5 → PASSED（中間無閘門）
 
+自動模式 PM→DEV 串接：每個角色各自一次 L1' → 全自動 L1~L5 → PASSED → 開新對話接續下一角色。
+
 L2~L5 宣告通過未通過一律退回 DECLARED 重新 L(n)'（手動）。自動退回至初始宣告重新開始。
 
 ## 派工檢查
@@ -125,9 +127,11 @@ L2~L5 宣告通過未通過一律退回 DECLARED 重新 L(n)'（手動）。自�
 
 ## Worktree 閘門
 
-- **手動模式**：`git checkout -b feat/<slug>`
+- **手動模式（跨部門 PM→DEV）**：`git checkout -b feat/<slug>`
+- **手動模式（單一部門）**：不開分支，直接在 main 操作
 - **自動模式**：`git worktree add .worktrees/<slug> -b feat/<slug>`
-- 收尾（手動）：merge → push → branch delete
+- 收尾（手動跨部門）：merge → push → branch delete
+- 收尾（手動單一部門）：push（已在 main）
 - 收尾（自動）：merge → push → worktree remove → branch delete
 
 ## 退回規則
@@ -142,7 +146,7 @@ L2~L5 宣告通過未通過一律退回 DECLARED 重新 L(n)'（手動）。自�
 
 - **PM L5 PASSED** → 老闆決定：歸檔 → 收尾；或 不歸檔 → 留至下一對話執行 DEV
 - **DEV L5 PASSED** → 收尾
-- 收尾：merge --no-ff → push → branch delete（自動額外 worktree remove）→ 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md
+- 收尾：merge --no-ff → push → branch delete（自動額外 worktree remove；手動單一部門已在 main 無需合併）→ 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md
 
 ## 每角色階段對話隔離
 

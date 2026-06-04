@@ -29,7 +29,7 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| 部門階段 | **手動**：L(n)' 對話 → 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED。PM PASSED → 老闆決定歸檔或留 DEV 接續。**自動**：L1' 對話 → 宣告開始 → L1→L2→L3→L4→L5→PASSED（全自動，無中間閘門）→ 停止 + 開新對話 |
+| 部門階段 | **手動**：L(n)' 對話 → 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED。PM PASSED → 老闆決定歸檔或留 DEV 接續。**自動**：L1' 對話 → 宣告開始 → L1→L2→L3→L4→L5→PASSED（全自動，無中間閘門）。每角色各自 L1' → 全自動 → PASSED → 停止 + 開新對話 |
 | 收尾 | merge --no-ff → push → branch delete（自動額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
@@ -113,7 +113,7 @@
    - **自動恢復**：讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色階段。PM PASSED → 接續 DEV；DEV PASSED → 接續 PM 或進入收尾。
 3. **模式選擇**：依決策表判定模式（手動/自動）與部門（PM/DEV）。
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
-5. **建立功能分支**：手動：`git checkout -b feat/<slug>`；自動：`git worktree add .worktrees/<slug> -b feat/<slug>`。
+5. **建立功能分支**：手動（跨部門 PM→DEV）：`git checkout -b feat/<slug>`；手動（單一部門）：不開分支，直接在 main 操作；自動：`git worktree add .worktrees/<slug> -b feat/<slug>`。
 6. **建立第一份 task.md**：管理者協調建立。**必須先建 NNN 切片目錄再寫檔案**（見「工作目錄結構」）。路徑：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`。路徑錯誤即 BLOCK。
 7. **進入 L1'**：**手動**：管理者在對話中與老闆討論本階段計畫（L1'，不寫文件）→ 老闆同意 → 共識寫入 task.md（宣告開始）→ 依 `ROLE/<ROLE>/TASK.md` 依複雜度執行 → commit → 寫入「宣告完成」。**自動**：管理者在對話中與老闆討論整個角色階段計畫（L1'，不寫文件）→ 老闆明確指示同意 → 宣告開始 → 自動執行 L1→L2→L3→L4→L5→PASSED，中間不設閘門。
 
@@ -147,9 +147,9 @@ L1' 通過後 L1→L2→L3→L4→L5→PASSED 全自動執行，中間不設閘�
 ### Slug 收尾
 
 1. **收尾確認**：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
-2. **合併**：手動/自動：`git merge --no-ff feat/<slug>`（禁止 squash）。
+2. **合併**：手動跨部門/自動：`git merge --no-ff feat/<slug>`（禁止 squash）；手動單一部門：已在 main，無需合併。
 3. **推送**：`git push`。
-4. **清理**：手動：branch delete；自動：worktree remove + branch delete。
+4. **清理**：手動跨部門：branch delete；手動單一部門：無需清理；自動：worktree remove + branch delete。
 5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v2/`（v3、v4… 遞增）。歸檔後確認 `.shiftblame/<slug>/` 已刪除。
 6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
 7. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。
@@ -158,11 +158,12 @@ L1' 通過後 L1→L2→L3→L4→L5→PASSED 全自動執行，中間不設閘�
 
 ## SLUG.md 維護
 
-建立新 slug 時建立 `.shiftblame/<slug>/SLUG.md`。五分類：1.本輪目標 2.管線狀態紀錄 3.殘餘風險 4.BossPreview/退回紀錄 5.待收尾整理。只追加不修改。歸檔後作為歷史紀錄保留。
+建立新 slug 時建立 `.shiftblame/<slug>/SLUG.md`。五分類：1.本輪目標 2.管線狀態紀錄 3.殘餘風險 4.BossPreview/退回紀錄 5.待收尾整理。只追加不修改。歸檔後作為歷史紀錄保留。L(n)' 期間若有重大需求變更，管理者應將變更摘要記錄於第 4 分類（BossPreview/退回紀錄），確保跨對話可追溯。
 
 ## Worktree 管理
 
-- **手動模式**：`git checkout -b feat/<slug>`（主工作目錄）
+- **手動模式（跨部門）**：`git checkout -b feat/<slug>`（主工作目錄）
+- **手動模式（單一部門）**：不開分支，直接在 main 操作
 - **自動模式**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
 
 ## 退回處理
@@ -173,7 +174,7 @@ L(n)' 老闆修改需求 → 重新 L(n)' 對話。L1~L5 宣告通過未通過�
 
 ### 手動模式（PM→DEV 接續）
 
-PM PASSED 後老闆選擇不歸檔 → 階段交接：
+PM PASSED 後老闆選擇不歸檔 → 階段交接（feat/ 分支保持開啟，直到 DEV 收尾才 merge）：
 1. 更新 SLUG.md 管線狀態紀錄（記錄 `PM/<NNN> PASSED`）
 2. Commit 所有變更
 3. 輸出階段摘要
