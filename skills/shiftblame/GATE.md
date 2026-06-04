@@ -10,27 +10,40 @@
 | 缺 REPO.md 或 ROADMAP.md | BLOCK：手動補齊 |
 | 無 `.shiftblame/` | 自動建立 + 模板 |
 
+## L(n)' 宣告階段
+
+L(n)' 為每個 L(n) 正式階段前的**純對話宣告階段**。管理者在對話中告訴老闆本階段計畫，老闆可持續修改需求，L(n)' 不寫入任何文件。L(n)' 通過後，共識寫入階段文件，正式進入 L(n)。
+
+- **手動模式**：每個 L(n) 前皆有 L(n)'（L1'、L2'、L3'、L4'、L5'）
+- **自動模式**：僅 L1'，通過後 L1~L5 全自動執行
+- L(n)' 期間老闆修改需求 → 重新 L(n)' 討論（等同退回）
+- L(n)' 通過 → 共識寫入文件 → 宣告開始 → 進入 L(n) 正式執行
+
 ## 狀態機
 
 ```
-L1 執行任務: 宣告開始 → APPROVED → 執行（依複雜度）→ commit → 宣告完成 → EXECUTED
-                宣告通過 → L2 / 未通過 → 修改後重新宣告完成
-L2 驗收成果: 宣告開始 → 驗收（依複雜度）→ result.md → 宣告完成 → EXECUTED
-                宣告通過 → L3 / 未通過 → 退回 DECLARED
-L3 紅隊攻擊: 宣告開始 → red.md（依複雜度）→ 宣告完成 → RED
-                宣告通過 → L4 / 未通過 → 退回 DECLARED
-L4 藍隊防禦: 宣告開始 → blue.md（依複雜度）→ 宣告完成 → BLUE
-                宣告通過 → L5 / 未通過 → 退回 DECLARED
-L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 → CHECKED
-                宣告通過 → PASSED → 宣告凍結（FEATURE）/ 收尾（其他模式）
-                未通過 → 退回 DECLARED
+L(n)' 宣告階段: 管理者與老闆在對話中討論本階段計畫（不寫文件）
+                 老闆修改需求 → 重新 L(n)' 討論
+                 老闆同意 → 共識寫入文件 → 宣告開始 → 進入 L(n)
 
-全閘門宣告通過：FEATURE/PM/DEV 由老闆逐階段宣告通過；AUTO 模式單次宣告通過後 L1~L5 全自動執行，中間不設閘門。FEATURE/PM/DEV 宣告寫入各階段文件。L2~L5 未通過一律退回 DECLARED。L1~L4 依複雜度決定在對話內執行或開子代理隔離（見 MANAGE.md「上下文隔離」）。
+L1 執行任務: L1' → 宣告開始 → APPROVED → 執行（依複雜度）→ commit → 宣告完成 → EXECUTED
+                 宣告通過 → L2' / 未通過 → 修改後重新宣告完成
+L2 驗收成果: L2' → 宣告開始 → 驗收（依複雜度）→ result.md → 宣告完成 → EXECUTED
+                 宣告通過 → L3' / 未通過 → 退回 DECLARED
+L3 紅隊攻擊: L3' → 宣告開始 → red.md（依複雜度）→ 宣告完成 → RED
+                 宣告通過 → L4' / 未通過 → 退回 DECLARED
+L4 藍隊防禦: L4' → 宣告開始 → blue.md（依複雜度）→ 宣告完成 → BLUE
+                 宣告通過 → L5' / 未通過 → 退回 DECLARED
+L5 最終結論: L5' → 宣告開始 → conclusion.md（管理者）→ 宣告完成 → CHECKED
+                 宣告通過 → PASSED → 收尾（PM：老闆決定歸檔或留 DEV 接續）/ 未通過 → 退回 DECLARED
+
+手動模式：每 L(n) 前皆有 L(n)' 宣告階段。L(n)' 通過後共識寫入文件，進入 L(n) 正式執行。
+自動模式：僅 L1' 宣告階段，通過後 L1~L5 全自動執行，中間不設閘門。
 ```
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
-| DECLARED | 管理者已寫入宣告開始，等待宣告通過 | task.md |
+| DECLARED | 管理者已寫入宣告開始，等待執行 | task.md |
 | APPROVED | 宣告通過(L1)，L1 執行任務開始 | task.md（含「## 執行成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待宣告通過 | + red.md |
@@ -38,51 +51,55 @@ L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 �
 | CHECKED | 五檔齊全，待宣告通過 | + conclusion.md |
 | PASSED | 宣告通過(L5) | — |
 
-**AUTO 簡化路徑**：DECLARED → PASSED（中間狀態為內部流程紀錄，不設閘門）。
+**自動簡化路徑**：DECLARED → PASSED（中間狀態為內部流程紀錄，不設閘門）。
 
 ## 宣告生命週期
 
 每個 L 階段（task.md / result.md / red.md / blue.md / conclusion.md）必須依序完成以下宣告，**寫入該階段文件**：
 
-**FEATURE/PM/DEV 模式**：逐階段宣告。
+**手動模式**：每階段先 L(n)' 對話，通過後宣告開始，執行後宣告完成，審查後宣告通過。
 
-**AUTO 模式**：僅在 task.md 寫入一次「宣告開始」（涵蓋整個角色階段計畫），老闆明確指示同意後 L1~L5 全自動執行，中間不寫入宣告完成/宣告通過，完成後直接 PASSED。
+**自動模式**：僅在 task.md 寫入一次「宣告開始」（涵蓋整個角色階段計畫），老闆明確指示同意後 L1~L5 全自動執行，中間不寫入宣告完成/宣告通過，完成後直接 PASSED。
 
 | 宣告 | 寫入時機 | 寫入者 | 意義 |
 |------|---------|--------|------|
-| 宣告開始 | 階段啟動 | 管理者 | 本階段計畫內容，標誌階段開始 |
+| L(n)' | L(n) 正式階段前 | 管理者 | 純對話，不寫文件。與老闆討論本階段計畫，老闆可修改需求 |
+| 宣告開始 | L(n)' 通過後 | 管理者 | L(n)' 共識寫入文件，標誌 L(n) 正式開始 |
 | 宣告完成 | 工作完成 | 管理者 | 執行成果摘要，標誌工作結束 |
-| 宣告通過 | 審查通過 | 管理者（依老闆選定動作）| 階段通過，可進入下一階段（AUTO 不適用此列） |
-| 宣告凍結 | 角色階段結束（FEATURE） | 管理者 | 凍結狀態，等待老闆切換對話 |
-| 宣告恢復 | 角色恢復（FEATURE） | 管理者 | 恢復狀態，從 SLUG.md 接續 |
+| 宣告通過 | 審查通過 | 管理者（依老闆選定動作）| 階段通過，可進入下一階段（自動不適用此列） |
+| 宣告凍結 | 角色階段結束（PM→DEV 接續） | 管理者 | 凍結狀態，等待下一對話 |
+| 宣告恢復 | 角色恢復 | 管理者 | 恢復狀態，從 SLUG.md 接續 |
 
 **規則**：
-- FEATURE/PM/DEV：無「宣告通過」不得進入下一階段
-- AUTO：單次宣告通過後全自動執行，中間不設閘門
+- 手動：無「宣告通過」不得進入下一階段
+- 自動：L1' 通過後全自動執行，中間不設閘門
 - L1 未通過：修改後重新「宣告完成」，再次等待「宣告通過」
-- L2~L5 未通過：一律退回 DECLARED 重新宣告（AUTO 退回至初始宣告重新開始）
-- 宣告凍結/宣告恢復僅適用於 FEATURE 模式角色切換
+- L2~L5 未通過：一律退回 DECLARED 重新 L(n)'（手動）。自動退回至初始宣告重新開始
+- L(n)' 老闆修改需求：重新 L(n)' 對話
+- 宣告凍結/宣告恢復適用於 PM PASSED 後不歸檔、留至下一對話執行 DEV 的情境
 
 **階段文件格式**：每份階段文件含「## 階段生命週期」段落，以表格記錄各宣告的時間與狀態。管理者隨階段進展逐項填入。
 
-**計畫不可更動**：不得更動已宣告通過的前輪計畫範圍。需更動→回溯或進路線圖。計畫調整後狀態回到 DECLARED，必須重新宣告開始。
+**計畫不可更動**：不得更動已宣告通過的前輪計畫範圍。需更動→回溯或進路線圖。計畫調整後狀態回到 DECLARED，必須重新 L(n)'。
 
 ## 宣告通過
 
-「宣告通過」為階段通過機制，適用於 FEATURE/PM/DEV 模式。管理者完成階段工作並寫入「宣告完成」後，向老闆呈現成果並列出明確的**動作選項**，老闆直接選擇動作，管理者將選定動作寫入該階段文件。不得自行假設通過。
+「宣告通過」為階段通過機制，適用於手動模式。管理者完成階段工作並寫入「宣告完成」後，向老闆呈現成果並列出明確的**動作選項**，老闆直接選擇動作，管理者將選定動作寫入該階段文件。不得自行假設通過。
 
-**AUTO 模式**：僅在角色階段開始時一次「宣告通過」。老闆明確指示同意後，L1~L5 全自動執行，中間不需再次宣告。
+**自動模式**：僅在角色階段開始時一次「L1'」。老闆明確指示同意後，L1~L5 全自動執行，中間不需再次宣告。
 
 **動作選項規則**：管理者呈現時必須列出每個動作選項會執行的具體內容，不得使用抽象詞彙（如「同意」「不同意」「調整」「通過」「未通過」）。範例：「修正 A1~A3 → 退回 DECLARED」「進入 L4 藍隊防禦」。
 
 **呈現規則**：面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標使用「現在是 L*階段（名稱）」。管理者呈現「宣告完成」內容與成果摘要，列出動作選項，等待老闆選擇。
 
-**通過流程（FEATURE/PM/DEV）**：
-1. 管理者向老闆呈現本階段「宣告完成」內容，列出動作選項（繁體中文）
-2. 老闆選擇動作
-3. 管理者執行選定動作，寫入宣告紀錄到該階段文件
+**通過流程（手動）**：
+1. L(n)' 對話 — 管理者與老闆討論本階段計畫（不寫文件）
+2. L(n)' 通過 — 共識寫入文件（宣告開始）
+3. 執行 L(n) — 依複雜度執行
+4. 宣告完成 — 管理者寫入執行成果
+5. 老闆選擇動作 → 宣告通過或退回
 
-**AUTO 通過流程**：老闆明確指示同意後，管理者寫入單次宣告通過，L1~L5 全自動執行，中間不需閘門。
+**自動通過流程**：L1' 對話 → 老闆明確指示同意 → L1~L5 全自動執行 → PASSED。
 
 `BossPreview`：DEV 期間即時觀看機制，不是正式閘門，不取代宣告通過。
 
@@ -90,60 +107,63 @@ L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 �
 
 嚴格序列執行，L3/L4 不得並行：
 
-**FEATURE/PM/DEV**（逐階段閘門）：
-1. 宣告開始(L1) → 依複雜度執行 → commit → 宣告完成(L1) → 宣告通過(L1)
-2. 宣告開始(L2) → 驗收（依複雜度）→ result.md → 宣告完成(L2) → 宣告通過(L2)
-3. 宣告開始(L3) → 紅隊攻擊（依複雜度）→ red.md → 宣告完成(L3) → 宣告通過(L3)
-4. 宣告開始(L4) → 藍隊防禦（依複雜度）→ blue.md → 宣告完成(L4) → 宣告通過(L4)
-5. 宣告開始(L5) → conclusion.md（管理者）→ 宣告完成(L5) → 宣告通過(L5) → PASSED
+**手動模式**（每階段 L(n)' + 閘門）：
+1. L1' → 宣告開始(L1) → 依複雜度執行 → commit → 宣告完成(L1) → 宣告通過(L1)
+2. L2' → 宣告開始(L2) → 驗收（依複雜度）→ result.md → 宣告完成(L2) → 宣告通過(L2)
+3. L3' → 宣告開始(L3) → 紅隊攻擊（依複雜度）→ red.md → 宣告完成(L3) → 宣告通過(L3)
+4. L4' → 宣告開始(L4) → 藍隊防禦（依複雜度）→ blue.md → 宣告完成(L4) → 宣告通過(L4)
+5. L5' → 宣告開始(L5) → conclusion.md（管理者）→ 宣告完成(L5) → 宣告通過(L5) → PASSED
 
-**AUTO**（單次宣告，全自動）：
-單次宣告通過 → L1 → L2 → L3 → L4 → L5 → PASSED（中間無閘門）
+**自動模式**（僅 L1'，全自動）：
+L1' → 宣告開始 → L1 → L2 → L3 → L4 → L5 → PASSED（中間無閘門）
 
-L2~L5 宣告通過未通過一律退回 DECLARED 重新宣告（FEATURE/PM/DEV）。AUTO 退回至初始宣告重新開始。
+L2~L5 宣告通過未通過一律退回 DECLARED 重新宣告（手動）。自動退回至初始宣告重新開始。
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>`、`## 階段生命週期` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>`、`## 階段生命週期` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（`<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄 → BLOCK。
 
 ## Worktree 閘門
 
-僅 AUTO 模式使用 worktree（`.worktrees/<slug>`）。FEATURE 在主工作目錄開分支。PM/DEV 不使用功能分支。
-
-- **FEATURE**：`git checkout -b feat/<slug>`
-- **AUTO**：`git worktree add .worktrees/<slug> -b feat/<slug>`
-- 收尾（FEATURE）：merge → push → branch delete
-- 收尾（AUTO）：merge → push → worktree remove → branch delete
+- **手動模式**：`git checkout -b feat/<slug>`
+- **自動模式**：`git worktree add .worktrees/<slug> -b feat/<slug>`
+- 收尾（手動）：merge → push → branch delete
+- 收尾（自動）：merge → push → worktree remove → branch delete
 
 ## 退回規則
 
-- L1 宣告通過未通過：修改後重新宣告完成。L2~L5 宣告通過未通過：一律退回 DECLARED 重新宣告（FEATURE/PM/DEV）。AUTO 退回至初始宣告重新開始。DEV 退回前先 commit。定義問題→退回 PM。回溯→撤回該角色所有變更回到 001。
+- L(n)' 老闆修改需求：重新 L(n)' 對話（不影響已寫入文件的內容）
+- L1 宣告通過未通過：修改後重新宣告完成。L2~L5 宣告通過未通過：一律退回 DECLARED 重新 L(n)'（手動）。自動退回至初始宣告重新開始
+- DEV 退回前先 commit
+- 定義問題→退回 PM。回溯→撤回該角色所有變更回到 001
+- 計畫更動判定→回溯或進路線圖
 
 ## 歸檔
 
-所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；PM/DEV：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md。
+- **PM L5 PASSED** → 老闆決定：歸檔 → 收尾；或 不歸檔 → 留至下一對話執行 DEV
+- **DEV L5 PASSED** → 收尾
+- 收尾：merge --no-ff → push → branch delete（自動額外 worktree remove）→ 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md
 
 ## 每角色階段對話隔離
 
-### FEATURE 模式：角色對話持久化
+### 手動模式（PM→DEV 接續）
 
-PM 與 DEV 各維持一個持久對話，透過凍結/恢復機制切換。首次 PM PASSED 後老闆開啟新對話作為 DEV 對話；之後每次角色切換，老闆在兩個已存在的對話間切換。PM 與 DEV 不得在同一對話內執行。
+PM PASSED 後老闆決定不歸檔 → 留至下一對話執行 DEV：
+1. 更新 SLUG.md 管線狀態紀錄
+2. Commit 所有變更
+3. 寫入「宣告凍結」到該階段文件與 SLUG.md
+4. 輸出階段摘要，提醒老闆開新對話以執行 DEV
+5. **停止處理**
 
-**凍結/恢復機制**：
-- **宣告凍結**：角色階段 PASSED 後，管理者寫入「宣告凍結」到該階段文件與 SLUG.md，輸出階段摘要，提醒老闆切換到另一個角色的對話，然後**停止處理**。
-- **宣告恢復**：老闆回到該角色的對話時，管理者讀取 SLUG.md 判定最新狀態，寫入「宣告恢復」到該階段文件，接續執行。
+恢復時，管理者讀取 SLUG.md 判定最新狀態，寫入「宣告恢復」，接續執行 DEV。
 
-SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。恢復時讀取最後一筆紀錄判定：PM PASSED → DEV；DEV PASSED → PM 或收尾。
+### 自動模式
 
-階段內部流程不受影響：單一角色階段的 L1~L5 閘門、攻擊防禦、FAIL 重跑均在同一對話內完成。
-
-### AUTO / PM / DEV 模式
-
-AUTO：每角色階段 PASSED 後強制開新對話。PM/DEV：slug 收尾後建議開新對話。
+每角色階段 PASSED 後強制開新對話。新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色。
 
 ## 開新對話
 
-FEATURE：使用角色對話持久化（凍結/恢復），僅首次 PM→DEV 時開啟新對話。AUTO：每角色階段 PASSED 後**強制**開新對話。PM/DEV：slug 收尾後建議開新對話。恢復：SLUG.md → ROADMAP.md → REPO.md。
+手動模式 PM→DEV 接續：老闆決定不歸檔後開新對話。自動模式：每角色 PASSED 後**強制**開新對話。恢復：SLUG.md → ROADMAP.md → REPO.md。
 
 ## 上下文監控
 

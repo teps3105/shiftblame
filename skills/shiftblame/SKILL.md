@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, PM(PM模式/規劃/文件)→使用PM模式僅PM在主分支僅修改.shiftblame/內文件, FEATURE(FEATURE模式/功能模式/功能/feature/新功能)→使用FEATURE模式PM→(開新對話)→DEV→收尾(預設新功能), DEV(DEV模式/維護/主分支)→使用DEV模式僅DEV在主分支執行, AUTO(AUTO模式/自動模式)→使用AUTO模式PM→(開新對話)→DEV→收尾(工作樹隔離)。每個對話只執行一個角色階段。"
+description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, 手動(手動模式/規劃/文件/開發/維護/功能/新功能)→手動模式每階段L(n)'對話確認後執行L(n), 自動(自動模式/自動/auto)→自動模式僅L1'後L1~L5全自動。每個對話只執行一個角色階段。"
 ---
 # shiftblame — AI Agents 協作框架
 
@@ -34,7 +34,7 @@ description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when:
 
 ## 模式
 
-四模式：PM（PM only，僅 .shiftblame/）、FEATURE（功能模式，預設，每階段宣告）、DEV（DEV only，每階段宣告）、AUTO（全自動模式，工作樹隔離，單次宣告後 L1~L5 全自動執行）。FEATURE 模式每個 L 階段都必須向老闆宣告（說明正在做什麼），老闆下達明確動作後才能推進；PM 與 DEV 各維持一個持久對話，透過宣告凍結/宣告恢復切換。AUTO 模式只需開頭一次宣告，老闆同意後 L1~L5 全自動執行，中間不設閘門；每角色 PASSED 後開新對話。詳見 `MANAGE.md`。
+雙模式：**手動**（預設，每階段 L(n)' 對話確認後執行 L(n)）與 **自動**（僅 L1' 對話確認後 L1~L5 全自動執行）。部門依需求選擇：計畫事項→PM、開發事項→DEV。手動模式每個 L 階段前都有 L(n)' 宣告階段（純對話、不寫文件），管理者在對話中告訴老闆本階段計畫，老闆可持續修改需求，通過後共識寫入文件正式進入 L(n)。自動模式僅在開頭一次 L1' 對話，老闆同意後 L1~L5 全自動執行。PM L5 PASSED 後老闆決定歸檔或留至下一對話執行 DEV。詳見 `MANAGE.md`。
 
 ## 定義檔結構
 
@@ -67,13 +67,11 @@ skills/shiftblame/
     └── E2E.md            # 端到端驗證工具索引（網頁驗證等）
 ```
 
-## 四模式摘要
+## 雙模式摘要
 
-以下為四模式的簡要摘要，**權威定義見 MANAGE.md（管線閘門表、上下文隔離）與 GATE.md（狀態機、退回規則）**。
+以下為雙模式的簡要摘要，**權威定義見 MANAGE.md（管線閘門表、上下文隔離）與 GATE.md（狀態機、退回規則）**。
 
-| 模式 | Pass | 宣告 | 分支 | worktree | 對話 |
-|------|:----:|:----:|------|:--------:|------|
-| PM | 1（PM only） | 每階段 | main | 否 | 單一 |
-| FEATURE | 2（PM + DEV） | 每階段 | feat/\<slug\> | 否 | 角色持久化（凍結/恢復） |
-| DEV | 1（DEV only） | 每階段 | main | 否 | 單一 |
-| AUTO | 2（PM + DEV） | 單次（開頭） | feat/\<slug\> | 是 | 每角色新對話 |
+| 模式 | L(n)' | 宣告 | 部門 | 分支 | worktree | 對話 |
+|------|:-----:|:----:|------|:----:|:--------:|------|
+| 手動 | 每階段（L1'~L5'） | 每階段 | PM 或 DEV（依需求） | feat/\<slug\> | 否 | 單一或持久化（PM→DEV 接續） |
+| 自動 | 僅 L1' | 單次（開頭） | PM 或 DEV（依需求） | feat/\<slug\> | 是 | 每角色新對話 |
