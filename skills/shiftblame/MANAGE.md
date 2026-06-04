@@ -21,7 +21,7 @@
 | 2 | 提問/答詢 | 直接回答 |
 | 3 | 功能開發/需求/快速迭代（預設） | FEATURE |
 | 4 | 維護/主分支/日常開發 | DEV |
-| 5 | 存在 RAPID.md 時的全自動模式 | AUTO |
+| 5 | 老闆明確指示的全自動模式 | AUTO |
 
 **PM**：需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威（履行品質保證職責）。
 **DEV**：技術規劃、設計、執行、自行驗收（含 GWT 逐條驗證、邊界測試、端到端驗收）（履行品質控制職責）。
@@ -30,17 +30,17 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | 每階段：宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **FEATURE: 宣告凍結 / AUTO: 停止 + 開新對話** |
-| DEV 階段 | 每階段：宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **FEATURE: 宣告凍結或收尾 / AUTO: 停止 + 開新對話或收尾** |
-| 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
+| PM 階段 | **FEATURE/PM/DEV**：每階段宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **FEATURE: 宣告凍結**。**AUTO**：單次宣告 → L1→L2→L3→L4→L5→PASSED（全自動，無中間閘門）→ 停止 + 開新對話 |
+| DEV 階段 | **FEATURE**：每階段宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED → **宣告凍結或收尾**。**AUTO**：單次宣告 → L1→L2→L3→L4→L5→PASSED（全自動）→ 停止 + 開新對話或收尾 |
+| 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新 |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：每階段依序執行 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過 → 下一階段。L1→L2→L3→L4→L5→PASSED → FEATURE 宣告凍結 / AUTO 開新對話。
+派工順序：FEATURE/PM/DEV 每階段依序執行 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過 → 下一階段。AUTO 單次宣告通過後全自動執行 L1→L2→L3→L4→L5→PASSED，中間不設閘門。FEATURE PASSED 後宣告凍結 / AUTO PASSED 後開新對話。
 
 ## 上下文隔離
 
-管理者依複雜度彈性決定 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦的執行方式：
+管理者依複雜度彈性決定 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦的執行方式（FEATURE/PM/DEV 適用）。AUTO 模式單次宣告後全自動執行，不逐階段宣告：
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
@@ -124,7 +124,7 @@
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
 5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
 6. **建立第一份 task.md**：管理者協調建立。**必須先建 NNN 切片目錄再寫檔案**（見「工作目錄結構」）。PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`。路徑錯誤即 BLOCK。
-7. **進入 L1**：管理者寫入「宣告開始」到 task.md（含本輪計畫）→ 向老闆呈現 → 宣告通過 → APPROVED → 依 `ROLE/<ROLE>/TASK.md` 依複雜度執行 → commit → 寫入「宣告完成」。
+7. **進入 L1**：**FEATURE/PM/DEV**：管理者寫入「宣告開始」到 task.md（含本輪計畫）→ 向老闆呈現 → 宣告通過 → APPROVED → 依 `ROLE/<ROLE>/TASK.md` 依複雜度執行 → commit → 寫入「宣告完成」。**AUTO**：管理者寫入「宣告開始」（涵蓋整個角色階段計畫）→ 老闆明確指示同意 → 自動執行 L1→L2→L3→L4→L5→PASSED，中間不設閘門。
 
 ## 流程結束
 
@@ -143,7 +143,7 @@
 
 #### AUTO 模式
 
-每角色階段 PASSED 後，若尚有後續角色階段需執行：
+AUTO 內部流程：單次宣告通過後 L1→L2→L3→L4→L5→PASSED 全自動執行，中間不設閘門。角色 PASSED 後，若尚有後續角色階段需執行：
 1. 更新 SLUG.md 管線狀態紀錄
 2. Commit 所有變更
 3. 輸出階段摘要
@@ -160,10 +160,9 @@
 4. **清理**：FEATURE：branch delete；AUTO：worktree remove + branch delete；PM/DEV：無需清理。
 5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v2/`（v3、v4… 遞增）。歸檔後確認 `.shiftblame/<slug>/` 已刪除。
 6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
-7. **更新 RAPID.md（僅 AUTO 模式）**：管理者從本次 AUTO 迭代中提取經驗，更新 `.shiftblame/RAPID.md`（已完成功能、待修正項目、下次迭代建議）。非 AUTO 模式跳過此步驟。
-8. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。
-9. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。不存在則跳過。
-10. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
+7. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。
+8. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。不存在則跳過。
+9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。PM/DEV 模式收尾後亦建議開新對話。
 
 ## SLUG.md 維護
 
