@@ -6,6 +6,14 @@
 
 管理者彙整五檔（task.md + result.md + red.md + blue.md），寫入 conclusion.md。
 
+```bash
+# Read .shiftblame/<slug>/DEV/<NNN>/task.md
+# Read .shiftblame/<slug>/DEV/<NNN>/result.md
+# Read .shiftblame/<slug>/DEV/<NNN>/red.md
+# Read .shiftblame/<slug>/DEV/<NNN>/blue.md
+# Write .shiftblame/<slug>/DEV/<NNN>/conclusion.md — 彙整五檔寫入
+```
+
 內容包含：
 - 結論 + 紅藍整合
 - 自行驗收聲明（GWT 驗證、邊界測試、端到端驗收）

@@ -8,7 +8,16 @@
 |------|------|
 | 皆存在 | 通過 |
 | 缺 REPO.md 或 ROADMAP.md | BLOCK：手動補齊 |
-| 無 `.shiftblame/` | 自動建立 + 模板 |
+| 無 `.shiftblame/` | 自動建立（見下方指令區塊） |
+
+```bash
+# 初始化 .shiftblame/ 目錄與模板
+mkdir -p .shiftblame
+# Write .shiftblame/REPO.md    — 使用 TEMPLATES/REPO.md 模板
+# Write .shiftblame/ROADMAP.md — 使用 TEMPLATES/ROADMAP.md 模板
+```
+
+> **指令規範**：以下所有指令區塊以 bash 為主。若環境無法執行 bash，執行同等功能指令，不另建 PowerShell 版本。
 
 ## L(n)' 宣告階段
 
@@ -131,13 +140,46 @@ L2~L5 宣告通過未通過：依三分法判定退回目標（見「退回規�
 
 ## Worktree 閘門
 
-- **手動模式（跨部門 PM→DEV）**：`git checkout -b feat/<slug>`
-- **手動模式（單一部門）**：不開分支，直接在 main 操作
-- **自動模式**：`git worktree add .worktrees/<slug> -b feat/<slug>`
-- 收尾（手動跨部門）：merge → push → branch delete
-- 收尾（手動單一部門）：push（已在 main）
-- 收尾（自動）：merge → push → worktree remove → branch delete
-- **`.shiftblame/` 隔離規則**：`.shiftblame/` 永遠只存在於主工作目錄（main repo），不得出現在任何 worktree 中。流程文件（SLUG.md、task.md、result.md 等）一律寫入主 repo 的 `.shiftblame/<slug>/`。Worktree 僅用於程式碼/定義檔變更。若 worktree 內出現 `.shiftblame/` 目錄 → BLOCK，管理者必須將流程文件移至主 repo。
+### 建立分支
+
+```bash
+# 手動模式（跨部門 PM→DEV）
+git checkout -b feat/<slug>
+
+# 手動模式（單一部門）— 不開分支，直接在 main 操作（無需執行指令）
+
+# 自動模式
+git worktree add .worktrees/<slug> -b feat/<slug>
+```
+
+### 收尾指令
+
+```bash
+# 收尾 — 手動模式（跨部門 PM→DEV）
+git checkout main
+git merge --no-ff feat/<slug>
+git push
+git branch -d feat/<slug>
+
+# 收尾 — 手動模式（單一部門）— 已在 main，直接推送
+git push
+
+# 收尾 — 自動模式
+git checkout main
+git merge --no-ff feat/<slug>
+git push
+git worktree remove .worktrees/<slug>
+git branch -d feat/<slug>
+```
+
+### `.shiftblame/` 隔離規則
+
+`.shiftblame/` 永遠只存在於主工作目錄（main repo），不得出現在任何 worktree 中。流程文件（SLUG.md、task.md、result.md 等）一律寫入主 repo 的 `.shiftblame/<slug>/`。Worktree 僅用於程式碼/定義檔變更。
+
+```bash
+# 若 worktree 內誤建 .shiftblame/ → BLOCK，管理者執行以下搬移：
+mv .worktrees/<slug>/.shiftblame/ .shiftblame/
+```
 
 ## 退回規則
 
@@ -159,7 +201,12 @@ L2~L5 宣告通過未通過：依三分法判定退回目標（見「退回規�
 - L2~L5 未通過：依上表判定退回目標，非一律退回 DECLARED
 - **上游退回流程**：退回上游 L(n-1) 後，L(n-1) 從該階段狀態重新開始（手動模式需重新 L(n-1)'；自動模式直接重新執行 L(n-1)）。L(n-1) 完成後接續執行 L(n)，不跳過中間階段。狀態回溯至 L(n-1) 對應的狀態值。
 - 當前修復不更改狀態，修正後重新宣告完成
-- DEV 退回前先 commit
+- DEV 退回前先 commit：
+
+```bash
+git add -A
+git commit -m "fix(<slug>): 退回前暫存"
+```
 - 定義問題（需求定義層面的缺陷）→ 退回 PM（跨部門，見 MANAGE.md「退回處理」）
 - 回溯→撤回該角色所有變更回到 001
 - 計畫更動判定→回溯或進路線圖
@@ -171,20 +218,74 @@ L2~L5 宣告通過未通過：依三分法判定退回目標（見「退回規�
 
 - **PM L5 PASSED** → 老闆決定：歸檔 → 收尾；或 不歸檔 → 留至下一對話執行 DEV
 - **DEV L5 PASSED** → 收尾
-- 收尾：merge --no-ff → push → branch delete（自動額外 worktree remove；手動單一部門已在 main 無需合併）→ 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md
+
+### 收尾歸檔指令
+
+```bash
+# === Step 1: 收尾確認 ===
+# 檢查：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制
+
+# === Step 2: 合併（手動跨部門 / 自動模式） ===
+git checkout main
+git merge --no-ff feat/<slug>   # 禁止 squash
+
+# Step 2（手動單一部門）— 已在 main，跳過合併
+
+# === Step 3: 推送 ===
+git push
+
+# === Step 4: 清理分支 ===
+# 手動跨部門：
+git branch -d feat/<slug>
+# 手動單一部門 — 無需清理
+# 自動模式：
+git worktree remove .worktrees/<slug>
+git branch -d feat/<slug>
+
+# === Step 5: 歸檔 ===
+mkdir -p .shiftblame/archive
+mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/
+# 若同名已存在，遞增版本號：
+# mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v2/
+# mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v3/  （以此類推）
+
+# === Step 6: 確認原目錄已刪除 ===
+test ! -d .shiftblame/<slug>/
+
+# === Step 7: 更新 REPO.md + ROADMAP.md ===
+# Read .shiftblame/archive/<slug>/SLUG.md
+# Edit .shiftblame/REPO.md    — 記錄「完成了什麼」
+# Edit .shiftblame/ROADMAP.md — 記錄「未來預計做什麼」
+```
 
 ## 每角色階段對話隔離
 
 ### 手動模式（PM→DEV 接續）
 
 PM PASSED 後老闆決定不歸檔 → 留至下一對話執行 DEV：
-1. 更新 SLUG.md 管線狀態紀錄
-2. Commit 所有變更
-3. 寫入「宣告凍結」到該階段文件與 SLUG.md
+
+```bash
+# 1. 更新 SLUG.md 管線狀態紀錄
+# Edit .shiftblame/<slug>/SLUG.md — 追加 PM/<NNN> PASSED 紀錄
+
+# 2. Commit 所有變更
+git add -A
+git commit -m "feat(<slug>): PM/<NNN> PASSED"
+
+# 3. 寫入「宣告凍結」
+# Edit <階段文件>  — 在「## 階段生命週期」表格追加 | 宣告凍結 | <ISO 8601> | FROZEN |
+# Edit .shiftblame/<slug>/SLUG.md — 記錄宣告凍結
+```
+
 4. 輸出階段摘要，提醒老闆開新對話以執行 DEV
 5. **停止處理**
 
-恢復時，管理者讀取 SLUG.md 判定最新狀態，寫入「宣告恢復」，接續執行 DEV。
+恢復時：
+
+```bash
+# Read .shiftblame/<slug>/SLUG.md — 判定最新狀態
+# Edit <階段文件>  — 寫入「宣告恢復」：在「## 階段生命週期」表格追加 | 宣告恢復 | <ISO 8601> | RESUMED |
+```
 
 ### 自動模式
 
