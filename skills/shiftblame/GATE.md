@@ -137,6 +137,7 @@ L2~L5 宣告通過未通過：依三分法判定退回目標（見「退回規�
 - 收尾（手動跨部門）：merge → push → branch delete
 - 收尾（手動單一部門）：push（已在 main）
 - 收尾（自動）：merge → push → worktree remove → branch delete
+- **`.shiftblame/` 隔離規則**：`.shiftblame/` 永遠只存在於主工作目錄（main repo），不得出現在任何 worktree 中。流程文件（SLUG.md、task.md、result.md 等）一律寫入主 repo 的 `.shiftblame/<slug>/`。Worktree 僅用於程式碼/定義檔變更。若 worktree 內出現 `.shiftblame/` 目錄 → BLOCK，管理者必須將流程文件移至主 repo。
 
 ## 退回規則
 

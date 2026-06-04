@@ -207,6 +207,7 @@ L1' 通過後 L1→L2→L3→L4→L5→PASSED 全自動執行，中間不設閘�
 - **手動模式（跨部門）**：`git checkout -b feat/<slug>`（主工作目錄）
 - **手動模式（單一部門）**：不開分支，直接在 main 操作
 - **自動模式**：`git worktree add .worktrees/<slug> -b feat/<slug>`（獨立 worktree）
+- **`.shiftblame/` 隔離規則**：`.shiftblame/` 永遠只存在於主工作目錄（main repo），不得出現在任何 worktree 中。流程文件一律寫入主 repo 的 `.shiftblame/<slug>/`，worktree 僅用於程式碼/定義檔變更。若 worktree 內出現 `.shiftblame/` → BLOCK。
 
 ## 退回處理
 
