@@ -71,9 +71,9 @@ skills/shiftblame/
 
 以下為四模式的簡要摘要，**權威定義見 MANAGE.md（管線閘門表、上下文隔離）與 GATE.md（狀態機、退回規則）**。
 
-| 模式 | Pass | BossConfirm | 分支 | worktree |
-|------|:----:|:-----------:|------|:--------:|
-| PM | 1（PM only） | Manual | main | 否 |
-| FEATURE | 2（PM + DEV） | Manual | feat/\<slug\> | 否 |
-| DEV | 1（DEV only） | Manual | main | 否 |
-| AUTO | 2（PM + DEV） | Auto | feat/\<slug\> | 是 |
+| 模式 | Pass | BossConfirm | 分支 | worktree | 對話 |
+|------|:----:|:-----------:|------|:--------:|------|
+| PM | 1（PM only） | Manual | main | 否 | 單一 |
+| FEATURE | 2（PM + DEV） | Manual | feat/\<slug\> | 否 | 角色持久化（凍結/恢復） |
+| DEV | 1（DEV only） | Manual | main | 否 | 單一 |
+| AUTO | 2（PM + DEV） | Auto | feat/\<slug\> | 是 | 每階段新對話 |

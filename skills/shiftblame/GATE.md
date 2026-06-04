@@ -94,15 +94,25 @@ L2~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。
 
 ## 每角色階段對話隔離
 
-所有模式下，每個對話只能執行一個角色階段（PM 或 DEV）。該角色階段 PASSED 後，管理者必須停止處理並提醒老闆開新對話。PM 與 DEV 不得在同一對話內執行。
+### FEATURE 模式：角色對話持久化
 
-階段內部流程不受影響：單一角色階段的 L1~L5 閘門、攻擊防禦、FAIL 重跑均在同一對話內完成。僅在該角色階段最終 PASSED 時才觸發對話邊界。
+PM 與 DEV 各維持一個持久對話，透過凍結/恢復機制切換。首次 PM PASSED 後老闆開啟新對話作為 DEV 對話；之後每次角色切換，老闆在兩個已存在的對話間切換。PM 與 DEV 不得在同一對話內執行。
 
-SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。新對話啟動時，管理者讀取最後一筆紀錄判定下一角色：PM PASSED → DEV；DEV PASSED → PM 或收尾。
+**凍結/恢復機制**：
+- **凍結**：角色階段結束時（PASSED 或需退回上游），管理者將狀態寫入 SLUG.md，輸出階段摘要，提醒老闆切換到另一個角色的對話，然後**停止處理**。
+- **恢復**：老闆回到該角色的對話時，管理者讀取 SLUG.md 判定最新狀態，接續執行。
+
+SLUG.md 管線狀態紀錄格式：`<ROLE>/<NNN> <STATUS>`（例：PM/001 PASSED）。恢復時讀取最後一筆紀錄判定：PM PASSED → DEV；DEV PASSED → PM 或收尾。
+
+階段內部流程不受影響：單一角色階段的 L1~L5 閘門、攻擊防禦、FAIL 重跑均在同一對話內完成。
+
+### AUTO / PM / DEV 模式
+
+AUTO：每角色階段 PASSED 後強制開新對話。PM/DEV：slug 收尾後建議開新對話。
 
 ## 開新對話
 
-FEATURE/AUTO：每角色階段 PASSED 後**強制**開新對話。PM/DEV：slug 收尾後建議開新對話。恢復：SLUG.md → ROADMAP.md → REPO.md。
+FEATURE：使用角色對話持久化（凍結/恢復），僅首次 PM→DEV 時開啟新對話。AUTO：每角色階段 PASSED 後**強制**開新對話。PM/DEV：slug 收尾後建議開新對話。恢復：SLUG.md → ROADMAP.md → REPO.md。
 
 ## 上下文監控
 

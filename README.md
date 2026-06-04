@@ -61,7 +61,7 @@ L3 紅隊攻擊與 L4 藍隊防禦不得並行；L4 不得在 L3 通過前啟動
 | FEATURE | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Manual | 功能開發（預設新功能）、快速迭代、原型驗證 |
 | AUTO | `feat/<slug>` | `<slug>/<ROLE>/<NNN>/` | PM→DEV | Auto | 快速迭代（需 RAPID.md，等同 FEATURE 但全自動 + worktree 隔離） |
 
-四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門 BossConfirm 自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE/AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
+四級別風控：PM（PM only，main 分支，僅 .shiftblame/）< DEV（DEV only，main 分支）< FEATURE（PM→DEV 雙鏈路，分支隔離，手動確認）< AUTO（PM→DEV 雙鏈路，分支 + 工作樹隔離，自動確認）。FEATURE 為預設新功能模式，未指定模式時自動選用。AUTO 等同 FEATURE 但全閘門 BossConfirm 自動通過，使用 worktree 隔離，僅在存在 `.shiftblame/RAPID.md` 時可用。FEATURE 每角色階段使用凍結/恢復機制切換持久對話（PM 與 DEV 各維持一個對話，避免上下文丟失）；AUTO 每角色階段完成後強制開新對話。PM 和 DEV 直接在 main 分支工作，不建立功能分支。
 
 ## PM 與 DEV
 

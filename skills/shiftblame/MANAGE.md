@@ -30,13 +30,13 @@
 
 | 閘門 | 條件 |
 |:----:|------|
-| PM 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話** |
-| DEV 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **停止 + 開新對話或收尾** |
+| PM 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **FEATURE: 凍結對話 / AUTO: 停止 + 開新對話** |
+| DEV 階段 | BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → **FEATURE: 凍結對話或收尾 / AUTO: 停止 + 開新對話或收尾** |
 | 收尾 | merge --no-ff → push → branch delete（AUTO 額外 worktree remove）→ 歸檔 → 更新（AUTO 額外更新 RAPID.md） |
 | 歸檔→更新 | 管理者從 archive/ 讀取 SLUG.md 並更新 REPO.md/ROADMAP.md |
 | 強制停止 | A：commit 後收尾 / B：全部捨棄 |
 
-派工順序：BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後開新對話（FEATURE/AUTO）。
+派工順序：BossConfirm → L1 執行任務（依複雜度）→ commit → L2 驗收成果 result.md（依複雜度）→ BossConfirm → L3 紅隊攻擊（依複雜度）→ BossConfirm → L4 藍隊防禦（依複雜度）→ BossConfirm → L5 conclusion.md（管理者）→ CHECKED → BossConfirm → PASSED → 每角色階段結束後 FEATURE 凍結對話 / AUTO 開新對話。
 
 ## 上下文隔離
 
@@ -118,7 +118,8 @@
 
 1. **初始化**：觸發技能時檢查 `.shiftblame/REPO.md` + `.shiftblame/ROADMAP.md`。缺任一 → BLOCK 或自動建立模板。
 2. **恢復**：若存在未歸檔的 `.shiftblame/<slug>/SLUG.md`，讀取並恢復該 slug 工作狀態。
-   - **階段恢復（FEATURE/AUTO）**：讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色階段。PM PASSED → 接續 DEV；DEV PASSED → 接續 PM 或進入收尾。
+   - **階段恢復（FEATURE）**：讀取 SLUG.md 管線狀態紀錄，判定最新狀態。PM PASSED → 恢復/開啟 DEV 對話；DEV PASSED → 恢復 PM 對話或進入收尾。角色對話持久化，恢復時沿用同一對話。
+   - **階段恢復（AUTO）**：讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色階段。PM PASSED → 接續 DEV；DEV PASSED → 接續 PM 或進入收尾。
 3. **模式選擇**：依決策表判定模式。
 4. **建立 SLUG.md**：管理者協調建立 `.shiftblame/<slug>/SLUG.md`。
 5. **建立功能分支（FEATURE/AUTO）**：FEATURE：`git checkout -b feat/<slug>`；AUTO：`git worktree add .worktrees/<slug> -b feat/<slug>`；PM/DEV：不建立分支。
@@ -127,7 +128,20 @@
 
 ## 流程結束
 
-### 階段結束（FEATURE/AUTO）
+### 階段結束
+
+#### FEATURE 模式（角色對話持久化）
+
+每角色階段 PASSED 後，若尚有後續角色階段需執行：
+1. 更新 SLUG.md 管線狀態紀錄
+2. Commit 所有變更
+3. 輸出階段摘要
+4. 凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
+5. **停止處理**
+
+若所有角色皆已完成 → 進入 slug 收尾。
+
+#### AUTO 模式
 
 每角色階段 PASSED 後，若尚有後續角色階段需執行：
 1. 更新 SLUG.md 管線狀態紀錄
@@ -166,14 +180,27 @@ L1~L5 BossConfirm FAIL 一律退回 DECLARED 重新宣告，不分模式。DEV �
 
 ## 階段交接
 
-FEATURE/AUTO 模式下，每角色階段 PASSED 後執行階段交接：
+### FEATURE 模式（角色對話持久化）
+
+每角色階段 PASSED 後執行階段交接：
+1. 更新 SLUG.md 管線狀態紀錄（記錄 `<ROLE>/<NNN> PASSED`）
+2. Commit 所有變更
+3. 輸出階段摘要
+4. 凍結本對話，提醒老闆切換到另一個角色的持久對話（首次 PM→DEV 時提醒開啟新對話）
+5. **停止處理**，不得繼續下一角色
+
+恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最新狀態並接續執行。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。
+
+### AUTO 模式
+
+每角色階段 PASSED 後執行階段交接：
 1. 更新 SLUG.md 管線狀態紀錄（記錄 `<ROLE>/<NNN> PASSED`）
 2. Commit 所有變更
 3. 輸出階段摘要
 4. 提醒老闆開新對話以繼續下一角色階段
 5. **停止處理**，不得繼續下一角色
 
-新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色。若 DEV PASSED 且無後續 PM 需求 → 進入收尾。PM/DEV 模式不適用（本就單角色）。
+新對話恢復時，管理者讀取 SLUG.md 管線狀態紀錄，判定最後 PASSED 的角色，接續下一角色。PM/DEV 模式不適用（本就單角色）。
 
 ## PRD/SOP
 
