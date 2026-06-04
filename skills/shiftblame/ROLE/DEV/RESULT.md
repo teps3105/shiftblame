@@ -9,7 +9,7 @@
 1. **角色**：DEV 驗收者（非執行者）
 2. **任務**：task.md 執行成果內容
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
-4. **上游**：PM conclusion.md（下游必讀）
+4. **上游**：`shared/handoff.md`（跨部門交接文件，下游必讀）
 5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
 
 ## 驗收規範
