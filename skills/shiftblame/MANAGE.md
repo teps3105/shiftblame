@@ -158,7 +158,7 @@
 2. **合併**：FEATURE/AUTO：`git merge --no-ff feat/<slug>`（禁止 squash）；PM/DEV：已在 main。
 3. **推送**：`git push`。
 4. **清理**：FEATURE：branch delete；AUTO：worktree remove + branch delete；PM/DEV：無需清理。
-5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → 附加時間戳。
+5. **歸檔**：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v2/`（v3、v4… 遞增）。歸檔後確認 `.shiftblame/<slug>/` 已刪除。
 6. **更新 REPO.md + ROADMAP.md**：從 archive/ SLUG.md 提取。REPO.md 記錄「完成了什麼」；ROADMAP.md 記錄「未來預計做什麼」。
 7. **更新 RAPID.md（僅 AUTO 模式）**：管理者從本次 AUTO 迭代中提取經驗，更新 `.shiftblame/RAPID.md`（已完成功能、待修正項目、下次迭代建議）。非 AUTO 模式跳過此步驟。
 8. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。

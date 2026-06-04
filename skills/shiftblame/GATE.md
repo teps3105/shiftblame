@@ -108,7 +108,7 @@ L2~L5 宣告通過未通過一律退回 DECLARED 重新宣告，不分模式。
 
 ## 歸檔
 
-所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；PM/DEV：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/` → 更新 REPO.md + ROADMAP.md（AUTO 額外更新 RAPID.md，見 MANAGE.md 收尾步驟 7）。
+所有角色 PASSED → FEATURE/AUTO：merge --no-ff → push → branch delete（AUTO 額外 worktree remove）；PM/DEV：push → 歸檔 `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`（同名已存在 → `mv .shiftblame/<slug>/ .shiftblame/archive/<slug>-v<N>/`，N 從 2 遞增）→ 確認原目錄已刪除 → 更新 REPO.md + ROADMAP.md（AUTO 額外更新 RAPID.md，見 MANAGE.md 收尾步驟 7）。
 
 ## 每角色階段對話隔離
 
