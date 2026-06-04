@@ -30,13 +30,13 @@ L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 �
 
 | 狀態 | 意義 | 必要檔案 |
 |------|------|----------|
-| DECLARED | 管理者已向老闆宣告（對話動作），等待確認 | task.md |
-| APPROVED | 老闆同意，L1 執行任務開始 | task.md（含「## 執行成果」） |
+| DECLARED | 管理者已寫入宣告開始，等待宣告通過 | task.md |
+| APPROVED | 宣告通過(L1)，L1 執行任務開始 | task.md（含「## 執行成果」） |
 | EXECUTED | result.md（驗收報告）已產出（依複雜度） | task.md + result.md |
 | RED | red.md 已產出（依複雜度），待宣告通過 | + red.md |
 | BLUE | blue.md 已產出（依複雜度），待宣告通過 | + blue.md |
-| CHECKED | 五檔齊全，待老闆確認 | + conclusion.md |
-| PASSED | 老闆確認通過 | — |
+| CHECKED | 五檔齊全，待宣告通過 | + conclusion.md |
+| PASSED | 宣告通過(L5) | — |
 
 ## 宣告生命週期
 
@@ -63,16 +63,17 @@ L5 最終結論: 宣告開始 → conclusion.md（管理者）→ 宣告完成 �
 
 ## 宣告通過
 
-「宣告通過」為階段通過機制：管理者完成階段工作並寫入「宣告完成」後，向老闆呈現成果，老闆宣告通過後管理者將通過紀錄寫入該階段文件。不得自行假設通過。
+「宣告通過」為階段通過機制：管理者完成階段工作並寫入「宣告完成」後，向老闆呈現成果並列出明確的**動作選項**，老闆直接選擇動作，管理者將選定動作寫入該階段文件。不得自行假設通過。
 
-**呈現規則**：面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標使用「現在是 L*階段（名稱）」。管理者呈現「宣告完成」內容與成果摘要，等待老闆回應。
+**動作選項規則**：管理者呈現時必須列出每個動作選項會執行的具體內容，不得使用抽象詞彙（如「同意」「不同意」「調整」「通過」「未通過」）。範例：「修正 A1~A3 → 退回 DECLARED」「進入 L4 藍隊防禦」。
+
+**呈現規則**：面向老闆全部使用繁體中文，預設老闆不懂技術。階段指標使用「現在是 L*階段（名稱）」。管理者呈現「宣告完成」內容與成果摘要，列出動作選項，等待老闆選擇。
 
 **通過流程**：
-1. 管理者向老闆呈現本階段「宣告完成」內容（繁體中文）
-2. 老闆回應：
-   - 通過 → 管理者寫入「宣告通過」到該階段文件，進入下一階段
-   - 未通過 → 依退回規則處理（L1 修改重呈；L2~L5 退回 DECLARED）
-3. AUTO 模式：全閘門自動通過，管理者直接寫入「宣告通過」
+1. 管理者向老闆呈現本階段「宣告完成」內容，列出動作選項（繁體中文）
+2. 老闆選擇動作
+3. 管理者執行選定動作，寫入宣告紀錄到該階段文件
+4. AUTO 模式：全閘門自動通過，管理者直接寫入「宣告通過」
 
 `BossPreview`：DEV 期間即時觀看機制，不是正式閘門，不取代宣告通過。
 
@@ -90,7 +91,7 @@ L2~L5 宣告通過未通過一律退回 DECLARED 重新宣告，不分模式。
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>`、`## 階段生命週期` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（PM/DEV：`.shiftblame/<slug>/<NNN>/task.md`；FEATURE/AUTO：`.shiftblame/<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 根目錄 → BLOCK。
 
 ## Worktree 閘門
 
