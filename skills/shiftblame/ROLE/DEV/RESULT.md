@@ -1,42 +1,17 @@
 # DEV RESULT — L2 驗收成果
+> L2 ｜ 開發期 ｜ 寫入權：可 commit ｜ 驗收者非執行者
 
-> 階段：L2 ｜ 執行者：依複雜度（對話內 / 子代理）｜ 上下文：見 MANAGE.md ｜ 所屬期別：開發期
+DEV 自行驗收：GWT 逐條驗證、邊界測試、端到端驗收。self-contained。
 
-## 子代理上下文需求
-
-若判定為高複雜度需開子代理，派工 prompt 必須提供：
-
-1. **角色**：DEV 驗收者（非執行者）
-2. **任務**：task.md 執行成果內容
-3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
-4. **上游**：`shared/handoff.md`（跨部門交接文件，下游必讀）
-5. **面向**：面向自動綁定 — 開發期（L0~L2）= 開發面向、維運期（L3~L5）= 維運面向
-6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
-   ```bash
-   mkdir -p .shiftblame/tmp
-   # 臨時檔案存放 .shiftblame/tmp/
-   ```
-
-## 驗收規範
-
-- L2 為**驗收成果**角色，非執行角色
-- 驗收 L1 執行成果是否正確：計畫是否已執行、功能是否完整
-- 產出驗收報告：
-  ```bash
-  # Write .shiftblame/<slug>/DEV/<NNN>/result.md — 驗收報告（self-contained，禁止引用其他文件）
-  ```
-- 驗收者不修改任何檔案，僅檢驗與報告
-- L4 不重跑測試，僅做品質團隊角度的防禦驗證
-
-### 面向差異
+## 面向差異
 
 | | 開發面向 | 維運面向 |
 |---|---|---|
-| 驗收焦點 | 功能實作完整性、技術品質、GWT 逐條通過 | 使用者視角功能正確性、端到端流程完整性、使用者體驗品質 |
+| 驗收焦點 | 功能實作完整性、GWT 逐條通過 | 端到端流程完整性、使用者體驗品質 |
 
-## frontmatter status 說明
-
-result.md frontmatter `status` 記錄的是**被驗收的 L1 執行狀態**（EXECUTED），而非 L2 驗收結果（APPROVED）。GATE.md 狀態機的 APPROVED 是管線閘門狀態，與 frontmatter status 是不同層級的記錄。兩者各司其職：frontmatter 記錄產物來源狀態，閘門記錄管線推進狀態。
+## 子代理上下文
+1. 角色：DEV 驗收者 2. 任務：task.md 成果 3. 背景：REPO/ROADMAP
+4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## result.md 產出格式
 
@@ -49,28 +24,23 @@ round: <NNN>
 status: EXECUTED
 created_at: <ISO 8601>
 ---
-
-# result.md（驗收報告） — <slug> DEV/<NNN>
+# result.md — <slug> DEV/<NNN>
 
 ## 階段生命週期
-
 | 宣告 | 時間 | 狀態 |
 |------|------|------|
 | 宣告開始 | | |
 | 宣告完成 | | |
 | 宣告通過 | | |
 
-## 驗收摘要
+## 驗收結果
+| # | 項目 | 判定 | 說明 |
+|---|------|------|------|
+| C1 | | 通過/未通過 | |
 
-（驗收者填入整體評估）
+## 變更摘要
+（修改檔案清單、commit hash）
 
-## 驗收項目
-
-### C1: （驗收項目標題）
-- **判定**：通過 / 未通過
-- **說明**：（驗收說明）
-
-## 綜合結論
-
-PASS / FAIL
+## 技術債狀態
+（如無則寫「無」）
 ```
