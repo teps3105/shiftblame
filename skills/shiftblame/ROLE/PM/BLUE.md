@@ -1,6 +1,6 @@
 # PM BLUE — L4 藍隊防禦
 
-> 階段：L4 ｜ 執行者：依複雜度（對話內 / 子代理）｜ 立場：內部品質團隊
+> 階段：L4 ｜ 執行者：依複雜度（對話內 / 子代理）｜ 立場：內部品質團隊 ｜ 所屬期別：品管期
 
 ## 定義
 
@@ -14,7 +14,7 @@ L4 為**藍隊防禦**階段。防禦者以內部品質團隊立場，對整體�
 2. **L3 攻擊報告**：red.md 全文
 3. **原始產出**：result.md 全文
 4. **任務**：task.md 執行成果內容
-5. **面向**：本輪面向（規劃/品管）及對應的面向差異指引
+5. **面向**：自動綁定 — 品管期=品管面向，及對應的面向差異指引
 6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
 
    ```bash
@@ -38,20 +38,21 @@ PM 特定防禦點：
 
 ### 面向差異
 
-| | 規劃面向 | 品管面向 |
+| | 研究面向 | 品管面向 |
 |---|---|---|
 | 防禦焦點 | 規格完整性防禦、DEV 可執行性確認、設計交接就緒確認 | 品質標準有效性防禦、偏移修正是否完整確認、一致性是否恢復確認 |
 
 ## 流程合規
 
-- FAIL → 管理者依三分法判定退回目標（見 `GATE.md`「退回規則」）
+- FAIL → 問題記錄為技術債，由下一輪 NNN 處理（不溯及既往：L3~L5 發現的問題不退回研究期）
 - ```bash
   # PASS → 管理者產出 conclusion.md
   # Read .shiftblame/<slug>/PM/<NNN>/task.md
   # Read .shiftblame/<slug>/PM/<NNN>/result.md
   # Read .shiftblame/<slug>/PM/<NNN>/red.md
   # Read .shiftblame/<slug>/PM/<NNN>/blue.md
-  # Write .shiftblame/<slug>/PM/<NNN>/conclusion.md — 彙整五檔
+  # Read .shiftblame/<slug>/PM/<NNN>/plan.md
+  # Write .shiftblame/<slug>/PM/<NNN>/conclusion.md — 彙整六檔
   ```
 - 防禦者發現問題標註嚴重性供管理者判定，不就地修復
 

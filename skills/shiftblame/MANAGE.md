@@ -1,6 +1,6 @@
 # MANAGE — 管理者協調與操作
 
-管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。手動模式每閘段先 L0 對話後寫入宣告並由老闆宣告通過；自動模式僅 L0 後全閘門自動通過。
+管理者為目前環境，負責協調、派工、管線、閘門、收尾。不寫入部門正式產物（result.md / red.md / blue.md），寫入 conclusion.md、plan.md 與 task.md 執行成果段落。L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦依複雜度彈性決定在對話內執行或開子代理隔離；L5 由管理者直接處理。雙對話制度：對話一負責 L0~L2，對話二負責 L3~L5。
 
 ## 編碼規則
 
@@ -15,66 +15,62 @@
 
 ## 決策表
 
-| # | 輸入 | 模式 | 部門 | 面向 |
-|---|------|:----:|------|------|
-| 1 | 計畫事項（規劃、文件、品質定義、驗收條件） | 手動/自動 | PM | 規劃（預設）/ 品管 |
-| 2 | 開發事項（技術實作、開發、維護） | 手動/自動 | DEV | 開發（預設）/ 驗證 |
-| 3 | 功能開發（PM→DEV 完整流程） | 手動/自動 | PM → DEV | 各自老闆指定 |
-| 4 | 提問/答詢 | 直接回答 | — | — |
+| # | 輸入 | 部門 | 期別 |
+|---|------|------|------|
+| 1 | 研究事項（需求釐清、功能規劃、品質定義） | PM（研究品管） | 研究期（L0~L2）/ 品管期（L3~L5） |
+| 2 | 開發事項（技術實作、開發、維護） | DEV（開發維運） | 開發期（L0~L2）/ 維運期（L3~L5） |
+| 3 | 功能開發（PM→DEV 完整流程） | PM → DEV | 各自雙對話 |
+| 4 | 提問/答詢 | 直接回答 | — |
 
-**PM**（計畫部門）：兩個面向 — **規劃**（需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威，履行品質保證職責）/ **品管**（品質偏移校正、標準校正、品質一致性檢查，當專案品質發生偏移或標準不明時觸發）。
-**DEV**（開發部門）：兩個面向 — **開發**（技術規劃、設計、執行、自行驗收含 GWT 逐條驗證/邊界測試/端到端驗收，履行品質控制職責）/ **驗證**（使用者視角產品驗證、端到端驗收、使用者體驗品質確認，開發完成後觸發）。
+**PM**（研究品管）：面向自動綁定——研究期=研究面向（需求釐清、品質定義、測試標準、驗收條件、GWT 測試案例、前端設計唯一權威）、品管期=品管面向（品質偏移校正、標準修訂、品質一致性檢查）。
 
-**面向判定**：每次新 NNN 的 L0 中，管理者向老闆提案本輪面向，老闆確認。面向記錄於 task.md frontmatter `aspect` 欄位。手動模式每個 NNN 的 L0 各自指定面向（同一部門內可自由切換）；自動模式僅一次 L0 指定本輪面向，角色 PASSED 後新對話重新 L0 可指定不同面向。若 L0 期間老闆未明確指定面向，管理者使用預設面向（PM：規劃；DEV：開發）。退回時面向保持原值不變。
+**DEV**（開發維運）：面向自動綁定——開發期=開發面向（技術規劃、設計、執行、自行驗收含 GWT 逐條驗證/邊界測試/端到端驗收）、維運期=維運面向（使用者視角產品驗證、端到端驗收、使用者體驗品質確認）。
 
 ## 管線閘門表
 
 | 閘門 | 條件 |
 |:----:|------|
-| 部門階段 | **手動**：L0 對話 → 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過。L1→L2→L3→L4→L5→PASSED。PM PASSED → 老闆決定歸檔或留 DEV 接續。**自動**：L0 對話 → 宣告開始 → L1→L2→L3→L4→L5→PASSED（全自動，無中間閘門，老闆可隨時喊停進入 L0）。每角色各自 L0 → 全自動 → PASSED → 停止 + 開新對話 |
+| 對話一（L0~L2） | L0 規劃確認（plan.md）→ L1 執行（依複雜度）→ commit → L2 驗收 → STOP → 提醒老闆開新對話做驗證 |
+| 對話二（L3~L5） | L3 紅隊（依複雜度）→ L4 藍隊（依複雜度）→ L5 結論+收尾（管理者）→ PASSED |
 | 收尾 | 見 GATE.md「歸檔 → 收尾歸檔指令」 |
 | 歸檔→更新 | `# Read .shiftblame/archive/<slug>/SLUG.md` → `# Edit .shiftblame/REPO.md` + `# Edit .shiftblame/ROADMAP.md` |
 | 強制停止 | A：`git add -A && git commit -m "chore(<slug>): 強制停止"` → 收尾 / B：`git checkout . && git clean -fd` |
 
-派工順序：手動模式每階段先 L0 對話確認後依序執行 宣告開始 → 執行（依複雜度）→ 宣告完成 → 宣告通過 → 下一階段。自動模式 L0 通過後全自動執行 L1→L2→L3→L4→L5→PASSED，中間不設閘門，老闆可隨時喊停進入 L0。
-
 ## 上下文隔離
 
-管理者依複雜度彈性決定 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦的執行方式（手動/自動均適用）。L0 為純對話階段，不涉及複雜度判定。自動模式 L0 通過後全自動執行，不逐階段宣告：
+管理者依複雜度彈性決定 L1/L2/L3/L4 的執行方式：
 
 | 階段 | 執行者 | 說明 |
 |:----:|--------|------|
-| L0 | 管理者（對話） | 純對話，不寫文件，不涉及複雜度判定 |
-| L1 執行任務 | 依複雜度 | 宣告通過後執行，低複雜度：對話內執行；高複雜度：子代理隔離 |
-| L2 驗收成果 | 依複雜度 | 驗收 L1 產出，產出驗收報告 result.md |
+| L0 規劃確認 | 管理者 | 與老闆確認需求，產出 plan.md |
+| L1 執行任務 | 依複雜度 | 低複雜度：對話內執行；高複雜度：子代理隔離 |
+| L2 驗收成果 | 依複雜度 | 驗收 L1 產出，產出 result.md |
 | L3 紅隊攻擊 | 依複雜度 | 滲透、攻擊、破壞 — 外部對手立場 |
 | L4 藍隊防禦 | 依複雜度 | 防禦、驗證、確認 — 內部品質團隊立場 |
-| L5 最終結論 | 管理者（目前環境） | 彙整五檔寫入 conclusion.md + 宣告通過 |
+| L5 結論+收尾 | 管理者 | 彙整六檔寫入 conclusion.md + 收尾後置作業 |
 
 ### 複雜度判定
 
-管理者在 L0 對話時一併判定本輪複雜度：
+管理者在 L0 規劃確認時一併判定本輪複雜度：
 
 | 複雜度 | 判定條件 | 執行方式 |
 |--------|---------|----------|
-| 低 | 計畫 ≤ 3 項變更、且 ≤ 2 份文件受影響 | 管理者在對話內直接執行 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦 |
-| 高 | 計畫 > 3 項變更、或涉及多份文件交叉修改 | 開子代理隔離執行 L1 執行任務/L2 驗收成果/L3 紅隊攻擊/L4 藍隊防禦 |
+| 低 | 計畫 ≤ 3 項變更、且 ≤ 2 份文件受影響 | 管理者在對話內直接執行 |
+| 高 | 計畫 > 3 項變更、或涉及多份文件交叉修改 | 開子代理隔離執行 |
 
-**面向考量**：品管面向與驗證面向可能涉及多份文件交叉審查，管理者應在複雜度判定時將面向的工作量差異納入考量。
+判定後記錄於 plan.md 末行，格式：`複雜度：低/高`。
 
-判定後記錄於 task.md 末行，格式：`複雜度：低/高`。低複雜度時管理者可在對話內依序執行 L1 執行任務（產出 task.md）→ L2 驗收成果（產出 result.md）→ L3 紅隊攻擊（產出 red.md）→ L4 藍隊防禦（產出 blue.md）。若無法開子代理 → BLOCK，不得使用外部品牌工具。
-
-角色上下文檔：`ROLE/<ROLE>/{TASK,RESULT,RED,BLUE,CONCLUSION}.md`。管理者依階段讀取對應檔案，建構派工 prompt 或對話內執行指引。
+角色上下文檔：`ROLE/<ROLE>/{PLAN,TASK,RESULT,RED,BLUE,CONCLUSION}.md`。管理者依階段讀取對應檔案。
 
 ## 溝通原則
 
-全流程預設老闆不懂技術。使用繁體中文、作品效果、可操作步驟。不得用技術術語包裝。階段指標使用「現在是 L*階段（名稱）」。宣告通過由老闆以中文回應（「通過」或提供修改意見）。狀態機值僅作內部記錄。L0 為純對話，管理者向老闆報告目前狀態與下一步計畫，老闆可持續修改需求。
+全流程預設老闆不懂技術。使用繁體中文、作品效果、可操作步驟。不得用技術術語包裝。階段指標使用「現在是 L*階段（名稱）」。狀態機值僅作內部記錄。
 
 ## 流程保護
 
-**跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。計畫調整後必須重新 L0。
+**跳步防護**：狀態轉移前驗證前一狀態產物存在且有效。
 
-**Commit 閘門**：所有模式、所有角色，L1 執行任務完成後、L2 驗收成果前必須先 commit。無例外。
+**Commit 閘門**：所有角色，L1 執行任務完成後、L2 驗收前必須先 commit。無例外。
 
 ```bash
 # L1 執行完成後，L2 驗收前
@@ -85,28 +81,30 @@ git commit -m "<type>(<slug>): <繁體中文標題>"
 git status  # 預期輸出：nothing to commit, working tree clean
 ```
 
-**工作目錄鎖定**：L3/L4 期間不得修改已追蹤檔案。L3/L4 發現問題依三分法判定退回目標（見 `GATE.md`「退回規則」）。
+**工作目錄鎖定**：L3/L4 期間不得修改已追蹤檔案。L3/L4 發現問題記錄為技術債。
 
 **派工隔離**：派工 prompt 不得引用 GATE.md 狀態定義。
 
 ## 工作目錄結構
 
-所有產物一律放在 `.shiftblame/<slug>/` 下，統一使用嵌套目錄（依角色分層）。**禁止將 task.md / result.md 等產物直接放在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄**（SLUG.md 除外）。
+所有產物一律放在 `.shiftblame/<slug>/` 下，統一使用嵌套目錄。**禁止將產物直接放在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄**（SLUG.md 除外）。
 
 ```
 .shiftblame/<slug>/
 ├── SLUG.md              ← 唯一允許在根目錄
 ├── shared/              ← 跨部門通訊目錄（PM→DEV 交接資料）
 │   └── handoff.md       ← 交接文件（管理者彙整 PM conclusion → DEV 輸入）
-├── PM/                  ← PM 部門（依需求）
-│   └── <NNN>/           ← 切片目錄（001, 002, ...）
-│       ├── task.md
-│       ├── result.md
-│       ├── red.md
-│       ├── blue.md
-│       └── conclusion.md
-└── DEV/                 ← DEV 部門（依需求）
-    └── <NNN>/           ← 切片目錄（001, 002, ...）
+├── PM/                  ← 研究品管部門
+│   └── <NNN>/
+│       ├── plan.md          ← L0 規劃確認
+│       ├── task.md          ← L1 執行任務
+│       ├── result.md        ← L2 驗收成果
+│       ├── red.md           ← L3 紅隊攻擊
+│       ├── blue.md          ← L4 藍隊防禦
+│       └── conclusion.md    ← L5 結論+收尾
+└── DEV/                 ← 開發維運部門
+    └── <NNN>/
+        ├── plan.md
         ├── task.md
         ├── result.md
         ├── red.md
@@ -123,26 +121,26 @@ mkdir -p .shiftblame/<slug>/<ROLE>/001
 
 # 2. 建立後寫入檔案
 # Write .shiftblame/<slug>/SLUG.md
+# Write .shiftblame/<slug>/<ROLE>/001/plan.md
 # Write .shiftblame/<slug>/<ROLE>/001/task.md
 ```
 
 3. 第一份產物永遠從 `<NNN> = 001` 開始
 4. 任何產物不得出現在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄（SLUG.md 除外）
-5. 跨部門交接資料存入 `shared/` 目錄（若已有既有分享目錄則不更動）
-6. **上述目錄一律在主 repo 建立，不得在 worktree 中建立**（見「Worktree 管理」隔離規則）
+5. 跨部門交接資料存入 `shared/` 目錄
 
 ## 跨部門檔案隔離
 
 所有 slug 部門間的交接檔案、資料**一律留在 `.shiftblame/<slug>/` 內**，不得外洩到專案其餘資料夾。
 
 - **`shared/` 跨部門通訊目錄**：存放 PM→DEV 交接資料（handoff.md）。由管理者在 PM PASSED 後建立，彙整 PM conclusion.md 關鍵資訊。DEV 從 `shared/handoff.md` 讀取上游輸入。
-- **暫存文件**：前端設計產出等暫存可放 `tmp/`，但最終版本必須存入 slug 內（部門目錄或 `shared/`）
-- **禁止外洩**：跨部門交接資料不得存放在 slug 目錄以外的任何專案位置（包括專案根目錄、`docs/` 等）
-- **既有分享目錄**：若 slug 已有其他名稱的分享目錄（判定標準：該目錄專門存放跨部門交接資料、非單一部門產物），則使用該目錄，不強制更名為 `shared/`
+- **暫存文件**：前端設計產出等暫存可放 `tmp/`，但最終版本必須存入 slug 內
+- **禁止外洩**：跨部門交接資料不得存放在 slug 目錄以外的任何專案位置
+- **既有分享目錄**：若 slug 已有其他名稱的分享目錄，則使用該目錄，不強制更名為 `shared/`
 
 ### handoff.md 格式
 
-管理者在 PM PASSED 後，彙整 PM conclusion.md 至 `shared/handoff.md`。DEV 從此處讀取上游輸入。
+管理者在 PM PASSED 後，彙整 PM conclusion.md 至 `shared/handoff.md`。
 
 ```markdown
 # handoff.md — <slug> PM→DEV 交接
@@ -151,11 +149,9 @@ mkdir -p .shiftblame/<slug>/<ROLE>/001
 
 （管理者填入：本輪 PM 完成了什麼、DEV 需要接續什麼）
 
-## 上游面向
+## 上游期別
 
-（管理者填入：本輪 PM 各 NNN 使用的面向，如「001 規劃面向、002 品管面向」，供 DEV 了解上游產出性質）
-
-（管理者填入：本輪 PM 完成了什麼、DEV 需要接續什麼）
+（管理者填入：本輪 PM 各 NNN 使用的期別，如「001 研究期、002 品管期」，供 DEV 了解上游產出性質）
 
 ## 功能規格
 
@@ -172,9 +168,13 @@ mkdir -p .shiftblame/<slug>/<ROLE>/001
 ## 殘餘風險
 
 （從 PM conclusion.md 彙整：已知風險與注意事項）
+
+## 技術債
+
+（從 PM red.md/blue.md 彙整：PM 品管期發現的技術債，供 DEV 開發期參考）
 ```
 
-**建立時機**：PM L5 PASSED 後、DEV 開始前。管理者負責建立與維護。DEV 不得修改 handoff.md。
+**建立時機**：PM PASSED 後、DEV 開始前。
 
 ```bash
 # PM PASSED 後建立 handoff.md
@@ -196,13 +196,12 @@ test -f .shiftblame/REPO.md && test -f .shiftblame/ROADMAP.md
 # === Step 2: 恢復 ===
 # 若存在未歸檔的 SLUG.md，讀取恢復
 # Read .shiftblame/<slug>/SLUG.md — 判定管線狀態紀錄
-# PM PASSED（不歸檔）→ 恢復/開啟 DEV 對話
-# DEV PASSED → 收尾
+# 判定接續對話一或對話二
 ```
 
 ```bash
-# === Step 3: 模式選擇 ===
-# 依決策表判定模式（手動/自動）與部門（PM/DEV）
+# === Step 3: 部門選擇 ===
+# 依決策表判定部門（PM 研究品管 / DEV 開發維運）
 ```
 
 ```bash
@@ -214,71 +213,65 @@ mkdir -p .shiftblame/<slug>/<ROLE>/001
 
 ```bash
 # === Step 5: 建立功能分支 ===
-# 手動模式（跨部門 PM→DEV）：
+# 跨部門 PM→DEV：
 git checkout -b feat/<slug>
-# 手動模式（單一部門）：不開分支，直接在 main 操作
-# 自動模式：
-git worktree add .worktrees/<slug> -b feat/<slug>
+# 單一部門：不開分支，直接在 main 操作
 ```
 
 ```bash
-# === Step 6: 建立第一份 task.md ===
-# 路徑：.shiftblame/<slug>/<ROLE>/001/task.md（路徑錯誤即 BLOCK）
-# Write .shiftblame/<slug>/<ROLE>/001/task.md — 使用 ROLE/<ROLE>/TASK.md 產出格式
+# === Step 6: L0 規劃確認 ===
+# 與老闆確認需求 → 寫入 plan.md
+# Write .shiftblame/<slug>/<ROLE>/001/plan.md — 使用 ROLE/<ROLE>/PLAN.md 產出格式
 ```
 
 ```bash
-# === Step 7: 進入 L0 ===
-# 手動：L0 對話 → 老闆同意 → 共識寫入 task.md（宣告開始）→ 執行 → commit → 寫入宣告完成
-# 自動：L0 對話 → 老闆同意 → 宣告開始 → L1→L2→L3→L4→L5→PASSED 全自動
+# === Step 7: L1 執行任務 ===
+# 依 plan.md 執行 → commit → 寫入 task.md 執行成果
+```
+
+```bash
+# === Step 8: L2 驗收成果 ===
+# 驗收 L1 產出 → result.md → STOP → 提醒老闆開新對話做 L3~L5
 ```
 
 ## 流程結束
 
-### 階段結束
-
-#### 手動模式
-
-PM L5 PASSED 後：
+### 對話一結束（L0~L2 完成）
 
 ```bash
 # 1. 更新 SLUG.md 管線狀態紀錄
-# Edit .shiftblame/<slug>/SLUG.md — 追加 PM/<NNN> PASSED
+# Edit .shiftblame/<slug>/SLUG.md — 追加 NNN 狀態（APPROVED）
 
 # 2. Commit 所有變更
 git add -A
-git commit -m "feat(<slug>): PM/<NNN> PASSED"
+git commit -m "feat(<slug>): <ROLE>/<NNN> 對話一完成 (L0~L2)"
 ```
 
-3. 輸出階段摘要
-4. 向老闆呈現動作選項：**「歸檔收尾」或「不歸檔，留至下一對話執行 DEV」**
-5. **老闆選擇歸檔** → 進入 slug 收尾（見 GATE.md「收尾歸檔指令」）
-6. **老闆選擇不歸檔** → 見「階段交接 → 手動模式」
-
-DEV L5 PASSED 後 → 進入 slug 收尾。
-
-#### 自動模式
-
-L0 通過後 L1→L2→L3→L4→L5→PASSED 全自動執行，中間不設閘門。老闆可隨時喊停進入 L0，由當下狀態決定分流。角色 PASSED 後，若尚有後續角色階段需執行：
-
-```bash
-# 1. 更新 SLUG.md 管線狀態紀錄
-# Edit .shiftblame/<slug>/SLUG.md — 追加 <ROLE>/<NNN> PASSED
-
-# 2. Commit 所有變更
-git add -A
-git commit -m "feat(<slug>): <ROLE>/<NNN> PASSED"
-```
-
-3. 輸出階段摘要
-4. 提醒老闆開新對話以繼續
+3. 寫入「宣告凍結」至 result.md
+4. 輸出摘要，提醒老闆開新對話進行 L3~L5
 5. **停止處理**
 
-若所有角色皆已完成 → 進入 slug 收尾。
+### 對話二結束（L3~L5 完成）
+
+若有技術債：
+
+```bash
+# 1. 記錄技術債至 SLUG.md
+# Edit .shiftblame/<slug>/SLUG.md — 追加技術債紀錄
+
+# 2. Commit
+git add -A
+git commit -m "feat(<slug>): <ROLE>/<NNN> 對話二完成 (L3~L5，含技術債)"
+```
+
+3. 提醒老闆開新 NNN 對話一處理技術債
+4. **停止處理**
+
+若無問題 → L5 PASSED → 進入 Slug 收尾。
 
 ### Slug 收尾
 
-收尾指令統一見 GATE.md「收尾歸檔指令」。以下為各步驟對應：
+收尾指令統一見 GATE.md「收尾歸檔指令」：
 
 1. **收尾確認**：無殭屍程序、無開發殘留、臨時檔案在 tmp/、.shiftblame/ 不納入版本控制、README.md 已更新。
 2. **合併** → GATE.md Step 2
@@ -286,13 +279,13 @@ git commit -m "feat(<slug>): <ROLE>/<NNN> PASSED"
 4. **清理** → GATE.md Step 4
 5. **歸檔** → GATE.md Step 5
 6. **更新 REPO.md + ROADMAP.md** → GATE.md Step 7
-7. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。未消耗 PRD 則跳過。
-8. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。不存在則跳過。
+7. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。
+8. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。
 9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。
 
 ## SLUG.md 維護
 
-建立新 slug 時建立 `.shiftblame/<slug>/SLUG.md`。五分類：1.本輪目標 2.管線狀態紀錄 3.殘餘風險 4.BossPreview/退回紀錄 5.待收尾整理。只追加不修改。歸檔後作為歷史紀錄保留。L0 期間若有重大需求變更，管理者應將變更摘要記錄於第 4 分類（BossPreview/退回紀錄），確保跨對話可追溯。
+建立新 slug 時建立 `.shiftblame/<slug>/SLUG.md`。五分類：1.本輪目標 2.管線狀態紀錄 3.殘餘風險 4.BossPreview/退回紀錄 5.待收尾整理。只追加不修改。歸檔後作為歷史紀錄保留。
 
 ```bash
 # 建立 SLUG.md（新建 slug 時）
@@ -304,37 +297,29 @@ git commit -m "feat(<slug>): <ROLE>/<NNN> PASSED"
 
 ## Worktree 管理
 
+DEV 開發預設在主 repo 分支執行，**不使用 worktree**。所有開發工作直接在主工作目錄進行。
+
 ```bash
-# 手動模式（跨部門 PM→DEV）— 主工作目錄
+# 跨部門 PM→DEV — 開 feat/ 分支，在主 repo 執行
 git checkout -b feat/<slug>
 
-# 手動模式（單一部門）— 不開分支，直接在 main 操作（無需執行指令）
-
-# 自動模式 — 獨立 worktree
-git worktree add .worktrees/<slug> -b feat/<slug>
+# 單一部門 — 不開分支，直接在 main 操作（無需執行指令）
 ```
 
 ### `.shiftblame/` 隔離規則
 
-`.shiftblame/` 永遠只存在於主工作目錄（main repo），不得出現在任何 worktree 中。流程文件一律寫入主 repo 的 `.shiftblame/<slug>/`，worktree 僅用於程式碼/定義檔變更。
-
-```bash
-# 驗證 worktree 中無 .shiftblame/
-test ! -d .worktrees/<slug>/.shiftblame/  # 若失敗 → BLOCK
-
-# 若 worktree 誤建 .shiftblame/，搬移回主 repo
-mv .worktrees/<slug>/.shiftblame/ .shiftblame/
-```
+`.shiftblame/` 永遠只存在於主工作目錄（main repo）。流程文件一律寫入主 repo 的 `.shiftblame/<slug>/`。
 
 ## 退回處理
 
-退回採**三分法**（定義見 `GATE.md`「退回規則」）。管理者依問題性質判定：
-- **原則性問題**（計畫範圍變更、需求理解錯誤、根本設計缺陷）→ 退回 L1（DECLARED）
-- **上游階段問題**（上游產出遺漏或不完整）→ 退回上游 L(n-1)
-- **當前階段問題**（報告微調、遺漏補充）→ 該階段直接修復
-- **跨部門問題**（DEV 發現需求定義層面的缺陷）→ 退回 PM（不適用同部門三分法，見 GATE.md「跨部門檔案隔離」）
+退回採**不溯及既往**原則。L3~L5 問題記為技術債，由下一輪 NNN 處理。
 
-L0 老闆修改需求 → 重新 L0 對話。L1 未通過 → 修改後重新宣告完成。L2~L5 未通過 → 依三分法判定退回目標。
+L0~L2 內部退回：
+- **計畫問題**（需求範圍變更、根本設計缺陷）→ 退回 L0（PLANNED）
+- **執行問題**（L1 產出不完整）→ 退回 L1（EXECUTED）
+- **驗收問題**（報告微調）→ L2 直接修復
+
+跨部門問題：DEV 發現需求定義缺陷 → 退回 PM（跨部門）。
 
 ```bash
 # DEV 退回前先 commit
@@ -344,16 +329,15 @@ git commit -m "fix(<slug>): 退回前暫存"
 
 ```bash
 # 回溯：撤回該角色所有變更回到 001
-# 找到該角色 001 對應的 commit hash（搜尋 commit message 含角色+001）
-git log --oneline --grep="<ROLE>/001" | tail -1  # 取得該角色初始 hash
-git reset --hard <initial-hash>                   # 撤回所有變更
+git log --oneline --grep="<ROLE>/001" | tail -1
+git reset --hard <initial-hash>
 ```
 
 ## 階段交接
 
-### 手動模式（PM→DEV 接續）
+### PM→DEV（跨部門）
 
-PM PASSED 後老闆選擇不歸檔 → 階段交接（feat/ 分支保持開啟，直到 DEV 收尾才 merge）：
+PM 對話二 PASSED 後交接 DEV：
 
 ```bash
 # 1. 建立 handoff.md（跨部門交接資料）
@@ -367,52 +351,28 @@ mkdir -p .shiftblame/<slug>/shared
 # 3. Commit 所有變更
 git add -A
 git commit -m "feat(<slug>): PM→DEV 階段交接"
-
-# 4. 寫入「宣告凍結」
-# Edit <階段文件>  — 在「## 階段生命週期」表格追加 | 宣告凍結 | <ISO 8601> | FROZEN |
-# Edit .shiftblame/<slug>/SLUG.md — 記錄宣告凍結
-```
-
-5. 輸出階段摘要
-6. **停止處理**，不得繼續下一角色
-
-恢復時：
-
-```bash
-# Read .shiftblame/<slug>/SLUG.md — 判定最新狀態
-# Read .shiftblame/<slug>/shared/handoff.md — 讀取上游交接
-# Edit <階段文件> — 寫入「宣告恢復」：在「## 階段生命週期」表格追加 | 宣告恢復 | <ISO 8601> | RESUMED |
-```
-
-### 自動模式
-
-每角色階段 PASSED 後執行階段交接：
-
-```bash
-# 1. 若為 PM PASSED 且尚有 DEV → 建立 handoff.md
-mkdir -p .shiftblame/<slug>/shared
-# Read .shiftblame/<slug>/PM/<NNN>/conclusion.md
-# Write .shiftblame/<slug>/shared/handoff.md — 彙整結論關鍵資訊
-
-# 2. 更新 SLUG.md 管線狀態紀錄
-# Edit .shiftblame/<slug>/SLUG.md — 追加 <ROLE>/<NNN> PASSED
-
-# 3. Commit 所有變更
-git add -A
-git commit -m "feat(<slug>): <ROLE>/<NNN> PASSED"
 ```
 
 4. 輸出階段摘要
-5. 提醒老闆開新對話以繼續下一角色階段
-6. **停止處理**，不得繼續下一角色
+5. **停止處理**，提醒老闆開新對話執行 DEV
 
-新對話恢復時：
+### 同類串接
+
+對話一串接（多 NNN 執行期）：
 
 ```bash
-# Read .shiftblame/<slug>/SLUG.md — 判定最後 PASSED 的角色
-# Read .shiftblame/ROADMAP.md — 讀取路線圖
-# Read .shiftblame/REPO.md — 讀取專案現狀
-# 接續下一角色
+# 對話一 NNN 001 完成後 → 開新對話 → 對話一 NNN 002
+# Read .shiftblame/<slug>/SLUG.md — 判定最新狀態
+# 建立新 NNN 目錄
+mkdir -p .shiftblame/<slug>/<ROLE>/002
+# Write plan.md, task.md 等
+```
+
+對話二串接（多 NNN 品管/品控期）：
+
+```bash
+# 對話二 NNN 001 完成後 → 開新對話 → 對話二 NNN 002
+# Read .shiftblame/<slug>/SLUG.md — 判定最新狀態與技術債
 ```
 
 ## PRD/SOP
