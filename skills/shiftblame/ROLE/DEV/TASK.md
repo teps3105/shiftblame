@@ -25,10 +25,20 @@ L1 為**執行任務**階段。宣告通過後，執行者直接執行所有產�
 - 依 `shared/handoff.md`（跨部門交接文件）定義本輪可見功能
 - 建立技術前置內容
 - GWT 逐條跑通
-- commit 格式：`<type>: <繁體中文標題>`
+- commit 格式：
+  ```bash
+  git add -A
+  git commit -m "<type>(<slug>): <繁體中文標題>"
+  # <type> 為 feat / fix / chore 等
+  ```
 - 計畫不可更動（已 PASSED 的前輪計畫範圍不得變更）
 - **所有測試在 L1 完成**：GWT 逐條驗證、邊界測試、端到端實機驗收。L4 不重跑測試，僅做品質團隊角度的防禦驗證
-- 程式碼執行完成後 commit，進入 L2 驗收
+- 程式碼執行完成後 commit：
+  ```bash
+  git add -A
+  git commit -m "feat(<slug>): <繁體中文標題>"
+  ```
+  進入 L2 驗收
 - 程式碼 EXECUTED 後鎖定，L3/L4 期間不得修改（發現問題依三分法判定退回目標）
 
 ### 子代理上下文需求
@@ -39,7 +49,11 @@ L1 為**執行任務**階段。宣告通過後，執行者直接執行所有產�
 2. **任務**：本輪計畫（管理者摘要）
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：`shared/handoff.md`（跨部門交接文件，下游必讀）
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
+5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
+   ```bash
+   mkdir -p .shiftblame/tmp
+   # 臨時檔案存放 .shiftblame/tmp/
+   ```
 
 ## task.md 產出格式
 

@@ -10,13 +10,20 @@
 2. **任務**：task.md 執行成果內容
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：前一輪 conclusion.md（若有）
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
+5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
+
+   ```bash
+   mkdir -p .shiftblame/tmp
+   # 臨時檔案存放 .shiftblame/tmp/
+   ```
 
 ## 驗收規範
 
 - L2 為**驗收成果**角色，非執行角色
 - 驗收 L1 執行成果是否正確：計畫是否已執行、品質標準是否達成
-- 產出驗收報告 result.md（self-contained，禁止引用其他文件）
+- ```bash
+  # Write .shiftblame/<slug>/PM/<NNN>/result.md — 驗收報告（self-contained，禁止引用其他文件）
+  ```
 - 驗收者不修改任何檔案，僅檢驗與報告
 - 品質標準驗收：安全要求、GWT 測試案例、驗收條件
 

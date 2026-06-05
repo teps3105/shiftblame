@@ -15,7 +15,11 @@ L4 為**藍隊防禦**階段。防禦者以內部品質團隊立場，對整體�
 3. **原始產出**：result.md 全文
 4. **任務**：task.md 執行成果內容
 5. **上游規格**：`shared/handoff.md`（跨部門交接文件，對照執行）
-6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
+6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
+   ```bash
+   mkdir -p .shiftblame/tmp
+   # 臨時檔案存放 .shiftblame/tmp/
+   ```
 
 ## 防禦方向
 
@@ -33,7 +37,14 @@ DEV 特定防禦點：
 ## 流程合規
 
 - FAIL → 管理者依三分法判定退回目標（見 `GATE.md`「退回規則」）
-- PASS → 管理者產出 conclusion.md
+- PASS → 管理者產出 conclusion.md：
+  ```bash
+  # Read .shiftblame/<slug>/DEV/<NNN>/task.md
+  # Read .shiftblame/<slug>/DEV/<NNN>/result.md
+  # Read .shiftblame/<slug>/DEV/<NNN>/red.md
+  # Read .shiftblame/<slug>/DEV/<NNN>/blue.md
+  # Write .shiftblame/<slug>/DEV/<NNN>/conclusion.md — 彙整五檔
+  ```
 - 防禦者發現問題標註嚴重性供管理者判定，不就地修復
 
 ## blue.md 產出格式

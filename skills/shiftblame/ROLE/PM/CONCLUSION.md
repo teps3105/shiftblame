@@ -6,6 +6,14 @@
 
 管理者彙整五檔（task.md + result.md + red.md + blue.md），寫入 conclusion.md。
 
+```bash
+# Read .shiftblame/<slug>/PM/<NNN>/task.md
+# Read .shiftblame/<slug>/PM/<NNN>/result.md
+# Read .shiftblame/<slug>/PM/<NNN>/red.md
+# Read .shiftblame/<slug>/PM/<NNN>/blue.md
+# Write .shiftblame/<slug>/PM/<NNN>/conclusion.md — 彙整五檔寫入
+```
+
 內容包含：
 - 最終結論 + 紅藍整合
 - 跨部門推進聲明（DEV 可接續的項目）

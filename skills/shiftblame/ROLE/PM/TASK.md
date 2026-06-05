@@ -25,12 +25,22 @@ L1 為**執行任務**階段。宣告通過後，執行者直接執行所有產�
 - 釐清使用者需求、REPO.md/ROADMAP.md 背景、本輪範圍
 - 調查市場研究、設計模式、CVE 等
 - 前端設計暫存 `.shiftblame/tmp/`
+
+```bash
+mkdir -p .shiftblame/tmp
+# 暫存前端設計產出至 .shiftblame/tmp/
+```
 - 前端設計與視覺規格完整寫入
 - 品質標準：安全要求、GWT 測試案例、驗收條件
 - 計畫不可更動（已 PASSED 的前輪計畫範圍不得變更）
 - 執行成果寫入 task.md「## 執行成果」
 - 跨部門流程時，conclusion.md 需提供充分的交接資訊（功能規格、設計規格、驗收條件、殘餘風險），供管理者彙整至 `shared/handoff.md` 交接給 DEV
-- 執行完成後 commit，進入 L2 驗收
+- ```bash
+  # 執行完成後 commit
+  git add -A
+  git commit -m "feat(<slug>): <繁體中文標題>"
+  # 進入 L2 驗收
+  ```
 
 ### 子代理上下文需求
 
@@ -40,7 +50,12 @@ L1 為**執行任務**階段。宣告通過後，執行者直接執行所有產�
 2. **任務**：本輪計畫（管理者摘要）
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：前一輪 conclusion.md（若有）
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放 `.shiftblame/tmp/`。
+5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
+
+   ```bash
+   mkdir -p .shiftblame/tmp
+   # 臨時檔案存放 .shiftblame/tmp/
+   ```
 
 ## task.md 產出格式
 
