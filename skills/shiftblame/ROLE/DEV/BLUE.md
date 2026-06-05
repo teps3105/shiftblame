@@ -46,6 +46,7 @@ DEV 特定防禦點：
 - FAIL → 不溯及既往：L3~L5 發現的問題記錄為技術債，由下一輪 NNN 處理
 - PASS → 管理者產出 conclusion.md：
   ```bash
+  # Read .shiftblame/<slug>/DEV/<NNN>/plan.md
   # Read .shiftblame/<slug>/DEV/<NNN>/task.md
   # Read .shiftblame/<slug>/DEV/<NNN>/result.md
   # Read .shiftblame/<slug>/DEV/<NNN>/red.md

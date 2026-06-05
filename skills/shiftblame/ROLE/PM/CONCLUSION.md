@@ -4,7 +4,7 @@
 
 ## 結論上下文
 
-管理者彙整六檔（plan.md + task.md + result.md + red.md + blue.md），寫入 conclusion.md。
+管理者彙整五份來源檔（plan.md + task.md + result.md + red.md + blue.md），寫入 conclusion.md（六檔齊全）。
 
 ```bash
 # Read .shiftblame/<slug>/PM/<NNN>/plan.md
