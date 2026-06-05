@@ -58,27 +58,6 @@ description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when:
 
 部門依需求選擇：研究事項→PM（研究品管）、開發事項→DEV（開發維運）。面向由對話階段自動綁定，老闆不再指定。不溯及既往：L3~L5 問題記為技術債，由下一輪 NNN 處理。同類對話串接：對話一→對話一→…；對話二→對話二→…。老闆控制分期切換。上下文管理由老闆自行決定。PM PASSED 後交接 DEV。詳見 `MANAGE.md`。
 
-## 跨部門全景流程
-
-完整功能開發（PM→DEV）的全景流程：
-
-```
-PM 研究期（對話一）  PM 品管期（對話二）  DEV 開發期（對話一）  DEV 維運期（對話二）
-    L0 規劃確認         L3 紅隊攻擊         L0 規劃確認         L3 紅隊攻擊
-    L1 執行任務         L4 藍隊防禦         L1 執行任務         L4 藍隊防禦
-    L2 驗收成果         L5 結論+收尾        L2 驗收成果         L5 結論+收尾
-         ↓                   ↓                   ↓                   ↓
-      APPROVED            PASSED             APPROVED            PASSED
-                              ↓                                       ↓
-                         handoff.md                              歸檔更新 4 檔
-                              ↓
-                        DEV 開發期開始
-```
-
-- PM PASSED 後建立 `shared/handoff.md` 交接給 DEV
-- DEV PASSED 後歸檔，更新 REPO.md / ROADMAP.md / PID.md / GRAPH.md
-- 技術債循環：對話二發現問題 → 新 NNN 對話一處理 → 對話二驗證
-
 ## 定義檔結構
 
 ```
@@ -127,3 +106,24 @@ skills/shiftblame/
 | 部門 | 研究事項→PM（研究品管）、開發事項→DEV（開發維運） |
 | 分支 | feat/\<slug\>（跨部門）或 main（單一部門，預設） |
 | 工作樹 | 不使用，DEV 預設在主 repo 分支執行 |
+
+## 跨部門全景流程
+
+完整功能開發（PM→DEV）的全景流程：
+
+```
+PM 研究期（對話一）  PM 品管期（對話二）  DEV 開發期（對話一）  DEV 維運期（對話二）
+    L0 規劃確認         L3 紅隊攻擊         L0 規劃確認         L3 紅隊攻擊
+    L1 執行任務         L4 藍隊防禦         L1 執行任務         L4 藍隊防禦
+    L2 驗收成果         L5 結論+收尾        L2 驗收成果         L5 結論+收尾
+         ↓                   ↓                   ↓                   ↓
+      APPROVED            PASSED             APPROVED            PASSED
+                              ↓                                       ↓
+                         handoff.md                              歸檔更新 4 檔
+                              ↓
+                        DEV 開發期開始
+```
+
+- PM PASSED 後建立 `shared/handoff.md` 交接給 DEV
+- DEV PASSED 後歸檔，更新 REPO.md / ROADMAP.md / PID.md / GRAPH.md
+- 技術債循環：對話二發現問題 → 新 NNN 對話一處理 → 對話二驗證
