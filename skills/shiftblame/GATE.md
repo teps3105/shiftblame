@@ -28,6 +28,15 @@ L0 為統一的**溝通階段**（停下並溝通）。管理者在對話中向�
 - L0 期間老闆修改需求 → 重新 L0 討論（等同退回）
 - L0 通過 → 共識寫入文件 → 宣告開始 → 依狀態分流進入 L(n)
 
+**面向判定**（L0 期間）：每次新 NNN 時，管理者向老闆提案本輪面向，老闆確認。面向記錄於 task.md frontmatter `aspect` 欄位。
+
+| 角色 | 面向 | 觸發時機 |
+|------|------|---------|
+| PM（計畫部門） | 規劃 | 需求釐清、功能規劃、品質定義（預設） |
+| PM（計畫部門） | 品管 | 專案品質偏移、標準不明、品質校正 |
+| DEV（開發部門） | 開發 | 技術實作、程式碼變更（預設） |
+| DEV（開發部門） | 驗證 | 開發完成後使用者視角驗證 |
+
 **分流規則**（L0 通過後，依當下狀態進入）：
 
 | 狀態 | → 進入 |
@@ -151,7 +160,7 @@ L2~L5 宣告通過未通過：依三分法判定退回目標（見「退回規�
 
 ## 派工檢查
 
-派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, round, status, created_at, trigger, review: local, upstream`。正文含 `# <ROLE>/<NNN>`、`## 階段生命週期` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（`<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄 → BLOCK。**跨部門交接驗證**：跨部門流程（PM→DEV）時，交接資料必須存入 `shared/` 目錄，不得散落在 slug 以外的專案位置。
+派工前確認 `SLUG.md` 與 `task.md` 存在。缺任一 → BLOCK。task.md frontmatter：`slug, role, aspect, round, status, created_at, trigger, review: local, upstream`。`aspect` 為必填欄位（PM：規劃/品管；DEV：開發/驗證），由老闆在 L0 指定。正文含 `# <ROLE>/<NNN>`、`## 階段生命週期` 與 `## 執行成果`。上游結論由管理者提供。PRD/SOP 非強制參照。**目錄結構驗證**：task.md 必須位於 NNN 切片目錄內（`<slug>/<ROLE>/<NNN>/task.md`）。task.md 直接出現在 `<slug>/` 或 `<slug>/<ROLE>/` 根目錄 → BLOCK。**跨部門交接驗證**：跨部門流程（PM→DEV）時，交接資料必須存入 `shared/` 目錄，不得散落在 slug 以外的專案位置。
 
 ## Worktree 閘門
 
