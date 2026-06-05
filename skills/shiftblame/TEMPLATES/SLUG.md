@@ -13,24 +13,18 @@ updated: <YYYY-MM-DD>
 
 ## 2. 管線狀態紀錄
 
-- 001 — （記錄每輪的角色、期別與狀態。格式：`<NNN> — <ROLE>/<期別>：<狀態>`。PM 期別為「研究期」或「品管期」、DEV 期別為「開發期」或「維運期」。範例：`001 — PM/研究期：APPROVED`、`002 — DEV/維運期：PASSED`。技術債紀錄附於狀態後）
+格式：`<NNN> — <ROLE>/<期別>：<狀態>（附註）`
+期別：PM 研究期/品管期；DEV 開發期/維運期。
 
-## 3. 殘餘風險與交接事項
+## 3. 技術債清單
+
+| 編號 | 來源 | 描述 | 建議行動 |
+|------|------|------|----------|
 
 ## 4. BossPreview/退回紀錄
 
 ## 5. 待收尾整理
 
-## 目錄結構參照
+## 目錄
 
-統一嵌套目錄：`<slug>/<ROLE>/<NNN>/task.md`
-
-禁止產物直接放在 `<slug>/` 或 `<ROLE>/` 根目錄（SLUG.md 除外）。
-
-```bash
-# 先建目錄再寫檔案
-mkdir -p .shiftblame/<slug>/shared
-mkdir -p .shiftblame/<slug>/<ROLE>/001
-# Write .shiftblame/<slug>/SLUG.md
-# Write .shiftblame/<slug>/<ROLE>/001/task.md
-```
+嵌套：`<slug>/<ROLE>/<NNN>/<stage>.md`（SLUG.md 除外）
