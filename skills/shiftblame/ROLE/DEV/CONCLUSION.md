@@ -29,7 +29,7 @@
 ## conclusion.md 產出格式
 
 ```markdown
-# conclusion.md — <slug> DEV/<NNN>
+# conclusion.md — <slug> DEV/<NNN>（<面向>面向）
 
 ## 階段生命週期
 
@@ -67,6 +67,6 @@ PASS / FAIL
 
 ## 歸檔時應更新
 
-- REPO.md：（需更新的項目）
+- REPO.md：（需更新的項目，含面向資訊）
 - ROADMAP.md：（需更新的項目）
 ```

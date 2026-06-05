@@ -14,7 +14,8 @@ L4 為**藍隊防禦**階段。防禦者以內部品質團隊立場，對整體�
 2. **L3 攻擊報告**：red.md 全文
 3. **原始產出**：result.md 全文
 4. **任務**：task.md 執行成果內容
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
+5. **面向**：本輪面向（規劃/品管）及對應的面向差異指引
+6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
 
    ```bash
    mkdir -p .shiftblame/tmp
@@ -57,7 +58,7 @@ PM 特定防禦點：
 ## blue.md 產出格式
 
 ```markdown
-# 防禦報告 — <slug> PM/<NNN>
+# 防禦報告 — <slug> PM/<NNN>（<面向>面向）
 
 ## 階段生命週期
 

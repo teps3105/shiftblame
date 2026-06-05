@@ -10,7 +10,8 @@
 2. **任務**：task.md 執行成果內容
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：`shared/handoff.md`（跨部門交接文件，下游必讀）
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
+5. **面向**：本輪面向（開發/驗證）及對應的面向差異指引
+6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
    ```bash
    mkdir -p .shiftblame/tmp
    # 臨時檔案存放 .shiftblame/tmp/
@@ -39,6 +40,7 @@
 ---
 slug: <slug>
 role: DEV
+aspect: <開發/驗證>
 round: <NNN>
 status: EXECUTED
 created_at: <ISO 8601>

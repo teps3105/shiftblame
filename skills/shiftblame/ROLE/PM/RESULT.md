@@ -10,7 +10,8 @@
 2. **任務**：task.md 執行成果內容
 3. **背景**：REPO.md、ROADMAP.md（管理者摘要）
 4. **上游**：前一輪 conclusion.md（若有）
-5. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
+5. **面向**：本輪面向（規劃/品管）及對應的面向差異指引
+6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；
 
    ```bash
    mkdir -p .shiftblame/tmp
@@ -39,6 +40,7 @@
 ---
 slug: <slug>
 role: PM
+aspect: <規劃/品管>
 round: <NNN>
 status: EXECUTED
 created_at: <ISO 8601>

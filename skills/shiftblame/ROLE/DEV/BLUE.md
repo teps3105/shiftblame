@@ -15,7 +15,8 @@ L4 為**藍隊防禦**階段。防禦者以內部品質團隊立場，對整體�
 3. **原始產出**：result.md 全文
 4. **任務**：task.md 執行成果內容
 5. **上游規格**：`shared/handoff.md`（跨部門交接文件，對照執行）
-6. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
+6. **面向**：本輪面向（開發/驗證）及對應的面向差異指引
+7. **讀寫規則**：遵守 `MANAGE.md`「編碼規則」。禁止未指定 UTF-8 讀取中文 Markdown；臨時檔案存放：
    ```bash
    mkdir -p .shiftblame/tmp
    # 臨時檔案存放 .shiftblame/tmp/
@@ -56,7 +57,7 @@ DEV 特定防禦點：
 ## blue.md 產出格式
 
 ```markdown
-# 防禦報告 — <slug> DEV/<NNN>
+# 防禦報告 — <slug> DEV/<NNN>（<面向>面向）
 
 ## 階段生命週期
 

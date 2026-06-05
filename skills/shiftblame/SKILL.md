@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, 手動(手動模式/規劃/文件/開發/維護/功能/新功能)→手動模式每階段L0對話確認後執行L(n), 自動(自動模式/自動/auto)→自動模式僅L0後L1~L5全自動。每個對話只執行一個角色階段。"
+description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, 手動(手動模式/規劃/文件/開發/維護/功能/新功能/品管/驗證/品質校正)→手動模式每階段L0對話確認後執行L(n), 自動(自動模式/自動/auto)→自動模式僅L0後L1~L5全自動。每個對話只執行一個角色階段。"
 ---
 # shiftblame — AI Agents 協作框架
 
