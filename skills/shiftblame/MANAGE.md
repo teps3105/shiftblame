@@ -41,6 +41,7 @@
 L1 commit：`git add <變更檔案> && git commit -m "<type>(<slug>): <標題>"`（禁止 force-add .shiftblame/，流程文件不入 repo）
 跨部門分支：`git checkout -b feat/<slug>`；單一部門：直接在 main 操作
 交接：PM PASSED → 彙整 conclusion.md 至 `shared/handoff.md`
+歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
 
 ## 觸發流程
 

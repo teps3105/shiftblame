@@ -45,6 +45,6 @@ L3/L4 序列執行，不得並行。
 ## Commit 與收尾
 
 L1 完成後必須 commit。期別結束：有產品變更則 commit，無則跳過。
-收尾：slug 結束 → 確認 → 合併 → 推送 → 清理 → 歸檔 → 更新四文件（REPO/ROADMAP/PID/GRAPH）。
+收尾：slug 結束 → 確認 → 合併 → 推送 → 清理 → 歸檔（遷移至 archive/） → 更新四文件（REPO/ROADMAP/PID/GRAPH）。
 
-**回溯原則**：錯誤不以後續提交修正，回到未發生時間點（`git reset --hard`）重做。已推送用 `--force` 覆蓋。
+**回溯原則**：錯誤不以後續提交修正，回特徵分支（`git reset --hard`）重做後重新 merge。已推送用 `--force` 覆蓋。
