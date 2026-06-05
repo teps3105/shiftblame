@@ -34,6 +34,10 @@
 |---|---|---|
 | 驗收焦點 | 功能規格完整性、GWT 案例可執行性、前端設計可交接性 | 品質標準是否校正完成、偏移是否已識別與修正、一致性檢查是否通過 |
 
+## frontmatter status 說明
+
+result.md frontmatter `status` 記錄的是**被驗收的 L1 執行狀態**（EXECUTED），而非 L2 驗收結果（APPROVED）。GATE.md 狀態機的 APPROVED 是管線閘門狀態，與 frontmatter status 是不同層級的記錄。兩者各司其職：frontmatter 記錄產物來源狀態，閘門記錄管線推進狀態。
+
 ## result.md 產出格式
 
 ```markdown

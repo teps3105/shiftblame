@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, 雙對話(雙對話/規劃/文件/開發/維護/功能/新功能/品管/維運/品質校正)→雙對話制度。每個對話只執行一個階段。"
+description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when: 開始(開始/start)→載入技能, 結束(結束/end)→載入技能, 雙對話(雙對話/規劃/文件/開發/維護/功能/新功能/品管/維運/品質校正)→雙對話制度。每個對話只執行一個階段。觸發(觸發/trigger/繼續/continue/接續)→意圖確認。"
 ---
 # shiftblame — AI Agents 協作框架
 
@@ -26,6 +26,18 @@ description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when:
 | PM | 研究品管 | 研究期 | 品管期 |
 | DEV | 開發維運 | 開發期 | 維運期 |
 
+## 觸發規格
+
+`/shiftblame` 後可接任意文字作為意圖線索，也可不接後標。
+
+| 觸發方式 | 行為 |
+|---------|------|
+| `/shiftblame <任意文字>` | 後標為意圖線索 → 讀取上下文 → 呈現理解到的意圖 → 對話確認 → 進 L0 |
+| `/shiftblame`（無後標，有未歸檔 SLUG.md） | 搜尋未歸檔 SLUG.md → 呈現清單 → 老闆選擇 → 確認意圖 |
+| `/shiftblame`（無後標，無未歸檔 slug） | 新 slug 溝通模式 → 分析 REPO.md / ROADMAP.md / PID.md / GRAPH.md → 提議下一個 slug → 對話確認 |
+
+**規則**：觸發後不直接執行，先與老闆對話確認意圖。意圖確認完成後才進入 L0 規劃確認。
+
 ## 入口導流
 
 | 情境 | 必讀 |
@@ -45,6 +57,27 @@ description: "AI Agents 協作框架。skills and docs encode: UTF-8。Use when:
 - **對話二（品管/品控對話）**：L3 紅隊攻擊(red.md) → L4 藍隊防禦(blue.md) → L5 結論+收尾(conclusion.md) → 提醒老闆開新對話或收尾
 
 部門依需求選擇：研究事項→PM（研究品管）、開發事項→DEV（開發維運）。面向由對話階段自動綁定，老闆不再指定。不溯及既往：L3~L5 問題記為技術債，由下一輪 NNN 處理。同類對話串接：對話一→對話一→…；對話二→對話二→…。老闆控制分期切換。上下文管理由老闆自行決定。PM PASSED 後交接 DEV。詳見 `MANAGE.md`。
+
+## 跨部門全景流程
+
+完整功能開發（PM→DEV）的全景流程：
+
+```
+PM 研究期（對話一）  PM 品管期（對話二）  DEV 開發期（對話一）  DEV 維運期（對話二）
+    L0 規劃確認         L3 紅隊攻擊         L0 規劃確認         L3 紅隊攻擊
+    L1 執行任務         L4 藍隊防禦         L1 執行任務         L4 藍隊防禦
+    L2 驗收成果         L5 結論+收尾        L2 驗收成果         L5 結論+收尾
+         ↓                   ↓                   ↓                   ↓
+      APPROVED            PASSED             APPROVED            PASSED
+                              ↓                                       ↓
+                         handoff.md                              歸檔更新 4 檔
+                              ↓
+                        DEV 開發期開始
+```
+
+- PM PASSED 後建立 `shared/handoff.md` 交接給 DEV
+- DEV PASSED 後歸檔，更新 REPO.md / ROADMAP.md / PID.md / GRAPH.md
+- 技術債循環：對話二發現問題 → 新 NNN 對話一處理 → 對話二驗證
 
 ## 定義檔結構
 

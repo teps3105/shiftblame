@@ -33,7 +33,7 @@
 | 對話一（L0~L2） | L0 規劃確認（plan.md）→ L1 執行（依複雜度）→ commit → L2 驗收 → STOP → 提醒老闆開新對話做驗證 |
 | 對話二（L3~L5） | L3 紅隊（依複雜度）→ L4 藍隊（依複雜度）→ L5 結論+收尾（管理者）→ PASSED |
 | 收尾 | 見 GATE.md「歸檔 → 收尾歸檔指令」 |
-| 歸檔→更新 | `# Read .shiftblame/archive/<slug>/SLUG.md` → `# Edit .shiftblame/REPO.md` + `# Edit .shiftblame/ROADMAP.md` |
+| 歸檔→更新 | `# Read .shiftblame/archive/<slug>/SLUG.md` → `# Edit .shiftblame/REPO.md` + `# Edit .shiftblame/ROADMAP.md` + `# Edit .shiftblame/PID.md` + `# Edit .shiftblame/GRAPH.md`（PID.md / GRAPH.md 不存在則跳過） |
 | 強制停止 | A：`git add -A && git commit -m "chore(<slug>): 強制停止"` → 收尾 / B：`git checkout . && git clean -fd` |
 
 ## 上下文隔離
@@ -185,6 +185,16 @@ mkdir -p .shiftblame/<slug>/shared
 
 ## 流程開始
 
+### 觸發確認（流程起點）
+
+技能觸發後，先執行意圖確認，不直接進入初始化：
+
+1. **有後標**：讀取後標指定的 SLUG.md 或解讀後標意圖 → 向老闆呈現理解 → 確認
+2. **無後標，有未歸檔 SLUG.md**：搜尋所有 `.shiftblame/*/SLUG.md`（status: in_progress）→ 呈現清單 → 老闆選擇 → 確認
+3. **無後標，無未歸檔 slug**：新 slug 溝通模式 → 讀取 REPO.md / ROADMAP.md / PID.md / GRAPH.md → 分析下一個 slug 建議 → 對話確認
+
+意圖確認完成後，接續下方 Step 1 初始化流程。
+
 ```bash
 # === Step 1: 初始化 ===
 # 檢查 .shiftblame/REPO.md 與 .shiftblame/ROADMAP.md 是否存在
@@ -247,6 +257,23 @@ git add -A
 git commit -m "feat(<slug>): <ROLE>/<NNN> 對話一完成 (L0~L2)"
 ```
 
+### 對話一結束提醒格式
+
+管理者在對話一結束時，向老闆輸出以下格式摘要：
+
+```markdown
+---
+**對話一完成：DEV/<NNN> 開發期**
+
+狀態：APPROVED（已 commit）
+產出：plan.md + task.md + result.md
+
+下一步：請開新對話進行 L3~L5 品管/品控驗證
+- 觸發方式：`/shiftblame L3~L5 .shiftblame/<slug>/SLUG.md`
+- 或直接輸入：`/shiftblame 繼續 <slug> 品管`（任意文字描述意圖即可）
+---
+```
+
 3. 寫入「宣告凍結」至 result.md
 4. 輸出摘要，提醒老闆開新對話進行 L3~L5
 5. **停止處理**
@@ -278,7 +305,7 @@ git commit -m "feat(<slug>): <ROLE>/<NNN> 對話二完成 (L3~L5，含技術債)
 3. **推送** → GATE.md Step 3
 4. **清理** → GATE.md Step 4
 5. **歸檔** → GATE.md Step 5
-6. **更新 REPO.md + ROADMAP.md** → GATE.md Step 7
+6. **更新 REPO.md + ROADMAP.md + PID.md + GRAPH.md**（PID.md / GRAPH.md 不存在則跳過）→ GATE.md Step 7
 7. **PRD 固化（若適用）**：若消耗 PRD，提取設計決策生成 SOP。
 8. **業務拓樑圖（若使用）**：若 `.shiftblame/GRAPH.md` 存在，更新。
 9. **開新對話**：輸出完成摘要，建議老闆開啟新對話。
@@ -320,6 +347,18 @@ L0~L2 內部退回：
 - **驗收問題**（報告微調）→ L2 直接修復
 
 跨部門問題：DEV 發現需求定義缺陷 → 退回 PM（跨部門）。
+
+### 回溯風險告知模板
+
+管理者在執行回溯（`git reset --hard`）前，必須向老闆呈現以下風險告知：
+
+> ⚠️ **回溯操作將永久刪除** DEV/001~目前 NNN 的所有 commit 紀錄與檔案變更。此操作不可逆。
+>
+> 影響範圍：<管理者填入受影響的 commit 數量與檔案數>
+>
+> 建議：若不確定，可先建立備份分支再回溯。
+
+老闆確認後才可執行回溯。
 
 ```bash
 # DEV 退回前先 commit

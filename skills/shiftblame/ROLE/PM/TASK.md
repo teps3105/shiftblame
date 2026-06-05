@@ -77,7 +77,7 @@ slug: <slug>
 role: PM
 aspect: <研究/品管>
 round: <NNN>
-status: PENDING
+status: EXECUTED
 created_at: <ISO 8601>
 trigger: <觸發原因>
 review: local

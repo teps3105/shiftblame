@@ -29,6 +29,7 @@ updated: <YYYY-MM-DD>
 
 ```bash
 # 先建目錄再寫檔案
+mkdir -p .shiftblame/<slug>/shared
 mkdir -p .shiftblame/<slug>/<ROLE>/001
 # Write .shiftblame/<slug>/SLUG.md
 # Write .shiftblame/<slug>/<ROLE>/001/task.md
