@@ -20,7 +20,7 @@ updated: <YYYY-MM-DD>
 | 編號 | 來源 | 描述 | 建議行動 |
 |------|------|------|----------|
 
-## 4. BossPreview/退回紀錄
+## 4. BossPreview/FAIL 紀錄
 
 ## 5. 待收尾整理
 
