@@ -188,8 +188,6 @@ skills/shiftblame/
 .shiftblame/
 ├── <slug>/               # 當前任務
 │   ├── SLUG.md           # 任務索引（目標、狀態、技術債）
-│   ├── shared/
-│   │   └── handoff.md    # PM→DEV 交接文件
 │   ├── PM/<NNN>/         # PM 各輪產物
 │   │   └── {plan,red,task,blue,result,conclusion}.md
 │   └── DEV/<NNN>/        # DEV 各輪產物（同結構）
