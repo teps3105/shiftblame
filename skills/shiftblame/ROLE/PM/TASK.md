@@ -1,7 +1,7 @@
 # PM TASK — L1 執行任務
 
 > L1 ｜ 依複雜度 ｜ 研究期 ｜ PM 無上游
-> 依計畫執行所有產出，成果寫入 task.md。前端設計暫存 .shiftblame/tmp/。完成後 commit。
+> 依計畫執行所有產出，成果寫入 task.md。前端設計限文字規格，不產出可執行程式碼。完成後 commit。
 
 ## 面向差異
 
@@ -16,14 +16,15 @@
 
 ## 執行規範
 
-- 依計畫執行；前端暫存 `.shiftblame/tmp/`；成果寫入 task.md
+- 依計畫執行；前端設計限文字規格，不產出可執行程式碼；成果寫入 task.md
 - commit：`git commit -m "feat(<slug>): <繁中標題>"`
+- PM 不碰程式碼；需程式碼理解時標記為 DEV 待辦
 
 ## 子代理上下文
 
 1. 角色：研究品管執行者 2. 任務：本輪計畫 3. 背景：REPO.md/ROADMAP.md
 4. 上游：前輪 conclusion.md（若有） 5. 面向：研究期=研究/品管期=品管
-6. 讀寫規則：UTF-8；PM 不變更 repo，產物僅存 .shiftblame/
+6. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
 
 ## task.md 產出格式
 
