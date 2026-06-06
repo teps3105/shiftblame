@@ -34,13 +34,15 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 ## 模式
 
 - **執行期**：L0 計畫(plan.md) → L1 執行(task.md) → L2 驗收(result.md)
-- **審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
+- **審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) 
 
 不溯及既往；同類串接；PM PASSED 後交接 DEV。
 
 ## 閘門
 
-老闆確認點位：開始→PM L0 ｜ PM L2→L3 ｜ PM L5→交接 ｜ 交接→DEV L0 ｜ DEV L2→L3 ｜ DEV L5→收尾。
+PM  閘門：流程開始 → PM  研究期開始 (L0) ｜  PM 研究期結束(L2) → PM 需求期開始(L3) ｜ PM 需求期結束(L5) → 交接
+DEV 閘門：交接開始 → DEV 開發期開始 (L0) ｜ DEV 開發期結束(L2) → DEV 維運期開始(L3) ｜ DEV 維運期結束(L5) → 收尾
+
 前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。適用 PM 與 DEV 所有角色。
 
 ## 角色與定義檔
