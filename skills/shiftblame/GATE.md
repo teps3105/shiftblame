@@ -31,6 +31,7 @@ PLANNED → RED → DEVELOPED → BLUE → VERIFIED → CHECKED → PASSED/FAIL
 ## 閘門紀律
 
 **六階段六斷點**：L0→L1→L2→L3→L4→L5 每個階段完成後，必須老闆確認通過才能進入下一階段。agent 不可自動通關。老闆只回答 PASS（推進）或 FAIL（開新 NNN 從 L0）。
+**審計定位**：L1/L3/L5 子代理獨立審計，揭露風險不做決策。L2/L4 參照審計結果評估。L5 審計供老闆參考決定是否收尾。
 
 ## 責任界線
 
