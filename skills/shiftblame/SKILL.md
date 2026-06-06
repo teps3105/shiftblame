@@ -1,10 +1,10 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。雙期：執行期 L0~L2，驗證期 L3~L5。"
+description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。雙期：執行期 L0~L2，審計期 L3~L5。"
 ---
 # shiftblame — AI Agents 協作框架
 
-依雙期制度協調 PM（研究品管）與 DEV（開發維運）。會話由老闆自由管理。
+依雙期制度協調 PM（研究需求）與 DEV（開發維運）。會話由老闆自由管理。
 
 1. **寫入權分化**：PM 不得變更 repo（產物僅存 .shiftblame/）；DEV 可變更 repo 並 commit（含維運期）
 2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
@@ -34,12 +34,17 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 ## 模式
 
 - **執行期**：L0 計畫(plan.md) → L1 執行(task.md) → L2 驗收(result.md)
-- **驗證期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
+- **審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
 
 不溯及既往；同類串接；PM PASSED 後交接 DEV。
 
+## 閘門
+
+老闆確認點位：開始→PM L0 ｜ PM L2→L3 ｜ PM L5→交接 ｜ 交接→DEV L0 ｜ DEV L2→L3 ｜ DEV L5→收尾。
+前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。適用 PM 與 DEV 所有角色。
+
 ## 角色與定義檔
 
-六角色（計畫/執行/驗收/攻擊/防禦/結論）× 雙部門（PM/DEV），各分執行期/驗證期。
+六角色（計畫/執行/驗收/攻擊/防禦/結論）× 雙部門（PM/DEV），各分執行期/審計期。
 詳見 `ROLE/{PM,DEV}/{PLAN,TASK,RESULT,RED,BLUE,CONCLUSION}.md`。
 閘門/收尾→GATE.md ｜ 管理者操作→MANAGE.md ｜ 模板→TEMPLATES/ ｜ 工具→TOOLS/

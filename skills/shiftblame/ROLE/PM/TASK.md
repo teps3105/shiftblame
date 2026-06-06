@@ -5,7 +5,7 @@
 
 ## 面向差異
 
-| | 研究面向 | 品管面向 |
+| | 研究面向 | 需求面向 |
 |---|---|---|
 | 觸發時機 | 需求釐清、功能研究 | 品質偏移、標準不明 |
 | L1 重點 | 需求分析、PICA、前端設計 | 偏移分析、校正、一致性檢查 |
@@ -23,15 +23,15 @@
 
 ## 子代理上下文
 
-1. 角色：研究品管執行者 2. 任務：本輪計畫 3. 背景：REPO.md/ROADMAP.md
-4. 上游：前輪 conclusion.md（若有） 5. 面向：研究期=研究/品管期=品管
+1. 角色：研究需求執行者 2. 任務：本輪計畫 3. 背景：REPO.md/ROADMAP.md
+4. 上游：前輪 conclusion.md（若有） 5. 面向：研究期=研究/需求期=需求
 6. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
 
 ## task.md 產出格式
 
 ```markdown
 ---
-slug: <slug> | role: PM | aspect: <研究/品管> | round: <NNN>
+slug: <slug> | role: PM | aspect: <研究/需求> | round: <NNN>
 status: EXECUTED | created_at: <ISO> | trigger: <原因>
 review: local | upstream: <上游 conclusion.md 路徑或 null>
 ---

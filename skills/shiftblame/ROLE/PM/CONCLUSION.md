@@ -1,6 +1,6 @@
 # PM CONCLUSION — L5 最終結論
 
-> L5 ｜ 管理者 ｜ 高權重 ｜ 品管期
+> L5 ｜ 管理者 ｜ 高權重 ｜ 需求期
 > 彙整六檔（plan+task+result+red+blue+conclusion）寫入 conclusion.md。Self-contained，不引用外部路徑。
 
 ## 內容
@@ -10,14 +10,14 @@
 ## 子代理上下文
 
 1. 角色：管理者 2. 來源：五份檔（plan/task/result/red/blue）
-3. 面向：品管期=品管面向
+3. 面向：需求期=需求面向
 4. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
 
 ## conclusion.md 產出格式
 
 ```markdown
 ---
-slug: <slug> | role: PM | aspect: <研究/品管> | round: <NNN>
+slug: <slug> | role: PM | aspect: <研究/需求> | round: <NNN>
 status: CHECKED | created_at: <ISO>
 ---
 # conclusion.md — <slug> PM/<NNN>（<面向>面向）

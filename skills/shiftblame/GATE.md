@@ -21,21 +21,20 @@ PLANNED → EXECUTED → APPROVED → RED → BLUE → CHECKED → PASSED
 | BLUE | L4 完成 | + blue.md |
 | CHECKED | 六檔齊全 | + conclusion.md |
 | PASSED | L5 通過（可能帶技術債） | — |
-
-**產物完整性**：狀態轉移前驗證必要文件已寫入 `<slug>/<ROLE>/<NNN>/`，含 frontmatter 且正文非空；不符 → BLOCK。每階段完成時一併執行。
+**產物完整性**：狀態轉移前驗證當前與下一階段必要文件已寫入 `<slug>/<ROLE>/<NNN>/`，含 frontmatter 且正文非空；不符 → BLOCK。每階段完成時一併執行。
+**前置建檔**：狀態轉移前須先建立下一階段文件並通過產物完整性驗證（frontmatter + 正文非空）。不符 → BLOCK。
+**交接紀律**：L2 result 僅記錄產物狀態。角色交接僅在 L5 PASSED 後生效，提前宣告交接 → BLOCK。
 
 ## 審查序列
 
-**意圖揭露**：進入 L0/L3 前、或修改 PRD/SOP/PID 時，管理者向老闆揭露手段、範圍、可調整項目。老闆確認後進入。
-
+**意圖揭露**：修改 PRD/SOP/PID 時須向老闆確認。閘門點位與前置建檔規則詳 SKILL.md。
 **執行期**：L0 計畫(plan.md) → L1 執行(task.md, commit) → L2 驗收(result.md)
-**驗證期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
-
+**審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
 L3/L4 序列執行，不得並行。
 
 ## 分流路由
 
-驗證期恢復依 NNN 狀態：APPROVED→意圖揭露→L3；RED→讀 red.md→L4；BLUE→L4；CHECKED→PASSED 後置（更新 SLUG.md、commit）；PLANNED/EXECUTED→BLOCK；PASSED→BLOCK。
+審計期恢復依 NNN 狀態：APPROVED→意圖揭露→L3；RED→讀 red.md→L4；BLUE→L4；CHECKED→PASSED 後置（更新 SLUG.md、commit）；PLANNED/EXECUTED→BLOCK；PASSED→BLOCK。
 
 ## 退回與追加
 

@@ -9,16 +9,16 @@
 
 ## 子代理上下文
 
-1. 角色：研究品管驗收者（非執行者） 2. 任務：task.md 執行成果
+1. 角色：研究需求驗收者（非執行者） 2. 任務：task.md 執行成果
 3. 背景：REPO.md/ROADMAP.md 4. 上游：前輪 conclusion.md（若有）
-5. 面向：研究期=研究/品管期=品管
+5. 面向：研究期=研究/需求期=需求
 6. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
 
 ## result.md 產出格式
 
 ```markdown
 ---
-slug: <slug> | role: PM | aspect: <研究/品管> | round: <NNN>
+slug: <slug> | role: PM | aspect: <研究/需求> | round: <NNN>
 status: EXECUTED | created_at: <ISO>
 ---
 # result.md — <slug> PM/<NNN>
