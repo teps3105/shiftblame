@@ -11,7 +11,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 3. **PM 程式碼邊界**：PM 可閱讀程式碼作為規格與研究素材，但不得定義實作方式；具體實作計畫為 DEV 職責
 4. **SOP 紀律**：PM/DEV 皆可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
 5. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，PID（`.shiftblame/PID/`）為 DEV 開發標準
-6. **計畫語言**：L0 建立 5W1H 邏輯 → L1 翻譯為 GWT 可執行語言
+6. **計畫語言**：L0 建立 5W1H 邏輯 → L2 翻譯為 GWT 可執行語言
 
 ## 啟動序列
 

@@ -1,4 +1,4 @@
-# DEV TASK — L1 執行任務
+# DEV TASK — L2 翻譯任務
 > L2 ｜ 開發期 ｜ 寫入權：可 commit ｜ 上游：shared/handoff.md
 
 依 plan.md 將技術 5W1H 翻譯為技術 GWT，執行實作、程式碼變更、測試撰寫。
