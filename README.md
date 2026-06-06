@@ -173,7 +173,7 @@ skills/shiftblame/
 | 2 | **會話 ≠ 管線** | 會話由老闆自由管理，L0~L5 是管線概念 |
 | 3 | **回溯原則** | 錯誤不以後續提交修正，回到未發生時間點重做 |
 | 4 | **SOP 紀律** | 可更新 SOP，建立與修改皆需意圖揭露 |
-| 5 | **PRD/PID 制度** | PRD 為規劃文件，PID 為開發標準 |
+| 5 | **PRD/PID 筆記本** | 老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈 |
 | 6 | **先實作再驗證** | 偶數實作、奇數審計，三輪配對（計畫/開發/驗收） |
 | 7 | **迭代收斂** | FAIL 推進下一 NNN，直到老闆認可 |
 | 8 | **前置建檔** | 每階段結束前須先建立下一階段文件 |
@@ -213,17 +213,17 @@ L0 計畫使用 5W1H 格式（Who/What/When/Where/Why/How），L4 驗收使用 G
 ## 📋 PRD / PID / SOP 制度
 
 <details>
-<summary>📖 了解 PRD、PID、SOP 的角色與生命週期</summary>
+<summary>📖 了解 PRD、PID、SOP</summary>
 
-### PRD — 產品需求文件
+### PRD — 需求筆記本
 
-規劃文件。生命週期：`draft → active → completed → 歸檔`
+老闆記錄需求的筆記本。Agent 可參考內容、協助整理，模板提供格式參考。
 
 存放位置：`.shiftblame/PRD/`
 
-### PID — 產品實作文件
+### PID — 標準筆記本
 
-開發標準。生命週期：`draft → active → deprecated → 歸檔`
+老闆記錄開發標準的筆記本。Agent 可參考內容、協助整理，模板提供格式參考。
 
 存放位置：`.shiftblame/PID/`
 

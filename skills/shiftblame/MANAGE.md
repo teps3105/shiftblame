@@ -9,15 +9,14 @@
 ├── SLUG.md
 └── <NNN>/{plan,red,task,blue,result,conclusion}.md
 .shiftblame/
-├── PRD/    ← 規劃（draft→active→completed→歸檔）
-├── PID/    ← 標準（draft→active→deprecated→歸檔）
+├── PRD/    ← 老闆筆記本（需求記錄）
+├── PID/    ← 老闆筆記本（標準記錄）
 └── SOP.md  ← 全局標準（需意圖揭露）
 ```
 
 ## PRD/PID/SOP 操作
 
-- PRD：撰寫 → 老闆確認 → slug 引用 → completed 後歸檔至 archive/PRD/
-- PID：撰寫 → 老闆確認 → slug 引用 → deprecated 後歸檔至 archive/PID/
+- PRD/PID：老闆的筆記本，agent 可參考與協助整理，模板提供格式參考
 - SOP：皆可更新，追加式記錄（來源+日期），建立與修改皆需意圖揭露
 
 ## 流程操作

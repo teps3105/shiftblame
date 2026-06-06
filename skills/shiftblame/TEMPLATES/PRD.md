@@ -7,6 +7,8 @@ updated: <YYYY-MM-DD>
 ---
 # <標題>
 
+> 老闆筆記本格式參考。Agent 可協助整理。
+
 ## Problem
 （描述當前問題或需求）
 
@@ -18,7 +20,3 @@ updated: <YYYY-MM-DD>
 
 ## Acceptance
 （描述驗收標準）
-
-## 關聯
-- 引用 PRD：無
-- 被引用於 slug：無

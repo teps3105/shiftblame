@@ -8,7 +8,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 1. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 2. **SOP 紀律**：可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
-3. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為規劃文件，PID（`.shiftblame/PID/`）為開發標準
+3. **PRD/PID 筆記本**：老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈
 4. **先實作再驗證**：偶數實作、奇數審計，三輪配對（計畫/開發/驗收）
 5. **迭代收斂**：FAIL 推進下一 NNN，直到老闆認可
 6. **Shift Blame**：L0~L1 老闆的鍋；L2 起 agent 的鍋
