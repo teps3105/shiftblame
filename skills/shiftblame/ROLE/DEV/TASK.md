@@ -1,5 +1,5 @@
 # DEV TASK — L2 翻譯任務
-> L2 ｜ 開發期 ｜ 寫入權：可 commit ｜ 上游：shared/handoff.md
+> L2 ｜ 開發期 ｜ 寫入權：可 commit
 
 依 plan.md 將技術 5W1H 翻譯為技術 GWT，執行實作、程式碼變更、測試撰寫。
 commit: `git commit -m "<type>(<slug>): <繁體中文標題>"`
@@ -12,7 +12,7 @@ commit: `git commit -m "<type>(<slug>): <繁體中文標題>"`
 
 ## 子代理上下文
 1. 角色：DEV 執行 2. 任務：plan.md 摘要 3. 背景：REPO/ROADMAP
-4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## task.md 產出格式
 

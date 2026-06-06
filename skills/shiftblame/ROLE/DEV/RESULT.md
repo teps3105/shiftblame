@@ -11,7 +11,7 @@
 
 ## 子代理上下文
 1. 角色：DEV 實作者 2. 任務：task.md GWT 規格 3. 背景：REPO/ROADMAP
-4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## result.md 產出格式
 

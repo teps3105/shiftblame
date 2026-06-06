@@ -6,7 +6,7 @@ DEV 開發維運。L0 建立技術邏輯 5W1H，產出 plan.md 作為本輪技�
 
 ## 子代理上下文
 1. 角色：DEV 計畫 2. 任務：本輪需求摘要 3. 背景：REPO/ROADMAP
-4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## plan.md 產出格式
 

@@ -10,7 +10,7 @@
 ## 子代理上下文
 
 1. 角色：PM 計畫 2. 任務：本輪需求 3. 背景：REPO.md/ROADMAP.md
-4. 上游：`shared/handoff.md`（若有） 5. 面向：研究面向
+4. 上游：前輪 conclusion.md（若有） 5. 面向：研究面向
 6. 讀寫規則：UTF-8；PM 可讀碼研究但禁定義實作；不變更 repo，產物僅存 .shiftblame/
 
 ## plan.md 產出格式

@@ -12,7 +12,7 @@
 
 ## 子代理上下文
 1. 角色：計畫審計者 2. 標的：plan.md 技術 5W1H
-3. 上游：shared/handoff.md 4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+3. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## red.md 產出格式
 

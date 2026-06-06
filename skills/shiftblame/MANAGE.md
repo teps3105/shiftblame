@@ -17,7 +17,7 @@
 
 ```
 .shiftblame/<slug>/
-├── SLUG.md, shared/handoff.md
+├── SLUG.md
 ├── PM/<NNN>/{plan,task,result,red,blue,conclusion}.md
 └── DEV/<NNN>/{plan,task,result,red,blue,conclusion}.md
 .shiftblame/
@@ -36,9 +36,9 @@
 
 **產物完整性**：每階段完成前，驗證該階段必要文件已寫入且正文非空。不符 → BLOCK。
 
-建立 slug：`mkdir -p .shiftblame/<slug>/shared .shiftblame/<slug>/<ROLE>/001`
+建立 slug：`mkdir -p .shiftblame/<slug>/<ROLE>/001`
 L1 commit：`git add <變更> && git commit -m "<type>(<slug>): <標題>"`（禁止 force-add .shiftblame/）
-交接：PM PASSED → 彙整 conclusion.md 至 `shared/handoff.md`
+交接：PM PASSED → DEV 從 conclusion.md 啟動 L0
 歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
 
 ## 觸發流程

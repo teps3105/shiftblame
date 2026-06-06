@@ -16,7 +16,7 @@
 
 ## 子代理上下文
 1. 角色：DEV 實作審計者 2. 來源：五份產出檔 3. 背景：REPO/ROADMAP
-4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## conclusion.md 產出格式
 
