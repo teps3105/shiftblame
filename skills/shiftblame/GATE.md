@@ -1,16 +1,17 @@
 # GATE — 閘門、狀態機與收尾
 
 1. **寫入權分化**：PM 任何階段不得變更 repo 檔案（產物僅存 .shiftblame/）；DEV 所有階段可變更 repo 並 commit（含維運期直接修復）
-2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行
+2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 3. **PM 程式碼禁令**：PM 不得研究、閱讀、分析、審查任何程式碼（含技能文件）；遇程式碼問題移交 DEV
+4. **PID 紀律**：PM/DEV 皆可更新 PID 作為全域紀錄，建立與修改皆需意圖揭露
+5. **PRD/SOP 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，SOP（`.shiftblame/SOP/`）為 DEV 開發標準
+6. **計畫語言分工**：PM 使用 PICA（Problem/Intent/Constraint/Acceptance），DEV 使用 GWT（Given/When/Then）
 
 ## 狀態機
-
 ```
 PLANNED → EXECUTED → APPROVED → RED → BLUE → CHECKED → PASSED
   (L0)      (L1)      (L2)     (L3)   (L4)    (L5)
 ```
-
 | 狀態 | 意義 | 必要文件 |
 |------|------|----------|
 | PLANNED | L0 完成 | plan.md |
@@ -21,11 +22,11 @@ PLANNED → EXECUTED → APPROVED → RED → BLUE → CHECKED → PASSED
 | CHECKED | 六檔齊全 | + conclusion.md |
 | PASSED | L5 通過（可能帶技術債） | — |
 
-**產物完整性**：狀態轉移前驗證必要文件已寫入 `<slug>/<ROLE>/<NNN>/`，含 frontmatter（slug/role/aspect/round/status）且正文非空；不符 → BLOCK。每階段完成時一併執行此檢查。
+**產物完整性**：狀態轉移前驗證必要文件已寫入 `<slug>/<ROLE>/<NNN>/`，含 frontmatter 且正文非空；不符 → BLOCK。每階段完成時一併執行。
 
 ## 審查序列
 
-**意圖揭露**：進入 L0 或 L3 前，管理者向老闆揭露手段、範圍、可調整項目。各項目須具體到老闆可判斷是否充分，老闆確認後進入。
+**意圖揭露**：進入 L0/L3 前、或修改 PRD/SOP/PID 時，管理者向老闆揭露手段、範圍、可調整項目。老闆確認後進入。
 
 **執行期**：L0 計畫(plan.md) → L1 執行(task.md, commit) → L2 驗收(result.md)
 **驗證期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
@@ -34,7 +35,7 @@ L3/L4 序列執行，不得並行。
 
 ## 分流路由
 
-驗證期恢復依 NNN 狀態：APPROVED→意圖揭露→L3；RED→讀 red.md→L4；BLUE→L4；CHECKED→PASSED 後置（更新 SLUG.md、commit）；PLANNED/EXECUTED→BLOCK（未完成執行期）；PASSED→BLOCK（已完成）。
+驗證期恢復依 NNN 狀態：APPROVED→意圖揭露→L3；RED→讀 red.md→L4；BLUE→L4；CHECKED→PASSED 後置（更新 SLUG.md、commit）；PLANNED/EXECUTED→BLOCK；PASSED→BLOCK。
 
 ## 退回與追加
 
@@ -45,6 +46,5 @@ L3/L4 序列執行，不得並行。
 
 ## Commit 與收尾
 
-L1 完成後必須 commit。期別結束：有產品變更則 commit，無則跳過。
-收尾：slug 結束 → 確認 → 合併 → 推送 → 清理 → 歸檔（遷移至 archive/） → 更新四文件（REPO/ROADMAP/PID/GRAPH）。
+L1 完成後必須 commit。期別結束：有產品變更則 commit，無則跳過。收尾：slug 結束 → 確認 → 合併 → 推送 → 清理 → 歸檔 → 更新四文件。
 **回溯原則**：錯誤不以後續提交修正，回所屬分支（`git reset --hard`）重做後重新 merge。無分支則在 main reset。已推送用 `--force` 覆蓋。

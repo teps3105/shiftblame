@@ -7,8 +7,11 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 依雙期制度協調 PM（研究品管）與 DEV（開發維運）。會話由老闆自由管理。
 
 1. **寫入權分化**：PM 不得變更 repo（產物僅存 .shiftblame/）；DEV 可變更 repo 並 commit（含維運期）
-2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行
+2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 3. **PM 程式碼禁令**：PM 不得研究、閱讀、分析、審查任何程式碼（含技能文件）；遇程式碼問題移交 DEV
+4. **PID 紀律**：PM/DEV 皆可更新 PID 作為全域紀錄，建立與修改皆需意圖揭露
+5. **PRD/SOP 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，SOP（`.shiftblame/SOP/`）為 DEV 開發標準
+6. **計畫語言分工**：PM 使用 PICA（Problem/Intent/Constraint/Acceptance），DEV 使用 GWT（Given/When/Then）
 
 ## 啟動序列
 
