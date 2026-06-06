@@ -30,7 +30,7 @@ PLANNED → RED → DEVELOPED → BLUE → VERIFIED → CHECKED → PASSED/FAIL
 
 ## 閘門紀律
 
-**六階段六斷點**：L0→L1→L2→L3→L4→L5 每個階段完成後，必須老闆確認通過才能進入下一階段。agent 不可自動通關。老闆只回答 pass（推進）或 fail（開新 NNN 從 L0）。
+**六階段六斷點**：L0→L1→L2→L3→L4→L5 每個階段完成後，必須老闆確認通過才能進入下一階段。agent 不可自動通關。老闆只回答 PASS（推進）或 FAIL（開新 NNN 從 L0）。
 
 ## 責任界線
 

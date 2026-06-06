@@ -14,6 +14,10 @@
 └── SOP.md  ← 全局標準（需意圖揭露）
 ```
 
+## 隔離原則
+
+**slug 鏈範圍僅限主 repo**。`.shiftblame/` 是本地運行時，不入 repo、不進 slug 鏈。PRD/PID/SOP 等運行時文件由老闆管理，agent 可協助整理但不屬 slug 產物。
+
 ## PRD/PID/SOP 操作
 
 - PRD/PID：老闆的筆記本，agent 可參考與協助整理，模板提供格式參考

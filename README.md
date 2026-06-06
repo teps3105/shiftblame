@@ -146,7 +146,7 @@ skills/shiftblame/
 
 ## 📦 .shiftblame/ 運行時目錄
 
-`.shiftblame/` 是框架的運行時工作區，**本地私密，不入 repo**：
+`.shiftblame/` 是框架的運行時工作區，**本地私密，不入 repo、不進 slug 鏈**。slug 鏈（L0~L5 + commit）影響的範圍僅限主 repo 的檔案。
 
 ```
 .shiftblame/
