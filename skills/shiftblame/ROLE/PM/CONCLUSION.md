@@ -11,7 +11,7 @@
 
 1. 角色：管理者 2. 來源：五份檔（plan/task/result/red/blue）
 3. 面向：需求期=需求面向
-4. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
+4. 讀寫規則：UTF-8；PM 可讀碼研究但禁定義實作；不變更 repo，產物僅存 .shiftblame/
 
 ## conclusion.md 產出格式
 

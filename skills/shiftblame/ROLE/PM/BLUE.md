@@ -20,7 +20,7 @@ PM 防禦點：規格完整性、DEV 可執行性、設計交接就緒。不含�
 
 1. 角色：內部品質團隊 2. L3 報告：red.md 3. 原始產出：result.md
 4. 面向：需求期=需求面向
-5. 讀寫規則：UTF-8；PM 不碰程式碼；不變更 repo，產物僅存 .shiftblame/
+5. 讀寫規則：UTF-8；PM 可讀碼研究但禁定義實作；不變更 repo，產物僅存 .shiftblame/
 
 ## blue.md 產出格式
 

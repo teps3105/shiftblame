@@ -2,7 +2,7 @@
 
 1. **寫入權分化**：PM 任何階段不得變更 repo 檔案（產物僅存 .shiftblame/）；DEV 所有階段可變更 repo 並 commit（含維運期直接修復）
 2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
-3. **PM 程式碼禁令**：PM 不得研究、閱讀、分析、審查任何程式碼（含技能文件）；遇程式碼問題移交 DEV
+3. **PM 程式碼邊界**：PM 可閱讀程式碼作為規格與研究素材，但不得定義實作方式；具體實作計畫為 DEV 職責
 4. **SOP 紀律**：PM/DEV 皆可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
 5. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，PID（`.shiftblame/PID/`）為 DEV 開發標準
 6. **計畫語言分工**：PM 使用 PICA（Problem/Intent/Constraint/Acceptance），DEV 使用 GWT（Given/When/Then）
