@@ -28,21 +28,15 @@ PLANNED → RED → DEVELOPED → BLUE → VERIFIED → CHECKED → PASSED/FAIL
 **產物完整性**：狀態轉移前驗證當前與下一階段必要文件已寫入且正文非空；不符 → BLOCK。
 **前置建檔**：狀態轉移前須先建立下一階段文件並通過產物完整性驗證。不符 → BLOCK。
 
+## 閘門紀律
+
+**六階段六斷點**：L0→L1→L2→L3→L4→L5 每個階段完成後，必須老闆確認通過才能進入下一階段。agent 不可自動通關。老闆只回答 pass（推進）或 fail（開新 NNN 從 L0）。
+
 ## 責任界線
 
 - **L0~L1**：老闆的鍋 — 計畫可反覆修改，老闆全權決定
 - **L2 起**：agent 的鍋 — 任何問題開新 NNN 從 L0 重跑，不修補
 - **NNN=Commit**：每個 NNN 恰好一個 commit，NNN 數量 = commit 數量
-
-## 分流路由
-
-依 NNN 狀態恢復：PLANNED→L1；RED→L2；DEVELOPED→L3；BLUE→L4；VERIFIED→L5；CHECKED→PASSED 後置；PASSED→BLOCK。
-
-## 退回與追加
-
-- 審計失敗：退回對應實作階段修復（L1→L0；L3→L2；L5→L4）
-- 不溯及既往，問題記為技術債
-- 追加超過原計畫 50%（累積）→ 應退回 L0
 
 ## Commit 與收尾
 

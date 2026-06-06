@@ -142,9 +142,6 @@ skills/shiftblame/
 └── TOOLS/                # 工具包（DESIGN, E2E）
 ```
 
-> [!NOTE]
-> 所有定義檔 ≤ 50 行/檔。UTF-8 編碼（含中文文件）。
-
 ---
 
 ## 📦 .shiftblame/ 運行時目錄
@@ -205,23 +202,11 @@ skills/shiftblame/
 
 ## 🔗 可追溯鏈
 
-框架的核心是**可追溯鏈**：
+每個任務（slug）遵循「先計畫→再實作→後驗收」的管線。管線分為六個階段（L0~L5），每個階段完成後必須老闆確認通過才能推進，老闆只須回答 pass 或 fail——pass 推進下一階段，fail 開新 NNN 從 L0 重跑。
 
-```
-先計畫 → 再實作 → 後驗收
-```
+L0~L1 是老闆的鍋：計畫可反覆修改，老闆全權決定。進入 L2 後是 agent 的鍋：一旦 commit，agent 為這個提交負責，後續任何問題都需開新 NNN 來收拾。每個 NNN 恰好對應一個 commit，slug 的完成是由多個 NNN commit 疊加收斂的結果，每一步都有跡可循。agent 所有變更走 `feat/<slug>` 分支，收尾合併回 main。
 
-- **L2 commit 前**：一切可反覆修改，這是老闆的鍋
-- **L2 commit 後**：agent 為這個提交負責，後續問題開新 NNN 收拾
-- **每個 NNN = 一個 commit**：slug 的完成由多個 NNN commit 疊加收斂，每個都有跡可循
-
-### 計畫/驗收格式
-
-框架使用兩種格式作為計畫與驗收的語言工具：
-
-**L0 計畫格式 — 5W1H**：Who / What / When / Where / Why / How
-
-**L4 驗收格式 — GWT**：Given（前提）→ When（動作）→ Then（預期結果）
+L0 計畫使用 5W1H 格式（Who/What/When/Where/Why/How），L4 驗收使用 GWT 格式（Given→When→Then）。
 
 ---
 

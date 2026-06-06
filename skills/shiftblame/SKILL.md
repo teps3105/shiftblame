@@ -40,11 +40,11 @@ L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md
 ## 閘門
 
 閘門：流程開始(L0) → L5 PASSED → 收尾
+六階段六斷點：每個階段完成後，必須老闆確認通過才能進入下一階段。不可自動通關。老闆只回答 pass（推進）或 fail（開新 NNN 從 L0）。
 前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。
 分支：同 slug 使用 `feat/<slug>` 分支，agent 禁止直接操作 main。
 
 ## 角色與定義檔
 
-六角色（實作計畫/審計計畫/實作開發/審計開發/實作驗收/審計驗收）。
-詳見 `ROLE/{PLAN,RED,TASK,BLUE,RESULT,CONCLUSION}.md`。
+六角色（實作計畫/審計計畫/實作開發/審計開發/實作驗收/審計驗收）。詳見 `ROLE/{PLAN,RED,TASK,BLUE,RESULT,CONCLUSION}.md`。
 閘門/收尾→GATE.md ｜ 管理者操作→MANAGE.md ｜ 模板→TEMPLATES/ ｜ 工具→TOOLS/
