@@ -9,15 +9,15 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 1. **寫入權分化**：PM 不得變更 repo（產物僅存 .shiftblame/）；DEV 可變更 repo 並 commit（含維運期）
 2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 3. **PM 程式碼禁令**：PM 不得研究、閱讀、分析、審查任何程式碼（含技能文件）；遇程式碼問題移交 DEV
-4. **PID 紀律**：PM/DEV 皆可更新 PID 作為全域紀錄，建立與修改皆需意圖揭露
-5. **PRD/SOP 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，SOP（`.shiftblame/SOP/`）為 DEV 開發標準
+4. **SOP 紀律**：PM/DEV 皆可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
+5. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，PID（`.shiftblame/PID/`）為 DEV 開發標準
 6. **計畫語言分工**：PM 使用 PICA（Problem/Intent/Constraint/Acceptance），DEV 使用 GWT（Given/When/Then）
 
 ## 啟動序列
 
 每次觸發**僅載入索引層**，禁止一次讀入整個專案。依序：
 1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md（清單即可）
-2. **四文件載入**：REPO.md → ROADMAP.md → PID.md → GRAPH.md
+2. **四文件載入**：REPO.md → ROADMAP.md → SOP.md → GRAPH.md
 3. **Repo 狀態**：git log、status、branch（摘要即可）
 其餘原始碼、角色定義檔、模板等，依分流後角色需求按需載入。
 

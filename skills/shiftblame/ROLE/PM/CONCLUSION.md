@@ -45,5 +45,5 @@ PASS / FAIL
 
 ## 收尾後置作業
 ### 歸檔時應更新
-- REPO.md / ROADMAP.md / PID.md / GRAPH.md / shared/handoff.md
+- REPO.md / ROADMAP.md / SOP.md / GRAPH.md / shared/handoff.md
 ```

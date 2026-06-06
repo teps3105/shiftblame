@@ -43,8 +43,8 @@ PASS / FAIL
 （如無則寫「無」）
 
 ## 收尾後置作業
-- 歸檔更新：REPO.md / ROADMAP.md / PID.md / GRAPH.md ｜ 維運驗證：端到端驗收確認
+- 歸檔更新：REPO.md / ROADMAP.md / SOP.md / GRAPH.md ｜ 維運驗證：端到端驗收確認
 
 ## 歸檔時應更新
-- REPO/ROADMAP/PID/GRAPH：（各項需更新內容）
+- REPO/ROADMAP/SOP/GRAPH：（各項需更新內容）
 ```

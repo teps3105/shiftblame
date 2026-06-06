@@ -22,15 +22,15 @@
 └── DEV/<NNN>/{plan,task,result,red,blue,conclusion}.md
 .shiftblame/
 ├── PRD/    ← PM 規劃（draft→active→completed→歸檔）
-├── SOP/    ← DEV 標準（draft→active→deprecated→歸檔）
-└── PID.md  ← 全域紀錄（PM/DEV 可更新，需意圖揭露）
+├── PID/    ← DEV 標準（draft→active→deprecated→歸檔）
+└── SOP.md  ← 全局標準（PM/DEV 可更新，需意圖揭露）
 ```
 
-## PRD/SOP/PID 操作
+## PRD/PID/SOP 操作
 
 - PRD：PM 撰寫 → 老闆確認 → slug 引用 → completed 後歸檔至 archive/PRD/
-- SOP：DEV 撰寫 → 老闆確認 → slug 引用 → deprecated 後歸檔至 archive/SOP/
-- PID：PM/DEV 皆可更新，追加式記錄（來源+日期），建立與修改皆需意圖揭露
+- PID：DEV 撰寫 → 老闆確認 → slug 引用 → deprecated 後歸檔至 archive/PID/
+- SOP：PM/DEV 皆可更新，追加式記錄（來源+日期），建立與修改皆需意圖揭露
 
 ## 流程操作
 

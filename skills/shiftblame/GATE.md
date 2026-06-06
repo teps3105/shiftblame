@@ -3,8 +3,8 @@
 1. **寫入權分化**：PM 任何階段不得變更 repo 檔案（產物僅存 .shiftblame/）；DEV 所有階段可變更 repo 並 commit（含維運期直接修復）
 2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 3. **PM 程式碼禁令**：PM 不得研究、閱讀、分析、審查任何程式碼（含技能文件）；遇程式碼問題移交 DEV
-4. **PID 紀律**：PM/DEV 皆可更新 PID 作為全域紀錄，建立與修改皆需意圖揭露
-5. **PRD/SOP 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，SOP（`.shiftblame/SOP/`）為 DEV 開發標準
+4. **SOP 紀律**：PM/DEV 皆可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
+5. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，PID（`.shiftblame/PID/`）為 DEV 開發標準
 6. **計畫語言分工**：PM 使用 PICA（Problem/Intent/Constraint/Acceptance），DEV 使用 GWT（Given/When/Then）
 
 ## 狀態機
@@ -27,7 +27,7 @@ PLANNED → EXECUTED → APPROVED → RED → BLUE → CHECKED → PASSED
 
 ## 審查序列
 
-**意圖揭露**：修改 PRD/SOP/PID 時須向老闆確認。閘門點位與前置建檔規則詳 SKILL.md。
+**意圖揭露**：修改 PRD/PID/SOP 時須向老闆確認。閘門點位與前置建檔規則詳 SKILL.md。
 **執行期**：L0 計畫(plan.md) → L1 執行(task.md, commit) → L2 驗收(result.md)
 **審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) → 收尾
 L3/L4 序列執行，不得並行。

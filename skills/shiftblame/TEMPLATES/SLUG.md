@@ -29,4 +29,4 @@ updated: <YYYY-MM-DD>
 
 嵌套：`<slug>/<ROLE>/<NNN>/<stage>.md`（SLUG.md 除外）
 
-全域文件：`.shiftblame/PRD/`（PM 規劃）、`.shiftblame/SOP/`（DEV 標準）、`.shiftblame/PID.md`（全域紀錄）
+全域文件：`.shiftblame/PRD/`（PM 規劃）、`.shiftblame/PID/`（DEV 標準）、`.shiftblame/SOP.md`（全局標準）

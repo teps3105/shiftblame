@@ -22,7 +22,7 @@ _「這不是我的鍋。」_
 | PM 研究品管 | 需求釐清、品質定義、測試標準 | 品質偏移校正、標準修訂 |
 | DEV 開發維運 | 技術規劃、設計、執行、驗收 | 使用者視角驗證、端到端驗收 |
 
-PM PASSED → 交接 DEV。DEV PASSED → 歸檔更新四文件（REPO 現狀 / ROADMAP 規劃 / PID 執行準則+項目清單 / GRAPH 圖譜）。
+PM PASSED → 交接 DEV。DEV PASSED → 歸檔更新四文件（REPO 現狀 / ROADMAP 規劃 / SOP 全局標準 / GRAPH 圖譜）。
 
 ## 定義檔
 
