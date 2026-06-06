@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。雙期：執行期 L0~L2，審計期 L3~L5。"
+description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。交錯六階段：計畫→審計→翻譯→審計→實作→審計。"
 ---
 # shiftblame — AI Agents 協作框架
 
@@ -33,20 +33,17 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 模式
 
-- **執行期**：L0 計畫(plan.md) → L1 執行(task.md) → L2 驗收(result.md)
-- **審計期**：L3 紅隊(red.md) → L4 藍隊(blue.md) → L5 結論(conclusion.md) 
-
+L0 計畫(plan.md) → L1 審計計畫(red.md) → L2 翻譯(task.md) → L3 審計翻譯(blue.md) → L4 實作(result.md) → L5 審計實作(conclusion.md)
 不溯及既往；同類串接；PM PASSED 後交接 DEV。
 
 ## 閘門
 
-PM  閘門：流程開始 → PM  研究期開始 (L0) ｜  PM 研究期結束(L2) → PM 需求期開始(L3) ｜ PM 需求期結束(L5) → 交接
-DEV 閘門：交接開始 → DEV 開發期開始 (L0) ｜ DEV 開發期結束(L2) → DEV 維運期開始(L3) ｜ DEV 維運期結束(L5) → 收尾
-
+PM  閘門：流程開始(L0) → L5 PASSED → 交接
+DEV 閘門：交接開始(L0) → L5 PASSED → 收尾
 前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。適用 PM 與 DEV 所有角色。
 
 ## 角色與定義檔
 
-六角色（計畫/執行/驗收/攻擊/防禦/結論）× 雙部門（PM/DEV），各分執行期/審計期。
+六角色（計畫/審計計畫/翻譯/審計翻譯/實作/審計實作）× 雙部門（PM/DEV）。
 詳見 `ROLE/{PM,DEV}/{PLAN,TASK,RESULT,RED,BLUE,CONCLUSION}.md`。
 閘門/收尾→GATE.md ｜ 管理者操作→MANAGE.md ｜ 模板→TEMPLATES/ ｜ 工具→TOOLS/

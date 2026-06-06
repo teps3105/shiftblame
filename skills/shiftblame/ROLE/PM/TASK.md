@@ -1,6 +1,6 @@
 # PM TASK — L1 執行任務
 
-> L1 ｜ 依複雜度 ｜ 研究期 ｜ PM 無上游
+> L2 ｜ 依複雜度 ｜ PM 無上游
 > 依計畫將 5W1H 翻譯為業務 GWT，成果寫入 task.md。不產出可執行程式碼。完成後 commit。
 
 ## 面向差異
@@ -32,7 +32,7 @@
 ```markdown
 ---
 slug: <slug> | role: PM | aspect: <研究/需求> | round: <NNN>
-status: EXECUTED | created_at: <ISO> | trigger: <原因>
+status: TRANSLATED | created_at: <ISO> | trigger: <原因>
 review: local | upstream: <上游 conclusion.md 路徑或 null>
 ---
 # PM/<NNN> <觸發原因>任務：<標題>

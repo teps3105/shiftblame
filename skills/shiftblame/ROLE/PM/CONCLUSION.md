@@ -1,16 +1,16 @@
-# PM CONCLUSION — L5 最終結論
+# PM CONCLUSION — L5 審計實作
 
-> L5 ｜ 管理者 ｜ 高權重 ｜ 需求期
-> 彙整六檔（plan+task+result+red+blue+conclusion）寫入 conclusion.md。Self-contained，不引用外部路徑。
+> L5 ｜ 管理者 ｜ 高權重
+> 審計 L4 result.md，檢驗實作有沒有到位。Self-contained，不引用外部路徑。
 
 ## 內容
 
-結論＋紅藍整合、自行驗收聲明、殘餘風險、收尾後置作業。僅涵蓋產品面，程式碼結論由 DEV 負責。
+審計 L4 實作是否完整反映 L2 GWT 規格。自行驗收聲明、殘餘風險、收尾後置作業。
 
 ## 子代理上下文
 
 1. 角色：管理者 2. 來源：五份檔（plan/task/result/red/blue）
-3. 面向：需求期=需求面向
+3. 面向：研究/需求
 4. 讀寫規則：UTF-8；PM 可讀碼研究但禁定義實作；不變更 repo，產物僅存 .shiftblame/
 
 ## conclusion.md 產出格式
@@ -33,12 +33,6 @@ PASS / FAIL
 
 ## 變更成果
 （摘要本次變更）
-
-## 自行驗收聲明
-（驗收確認）
-
-## Commit 紀錄
-- `<hash>` — <commit 訊息>
 
 ## 殘餘風險
 （含技術債，無則寫「無」）

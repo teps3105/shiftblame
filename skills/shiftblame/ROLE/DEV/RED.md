@@ -1,46 +1,41 @@
-# DEV RED — L3 紅隊攻擊
-> L3 ｜ 維運期 ｜ 立場：外部對手 ｜ 寫入權：**可直接修復並 commit**
+# DEV RED — L1 審計計畫
 
-外部對手立場，滲透/攻擊/破壞。DEV 攻擊面：PM 規格完整執行、GWT 全通、安全性、效能。
+> L1 ｜ 審計 L0 plan.md ｜ 寫入權：**可直接修復並 commit**
+
+審計技術 5W1H 計畫有沒有偏差。DEV 審計面：技術可行性、架構合理性、安全性、效能。
 
 ## 面向差異
 
 | | 開發面向 | 維運面向 |
 |---|---|---|
-| 攻擊焦點 | 程式碼缺陷、安全漏洞、架構弱點 | 使用者視角遺漏、端到端流程斷裂 |
+| 審計焦點 | 技術 5W1H 可行性、架構風險 | 維運方案完整性、端到端風險 |
 
 ## 子代理上下文
-1. 角色：外部攻擊者 2. 標的：result.md+產出 3. 任務：task.md 成果
-4. 上游：shared/handoff.md 5. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
+1. 角色：計畫審計者 2. 標的：plan.md 技術 5W1H
+3. 上游：shared/handoff.md 4. 讀寫：UTF-8，臨時檔放 .shiftblame/tmp/
 
 ## red.md 產出格式
 
 ```markdown
 ---
-slug: <slug>
-role: DEV
-aspect: <開發/維運>
-round: <NNN>
-status: RED
-created_at: <ISO 8601>
+slug: <slug> | role: DEV | aspect: <開發/維運> | round: <NNN>
+status: RED | created_at: <ISO>
 ---
-# 攻擊報告 — <slug> DEV/<NNN>（<面向>面向）
+# 審計報告（計畫）— <slug> DEV/<NNN>（<面向>面向）
 
 ## 階段生命週期
 | 宣告 | 時間 | 狀態 |
 |------|------|------|
 | 宣告開始 | | |
 | 宣告完成 | | |
-| 宣告通過 | | |
 
-## 攻擊摘要
+## 審計摘要
 （整體評估）
 
-## 攻擊點
+## 審計發現
 ### A1: （標題）
 - **嚴重性**：HIGH/MEDIUM/LOW
-- **類型**：滲透/攻擊/破壞
-- **描述**：（問題與證據）
+- **描述**：（問題）| **證據**：（plan.md 行號）
 
 ## 結論
 PASS / FAIL

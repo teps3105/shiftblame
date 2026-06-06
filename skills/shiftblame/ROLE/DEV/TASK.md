@@ -1,5 +1,5 @@
 # DEV TASK — L1 執行任務
-> L1 ｜ 開發期 ｜ 寫入權：可 commit ｜ 上游：shared/handoff.md
+> L2 ｜ 開發期 ｜ 寫入權：可 commit ｜ 上游：shared/handoff.md
 
 依 plan.md 將技術 5W1H 翻譯為技術 GWT，執行實作、程式碼變更、測試撰寫。
 commit: `git commit -m "<type>(<slug>): <繁體中文標題>"`
@@ -22,7 +22,7 @@ slug: <slug>
 role: DEV
 aspect: <開發/維運>
 round: <NNN>
-status: EXECUTED
+status: TRANSLATED
 created_at: <ISO 8601>
 trigger: <觸發原因>
 review: local
