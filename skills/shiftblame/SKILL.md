@@ -11,6 +11,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 3. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為規劃文件，PID（`.shiftblame/PID/`）為開發標準
 4. **先實作再驗證**：偶數實作、奇數審計，三輪配對（計畫/開發/驗收）
 5. **迭代收斂**：FAIL 推進下一 NNN，直到老闆認可
+6. **Shift Blame**：L0~L1 老闆的鍋；L2 起 agent 的鍋
 
 ## 啟動序列
 
@@ -27,18 +28,20 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 | `/shiftblame <任意文字>` | 意圖線索 → 啟動序列 → 呈現意圖 → 確認 → 分流 |
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
+| 任何階段 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
 
 意圖揭露詳 GATE.md。觸發後不直接執行；呈現意圖時**必須包含執行模式**（slug 流程 vs main 直接執行），由老闆決定。
 
 ## 模式
 
 L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md) → L3 審計開發(blue.md) → L4 實作驗收(result.md) → L5 審計驗收(conclusion.md)
-偶數＝實作，奇數＝審計。FAIL → 同 slug 下一 NNN。
+偶數＝實作，奇數＝審計。任何階段 FAIL → 同 slug 開新 NNN 從 L0 重跑。
 
 ## 閘門
 
 閘門：流程開始(L0) → L5 PASSED → 收尾
 前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。
+分支：同 slug 使用 `feat/<slug>` 分支，agent 禁止直接操作 main。
 
 ## 角色與定義檔
 

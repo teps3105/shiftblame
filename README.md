@@ -88,12 +88,13 @@ L0 實作計畫 ──→ L1 審計計畫 ──→ L2 實作開發 ──→ L3
 |:----:|------|------|------|
 | L0 | 實作計畫 | `plan.md` | 建立 5W1H 計畫邏輯，與老闆確認 |
 | L1 | 審計計畫 | `red.md` | 檢查計畫有沒有偏差、遺漏、矛盾 |
-| L2 | 實作開發 | `task.md` | 依計畫執行實作，commit |
+| L2 | 實作開發 | `task.md` | 依計畫執行實作，commit（**agent 的鍋**） |
 | L3 | 審計開發 | `blue.md` | 檢查實作是否到位 |
 | L4 | 實作驗收 | `result.md` | 定義 GWT 驗收標準 |
-| L5 | 審計驗收 | `conclusion.md` | 審計驗收 → PASS 收尾 / FAIL 下一 NNN |
+| L5 | 審計驗收 | `conclusion.md` | 審計驗收 → PASS 收尾 / FAIL 開新 NNN 從 L0 重跑 |
 
 **偶數＝實作，奇數＝審計，三輪配對：計畫/開發/驗收。**
+**L0~L1 老闆的鍋（可反覆修改）；L2 起 agent 的鍋（FAIL → 開新 NNN 從 L0 重跑）。**
 
 ---
 
@@ -180,6 +181,9 @@ skills/shiftblame/
 | 7 | **迭代收斂** | FAIL 推進下一 NNN，直到老闆認可 |
 | 8 | **前置建檔** | 每階段結束前須先建立下一階段文件 |
 | 9 | **計畫語言** | L0 建立 5W1H 邏輯 → L4 定義 GWT 驗收標準 |
+| 10 | **Shift Blame** | L0~L1 老闆的鍋（可反覆修改）；L2 起 agent 的鍋（FAIL 開新 NNN） |
+| 11 | **NNN=Commit** | 每個 NNN 恰好一個 commit，任何階段 FAIL 開新 NNN 從 L0 重跑 |
+| 12 | **分支保護** | agent 禁止操作 main；所有變更走 `feat/<slug>`，收尾合併 |
 
 ---
 
@@ -190,6 +194,7 @@ skills/shiftblame/
 | `/shiftblame <任意文字>` | 意圖線索 → 啟動序列 → 呈現意圖 → 確認 → 分流 |
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
+| 任何階段 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
 
 **啟動序列**（每次觸發僅載入索引層）：
 1. 未歸檔偵測 — 掃描 `.shiftblame/` 下未歸檔 SLUG.md
@@ -264,7 +269,7 @@ Then  預期結果
 <details>
 <summary>為什麼叫「shiftblame」？</summary>
 
-「Shift Blame」= 推卸責任。在框架裡，每個階段只負責自己的工作。出了問題，你能清楚看見是哪個環節該負責。這不是逃避，而是**讓責任歸屬透明化**。
+「Shift Blame」= 推卸責任。在框架裡，L0~L1 是老闆的鍋——計畫可反覆修改。進入 L2 後是 agent 的鍋——任何問題都由 agent 承擔，開新 NNN 負責。出了問題，你能清楚看見是哪個環節該負責。這不是逃避，而是**讓責任歸屬透明化**。
 
 </details>
 
@@ -285,7 +290,7 @@ Then  預期結果
 <details>
 <summary>可以跳過某些階段嗎？</summary>
 
-管線模式下不行，六階段是強制閘門。但你隨時可以切換為 **main 直接執行模式**跳過管線，由老闆直接指示 AI 完成——差別在於：責任屬於老闆，框架不提供審計保障。
+管線模式下不行，六階段是強制閘門。但你隨時可以切換為 **main 直接執行模式**跳過管線，由老闆直接在 main 上操作（文件修正等人工操作）。差別在於：責任屬於老闆，框架不提供審計保障。agent 不得使用 main 直接執行模式。
 
 </details>
 
@@ -297,9 +302,16 @@ Then  預期結果
 </details>
 
 <details>
-<summary>L5 FAIL 之後會怎樣？</summary>
+<summary>FAIL 之後會怎樣？</summary>
 
-同 slug 推進下一個 NNN 迭代（如 001 → 002 → 003），直到老闆認為合理可行為止。每次 NNN 都是完整的 L0~L5 循環。
+**任何階段** FAIL → 同 slug 開新 NNN 從 L0 重跑（如 001 → 002 → 003），直到老闆認可。每個 NNN 恰好一個 commit，NNN 數量 = commit 數量。slug 的完成是非線性的：多個 NNN commit 疊加收斂到最終結果。
+
+</details>
+
+<details>
+<summary>為什麼 agent 不能直接在 main 上操作？</summary>
+
+main 是老闆的領地，是受保護的穩定基線。agent 所有變更必須走 `feat/<slug>` 分支，收尾時合併回 main。這確保 main 永遠是可控的，agent 的每次嘗試都有跡可循。
 
 </details>
 

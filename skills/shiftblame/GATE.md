@@ -5,6 +5,7 @@
 3. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為規劃文件，PID（`.shiftblame/PID/`）為開發標準
 4. **先實作再驗證**：偶數實作、奇數審計，三輪配對
 5. **迭代收斂**：FAIL 推進下一 NNN
+6. **Shift Blame**：L0~L1 老闆的鍋；L2 起 agent 的鍋
 
 ## 狀態機
 
@@ -22,14 +23,16 @@ PLANNED → RED → DEVELOPED → BLUE → VERIFIED → CHECKED → PASSED/FAIL
 | VERIFIED | L4 實作驗收完成 | + result.md |
 | CHECKED | L5 審計驗收完成 | + conclusion.md |
 | PASSED | 全部通過 | — |
-| FAIL | 驗收未通過，推進下一 NNN | — |
+| FAIL | 任何階段失敗，開新 NNN 從 L0 重跑 | — |
 
 **產物完整性**：狀態轉移前驗證當前與下一階段必要文件已寫入且正文非空；不符 → BLOCK。
 **前置建檔**：狀態轉移前須先建立下一階段文件並通過產物完整性驗證。不符 → BLOCK。
 
-## 審查序列
+## 責任界線
 
-L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md) → L3 審計開發(blue.md) → L4 實作驗收(result.md) → L5 審計驗收(conclusion.md) → 收尾
+- **L0~L1**：老闆的鍋 — 計畫可反覆修改，老闆全權決定
+- **L2 起**：agent 的鍋 — 任何問題開新 NNN 從 L0 重跑，不修補
+- **NNN=Commit**：每個 NNN 恰好一個 commit，NNN 數量 = commit 數量
 
 ## 分流路由
 
@@ -43,5 +46,5 @@ L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md
 
 ## Commit 與收尾
 
-L2 實作完成後必須 commit。收尾：slug 結束 → 確認 → 合併 → 推送 → 清理 → 歸檔 → 更新四文件。
-**回溯原則**：錯誤不以後續提交修正，回所屬分支重做後重新 merge。
+L2 實作完成後必須 commit。同 slug 使用 `feat/<slug>` 分支。收尾：確認 → 合併回 main → 推送 → 清理 → 歸檔 → 更新四文件。
+**回溯原則**：錯誤不修補，回分支重做。**main 保護**：agent 禁止操作 main。
