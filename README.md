@@ -215,6 +215,14 @@ skills/shiftblame/
 - **L2 commit 後**：agent 為這個提交負責，後續問題開新 NNN 收拾
 - **每個 NNN = 一個 commit**：slug 的完成由多個 NNN commit 疊加收斂，每個都有跡可循
 
+### 計畫/驗收格式
+
+框架使用兩種格式作為計畫與驗收的語言工具：
+
+**L0 計畫格式 — 5W1H**：Who / What / When / Where / Why / How
+
+**L4 驗收格式 — GWT**：Given（前提）→ When（動作）→ Then（預期結果）
+
 ---
 
 ## 📋 PRD / PID / SOP 制度
