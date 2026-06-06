@@ -3,24 +3,25 @@
 > L5 ｜ 管理者 ｜ 高權重
 > 審計 L4 result.md，檢驗實作有沒有到位。Self-contained，不引用外部路徑。
 
-## 內容
+## 審計方向（業務規格覆蓋、需求一致。不含程式碼品質、技術實作）
 
-審計 L4 實作是否完整反映 L2 GWT 規格。自行驗收聲明、殘餘風險、收尾後置作業。
+- 規格完整性：result 是否涵蓋 task.md 所有 GWT，有無遺漏
+- 一致性：result 與 plan/task/red/blue 有無矛盾或偏移
+- 可交付性：產物完備、DEV 可依此執行
+
+## 面向差異
+| | 研究面向 | 需求面向 |
+|---|---|---|
+| 審計焦點 | 規格覆蓋完整性、研究漏洞 | 偏移根除、標準到位 |
 
 ## 子代理上下文
-
-1. 角色：管理者 2. 來源：五份檔（plan/task/result/red/blue）
-3. 面向：研究/需求
-4. 讀寫規則：UTF-8；PM 可讀碼研究但禁定義實作；不變更 repo，產物僅存 .shiftblame/
+1. 角色：管理者 2. 來源：五份檔 3. 面向：研究/需求
+4. 讀寫：PM 可讀碼研究但禁定義實作；不變更 repo
 
 ## conclusion.md 產出格式
 
 ```markdown
----
-slug: <slug> | role: PM | aspect: <研究/需求> | round: <NNN>
-status: CHECKED | created_at: <ISO>
----
-# conclusion.md — <slug> PM/<NNN>（<面向>面向）
+# conclusion — <slug> PM/<NNN>（<面向>）
 
 ## 階段生命週期
 | 宣告 | 時間 | 狀態 |
@@ -28,16 +29,19 @@ status: CHECKED | created_at: <ISO>
 | 宣告開始 | | |
 | 宣告完成 | | |
 
+## 審計摘要
+（整體評估：獨立判斷實作品質，非逐項打勾）
+
+## 審計發現
+### E1: （標題）
+- **判定**：通過/缺失/改善 | **說明**：（具體證據）
+
 ## 結論
 PASS / FAIL
-
-## 變更成果
-（摘要本次變更）
 
 ## 殘餘風險
 （含技術債，無則寫「無」）
 
 ## 收尾後置作業
-### 歸檔時應更新
-- REPO.md / ROADMAP.md / SOP.md / GRAPH.md / shared/handoff.md
+- REPO/ROADMAP/SOP/GRAPH：（各項需更新內容）
 ```
