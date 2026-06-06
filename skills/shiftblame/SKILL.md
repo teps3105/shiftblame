@@ -1,17 +1,16 @@
 ---
 name: shiftblame
-description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。交錯六階段：計畫→審計→翻譯→審計→實作→審計。"
+description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行。先實作再驗證：實作→審計三輪配對。"
 ---
 # shiftblame — AI Agents 協作框架
 
-依雙期制度協調 PM（研究需求）與 DEV（開發維運）。會話由老闆自由管理。
+單一角色，交錯六階段管線。會話由老闆自由管理。
 
-1. **寫入權分化**：PM 不得變更 repo（產物僅存 .shiftblame/）；DEV 可變更 repo 並 commit（含維運期）
-2. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
-3. **PM 程式碼邊界**：PM 可閱讀程式碼作為規格與研究素材，但不得定義實作方式；具體實作計畫為 DEV 職責
-4. **SOP 紀律**：PM/DEV 皆可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
-5. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為 PM 規劃文件，PID（`.shiftblame/PID/`）為 DEV 開發標準
-6. **計畫語言**：L0 建立 5W1H 邏輯 → L2 翻譯為 GWT 可執行語言
+1. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
+2. **SOP 紀律**：可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
+3. **PRD/PID 制度**：PRD（`.shiftblame/PRD/`）為規劃文件，PID（`.shiftblame/PID/`）為開發標準
+4. **先實作再驗證**：偶數實作、奇數審計，三輪配對（計畫/開發/驗收）
+5. **迭代收斂**：FAIL 推進下一 NNN，直到老闆認可
 
 ## 啟動序列
 
@@ -19,7 +18,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md（清單即可）
 2. **四文件載入**：REPO.md → ROADMAP.md → SOP.md → GRAPH.md
 3. **Repo 狀態**：git log、status、branch（摘要即可）
-其餘原始碼、角色定義檔、模板等，依分流後角色需求按需載入。
+其餘原始碼、角色定義檔、模板等，依需求按需載入。
 
 ## 觸發
 
@@ -33,17 +32,16 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 模式
 
-L0 計畫(plan.md) → L1 審計計畫(red.md) → L2 翻譯(task.md) → L3 審計翻譯(blue.md) → L4 實作(result.md) → L5 審計實作(conclusion.md)
-不溯及既往；同類串接；PM PASSED 後交接 DEV。
+L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md) → L3 審計開發(blue.md) → L4 實作驗收(result.md) → L5 審計驗收(conclusion.md)
+偶數＝實作，奇數＝審計。FAIL → 同 slug 下一 NNN。
 
 ## 閘門
 
-PM  閘門：流程開始(L0) → L5 PASSED → 交接
-DEV 閘門：交接開始(L0) → L5 PASSED → 收尾
-前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。適用 PM 與 DEV 所有角色。
+閘門：流程開始(L0) → L5 PASSED → 收尾
+前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。
 
 ## 角色與定義檔
 
-六角色（計畫/審計計畫/翻譯/審計翻譯/實作/審計實作）× 雙部門（PM/DEV）。
-詳見 `ROLE/{PM,DEV}/{PLAN,TASK,RESULT,RED,BLUE,CONCLUSION}.md`。
+六角色（實作計畫/審計計畫/實作開發/審計開發/實作驗收/審計驗收）。
+詳見 `ROLE/{PLAN,RED,TASK,BLUE,RESULT,CONCLUSION}.md`。
 閘門/收尾→GATE.md ｜ 管理者操作→MANAGE.md ｜ 模板→TEMPLATES/ ｜ 工具→TOOLS/
