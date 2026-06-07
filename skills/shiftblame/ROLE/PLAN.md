@@ -1,7 +1,7 @@
 # PLAN — L0 實作計畫
 
 > L0 ｜ 管理者 ｜ 高權重
-> 建立 5W1H 計畫，與老闆確認需求產出 plan.md。可 commit。
+> 建立 5W1H 計畫，與老闆確認需求產出 plan.md。（禁止 commit）
 
 ## 職責
 
@@ -11,7 +11,7 @@
 
 1. 角色：計畫者 2. 任務：本輪需求 3. 背景：REPO.md/ROADMAP.md
 4. 上游：前輪 conclusion.md（若有）
-5. 讀寫規則：UTF-8；可變更 repo 並 commit
+5. 讀寫規則：UTF-8；可變更 repo
 
 ## plan.md 產出格式
 
