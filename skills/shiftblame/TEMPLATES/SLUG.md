@@ -11,30 +11,29 @@ updated: <YYYY-MM-DD>
 
 （管理者填入本輪的功能目標）
 
-## 2. 管線狀態紀錄
+## 2. 行為狀態紀錄
 
-格式：`<NNN>：<狀態>（附註）`
+格式：`<NNN>.<出口>：<R1正/R1反/R2正/R2反 狀態>` | 閘門：G1→G2→G3→G4
+例：`001.計畫(G1)：R2反完成（待閘門） | 001.展望(G4)：R1正進行中`
 
-## 3. 發散策略
+## 3. 子代理策略
 
-- diverge_count: <N>（L0 發散子代理數量）
-- audit_angles: <覆蓋率/一致性/...>（L5 審計維度分配）
+計畫（G1）：diverge_count=<N> | 開發（G2）：sub_agent_strategy=<描述> | 驗收（G3）：audit_angles=<覆蓋率/一致性>
 
-## 4. 收斂管線形式
-
-- 審計管線(L1/L3)：<單一子代理/團隊>（由老闆決定）
-- 實作管線(L2/L4)：<單一子代理/團隊>（由老闆決定）
-
-## 5. 技術債清單
+## 4. 技術債清單
 
 | 編號 | 來源 | 描述 | 建議行動 |
 |------|------|------|----------|
 
-## 6. BossPreview/FAIL 紀錄（L3 PASS 前：回同 NNN；L3 PASS 後：開新 NNN）
+## 5. FAIL 紀錄
 
-## 7. 待收尾整理
+（同行為 FAIL 重計數：R2 產出為起始基線，覆寫不重建）
 
-## 目錄
+## 6. 交接摘要
 
-嵌套：`<slug>/<NNN>/<stage>.md`（SLUG.md 除外）
-全域文件：`.shiftblame/PRD/`（規劃）、`.shiftblame/PID/`（標準）、`.shiftblame/SOP.md`（全局標準）
+首次使用時此欄位留空。G4 展望行為期間，管理者彙整 G4 正反方素材，以白話填入 3~5 行。下一輪 L0 前過去的老闆留下的記錄。例：
+> 「正方展望處理 X，反方質疑時機。結論：收尾後開新 NNN 處理。」
+
+## 7. 目錄與 G(n).md 格式
+
+嵌套：`<slug>/<NNN>/G(n).md`（n=1~4）。FM：`slug|nnn|gate|status|created_at`；正文 5 section（正方提出→反方質疑→正方回應→反方再質疑→正方收斂），標題隱含 stance。質疑編號 D/E + 力度 H/M/L。status 值：PLANNED/DEVELOPED/VERIFIED/PROSPECTED。

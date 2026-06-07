@@ -1,42 +1,48 @@
-# MANAGE — 管理者協調與操作
+# MANAGE — 流程操作與交接機制
 
-管理者負責協調、管線、閘門、歸檔。讀寫含中文文件須指定 UTF-8。
-
-## 目錄結構
-
-```
-.shiftblame/<slug>/├── SLUG.md └── <NNN>/{plan,red,task,blue,result,conclusion}.md
-.shiftblame/├── PRD/ PID/ └── SOP.md
-```
+管理者負責正反調度、閘門、歸檔。讀寫含中文文件須指定 UTF-8。
 
 ## 隔離與操作
 
 **slug 鏈範圍僅限主 repo**。`.shiftblame/` 本地運行時，不入 repo、不進 slug 鏈。
-PRD/PID：老闆的筆記本。SOP：皆可更新，建立與修改皆需意圖揭露。
+目錄結構詳 TEMPLATES/SLUG.md。PRD/PID：老闆的筆記本。SOP：皆可更新，建立與修改皆需意圖揭露。
 
-## 發散調度（L0）／收斂綜合（L5）
+## 正反調度
 
-L0：決定發散子代理數量與視角，盲獨立運行，管理者收斂為 plan.md。
-L5：分配正交審計維度（覆蓋率/一致性），盲獨立運行，管理者彙整為 conclusion.md。
+計畫行為：管理者決定發散子代理數量與視角，盲獨立運行，管理者收斂為 G1.md 正方提出段。
+開發行為：管理者提出子代理數量與策略，正方執行實作。
+驗收行為：管理者決定審計維度（覆蓋率/一致性），盲獨立運行，管理者彙整為 G3.md 反方質疑段。
+展望行為：G3 PASS 後自動調度 G4 正方。管理者彙整 G4 正反方素材為交接摘要（3~5 行白話），寫入 SLUG.md。
+每出口僅一份 G(n).md，正反方在同一文件交替。
+行為內部 R1↔R2 自動推進，管理者不需介入。僅行為出口閘門由管理者提交老闆確認。
 
 ## 流程操作
 
-**產物完整性**：每階段完成前驗證文件已寫入且正文非空。不符 → BLOCK。
-建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>` + 預建收斂管線(L1/L3+L2/L4)，形式由老闆決定
+**產物完整性**：行為出口前驗證 G(n).md 正文非空。不符 → BLOCK。
+建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 新 NNN：同 slug 複用 `feat/<slug>` 分支，開新目錄
-Commit：管理者執行 `git add <變更> && git commit`（時機僅限 L3 PASS 後；禁止 force-add .shiftblame/）
+Commit：G2 PASS 後管理者執行 `git add <變更> && git commit`（禁止 force-add .shiftblame/）
 歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
-清理：合併後刪除 `feat/<slug>` 分支。FAIL 回退：同 NNN 增量更新
+清理：合併後刪除 `feat/<slug>` 分支
 
 ## 分支保護
 
-**main**：僅限老闆手動。**feat/<slug>**：agent 所有變更走此分支，收尾合併。**NNN=Commit**：L3 PASS 後才 commit，每 NNN 恰好一個。
+**main**：僅限老闆手動。**feat/<slug>**：agent 所有變更走此分支，收尾合併。**NNN=Commit**：G2 PASS 後才 commit，每 NNN 恰好一個。
 
 ## 觸發流程
 
-1. 讀取或搜尋未歸檔 SLUG.md → 掌握管線狀態
+1. 讀取或搜尋未歸檄 SLUG.md → 掌握 slug 狀態
 2. 呈現理解到的意圖 → 與老闆溝通確認
-3. L0 發散：多子代理盲獨立研究 → 收斂為 plan.md
-4. 歸屬判定：L3 已 PASS → FAIL 開新 NNN；未 PASS → 回同 NNN L0
-5. L5 收斂：多子代理全域審計 → 收斂為 conclusion.md
-6. 收斂管線交替：閘門點暫停/喚醒，注入摘要延續上下文
+3. 計畫行為（G1）：掃描環境 → 提出子代理策略 → 正方發散 → 反方質疑
+4. 歸屬判定：驗收 PASS → 展望（G4，強制）→ G4 決策；行為出口 FAIL → 回同行為重計數
+5. 展望行為（G4）：正方提出→反方質疑→正方回應→反方再質疑→正方收斂→管理者彙整交接摘要→G4 閘門
+6. L0 前：檢視交接摘要（過去的老闆留下的記錄）
+7. 上下文延續：同行為內 R2 讀 R1 產出；跨行為以 SLUG.md 為樞紐
+
+## NNN 語義差異
+
+驗收後 FAIL 的 NNN：修正既有品質問題，方向不變。展望後 G4 的 NNN：基於展望結論的新方向。兩者皆從計畫行為重跑，但觸發動機不同。
+
+## 會話紀律
+
+依 SOP.md 會話由老闆自由管理原則，NNN 迭代期間建議不開新對話（老闆可因 token 限制或 session 超時自由決定）。老闆開 NNN 即為流程決策，管理者不應以變更規模質疑流程成本。
