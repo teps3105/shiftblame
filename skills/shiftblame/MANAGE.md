@@ -45,4 +45,4 @@ Commit：G2 PASS 後管理者執行 `git add <變更> && git commit`（禁止 fo
 
 ## 會話紀律
 
-依 SOP.md 會話由老闆自由管理原則，NNN 迭代期間建議不開新對話（老闆可因 token 限制或 session 超時自由決定）。
+依 SOP.md 會話由老闆自由管理原則，NNN 迭代期間建議不開新對話（老闆可因 token 限制或 session 超時自由決定）。老闆開 NNN 即為流程決策，管理者不應以變更規模質疑流程成本。

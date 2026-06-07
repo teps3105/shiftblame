@@ -9,10 +9,10 @@
 ## 狀態機
 
 ```
-PLANNED → DEVELOPED → VERIFIED → DEBATED → PASSED
- (計畫)    (開發)      (驗收)     (展望)
+PLANNED → DEVELOPED → VERIFIED → PROSPECTED → PASSED
+ (計畫)    (開發)      (驗收)      (展望)
   ↓FAIL      ↓FAIL       ↓FAIL      ↓FAIL
-PLANNED   DEVELOPED   VERIFIED    DEBATED
+PLANNED   DEVELOPED   VERIFIED     PROSPECTED
 ```
 
 | 狀態 | 出口閘門 | 負責老闆 |
@@ -20,10 +20,10 @@ PLANNED   DEVELOPED   VERIFIED    DEBATED
 | PLANNED | G1 計畫 | 現在 |
 | DEVELOPED | G2 開發 | 現在 |
 | VERIFIED | G3 驗收 | 未來 |
-| DEBATED | G4 展望 | 未來 |
+| PROSPECTED | G4 展望 | 未來 |
 | PASSED / FAIL | 全部通過 / 老闆判斷回同行為重計數 | — / 同上閘門老闆 |
 
-VERIFIED→DEBATED 為 G3 PASS 後自動進入（強制觸發，無跳過路徑）。
+VERIFIED→PROSPECTED 為 G3 PASS 後自動進入（強制觸發，無跳過路徑）。
 L0 前檢視過去的老闆之交接摘要（SLUG.md）。
 
 ## 閘門紀律

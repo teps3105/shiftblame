@@ -36,4 +36,4 @@ updated: <YYYY-MM-DD>
 
 ## 7. 目錄與 G(n).md 格式
 
-嵌套：`<slug>/<NNN>/G(n).md`（n=1~4）。FM：`slug|nnn|gate|status|created_at`；正文 5 section（正方提出→反方質疑→正方回應→反方再質疑→正方收斂），標題隱含 stance。質疑編號 D/E + 力度 H/M/L。
+嵌套：`<slug>/<NNN>/G(n).md`（n=1~4）。FM：`slug|nnn|gate|status|created_at`；正文 5 section（正方提出→反方質疑→正方回應→反方再質疑→正方收斂），標題隱含 stance。質疑編號 D/E + 力度 H/M/L。status 值：PLANNED/DEVELOPED/VERIFIED/PROSPECTED。
