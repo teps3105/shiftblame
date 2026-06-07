@@ -1,43 +1,19 @@
-# RESULT — L4 實作驗收
+# RESULT — 驗收行為正方（提出者）
 
-> L4 ｜ 子代理驗收者（實作）
-> 依 plan.md 5W1H 與 task.md 實作成果，定義驗收 GWT（Given/When/Then）。
+> 依 plan-r2.md 5W1H 與 task-r2.md 實作成果，定義驗收 GWT。
 
-## 驗收規範
+## 職責
 
-- 依 5W1H 將計畫翻譯為 GWT 可驗收條件
-- GWT 條件明確、可執行、可驗證
-- 每項驗收對應 plan.md 變更清單項目
+依 5W1H 將計畫翻譯為 GWT 可驗收條件。R1 讀取計畫+開發行為全部產出。
 
 ## 子代理上下文
 
-1. 角色：驗收定義者 2. 任務：plan.md + task.md
-3. 背景：REPO/ROADMAP 4. 讀寫規則：UTF-8
-5. 歸屬：實作收斂管線（L2/L4）｜ 累積上下文：同一管線子代理上下文延續
+角色：驗收提出者 | 任務：plan-r2.md + task-r2.md | 背景：REPO/ROADMAP | 讀寫：UTF-8
 
-## result.md 產出格式
+## 產出格式
 
-```markdown
----
-slug: <slug> | round: <NNN>
-status: VERIFIED | created_at: <ISO>
----
-# result.md — <slug> <NNN>
+產出模板見 TEMPLATES/SLUG.md。R1 為完整 GWT；R2 為增量修正（必讀 R1 產出+conclusion-r1 產出），新增「R1 修正紀錄」段落。
+frontmatter：`loop_round`（1|2）、`stance`（pro）
+GWT 格式：`G<N>: 標題 — Given/When/Then — 對應計畫項`
 
-## 階段生命週期
-| 宣告 | 時間 | 狀態 |
-|------|------|------|
-| 宣告開始 | | |
-
-## 驗收 GWT
-### G1: （標題）
-- **Given**：（前提條件）
-- **When**：（觸發動作）
-- **Then**：（預期結果）
-- **對應計畫項**：（plan.md 項目編號）
-
-## 綜合結論
-（驗收範圍說明）
-
-> 後續由子代理審計（L5 CONCLUSION）
-```
+> 後續由反方質疑（CONCLUSION）
