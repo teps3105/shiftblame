@@ -37,4 +37,6 @@ status: VERIFIED | created_at: <ISO>
 
 ## 綜合結論
 （驗收範圍說明）
+
+> 後續由子代理審計（L5 CONCLUSION）
 ```
