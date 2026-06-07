@@ -61,7 +61,7 @@ shiftblame 是一套**給 AI Agent 用的協作框架**。它定義了一套嚴�
 | 設計和實作脫節 | **先實作再驗證**：AI 的優勢在於快速實作和迭代，先動手做再回頭定義什麼是「做對了」，更符合敏捷直覺 |
 | 審計只是形式 | 獨立子代理審計，揭露風險供老闆決策 |
 | 前後階段脫節 | 前置建檔：每階段結束前須先建立下一階段文件 |
-| 一次失敗就要重來 | **迭代收斂**：FAIL 推進下一 NNN，直到老闆認可 |
+| 一次失敗就要重來 | **迭代收斂**：L3 PASS 前 FAIL 回同 NNN；L3 PASS 後 FAIL 開新 NNN |
 
 ---
 
@@ -82,20 +82,20 @@ shiftblame 是一套**給 AI Agent 用的協作框架**。它定義了一套嚴�
 L0 實作計畫 ──→ L1 審計計畫 ──→ L2 實作開發 ──→ L3 審計開發 ──→ L4 實作驗收 ──→ L5 審計驗收
   (plan.md)       (red.md)        (task.md)       (blue.md)       (result.md)    (conclusion.md)
      │               │                │               │                │               │
-     └───── 任何階段 FAIL → 開新 NNN 從 L0 重跑（同 slug 同分支）──────────────────────┘
+     └── L3 PASS 前 FAIL → 回同 NNN L0 │ L3 PASS 後 FAIL → 開新 NNN ──┘
 ```
 
 | 階段 | 名稱 | 產出 | 說明 |
 |:----:|------|------|------|
 | L0 | 實作計畫 | `plan.md` | 建立 5W1H 計畫邏輯，與老闆確認 |
 | L1 | 審計計畫 | `red.md` | 檢查計畫有沒有偏差、遺漏、矛盾 |
-| L2 | 實作開發 | `task.md` | 依計畫執行實作，commit（**agent 的鍋**） |
+| L2 | 實作開發 | `task.md` | 依計畫執行實作，L3 PASS 後 commit（**agent 的鍋**） |
 | L3 | 審計開發 | `blue.md` | 檢查實作是否到位 |
 | L4 | 實作驗收 | `result.md` | 定義 GWT 驗收標準 |
-| L5 | 審計驗收 | `conclusion.md` | 審計驗收 → PASS 收尾 / FAIL 開新 NNN 從 L0 重跑 |
+| L5 | 審計驗收 | `conclusion.md` | 審計驗收 → PASS 收尾 / FAIL 開新 NNN |
 
 **偶數＝實作，奇數＝審計，三輪配對：計畫/開發/驗收。**
-**L0~L1 老闆的鍋（可反覆修改）；L2 起 agent 的鍋（FAIL → 開新 NNN 從 L0 重跑）。**
+**L0~L3 PASS 前老闆的鍋（FAIL 回同 NNN）；L3 PASS 後 agent 的鍋（FAIL 開新 NNN）。**
 
 ---
 
@@ -176,11 +176,11 @@ skills/shiftblame/
 | 4 | **SOP 紀律** | 可更新 SOP，建立與修改皆需意圖揭露 |
 | 5 | **PRD/PID 筆記本** | 老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈 |
 | 6 | **先實作再驗證** | 偶數實作、奇數審計，三輪配對（計畫/開發/驗收） |
-| 7 | **迭代收斂** | FAIL 推進下一 NNN，直到老闆認可 |
+| 7 | **迭代收斂** | L3 PASS 前 FAIL 回同 NNN；L3 PASS 後 FAIL 開新 NNN |
 | 8 | **前置建檔** | 每階段結束前須先建立下一階段文件 |
 | 9 | **計畫語言** | L0 建立 5W1H 邏輯 → L4 定義 GWT 驗收標準 |
-| 10 | **Shift Blame** | L0~L1 老闆的鍋（可反覆修改）；L2 起 agent 的鍋（FAIL 開新 NNN） |
-| 11 | **NNN=Commit** | 每個 NNN 恰好一個 commit，任何階段 FAIL 開新 NNN 從 L0 重跑 |
+| 10 | **Shift Blame** | L0~L3 PASS 前老闆的鍋；L3 PASS 後 agent 的鍋（FAIL 開新 NNN） |
+| 11 | **NNN=Commit** | L3 PASS 後才 commit，每個 NNN 恰好一個 commit |
 | 12 | **分支保護** | agent 禁止操作 main；所有變更走 `feat/<slug>`，收尾合併 |
 
 ---
@@ -192,7 +192,7 @@ skills/shiftblame/
 | `/shiftblame <任意文字>` | 意圖線索 → 啟動序列 → 呈現意圖 → 確認 → 分流 |
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
-| 任何階段 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
+| L3 PASS 後 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
 
 **啟動序列**（每次觸發僅載入索引層）：
 1. 未歸檔偵測 — 掃描 `.shiftblame/` 下未歸檔 SLUG.md
@@ -203,9 +203,9 @@ skills/shiftblame/
 
 ## 🔗 可追溯鏈
 
-每個任務（slug）遵循「先計畫→再實作→後驗收」的管線。管線分為六個階段（L0~L5），每個階段完成後必須老闆確認通過才能推進，老闆只須回答 pass 或 fail——pass 推進下一階段，fail 開新 NNN 從 L0 重跑。
+pass 推進下一階段，fail 回同 NNN L0（L3 PASS 前）；L3 PASS 後 fail 開新 NNN。
 
-L0~L1 是老闆的鍋：計畫可反覆修改，老闆全權決定。進入 L2 後是 agent 的鍋：一旦 commit，agent 為這個提交負責，後續任何問題都需開新 NNN 來收拾。每個 NNN 恰好對應一個 commit，slug 的完成是由多個 NNN commit 疊加收斂的結果，每一步都有跡可循。agent 所有變更走 `feat/<slug>` 分支，收尾合併回 main。
+L0~L3 PASS 前是老闆的鍋：計畫可反覆修改。L3 PASS 後是 agent 的鍋：commit 後 agent 為提交負責，後續任何問題開新 NNN。
 
 L0 計畫使用 5W1H 格式（Who/What/When/Where/Why/How），L4 驗收使用 GWT 格式（Given→When→Then）。老闆可隨時跳過管線，直接在 main 上操作（文件修正等人工操作），但責任屬於老闆，框架不提供審計保障。agent 不得使用此模式。
 
@@ -240,7 +240,7 @@ L0 計畫使用 5W1H 格式（Who/What/When/Where/Why/How），L4 驗收使用 G
 
 ## ❓ 為什麼叫「shiftblame」？
 
-「Shift Blame」= 推卸責任。在框架裡，L0~L1 是老闆的鍋——計畫可反覆修改。進入 L2 後是 agent 的鍋——任何問題都由 agent 承擔，開新 NNN 負責。出了問題，你能清楚看見是哪個環節該負責。這不是逃避，而是**讓責任歸屬透明化**。
+「Shift Blame」= 推卸責任。L0~L3 PASS 前是老闆的鍋——計畫可反覆修改。L3 PASS 後是 agent 的鍋——開新 NNN 負責。
 
 ---
 

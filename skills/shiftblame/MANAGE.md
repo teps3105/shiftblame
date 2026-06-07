@@ -36,10 +36,10 @@ Commit：`git add <變更> && git commit -m "<type>(<slug>): <標題>"`（禁止
 
 - **main**：僅限老闆手動操作（文件修正等人工操作）
 - **feat/<slug>**：agent 所有變更走此分支，收尾合併回 main
-- **NNN=Commit**：每個 NNN 恰好一個 commit
+- **NNN=Commit**：L3 PASS 後才 commit，每個 NNN 恰好一個 commit
 
 ## 觸發流程
 
 1. 讀取指定或搜尋未歸檔 SLUG.md → 掌握管線狀態
 2. 呈現理解到的意圖 → 與老闆溝通確認
-3. 歸屬判定（當前 NNN / 新 NNN）→ 分流；任何 FAIL 自動開新 NNN 從 L0
+3. 歸屬判定：L3 已 PASS → FAIL 開新 NNN；L3 未 PASS → FAIL 回同 NNN L0
