@@ -3,16 +3,16 @@
 1. **回饋即意圖**：老闆回饋為意圖確認素材，不可直接執行，禁止寫入記憶
 2. **SOP 紀律**：可更新 SOP 作為全局標準，建立與修改皆需意圖揭露
 3. **PRD/PID 筆記本**：老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈
-4. **先提出再質疑**：正方提出→反方質疑，三行為各 2 輪正反迴圈
+4. **先提出再質疑**：正方提出→反方質疑，四行為各 2 輪正反迴圈
 5. **迭代收斂+責任**：閘門 FAIL 回同行為重計數（R2 產出為起始基線，覆寫不重建）
 
 ## 狀態機
 
 ```
-PLANNED → DEVELOPED → VERIFIED → PASSED
- (計畫)    (開發)      (驗收)
-  ↓FAIL      ↓FAIL       ↓FAIL
-PLANNED   DEVELOPED   VERIFIED
+PLANNED → DEVELOPED → VERIFIED → DEBATED → PASSED
+ (計畫)    (開發)      (驗收)     (辯論)
+  ↓FAIL      ↓FAIL       ↓FAIL      ↓FAIL
+PLANNED   DEVELOPED   VERIFIED    DEBATED
 ```
 
 | 狀態 | 意義 | 必要產物（R1+R2） |
@@ -20,21 +20,31 @@ PLANNED   DEVELOPED   VERIFIED
 | PLANNED | 計畫行為 R2 反完成 | plan-r1/r2.md + red-r1/r2.md |
 | DEVELOPED | 開發行為 R2 反完成 | + task-r1/r2.md + blue-r1/r2.md |
 | VERIFIED | 驗收行為 R2 反完成 | + result-r1/r2.md + conclusion-r1/r2.md |
+| DEBATED | 辯論行為 R2 反完成 | + debate-r1/r2.md + objection-r1/r2.md |
 | PASSED | 全部通過 | — |
 | FAIL（同行為）| 老闆判斷，回同行為重計數 | R2 產出為起始基線，覆寫 |
 
-**產物完整性**：行為出口閘門前驗證 R1/R2 產物已寫入且正文非空；不符 → BLOCK。
+VERIFIED→DEBATED 為 G3 PASS 後自動進入（強制觸發，無跳過路徑）。
 
 ## 閘門紀律
 
-**三行為三斷點**：計畫/開發/驗收各出口一個閘門，R2 反完成後老闆確認通過才進入下行為。
+**四行為四斷點**：計畫/開發/驗收/辯論各出口一個閘門，R2 反完成後老闆確認通過才進入下行為。
 **行為內部交接**：R1 正→R1 反→R2 正→R2 反 自動推進，不需老闆確認。
 **反方定位**：質疑正方論點不做決策，**禁止使用 PASS/FAIL**。
 **增量原則**：FAIL 後產物增量更新，不重建。R2 產出為起始基線，新 R1/R2 覆寫原版。
 
+## G4 閘門決策語義
+
+| 決策 | 語義 | 後續行為 |
+|------|------|----------|
+| 收尾 | 辯論結論為無需後續行動 | 確認→合併→推送→清理→歸檔→更新四文件 |
+| 開新 NNN | 辯論建議需更進一步修正 | 同 slug 開新 NNN，從計畫行為重跑 |
+| FAIL（異常路徑） | 辯論未收斂 | 回辯論行為重計數（R2 產出為起始基線） |
+
+G3 判品質（做得好不好），G4 判方向（下一步做什麼）。「開新 NNN」不代表推翻驗收結論。
+
 ## 責任與收尾
 
-- **NNN=Commit**：每個 NNN 恰好一個 commit；開發行為出口 PASS 後管理者執行 commit（不需額外確認）
-- 同 slug 使用 `feat/<slug>` 分支。收尾：確認 → 合併回 main → 推送 → 清理 → 歸檔 → 更新四文件
-- **結束提示**：歸檔完成後管理者輸出提示訊息，建議老闆開新對話
-- **main 保護**：agent 禁止操作 main
+- **NNN=Commit**：每 NNN 恰好一個 commit；開發 PASS 後管理者執行，同 slug 用 `feat/<slug>` 分支
+- 收尾：確認→合併回 main→推送→清理分支→歸檔→更新四文件。**main 保護**：agent 禁止操作 main
+- **結束提示**：歸檔完成後管理者輸出提示訊息
