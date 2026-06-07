@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  <strong>AI Agents 協作框架</strong> — 用純 Markdown 定義檔，讓 AI 角色在四行為管線中先提出再質疑，強制辯論後才收尾。
+  <strong>AI Agents 協作框架</strong> — 用純 Markdown 定義檔，四出口（計畫/開發/驗收/展望）先提出再質疑，強制展望後才收尾。
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
-  <img src="https://img.shields.io/badge/Stage-4%20Behavior%20Pipeline-6f42c1.svg" alt="4-Behavior Pipeline"/>
+  <img src="https://img.shields.io/badge/Stage-4%20Outlet%20Pipeline-6f42c1.svg" alt="4-Outlet Pipeline"/>
   <img src="https://img.shields.io/badge/Model-Propose%20First-21854d.svg" alt="Propose First"/>
 </p>
 
@@ -21,7 +21,7 @@
 
 - [這是什麼？](#-這是什麼)
 - [為什麼需要 shiftblame？](#-為什麼需要-shiftblame)
-- [四行為管線](#-四行為管線)
+- [四出口管線](#-四出口管線)
 - [快速上手](#-快速上手)
 - [專案結構](#-專案結構)
 - [.shiftblame/ 運行時目錄](#shiftblame-運行時目錄)
@@ -38,10 +38,10 @@
 
 shiftblame 是一套**給 AI Agent 用的協作框架**。它定義了一套嚴格的管線流程，讓 AI 角色在老闆（你）的監督下完成任務。
 
-**核心思想：意圖揭露 + 先提出再質疑 + 強制辯論收尾。** AI 的每步行動都必須先向老闆說明「我要做什麼、為什麼」，經確認後才執行。不是事後解釋，是事前揭露。管線採「先提出再質疑」模式——每個行為都是正方提出、反方質疑的兩輪迴圈。驗收後還要強制經過辯論行為，確認下一步方向後才收尾。
+**核心思想：意圖揭露 + 先提出再質疑 + 強制展望收尾。** AI 的每步行動都必須先向老闆說明「我要做什麼、為什麼」，經確認後才執行。不是事後解釋，是事前揭露。管線採「先提出再質疑」模式——每個出口都是正方提出、反方質疑的兩輪迴圈。驗收後還要強制經過展望行為，確認下一步方向後才收尾。
 
-- **AI 角色**：八個角色分工——正方（PLAN/TASK/RESULT/DEBATE）提出、反方（RED/BLUE/CONCLUSION/OBJECTION）質疑。
-- **老闆（你）**：決定要做什麼、確認每個閘門、在辯論結論後拍板。
+- **AI 角色**：四出口×正反，詳 `ROLE/G1~G4.md`。角色為執行工具，不出現在責任定義中。
+- **老闆（你）**：唯一責任主體。G1 確認方向、G2 確認品質+commit、G3 確認驗收、G4 決策下一步。
 
 整個框架**只有 Markdown 定義檔**，沒有程式碼。它透過 Claude Code、Codex 或任何 Agent 框架的 Skill 系統運作，定義 AI 角色該怎麼行動。
 
@@ -54,58 +54,58 @@ shiftblame 是一套**給 AI Agent 用的協作框架**。它定義了一套嚴�
 
 | 問題 | shiftblame 怎麼解決 |
 |------|---------------------|
-| 直接叫 AI 寫碼，一人做完全部，沒有檢查點 | 四行為管線，每步都有獨立的質疑把關，出錯能明確定位是哪個環節的問題 |
-| AI 偷偷做事，你不知道它做了什麼 | **意圖揭露**：每步行動事前說明，老闆確認後才執行 |
-| AI 一次做太多，出錯難追 | 四行為管線，每步都有質疑關卡 |
+| 直接叫 AI 寫碼，沒有檢查點 | 四出口管線，每步都有獨立的質疑把關 |
+| AI 偷偷做事 | **意圖揭露**：每步行動事前說明，老闆確認後才執行 |
 | AI 自作主張改記憶 | 回饋即意圖：老闆的回饋是素材，禁止寫入記憶 |
-| 設計和實作脫節 | **先提出再質疑**：正方提出方案，反方立刻質疑，暴露問題 |
-| 審計只是形式 | 獨立子代理質疑，揭露風險供老闆決策 |
-| 前後階段脫節 | 前置建檔：每行為結束前須先建立下一行為文件 |
-| 一次失敗就要重來 | **迭代收斂**：閘門 FAIL 回同行為重計數，R2 產出為起始基線 |
-| 驗收通過就沒下文了 | **強制辯論**：驗收後必須經過辯論行為，討論下一步方向才收尾 |
+| 設計和實作脫節 | **先提出再質疑**：正方提出方案，反方立刻質疑 |
+| 驗收通過就沒下文了 | **強制展望**：驗收後必須經過展望行為，確認下一步方向 |
+| 出錯難追 | **迭代收斂**：閘門 FAIL 回同行為重計數 |
 
 ---
 
-## 四行為管線
+## 四出口管線
 
-每個任務（slug）都經過四個行為，**正方提出與反方質疑交替進行**：
+每個任務（slug）都經過四個出口，**正方提出與反方質疑交替進行**：
 
 <p align="center">
-  <img src="https://img.shields.io/badge/計畫行為-blue" alt="計畫"/>
-  <img src="https://img.shields.io/badge/開發行為-blue" alt="開發"/>
-  <img src="https://img.shields.io/badge/驗收行為-blue" alt="驗收"/>
-  <img src="https://img.shields.io/badge/辯論行為-blue" alt="辯論"/>
+  <img src="https://img.shields.io/badge/計畫(G1)-blue" alt="計畫"/>
+  <img src="https://img.shields.io/badge/開發(G2)-blue" alt="開發"/>
+  <img src="https://img.shields.io/badge/驗收(G3)-blue" alt="驗收"/>
+  <img src="https://img.shields.io/badge/展望(G4)-blue" alt="展望"/>
 </p>
 
 ```
-計畫（PLAN/RED）──→ 開發（TASK/BLUE）──→ 驗收（RESULT/CONCLUSION）──→ 辯論（DEBATE/OBJECTION）
-   plan.md/red.md      task.md/blue.md      result.md/conclusion.md      debate.md/objection.md
-        │                   │                      │                            │
-        └─ FAIL → 回同行為重計數（R2 產出為起始基線）────── 同左 ────────────── 同左
-                            │
-                            └─ 辯論 G4 決策：收尾（PASSED）/ 開新 NNN（計畫重跑）/ FAIL（異常路徑，辯論重計數）
+計畫（G1）──→ 開發（G2）──→ 驗收（G3）──→ 展望（G4）
+  G1.md          G2.md          G3.md          G4.md
+    │               │              │               │
+    └─ FAIL → 回同行為重計數（R2 產出為起始基線）──────── 同左
+                         │
+                         └─ G4 決策：收尾 / 開新 NNN / FAIL（異常路徑）
 ```
 
-每個行為內部恰好 2 輪正反交替：
+### 四出口與老闆時間線
+
+| 出口 | 議題 | 正方 | 反方 | 負責老闆 |
+|:----:|------|------|------|----------|
+| G1 | 計畫 | 提出 5W1H | 質疑遺漏/可行性 | 現在 |
+| G2 | 開發 | 執行實作 | 質疑覆蓋率/品質 | 現在 |
+| G3 | 驗收 | 審計成果 | 質疑完整性 | 未來 |
+| G4 | 展望 | 提出方向/時機/範圍 | 質疑遺漏/時機 | 未來 |
+
+每個出口內部恰好 2 輪正反交替：
 
 ```
 R1 正（提出）→ R1 反（質疑）→ R2 正（修正）→ R2 反（再質疑）→ 閘門（老闆確認）
 ```
 
-| 行為 | 正方角色 | 反方角色 | 產出 | 說明 |
-|:----:|---------|---------|------|------|
-| 計畫 | PLAN | RED | plan-r{n}.md, red-r{n}.md | 5W1H 規劃 + 質疑 |
-| 開發 | TASK | BLUE | task-r{n}.md, blue-r{n}.md | 實作 + 質疑 |
-| 驗收 | RESULT | CONCLUSION | result-r{n}.md, conclusion-r{n}.md | GWT 驗收 + 質疑 |
-| 辯論 | DEBATE | OBJECTION | debate-r{n}.md, objection-r{n}.md | 下一步建議 + 質疑 |
+### 展望行為（G4）
 
-### 辯論行為（管線第四階段）
+展望行為是驗收閘門 G3 PASS 後的**強制第四出口**，不可跳過。
 
-辯論行為是驗收閘門 G3 PASS 後的**強制第四階段**，不可跳過。
-
-- **DEBATE（正方）**：閱讀當前 slug 的計畫/開發/驗收最終產出，提出下一步建議（方向、時機、範圍）
-- **OBJECTION（反方）**：質疑正方建議的遺漏、時機、可行性
-- **G4 閘門決策**：收尾（PASSED）/ 開新 NNN（基於辯論結論的新方向，從計畫重跑）/ FAIL（異常路徑，辯論未收斂，重計數）
+- **正方**：閱讀當前 slug 的 G1/G2/G3 最終產出，提出展望（方向、時機、範圍）
+- **反方**：質疑展望的遺漏、時機、可行性
+- **G4 閘門決策**：收尾 / 開新 NNN（基於展望結論的新方向，從計畫重跑）/ FAIL（異常路徑，展望未收斂，重計數）
+- 產出為交接摘要，供下一輪 L0 前檢視
 
 G3 判品質（做得好不好），G4 判方向（下一步做什麼）。兩者維度不同，「開新 NNN」不代表推翻驗收結論。
 
@@ -129,7 +129,7 @@ mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftb
 /shiftblame 幫我重構登入流程
 ```
 
-框架會自動：啟動 → 呈現意圖 → 你確認 → 進入四行為管線。
+框架會自動：啟動 → 呈現意圖 → 你確認 → 進入四出口管線。
 
 ### 3. 你的角色（老闆）
 
@@ -143,16 +143,12 @@ mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftb
 skills/shiftblame/
 ├── SKILL.md              # 入口與觸發定義
 ├── GATE.md               # 閘門、狀態機、收尾規則
-├── MANAGE.md             # 管理者協調與操作
+├── MANAGE.md             # 流程操作與交接機制
 ├── ROLE/
-│   ├── PLAN.md           # 計畫正方
-│   ├── RED.md            # 計畫反方
-│   ├── TASK.md           # 開發正方
-│   ├── BLUE.md           # 開發反方
-│   ├── RESULT.md         # 驗收正方
-│   ├── CONCLUSION.md     # 驗收反方
-│   ├── DEBATE.md         # 辯論正方
-│   └── OBJECTION.md      # 辯論反方
+│   ├── G1.md             # 計畫出口：正方（提出）+ 反方（質疑）
+│   ├── G2.md             # 開發出口：正方（實作）+ 反方（質疑）
+│   ├── G3.md             # 驗收出口：正方（審計）+ 反方（質疑）
+│   └── G4.md             # 展望出口：正方（展望）+ 反方（質疑）
 ├── TEMPLATES/            # 模板（SLUG, REPO, ROADMAP, SOP, GRAPH, PRD, PID）
 └── TOOLS/                # 工具包（DESIGN, E2E）
 ```
@@ -166,9 +162,9 @@ skills/shiftblame/
 ```
 .shiftblame/
 ├── <slug>/               # 當前任務
-│   ├── SLUG.md           # 任務索引（目標、狀態、技術債、辯論總結）
-│   └── <NNN>/            # 各輪迭代產物
-│       └── {plan,red,task,blue,result,conclusion,debate,objection}-r{n}.md
+│   ├── SLUG.md           # 任務索引（目標、狀態、技術債、交接摘要）
+│   └── <NNN>/            # 各輪迭代
+│       └── G1.md ~ G4.md
 ├── PRD/                  # 規劃文件
 ├── PID/                  # 開發標準
 ├── SOP.md                # 全局標準
@@ -185,18 +181,20 @@ skills/shiftblame/
 | # | 原則 | 說明 |
 |:-:|------|------|
 | 1 | **回饋即意圖** | 老闆回饋是素材，不直接執行，禁止寫入記憶 |
-| 2 | **會話 ≠ 管線** | 會話由老闆自由管理，四行為是管線概念 |
+| 2 | **會話 ≠ 管線** | 會話由老闆自由管理，四出口是管線概念 |
 | 3 | **回溯原則** | 錯誤不以後續提交修正，回到未發生時間點重做 |
 | 4 | **SOP 紀律** | 可更新 SOP，建立與修改皆需意圖揭露 |
 | 5 | **PRD/PID 筆記本** | 老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈 |
-| 6 | **先提出再質疑** | 正方提出→反方質疑，四行為各 2 輪正反迴圈 |
+| 6 | **先提出再質疑** | 正方提出→反方質疑，四出口各 2 輪正反迴圈 |
 | 7 | **迭代收斂** | 閘門 FAIL 回同行為重計數，R2 產出為起始基線 |
-| 8 | **前置建檔** | 每行為結束前須先建立下行為文件 |
+| 8 | **前置建檔** | 每出口結束前須先建立下一出口文件 |
 | 9 | **計畫語言** | 計畫使用 5W1H 格式，驗收使用 GWT 格式 |
-| 10 | **Shift Blame** | 閘門 PASS 前老闆的鍋；閘門 PASS 後 agent 的鍋 |
-| 11 | **NNN=Commit** | 開發 PASS 後才 commit，每個 NNN 恰好一個 commit |
+| 10 | **Shift Blame** | 責任跟著老闆走。G1/G2 現在的老闆確認，G3/G4 未來的老闆確認 |
+| 11 | **NNN=Commit** | G2 PASS 後才 commit，每個 NNN 恰好一個 commit |
 | 12 | **分支保護** | agent 禁止操作 main；所有變更走 `feat/<slug>`，收尾合併 |
-| 13 | **強制辯論** | 驗收 G3 PASS 後強制進入辯論行為，不可跳過 |
+| 13 | **強制展望** | 驗收 G3 PASS 後強制進入展望行為，不可跳過 |
+| 14 | **單一產物** | 每個 NNN 每出口僅一份 G(n).md，正反方在同一文件交替 |
+| 15 | **交接摘要** | G4 展望行為產出，管理者彙整寫入 SLUG.md，供下一輪 L0 前檢視 |
 
 ---
 
@@ -208,7 +206,7 @@ skills/shiftblame/
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
 | 驗收 PASS 後 FAIL | 自動觸發 → 同 slug 開新 NNN（計畫重跑） |
-| 驗收 G3 PASS | 自動進入辯論行為（強制觸發，無需觸發表記載） |
+| 驗收 G3 PASS | 自動進入展望行為（G4，強制觸發） |
 
 **啟動序列**（每次觸發僅載入索引層）：
 1. 未歸檄偵測 — 掃描 `.shiftblame/` 下未歸檔 SLUG.md
@@ -219,11 +217,11 @@ skills/shiftblame/
 
 ## 可追溯鏈
 
-閘門 PASS 推進下行為，FAIL 回同行為重計數（R2 產出為起始基線，覆寫不重建）。
+閘門 PASS 推進下出口，FAIL 回同行為重計數（R2 產出為起始基線，覆寫不重建）。
 
-閘門 PASS 前是老闆的鍋：計畫可反覆修改。閘門 PASS 後是 agent 的鍋：commit 後 agent 為提交負責。
+責任跟著老闆走：G1/G2 由現在的老闆確認方向與品質，G3/G4 由未來的老闆確認驗收與展望。Agent 為執行工具。
 
-計畫使用 5W1H 格式（Who/What/When/Where/Why/How），驗收使用 GWT 格式（Given→When→Then）。辯論提出下一步建議方向。老闆可隨時跳過管線直接在 main 上操作，但責任屬於老闆，框架不提供質疑保障。
+計畫使用 5W1H 格式（Who/What/When/Where/Why/How），驗收使用 GWT 格式（Given→When→Then）。展望提出下一步方向。老闆可隨時跳過管線直接在 main 上操作，但責任屬於老闆，框架不提供質疑保障。
 
 ---
 
@@ -253,7 +251,7 @@ skills/shiftblame/
 
 ## 為什麼叫「shiftblame」？
 
-「Shift Blame」= 推卸責任。閘門 PASS 前是老闆的鍋——計畫可反覆修改。閘門 PASS 後是 agent 的鍋——後續問題開新 NNN 負責。
+「Shift Blame」= 責任跟著老闆走。G1/G2 現在的老闆確認方向與品質，閘門 PASS 後交棒給 G3/G4 未來的老闆確認驗收與下一步。Agent 是執行工具，責任始終在老闆之間延續。
 
 ---
 
