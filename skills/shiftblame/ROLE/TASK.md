@@ -33,4 +33,6 @@ status: DEVELOPED | created_at: <ISO> | trigger: <原因>
 
 ## 變更摘要
 （修改檔案清單、commit hash）
+
+> 後續由子代理審計（L3 BLUE）
 ```

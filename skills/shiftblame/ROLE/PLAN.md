@@ -37,4 +37,6 @@ status: PLANNED | created_at: <ISO> | trigger: <原因>
 （預計變更的檔案路徑與性質）
 
 ## 殘餘風險
+
+> 後續由子代理審計（L1 RED）
 ```
