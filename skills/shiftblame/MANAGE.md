@@ -31,6 +31,7 @@
 新 NNN：同 slug 複用既有 `feat/<slug>` 分支，開新目錄
 Commit：`git add <變更> && git commit -m "<type>(<slug>): <標題>"`（禁止 force-add .shiftblame/）
 歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
+清理：合併後刪除 `feat/<slug>` 分支（main 上執行 `git branch -d feat/<slug>`）
 
 ## 分支保護
 
