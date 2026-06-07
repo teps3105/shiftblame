@@ -1,6 +1,6 @@
 # RESULT — L4 實作驗收
 
-> L4 ｜ 依複雜度 ｜ 定義 GWT 驗收標準
+> L4 ｜ 子代理驗收者（實作）
 > 依 plan.md 5W1H 與 task.md 實作成果，定義驗收 GWT（Given/When/Then）。
 
 ## 驗收規範
@@ -13,6 +13,7 @@
 
 1. 角色：驗收定義者 2. 任務：plan.md + task.md
 3. 背景：REPO/ROADMAP 4. 讀寫規則：UTF-8
+5. 歸屬：實作一條龍（L0/L2/L4）｜ 累積上下文：同一條龍子代理上下文延續
 
 ## result.md 產出格式
 

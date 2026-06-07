@@ -28,6 +28,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 | `/shiftblame <任意文字>` | 意圖線索 → 啟動序列 → 呈現意圖 → 確認 → 分流 |
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
+| slug 確認後 | 預建實作+審計兩條龍 |
 | L3 PASS 後 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
 
 意圖揭露詳 GATE.md。觸發後不直接執行；呈現意圖時**必須包含執行模式**（slug 流程 vs main 直接執行），由老闆決定。
@@ -46,5 +47,4 @@ L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md
 
 ## 角色與定義檔
 
-六角色（實作計畫/審計計畫/實作開發/審計開發/實作驗收/審計驗收）。詳見 `ROLE/{PLAN,RED,TASK,BLUE,RESULT,CONCLUSION}.md`。
-閘門/收尾→GATE.md ｜ 管理者操作→MANAGE.md ｜ 模板→TEMPLATES/ ｜ 工具→TOOLS/
+六角色（實作計畫/審計計畫/實作開發/審計開發/實作驗收/審計驗收）。詳見 `ROLE/{PLAN,RED,TASK,BLUE,RESULT,CONCLUSION}.md`；閘門/收尾→GATE.md；管理者→MANAGE.md；模板→TEMPLATES/；工具→TOOLS/
