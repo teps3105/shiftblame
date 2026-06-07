@@ -16,10 +16,10 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 ## 啟動序列
 
 每次觸發**僅載入索引層**，禁止一次讀入整個專案。依序：
-1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md（清單即可）
+1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md
 2. **四文件載入**：REPO.md → ROADMAP.md → SOP.md → GRAPH.md
-3. **Repo 狀態**：git log、status、branch（摘要即可）
-其餘原始碼、角色定義檔、模板等，依需求按需載入。
+3. **Repo 狀態**：git log、status、branch
+其餘依需求按需載入。
 
 ## 觸發
 
@@ -28,20 +28,19 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 | `/shiftblame <任意文字>` | 意圖線索 → 啟動序列 → 呈現意圖 → 確認 → 分流 |
 | `/shiftblame`（有未歸檔） | 啟動序列 → 呈現清單 → 老闆選擇 → 分流 |
 | `/shiftblame`（無未歸檔） | 啟動序列 → 提議 slug → 確認 |
-| slug 確認後 | 預建實作+審計兩條龍 |
+| slug 確認後 | 定義發散策略 → 啟動 L0 多子代理發散 → 預建收斂管線 |
 | L3 PASS 後 FAIL | 自動觸發 → 同 slug 開新 NNN（L0 重跑）|
 
 意圖揭露詳 GATE.md。觸發後不直接執行；呈現意圖時**必須包含執行模式**（slug 流程 vs main 直接執行），由老闆決定。
 
 ## 模式
 
-L0 實作計畫(plan.md) → L1 審計計畫(red.md) → L2 實作開發(task.md) → L3 審計開發(blue.md) → L4 實作驗收(result.md) → L5 審計驗收(conclusion.md)
-偶數＝實作，奇數＝審計。L3 PASS 前 FAIL 回同 NNN L0；L3 PASS 後 FAIL 開新 NNN。
+三層架構：**發散層**（L0 多子代理盲獨立研究）→ **收斂層**（L1~L4 審計+實作收斂管線交替）→ **全域審計層**（L5 多子代理全域審計收斂）。偶數＝實作，奇數＝審計。收斂管線有記憶（上下文累積），發散/收斂層無記憶。
 
 ## 閘門
 
 閘門：流程開始(L0) → L5 PASSED → 收尾
-六階段六斷點：每個階段完成後，必須老闆確認通過才能進入下一階段。不可自動通關。老闆回答 PASS（推進）或 FAIL（L3 PASS 前：回同 NNN L0；L3 PASS 後：開新 NNN）。
+六階段六斷點：每個階段完成後，必須老闆確認通過才能進入下一階段。
 前置建檔：每階段結束前須先建立下一階段文件。PASSED 為終態免除。
 分支：同 slug 使用 `feat/<slug>` 分支，agent 禁止直接操作 main。
 
