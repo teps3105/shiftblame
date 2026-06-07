@@ -20,7 +20,7 @@ updated: <YYYY-MM-DD>
 | 編號 | 來源 | 描述 | 建議行動 |
 |------|------|------|----------|
 
-## 4. BossPreview/FAIL 紀錄
+## 4. BossPreview/FAIL 紀錄（L3 PASS 前：回同 NNN；L3 PASS 後：開新 NNN）
 
 ## 5. 待收尾整理
 
