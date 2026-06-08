@@ -13,8 +13,8 @@ updated: <YYYY-MM-DD>
 
 ## 2. 行為狀態紀錄
 
-格式：`<NNN>.<出口>：<R1正/R1反/R2正/R2反 狀態>` | 閘門：G1→G2→G3→G4
-例：`001.計畫(G1)：R2反完成（待閘門） | 001.展望(G4)：R1正進行中`
+格式：`<NNN>.<出口>：<正方/反方/收斂 狀態>` | 閘門：G1→G2→G3→G4
+例：`001.計畫(G1)：收斂完成（待閘門） | 001.展望(G4)：正方進行中`
 
 ## 3. 子代理策略
 
@@ -27,7 +27,7 @@ updated: <YYYY-MM-DD>
 
 ## 5. FAIL 紀錄
 
-（同行為 FAIL 重計數：R2 產出為起始基線，覆寫不重建）
+（同行為 FAIL：以收斂產出為起始基線重跑）
 
 ## 6. 交接摘要
 
@@ -36,4 +36,11 @@ updated: <YYYY-MM-DD>
 
 ## 7. 目錄與 G(n).md 格式
 
-嵌套：`<slug>/<NNN>/G(n).md`（n=1~4）。FM：`slug|nnn|gate|status|created_at`；正文 5 section（正方提出→反方質疑→正方回應→反方再質疑→正方收斂），標題隱含 stance。質疑編號 D/E + 力度 H/M/L。status 值：PLANNED/DEVELOPED/VERIFIED/PROSPECTED。
+嵌套：`<slug>/<NNN>/G(n).md`（n=1~4）。FM：`slug|nnn|gate|status|created_at`；正文 3 section（正方提出→反方質疑→正方收斂），標題隱含 stance。質疑編號 D/E + 力度 H/M/L。status 值：PLANNED/DEVELOPED/VERIFIED/PROSPECTED。
+
+## 8. 租約有效期
+
+本節記錄 slug 期間新增的臨時規範（非功能目標、非交接摘要）。功能目標見第 1 節，交接摘要見第 6 節。
+格式：`[租約編號] 規範描述 | 生效日期 | 升級至SOP / 隨歸檔失效`
+歸檔前管理者須逐條標記處置方式。
+範例：`[L1] 開發禁 commit 改為 G2 後可 commit | 2026-06-08 | 升級至SOP`
