@@ -179,7 +179,7 @@ skills/shiftblame/
 | 8 | **前置建檔** | 每出口結束前須先建立下一出口文件 |
 | 9 | **計畫語言** | 計畫使用 5W1H 格式，驗收使用 GWT 格式 |
 | 10 | **Shift Blame** | 責任跟著老闆走。G1/G2 現在的老闆確認，G3/G4 未來的老闆確認 |
-| 11 | **NNN=Commit** | G2 PASS 後才 commit，每個 NNN 恰好一個 commit |
+| 11 | **NNN=Commit** | G3 出口閘門 PASS 後才 commit，每個 NNN 恰好一個 commit |
 | 12 | **分支保護** | agent 禁止操作 main；所有變更走 `feat/<slug>`，收尾合併 |
 | 13 | **強制展望** | 驗收 G3 PASS 後強制進入展望行為，不可跳過 |
 | 14 | **單一產物** | 每個 NNN 每出口僅一份 G(n).md，正反方在同一文件交替 |
