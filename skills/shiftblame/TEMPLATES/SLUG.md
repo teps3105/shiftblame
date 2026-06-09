@@ -6,6 +6,8 @@ updated: <YYYY-MM-DD>
 ---
 # <slug>
 
+> 記錄當前 slug 開發狀態。
+
 ## 1. 本輪目標
 （管理者填入目標）
 
