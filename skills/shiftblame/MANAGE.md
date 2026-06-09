@@ -5,7 +5,7 @@
 ## 調度流程
 
 1. START：驗證上游產出→載入租約（slug：三層；簡易：僅 SOP）→揭露目標→**暫停等老闆確認**
-2. 讀取未歸檔 SLUG.md → 掌握 slug 狀態（簡易模式跳過）
+2. 讀取未歸檔 SLUG.md → 掌握 slug 狀態（簡易模式不適用）
 3. 呈現理解到的意圖→與老闆溝通確認（含模式選擇：slug 或簡易）（入口 FAIL 回此步）
 4. 計畫（G1）：正方提案→反方質疑→管理者收斂
 5. 開發（G2）：正方提出開發方案→反方質疑→管理者收斂（含 TDD 紀律實作）
@@ -18,11 +18,11 @@
 
 ## 簡易模式流程
 
-老闆指定簡易→正方提案→反方質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit→結束。同角色分工，不開 slug、不開分支、無 G(n).md、無歸檔。觸發權在老闆。FAIL 以收斂為基線重跑。
+老闆指定簡易→START（載入租約→揭露目標→暫停等老闆確認，**不可跳過**）→正方提案→反方質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit（**僅 repo 檔案；.shiftblame/ 不入 repo**）→結束。同角色分工，不開 slug、不開分支、無 G(n).md、無歸檔。觸發權在老闆。FAIL 以收斂為基線重跑。
 
 ## 流程操作
 
-產物完整性：出口前驗證 G(n).md 正文非空。建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`。簡易模式跳過。Commit：slug G4 PASS 後管理者執行；簡易 PASS 後管理者在 main 執行。歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。
+產物完整性：出口前驗證 G(n).md 正文非空。建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`。簡易模式不適用。Commit：slug G4 PASS 後管理者執行；簡易 PASS 後管理者在 main 執行。歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。
 
 ## 分支保護與會話紀律
 

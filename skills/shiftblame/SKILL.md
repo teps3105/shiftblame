@@ -27,4 +27,4 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 ## 出口迴圈
 
 **Slug 管線**：G1→G2→G3→G4，每出口正方提案→反方質疑→管理者收斂（含執行變更）。閘門詳 GATE.md；角色→ROLE/；模板→TEMPLATES/；工具→TOOLS/。分支 `feat/<slug>`。
-**簡易模式**：正方提案→反方質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit。同角色分工，不開 slug、不開分支、無 G(n).md。觸發權在老闆。
+**簡易模式**：START（不可跳過）→正方提案→反方質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit（僅 repo 檔案）。同角色分工，不開 slug、不開分支、無 G(n).md。觸發權在老闆。
