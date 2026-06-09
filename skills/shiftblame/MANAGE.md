@@ -1,6 +1,6 @@
 # MANAGE — 調度與交接
 
-管理者負責調度、收斂（含執行變更）、閘門、歸檔。slug 鏈限主 repo；.shiftblame/ 本地不入 repo；非持久產出放 tmp。讀寫中文須 UTF-8。
+管理者負責調度、收斂（含執行變更）、閘門、歸檔。slug 鏈限主 repo；.shiftblame/ 本地不入 repo；非持久產出放 .shiftblame/tmp/。讀寫中文須 UTF-8。
 
 ## 調度流程
 
@@ -8,9 +8,9 @@
 2. 讀取未歸檔 SLUG.md → 掌握 slug 狀態（簡易模式不適用）
 3. 呈現理解到的意圖→與老闆溝通確認（含模式選擇：slug 或簡易）（入口 FAIL 回此步）
 4. 計畫（G1）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（變更僅限 .shiftblame/ 範圍）
-5. 開發（G2）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含 TDD 紀律實作+提交）
-6. 驗收（G3）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含修復+提交）
-7. 展望（G4）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含文件更新+提交）→收尾或暫停
+5. 開發（G2）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含 TDD 紀律實作+提交）。G2 為 NNN 迭代出口：FAIL→開新 NNN；PASS→老闆決定推進 G3
+6. 驗收（G3）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含使用者體驗驗收+整理 G4 素材）。不開新 NNN；若需更多開發→開新 slug
+7. 展望（G4）：正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含文件更新+提交）→收尾或暫停。不開新 NNN；若需更多開發→開新 slug
 8. END：呈現收斂+下一步方向→老闆確認。Slug 走收尾；簡易結束
 9. L0 前：檢視交接摘要
 
@@ -22,7 +22,7 @@
 
 ## 流程操作
 
-產物完整性：出口前驗證 G(n).md 正文非空。建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`。簡易模式不適用。Commit：slug G2/G3/G4 各出口收斂後依進度提交；簡易 PASS 後管理者在 main 執行。G1 變更僅限 `.shiftblame/` 範圍。歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。
+產物完整性：出口前驗證 G(n).md 正文非空。建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`。簡易模式不適用。Commit：G2 為 NNN 迭代出口，收斂後提交；G3/G4 不開新 NNN，收斂後提交（修復/文件更新）；簡易 PASS 後管理者在 main 執行。G1 變更僅限 `.shiftblame/` 範圍。歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`。
 
 ## 分支保護與會話紀律
 

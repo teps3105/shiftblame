@@ -26,5 +26,5 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 出口迴圈
 
-**Slug 管線**：G1→G2→G3→G4，每出口正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含執行變更）。G2/G3/G4 收斂後在 `feat/<slug>` 依進度提交。G1 變更僅限 `.shiftblame/` 範圍。閘門→GATE.md；角色→ROLE/；管理→MANAGE.md；模板→TEMPLATES/（皆技能定義檔 skills/shiftblame/）。分支 `feat/<slug>`。
+**Slug 管線**：G1→G2（可反覆開 NNN）→G3→G4，每出口正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含執行變更）。G2 為 NNN 迭代出口，收斂後提交；G3/G4 不開新 NNN。G3/G4 若需更多開發→開新 slug。G1 變更僅限 `.shiftblame/` 範圍。閘門→GATE.md；角色→ROLE/；管理→MANAGE.md；模板→TEMPLATES/（皆技能定義檔 skills/shiftblame/）。分支 `feat/<slug>`。
 **簡易模式**：START（不可跳過）→正方多子代理多視角提案→反方多子代理多視角質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit（僅 repo 檔案）。同角色分工，不開 slug、不開分支、無 G(n).md。觸發權在老闆。
