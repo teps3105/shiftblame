@@ -10,7 +10,7 @@ Slug 狀態序：PLANNED→DEVELOPED→VERIFIED→PROSPECTED→PASSED。簡易�
 
 ## 閘門生命週期
 
-**Slug START**：驗證上游→載入三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE）→揭露目標→**暫停等老闆確認**。
+**Slug START**：驗證上游→載入三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE 皆技能定義檔 skills/shiftblame/）→揭露目標→**暫停等老闆確認**。
 **Slug END**：呈現管理者收斂+下一步→老闆 PASS/FAIL。反方 H/M/L 標註，不做決策。
 **簡易 START**：載入 SOP（長期租約）→揭露目標→**暫停等老闆確認**。不可跳過。
 **簡易 END**：呈現管理者收斂→老闆 PASS→管理者在 main commit（僅 repo 檔案；.shiftblame/ 不入 repo）。FAIL 重跑正→反→收斂。

@@ -17,7 +17,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md
 2. **四文件載入**：REPO.md → ROADMAP.md → SOP.md → GRAPH.md
 3. **Repo 狀態**：git log、status、branch
-4. **租約載入**：slug 管線載入三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE）；簡易模式僅載入 SOP（長期）。若長期未載入回入口閘門 FAIL
+4. **租約載入**：slug 管線載入三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE 皆技能定義檔 skills/shiftblame/）；簡易模式僅載入 SOP（長期）。若長期未載入回入口閘門 FAIL
 5. **模式判斷**：老闆確認時指定 slug 管線或簡易模式。簡易模式同角色分工但不開 slug、不開分支、無 G(n).md，直接在 main commit。
 
 ## 觸發
@@ -26,5 +26,5 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 出口迴圈
 
-**Slug 管線**：G1→G2→G3→G4，每出口正方提案→反方質疑→管理者收斂（含執行變更）。閘門詳 GATE.md；角色→ROLE/；模板→TEMPLATES/；工具→TOOLS/。分支 `feat/<slug>`。
+**Slug 管線**：G1→G2→G3→G4，每出口正方提案→反方質疑→管理者收斂（含執行變更）。閘門→GATE.md；角色→ROLE/；管理→MANAGE.md；模板→TEMPLATES/（皆技能定義檔 skills/shiftblame/）。分支 `feat/<slug>`。
 **簡易模式**：START（不可跳過）→正方提案→反方質疑→管理者收斂（含執行變更）→老闆 PASS→管理者在 main commit（僅 repo 檔案）。同角色分工，不開 slug、不開分支、無 G(n).md。觸發權在老闆。

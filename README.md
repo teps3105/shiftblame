@@ -156,6 +156,8 @@ mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftb
 
 ## 專案結構
 
+> `skills/shiftblame/` 下皆為技能定義檔（技能層租約），與 `.shiftblame/`（專案層）區分。
+
 ```
 skills/shiftblame/
 ├── SKILL.md              # 入口與觸發定義
