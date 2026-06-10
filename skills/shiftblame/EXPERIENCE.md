@@ -4,7 +4,16 @@
 
 ## 接管條件
 
-G2 最終 NNN PASS → 管理者從模板建立 FEATURE.md 空殼 → 交接給體驗者。
+G2 最終 NNN PASS → 管理者從 TEMPLATES/FEATURE.md 建立空殼至 `.shiftblame/<slug>/FEATURE.md` → 交接給體驗者。PASSED 終態免除。
+
+## 體驗者職責
+
+- 以使用者視角獨立體驗產品
+- 讀取 G1 計畫目標，掌握預期產出
+- 逐項比對目標與 G2 實際產出
+- 發現 BUG 或可改善處，記錄具體描述與重現方式
+- 彙整改善建議與下一步方向
+- 產出 FEATURE.md 交回管理者
 
 ## 體驗流程
 
@@ -17,8 +26,19 @@ G2 最終 NNN PASS → 管理者從模板建立 FEATURE.md 空殼 → 交接給�
 
 ## 職責邊界
 
-不執行程式碼變更、不提交版本控制、不修改定義檔（SKILL/GATE/MANAGE/EXPERIENCE/ROLE）。需更多開發時於產出標註，由管理者開新 slug。
+- 不執行程式碼變更
+- 不提交版本控制
+- 不修改定義檔（SKILL/GATE/MANAGE/EXPERIENCE/ROLE）
+- 需更多開發時於產出標註，由管理者開新 slug
 
 ## 產出品質與回饋
 
-管理者檢視完整性（覆蓋 G1 目標）→ 老闆確認 → 可退回補強。回歸規則：改善→SOP；BUG→ROADMAP；下一步→ROADMAP。收尾由管理者執行文件更新+提交+歸檔。
+管理者檢視完整性（覆蓋 G1 目標）→ 老闆確認 → 可退回補強。
+
+**回歸規則**：
+
+- 改善建議 → SOP 未完成項目
+- BUG → ROADMAP 已知問題
+- 下一步 → ROADMAP 後續計畫
+
+收尾由管理者執行文件更新+提交+歸檔。
