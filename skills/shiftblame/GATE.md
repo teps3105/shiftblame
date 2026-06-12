@@ -43,7 +43,7 @@ FAIL 以收斂為基線增量增加（正→反→收斂重新跑）。
 2. 管理者品質確認
 3. 老闆 PASSED
 4. 管理者提交文件更新
-5. 合併→推送→清理
+5. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
 6. 歸檔至 `.shiftblame/archive/`（本地流程紀錄，不提交）
 
 **回歸規則**：改善建議→SOP 未完成項目；BUG→SOP 已知問題區；目標→SOP 當前目標區。

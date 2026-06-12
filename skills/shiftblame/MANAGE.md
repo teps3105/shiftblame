@@ -26,7 +26,7 @@
 10. 實作意圖揭露：呈現將做的變更→**暫停等老闆確認**→確認後才正式實作
 11. 閘門：呈現雙軌收斂結論→老闆 PASS/FAIL
 12. PASS→按兩份收斂結論實作→commit。FAIL→以收斂為基線增量增加→開新 NNN（回步驟 7）
-13. 收尾：老闆 PASSED→管理者提交文件更新→合併→推送→清理→歸檔至 .shiftblame/archive/
+13. 收尾：老闆 PASSED→管理者提交文件更新→`git checkout main && git merge --no-ff feat/<slug>`→推送→清理→歸檔至 .shiftblame/archive/
 14. END：呈現收尾+下一步方向→老闆確認
 
 ## 調度策略
@@ -42,6 +42,7 @@
 - 建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 - 每個 NNN 同時產出 G1.md + G2.md
 - Commit：NNN PASS 後按雙軌收斂結論實作→commit。每個 NNN 恰好一個 commit
+- 歸檔合併：`git checkout main && git merge --no-ff feat/<slug>`。每個 slug 恰好一個 merge commit
 - `.shiftblame/` 永遠不 stage、不 commit、不 push
 - 歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
 - 非持久產出放 .shiftblame/tmp/；跨 NNN/slug 回歸測試或腳本可留主 repo，已無用則刪除
