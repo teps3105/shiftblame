@@ -63,6 +63,18 @@ skills/shiftblame/
 
 **Slug 鏈文件白名單（嚴格）**：每個 `<slug>/` 僅含 `SLUG.md` 與 `<NNN>/` 資料夾；每個 `<NNN>/` 僅含 `G1.md` 與 `G2.md`。NNN 內禁止新增其他文件，收斂與實作內容附於 `G1.md`/`G2.md` 末尾。其餘需求/設計/研究文件依性質歸 `PRD/` 或 `PID/`（見核心原則 3）。
 
+## Obsidian 初始化規範
+
+`.shiftblame/` 本身即為 Obsidian vault root。新專案初始化時，四文件、`PRD/`、`PID/`、`archive/`、`tmp/` 與開發中 slug 都可在 Obsidian 檔案樹中可視；連接完整性只要求四文件、`PRD/`、`PID/`。
+
+- 四文件使用 Obsidian properties：`title`、`type: FOUR_FILE`、`role`、`status`、`updated`
+- PRD 使用 Obsidian properties：`title`、`domain`、`type: PRD`、`status`、`priority`、`created`、`updated`
+- PID 使用 Obsidian properties：`title`、`domain`、`type: PID`、`status`、`priority`、`created`、`updated`
+- PRD/PID 對應檔存在時才填 `pid` 或 `prd` wiki link；不存在時不建立假連結、不新增佔位筆記
+- 四文件、PRD、PID 必須至少連回四文件中的一個；建議 References 連到 `[[REPO]]`、`[[ROADMAP]]`、`[[SOP]]`、`[[GRAPH]]`
+- `archive/` 與開發中 slug 文件可視，但不納入 Obsidian 連接完整性驗證
+- 不新增 `00_INDEX.md`，不新增編號欄位；資料夾結構本身即為權威結構
+
 ## 啟動序列
 
 每次觸發**僅載入索引層**，按需讀取所需檔案。依序：

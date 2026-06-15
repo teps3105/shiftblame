@@ -1,3 +1,10 @@
+---
+title: ROADMAP
+type: FOUR_FILE
+role: roadmap
+status: active
+updated: <YYYY-MM-DD>
+---
 # ROADMAP — 產品方向
 
 > 記錄未來預計要做的事。每次收尾時從老闆指示與管理者回歸更新同步。
@@ -23,3 +30,9 @@
 | Slug | 功能 | 歸檔日期 | 老闆評價 |
 |------|------|----------|------------|
 | （收尾時追加） | | | |
+
+## References
+
+- [[REPO]]
+- [[SOP]]
+- [[GRAPH]]

@@ -26,7 +26,7 @@
 10. 實作意圖揭露：呈現將做的變更→**暫停等老闆確認**→確認後才正式實作
 11. 閘門：呈現雙軌收斂結論→老闆 PASS/FAIL
 12. PASS→按兩份收斂結論實作→commit。FAIL→以收斂為基線增量增加→開新 NNN（回步驟 7）
-13. 收尾：老闆 PASSED→管理者提交文件更新→`git checkout main && git merge --no-ff feat/<slug>`→推送→清理→歸檔至 .shiftblame/archive/
+13. 收尾：老闆 PASSED→管理者提交文件更新→Obsidian 連接收尾→`git checkout main && git merge --no-ff feat/<slug>`→推送→清理→歸檔至 .shiftblame/archive/
 14. END：呈現收尾+下一步方向→老闆確認
 
 ## 調度策略
@@ -42,6 +42,8 @@
 - 建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 - 每個 NNN 同時產出 G1.md + G2.md
 - 非 slug 鏈文件（需求/設計/研究）依性質分流至 `PRD/`（需求類）或 `PID/`（標準類）子資料夾，按主題歸類（見 SKILL.md 原則 3）
+- Obsidian 初始化：`.shiftblame/` 作為 vault root，整棵樹可視；連接完整性只要求四文件、`PRD/`、`PID/`
+- Obsidian 收尾：每個 slug 結束時更新四文件與相關 PRD/PID；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析成功；`archive/` 與開發中 slug 文件可視但不納入連接完整性
 - Commit：NNN PASS 後按雙軌收斂結論實作→commit。每個 NNN 恰好一個 commit
 - 歸檔合併：`git checkout main && git merge --no-ff feat/<slug>`。每個 slug 恰好一個 merge commit
 - `.shiftblame/` 永遠不 stage、不 commit、不 push

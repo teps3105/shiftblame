@@ -1,3 +1,10 @@
+---
+title: REPO
+type: FOUR_FILE
+role: repo
+status: active
+updated: <YYYY-MM-DD>
+---
 # REPO — 專案現狀
 
 > 記錄當前架構、技術棧、已完成功能。每次收尾時更新。
@@ -35,3 +42,9 @@
 | 日期 | 變更摘要 | 來源 |
 |------|----------|------|
 | （收尾時追加） | | |
+
+## References
+
+- [[ROADMAP]]
+- [[SOP]]
+- [[GRAPH]]

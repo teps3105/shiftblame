@@ -1,9 +1,12 @@
 ---
-id: <唯一編號>
 title: <標題>
+domain: <主題>
+type: PRD
 status: draft
+priority: medium
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
+# pid 僅在對應 PID 已存在時填寫；不存在時省略本欄位
 ---
 # <標題>
 
@@ -49,4 +52,9 @@ updated: <YYYY-MM-DD>
 
 ## References
 
-- （相關文件連結：ROADMAP 項目、SOP 條目、既有 PRD）
+- [[REPO]]
+- [[ROADMAP]]
+- [[SOP]]
+- [[GRAPH]]
+- （若對應 PID 已存在，加入對應 PID 的 wiki link）
+- （相關文件連結：既有 PRD/PID、slug 歸檔紀錄、外部素材）
