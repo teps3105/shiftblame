@@ -1,3 +1,10 @@
+---
+title: GRAPH
+type: FOUR_FILE
+role: graph
+status: active
+updated: <YYYY-MM-DD>
+---
 # GRAPH — 專案可視化圖譜
 
 > 視覺化追蹤專案進度、slug 依賴與架構關係。每次收尾時更新。
@@ -45,3 +52,31 @@ graph TD
 | 日期 | 變更 | 觸發 slug |
 |------|------|-----------|
 | （收尾時追加） | | |
+
+## Obsidian 筆記查詢
+
+> 查詢範圍只含四文件、PRD、PID；archive 與開發中 slug 可視但不列入連接完整性。
+
+### 未完成 PRD
+
+```dataview
+TABLE domain, status, priority, updated, pid
+FROM "PRD"
+WHERE type = "PRD" AND status != "implemented" AND status != "archived"
+SORT priority DESC, updated DESC
+```
+
+### PID
+
+```dataview
+TABLE domain, status, updated, prd
+FROM "PID"
+WHERE type = "PID"
+SORT updated DESC
+```
+
+## References
+
+- [[REPO]]
+- [[ROADMAP]]
+- [[SOP]]

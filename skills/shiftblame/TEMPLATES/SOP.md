@@ -1,3 +1,10 @@
+---
+title: SOP
+type: FOUR_FILE
+role: sop
+status: active
+updated: <YYYY-MM-DD>
+---
 # SOP — 專案執行準則
 
 > 記錄執行準則、目標與未完成/已完成項目。三層租約的長期層。
@@ -67,3 +74,9 @@
 | 日期 | Slug | 摘要 |
 |------|------|------|
 | | | |
+
+## References
+
+- [[REPO]]
+- [[ROADMAP]]
+- [[GRAPH]]
