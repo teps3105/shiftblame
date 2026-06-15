@@ -42,6 +42,7 @@ NNN 狀態：CONVERGED → PASSED（commit）或 FAILED（開新 NNN）
 ## 6. G(n).md 格式
 
 - 路徑：`.shiftblame/<slug>/<NNN>/G1.md` + `.shiftblame/<slug>/<NNN>/G2.md`（每 NNN 同時產出兩份）
+- Slug 鏈白名單：`<slug>/` 僅含 `SLUG.md` 與 `<NNN>/`；`<NNN>/` 僅含 `G1.md` 與 `G2.md`（見 SKILL.md「`.shiftblame/` 內部佈局」）
 - YAML front matter：`slug | nnn | role | status | created_at`
 - 正文結構：正方→反方→收斂，各段首行追溯性標註 `[正方: name | 反方: name | 收斂: name]`
 - 命名：`<role>-<topic>`
