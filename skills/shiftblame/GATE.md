@@ -24,6 +24,8 @@ FAIL 以收斂為基線增量增加（正→反→收斂重新跑）。
 
 每個 NNN 僅產出 `G1.md` 與 `G2.md`，禁止新增 slug 鏈外文件（白名單見 SKILL.md「`.shiftblame/` 內部佈局」）。
 
+**範圍聚焦**：每個 NNN 處理單一可驗證問題（可寫成驗收條件、可被閘門 PASS/FAIL 判定者）；不同問題拆成獨立 NNN，不混在同一 NNN。
+
 **體驗閘門**（修正/優化類變更）：管理者與老闆共同完整體驗產品，記錄使用者體驗、缺陷、BUG 等問題。問題寫入當輪 slug 的反方/收斂或 SOP 已知問題區。新功能開發類無此閘門。
 
 **START**：載入三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE+ROLE/G1+G2）→揭露目標→**暫停等老闆確認**。
@@ -46,6 +48,6 @@ FAIL 以收斂為基線增量增加（正→反→收斂重新跑）。
 3. 老闆 PASSED
 4. 管理者提交文件更新
 5. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
-6. 歸檔至 `.shiftblame/archive/`（本地流程紀錄，不提交）
+6. 歸檔：將 `.shiftblame/<slug>/` 移至 `.shiftblame/archive/<slug>/`（archive 為可清空暫存，老闆可隨時清理），並更新 GRAPH.md 與 REPO.md 的歸檔紀錄（持久紀錄，欄位見各檔模板）
 
 **回歸規則**：改善建議→SOP 未完成項目；BUG→SOP 已知問題區；目標→SOP 當前目標區。

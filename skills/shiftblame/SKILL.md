@@ -67,7 +67,7 @@ skills/shiftblame/
 
 每次觸發**僅載入索引層**，按需讀取所需檔案。依序：
 
-1. **未歸檔偵測**：掃描 `.shiftblame/` 下未歸檔 SLUG.md
+1. **文件夾狀態偵測**：檢視 `.shiftblame/` 根目錄目前狀態——未歸檔 SLUG.md 與已 PASSED 仍未歸檔的殘留 slug 文件夾（只看當下，archive 可被隨時清空，不對照歷史）。若有殘留，先歸檔再繼續（見 GATE.md 收尾）
 2. **四文件載入**：REPO.md → ROADMAP.md → SOP.md → GRAPH.md
 3. **Repo 狀態**：git log、status、branch
 4. **租約載入**：三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE+ROLE/G1+G2）。若長期未載入回入口閘門 FAIL
