@@ -6,16 +6,9 @@
 
 ```mermaid
 graph LR
-    A[老闆觸發] --> B{模式?}
-    B -->|Slug 管線| C[G1 計畫]
-    B -->|簡易模式| D[START]
+    A[老闆觸發] --> C[G1 計畫]
     C --> E[G2 開發 NNN]
-    E --> F[體驗者]
-    F --> G[收尾]
-    D --> H[正方提案]
-    H --> I[反方質疑]
-    I --> J[收斂]
-    J --> K[PASS→commit]
+    E --> G[管理者收尾]
 ```
 
 ## 狀態圖
@@ -24,8 +17,7 @@ graph LR
 stateDiagram-v2
     [*] --> PLANNED : G1 出口
     PLANNED --> DEVELOPED : G2 出口
-    DEVELOPED --> EXPERIENCED : 體驗者完成
-    EXPERIENCED --> PASSED : 管理者收尾
+    DEVELOPED --> PASSED : 管理者收尾
 
     DEVELOPED --> DEVELOPED : NNN FAIL→新 NNN
 ```
@@ -46,7 +38,7 @@ graph TD
 | 已歸檔 slug | 0 |
 | 進行中 slug | 0 |
 | 總 NNN 迭代次數 | 0 |
-| 體驗者回饋 BUG 數 | 0 |
+| 已知 BUG 數 | 0 |
 
 ## 架構演化
 
