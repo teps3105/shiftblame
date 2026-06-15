@@ -26,20 +26,18 @@
 ### NNN=Commit 紀律
 
 - G2 每個 NNN 迭代收斂後，管理者提交一次 commit
-- Commit 訊息格式：`<type>: <slug>—<簡述>`
-- Type：feat / fix / refactor / docs / test
+- Commit 訊息格式：`<type>(slug): <繁體中文描述>`（例：`feat(map-ui): 強化常態地圖雲氣流動`）
+- Type：feat / fix / docs / style / refactor / test / chore / build / ci / perf / revert
+- Merge commit：`chore(slug): 合併<繁體中文成果>`
 
 ### Commit 紀律
 
 - 所有 commit 由管理者執行，正方/反方禁止 commit
 - Slug 管線 commit 在 `feat/<slug>` 分支
-- 簡易模式 commit 在 main（老闆授權）
-- 簡易模式僅提交 repo 檔案，.shiftblame/ 不入 repo
 
 ### 租約載入
 
-- Slug 管線三層租約：SOP（長期）｜SLUG §7（中期）｜閘門對應 ROLE + SKILL+GATE+MANAGE+EXPERIENCE（短期）
-- 簡易模式：SOP（長期）+ SKILL+GATE+MANAGE+EXPERIENCE（短期）
+- Slug 管線三層租約：SOP（長期）｜SLUG §7（中期）｜SKILL+GATE+MANAGE+ROLE/G1+G2（短期）
 - 長期租約未載入 → 入口閘門 FAIL
 
 ### 會話管理
@@ -60,7 +58,7 @@
 
 ## 未完成項目
 
-（待執行項目清單，收尾時從體驗者回饋同步）
+（待執行項目清單，收尾時從管理者回歸更新同步）
 
 ## 已完成項目
 
