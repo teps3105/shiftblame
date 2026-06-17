@@ -35,7 +35,7 @@ updated: <YYYY-MM-DD>
 - G2 每個 NNN 迭代收斂後，管理者提交一次 commit
 - Commit 訊息格式：`<type>: <繁體中文描述>`（例：`feat: 強化常態地圖雲氣流動`）
 - Type：feat / fix / docs / style / refactor / test / chore / build / ci / perf / revert
-- Merge commit：`chore(slug): 合併<繁體中文成果>`
+- Merge commit：`chore(slug): <繁體中文成果>`
 
 ### Commit 紀律
 
