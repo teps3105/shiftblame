@@ -29,6 +29,7 @@
 - [三層租約](#-三層租約)
 - [觸發方式](#-觸發方式)
 - [角色總覽](#-角色總覽)
+- [選用：ponytail](#選用ponytail)
 - [PRD / PID / SOP 制度](#-prd--pid--sop-制度)
 - [License](#-license)
 
@@ -217,6 +218,19 @@ skills/shiftblame/
 ### 管理者
 
 調度 G1/G2 子代理（平行）、分別收斂雙軌、按雙軌收斂結論執行實作、閘門管理、提交/合併/歸檔。
+
+---
+
+## 選用：ponytail
+
+shiftblame 可與 [ponytail](https://github.com/DietrichGebert/ponytail)（lazy senior dev 模式）並用。以下為 shiftblame 對此整合的詮釋與規則。
+
+- **未安裝 ponytail**：shiftblame 完整可用，功能不受影響。
+- **已安裝且生效時**：ponytail 的 lazy ladder（YAGNI / stdlib 優先 / 最短可運作解 / 壓制未請求過度工程）套用於 shiftblame 流程的程式碼與產物產出。
+
+> 作用面說明：shiftblame 為純 Markdown 定義檔框架，ponytail 主要作用於其中少量程式碼/腳本產出（如 G2 實作階段、`.shiftblame/tmp/` 探索測試）。
+
+**衝突仲裁**：ponytail「最短化」與 shiftblame 定義檔明文要求的產出（證據鏈、收斂、GWT 測試、意圖揭露等）衝突時，以 **shiftblame 定義檔條款為準**——這些屬「使用者/框架明確要求的詳盡產出」，不適用最短化。詳細規則見 SOP 執行準則。
 
 ---
 
