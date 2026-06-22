@@ -50,7 +50,7 @@ FAIL 以收斂為基線增量增加（正→反→收斂重新跑）。
 1. 最終 NNN PASS 後實作完成
 2. 管理者品質確認
 3. 老闆 PASSED
-4. 管理者提交文件更新：更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID
+4. 管理者更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID
 5. Obsidian 連接收尾：確認 `.shiftblame/` 整棵樹可作 vault root 可視；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析到現有 Markdown；`archive/` 與開發中 slug 可視但不列入連接完整性
 6. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
 7. 歸檔：將 `.shiftblame/<slug>/` 移至 `.shiftblame/archive/<slug>/`（archive 為可清空暫存，老闆可隨時清理），並更新 GRAPH.md 與 REPO.md 的歸檔紀錄（持久紀錄，欄位見各檔模板）
