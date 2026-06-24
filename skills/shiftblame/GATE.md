@@ -45,20 +45,21 @@ Slug 內的迭代以收斂為基線增量增加：下一個 NNN 以上一 NNN �
 
 **收斂**：管理者分別收斂 G1 和 G2，產出兩份各自結論。反方 H/M/L 標註，不做決策。收斂結論與實作內容附於當輪 `G1.md`/`G2.md` 末尾，不另開新文件。收斂須交代證據鏈與取捨：主張依據、查證狀態、未知項、風險/反證、替代方案，以及為何建議推進。收斂後揭露實作意圖（將做什麼變更、依據為何）→**暫停等老闆確認**→確認後才正式實作。
 
-**NNN 推進（commit 前獨立驗收）**：NNN 走完正→反→收斂、實作完成後，commit 前的獨立驗收見閘門原則 12。此為 commit 前置審查，**不是 NNN 層 gate、不是 slug PASS**。驗收通過後 commit；commit 後由老闆指示推進到下一個 NNN（或退回）。此層級無 PASS/FAIL 判定。
+**NNN 推進（commit 與驗收解耦）**：NNN 走完正→反→收斂、實作完成後即 commit（本地存檔，可逆）；commit 不綁驗收。NNN 層驗收可選（管理者初判／老闆覆核，機制見 SKILL 核心原則「選用外部角色整合」）。commit 後由老闆指示推進到下一個 NNN（或退回）。此層級無 PASS/FAIL 判定。
 
 **Slug 閘門（slug 結束才適用）**：整條 slug 所有 NNN 完成、老闆拍板 slug 結束時 → 老闆 PASS → 走收尾流程。PASS 是 slug 層級的唯一閘門判定，由老闆決定，agent 不得自行宣告。
 
 ## 收尾
 
-1. 老闆拍板 slug 結束（PASS）後進入收尾
-2. 管理者品質確認
-3. 老闆 PASSED
-4. 管理者更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID
-5. Obsidian 連接收尾：確認 `.shiftblame/` 整棵樹可作 vault root 可視；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析到現有 Markdown；`archive/` 與開發中 slug 可視但不列入連接完整性
-6. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
-7. 歸檔：將 `.shiftblame/<slug>/` 移至 `.shiftblame/archive/<slug>/`（archive 為可清空暫存，老闆可隨時清理），並更新 GRAPH.md 與 REPO.md 的歸檔紀錄（持久紀錄，欄位見各檔模板）
-8. 反面教訓提煉：若本 slug 有「方向性錯誤被否決撤回」的教訓，提煉為方向性紀律（不保留單案 slug 名與具體系統內容），記入專案 SOP 的反面教訓區或對應原則旁。單案完整過程隨 slug 歸入 `archive/`。判準：教訓是否「可脫離單案、通用於未來」——是則提煉，否則只歸檔
+1. 老闆有意拍板 slug 結束時，先觸發 **slug 末強制驗收**（兜底，見 SKILL 核心原則「選用外部角色整合」）：整條 slug 成果交 codex 獨立驗收；codex 判退修→不得 PASS，rework 後重驗
+2. slug 末驗收通過後，老闆拍板 slug 結束（PASS）進入收尾
+3. 管理者品質確認
+4. 老闆 PASSED
+5. 管理者更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID
+6. Obsidian 連接收尾：確認 `.shiftblame/` 整棵樹可作 vault root 可視；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析到現有 Markdown；`archive/` 與開發中 slug 可視但不列入連接完整性
+7. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
+8. 歸檔：將 `.shiftblame/<slug>/` 移至 `.shiftblame/archive/<slug>/`（archive 為可清空暫存，老闆可隨時清理），並更新 GRAPH.md 與 REPO.md 的歸檔紀錄（持久紀錄，欄位見各檔模板）
+9. 反面教訓提煉：若本 slug 有「方向性錯誤被否決撤回」的教訓，提煉為方向性紀律（不保留單案 slug 名與具體系統內容），記入專案 SOP 的反面教訓區或對應原則旁。單案完整過程隨 slug 歸入 `archive/`。判準：教訓是否「可脫離單案、通用於未來」——是則提煉，否則只歸檔
 
 **回歸規則**：改善建議→SOP 未完成項目；BUG→SOP 已知問題區；目標→SOP 當前目標區。
 
