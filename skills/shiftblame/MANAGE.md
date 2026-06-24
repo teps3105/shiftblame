@@ -27,7 +27,7 @@
 8. 反方（雙軌平行）：G1/G2 各軌子代理切換反方身份做初步質疑（保留內部對抗）。回收反方輸出後由管理者收斂；質疑成立的須逐項回應（承認/反駁/部分承認/記入技術債），不無視亦不全盤接受。反方獨立複審的 codex 啟用與雙層細則見 SKILL 核心原則「選用外部角色整合」
 9. 收斂：管理者分別收斂 G1 和 G2，產出兩份各自結論（寫入當輪 G1.md/G2.md 末尾，見 GATE.md）。收斂須回應證據鏈、反證、未知項與替代方案
 10. 實作意圖揭露：呈現將做的變更、採用依據、查證狀態、主要取捨與殘餘風險→**暫停等老闆確認**→確認後才正式實作
-11. 實作→commit 前獨立驗收（細則見 SKILL 核心原則「選用外部角色整合」）→ commit。commit 後由老闆指示推進到下一個 NNN（回步驟 7），或老闆拍板 slug 結束（PASS）→ 進步驟 13 收尾。NNN 層級無 PASS/FAIL 判定
+11. 實作→commit（commit 與驗收解耦，驗收機制見 SKILL 核心原則「選用外部角色整合」：NNN 可選／老闆覆核免驗／slug 末強制）→ commit 後由老闆指示推進到下一個 NNN（回步驟 7），或老闆拍板 slug 結束（PASS）→ 進步驟 13 收尾。NNN 層級無 PASS/FAIL 判定
 12. （slug 結束分流）老闆拍板 slug 結束（PASS）才進收尾；否則由老闆指示繼續推進下一個 NNN（回步驟 7）
 13. 收尾：老闆 PASSED→管理者提交文件更新→Obsidian 連接收尾→`git checkout main && git merge --no-ff feat/<slug>`→推送→清理→歸檔至 .shiftblame/archive/
 14. END：呈現收尾+下一步方向→老闆確認
@@ -53,7 +53,7 @@
 - 非 slug 鏈文件（需求/設計/研究）依性質分流至 `PRD/`（需求類）或 `PID/`（標準類）子資料夾，按主題歸類（見 SKILL.md 原則 3）
 - Obsidian 初始化：`.shiftblame/` 作為 vault root，整棵樹可視；連接完整性只要求四文件、`PRD/`、`PID/`
 - Obsidian 收尾：每個 slug 結束時更新四文件與相關 PRD/PID；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析成功；`archive/` 與開發中 slug 文件可視但不納入連接完整性
-- Commit：NNN 走完整輪（正→反→收斂→實作意圖揭露→老闆確認→實作；commit 前獨立驗收見 SKILL 核心原則「選用外部角色整合」）後 commit。每個 NNN 恰好一個 commit。commit 後由老闆指示推進。NNN 層級無 PASS/FAIL
+- Commit：NNN 走完整輪（正→反→收斂→實作意圖揭露→老闆確認→實作）後 commit（commit 與驗收解耦，驗收機制見 SKILL 核心原則「選用外部角色整合」：NNN 可選／老闆覆核免驗／slug 末強制）。每個 NNN 恰好一個 commit。commit 後由老闆指示推進。NNN 層級無 PASS/FAIL
 - 歸檔合併：`git checkout main && git merge --no-ff feat/<slug>`。每個 slug 恰好一個 merge commit
 - `.shiftblame/` 永遠不 stage、不 commit、不 push
 - 歸檔：`mv .shiftblame/<slug>/ .shiftblame/archive/<slug>/`
