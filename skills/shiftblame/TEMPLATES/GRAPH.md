@@ -26,7 +26,7 @@ stateDiagram-v2
     PLANNED --> DEVELOPED : G2 出口
     DEVELOPED --> PASSED : 管理者收尾
 
-    DEVELOPED --> DEVELOPED : NNN FAIL→新 NNN
+    DEVELOPED --> DEVELOPED : NNN commit→老闆指示推進下一 NNN
 ```
 
 ## 依賴圖
