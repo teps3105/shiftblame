@@ -12,10 +12,13 @@ updated: <YYYY-MM-DD>
 ## 流程圖
 
 ```mermaid
-graph LR
-    A[老闆觸發] --> C[G1 計畫]
-    C --> E[G2 開發 NNN]
-    E --> G[管理者收尾]
+graph TD
+    A[老闆觸發] --> B[NNN 雙軌平行]
+    B --> C[G1 外部研究規劃視角]
+    B --> D[G2 內部技術實作視角]
+    C --> E[管理者收斂]
+    D --> E
+    E --> F[老闆 PASS／推進]
 ```
 
 ## 狀態圖
@@ -59,14 +62,18 @@ graph TD
 
 ### 未完成 PRD
 
+> PRD `status` 三態（原則 6）：`draft`=未完成（列此）、`implemented`=已固化、`archived`=已否決。
+
 ```dataview
 TABLE domain, status, priority, updated, pid
 FROM "PRD"
-WHERE type = "PRD" AND status != "implemented" AND status != "archived"
+WHERE type = "PRD" AND status = "draft"
 SORT priority DESC, updated DESC
 ```
 
 ### PID
+
+> PID `status`（原則 6.4）：`implemented`=現行標準、`superseded`=被新標準取代（歷史事實保留可視，不過濾）。
 
 ```dataview
 TABLE domain, status, updated, prd
