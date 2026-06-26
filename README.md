@@ -30,6 +30,7 @@
 - [觸發方式](#-觸發方式)
 - [角色總覽](#-角色總覽)
 - [選用：ponytail](#選用ponytail)
+- [選用：外部工具](#選用外部工具)
 - [PRD / PID / SOP 制度](#-prd--pid--sop-制度)
 - [License](#-license)
 
@@ -231,6 +232,23 @@ shiftblame 可與 [ponytail](https://github.com/DietrichGebert/ponytail)（lazy 
 > 作用面說明：shiftblame 為純 Markdown 定義檔框架，ponytail 主要作用於其中少量程式碼/腳本產出（如 G2 實作階段、`.shiftblame/tmp/` 探索測試）。
 
 **衝突仲裁**：ponytail「最短化」與 shiftblame 定義檔明文要求的產出（證據鏈、收斂、GWT 測試、意圖揭露等）衝突時，以 **shiftblame 定義檔條款為準**——這些屬「使用者/框架明確要求的詳盡產出」，不適用最短化。完整規則見框架核心原則（[SKILL.md](skills/shiftblame/SKILL.md)「選用外部 skill 整合」）。
+
+---
+
+## 選用：外部工具
+
+shiftblame 是 **platform-agnostic**——框架不綁單一平台／工具，卸除任一外部工具，核心流程仍完整可用。下列外部工具已安裝時優先使用，不可用方降級內部（降級留痕，不跳過既有足夠內建工具）：
+
+- **SEARXNG-mcp**（研究／搜尋）：外部資訊研究與查證
+- **ai-vision-mcp**（圖像識別）：視覺驗收粗篩（最終裁判仍是老闆的眼睛）
+- **godot-mcp**（Godot 實作）：Godot 專案／場景／節點操作
+- **codex**（獨立性工作）：反方獨立複審、成果驗收、外部查證
+
+**未安裝任一工具時**：框架完整可用——研究用內建 web、驗收用獨立子代理＋老闆親驗、反方由子代理內部擔任、實作由管理者手寫。
+
+> codex 不再是「特殊外部角色」，而是普通外部工具之一；framework 內 agent 對 codex 的所有外部需求一律走 `/codex:rescue`，禁側通道。
+
+**衝突仲裁**：外部工具產出與 shiftblame 定義檔明文要求的產出衝突時，以 **shiftblame 定義檔條款為準**。完整規則見框架核心原則（[SKILL.md](skills/shiftblame/SKILL.md)「外部工具整合總則 §17.0–§17.3」）。
 
 ---
 

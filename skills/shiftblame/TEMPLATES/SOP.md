@@ -38,7 +38,7 @@ updated: <YYYY-MM-DD>
 
 ### NNN=Commit 紀律
 
-- 每個 NNN 走完整輪（正→反→收斂→實作意圖揭露→老闆確認→實作；commit 與驗收解耦，驗收機制見框架 SKILL 核心原則「選用外部角色整合」：NNN 可選／老闆覆核免驗／slug 末強制，本專案 SOP 不重述）後，管理者提交一次 commit。NNN 層級無 gate/PASS/FAIL，推進時機由老闆指示
+- 每個 NNN 走完整輪（正→反→收斂→實作意圖揭露→老闆確認→實作；commit 與驗收解耦，驗收機制見框架 SKILL §17.3：NNN 可選／老闆覆核免驗／slug 末強制，本專案 SOP 不重述）後，管理者提交一次 commit。NNN 層級無 gate/PASS/FAIL，推進時機由老闆指示
 - Commit 訊息格式：`<type>: <繁體中文描述>`（例：`feat: 強化常態地圖雲氣流動`，**不帶 slug scope**）
 - Type：feat / fix / docs / style / refactor / test / chore / build / ci / perf / revert
 - Merge commit：`merge(slug): <繁體中文成果>`（slug 僅出現在 merge commit）
