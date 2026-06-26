@@ -12,10 +12,13 @@ updated: <YYYY-MM-DD>
 ## 流程圖
 
 ```mermaid
-graph LR
-    A[老闆觸發] --> C[G1 計畫]
-    C --> E[G2 開發 NNN]
-    E --> G[管理者收尾]
+graph TD
+    A[老闆觸發] --> B[NNN 雙軌平行]
+    B --> C[G1 外部研究規劃視角]
+    B --> D[G2 內部技術實作視角]
+    C --> E[管理者收斂]
+    D --> E
+    E --> F[老闆 PASS／推進]
 ```
 
 ## 狀態圖

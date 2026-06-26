@@ -50,7 +50,7 @@
 
 - 建立 slug：`mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 - 每個 NNN 同時產出 G1.md + G2.md
-- 非 slug 鏈文件（需求/設計/研究）依性質分流至 `PRD/`（需求類）或 `PID/`（標準類）子資料夾，按主題歸類（見 SKILL.md 原則 3）
+- 非 slug 鏈文件（需求/設計/研究）依性質分流至 `PRD/`（需求類）或 `PID/`（標準類）子資料夾，按主題歸類（見 SKILL.md 原則 6）
 - Obsidian 初始化：`.shiftblame/` 作為 vault root，整棵樹可視；連接完整性只要求四文件、`PRD/`、`PID/`
 - Obsidian 收尾：每個 slug 結束時更新四文件與相關 PRD/PID；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析成功；`archive/` 與開發中 slug 文件可視但不納入連接完整性
 - Commit：NNN 走完整輪（正→反→收斂→實作意圖揭露→老闆確認→實作）後 commit（commit 與驗收解耦，驗收機制見 SKILL §17.3：NNN 可選／老闆覆核免驗／slug 末強制）。每個 NNN 恰好一個 commit。commit 後由老闆指示推進。NNN 層級無 PASS/FAIL
