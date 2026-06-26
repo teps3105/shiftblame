@@ -13,14 +13,19 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 3. **證據驅動說服**：agent 的任務是把需求翻譯成可驗證問題，用專案現況、官方文件、可重現實測、業界範例等完整證據鏈提出可反駁建議；不迎合老闆技術直覺，不得隱藏反證或只用 LLM 既有印象推動方案通過
 4. **查證優先**：涉及不確定、新框架/版本、外部 API、法規/安全/效能/成本、repo 無先例、與老闆技術直覺衝突，或 agent 只能憑印象回答時，必須查證；專案租約與現況先界定問題邊界，外部證據依問題性質加權，LLM 既有知識只作待查假設
 5. **SOP 約束**：SOP 為各專案執行準則，建立與修改皆需意圖揭露
-6. **PRD/PID 筆記本**：老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈。非 slug 鏈文件依性質分流：需求類歸 `PRD/`、標準類歸 `PID/`，各自按主題建子資料夾歸類（同時含兩者以主要意圖歸類，見「`.shiftblame/` 內部佈局」）
+6. **PRD/PID/SOP 三性質邊界總則**：PRD、SOP、PID 是 `.shiftblame/` 內三種不同性質的文件，依「性質＋時效＋權威」三軸分類，不混雜、不互相污染。老闆的筆記本（PRD/PID）agent 可參考與協助整理，不進 slug 鏈；非 slug 鏈文件依性質分流（需求類歸 `PRD/`、標準類歸 `PID/`），各自按主題建子資料夾（同時含兩者以主要意圖歸類，見「`.shiftblame/` 內部佈局」）。
+    - **6.0 三性質定義（互斥完備，定語不可替換）**：① **PRD=未來**（未證實的需求／方向，來源老闆意圖）② **SOP=當下**（開工必讀必執行的紀律，來源流程紀律／反面教訓）③ **PID=過去**（已實作固化的事實／標準，來源收尾固化）。任一段落須能無歧義歸類到三者之一；時間軸（文件性質）與 G1/G2 視角軸正交，不可組合表述。
+    - **6.1 權威覆蓋＝性質定語判定（非文件階層）**：內容衝突時以性質定語判定歸屬——「現在該怎麼做」歸 SOP、「已經怎麼做」歸 PID、「未來想做」歸 PRD。**不是「某類文件階層最高」**（SSOT 是「每條規則只在一處定義」，非階層覆蓋）。紀律改變改 SOP 不改 PID；PID 舊事實過時則標 `superseded`＋變更紀錄，內容不刪。
+    - **6.2 同步時機與方向**：三文件同步只發生於 GATE 收尾步驟 5（slug 結束），**NNN 中途不同步**（NNN 中途技術決策記於 G2.md 收斂，屬 slug 鏈內文件，非三文件）。同步方向單向：slug 成果→PID（固化）→SOP（若衍生新紀律）→PRD（status 流轉）；**禁止反向改寫**（PID 不回頭改 PRD 需求描述）。
+    - **6.3 污染防治（框架內經驗規則，非業界背書）**：隔離硬規則——PRD 不寫「如何執行」（那是 SOP）也不寫「已如何實作」（那是 PID）；SOP 不寫「未來需求」（那是 PRD）也不寫「當次 slug 具體實作」（那是 PID）；PID 不回寫「未來方向」（那是 PRD）也不宣稱「新紀律」（那是 SOP）。PRD 的 Acceptance 限業務價值／使用者可感知條件，不含技術選型。跨性質遷移（PRD→PID／PRD→SOP）屬文件歸檔動作，須走意圖揭露（原則 1）。
+    - **6.4 事實 vs 規範適用範圍（解 SOP.md「移除錯誤歷史」與 PID 衝突）**：「移除錯誤歷史不堆疊」規則的適用範圍＝**框架定義檔**（`skills/shiftblame/` 規範性文件，描述當前真相，可重寫）；**PID**（專案 `.shiftblame/` 固化事實）適用「事實保留＋ `superseded` 標註」（不刪，只追加變更紀錄）。兩者適用範圍不同正是三性質邊界體現。
 7. **先提案再質疑**：G1/G2 雙軌平行，各走正→反→收斂流程
 8. **迭代收斂**：管理者以最後收斂為基線增量增加
 9. **變更前先體驗**：任何修正/優化類變更，管理者必須與老闆共同完整體驗一次產品，記錄使用者體驗、缺陷、BUG 等問題，再開始修正。記錄的問題寫入當輪 slug 的反方/收斂或 SOP 已知問題區
 10. **Slug 前置硬閘門**：任何程式碼或產品變更前，必須先建立 `.shiftblame/<slug>/<NNN>/` 文件夾，開啟 G1/G2 子代理，回收子代理輸出並由管理者收斂寫入 `G1.md`/`G2.md` 後，才能開始實作
 11. **SHIFTBLAME 文件不提交**：`.shiftblame/` 永遠只作本地流程紀錄，不得 stage、commit 或 push
 12. **本地產物不污染 git**：啟動腳本、建置流程、服務 PID、Web export 產物與 runtime 輸出等本地產物須納入 `.gitignore` 或明確標示為可提交正式產物
-13. **目標統一寫入 SOP**：所有長期目標、當前目標、目標附加條件都只能寫入 SOP，不另創其他平行目標文件
+13. **目標統一寫入 SOP**：所有長期目標、當前目標、目標附加條件都只能寫入 SOP，不另創其他平行目標文件。與原則 6 邊界：「目標」（當下要達成，屬 SOP 當下紀律）vs「未證實需求」（未來想做，屬 PRD）——目標寫 SOP，未來需求寫 PRD，不混淆
 14. **固定雙子代理（正反收斂軌）**：正反收斂雙軌永遠只開兩個子代理（G1 外部研究規劃視角 + G2 內部技術實作視角），不得增開多視角子代理。本原則的「子代理」僅指 G1/G2 正反收斂軌；codex（原則 17，無論複審或驗收角色）一律為外部工具，驗收擔任者（獨立子代理，見原則 17.3）性質不同（read-only 審查、非正反收斂、非視角分工），皆不計入雙子代理數、不改變雙軌結構
 15. **子代理續用與雙軌隔離**：子代理身份可續用；G1/G2 分開運作、分開產出、分開收斂，再由管理者合併為實作基線
 16. **選用外部 skill 整合（以 ponytail 為首例）**：未安裝時框架完整可用；已安裝且生效時，該 skill 的紀律套用於 shiftblame 流程的程式碼/產物產出；與 shiftblame 定義檔明文要求的產出衝突時，shiftblame 定義檔條款優先。
@@ -95,8 +100,8 @@ skills/shiftblame/
 `.shiftblame/` 本身即為 Obsidian vault root。新專案初始化時，四文件、`PRD/`、`PID/`、`archive/`、`tmp/` 與開發中 slug 都可在 Obsidian 檔案樹中可視；連接完整性只要求四文件、`PRD/`、`PID/`。
 
 - 四文件使用 Obsidian properties：`title`、`type: FOUR_FILE`、`role`、`status`、`updated`
-- PRD 使用 Obsidian properties：`title`、`domain`、`type: PRD`、`status`、`priority`、`created`、`updated`
-- PID 使用 Obsidian properties：`title`、`domain`、`type: PID`、`status`、`priority`、`created`、`updated`
+- PRD 使用 Obsidian properties：`title`、`domain`、`type: PRD`、`status`（值：`draft`→`implemented`→`archived`，見原則 6）、`priority`、`created`、`updated`
+- PID 使用 Obsidian properties：`title`、`domain`、`type: PID`、`status`（值：`implemented`→`superseded`，見原則 6）、`priority`、`created`、`updated`
 - PRD/PID 對應檔存在時才填 `pid` 或 `prd` wiki link；不存在時不建立假連結、不新增佔位筆記
 - 四文件、PRD、PID 必須至少連回四文件中的一個；建議 References 連到 `[[REPO]]`、`[[ROADMAP]]`、`[[SOP]]`、`[[GRAPH]]`
 - `archive/` 與開發中 slug 文件可視，但不納入 Obsidian 連接完整性驗證

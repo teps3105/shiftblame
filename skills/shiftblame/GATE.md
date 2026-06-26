@@ -55,7 +55,7 @@ Slug 內的迭代以收斂為基線增量增加：下一個 NNN 以上一 NNN �
 2. slug 末驗收通過後，老闆拍板 slug 結束（PASS）進入收尾
 3. 管理者品質確認
 4. 老闆 PASSED
-5. 管理者更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID
+5. 管理者更新 REPO.md、ROADMAP.md、SOP.md、GRAPH.md 與相關 PRD/PID。PRD/PID 固化判定流（原則 6）：① 新功能/新標準→建對應 PID（`implemented`）＋PRD 轉 `implemented`＋雙向 wiki link；② 方向被否決撤回→PRD 轉 `archived`（老闆拍板），**不建 PID**（反面教訓提煉屬步驟 9，此處不重述）；③ 修正既有功能→更新既有 PID 變更紀錄＋對應 PRD（若存在）轉 `implemented`。無對應 PRD 的獨立 PID（口頭指示/臨時實作）省略 `prd` 連結、變更紀錄註明來源
 6. Obsidian 連接收尾：確認 `.shiftblame/` 整棵樹可作 vault root 可視；驗證四文件、`PRD/`、`PID/` 內所有 wiki links 解析到現有 Markdown；`archive/` 與開發中 slug 可視但不列入連接完整性
 7. `git checkout main && git merge --no-ff feat/<slug>`→推送→清理（每個 slug 恰好一個 merge commit）
 8. 歸檔：將 `.shiftblame/<slug>/` 移至 `.shiftblame/archive/<slug>/`（archive 為可清空暫存，老闆可隨時清理），並更新 GRAPH.md 與 REPO.md 的歸檔紀錄（持久紀錄，欄位見各檔模板）

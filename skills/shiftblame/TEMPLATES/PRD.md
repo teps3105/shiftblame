@@ -2,7 +2,7 @@
 title: <標題>
 domain: <主題>
 type: PRD
-status: draft
+status: draft  # draft→implemented（收尾固化）→archived（方向否決/被取代，老闆拍板）見原則 6
 priority: medium
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
@@ -10,7 +10,7 @@ updated: <YYYY-MM-DD>
 ---
 # <標題>
 
-> 老闆的筆記本。記錄待開發的功能詳節。Agent 可參考與協助整理，不進 slug 鏈。
+> 老闆的**未來需求**筆記本（原則 6.0：PRD=未來）。記錄待開發／未證實的需求與方向。性質：未來／未證實／可被否決。權威最低——一經實作固化須遷出至 PID，一經驗證為長期紀律須遷出至 SOP（遷移走意圖揭露）。Agent 可參考與協助整理，不進 slug 鏈。
 
 ## Problem
 
@@ -36,7 +36,7 @@ updated: <YYYY-MM-DD>
 
 ## Acceptance
 
-（描述驗收標準。G1 正方將此翻譯為 5W1H + 變更清單 + 品質定義）
+（描述驗收標準。限業務價值／使用者可感知條件，**不含技術選型**——原則 6.3。G1 正方將此翻譯為 5W1H + 變更清單 + 品質定義）
 
 ### Must Have
 

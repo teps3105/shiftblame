@@ -2,15 +2,15 @@
 title: <標題>
 domain: <主題>
 type: PID
-status: implemented
+status: implemented  # implemented→superseded（被新標準取代，事實保留不刪）見原則 6.4
 priority: medium
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
-# prd 僅在對應 PRD 已存在時填寫；不存在時省略本欄位
+# prd 僅在對應 PRD 已存在時填寫；無對應 PRD（口頭指示/臨時實作的獨立 PID）省略本欄位，並於變更紀錄註明來源（原則 6.0）
 ---
 # <標題>
 
-> 老闆的筆記本。記錄已開發的功能詳節與開發標準。Agent 可參考與協助整理，不進 slug 鏈。
+> 老闆的**過去事實**筆記本（原則 6.0：PID=過去）。記錄已實作固化的成果與開發標準。性質：過去／已固化／追加變更紀錄不回溯改寫。固化事實不得被 PRD 新需求覆蓋；與新 SOP 紀律衝突時 PID 保留為歷史事實（標 `superseded`，內容不刪，原則 6.4）。Agent 可參考與協助整理，不進 slug 鏈。
 
 ## 適用範圍
 

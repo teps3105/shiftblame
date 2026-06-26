@@ -59,14 +59,18 @@ graph TD
 
 ### 未完成 PRD
 
+> PRD `status` 三態（原則 6）：`draft`=未完成（列此）、`implemented`=已固化、`archived`=已否決。
+
 ```dataview
 TABLE domain, status, priority, updated, pid
 FROM "PRD"
-WHERE type = "PRD" AND status != "implemented" AND status != "archived"
+WHERE type = "PRD" AND status = "draft"
 SORT priority DESC, updated DESC
 ```
 
 ### PID
+
+> PID `status`（原則 6.4）：`implemented`=現行標準、`superseded`=被新標準取代（歷史事實保留可視，不過濾）。
 
 ```dataview
 TABLE domain, status, updated, prd
