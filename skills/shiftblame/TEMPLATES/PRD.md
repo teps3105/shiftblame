@@ -26,25 +26,17 @@ updated: <YYYY-MM-DD>
 
 ## Scope
 
-### In Scope
+### In Scope / Out of Scope
 
-（本次需求明確包含的項目）
-
-### Out of Scope
-
-（本次需求明確排除的項目）
+（本次需求明確包含／排除的項目）
 
 ## Acceptance
 
-（描述驗收標準。限業務價值／使用者可感知條件，**不含技術選型**——原則 6.3。G1 正方將此翻譯為 5W1H + 變更清單 + 品質定義）
+（驗收標準。限業務價值／使用者可感知條件，**不含技術選型**——原則 6.3。G1 正方將此翻譯為 5W1H + 變更清單 + 品質定義）
 
-### Must Have
+### Must Have / Nice to Have
 
-- （必要條件）
-
-### Nice to Have
-
-- （加分條件）
+- （必要條件／加分條件）
 
 ## Context
 
@@ -52,9 +44,5 @@ updated: <YYYY-MM-DD>
 
 ## References
 
-- [[REPO]]
-- [[ROADMAP]]
-- [[SOP]]
-- [[GRAPH]]
-- （若對應 PID 已存在，加入對應 PID 的 wiki link）
-- （相關文件連結：既有 PRD/PID、slug 歸檔紀錄、外部素材）
+- [[REPO]]、[[ROADMAP]]、[[SOP]]、[[GRAPH]]
+- （若對應 PID 已存在，加入對應 PID 的 wiki link；相關文件連結：既有 PRD/PID、slug 歸檔紀錄、外部素材）

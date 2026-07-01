@@ -45,6 +45,4 @@ updated: <YYYY-MM-DD>
 
 ## References
 
-- [[ROADMAP]]
-- [[SOP]]
-- [[GRAPH]]
+- [[ROADMAP]]、[[SOP]]、[[GRAPH]]
