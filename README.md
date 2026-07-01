@@ -74,12 +74,11 @@ NNN 001：G1（外部研究規劃視角）‖ G2（內部技術實作視角）�
       │
       ├── 正方（平行）：G1 提計畫 ‖ G2 提技術
       ├── 反方（平行）：G1 質疑計畫 ‖ G2 質疑技術
-      └── 收斂：管理者分別收斂 G1 + G2 → 各自結論
+      └── 收斂：管理者分別收斂 G1（產 <task>）+ G2（產 <complete>）→ 合併基線
       │
       ▼
-老闆 PASS/FAIL
-  PASS → 按雙軌收斂結論實作 → commit → 收尾
-  FAIL → 開 NNN 002（以收斂為基線增量增加）→ 回到正方
+EXECUTOR 執行 <task> 至 <complete> → commit → 老闆指示推進下一 NNN
+老闆拍板 slug 結束（PASS，唯 slug 層級）→ 收尾
 ```
 
 ### 雙軌分工
@@ -126,13 +125,14 @@ mklink /J "%USERPROFILE%\.claude\skills\shiftblame" "D:\shiftblame\skills\shiftb
 ```
 skills/shiftblame/
 ├── SKILL.md              # 入口：核心原則、啟動序列、觸發、管線概述
-├── GATE.md               # 閘門原則、狀態序、NNN 生命週期、收尾
-├── MANAGE.md             # 管理者調度流程、分支保護、會話紀律
+├── GATE.md               # 閘門原則、狀態序、NNN 生命週期、複審、收尾
 ├── ROLE/
+│   ├── MANAGER.md        # 管理者角色（調度／收斂／初審／commit，不實作）
+│   ├── EXECUTOR.md       # 執行者子代理（實作軌，不計入正反收斂）
 │   ├── G1.md             # 外部研究規劃視角：需求翻譯、5W1H、可行性評估
 │   └── G2.md             # 內部技術實作視角：技術選型、GWT 測試、TDD
 ├── TEMPLATES/            # 模板（REPO, ROADMAP, SOP, GRAPH, SLUG, PRD, PID）
-└── TOOLS/                # 工具包
+└── TOOLS/                # 外部工具整合（具體設定集中此處）
 ```
 
 ---
@@ -180,7 +180,7 @@ skills/shiftblame/
 |:----:|------|------|----------|
 | 長期 | 跨 slug | SOP.md | 每次啟動 |
 | 中期 | 單 slug | SLUG.md §7 租約有效期 | 每次 START |
-| 短期 | 單 NNN | SKILL+GATE+MANAGE+ROLE/G1+G2 | 每個 NNN START |
+| 短期 | 單 NNN | SKILL+GATE+ROLE/（MANAGER+EXECUTOR+G1+G2） | 每個 NNN START |
 
 ---
 
@@ -197,7 +197,7 @@ skills/shiftblame/
 1. **未歸檔偵測** — 掃描 `.shiftblame/` 下未歸檔 SLUG.md
 2. **四文件載入** — REPO → ROADMAP → SOP → GRAPH
 3. **Repo 狀態** — git log / status / branch 摘要
-4. **租約載入** — 三層租約（SOP｜SLUG §7｜SKILL+GATE+MANAGE+ROLE/G1+G2）
+4. **租約載入** — 三層租約（SOP｜SLUG §7｜SKILL+GATE+ROLE/）
 5. **建立 slug** — `mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 
 ---
@@ -216,9 +216,9 @@ skills/shiftblame/
 
 **反方**：質疑測試涵蓋度/技術方案合理性/程式碼品質/一致性。7 個質疑方向、5 項越權防線。
 
-### 管理者
+### 管理者（MANAGER）
 
-調度 G1/G2 子代理（平行）、分別收斂雙軌、按雙軌收斂結論執行實作、閘門管理、提交/合併/歸檔。
+調度 G1/G2 子代理（平行）、分別收斂雙軌、初審、提交/合併/歸檔。**不自行實作**——收斂後由 EXECUTOR 實作軌承接（EXECUTOR 為臨時性單一職責子代理，不計入正反收斂軌）。複審 3 觸發點（收斂後／`<task>` 執行完／slug 全域）全老闆-gated、預設關閉。
 
 ---
 
@@ -244,7 +244,7 @@ shiftblame 是 **platform-agnostic**——框架不綁單一平台／工具，�
 - **godot-mcp**（Godot 實作）：Godot 專案／場景／節點操作
 - **codex**（獨立性工作）：反方獨立複審、成果驗收、外部查證
 
-**未安裝任一工具時**：框架完整可用——研究用內建 web、驗收用獨立子代理＋老闆親驗、反方由子代理內部擔任、實作由管理者手寫。
+**未安裝任一工具時**：框架完整可用——研究用內建 web、驗收用獨立子代理＋老闆親驗、反方由子代理內部擔任、實作由 EXECUTOR 承接。
 
 > codex 不再是「特殊外部角色」，而是普通外部工具之一；framework 內 agent 對 codex 的所有外部需求一律走 `/codex:rescue`，禁側通道。
 
