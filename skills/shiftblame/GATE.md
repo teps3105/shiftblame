@@ -1,4 +1,4 @@
-# GATE — 閘門、NNN 生命週期、複審、收尾
+# GATE — 閘門、<nnn> 生命週期、複審、收尾
 
 ## 閘門原則（編號＋一句話）
 
@@ -15,13 +15,13 @@
 
 ## 狀態序
 
-**Slug**：IN_PROGRESS → PASSED（PASS 唯 slug 層級，由老闆拍板 slug 結束）。**NNN**：START → 正方 → 反方 → 收斂 → EXECUTOR 實作 → commit →（老闆指示推進）下一個 NNN。NNN 層級無 gate／無 PASS／無 FAIL；推進時機由老闆隨時指示，agent 不得自行判定可推進、不得因 NNN 走完自動 commit 不請示。commit 是本地存檔（可逆）；push 才是對外動作，仍需老闆指示。
+**Slug**：IN_PROGRESS → PASSED（PASS 唯 slug 層級，由老闆拍板 slug 結束）。**<nnn>**：START → 正方 → 反方 → 收斂 → EXECUTOR 逐項實作（每項 <task> 自驗通過即 commit）→ <complete> 達成 →（老闆指示推進）下一個 <nnn>。<nnn> 層級無 gate／無 PASS／無 FAIL；推進時機由老闆隨時指示，agent 不得自行判定可推進、不得因 <nnn> 走完自動推進不請示。commit 是本地存檔（可逆）；push 才是對外動作，仍需老闆指示。
 
-**節奏紀律**：「功能告一段落」≠「功能全部完善」。每個 NNN 只做當下該做的那一塊，做完即推進切換；嚴禁每輪急著收斂／完善／給完成戳記。完善只限 slug 最後一個 NNN（前提：問題已浮現、無未知殘留）。**EXECUTOR 達成 `<complete>` 僅實作完成、非 PASS**；PASS 唯老闆拍板 `<slug>` 結束。
+**節奏紀律**：「功能告一段落」≠「功能全部完善」。每個 <nnn> 只做當下該做的那一塊，做完即推進切換；嚴禁每輪急著收斂／完善／給完成戳記。完善只限 slug 最後一個 <nnn>（前提：問題已浮現、無未知殘留）。**EXECUTOR 達成 `<complete>` 僅實作完成、非 PASS**；PASS 唯老闆拍板 `<slug>` 結束。
 
-## NNN 生命週期
+## <nnn> 生命週期
 
-每個 NNN 僅產出 `G1.md`＋`G2.md`，禁止新增 slug 鏈外文件。範圍聚焦單一可驗證問題（不同問題拆獨立 NNN）。
+每個 <nnn> 僅產出 `G1.md`＋`G2.md`，禁止新增 slug 鏈外文件。範圍聚焦單一可驗證問題（不同問題拆獨立 <nnn>）。
 
 - **START**：載入三層租約（SOP｜SLUG §7｜SKILL+GATE+ROLE/）→ 揭露目標 → **暫停等老闆確認**
 - **正方（雙軌平行）**：G1 提計畫方案 ‖ G2 提技術方案；須說明依據，不把老闆非技術描述當技術結論
