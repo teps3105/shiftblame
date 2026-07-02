@@ -4,7 +4,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 ---
 # shiftblame — AI Agents 協作框架
 
-正反回饋迴圈框架。雙軌平行：G1 外部研究規劃視角 + G2 內部技術實作視角，相輔相成不分先後。每次變更走 slug 管線，依規模開 NNN 輪數。管理者調度收斂後**不自行實作**，由 EXECUTOR 實作軌承接。
+正反回饋迴圈框架。雙軌平行：G1 外部研究規劃視角 + G2 內部技術實作視角，相輔相成不分先後。每次變更走 slug 管線，依規模開 <nnn> 輪數。管理者調度收斂後**不自行實作**，由 EXECUTOR 實作軌承接。
 
 ## 核心原則（編號＋一句話）
 
@@ -17,23 +17,24 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 7. **先提案再質疑**：G1/G2 雙軌平行，各走正→反→收斂流程
 8. **迭代收斂**：管理者以最後收斂為基線增量增加
 9. **變更前先體驗**：修正／優化類變更前與老闆共同完整體驗產品，記錄問題再開始
-10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<NNN>/`、開 G1/G2 子代理、管理者收斂寫入 G1.md/G2.md 才能實作
+10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<nnn>/`、開 G1/G2 子代理、管理者收斂寫入 G1.md/G2.md 才能實作
 11. **SHIFTBLAME 文件不提交**：`.shiftblame/` 永遠只作本地流程紀錄，不得 stage/commit/push
 12. **本地產物不污染 git**：啟動腳本、建置流程、服務 PID、runtime 輸出等本地產物須納入 `.gitignore` 或明確標示為正式產物
 13. **目標統一寫入 SOP**：所有長期／當前／附加目標只寫 SOP，不另創平行目標文件（目標=當下，屬 SOP；未證實需求=未來，屬 PRD）
 14. **固定雙子代理（正反收斂軌）**：正反收斂雙軌永遠只開 G1+G2；EXECUTOR 為實作軌、臨時性單一職責，**不計入正反收斂軌**，不改變雙軌結構
-15. **子代理續用與雙軌隔離**：子代理身份可跨 NNN 續用；G1/G2 分開運作產出收斂，再由管理者合併為實作基線
+15. **子代理續用與雙軌隔離**：子代理身份可跨 <nnn> 續用；G1/G2 分開運作產出收斂，再由管理者合併為實作基線
 16. **選用外部 skill 整合**：未安裝時框架完整可用；已安裝生效時該 skill 紀律套用於產出；與定義檔明文產出衝突時定義檔優先（詳該 skill 自身）
 17. **外部工具整合總則（platform-agnostic）**：框架不綁平台——卸除任一外部工具核心流程仍完整可用（降級鏈／升級鏈／推進禁令／工具清單／驗收機制細則集中 TOOLS/）
 18. **決策邊界三條**：① 技術決策管理者自決不請示 ② 接力方向（下一可驗證問題）老闆拍板 ③ 過程順序步驟自決不問老闆
+19. **術語總則**：大寫裸詞（SLUG/TASK/COMPLETE）＝概念名稱，只單獨用；小寫角括號（<nnn>/<task>/<complete>/<slug>）＝該切片具體值（數字／任務內容／完成條件／分支名），單獨角括號使用，不作任務名、不當前綴（不當前綴＝禁複合識別符拼接如 NNN001）
 
 ## 檔案結構
 
-`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／NNN 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者不實作、EXECUTOR.md 實作軌、G1.md 外部研究規劃視角、G2.md 內部技術實作視角）｜TEMPLATES/（模板）｜TOOLS/（外部工具整合，具體設定集中此處）。
+`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／<nnn> 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者不實作、EXECUTOR.md 實作軌、G1.md 外部研究規劃視角、G2.md 內部技術實作視角）｜TEMPLATES/（模板）｜TOOLS/（外部工具整合，具體設定集中此處）。
 
 ## `.shiftblame/` 內部佈局
 
-每個採用 shiftblame 的專案固定佈局：四文件（SOP/REPO/ROADMAP/GRAPH）＋ `PRD/`（需求）＋ `PID/`（標準）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（僅含 `SLUG.md` 與 `<NNN>/G1.md`+`G2.md`，白名單嚴格）。`.shiftblame/` 即 Obsidian vault root；連接完整性只要求四文件、`PRD/`、`PID/`（archive 與開發中 slug 可視但不列入）。
+每個採用 shiftblame 的專案固定佈局：四文件（SOP/REPO/ROADMAP/GRAPH）＋ `PRD/`（需求）＋ `PID/`（標準）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（僅含 `SLUG.md` 與 `<nnn>/G1.md`+`G2.md`，白名單嚴格）。`.shiftblame/` 即 Obsidian vault root；連接完整性只要求四文件、`PRD/`、`PID/`（archive 與開發中 slug 可視但不列入）。
 
 ## 啟動序列與觸發
 
@@ -41,4 +42,4 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 管線
 
-**雙軌平行 slug 管線**：G1(外部研究規劃) ‖ G2(內部技術實作) 同時進行。每 NNN＝正→反→收斂→EXECUTOR 實作→commit；NNN 層級無 gate/PASS/FAIL，推進由老闆指示。收斂分兩份各自結論（G1 產 `<task>`／G2 產 `<complete>`），管理者合併為一致基線後派發 EXECUTOR。PASS 唯 slug 層級（老闆拍板 slug 結束）。分支 `feat/<slug>`。
+**雙軌平行 slug 管線**：G1(外部研究規劃) ‖ G2(內部技術實作) 同時進行。每 <nnn>＝正→反→收斂→EXECUTOR 逐項實作（每項 <task> 自驗通過即 commit）；<nnn> 層級無 gate/PASS/FAIL，推進由老闆指示。收斂分兩份各自結論（G1 產 `<task>`／G2 產 `<complete>`），管理者合併為一致基線後派發 EXECUTOR。PASS 唯 slug 層級（老闆拍板 slug 結束）。分支 `feat/<slug>`。
