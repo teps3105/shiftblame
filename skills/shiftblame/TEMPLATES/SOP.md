@@ -26,7 +26,7 @@ updated: <YYYY-MM-DD>
 （專案特定執行規範。ROLE/ 涵蓋職責＋越權防線，專案細項由此增補）
 
 - **定義檔規範**：每檔 ≤50 行（含 frontmatter）；單一權威（每條規則只在一處定義）；正向表述；UTF-8。方向修正須重整非貼上（舊版移 `archive/`）；錯誤歷史直接移除重寫為當前真相（框架定義檔），PID 適用「事實保留＋`superseded` 標註」（原則 6.4，不刪只追加變更紀錄）
-- **<task> Commit 紀律**：每個 <nnn> 雙軌收斂後 EXECUTOR 逐項實作 <task>，每項自驗通過即 commit（對照 <complete> 達成）。commit 粒度＝<task> 序列每項一 commit。Commit 訊息 `<type>: <繁體中文描述>`（不帶 slug scope）；Merge commit `merge(slug): <繁體中文成果>`。EXECUTOR 於 <task> 項自驗通過時自行 commit（僅範圍內檔案、`.shiftblame/` 永不 commit）；正方/反方禁止 commit；管理者保留收尾 merge。管線 commit 在 `feat/<slug>`
+- **<task> Commit 紀律**：每個 <nnn> 雙軌收斂後 EXECUTOR 逐項實作 <task>，每項自驗通過即 commit（對照 <complete> 達成）。commit 粒度＝<task> 序列每項一 commit。Commit 訊息 `<type>: <繁體中文描述>`，描述≤20 codepoint（不含 type 前綴，動賓短語結果導向禁作文，語意判準管理者初審）；驗證：`...| sed 's/^[^:]*: //' | python -c "import sys;print(len(sys.stdin.readline().rstrip()))"` ≤20。Merge commit `merge(slug): <成果>`（受字數限，豁免動賓）。EXECUTOR 於 <task> 項自驗通過時自行 commit（僅範圍內檔案、`.shiftblame/` 永不 commit）；正方/反方禁止 commit；管理者保留收尾 merge。管線 commit 在 `feat/<slug>`
 - **租約／會話／產物**：三層租約 SOP（長期）｜SLUG §7（中期）｜SKILL+GATE+ROLE/（短期），長期未載入→入口閘門 FAIL。會話由老闆自由管理；`.shiftblame/` 不在 repo（gitignore）；本地產物納入 `.gitignore`，正式產物明確標示
 
 ## PRD/PID 固化判定流（原則 6 收尾同步）
