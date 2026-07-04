@@ -20,11 +20,11 @@ updated: <YYYY-MM-DD>
 |-----|---------|---------|----------|------|
 | 001 | — | — | — | 初始輪 |
 
-<nnn> 狀態：START → 正方 → 反方 → 收斂 → EXECUTOR 逐項實作（每項 <task> 自驗通過即 commit）→ <complete> 達成。<nnn> 層級無 gate/PASS/FAIL，推進由老闆指示。Slug：IN_PROGRESS → PASSED（老闆拍板 slug 結束）。
+<nnn> 狀態：START → 正方 → 反方 → 收斂 → 實作前規劃 → EXECUTOR 逐項實作（每項 <task> 自驗通過即 commit）→ <complete> 達成。<nnn> 層級無 gate/PASS/FAIL，推進由老闆指示。Slug：IN_PROGRESS → PASSED（老闆拍板 slug 結束）。
 
-## 3. 子代理策略
+## 3. 雙軌策略
 
-固定雙子代理（正反收斂軌）：G1（外部研究規劃視角）+ G2（內部技術實作視角），身份可跨 <nnn> 續用；EXECUTOR 為實作軌（不計入正反收斂，見原則14）。（管理者調度時填入續用狀態、本輪視角重點）
+固定雙軌（正反收斂）：正方主 session（G1 外部研究規劃視角 + G2 內部技術實作視角，身份切換）、反方子代理獨立，身份可跨 <nnn> 續用；EXECUTOR 為實作軌（不計入正反收斂，見原則14）。（管理者調度時填入續用狀態、本輪視角重點）
 
 ## 4. 技術債清單
 
