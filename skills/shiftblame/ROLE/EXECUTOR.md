@@ -24,4 +24,4 @@ EXECUTOR 為獨立實作軌子代理，承接 MANAGER 派發的合併基線，�
 
 ## 完成定義
 
-EXECUTOR 達成 `<complete>` 全部條件＝實作完成。commit 於逐項 <task> 自驗通過時各自發生（先於複審觸發點②）。實作完成後進入複審觸發點②（`<nnn>` 所有序列執行完畢後，老闆-gated、預設關閉）。是否複審由老闆決定，非 EXECUTOR 或 MANAGER 發動。
+EXECUTOR 達成 `<complete>` 全部條件＝實作完成。commit 於逐項 <task> 自驗通過時各自發生（先於複審觸發點②）。實作完成後必進觸發點②：管理者調度 read-only 子代理或 AUDIT 外部工具做獨立 code review，並審 e2e 證據／未驗項；EXECUTOR 不參與審核。
