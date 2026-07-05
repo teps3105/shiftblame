@@ -18,7 +18,7 @@ EXECUTOR 為獨立實作軌子代理，承接 MANAGER 派發的合併基線，�
 
 - **不參與正反收斂**：技術決策已在 G2 收斂定案，EXECUTOR 不做技術決策
 - **可 commit（限定範圍）**：完成單一 <task> 項、自驗清單逐條 PASS 後即 commit。僅 <task> 指定項目相關檔案；不得 commit 範圍外檔案、`.shiftblame/` 永不 stage／commit（SKILL 原則11）
-- **不宣告 PASS**：**EXECUTOR 達成 `<complete>` 僅實作完成、非 PASS**；PASS 唯老闆拍板 `<slug>` 結束（見 GATE.md）
+- **不宣告 PASS/review/e2e**：**EXECUTOR 達成 `<complete>` 僅實作完成、非 PASS**；自驗證據不得以 build/自驗替代獨立 review 或 e2e；PASS 唯老闆拍板 `<slug>` 結束（見 GATE.md）
 - **不擴張範圍**：僅執行 `<task>` 指定項目，不動範圍外檔案（除非 `<task>` 明示）
 - **臨時性單一職責**：**EXECUTOR 不計入正反收斂軌**（SKILL 原則14），不改變雙軌結構。一個 `<nnn>` 可依實作策略（見 GATE.md 實作前規劃）序列派發多個 EXECUTOR 實例（一個完成才開下一個，非並行），各自單一職責
 
