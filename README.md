@@ -80,7 +80,7 @@ shiftblame 是一套**給 AI Agent 用的協作框架**。它定義嚴格的管�
 實作前規劃（獨立階段：依複雜度定實作策略＋明確化 <complete>）
       │
       ▼
-EXECUTOR 逐項實作 <task> 至 <complete>（每項自驗通過即 commit）→ 老闆指示推進下一 <nnn>
+EXECUTOR 逐項實作 <task> 至 <complete>（每項自驗通過即 commit）→ 管理者揭露自驗／初審／獨立 review／e2e／未驗項 → 老闆指示推進下一 <nnn>
 老闆拍板 slug 結束（PASS，唯 slug 層級）→ 收尾
 ```
 
@@ -135,7 +135,7 @@ skills/shiftblame/
 │   ├── G1.md             # 外部研究規劃視角：需求翻譯、5W1H、可行性評估
 │   └── G2.md             # 內部技術實作視角：技術選型、GWT 測試、TDD
 ├── TEMPLATES/            # 模板（REPO, ROADMAP, SOP, GRAPH, SLUG, PRD, PID）
-└── TOOLS/                # 外部工具整合（具體設定集中此處）
+└── TOOLS/                # 外部工具整合：TOOLS/<功能英文大寫>/<具體工具>.md
 ```
 
 ---
@@ -221,7 +221,7 @@ skills/shiftblame/
 
 ### 管理者（MANAGER）
 
-調度雙軌：正方主 session 身份切換（G1/G2）、反方開子代理獨立對抗；分別收斂雙軌、初審、合併/歸檔。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge。**不自行實作**——收斂後由 EXECUTOR 實作軌承接（EXECUTOR 為臨時性單一職責子代理，不計入正反收斂軌）。複審 3 觸發點（收斂後／`<task>` 執行完／slug 全域）全老闆-gated、預設關閉。
+調度雙軌：正方主 session 身份切換（G1/G2）、反方開子代理獨立對抗；分別收斂雙軌、初審、合併/歸檔。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge。**不自行實作**——收斂後由 EXECUTOR 實作軌承接（EXECUTOR 為臨時性單一職責子代理，不計入正反收斂軌）。複審 3 觸發點全老闆-gated、預設關閉；post-EXECUTOR 交付必須揭露自驗／初審／獨立 review／e2e／未驗項。
 
 ---
 
@@ -240,12 +240,12 @@ shiftblame 可與 [ponytail](https://github.com/DietrichGebert/ponytail)（lazy 
 
 ## 選用：外部工具
 
-shiftblame 是 **platform-agnostic**——框架不綁單一平台／工具，卸除任一外部工具，核心流程仍完整可用。下列外部工具已安裝時優先使用，不可用方降級內部（降級留痕，不跳過既有足夠內建工具）：
+shiftblame 是 **platform-agnostic**——框架不綁單一平台／工具，卸除任一外部工具，核心流程仍完整可用。工具檔採 `TOOLS/<功能英文大寫>/<具體工具>.md`，按行為功能載入，不按產品載體建大類：
 
-- **SEARXNG-mcp**（研究／搜尋）：外部資訊研究與查證
-- **ai-vision-mcp**（圖像識別）：視覺驗收粗篩（最終裁判仍是老闆的眼睛）
-- **godot-mcp**（Godot 實作）：Godot 專案／場景／節點操作
-- **codex**（獨立性工作）：反方獨立複審、成果驗收、外部查證
+- **AUDIT/**：獨立 code review、成果驗收、外部複審
+- **E2E/**：web、Godot、TapTap Maker runtime/e2e 驗證；build/smoke 不得冒充 e2e
+- **MEDIA/**：mmx 與 TapTap Maker 資產生成
+- **DESIGN/RESEARCH/VISION/IMPLEMENTATION/**：設計、查證、視覺粗篩、專案實作工具
 
 **未安裝任一工具時**：框架完整可用——研究用內建 web、驗收用獨立子代理＋老闆親驗、反方子代理獨立對抗（常態即如此）、實作由 EXECUTOR 承接。
 
