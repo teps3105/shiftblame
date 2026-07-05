@@ -12,4 +12,4 @@
 
 - 純文字審查 prompt 須明確：不得 computer use、不得操作瀏覽器與桌面、只讀本機檔＋文字產出。
 - code review 須附 diff 或指示自跑 `git diff`，結論以 file:line／commit 證據支撐。
-- 複審是否啟動仍依 GATE：管理者狀態揭露後，老闆選擇。
+- GATE 觸發點②為 post-EXECUTOR 硬審核；①③ 是否啟動仍由老闆選擇。

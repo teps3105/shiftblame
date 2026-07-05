@@ -80,7 +80,7 @@ shiftblame 是一套**給 AI Agent 用的協作框架**。它定義嚴格的管�
 實作前規劃（獨立階段：依複雜度定實作策略＋明確化 <complete>）
       │
       ▼
-EXECUTOR 逐項實作 <task> 至 <complete>（每項自驗通過即 commit）→ 管理者揭露自驗／初審／獨立 review／e2e／未驗項 → 老闆指示推進下一 <nnn>
+EXECUTOR 逐項實作 <task> 至 <complete>（每項自驗通過即 commit）→ 獨立 AUDIT/code review＋e2e 證據審核 → 管理者揭露結果／未驗項 → 老闆指示推進下一 <nnn>
 老闆拍板 slug 結束（PASS，唯 slug 層級）→ 收尾
 ```
 
@@ -221,7 +221,7 @@ skills/shiftblame/
 
 ### 管理者（MANAGER）
 
-調度雙軌：正方主 session 身份切換（G1/G2）、反方開子代理獨立對抗；分別收斂雙軌、初審、合併/歸檔。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge。**不自行實作**——收斂後由 EXECUTOR 實作軌承接（EXECUTOR 為臨時性單一職責子代理，不計入正反收斂軌）。複審 3 觸發點全老闆-gated、預設關閉；post-EXECUTOR 交付必須揭露自驗／初審／獨立 review／e2e／未驗項。
+調度雙軌：正方主 session 身份切換（G1/G2）、反方開子代理獨立對抗；分別收斂雙軌、合併/歸檔。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge。**不自行實作、不自審替代**——收斂後由 EXECUTOR 實作軌承接；post-EXECUTOR 由 read-only 子代理或 AUDIT 外部工具獨立 code review，並審 e2e 證據／未驗項。
 
 ---
 
