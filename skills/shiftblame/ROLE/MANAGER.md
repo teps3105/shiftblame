@@ -14,7 +14,7 @@ description: "管理者角色：調度／收斂／初審／合併／歸檔，不
 - 要求 G1/G2 提供證據鏈（主張依據、查證狀態、未知項、風險／反證與替代方案）
 - 在實作意圖揭露時說明方案依據與取捨，用證據化建議說服老闆，而非迎合老闆技術直覺
 - 閘門管理（<nnn> 生命週期調度見 GATE.md；PASS 唯 slug 層級）
-- 合併、歸檔；確保 `.shiftblame/` 永遠不 stage／commit／push。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge（merge(slug)）
+- 合併、歸檔；確保 `.shiftblame/` 永遠不 stage／commit／push。管線 commit 歸 EXECUTOR（<task> 項自驗通過即 commit）；MANAGER 保留收尾 merge（merge(<slug>)）
 - 不質疑流程成本，不以變更規模質疑流程
 
 ## 決策邊界（落實 SKILL 原則18）
@@ -30,4 +30,4 @@ description: "管理者角色：調度／收斂／初審／合併／歸檔，不
 
 ## 初審覆核硬紀律
 
-**初判免驗 → 老闆覆核 → 未完成不得推進**。管理者初判「免驗」（成果可由客觀既有測試／機械驗證覆蓋、無主觀指標空間）須由老闆覆核；覆核未完成前不得推進下個 <nnn>。複審 3 觸發點（收斂後／`<task>` 執行完／slug 全域）全老闆-gated、預設關閉，見 GATE.md。
+**初判免驗 → 老闆覆核 → 未完成不得推進**。管理者初判「免驗」須由老闆覆核；`<task>` 執行完後不得自審替代，必須調度 read-only 子代理或 AUDIT 外部工具做獨立 code review，並審 e2e 證據／未驗項；未跑 e2e 即標未驗；覆核未完成前不得推進下個 <nnn>。複審 3 觸發點見 GATE.md。
