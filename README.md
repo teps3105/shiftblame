@@ -29,7 +29,7 @@
 - [三層租約](#-三層租約)
 - [觸發方式](#-觸發方式)
 - [角色總覽](#-角色總覽)
-- [選用：ponytail](#選用ponytail)
+- [已吸收：外部方法論紀律](#已吸收外部方法論紀律)
 - [選用：外部工具](#選用外部工具)
 - [PRD / PID / SOP 制度](#-prd--pid--sop-制度)
 - [License](#-license)
@@ -225,16 +225,18 @@ skills/shiftblame/
 
 ---
 
-## 選用：ponytail
+## 已吸收：外部方法論紀律
 
-shiftblame 可與 [ponytail](https://github.com/DietrichGebert/ponytail)（lazy senior dev 模式）並用。以下為 shiftblame 對此整合的詮釋與規則。
+shiftblame 的紀律經評估吸收後已自足——**外部插件不再需要**。下列紀律現以行為語言內化於框架定義檔：
 
-- **未安裝 ponytail**：shiftblame 完整可用，功能不受影響。
-- **已安裝且生效時**：ponytail 的 lazy ladder（YAGNI、stdlib 優先、最短可運作解等，詳見 ponytail）套用於 shiftblame 流程的程式碼與產物產出。
+- **最短解決策階梯**：YAGNI → 復用既有 → 標準庫 → 平台原生 → 已裝依賴 → 一行勝五十行 → 禁投機抽象、刪除優先。落點：G2 正方（技術方案）。
+- **測試先行**：實作前先寫測試，測試結構按專案特性建立。落點：G2 GWT 段。
+- **根因除錯**：遇缺陷建立假設→驗證鏈，禁跳結論。落點：G2 正方。
+- **證據先於斷言**：宣稱通過前須跑驗證指令確認輸出。落點：EXECUTOR 完成定義。
+- **前置探索**：創造性工作前須探索需求邊界。落點：G1 正方。
+- **過度工程審查**：反方質疑是否可刪減、有無投機抽象。落點：G2 反方。
 
-> 作用面說明：shiftblame 為純 Markdown 定義檔框架，ponytail 主要作用於其中少量程式碼/腳本產出（如 G2 實作階段、`.shiftblame/tmp/` 探索測試）。
-
-**衝突仲裁**：ponytail「最短化」與 shiftblame 定義檔明文要求的產出（證據鏈、收斂、GWT 測試、意圖揭露等）衝突時，以 **shiftblame 定義檔條款為準**——這些屬「使用者/框架明確要求的詳盡產出」，不適用最短化。完整規則見框架核心原則（[SKILL.md](skills/shiftblame/SKILL.md)「選用外部 skill 整合」）。
+> 完整規則見框架核心原則（[SKILL.md](skills/shiftblame/SKILL.md)「選用外部 skill 整合」「外部工具整合總則 §17」）。
 
 ---
 
