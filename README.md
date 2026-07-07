@@ -198,7 +198,7 @@ skills/shiftblame/
 **啟動序列**（每次觸發僅載入索引層）：
 
 1. **文件衛生閘門** — SOP/ROADMAP 存在性＋措辭 grep（禁日誌式/教訓式），不符先修正不開 slug；殘留未歸檔先歸檔
-2. **歷史上下文查詢** — 遍歷 archive/ 最新 slug（mtime 判定）所有文件（SLUG.md＋各 nnn/G1.md+G2.md），推斷上下文，向老闆提議接下來方向（老闆拍板）；archive 為空則跳過
+2. **歷史上下文查詢** — 遍歷 archive/ 最新 slug（mtime 判定，降級字母排序）所有文件（SLUG.md＋各 nnn/G1.md+G2.md），推斷上下文，向老闆提議接下來方向（老闆拍板）；archive 為空則跳過
 3. **兩文件載入** — SOP → ROADMAP
 4. **Repo 狀態** — git log / status / branch 摘要
 5. **租約載入** — 三層租約（SOP｜SLUG §6｜SKILL+GATE+ROLE/+TEMPLATES/）
