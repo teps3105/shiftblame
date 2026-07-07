@@ -13,14 +13,14 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 3. **證據驅動說服**：把需求翻譯為可驗證問題，用完整證據鏈提可反駁建議；不迎合老闆技術直覺，不隱藏反證
 4. **查證優先**：不確定／新框架版本／外部 API／法規安全效能成本／repo 無先例／與老闆直覺衝突／只能憑印象回答時必須查證
 5. **SOP 約束**：SOP 為各專案執行準則，建立與修改皆需意圖揭露
-6. **PRD/PID/SOP 三性質邊界**：PRD=未來需求／SOP=當下紀律／PID=過去事實，互斥完備不混雜；權威覆蓋＝性質定語判定非階層；同步只於收尾單向發生；污染防治與事實保留細則見 TEMPLATES/SOP.md
+6. **文件體系**：SOP=當下紀律／ROADMAP=後續候選；過去事實以 git 歷史為權威（commit 歷史＋archive/）；禁日誌式（逐次變更流水帳）、寫當下事實、禁教訓式表述（含反面教訓）
 7. **先提案再質疑**：G1/G2 雙軌分軌，各走正→反→收斂流程
 8. **迭代收斂**：管理者以最後收斂為基線增量增加
 9. **變更前先體驗**：修正／優化類變更前與老闆共同完整體驗產品，記錄問題再開始
-10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<nnn>/`、正方主 session 身份切換＋反方開子代理、管理者收斂寫入 G1.md/G2.md 才能實作
+10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<nnn>/`、正方主 session 身份切換＋反方開子代理、管理者收斂寫入 G1.md/G2.md 才能實作；TEMPLATES 結構＝合法文件白名單，slug 產出須鏡射 TEMPLATES/slug/ 結構
 11. **SHIFTBLAME 文件不提交**：`.shiftblame/` 永遠只作本地流程紀錄，不得 stage/commit/push
 12. **本地產物不污染 git**：啟動腳本、建置流程、服務 PID、runtime 輸出等本地產物須納入 `.gitignore` 或明確標示為正式產物
-13. **目標統一寫入 SOP**：所有長期／當前／附加目標只寫 SOP，不另創平行目標文件（目標=當下，屬 SOP；未證實需求=未來，屬 PRD）
+13. **目標統一寫入 SOP**：所有長期／當前／附加目標只寫 SOP，不另創平行目標文件（目標=當下，屬 SOP）
 14. **固定雙軌（正反收斂）**：正反收斂永遠只走 G1+G2 雙軌；正方由主 session 擔任（G1/G2 身份切換），反方由子代理擔任（獨立對抗）；EXECUTOR 為實作軌、臨時性單一職責，**不計入正反收斂軌**，不改變雙軌結構
 15. **雙軌身份續用與隔離**：G1/G2 身份可跨 <nnn> 續用；正方主 session 分軌產出（身份切換），反方子代理獨立上下文；管理者合併為實作基線。隔離＝身份切換（正方，弱）＋獨立上下文（反方，強）；承認正方端隔離弱於上下文隔離，反方獨立性為主要補償
 16. **選用外部 skill 整合**：框架不依賴任一外部 skill——未安裝時完整可用；衝突時定義檔優先；外部 skill 紀律經評估後吸收進框架定義檔（以行為語言描述，不點名來源），吸收後外部 skill 不再需要
@@ -30,15 +30,15 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 檔案結構
 
-`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／<nnn> 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者不實作、EXECUTOR.md 實作軌、G1.md 外部研究規劃視角、G2.md 內部技術實作視角）｜TEMPLATES/（模板）｜TOOLS/（`<功能英文大寫>/<具體工具>.md`）。
+`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／<nnn> 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者、EXECUTOR.md 實作軌）｜TEMPLATES/（SOP/ROADMAP＋slug/ 鏡射產出結構：slug/SLUG.md＋slug/nnn/G1.md+G2.md，nnn 為佔位符）｜TOOLS/（`<功能英文大寫>/<具體工具>.md`）。
 
 ## `.shiftblame/` 內部佈局
 
-每個採用 shiftblame 的專案固定佈局：四文件（SOP/REPO/ROADMAP/GRAPH）＋ `PRD/`（需求）＋ `PID/`（標準）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（僅含 `SLUG.md` 與 `<nnn>/G1.md`+`G2.md`，白名單嚴格）。`.shiftblame/` 即 Obsidian vault root；連接完整性只要求四文件、`PRD/`、`PID/`（archive 與開發中 slug 可視但不列入）。
+每個採用 shiftblame 的專案固定佈局：兩文件（SOP/ROADMAP）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（結構鏡射 TEMPLATES/slug/：SLUG.md＋nnn/G1.md+G2.md）；TEMPLATES 樹＝合法文件白名單。過去事實由 git 歷史（commit 歷史＋archive/）承擔權威。
 
 ## 啟動序列與觸發
 
-每次觸發僅載入索引層，按需讀取：① 文件夾狀態偵測（殘留未歸檔先歸檔）→ ② 四文件載入（REPO→ROADMAP→SOP→GRAPH）→ ③ Repo 狀態 → ④ 租約載入（SOP｜SLUG §7｜SKILL+GATE+ROLE/）→ ⑤ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
+每次觸發僅載入索引層，按需讀取：① 文件衛生閘門——存在性（SOP/ROADMAP 齊全）＋規範符合性（grep 日誌式/教訓式措辭），不符先修正不開 slug；殘留未歸檔先歸檔 → ② 歷史上下文查詢——遍歷 archive/ 最新 slug（mtime 判定，降級字母排序）所有文件（SLUG.md＋各 nnn/G1.md+G2.md），推斷上下文，向老闆提議接下來方向（老闆拍板）；archive 為空則跳過 → ③ 兩文件載入（SOP→ROADMAP）→ ④ Repo 狀態 → ⑤ 租約載入（SOP｜SLUG §6｜SKILL+GATE+ROLE/+TEMPLATES/）→ ⑥ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
 
 ## 管線
 

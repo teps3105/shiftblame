@@ -31,7 +31,6 @@
 - [角色總覽](#-角色總覽)
 - [已吸收：外部方法論紀律](#已吸收外部方法論紀律)
 - [選用：外部工具](#選用外部工具)
-- [PRD / PID / SOP 制度](#-prd--pid--sop-制度)
 - [License](#-license)
 
 ---
@@ -131,10 +130,15 @@ skills/shiftblame/
 ├── GATE.md               # 閘門原則、狀態序、<nnn> 生命週期、複審、收尾
 ├── ROLE/
 │   ├── MANAGER.md        # 管理者角色（調度／收斂／初審／合併，不實作）
-│   ├── EXECUTOR.md       # 執行者子代理（實作軌，不計入正反收斂）
-│   ├── G1.md             # 外部研究規劃視角：需求翻譯、5W1H、可行性評估
-│   └── G2.md             # 內部技術實作視角：技術選型、GWT 測試、TDD
-├── TEMPLATES/            # 模板（REPO, ROADMAP, SOP, GRAPH, SLUG, PRD, PID）
+│   └── EXECUTOR.md       # 執行者子代理（實作軌，不計入正反收斂）
+├── TEMPLATES/            # 模板（SOP, ROADMAP, slug/）—結構＝合法文件白名單
+│   ├── SOP.md
+│   ├── ROADMAP.md
+│   └── slug/             # 鏡射 .shiftblame/<slug>/ 產出結構
+│       ├── SLUG.md
+│       └── nnn/          # 佔位符，實例化為 001/002 等
+│           ├── G1.md     # 外部研究規劃視角（角色定義＋產出格式）
+│           └── G2.md     # 內部技術實作視角（角色定義＋產出格式）
 └── TOOLS/                # 外部工具整合：TOOLS/<功能英文大寫>/<具體工具>.md
 ```
 
@@ -151,14 +155,10 @@ skills/shiftblame/
 │   └── <nnn>/            # 各輪迭代（每輪同時產出 G1.md + G2.md）
 │       ├── G1.md         # 外部研究規劃視角產出
 │       └── G2.md         # 內部技術實作視角產出
-├── PRD/                  # 需求筆記本
-├── PID/                  # 開發標準筆記本
-├── SOP.md                # 全局標準（長期租約）
-├── REPO.md               # 專案現狀
-├── ROADMAP.md            # 未來規劃
-├── GRAPH.md              # 可視化圖譜
+├── SOP.md                # 專案紀律（長期租約，當下事實）
+├── ROADMAP.md            # 後續候選
 ├── tmp/                  # 非持久產出
-├── archive/              # 已歸檔任務
+├── archive/              # 已歸檔任務（過去事實由 git 歷史承擔權威）
 ```
 
 ---
@@ -169,7 +169,7 @@ skills/shiftblame/
 |:-:|------|------|
 | 1 | **回饋即意圖** | 老闆每次說話即觸發意圖揭露，管理者必須先揭露理解到的意圖，確認後才執行 |
 | 2 | **SOP 約束** | 可更新 SOP 作為全局標準，建立與修改皆需意圖揭露 |
-| 3 | **PRD/PID 筆記本** | 老闆的筆記本，agent 可參考與協助整理，不進 slug 鏈 |
+| 3 | **文件體系** | SOP=當下紀律／ROADMAP=後續候選；過去事實以 git 歷史為權威；禁日誌式、寫當下事實、禁教訓 |
 | 4 | **先提案再質疑** | G1/G2 雙軌分軌，各走正→反→收斂流程 |
 | 5 | **迭代收斂** | 管理者以最後收斂為基線增量增加 |
 
@@ -182,8 +182,8 @@ skills/shiftblame/
 | 層級 | 期間 | 內容 | 載入時機 |
 |:----:|------|------|----------|
 | 長期 | 跨 slug | SOP.md | 每次啟動 |
-| 中期 | 單 slug | SLUG.md §7 租約有效期 | 每次 START |
-| 短期 | 單 <nnn> | SKILL+GATE+ROLE/（MANAGER+EXECUTOR+G1+G2） | 每個 <nnn> START |
+| 中期 | 單 slug | SLUG.md §6 租約有效期 | 每次 START |
+| 短期 | 單 <nnn> | SKILL+GATE+ROLE/（MANAGER+EXECUTOR）+TEMPLATES/slug/nnn/（G1+G2） | 每個 <nnn> START |
 
 ---
 
@@ -197,11 +197,12 @@ skills/shiftblame/
 
 **啟動序列**（每次觸發僅載入索引層）：
 
-1. **未歸檔偵測** — 掃描 `.shiftblame/` 下未歸檔 SLUG.md
-2. **四文件載入** — REPO → ROADMAP → SOP → GRAPH
-3. **Repo 狀態** — git log / status / branch 摘要
-4. **租約載入** — 三層租約（SOP｜SLUG §7｜SKILL+GATE+ROLE/）
-5. **建立 slug** — `mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
+1. **文件衛生閘門** — SOP/ROADMAP 存在性＋措辭 grep（禁日誌式/教訓式），不符先修正不開 slug；殘留未歸檔先歸檔
+2. **歷史上下文查詢** — 遍歷 archive/ 最新 slug（mtime 判定，降級字母排序）所有文件（SLUG.md＋各 nnn/G1.md+G2.md），推斷上下文，向老闆提議接下來方向（老闆拍板）；archive 為空則跳過
+3. **兩文件載入** — SOP → ROADMAP
+4. **Repo 狀態** — git log / status / branch 摘要
+5. **租約載入** — 三層租約（SOP｜SLUG §6｜SKILL+GATE+ROLE/+TEMPLATES/）
+6. **建立 slug** — `mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 
 ---
 
@@ -254,30 +255,6 @@ shiftblame 是 **platform-agnostic**——框架不綁單一平台／工具，�
 > codex 不再是「特殊外部角色」，而是普通外部工具之一；framework 內 agent 對 codex 的所有外部需求一律走 `/codex:rescue`，禁側通道。
 
 **衝突仲裁**：外部工具產出與 shiftblame 定義檔明文要求的產出衝突時，以 **shiftblame 定義檔條款為準**。完整規則見框架核心原則（[SKILL.md](skills/shiftblame/SKILL.md)「外部工具整合總則 §17.0–§17.3」）。
-
----
-
-## PRD / PID / SOP 制度
-
-<details>
-<summary>了解 PRD、PID、SOP</summary>
-
-### PRD — 需求筆記本
-
-老闆記錄需求的筆記本。Agent 可參考內容、協助整理，模板提供格式參考。
-存放位置：`.shiftblame/PRD/`
-
-### PID — 標準筆記本
-
-老闆記錄開發標準的筆記本。Agent 可參考內容、協助整理，模板提供格式參考。
-存放位置：`.shiftblame/PID/`
-
-### SOP — 全局標準
-
-可更新，追加式記錄（來源 + 日期）。建立與修改皆需意圖揭露（向老闆確認）。
-存放位置：`.shiftblame/SOP.md`
-
-</details>
 
 ---
 
