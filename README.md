@@ -130,10 +130,15 @@ skills/shiftblame/
 ├── GATE.md               # 閘門原則、狀態序、<nnn> 生命週期、複審、收尾
 ├── ROLE/
 │   ├── MANAGER.md        # 管理者角色（調度／收斂／初審／合併，不實作）
-│   ├── EXECUTOR.md       # 執行者子代理（實作軌，不計入正反收斂）
-│   ├── G1.md             # 外部研究規劃視角：需求翻譯、5W1H、可行性評估
-│   └── G2.md             # 內部技術實作視角：技術選型、GWT 測試、TDD
-├── TEMPLATES/            # 模板（SOP, ROADMAP, SLUG）
+│   └── EXECUTOR.md       # 執行者子代理（實作軌，不計入正反收斂）
+├── TEMPLATES/            # 模板（SOP, ROADMAP, slug/）—結構＝合法文件白名單
+│   ├── SOP.md
+│   ├── ROADMAP.md
+│   └── slug/             # 鏡射 .shiftblame/<slug>/ 產出結構
+│       ├── SLUG.md
+│       └── nnn/          # 佔位符，實例化為 001/002 等
+│           ├── G1.md     # 外部研究規劃視角（角色定義＋產出格式）
+│           └── G2.md     # 內部技術實作視角（角色定義＋產出格式）
 └── TOOLS/                # 外部工具整合：TOOLS/<功能英文大寫>/<具體工具>.md
 ```
 
@@ -178,7 +183,7 @@ skills/shiftblame/
 |:----:|------|------|----------|
 | 長期 | 跨 slug | SOP.md | 每次啟動 |
 | 中期 | 單 slug | SLUG.md §7 租約有效期 | 每次 START |
-| 短期 | 單 <nnn> | SKILL+GATE+ROLE/（MANAGER+EXECUTOR+G1+G2） | 每個 <nnn> START |
+| 短期 | 單 <nnn> | SKILL+GATE+ROLE/（MANAGER+EXECUTOR）+TEMPLATES/slug/nnn/（G1+G2） | 每個 <nnn> START |
 
 ---
 
@@ -195,7 +200,7 @@ skills/shiftblame/
 1. **文件衛生閘門** — SOP/ROADMAP 存在性＋措辭 grep（禁日誌式/教訓式），不符先修正不開 slug；殘留未歸檔先歸檔
 2. **兩文件載入** — SOP → ROADMAP
 3. **Repo 狀態** — git log / status / branch 摘要
-4. **租約載入** — 三層租約（SOP｜SLUG §7｜SKILL+GATE+ROLE/）
+4. **租約載入** — 三層租約（SOP｜SLUG §7｜SKILL+GATE+ROLE/+TEMPLATES/）
 5. **建立 slug** — `mkdir -p .shiftblame/<slug>/001` + `git checkout -b feat/<slug>`
 
 ---
