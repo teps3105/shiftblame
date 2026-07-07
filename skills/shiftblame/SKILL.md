@@ -17,7 +17,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 7. **先提案再質疑**：G1/G2 雙軌分軌，各走正→反→收斂流程
 8. **迭代收斂**：管理者以最後收斂為基線增量增加
 9. **變更前先體驗**：修正／優化類變更前與老闆共同完整體驗產品，記錄問題再開始
-10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<nnn>/`、正方主 session 身份切換＋反方開子代理、管理者收斂寫入 G1.md/G2.md 才能實作
+10. **Slug 前置硬閘門**：任何變更前先建 `.shiftblame/<slug>/<nnn>/`、正方主 session 身份切換＋反方開子代理、管理者收斂寫入 G1.md/G2.md 才能實作；TEMPLATES 結構＝合法文件白名單，slug 產出須鏡射 TEMPLATES/slug/ 結構
 11. **SHIFTBLAME 文件不提交**：`.shiftblame/` 永遠只作本地流程紀錄，不得 stage/commit/push
 12. **本地產物不污染 git**：啟動腳本、建置流程、服務 PID、runtime 輸出等本地產物須納入 `.gitignore` 或明確標示為正式產物
 13. **目標統一寫入 SOP**：所有長期／當前／附加目標只寫 SOP，不另創平行目標文件（目標=當下，屬 SOP）
@@ -30,15 +30,15 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 檔案結構
 
-`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／<nnn> 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者不實作、EXECUTOR.md 實作軌、G1.md 外部研究規劃視角、G2.md 內部技術實作視角）｜TEMPLATES/（模板）｜TOOLS/（`<功能英文大寫>/<具體工具>.md`）。
+`skills/shiftblame/`：SKILL.md（入口）｜GATE.md（閘門／<nnn> 生命週期／複審／收尾）｜ROLE/（MANAGER.md 管理者、EXECUTOR.md 實作軌）｜TEMPLATES/（SOP/ROADMAP＋slug/ 鏡射產出結構：slug/SLUG.md＋slug/nnn/G1.md+G2.md，nnn 為佔位符）｜TOOLS/（`<功能英文大寫>/<具體工具>.md`）。
 
 ## `.shiftblame/` 內部佈局
 
-每個採用 shiftblame 的專案固定佈局：兩文件（SOP/ROADMAP）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（僅含 `SLUG.md` 與 `<nnn>/G1.md`+`G2.md`，白名單嚴格）。過去事實由 git 歷史（commit 歷史＋archive/）承擔權威。
+每個採用 shiftblame 的專案固定佈局：兩文件（SOP/ROADMAP）＋ `tmp/` ＋ `archive/` ＋ 進行中 `<slug>/`（結構鏡射 TEMPLATES/slug/：SLUG.md＋nnn/G1.md+G2.md）；TEMPLATES 樹＝合法文件白名單。過去事實由 git 歷史（commit 歷史＋archive/）承擔權威。
 
 ## 啟動序列與觸發
 
-每次觸發僅載入索引層，按需讀取：① 文件衛生閘門——存在性（SOP/ROADMAP 齊全）＋規範符合性（grep 日誌式/教訓式措辭），不符先修正不開 slug；殘留未歸檔先歸檔 → ② 兩文件載入（SOP→ROADMAP）→ ③ Repo 狀態 → ④ 租約載入（SOP｜SLUG §7｜SKILL+GATE+ROLE/）→ ⑤ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
+每次觸發僅載入索引層，按需讀取：① 文件衛生閘門——存在性（SOP/ROADMAP 齊全）＋規範符合性（grep 日誌式/教訓式措辭），不符先修正不開 slug；殘留未歸檔先歸檔 → ② 兩文件載入（SOP→ROADMAP）→ ③ Repo 狀態 → ④ 租約載入（SOP｜SLUG §7｜SKILL+GATE+ROLE/+TEMPLATES/）→ ⑤ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
 
 ## 管線
 
