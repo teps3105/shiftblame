@@ -10,7 +10,7 @@
 6. **雙軌分軌**：G1 外部研究規劃視角 ‖ G2 內部技術實作視角，分軌產出各自收斂（相輔相成不分先後）
 7. **固定雙軌（正反收斂）**：正反收斂永遠只走 G1+G2 雙軌，正方主 session 身份切換、反方子代理獨立；EXECUTOR 為實作軌不計入（見 SKILL 原則14）
 8. **變更前先體驗**：修正／優化類變更前與老闆共同完整體驗產品再進入管線
-9. **Slug 前置硬閘門**：實作前必須先完成 slug 文件夾＋反方子代理回收＋管理者收斂寫入 G1.md/G2.md
+9. **Slug 前置硬閘門**：實作前必須先完成 slug 文件夾＋反方子代理回收＋管理者收斂寫入 G1.md/G2.md；啟動序列含文件衛生檢測（SOP/ROADMAP 存在性＋措辭 grep，見 SKILL 啟動序列①），不符先修正不開 slug
 10. **雙軌隔離**：G1/G2 分軌產出（正方身份切換、反方獨立上下文），管理者合併為實作基線
 
 ## 狀態序
@@ -44,4 +44,4 @@
 
 ## 收尾
 
-老闆拍板 slug 結束（PASS）才走收尾：① 管理者品質確認 → ② 老闆 PASSED → ③ 更新 REPO/ROADMAP/SOP/GRAPH 與相關 PRD/PID（PRD/PID 固化判定流見 TEMPLATES/SOP.md）→ ④ Obsidian 連接收尾（四文件＋PRD/＋PID/ wiki link 解析）→ ⑤ `git checkout main && git merge --no-ff feat/<slug>` → 推送 → 清理（每 slug 恰一個 merge commit）→ ⑥ 歸檔 `.shiftblame/<slug>/` 至 `archive/`。反面教訓（可脫離單案、通用未來者）提煉記 SOP；單案完整過程隨 slug 歸 `archive/`。
+老闆拍板 slug 結束（PASS）才走收尾：① 管理者品質確認 → ② 老闆 PASSED → ③ 更新 SOP/ROADMAP（寫當下事實，禁日誌式/教訓式）→ ④ `git checkout main && git merge --no-ff feat/<slug>` → 推送 → 清理（每 slug 恰一個 merge commit）→ ⑤ 歸檔 `.shiftblame/<slug>/` 至 `archive/`。
