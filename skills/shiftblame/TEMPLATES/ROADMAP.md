@@ -1,6 +1,6 @@
 ---
 title: ROADMAP
-type: FOUR_FILE
+type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>

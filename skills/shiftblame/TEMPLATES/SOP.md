@@ -1,6 +1,6 @@
 ---
 title: SOP
-type: FOUR_FILE
+type: TWO_FILE
 role: sop
 status: active
 updated: <YYYY-MM-DD>
