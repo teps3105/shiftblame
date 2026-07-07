@@ -38,7 +38,7 @@ description: "AI Agents 協作框架。UTF-8。回饋即意圖，不直接執行
 
 ## 啟動序列與觸發
 
-每次觸發僅載入索引層，按需讀取：① 文件衛生閘門——存在性（SOP/ROADMAP 齊全）＋規範符合性（grep 日誌式/教訓式措辭），不符先修正不開 slug；殘留未歸檔先歸檔 → ② 兩文件載入（SOP→ROADMAP）→ ③ Repo 狀態 → ④ 租約載入（SOP｜SLUG §7｜SKILL+GATE+ROLE/+TEMPLATES/）→ ⑤ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
+每次觸發僅載入索引層，按需讀取：① 文件衛生閘門——存在性（SOP/ROADMAP 齊全）＋規範符合性（grep 日誌式/教訓式措辭），不符先修正不開 slug；殘留未歸檔先歸檔 → ② 歷史上下文查詢——遍歷 archive/ 最新 slug（mtime 判定，降級字母排序）所有文件（SLUG.md＋各 nnn/G1.md+G2.md），推斷上下文，向老闆提議接下來方向（老闆拍板）；archive 為空則跳過 → ③ 兩文件載入（SOP→ROADMAP）→ ④ Repo 狀態 → ⑤ 租約載入（SOP｜SLUG §6｜SKILL+GATE+ROLE/+TEMPLATES/）→ ⑥ 建立 slug。`/shiftblame <文字>` 啟動→呈現意圖→確認→建立 slug；`/shiftblame`（無參數）呈現未歸檔清單。觸發後不直接執行；確認理解≠授權實作，仍須完成 slug、G1/G2 收斂、實作意圖揭露與再次確認。
 
 ## 管線
 
