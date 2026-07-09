@@ -3,28 +3,35 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
+doc_id: SBM-TM-SLUG
+parent: SBM-SKILL
+revision: 2.0
 ---
-# <slug>
+# SBM-TM-SLUG — `<slug>` 開發狀態記錄
 
-> 記錄當前 slug 開發狀態。生命週期：IN_PROGRESS→PASSED。
+> 記錄當前 slug 開發狀態。生命週期：`IN_PROGRESS → PASSED`。規範詞彙依 SBM-SKILL §3.1。
 
 ## 1. 本輪目標
 
-（管理者填入目標，源自老闆意圖）
+（管理者 MUST 填入目標，源自老闆意圖）
 
 ## 2. 行為狀態
 
-每個 <nnn> = 一輪雙軌平行正→反→收斂。G1（外部研究規劃視角）與 G2（內部技術實作視角）同時進行。
+每個 `<nnn>` = 一輪雙軌平行正→反→收斂。G1（外部研究規劃視角）與 G2（內部技術實作視角）同時進行。
 
-| <nnn> | G1 狀態 | G2 狀態 | 老闆指示 | 備註 |
-|-----|---------|---------|----------|------|
+| `<nnn>` | G1 狀態 | G2 狀態 | 老闆指示 | 備註 |
+|---------|---------|---------|----------|------|
 | 001 | — | — | — | 初始輪 |
 
-<nnn> 狀態：START → 正方 → 反方 → 收斂 → 實作前規劃 → EXECUTOR 逐項實作（每項 <task> 自驗通過即 commit）→ <complete> 達成。<nnn> 層級無 gate/PASS/FAIL，推進由老闆指示。Slug：IN_PROGRESS → PASSED（老闆拍板 slug 結束）。
+**`<nnn>` 狀態**：`START → 正方 → 反方 → 收斂 → 實作前規劃 → 執行者逐項實作（每項 <task> 自驗通過即 commit）→ <complete> 達成`。`<nnn>` 層級無 gate/PASS/FAIL，推進 MUST 由老闆指示。
+
+**Slug 狀態**：`IN_PROGRESS → PASSED`（老闆拍板 slug 結束）。
 
 ## 3. 雙軌策略
 
-固定雙軌（正反收斂）：正方主 session（G1 外部研究規劃視角 + G2 內部技術實作視角，身份切換）、反方子代理獨立，身份可跨 <nnn> 續用；EXECUTOR 為實作軌（不計入正反收斂，見原則14）。（管理者調度時填入續用狀態、本輪視角重點）
+固定雙軌（正反收斂）：正方主 session（G1 外部研究規劃視角 + G2 內部技術實作視角，身份切換）、反方子代理獨立，身份 MAY 跨 `<nnn>` 續用。執行者為實作軌（歸屬實作軌，見 SBM-SKILL §5.13）。
+
+（管理者調度時 MUST 填入續用狀態、本輪視角重點）
 
 ## 4. 技術債清單
 
@@ -34,9 +41,13 @@ updated: <YYYY-MM-DD>
 
 ## 5. 推進與交接
 
-- **推進**：<nnn> 所有序列逐項 commit 並達 <complete> 後，由老闆指示推進到下一個 <nnn>；老闆指示「退回／撤銷」時不提交。<nnn> 層級無 gate/PASS/FAIL
-- **交接摘要**：管理者彙整最終 <nnn> 雙軌收斂結論 3~5 行白話寫入此處（收尾時填入）
+- **推進**：`<nnn>` 所有序列逐項 commit 並達 `<complete>` 後，MUST 由老闆指示推進到下一個 `<nnn>`。老闆指示「退回／撤銷」時該輪產出 MUST 保留於 `.shiftblame/` 本地紀錄，提交路由 MUST 暫停。`<nnn>` 層級無 gate/PASS/FAIL。
+- **交接摘要**：管理者 MUST 彙整最終 `<nnn>` 雙軌收斂結論 3~5 行白話寫入此處（收尾時填入）。
 
 ## 6. 租約有效期
 
-臨時規範，三層租約的中期層。格式：`[編號] 描述 | 日期 | 升級SOP/隨歸檔失效`。歸檔前逐條標記處理狀態（升級至 SOP 或隨歸檔失效）。G(n).md 路徑＝`.shiftblame/<slug>/<nnn>/G1.md`+`G2.md`（白名單嚴格見 SKILL.md）。
+臨時規範，三層租約的中期層。格式：`[編號] 描述 | 日期 | 升級SOP/隨歸檔失效`。
+
+歸檔前 MUST 逐條標記處理狀態（升級至 SOP 或隨歸檔失效）。
+
+G(n).md 路徑 = `.shiftblame/<slug>/<nnn>/G1.md` + `G2.md`（合法文件白名單見 SBM-SKILL §6）。

@@ -10,6 +10,6 @@ Maker MCP 具體 tool schema 以啟用時 tool list 為準。常見能力包含 
 
 ## 使用
 
-- post-EXECUTOR 交付時，Maker build 可列為自驗或 smoke 證據，不得替代 e2e。
+- post-EXECUTOR 交付時，Maker build MAY 列為自驗或 smoke 證據，MUST NOT 替代 e2e。
 - runtime/e2e 應覆蓋啟動、錯誤輸出、關鍵互動、必要截圖或預覽檢查；未跑即標未驗。
 - 純 Lua 模組可優先用本機 Lua 離線 e2e；渲染/視覺項再用 Maker preview 或老闆肉眼。
