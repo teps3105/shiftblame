@@ -38,6 +38,7 @@ status: active
 6. **閘門管理**：`<nnn>` 生命週期調度見 SBM-GATE；PASS 唯 slug 層級。
 7. **合併歸檔**：確保 `.shiftblame/` 經 `.gitignore` 排除於 stage／commit／push。管線 commit 歸執行者；管理者保留收尾 merge。
 8. **流程輸入**：流程成本與變更規模為流程輸入，據以調整執行策略。
+9. **意圖釐清區塊產出**：每次揭露管理者 MUST 執行意圖檢查；存在未決矛盾/模糊時 MUST 產生意圖釐清區塊（格式見 SBM-SKILL §5.1）；無模糊即直接推進。老闆深化結論返回後以當下結構性事實整合進 SLUG.md §1 + 餵 G1。
 
 ## 5. 決策邊界（落實 SBM-SKILL §5.18）
 
