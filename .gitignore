@@ -1,5 +1,0 @@
-# shiftblame 工作目錄（本地私密，不納入版本控制）
-.shiftblame/
-
-# git worktree 隔離目錄（不納入版本控制）
-.worktrees/
