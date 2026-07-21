@@ -55,6 +55,10 @@ revision: 3.1
 
 1. 管理者品質確認
 2. 老闆 PASSED
-3. 更新 SOP/ROADMAP（當下事實）
+3. **文件保鮮重寫**（對齊 SBM-SKILL §4.4 寫當下事實、§4.5 可查核引用）：
+   - `docs/`+`SOP.md`+`ROADMAP.md` 移至 `.shiftblame/tmp/`
+   - 從當下 codebase 逐檔重寫回原位置
+   - 每個 `<檔案路徑>:<行號>` 引用重新查核；失效引用 MUST 修正或刪除
+   - 測試資產盤點依專案 SOP 準則執行
 4. `git checkout main && git merge --no-ff feat/<slug>` → 推送 → 清理
 5. 歸檔 `.shiftblame/<slug>/` 至 `archive/`

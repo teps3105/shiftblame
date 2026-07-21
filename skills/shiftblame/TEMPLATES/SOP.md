@@ -15,16 +15,14 @@ updated: <YYYY-MM-DD>
 
 ## 2. 文件保鮮
 
-- 禁日誌式（流水帳）、禁教訓式（推翻/經N輪/TRANSFERRED/TD由X解決/反面教訓）。過去事實以 git 歷史為權威。
-- `docs/` 每事實陳述附 `<檔案路徑>:<行號>`。
-- slug PASS 前 MUST 重寫流程：`docs/`+`SOP.md`+`ROADMAP.md` 移至 `.shiftblame/tmp/` → 從當下 codebase 逐檔重寫 → 每個引用重新查核。
+對齊 SBM-SKILL §4.4（寫當下事實）、§4.5（可查核引用）。保鮮重寫流程與測試資產盤點於 SBM-GATE §7 收尾程序執行，本節不重複。
 
 ## 3. 測試資產治理
 
 - 進 repo 判準：測試 MUST 驗證行為，SHOULD NOT 鎖定實作細節（字串常數/座標/hash）。鎖定類測試 MUST 限契約本質需要並附維護條件。
 - 命名：測試檔名、docstring、screenshot、fixture MUST NOT 含 slug/task/session 編號；MUST 用語意命名。
 - 顆粒度：覆蓋行為面（輸入→輸出、狀態轉換、邊界），非單一字串/座標存在。
-- slug PASS 前盤點：刪探索性（歸 `.shiftblame/tmp/`）→ 合併重複契約 → 去編號 → fixtures 重組。
+- slug PASS 前盤點：各專案自訂具體步驟。原則——探索性測試歸 `.shiftblame/tmp/`、重複契約合併、命名去編號語意化。
 
 ## 4. 生成式資產取用
 
