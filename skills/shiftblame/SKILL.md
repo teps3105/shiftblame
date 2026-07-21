@@ -1,6 +1,7 @@
 ---
 name: shiftblame
 revision: 3.1
+description: 回饋驅動的通用 agent 協作流程框架,所有專案預設採用。以老闆/管理者/執行者三角色、G1(Why-What)/G2(How-Done)/G3(Plan)三軌與 slug 租約生命週期,透過正反收斂、證據閘門、寫當下事實、可查核引用,管理需求→規劃→實作→驗收。處理任務、收斂需求、規劃派發或收到 /shiftblame 時載入。
 ---
 # shiftblame — 回饋驅動的 agent 協作框架
 
