@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 3.0
+revision: 3.1
 ---
 # shiftblame — 回饋驅動的 agent 協作框架
 
@@ -43,7 +43,41 @@ MUST（必須）｜SHOULD（應）｜MAY（得）｜MUST NOT（必須不，走�
 - `/shiftblame <text>`：揭露意圖 → 老闆確認 → 建 slug → 流程路由 → 再次確認 → 實作。
 - `/shiftblame`：列未歸檔 slug。
 
-## 6. 提交與文件
+## 6. 提交規範
 
-- 訊息 `<type>: <繁中描述>`，描述 ≤20 codepoint（`sed 's/^[^:]*: //' | python -c "import sys;print(len(sys.stdin.readline().rstrip()))"`）。`.shiftblame/` MUST 經 `.gitignore` 排除。開框架走 `feat/<slug>`，管理者收尾 merge；不開 MAY 直接 main。
-- 文件：`SKILL`(主)｜`GATE`(閘門)｜`ROLE/`(角色)｜`TEMPLATES/`(範本+slug鏡射)。
+- 訊息 `<type>: <繁中描述>`，描述 ≤20 codepoint。
+- 驗證：`echo "<msg>" | sed 's/^[^:]*: //' | python -c "import sys;print(len(sys.stdin.readline().rstrip()))"`
+- 開框架走 `feat/<slug>` 分支，管理者收尾 merge；不開 MAY 直接 main。
+
+## 7. 框架檔
+
+```
+skills/shiftblame/
+├── SKILL.md      # 主規範（本檔）
+├── GATE.md       # 閘門與 <nnn> 生命週期
+├── ROLE/
+│   ├── MANAGER.md
+│   └── EXECUTOR.md
+└── TEMPLATES/    # 範本＝合法文件白名單
+    ├── SOP.md
+    ├── ROADMAP.md
+    └── slug/     # 鏡射 .shiftblame/<slug>/ 產出
+        ├── SLUG.md
+        └── nnn/
+            ├── G1.md
+            ├── G2.md
+            └── G3.md
+```
+
+## 8. 專案工作區 `.shiftblame/`
+
+每個採用 shiftblame 的專案自成本目錄，MUST 經 `.gitignore` 排除於 repo 外。
+
+```
+.shiftblame/
+├── SOP.md         # 專案執行準則（長期租約，當下事實）
+├── ROADMAP.md     # 後續候選
+├── <slug>/        # 鏡射 TEMPLATES/slug/
+├── tmp/           # 非持久產出
+└── archive/       # 已歸檔任務（過去事實由 git 歷史承擔權威）
+```

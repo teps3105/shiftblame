@@ -81,7 +81,21 @@ skills/shiftblame/
             └── G3.md
 ```
 
-每個採用 shiftblame 的專案自成 `.shiftblame/` 工作區（經 `.gitignore` 排除）：`SOP.md` + `ROADMAP.md` + 進行中 `<slug>/` + `tmp/` + `archive/`。
+每個採用 shiftblame 的專案自成 `.shiftblame/` 工作區（MUST 經 `.gitignore` 排除於 repo 外）：
+
+```
+.shiftblame/
+├── SOP.md                # 專案執行準則（長期租約，當下事實）
+├── ROADMAP.md            # 後續候選
+├── <slug>/               # 當前任務
+│   ├── SLUG.md           # 任務索引（目標、狀態、技術債、交接摘要）
+│   └── <nnn>/            # 各輪迭代
+│       ├── G1.md         # 外部研究規劃視角產出
+│       ├── G2.md         # 內部技術實作視角產出
+│       └── G3.md         # 共識後執行規劃
+├── tmp/                  # 非持久產出
+└── archive/              # 已歸檔任務（過去事實由 git 歷史承擔權威）
+```
 
 ## 核心原則
 

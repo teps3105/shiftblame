@@ -18,7 +18,9 @@ updated: <YYYY-MM-DD>
 |---------|---------|---------|----------|------|
 | 001 | — | — | — | 初始輪 |
 
-`<nnn>` 狀態：`START → 正方 → 反方 → 收斂 → G3 → 執行 → <complete>`。推進 MUST 由老闆指示。Slug 狀態：`IN_PROGRESS → PASSED`（老闆拍板）。
+**`<nnn>` 狀態**：`START → 正方 → 反方 → 收斂 → G3 → 執行 → <complete>`。推進 MUST 由老闆指示。
+
+**Slug 狀態**：`IN_PROGRESS → PASSED`（老闆拍板結束）。
 
 ## 3. 雙軌策略
 
@@ -33,7 +35,8 @@ updated: <YYYY-MM-DD>
 
 ## 5. 推進與交接
 
-- **推進**：`<nnn>` 序列逐項 commit 並達 `<complete>` 後，MUST 由老闆指示推進。老闆「退回/撤銷」時產出保留 `.shiftblame/`，提交路由暫停。
+- **推進**：`<nnn>` 序列逐項 commit 並達 `<complete>` 後，MUST 由老闆指示推進。
+- **退回**：老闆「退回/撤銷」時產出保留 `.shiftblame/`，提交路由暫停。
 - **交接摘要**：管理者 MUST 彙整最終收斂結論 3~5 行白話寫入此處（收尾時填入）。
 
 ## 6. 租約有效期
