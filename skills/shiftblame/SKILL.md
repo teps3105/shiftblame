@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 4.0
+revision: 4.2
 description: 轉移責任以保持注意力——回饋驅動的通用 agent 協作框架,所有專案預設採用。注意力在協定層(讀),文件層只放乾淨的當下結論快照(G1需求研究/G2技術分析/G3實作計畫);以老闆＋管理者/執行者/審查者三角分工、`<slug>`/`<nnn>` 兩注意力弧、兩 checkpoint(揭露/PASS)、證據優先與可查核引用,管理需求→規劃→實作→驗收。處理任務、規劃派發或收到 /shiftblame 時載入。
 ---
 # shiftblame — 回饋驅動的 agent 協作框架
@@ -92,6 +92,7 @@ G1/G2 是兩個研究視角對同一份 codebase+意圖的結論(cross-attend),�
 - **真 checkpoint 只有兩個**:老闆**揭露意圖**(進入迭代)、老闆 **PASS**(結束)。中間全是自由迭代。
 - **三角互斥**:規劃/實作/驗證分屬管理者/執行者/審查者;實作與審查 MUST 不同人(見 SBM-GATE §6)。
 - **可查核引用**:每條事實陳述 MUST 附 `<檔案路徑>:<行號>`;引用對象變更時同步查核,失效引用等同錯誤。
+- **文件先於 repo 改動**:涉及 repo 的改動 MUST 先由 slug 文件承載(G3 `<plan>` 指明該變更);MUST NOT 先改碼再回頭補文件。迭代發生在文件層(讀 G1/G2、改寫快照),repo 改動是穩定計畫後的執行——順序不可倒置。
 
 證據查證觸發:不確定、新版本/依賴/API、法規/安全/效能/成本、無先例、與老闆直覺衝突——MUST 查證。
 
@@ -102,9 +103,8 @@ G1/G2 是兩個研究視角對同一份 codebase+意圖的結論(cross-attend),�
 
 ## 8. 提交規範
 
-- 訊息 `<type>: <繁中描述>`,描述 ≤20 codepoint。
-- 驗證:`echo "<msg>" | sed 's/^[^:]*: //' | python -c "import sys;print(len(sys.stdin.readline().rstrip()))"`
-- 開框架走 `feat/<slug>` 分支,管理者收尾 merge;不開 MAY 直接 main。
+- 訊息 `<type>: <繁中描述>`,簡潔一行可掃過(防膨脹,不硬限字數;MUST NOT 為算字數耗 token)。
+- 分支依外部證據:SOP 記載多人協作、或具 upstream remote 等 → 走 `feat/<slug>`,管理者收尾 merge;單人本地無上述譯據 → MAY 直接 main。
 
 ## 9. 框架檔
 

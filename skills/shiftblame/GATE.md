@@ -1,7 +1,7 @@
 ---
 name: GATE
 parent: SBM-SKILL
-revision: 4.0
+revision: 4.1
 ---
 # GATE — checkpoint、`<nnn>` 與收尾
 
@@ -70,5 +70,5 @@ revision: 4.0
    - 從當下 codebase 逐檔重寫回原位置(只寫結果,不寫過程)。
    - 每個 `<檔案路徑>:<行號>` 引用重新查核;失效引用 MUST 修正或刪除。
    - 測試資產盤點依專案 SOP 準則執行。
-4. `git checkout main && git merge --no-ff feat/<slug>` → 推送 → 清理。
+4. 收尾合併依分支政策(SBM-SKILL §8):有 `feat/<slug>` → `git checkout main && git merge --no-ff feat/<slug>`;直接 main 免 merge。續推送 → 清理。
 5. 歸檔 `.shiftblame/<slug>/` 至 `archive/`。
