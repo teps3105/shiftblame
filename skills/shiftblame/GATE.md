@@ -1,16 +1,16 @@
 ---
 name: GATE
 parent: SBM-SKILL
-revision: 4.1
+revision: 5.0
 ---
 # GATE — checkpoint、`<nnn>` 與收尾
 
 ## 1. checkpoint(只有兩個真閘)
 
-- **揭露意圖**:老闆每次說話即意圖,管理者揭露後進入迭代。有矛盾/模糊隨附「意圖釐清區塊」(Type/Issue/Context/Decision Needed 四欄)。
+- **揭露意圖**:老闆每次說話即意圖,秘書承接後進入迭代。有矛盾/模糊隨附「意圖釐清區塊」(Type/Issue/Context/Decision Needed 四欄)。
 - **PASS**:唯老闆拍板 `<slug>` 結束。
 
-其餘一切不是閘。研究、寫 G3、改 G1/G2 之間無先後閘門——迭代自由(見 SBM-SKILL §5)。
+其餘一切不是閘。研究、寫 G3、改 G1/G2/G3 之間無先後閘門——迭代自由(見 SBM-SKILL §5)。
 
 ## 2. 不變量閘(隨時可審,非順序閘)
 
@@ -33,24 +33,26 @@ revision: 4.1
 
 | 標籤 | 意義 |
 |------|------|
-| 迭代中 | 讀 G1/G2+codebase,改寫快照 |
+| 迭代中 | 三軌角色讀 G1/G2/G3+codebase,改寫聚合快照 |
 | 穩定 | 重讀結論不再變,可交 G3 |
-| 執行中 | 執行者跑 `<task>` 序列(causal) |
+| 執行中 | DEVELOPER 跑 `<task>` 序列(causal) |
 | `<complete>` | 達成全部完成標準 |
 
 任一時刻可退回「迭代中」——這就是不鎖迭代。開新 `<nnn>` = 注意力弧移位(Major:目標/完成標準/架構改變)。推進(穩定→執行、epoch 間)MUST 由老闆指示。
 
 ## 4. 派發策略
 
-穩定後依複雜度派發執行者。任一成立 → 序列派發多執行者(一個完成才開下一個,非並行);否則單一執行者:
+穩定後秘書確認聚合,觸發執行。**執行只在主對話**(DEVELOPER 角色序列自執行);**子代理僅承接唯讀研究/審查任務**(由 RESEARCHER/AUDITOR 派發)。
 
-| 維度 | 門檻 |
+| 執行複雜度(決定主對話 DEVELOPER 如何序列化) | 門檻 |
 |------|------|
 | `<task>` 序列長度 | ≥ 4 |
 | 跨檔數 | ≥ 4 |
 | 強序列依賴對 | ≥ 2 |
 
-一致性的跨檔 `<task>` MUST 保持同一執行者。
+任一成立 → 序列化拆解逐項執行(causal:只能依賴已完成項);否則單段執行。一致性的跨檔 `<task>` MUST 同一段執行(子代理不做開發,無跨段派發問題)。
+
+**子代理唯讀派發**:RESEARCHER MAY 並行派發多個研究子代理;AUDITOR MAY 派發獨立審查子代理。子代理產出非權威,責任回主對話(見 SBM-SKILL §2)。
 
 ## 5. Minor/Major 變更
 
@@ -59,11 +61,15 @@ revision: 4.1
 
 ## 6. 複審(審查者 AUDITOR)
 
-`<task>` 序列執行達 `<complete>` 後 MUST 交審查者(AUDITOR)獨立審查(三角互斥,見 SBM-SKILL §6)。管理者揭露升級鏈選項 → 老闆選擔任者 → 審查者獨立審 e2e 證據/未驗項/可查核引用。未跑 e2e MUST 標「未驗」。審查者不得審自己改的碼(MUST 由另一審查者承擔);初判「免驗」MUST 由老闆覆核。
+`<task>` 序列執行達 `<complete>` 後 MUST 交 AUDITOR 獨立驗收(G3↔G1,見 SBM-SKILL §3)。秘書揭露升級鏈選項 → 老闆選擔任者 → AUDITOR 獨立審 e2e 證據/未驗項/可查核引用。
+
+- **獨立性來自外包成果**:AUDITOR MAY 派發子代理做獨立唯讀審查;獨立性來自外包成果,因責任回主對話而有效(見 SBM-SKILL §2、§6)。未跑 e2e MUST 標「未驗」。
+- **審查路由(不自審)**:DEVELOPER 改的碼 MUST 由 AUDITOR 承擔(三軌互斥);秘書另有改碼時亦同。初判「免驗」MUST 由老闆覆核。
+- **驗收不過 → 回 G1**:開發不符需求時,AUDITOR 觸發 RESEARCHER 重新研究(TDD Red → 回 G1,非盲目改開發)。
 
 ## 7. 收尾(老闆 PASS 後)
 
-1. 管理者品質確認。
+1. 秘書品質確認。
 2. 老闆 PASSED。
 3. **文件保鮮重寫**(對齊 SBM-SKILL §4 不變量#3 冪等可重寫):
    - `docs/`+`SOP.md`+`ROADMAP.md` 移至 `.shiftblame/tmp/`。
