@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 4.6
+revision: 4.7
 description: 轉移責任以保持注意力——回饋驅動的通用 agent 協作框架,所有專案預設採用。注意力在協定層(讀),文件層只放乾淨的當下結論快照(G1需求研究/G2技術分析/G3實作計畫);以老闆＋管理者/執行者/審查者三角分工、`<slug>`/`<nnn>` 兩注意力弧、兩 checkpoint(揭露/PASS)、證據優先與可查核引用,管理需求→規劃→實作→驗收。處理任務、規劃派發或收到 /shiftblame 時載入。
 ---
 # shiftblame — 回饋驅動的 agent 協作框架
@@ -105,7 +105,7 @@ G1/G2 是兩個研究視角對同一份 codebase+意圖的結論(cross-attend),�
 
 ## 8. 提交規範
 
-- 訊息 `<type>: <繁中描述>`,簡潔一行可掃過(防膨脹,不硬限字數;MUST NOT 為算字數耗 token)。
+- 訊息 `<type>: <繁中描述>`,單行可掃過;繁中描述 SHOULD 約 10~50 字,MUST NOT 多行或多事項冗餘(防膨脹;字數為指引非硬限,MUST NOT 為算字數耗 token)。
 - 分支依外部證據:SOP 記載多人協作、或具非本人 owner 的 upstream remote 等 → 走 `feat/<slug>`,管理者收尾 merge;單人本地無上述證據 → MAY 直接 main。
 
 ## 9. 框架檔
