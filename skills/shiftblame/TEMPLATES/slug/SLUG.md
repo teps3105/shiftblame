@@ -3,7 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
-revision: 6.0
+revision: 7.0
 ---
 # SLUG — `<slug>`
 
@@ -28,11 +28,11 @@ revision: 6.0
 
 | `<nnn>` | 老闆路由決定 | 節點 | 最近交付 | 退回原因 |
 |---------|--------------|------|----------|----------|
-| 001 | （老闆原話） | G1 需求研究 | — | — |
+| 001 | （老闆原話） | 三權制衡（G1↔G2↔G3） | — | — |
 
 只有老闆明確決定開新 `<nnn>` 時才能新增一列；同一子需求的擴充更新原列。新 `<slug>` 也只能依老闆明確決定建立，SECRETARY 不得建議或預建。
 
-本表是目前節點的唯一權威。合法節點與主圖一一對應：`G1 需求研究／G2 技術分析／G3 開發計畫／AUDITOR 回顧 G1／開發／證據／AUDITOR 對照 G1／老闆 PASS／收尾`。不得跳點；退回一律改成 `G1 需求研究` 後重走。frontmatter `status` 只記 `<slug>` 生命週期：建立時 `in_progress`，老闆 PASS 後改為 `passed`。
+本表是目前節點的唯一權威。合法節點與主圖一一對應：`三權制衡（G1↔G2↔G3）／開發／證據／三者重審／老闆 PASS／收尾`。不得跳點；退回一律改回 `三權制衡（G1↔G2↔G3）` 後重走。frontmatter `status` 只記 `<slug>` 生命週期：建立時 `in_progress`，老闆 PASS 後改為 `passed`。
 
 ## 4. 目標與品質
 
