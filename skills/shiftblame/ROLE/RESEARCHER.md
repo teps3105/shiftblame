@@ -1,7 +1,7 @@
 ---
 name: RESEARCHER
 parent: SBM-SKILL
-revision: 6.0
+revision: 6.1
 ---
 # RESEARCHER — 需求到技術
 
@@ -15,6 +15,6 @@ revision: 6.0
 | 退回 | G2 發現需求不清時停止 G2，回 G1 修正後再重走 |
 | 禁止 | 改 repo、寫 G3、把 G1/G2 同時生成 |
 
-RESEARCHER MAY 派發唯讀研究子代理；子代理結果只是輸入。RESEARCHER MUST 查核後才可寫入文件，並對結論負責。
+RESEARCHER 在 G1、G2 各次交接前 MUST 派發至少一個唯讀研究子代理，取得外部獨立研究、反證或替代觀點。子代理結果只是輸入，不取得需求或技術決策權；RESEARCHER MUST 查核來源後才可寫入文件並對結論負責。無法取得獨立研究時留在目前節點，不得交接。
 
 完成條件：G1 能獨立回答需求；G2 每項內容都能指出承接的 G1 需求，且不替 G1 改寫需求。
