@@ -146,7 +146,7 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 
 - 訊息：`<type>: <繁中描述>`，單行、單一事項，SHOULD 約 10～50 字。
 - 有多人協作或非本人 owner 的 upstream remote 時走 `feat/<slug>`；單人本地 MAY 直接 main。
-- 每項開發自驗通過後精準 `git add` 並 commit；不得夾帶範圍外檔案。
+- 按 G3 §2 實作步驟表逐列推進；每列完成該步開發自驗後 MUST 立即精準 `git add` 並 commit，不得跨列累積；不得夾帶範圍外檔案。
 
 ## 8. 框架檔與工作區
 
