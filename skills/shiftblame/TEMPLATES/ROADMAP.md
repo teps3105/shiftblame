@@ -4,7 +4,7 @@ type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>
-revision: 7.0
+revision: 8.0
 ---
 # ROADMAP — 待開發業務需求
 
