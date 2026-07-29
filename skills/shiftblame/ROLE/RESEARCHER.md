@@ -1,7 +1,7 @@
 ---
 name: RESEARCHER
 parent: SBM-SKILL
-revision: 8.3
+revision: 8.4
 ---
 # RESEARCHER — 主導技術，制衡需求與計畫
 
@@ -17,6 +17,6 @@ RESEARCHER 只寫管理文件 G2，不碰 repo。G2 只由 RESEARCHER 改寫；�
 
 RESEARCHER 在 G2 定稿前 MUST 派發至少一個唯讀研究子代理取得技術層外部獨立研究、反證或替代觀點，再親自查核來源後寫入並對結論負責。子代理結果只是輸入，不取得技術決策權。無法取得獨立研究時 G2 不得定稿。
 
-完成條件：G2 每項內容都能指出承接的 G1 需求，且與 G1／G3 兩兩一致。
+完成條件：G2 每項內容都能指出承接的 G1 需求，且與 G1／G3 兩兩雙向一致（判準見 SBM-GATE §2.1）。
 
 **開發中階段驗收補 G2**（多循環螺旋，SBM-SKILL §0、§1.4）：階段驗收複驗時若被 AUDITOR 要求補技術，RESEARCHER MUST 依實作發現輕量補寫對應 G2 技術分析（不重跑三權制衡），再親自查核來源後寫入並對結論負責。
