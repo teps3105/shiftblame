@@ -12,8 +12,8 @@ revision: 8.5
 | 範圍 | 判定 |
 |------|------|
 | **適用** | 專案 `docs/` 目錄下的系統文件（描述 codebase 各系統實際運作的文件） |
-| **MUST NOT 套用** | `.shiftblame/` 管理文件（G1／G2／G3／SOP／ROADMAP／SLUG）——寫 Why、技術理由、需求動機是這些文件的法定職責（SBM-SKILL §4、SBM-SKILL §10、roles/*.md）。把本規範的反向詞清單套到管理文件會誤殺其核心內容。 |
-| **MUST NOT 套用** | 專案 `.shiftblame/SOP.md`——SOP 依其模板（`templates/SOP.md` §1.3）保留真實檔案路徑、行號、命令、URL、埠號、版本與 `path:line` 是其法定職責，與本檔 §2 R3 的「無 code 導覽特徵」**有意為之地分工**：SOP 寫「怎麼跑／配置在哪／入口是什麼」，docs/ 寫「系統實際怎麼運作」。 |
+| **MUST NOT 套用** | `.shiftblame/` 管理文件（G1／G2／G3／SOP／ROADMAP／SLUG）——寫 Why、技術理由、需求動機是這些文件的法定職責（SBM-SKILL §4、SBM-SKILL §10、references/*.md）。把本規範的反向詞清單套到管理文件會誤殺其核心內容。 |
+| **MUST NOT 套用** | 專案 `.shiftblame/SOP.md`——SOP 依其模板（`assets/SOP.md` §1.3）保留真實檔案路徑、行號、命令、URL、埠號、版本與 `path:line` 是其法定職責，與本檔 §2 R3 的「無 code 導覽特徵」**有意為之地分工**：SOP 寫「怎麼跑／配置在哪／入口是什麼」，docs/ 寫「系統實際怎麼運作」。 |
 
 本檔的 grep 反向詞清單（§2）只在 `docs/` 執行；MUST NOT 對 `.shiftblame/` 或 SOP 執行。
 
@@ -21,8 +21,8 @@ revision: 8.5
 
 | 項目 | 說明 |
 |------|------|
-| 本檔性質 | 文件**寫法品質**的通用判準（中央尺），類似 `templates/` 的中央模板 |
-| 與 G1 的關係 | 單次文件化工作的**驗收仍由 AUDITOR 主導的 G1 承載**（roles/AUDITOR.md）；本規範 MAY 被 G1 引用為驗收依據，MUST NOT 取代 G1。G1 仍只由 AUDITOR 改寫。 |
+| 本檔性質 | 文件**寫法品質**的通用判準（中央尺），類似 `assets/` 的中央模板 |
+| 與 G1 的關係 | 單次文件化工作的**驗收仍由 AUDITOR 主導的 G1 承載**（references/AUDITOR.md）；本規範 MAY 被 G1 引用為驗收依據，MUST NOT 取代 G1。G1 仍只由 AUDITOR 改寫。 |
 | 與 SBM-SKILL §5 的關係 | 本規範規範「**怎麼寫才正確**」（品質）；§5「既有 `docs/` 預設不得修改，除非老闆明確授權」規範「**誰能改、何時能改**」（寫入權）。兩者正交。本規範**不授予寫入權**——改 `docs/` 仍須走 §5 的老闆授權，且實際寫入由 DEVELOPER 執行（唯一 repo 寫入角色）。 |
 | 本檔修改路由 | 本檔是框架檔，修改走「框架演化」路由（SBM-SKILL §0、§6），不開 slug、先揭露方案取得授權。 |
 
@@ -95,7 +95,7 @@ grep 命中即判違規；例外須在文件內註明理由（如引用外部規
 ## 6. 與其他文件的關係
 
 - **SBM-SKILL §5**：規範 `docs/` 的**寫入權**（預設不得改，須授權）；本檔規範**寫法品質**。正交，不衝突。
-- **SBM-SKILL §8**：框架檔結構含本檔（`skills/shiftblame/templates/DOCS.md`）。
+- **SBM-SKILL §8**：框架檔結構含本檔（`skills/shiftblame/assets/DOCS.md`）。
 - **SBM-SKILL §3**：開發後 AUDITOR 對照 G1 驗收；文件化工作裡 AUDITOR MAY 引用本檔作為 docs/ 驗收尺。
-- **templates/SOP.md §1.3**：SOP 保留真實路徑／命令／行號是其職責，與本檔 R3 分工（見 §0）。
-- **roles/AUDITOR.md**：本檔不取代 AUDITOR 主導的 G1 驗收。
+- **assets/SOP.md §1.3**：SOP 保留真實路徑／命令／行號是其職責，與本檔 R3 分工（見 §0）。
+- **references/AUDITOR.md**：本檔不取代 AUDITOR 主導的 G1 驗收。

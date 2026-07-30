@@ -113,7 +113,7 @@ AUDITOR 回顧 G1
 | SOP | 本專案跨 `<slug>` 長期有效、可查核的本地配置、具體執行規範、資料／服務邊界與驗證入口；可使用段落、表格、命令與來源標註 | 產品目標、ROADMAP 計畫、G1/G2/G3、中央流程副本、單一需求、過時規範、進度或流水帳 |
 | ROADMAP | 用白話寫產品目標、固定邊界與尚未完成的想做計畫 | 未授權想法、已完成事項、技術方案、G1/G2/G3、排程、優先級、任務、進度或流水帳 |
 
-欄位模板與拒絕規則以 [`skills/shiftblame/templates/SOP.md`](skills/shiftblame/templates/SOP.md) 及 [`skills/shiftblame/templates/ROADMAP.md`](skills/shiftblame/templates/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
+欄位模板與拒絕規則以 [`skills/shiftblame/assets/SOP.md`](skills/shiftblame/assets/SOP.md) 及 [`skills/shiftblame/assets/ROADMAP.md`](skills/shiftblame/assets/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
 
 每個 `<slug>` 結束時，文件保鮮是收尾的固定動作：ROADMAP 移除已完成條目並修正剩餘方向，SOP 依當前 codebase 更新事實並刪除過時內容。這是維護既有文件，不等於授權新增產品需求；新增方向與產品邊界仍須 owner 明確授權。
 
@@ -125,15 +125,19 @@ README 不承載個人化或內部配置。個人工作站路徑、內網 IP／�
 
 ## 安裝
 
-把 `skills/shiftblame/` 連結或複製到 Agent 的 skill 目錄。
+shiftblame 是一個 ZCode plugin 套件（根目錄含 `.zcode-plugin/plugin.json`）。安裝後自動提供 `shiftblame` skill 與 `/shiftblame` command，不需手動 symlink。
 
-```bash
-# macOS / Linux
-ln -s ~/shiftblame/skills/shiftblame <你的 skill 目錄>/shiftblame
+**方式一：從本地目錄安裝（開發／自用）**
 
-# Windows（以系統管理員開啟 cmd）
-mklink /J "<你的 skill 目錄>\shiftblame" "D:\shiftblame\skills\shiftblame"
-```
+1. 開啟 **Settings → Plugin Management → Discover**。
+2. 點 **`+`** 新增 marketplace，來源選「本地目錄」，指向本 repo 根目錄。
+3. 在 **Installed** 分頁啟用 `shiftblame`。
+
+**方式二：從 Git 安裝（分享／版本追蹤）**
+
+把本 repo 推到 GitHub 後，以 Git URL 或 GitHub repo 作為 marketplace 來源加入，再啟用 plugin。
+
+安裝完成後，skill 自動被發現、`/shiftblame` command 可用；plugin 啟用即生效，無需複製檔案到 skill 目錄。
 
 ## 使用
 
@@ -148,22 +152,20 @@ SECRETARY 會先揭露意圖，並等待老闆自行指定路由；不得代替�
 ## 文件結構
 
 ```text
-skills/shiftblame/
-├── SKILL.md              # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
-├── roles/
-│   ├── RESEARCHER.md
-│   ├── DEVELOPER.md
-│   └── AUDITOR.md
-└── templates/
-    ├── DOCS.md           # 專案 docs/ 系統文件寫法判準
-    ├── SOP.md
-    ├── ROADMAP.md
-    └── slug/
-        ├── SLUG.md
-        └── nnn/
-            ├── G1.md
-            ├── G2.md
-            └── G3.md
+shiftblame/                         # plugin 套件根（repo 根）
+├── .zcode-plugin/plugin.json      # plugin manifest
+├── commands/                      # 顯式呼叫指令（/shiftblame …）
+└── skills/shiftblame/
+    ├── SKILL.md                   # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
+    ├── references/                # 角色定義（按需讀）
+    │   ├── RESEARCHER.md
+    │   ├── DEVELOPER.md
+    │   └── AUDITOR.md
+    └── assets/                    # 範本與固定資產
+        ├── DOCS.md                # 專案 docs/ 系統文件寫法判準
+        ├── SOP.md
+        ├── ROADMAP.md
+        └── SLUG.md                # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
 ```
 
 每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除。

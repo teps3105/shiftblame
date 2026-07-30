@@ -126,7 +126,7 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
 
    Minor commit 訊息用 `change(<slug>): <摘>`；Major 不會自動建立新 `<nnn>/<slug>`。
 5. **圖文衝突時以圖為準**：其他文件只能解釋自己負責的面向與箭頭，不得另建流程。
-6. **SOP／ROADMAP 硬分欄**：SOP 寫本專案跨 `<slug>` 長期有效、可執行且可查核的本地配置、專案特有規範、資料／服務邊界與驗證入口，可用段落、表格、命令與來源標註完整保存實際值；MUST NOT 複製 SKILL 或 `roles/` 中央模板已定義的通用流程。ROADMAP 只寫老闆明確授權的產品目標、固定邊界與尚未完成的想做計畫，需求不必先被阻塞。兩者 MUST NOT 寫需求流程、技術方案、實作計畫、進度、討論、角色行為、歷史流水或未授權方案；完整准入欄位與禁止項以 `templates/SOP.md`、`templates/ROADMAP.md` 為準。違規內容不得以「只寫結果」之名保留。
+6. **SOP／ROADMAP 硬分欄**：SOP 寫本專案跨 `<slug>` 長期有效、可執行且可查核的本地配置、專案特有規範、資料／服務邊界與驗證入口，可用段落、表格、命令與來源標註完整保存實際值；MUST NOT 複製 SKILL 或 `references/` 中央模板已定義的通用流程。ROADMAP 只寫老闆明確授權的產品目標、固定邊界與尚未完成的想做計畫，需求不必先被阻塞。兩者 MUST NOT 寫需求流程、技術方案、實作計畫、進度、討論、角色行為、歷史流水或未授權方案；完整准入欄位與禁止項以 `assets/SOP.md`、`assets/ROADMAP.md` 為準。違規內容不得以「只寫結果」之名保留。
 7. **管理文件唯一寫入矩陣**：
 
 | 文件 | 唯一寫入者 | 前置條件 |
@@ -221,7 +221,7 @@ AUDITOR 對 repo 永遠唯讀；其主導的 G1 為管理文件。**DEVELOPER �
 - 寫檔、測試、操作與 commit 只在主對話 DEVELOPER 角色執行。
 - 三者重審不通過 MUST 回三權制衡環形，非直接要求猜修法。
 - `.shiftblame/` MUST 經 `.gitignore` 排除，不得 commit。
-- 多人協作下既有 `docs/` 預設不得修改，除非老闆明確授權；其**寫法品質**判準見 `templates/DOCS.md`（規範怎麼寫才正確，不授予寫入權，與本條的寫入授權正交）。
+- 多人協作下既有 `docs/` 預設不得修改，除非老闆明確授權；其**寫法品質**判準見 `assets/DOCS.md`（規範怎麼寫才正確，不授予寫入權，與本條的寫入授權正交）。
 
 不確定、新版本／API、法規、安全、效能、成本、無先例或與老闆直覺衝突時 MUST 查證。
 
@@ -260,16 +260,19 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 ## 8. 框架檔與工作區
 
 ```text
-skills/shiftblame/
-├── SKILL.md
-├── roles/{RESEARCHER,DEVELOPER,AUDITOR}.md
-└── templates/
-    ├── DOCS.md
-    ├── SOP.md
-    ├── ROADMAP.md
-    └── slug/{SLUG.md,nnn/{G1,G2,G3}.md}
+shiftblame/                         # plugin 套件根（repo 根）
+├── .zcode-plugin/plugin.json      # plugin manifest
+├── commands/                      # 顯式呼叫指令（/shiftblame …）
+└── skills/shiftblame/
+    ├── SKILL.md
+    ├── references/{RESEARCHER,DEVELOPER,AUDITOR}.md
+    └── assets/
+        ├── DOCS.md
+        ├── SOP.md
+        ├── ROADMAP.md
+        └── SLUG.md                # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
 
-.shiftblame/
+.shiftblame/                       # 各專案工作區（MUST 經 .gitignore 排除）
 ├── SOP.md
 ├── ROADMAP.md
 ├── <slug>/
