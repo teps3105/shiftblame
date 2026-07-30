@@ -151,6 +151,7 @@ SECRETARY 會先揭露意圖，並等待老闆自行指定路由；不得代替�
 skills/shiftblame/
 ├── SKILL.md              # 權威拓樸、讀圖規則、分流
 ├── GATE.md               # 箭頭條件、退回、收尾
+├── DOCS.md               # 專案 docs/ 系統文件寫法判準
 ├── ROLE/
 │   ├── RESEARCHER.md
 │   ├── DEVELOPER.md
