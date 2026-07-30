@@ -1,6 +1,5 @@
 ---
 name: DOCS
-parent: SBM-SKILL
 revision: 8.5
 ---
 # DOCS — 專案系統文件的寫法判準

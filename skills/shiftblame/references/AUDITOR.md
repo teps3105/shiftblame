@@ -1,6 +1,5 @@
 ---
 name: AUDITOR
-parent: SBM-SKILL
 revision: 8.5
 ---
 # AUDITOR — 主導需求，制衡技術與計畫

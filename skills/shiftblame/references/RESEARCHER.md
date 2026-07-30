@@ -1,6 +1,5 @@
 ---
 name: RESEARCHER
-parent: SBM-SKILL
 revision: 8.5
 ---
 # RESEARCHER — 主導技術，制衡需求與計畫
