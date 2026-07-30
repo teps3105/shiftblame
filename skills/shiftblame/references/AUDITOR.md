@@ -1,6 +1,6 @@
 ---
 name: AUDITOR
-revision: 0.1.1
+revision: 0.1.2
 ---
 # AUDITOR — 主導需求，制衡技術與計畫
 
