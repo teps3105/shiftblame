@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 8.5
+revision: 0.1.1
 description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡（AUDITOR 主導 G1、RESEARCHER 主導 G2、DEVELOPER 主導 G3），三份兩兩一致才開發；開發採多循環螺旋，每圈一個功能、先提交再階段驗收（老闆確認＋AUDITOR 複驗寫回 G1），不合格返工疊加新 commit，全部功能完成後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
