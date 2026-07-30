@@ -95,7 +95,7 @@ grep 命中即判違規；例外須在文件內註明理由（如引用外部規
 ## 6. 與其他文件的關係
 
 - **SBM-SKILL §5**：規範 `docs/` 的**寫入權**（預設不得改，須授權）；本檔規範**寫法品質**。正交，不衝突。
-- **SBM-SKILL §8**：框架檔結構含本檔（`skills/shiftblame/DOCS.md`）。
+- **SBM-SKILL §8**：框架檔結構含本檔（`skills/shiftblame/TEMPLATES/DOCS.md`）。
 - **SBM-GATE §6**：開發後 AUDITOR 對照 G1 驗收；文件化工作裡 AUDITOR MAY 引用本檔作為 docs/ 驗收尺。
 - **TEMPLATES/SOP.md §1.3**：SOP 保留真實路徑／命令／行號是其職責，與本檔 R3 分工（見 §0）。
 - **ROLE/AUDITOR.md**：本檔不取代 AUDITOR 主導的 G1 驗收。

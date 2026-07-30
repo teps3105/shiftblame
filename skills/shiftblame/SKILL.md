@@ -170,7 +170,7 @@ MUST（必須）｜SHOULD（應）｜MAY（得）｜MUST NOT（必須不）｜SH
 - 寫檔、測試、操作與 commit 只在主對話 DEVELOPER 角色執行。
 - 三者重審不通過 MUST 回三權制衡環形，非直接要求猜修法。
 - `.shiftblame/` MUST 經 `.gitignore` 排除，不得 commit。
-- 多人協作下既有 `docs/` 預設不得修改，除非老闆明確授權；其**寫法品質**判準見 `DOCS.md`（規範怎麼寫才正確，不授予寫入權，與本條的寫入授權正交）。
+- 多人協作下既有 `docs/` 預設不得修改，除非老闆明確授權；其**寫法品質**判準見 `TEMPLATES/DOCS.md`（規範怎麼寫才正確，不授予寫入權，與本條的寫入授權正交）。
 
 不確定、新版本／API、法規、安全、效能、成本、無先例或與老闆直覺衝突時 MUST 查證。
 
@@ -203,9 +203,9 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 skills/shiftblame/
 ├── SKILL.md
 ├── GATE.md
-├── DOCS.md
 ├── ROLE/{RESEARCHER,DEVELOPER,AUDITOR}.md
 └── TEMPLATES/
+    ├── DOCS.md
     ├── SOP.md
     ├── ROADMAP.md
     └── slug/{SLUG.md,nnn/{G1,G2,G3}.md}
