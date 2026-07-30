@@ -137,12 +137,14 @@ shiftblame 是一個 ZCode plugin 套件（根目錄含 `.zcode-plugin/plugin.js
 
 把本 repo 推到 GitHub 後，以 Git URL 或 GitHub repo 作為 marketplace 來源加入，再啟用 plugin。
 
-安裝完成後，skill 自動被發現、`/shiftblame` command 可用；plugin 啟用即生效，無需複製檔案到 skill 目錄。
+安裝完成後，skill 自動被發現；plugin 啟用即生效，無需複製檔案到 skill 目錄。
 
 ## 使用
 
+shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務皆然）。直接描述你的目標即可，例如：
+
 ```text
-/shiftblame 幫我重構登入流程
+幫我用三權制衡流程重構登入流程
 ```
 
 SECRETARY 會先揭露意圖，並等待老闆自行指定路由；不得代替老闆判定。可依既有脈絡提出路由提議，但提議只能回報給老闆，不能寫入 ROADMAP，也不等於授權。老闆指定後，SECRETARY 才能忠實記錄與交接。
