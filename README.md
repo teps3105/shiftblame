@@ -25,7 +25,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 
 - 問題陳述不等於修改授權。
 - 秘書必須先揭露原始命題、意圖翻譯與候選方案。
-- G1、G2、G3 各由主導角色產出，互相制衡並須兩兩一致；一致以 G1 需求項為對齊軸，三對各須正向承接＋反向回指（判準見 `GATE.md` §2.1，`SKILL.md` §1.3 轉述）。
+- G1、G2、G3 各由主導角色產出，互相制衡並須兩兩一致；一致以 G1 需求項為對齊軸，三對各須正向承接＋反向回指（判準見 `SKILL.md` §10，§1.3 轉述）。
 - G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟。
 - 計畫與開發結果都由 AUDITOR 回頭對照 G1。
 - 不符合時回 G1 重走，而不是直接猜修法。
@@ -113,7 +113,7 @@ AUDITOR 回顧 G1
 | SOP | 本專案跨 `<slug>` 長期有效、可查核的本地配置、具體執行規範、資料／服務邊界與驗證入口；可使用段落、表格、命令與來源標註 | 產品目標、ROADMAP 計畫、G1/G2/G3、中央流程副本、單一需求、過時規範、進度或流水帳 |
 | ROADMAP | 用白話寫產品目標、固定邊界與尚未完成的想做計畫 | 未授權想法、已完成事項、技術方案、G1/G2/G3、排程、優先級、任務、進度或流水帳 |
 
-欄位模板與拒絕規則以 [`skills/shiftblame/TEMPLATES/SOP.md`](skills/shiftblame/TEMPLATES/SOP.md) 及 [`skills/shiftblame/TEMPLATES/ROADMAP.md`](skills/shiftblame/TEMPLATES/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
+欄位模板與拒絕規則以 [`skills/shiftblame/templates/SOP.md`](skills/shiftblame/templates/SOP.md) 及 [`skills/shiftblame/templates/ROADMAP.md`](skills/shiftblame/templates/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
 
 每個 `<slug>` 結束時，文件保鮮是收尾的固定動作：ROADMAP 移除已完成條目並修正剩餘方向，SOP 依當前 codebase 更新事實並刪除過時內容。這是維護既有文件，不等於授權新增產品需求；新增方向與產品邊界仍須 owner 明確授權。
 
@@ -149,13 +149,12 @@ SECRETARY 會先揭露意圖，並等待老闆自行指定路由；不得代替�
 
 ```text
 skills/shiftblame/
-├── SKILL.md              # 權威拓樸、讀圖規則、分流
-├── GATE.md               # 箭頭條件、退回、收尾
-├── ROLE/
+├── SKILL.md              # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
+├── roles/
 │   ├── RESEARCHER.md
 │   ├── DEVELOPER.md
 │   └── AUDITOR.md
-└── TEMPLATES/
+└── templates/
     ├── DOCS.md           # 專案 docs/ 系統文件寫法判準
     ├── SOP.md
     ├── ROADMAP.md

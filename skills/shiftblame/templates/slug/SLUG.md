@@ -3,7 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
-revision: 8.4
+revision: 8.5
 ---
 # SLUG — `<slug>`
 
@@ -34,12 +34,12 @@ revision: 8.4
 
 本表是目前節點的唯一權威。合法節點與主圖一一對應：`三權制衡（G1↔G2↔G3）／開發／證據／三者重審／nnn 完成／老闆 PASS／收尾`。不得跳點；退回一律改回 `三權制衡（G1↔G2↔G3）` 後重走。
 
-**`<nnn>` 完成 ≠ slug PASS**（SBM-SKILL §0、§1.4、§6；SBM-GATE §3、§7）：
+**`<nnn>` 完成 ≠ slug PASS**（SBM-SKILL §0、§1.4、§6、§1.7）：
 
 | 節點 | 語義 | 誰觸發 | 後續 |
 |------|------|--------|------|
-| `nnn 完成` | 單一子需求循環收斂（三者重審通過、片段清空） | 三者重審通過即到達 | 先做輕量保鮮（SBM-GATE §7.1），再由老闆決定開新 `<nnn>`（加新列）或結束 `<slug>` |
-| `老闆 PASS` | 整個 `<slug>` 結束，老闆拍板 | 老闆在 `<nnn>` 完成（含輕量保鮮）後決定結束 `<slug>` | 完整收尾保鮮（SBM-GATE §7.2）→ 移 archive/ |
+| `nnn 完成` | 單一子需求循環收斂（三者重審通過、片段清空） | 三者重審通過即到達 | 先做輕量保鮮（§1.7.1），再由老闆決定開新 `<nnn>`（加新列）或結束 `<slug>` |
+| `老闆 PASS` | 整個 `<slug>` 結束，老闆拍板 | 老闆在 `<nnn>` 完成（含輕量保鮮）後決定結束 `<slug>` | 完整收尾保鮮（§1.7.2）→ 移 archive/ |
 | `收尾` | `<slug>` 已 PASS，執行完整保鮮與歸檔 | PASS 後進入 | 歸檔完成，`<slug>` 結束 |
 
 老闆在同一 `<slug>` 內開新 `<nnn>` 時，舊 `<nnn>` 列節點定為 `nnn 完成` 即可，**不需先走 PASS／收尾**。frontmatter `status` 只記 `<slug>` 生命週期：建立時 `in_progress`，老闆 PASS 後改為 `passed`。
