@@ -1,0 +1,21 @@
+{
+  "name": "shiftblame",
+  "interface": {
+    "displayName": "shiftblame"
+  },
+  "plugins": [
+    {
+      "name": "shiftblame",
+      "description": "以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡，三份兩兩一致才開發；開發採多循環螺旋，每圈一個功能、先提交再階段驗收。",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Engineering"
+    }
+  ]
+}
