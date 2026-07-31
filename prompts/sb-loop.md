@@ -23,8 +23,9 @@
    - 開發：sb-do 放行 → 多循環螺旋開發 → sb-proof 收斂進入 nnn 完成。
    - 續跑：每個 nnn 完成後自動判斷是否還有未完成計畫項，有則開新 nnn 重走上述循環，無則停止。
    - 期間無需老闆逐階段手動觸發。
-3. **停止點**：跑到所有 nnn 完成，**sb-loop 到此為止，不觸發 sb-end**。停止後等待老闆：
-   - sb-docs 處理專案文件（確保 docs/ 與實作一致，依 assets/DOCS.md 判準）→ 再 sb-end 結束 slug（merge gate §1.7.2）。**sb-docs 是 sb-end 的前置**。
+3. **最後節點 sb-docs**：所有 nnn 完成後，sb-loop 自動觸發 sb-docs 處理專案 docs/ 文件（確保與實作一致，依 assets/DOCS.md 判準）。**sb-docs 只碰 docs/，不碰 ROADMAP／SOP**——後者是 sb-end 收尾保鮮（§1.7.2）的職責。
+4. **停止點**：sb-docs 完成後，**sb-loop 到此為止，不觸發 sb-end**。停止後等待老闆：
+   - sb-end 結束 slug（收尾保鮮碰 ROADMAP／SOP，merge gate §1.7.2）。
    - 走偏或不滿意 → **可捨棄整個 slug 與分支**（自主模式的價值：丟掉重來不污染 main）。
    - session 中斷 → sb-resume 接續（resume 時讀 SLUG 的 loop 授權記錄，恢復自主模式）。
 
