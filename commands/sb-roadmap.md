@@ -3,13 +3,13 @@ description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，�
 argument-hint: [修改需求]
 ---
 
-載入 `shiftblame` skill。本指令用於修改專案 `ROADMAP.md`。ROADMAP 唯一寫入者為 SECRETARY，但新增產品意圖／改變產品邊界須老闆明確授權（SBM-SKILL §1.7）。
+載入 `shiftblame` skill。本指令用於修改專案 `ROADMAP.md`。ROADMAP 唯一寫入者為 SECRETARY，但新增產品意圖／改變產品邊界須老闆明確授權（SKILL §1.7）。
 
 ## 判定樹
 
 ### 無後標 → 依上下文提建議，待授權
 
-讀取當前 `ROADMAP.md`、`SOP.md`、當前 `<slug>` 與 archive 脈絡，判定修改意圖並提出修改建議（附脈絡依據）。**提議不等於授權**（SBM-SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。
+讀取當前 `ROADMAP.md`、`SOP.md`、當前 `<slug>` 與 archive 脈絡，判定修改意圖並提出修改建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。
 
 ### 有後標 → 顯式授權寫入（$ARGUMENTS）
 

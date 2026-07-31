@@ -7,9 +7,9 @@ argument-hint: [後標文字]
 
 ## 判定樹
 
-先載入 SBM-SKILL §9 脈絡（讀 `.shiftblame/SOP.md`、`ROADMAP.md`、`archive/`、當前 `<slug>`），再依下列分派：
+先載入 SKILL §9 脈絡（讀 `.shiftblame/SOP.md`、`ROADMAP.md`、`archive/`、當前 `<slug>`），再依下列分派：
 
-### 無後標 → 提議，待老闆授權（SBM-SKILL §2、§9）
+### 無後標 → 提議，待老闆授權（SKILL §2、§9）
 
 問題揭露不等於修改授權。SECRETARY 提出路由提議後**等待老闆拍板**，MUST NOT 在授權前預建檔案或自行開 slug／nnn。
 
@@ -20,7 +20,7 @@ argument-hint: [後標文字]
 
 ### 有後標 → 視為需求，顯式授權（$ARGUMENTS）
 
-後標即老闆命題，視為顯式授權。依脈絡自動判定開新 `<slug>` 或新 `<nnn>`（SBM-SKILL §6 關係原則）：
+後標即老闆命題，視為顯式授權。依脈絡自動判定開新 `<slug>` 或新 `<nnn>`（SKILL §6 關係原則）：
 
 - 與既有功能幾乎無關的新功能 → 開新 `<slug>`，從三權制衡開始。
 - 同一大需求中的新子需求 → 在當前 `<slug>` 開新 `<nnn>`（前置：當前 `<nnn>` 已完成，§6；不需先 PASS）。

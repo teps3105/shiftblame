@@ -3,13 +3,13 @@ description: 對 SOP 提出修改需求；無後標依上下文提建議，有�
 argument-hint: [修改需求]
 ---
 
-載入 `shiftblame` skill。本指令用於修改專案 `SOP.md`。SOP 唯一寫入者為 SECRETARY，但新增專案規範須老闆明確授權（SBM-SKILL §1.7）。
+載入 `shiftblame` skill。本指令用於修改專案 `SOP.md`。SOP 唯一寫入者為 SECRETARY，但新增專案規範須老闆明確授權（SKILL §1.7）。
 
 ## 判定樹
 
 ### 無後標 → 依上下文提建議，待授權
 
-讀取當前 `SOP.md`、`ROADMAP.md`、codebase 設定與測試入口脈絡，判定修改意圖並提出修改建議（附脈絡依據）。**提議不等於授權**（SBM-SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。
+讀取當前 `SOP.md`、`ROADMAP.md`、codebase 設定與測試入口脈絡，判定修改意圖並提出修改建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。
 
 ### 有後標 → 顯式授權寫入（$ARGUMENTS）
 

@@ -2,11 +2,11 @@
 description: 結束當前 slug 並執行完整收尾保鮮；嚴格檢查 PASS 前置條件。
 ---
 
-載入 `shiftblame` skill。本指令用於結束當前 `<slug>`——老闆主動呼叫即表達結束意圖，對應 SBM-SKILL §2 的 PASS checkpoint 與 §6「結束 `<slug>`」路由。
+載入 `shiftblame` skill。本指令用於結束當前 `<slug>`——老闆主動呼叫即表達結束意圖，對應 SKILL §2 的 PASS checkpoint 與 §6「結束 `<slug>`」路由。
 
 ## 觸發後流程
 
-### 1. 嚴格檢查 PASS 前置條件（SBM-SKILL §2）
+### 1. 嚴格檢查 PASS 前置條件（SKILL §2）
 
 逐項核對，**任一未滿足即停止並提示老闆**，不執行收尾：
 
@@ -19,7 +19,7 @@ description: 結束當前 slug 並執行完整收尾保鮮；嚴格檢查 PASS �
 
 任一未滿足 → 提示老闆具體缺項，建議先收斂當前 nnn（或用 `/sb-req` 回 G1）後再結束。
 
-### 2. 前置通過 → 執行完整收尾保鮮（SBM-SKILL §1.7.2）
+### 2. 前置通過 → 執行完整收尾保鮮（SKILL §1.7.2）
 
 前置全數通過後，SECRETARY 執行收尾（既定維護動作，不需另行授權）：
 

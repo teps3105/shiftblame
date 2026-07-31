@@ -3,7 +3,7 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 argument-hint: [slug/nnn]
 ---
 
-載入 `shiftblame` skill。本指令用於 session 中斷後恢復既有未完成的工作。主對話 SECRETARY 依 SBM-SKILL §9 讀取脈絡，找出未完成的 `<slug>`／`<nnn>`，基於既有 G1~G3 重新確認後重走三權制衡。
+載入 `shiftblame` skill。本指令用於 session 中斷後恢復既有未完成的工作。主對話 SECRETARY 依 SKILL §9 讀取脈絡，找出未完成的 `<slug>`／`<nnn>`，基於既有 G1~G3 重新確認後重走三權制衡。
 
 ## 觸發後流程
 
@@ -14,7 +14,12 @@ argument-hint: [slug/nnn]
    - 無未完成 → 提示「無未完成 slug，請用 `/sb-next` 開新工作」。
    - 老闆於後標指定（如 `sb-resume feature-auth/002`）→ 直接 resume 指定者。
 2. **偵測 loop 授權**：檢查 SLUG §2 是否有 `loop 模式：自主執行至所有 nnn 完成` 記錄。
-   - **有 loop 授權** → 恢復自主模式：續跑 `/sb-do`→開發→`/sb-review`→開新 nnn（`/sb-next`）→ ... 直到所有 nnn 完成 → `/sb-docs` → 停止（同 `/sb-loop` 的自主序列）。**跳過以下 step 3-4 的單次重新確認**（自主模式由 loop 授權驅動，不需逐階段重確認）。
+   - **有 loop 授權** → 恢復自主模式：**依 SLUG §3 當前節點決定續跑點**（同 `/sb-loop` 的自主序列，從中斷處續跑，不從頭重跑）：
+     - 在 `三權制衡` → 從未完成的權續跑（`/sb-req`／`/sb-meth`／`/sb-plan`）→ §10 核對 → `/sb-do`。
+     - 在 `開發` → 續跑開發 → `/sb-review`。
+     - 在 `nnn 完成` → `/sb-next` 開新 nnn 重走完整循環。
+     - 跑到所有 nnn 完成 → `/sb-docs` → 停止。
+     - **跳過以下 step 3-4 的單次重新確認**（自主模式由 loop 授權驅動）。
    - **無 loop 授權** → 走一般 resume（step 3-4）。
 3. **基於既有重新確認 G1~G3**（非清空重寫，無 loop 授權時）：SECRETARY 派發角色子代理，讀取該 `<nnn>` 既有的 G1／G2／G3，逐份確認內容是否仍有效（codebase、需求、技術是否變動）：
    - 仍成立 → 保留。

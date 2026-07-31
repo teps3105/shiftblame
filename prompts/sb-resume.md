@@ -13,7 +13,12 @@
    - 無未完成 → 提示「無未完成 slug，請用 sb-next 開新工作」。
    - 老闆指定 → 直接 resume 指定者。
 2. **偵測 loop 授權**：檢查 SLUG §2 是否有 `loop 模式：自主執行至所有 nnn 完成` 記錄。
-   - **有 loop 授權** → 恢復自主模式：續跑 sb-do→開發→sb-review→開新 nnn（sb-next）→ ... 直到所有 nnn 完成 → sb-docs → 停止（同 sb-loop 自主序列）。**跳過以下 step 3-4 的單次重新確認**。
+   - **有 loop 授權** → 恢復自主模式：**依 SLUG §3 當前節點決定續跑點**（同 sb-loop 自主序列，從中斷處續跑）：
+     - 在 `三權制衡` → 從未完成的權續跑（sb-req／sb-meth／sb-plan）→ §10 → sb-do。
+     - 在 `開發` → 續跑開發 → sb-review。
+     - 在 `nnn 完成` → sb-next 開新 nnn 重走完整循環。
+     - 跑到所有 nnn 完成 → sb-docs → 停止。
+     - **跳過以下 step 3-4 的單次重新確認**。
    - **無 loop 授權** → 走一般 resume（step 3-4）。
 3. **基於既有重新確認 G1~G3**（非清空重寫，無 loop 授權時）：SECRETARY 派發角色子代理，讀取該 `<nnn>` 既有的 G1／G2／G3，逐份確認是否仍有效（codebase、需求、技術是否變動）：
    - 仍成立 → 保留。

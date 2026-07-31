@@ -3,13 +3,13 @@ description: 對當前專案 docs/ 文件提出修改需求；無後標依上下
 argument-hint: [修改需求]
 ---
 
-載入 `shiftblame` skill。本指令用於修改專案 `docs/` 下的系統文件。既有 `docs/` 預設不得修改，除非老闆明確授權（SBM-SKILL §5）；寫法品質判準見 `assets/DOCS.md`。
+載入 `shiftblame` skill。本指令用於修改專案 `docs/` 下的系統文件。既有 `docs/` 預設不得修改，除非老闆明確授權（SKILL §5）；寫法品質判準見 `assets/DOCS.md`。
 
 ## 判定樹
 
 ### 無後標 → 依上下文提建議，待授權
 
-讀取當前 `docs/` 文件與 codebase 對應系統，比對文件與實作一致性，判定修改意圖並提出修改建議（附 `<路徑>:<行號>` 與實作依據）。**提議不等於授權**（SBM-SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。實際寫入由 DEVELOPER 執行（§5：唯一 repo 寫入角色）。
+讀取當前 `docs/` 文件與 codebase 對應系統，比對文件與實作一致性，判定修改意圖並提出修改建議（附 `<路徑>:<行號>` 與實作依據）。**提議不等於授權**（SKILL §2、§9）；SECRETARY MUST NOT 在授權前寫入。實際寫入由 DEVELOPER 執行（§5：唯一 repo 寫入角色）。
 
 ### 有後標 → 顯式授權修改（$ARGUMENTS）
 
