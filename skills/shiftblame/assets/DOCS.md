@@ -1,6 +1,6 @@
 ---
 name: DOCS
-revision: 0.1.2
+revision: 0.1.3
 ---
 # DOCS — 專案系統文件的寫法判準
 
