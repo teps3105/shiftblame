@@ -3,7 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
-revision: 0.1.6
+revision: 0.1.7
 ---
 # SLUG — `<slug>`
 

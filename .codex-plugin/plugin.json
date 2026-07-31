@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡，三份兩兩一致才開發；開發採多循環螺旋，每圈一個功能、先提交再階段驗收。",
   "skills": "skills",
   "prompts": "prompts"
