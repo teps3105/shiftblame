@@ -18,11 +18,13 @@
 
 0. **SECRETARY 記錄 loop 授權**：後續文字即老闆詳盡計畫，視為顯式授權。在 SLUG §2 記錄 `loop 模式：自主執行至所有 nnn 完成`，讓 sb-resume 能識別並恢復此授權。
 1. **開 slug + 乾淨分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）；建立 slug 骨架。
-2. **自主執行**：SECRETARY 依計畫驅動，自動調用對應指令推進：
-   - 三權制衡（依計畫產 G1~G3，核對 §10）→ sb-do 放行 → 開發（多循環螺旋）→ sb-proof 收斂 → 開新 nnn（sb-next）→ ... 跑到**所有 nnn 完成**。
-   - 期間無需老闆逐階段觸發；每個 nnn 完成後自動判斷是否還有未完成計畫項，有則續跑，無則停止。
-3. **停止點**：跑到所有 nnn 完成。停止後等待老闆：
-   - review 成果 → sb-end 結束 slug 並收尾（merge gate §1.7.2）。
+2. **自主執行**：SECRETARY 依計畫驅動，自動調用對應指令推進。每個 nnn 的循環：
+   - 三權產出：sb-req（產 G1）→ sb-meth（產 G2）→ sb-plan（產 G3），SECRETARY 核對 §10 一致。
+   - 開發：sb-do 放行 → 多循環螺旋開發 → sb-proof 收斂進入 nnn 完成。
+   - 續跑：每個 nnn 完成後自動判斷是否還有未完成計畫項，有則開新 nnn 重走上述循環，無則停止。
+   - 期間無需老闆逐階段手動觸發。
+3. **停止點**：跑到所有 nnn 完成，**sb-loop 到此為止，不觸發 sb-end**。停止後等待老闆：
+   - sb-docs 處理專案文件（確保 docs/ 與實作一致，依 assets/DOCS.md 判準）→ 再 sb-end 結束 slug（merge gate §1.7.2）。**sb-docs 是 sb-end 的前置**。
    - 走偏或不滿意 → **可捨棄整個 slug 與分支**（自主模式的價值：丟掉重來不污染 main）。
    - session 中斷 → sb-resume 接續（resume 時讀 SLUG 的 loop 授權記錄，恢復自主模式）。
 
