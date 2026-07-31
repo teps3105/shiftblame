@@ -1,6 +1,6 @@
 ---
 name: DEVELOPER
-revision: 0.1.4
+revision: 0.1.5
 ---
 # DEVELOPER — 主導計畫與開發，制衡需求與技術
 
