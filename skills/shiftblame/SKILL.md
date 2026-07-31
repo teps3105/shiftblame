@@ -162,8 +162,11 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
 3. 重新整理 `ROADMAP.md`：移除已開發完成或已不存在的計畫；部分完成的計畫改寫成目前仍要做的方向；固定邊界依實際完成結果修正。不得藉保鮮新增未經老闆授權的產品需求。
 4. 新增產品目標、改變產品邊界或把剩餘方向擴張成新需求，仍須老闆明確授權；完成項的移除與剩餘方向的忠實改寫不屬於新增需求。
 5. 依 SOP 盤點測試資產；探索性內容留在 `.shiftblame/tmp/`。
-6. 依分支政策合併、推送與清理。
-7. 將 `.shiftblame/<slug>/` 移至 `archive/`。
+6. **保鮮是 merge 的 gate**——保鮮未完成 MUST NOT merge 回主分支。保鮮範圍依身分區分：
+   - **單人 owner**：merge 前完成所有保鮮（含 repo 內文件如 `docs/`、`README.md`）。
+   - **多人協作貢獻者**：只處理本地 `.shiftblame/SOP.md`、`ROADMAP.md` 保鮮（經 `.gitignore` 排除，不進 repo）；**repo 內文件是 owner 資產，貢獻者 MUST NOT 動**，由 owner 在 merge 後接手保鮮。
+7. 保鮮完成後依分支政策合併、推送與清理。
+8. 將 `.shiftblame/<slug>/` 移至 `archive/`。
 
 ## 2. 詞彙與意圖授權（RFC 2119）
 
