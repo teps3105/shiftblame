@@ -256,7 +256,7 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 ## 7. 提交規範
 
 - 訊息：`<type>: <繁中描述>`，單行、單一事項，SHOULD 約 10～50 字。
-- 有多人協作或非本人 owner 的 upstream remote 時走 `feat/<slug>`；單人本地 MAY 直接 main。
+- **分支政策綁定 slug**：開 `<slug>` 時 MUST 切 `<type>/<slug>` 分支（如 `feat/<slug>`），slug 工作在分支上進行；**直接在 main 上工作是例外**（如不開 slug 的框架演化、緊急修復、輕量調整），不適用一般 slug 開發流程。
 - 開發採多循環螺旋（§1.4、§0）：按 G3 功能逐個推進，DEVELOPER 完成功能後 MUST 先精準 `git add` 並 commit 再驗收；階段驗收不合格 MUST 返工，修正後新 commit 疊加保留迭代證據；不得跨功能累積；不得夾帶範圍外檔案。
 
 ## 8. 框架檔與工作區
