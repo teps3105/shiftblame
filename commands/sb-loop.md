@@ -3,7 +3,7 @@ description: 老闆提交詳盡計畫，授權在乾淨分支自主執行至所�
 argument-hint: <詳盡計畫>
 ---
 
-載入 `shiftblame` skill。本指令用於老闆提交**詳盡計畫或大範圍需求**，授權 SECRETARY 在獨立分支上自主執行整個 slug 至所有 `<nnn>` 完成。是 §11「每階段須顯式觸發」原則的**例外授權模式**——授權後期間自動調用 `/sb-do`／`/sb-proof`／`/sb-next` 等指令，不需逐階段手動觸發。
+載入 `shiftblame` skill。本指令用於老闆提交**詳盡計畫或大範圍需求**，授權 SECRETARY 在獨立分支上自主執行整個 slug 至所有 `<nnn>` 完成。是 §11「每階段須顯式觸發」原則的**例外授權模式**——授權後期間自動調用 `/sb-do`／`/sb-review`／`/sb-next` 等指令，不需逐階段手動觸發。
 
 ## 前置條件（MUST 全部滿足）
 
@@ -22,7 +22,7 @@ argument-hint: <詳盡計畫>
 2. **開 slug + 乾淨分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）；建立 slug 管理文件骨架。
 3. **自主執行**：SECRETARY 依計畫驅動，自動調用對應指令推進。每個 `<nnn>` 的循環：
    - 三權產出：`/sb-req`（產 G1）→ `/sb-meth`（產 G2）→ `/sb-plan`（產 G3），SECRETARY 核對 §10 一致。
-   - 開發：`/sb-do` 放行 → 多循環螺旋開發 → `/sb-proof` 收斂進入 nnn 完成。
+   - 開發：`/sb-do` 放行 → 多循環螺旋開發 → `/sb-review` 收斂進入 nnn 完成。
    - 續跑：每個 nnn 完成後自動判斷是否還有未完成計畫項，有則開新 nnn 重走上述循環，無則停止。
    - 期間無需老闆逐階段手動觸發。
 4. **最後節點 sb-docs**：所有 nnn 完成後，sb-loop 自動觸發 `/sb-docs` 處理專案 `docs/` 文件（確保與實作一致，依 `assets/DOCS.md` 判準）。**sb-docs 只碰 `docs/`，不碰 ROADMAP／SOP**——後者是 `/sb-end` 收尾保鮮（§1.7.2）的職責。

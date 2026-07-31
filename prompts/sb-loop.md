@@ -21,7 +21,7 @@
 2. **開 slug + 乾淨分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）；建立 slug 骨架。
 3. **自主執行**：SECRETARY 依計畫驅動，自動調用對應指令推進。每個 nnn 的循環：
    - 三權產出：sb-req（產 G1）→ sb-meth（產 G2）→ sb-plan（產 G3），SECRETARY 核對 §10 一致。
-   - 開發：sb-do 放行 → 多循環螺旋開發 → sb-proof 收斂進入 nnn 完成。
+   - 開發：sb-do 放行 → 多循環螺旋開發 → sb-review 收斂進入 nnn 完成。
    - 續跑：每個 nnn 完成後自動判斷是否還有未完成計畫項，有則開新 nnn 重走上述循環，無則停止。
    - 期間無需老闆逐階段手動觸發。
 4. **最後節點 sb-docs**：所有 nnn 完成後，sb-loop 自動觸發 sb-docs 處理專案 docs/ 文件（確保與實作一致，依 assets/DOCS.md 判準）。**sb-docs 只碰 docs/，不碰 ROADMAP／SOP**——後者是 sb-end 收尾保鮮（§1.7.2）的職責。
