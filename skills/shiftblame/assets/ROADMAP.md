@@ -35,5 +35,5 @@ authorized_by: owner
 - 新增產品目標、改變產品邊界、取消尚未完成的需求或把剩餘方向擴張成新需求，仍須老闆明確授權；完成項的移除與剩餘方向的忠實改寫是收尾保鮮，不需另行授權。
 - 路由提議只能在對話回報，不得寫入 ROADMAP；`<slug>`／`<nnn>` 仍只由老闆決定。
 - ROADMAP MUST NOT 包含 G1 需求／驗收、G2 技術方案、G3 實作步驟、commit、測試輸出、檔案清單、排程、優先級、估算、負責人、進度、討論、嘗試紀錄或 Agent 行為。
-- ROADMAP MUST NOT 複製 SKILL、GATE、ROLE 或其他中央模板已定義的通用流程規範；只保留本專案的產品意圖與邊界。
+- ROADMAP MUST NOT 複製 SKILL、`references/` 或其他中央模板已定義的通用流程規範；只保留本專案的產品意圖與邊界。
 - ROADMAP 只能由 SECRETARY 寫入；三軌角色 MUST NOT 修改 ROADMAP。PASS、收尾與歸檔會觸發既定的文件保鮮動作，但不會自動授權新增產品意圖。
