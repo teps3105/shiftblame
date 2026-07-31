@@ -258,7 +258,7 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 
 ## 7. 提交規範
 
-- 訊息：`<type>: <繁中描述>`，單行、單一事項，SHOULD 約 10～50 字。
+- 訊息：`<type>: <繁中描述>`，**單行、10～30 字**（可超過但 MUST NOT 含功能詳細訊息）。**MUST NOT 含任何追蹤編號**——nnn 編號、slug 名稱、issue／ticket 號（如 `#123`、`PROJ-456`）、任何代號皆禁止；commit 訊息純描述變更本身，追蹤靠分支名與 merge 訊息。**slug 名稱只在 merge 訊息呈現**（合回主分支時），平時 feature commit 不得帶 slug。
 - **分支政策綁定 slug**：開 `<slug>` 時 MUST 切 `<type>/<slug>` 分支（如 `feat/<slug>`），slug 工作在分支上進行；**直接在 main 上工作是例外**（如不開 slug 的框架演化、緊急修復、輕量調整），不適用一般 slug 開發流程。
 - 開發採多循環螺旋（§1.4、§0）：按 G3 功能逐個推進，DEVELOPER 完成功能後 MUST 先精準 `git add` 並 commit 再驗收；階段驗收不合格 MUST 返工，修正後新 commit 疊加保留迭代證據；不得跨功能累積；不得夾帶範圍外檔案。
 
