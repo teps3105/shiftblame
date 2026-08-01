@@ -125,7 +125,7 @@ README 不承載個人化或內部配置。個人工作站路徑、內網 IP／�
 
 ## 安裝
 
-shiftblame 是一個 ZCode plugin 套件（根目錄含 `.zcode-plugin/plugin.json`）。安裝後自動提供 `shiftblame` skill 與 `/shiftblame` command，不需手動 symlink。
+shiftblame 是一個 Codex plugin 套件（根目錄含 `.codex-plugin/plugin.json`）。安裝後自動提供 `shiftblame` 與各個 `sb-*` skills，不需手動 symlink。
 
 **方式一：從本地目錄安裝（開發／自用）**
 
@@ -155,19 +155,20 @@ SECRETARY 會先揭露意圖，並等待老闆自行指定路由；不得代替�
 
 ```text
 shiftblame/                         # plugin 套件根（repo 根）
-├── .zcode-plugin/plugin.json      # plugin manifest
-├── commands/                      # 顯式呼叫指令（/shiftblame …）
-└── skills/shiftblame/
-    ├── SKILL.md                   # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
-    ├── references/                # 角色定義（按需讀）
-    │   ├── RESEARCHER.md
-    │   ├── DEVELOPER.md
-    │   └── AUDITOR.md
-    └── assets/                    # 範本與固定資產
-        ├── DOCS.md                # 專案 docs/ 系統文件寫法判準
-        ├── SOP.md
-        ├── ROADMAP.md
-        └── SLUG.md                # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
+├── .codex-plugin/plugin.json      # plugin manifest
+└── skills/
+    ├── shiftblame/
+    │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
+    │   ├── references/            # 角色定義（按需讀）
+    │   │   ├── RESEARCHER.md
+    │   │   ├── DEVELOPER.md
+    │   │   └── AUDITOR.md
+    │   └── assets/                # 範本與固定資產
+    │       ├── DOCS.md            # 專案 docs/ 系統文件寫法判準
+    │       ├── SOP.md
+    │       ├── ROADMAP.md
+    │       └── SLUG.md             # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
+    └── sb-*/SKILL.md               # 各個可直接觸發的工作流 skill
 ```
 
 每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除。
