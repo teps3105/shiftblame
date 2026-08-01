@@ -111,19 +111,16 @@ SECRETARY 核對 §10 一致性
 
 ## 安裝
 
-shiftblame 是一個 Codex plugin 套件（根目錄含 `.codex-plugin/plugin.json`）。安裝後自動提供 `shiftblame` 與各個 `sb-*` skills，不需手動 symlink。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**方式一：從本地目錄安裝（開發／自用）**
+**安裝來源**
 
-1. 開啟 **Settings → Plugin Management → Discover**。
-2. 點 **`+`** 新增 marketplace，來源選「本地目錄」，指向本 repo 根目錄。
-3. 在 **Installed** 分頁啟用 `shiftblame`。
+| 來源 | 用途 | 指向 |
+|------|------|------|
+| 本地目錄 | 開發、自用、測試 | 本 repo 根目錄 |
+| Git（GitHub） | 分享、版本追蹤、更新 | `https://github.com/teps3105/shiftblame` |
 
-**方式二：從 Git 安裝（分享／版本追蹤）**
-
-把本 repo 推到 GitHub 後，以 Git URL 或 GitHub repo 作為 marketplace 來源加入，再啟用 plugin。
-
-安裝完成後，skill 自動被發現；plugin 啟用即生效，無需複製檔案到 skill 目錄。
+載入後 `shiftblame` 與各 `sb-*` skills 會自動被發現，無需手動複製檔案或 symlink。
 
 ## 使用
 
@@ -172,7 +169,9 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 
 ```text
 shiftblame/                         # plugin 套件根（repo 根）
-├── .codex-plugin/plugin.json      # plugin manifest
+├── .codex-plugin/plugin.json      # plugin manifest（各平台對應 manifest）
+├── .claude-plugin/marketplace.json
+├── .agents/plugins/marketplace.json
 └── skills/
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
