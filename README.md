@@ -143,7 +143,7 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 
 ### sb-* 工作流指令
 
-除了自動觸發的 `shiftblame` skill，下列 `sb-*` 指令可顯式觸發各階段轉換（每個階段轉換都須顯式觸發，條件成立不自動推進）：
+下列 `sb-*` 指令對應各階段轉換——條件成立時 agent 自動觸發該 skill 推進。`sb-loop` 則在老闆授權後連續推進整個 slug（詳見 SKILL §11 授權範圍光譜）：
 
 | 指令 | 用途 |
 |------|------|
@@ -153,7 +153,6 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 | [`sb-review`](skills/sb-review/SKILL.md) | 開發收斂：提交證據 → 三者重審 → nnn 完成 |
 | [`sb-end`](skills/sb-end/SKILL.md) | 結束 slug，執行完整收尾保鮮 |
 | [`sb-save`](skills/sb-save/SKILL.md) | 記錄工作落點到 SLUG.md，供 sb-resume 恢復 |
-| [`sb-go`](skills/sb-go/SKILL.md) | 輕量自動模式：翻譯意圖後自動產 G1/G2/G3 並放行開發 |
 | [`sb-loop`](skills/sb-loop/SKILL.md) | 老闆帶詳盡計畫，授權自主執行至所有 nnn 完成 |
 | [`sb-req`](skills/sb-req/SKILL.md) | 開發途中回 G1 重新確認需求 |
 | [`sb-meth`](skills/sb-meth/SKILL.md) | 開發途中回 G2 重新研究技術方法 |
