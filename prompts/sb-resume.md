@@ -19,7 +19,11 @@
      - 在 `nnn 完成` → sb-next 開新 nnn 重走完整循環。
      - 跑到所有 nnn 完成 → sb-docs → 停止。
      - **跳過以下 step 3-4 的單次重新確認**。
-   - **無 loop 授權** → 走一般 resume（step 3-4）。
+   - **無 loop 授權** → 偵測 `last_save` 標記（step 2b）。
+
+2b. **偵測 sb-save 落點**（無 loop 授權時）：檢查 SLUG frontmatter 是否有 `last_save`。
+   - **有 `last_save`** → **接續工作**（不重確認）：讀 SLUG §7 交接摘要的工作落點，直接從記錄的「下一步」繼續。**清除 `last_save` 標記**（存檔點已消費）。跳過 step 3-4。
+   - **無 `last_save`** → 落點不明，走重確認（step 3-4）。
 3. **基於既有重新確認 G1~G3**（非清空重寫，無 loop 授權時）：SECRETARY 派發角色子代理，讀取該 `<nnn>` 既有的 G1／G2／G3，逐份確認是否仍有效（codebase、需求、技術是否變動）：
    - 仍成立 → 保留。
    - 過時或與當前 codebase 矛盾 → 修正該份（由其主導角色子代理改寫自己文件）。

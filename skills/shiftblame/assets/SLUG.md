@@ -3,6 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
+last_save:          # 由 /sb-save 寫入；/sb-resume 消費後清除
 revision: 0.2.0
 ---
 # SLUG — `<slug>`
