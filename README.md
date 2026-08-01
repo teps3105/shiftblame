@@ -91,10 +91,11 @@ AUDITOR 回顧 G1
 | 老闆 | 提出命題、授權修改、做決策、最終 PASS |
 | **SECRETARY（主對話固定）** | 揭露意圖、記錄老闆路由、交接、收尾與文件保鮮；派發子代理、**親自核對 §10 一致性**；不得自行決定，可提出路由提議但不等於授權 |
 | RESEARCHER | 主導 G2，承接 G1 並取得、複核外部獨立研究（由子代理承載，角色為任務參數） |
-| DEVELOPER | 主導 G3，先寫驗收再寫計畫；通過三份文件制衡後開發並交證據（由子代理承載；唯一 repo 寫入角色） |
+| PLANNER | 主導 G3，先寫驗收再寫計畫（供 SECRETARY 照表執行開發）；對 repo 唯讀，不執行開發（由子代理承載） |
+| **SECRETARY（主對話）** | 主導 G3 計畫產出後，**依 G3 親自執行 repo 開發、測試、commit、自驗**（唯一 repo 開發執行者）；沿用原 SECRETARY 職責（揭露意圖、記錄路由、交接、收尾、保鮮、核對 §10） |
 | AUDITOR | 開發前與開發後都派發唯讀子代理獨立審核，再複核並回頭對照 G1（由子代理承載） |
 
-**主對話永遠是 SECRETARY**——AUDITOR／RESEARCHER／DEVELOPER 的工作由子代理承載（角色為任務參數）。子代理可執行操作（寫檔、測試、操作與 commit，須符合規範）；**判決性工作**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定）MUST 由主對話 SECRETARY 執行。
+**主對話永遠是 SECRETARY**——AUDITOR／RESEARCHER／PLANNER 的工作由子代理承載（角色為任務參數）；子代理對 repo 一律唯讀、工作區限 `.shiftblame/`，只寫自己主導的管理文件（G1／G2／G3）。repo 開發、測試、commit、自驗與**判決性工作**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定）MUST 由主對話 SECRETARY 執行。
 
 ## 三份文件
 
@@ -161,7 +162,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
     │   ├── references/            # 角色定義（按需讀）
     │   │   ├── RESEARCHER.md
-    │   │   ├── DEVELOPER.md
+    │   │   ├── PLANNER.md
     │   │   └── AUDITOR.md
     │   └── assets/                # 範本與固定資產
     │       ├── DOCS.md            # 專案 docs/ 系統文件寫法判準

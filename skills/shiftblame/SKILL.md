@@ -1,7 +1,7 @@
 ---
 name: shiftblame
-revision: 0.2.3
-description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡（AUDITOR 主導 G1、RESEARCHER 主導 G2、DEVELOPER 主導 G3），三份兩兩一致才開發；開發採多循環螺旋，每圈一個功能、先提交再階段驗收（老闆確認＋AUDITOR 複驗寫回 G1），不合格返工疊加新 commit，全部功能完成後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
+revision: 0.3.0
+description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡（AUDITOR 主導 G1、RESEARCHER 主導 G2、PLANNER 主導 G3），三份兩兩一致才開發；開發由秘書在主對話依 G3 計畫執行、採多循環螺旋，每圈一個功能、先提交再階段驗收（老闆確認＋AUDITOR 複驗寫回 G1），不合格返工疊加新 commit，全部功能完成後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
 
@@ -40,7 +40,7 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
    ║                                     ║
    ║   G1   AUDITOR 主導（需求／驗收）   ║
    ║   G2   RESEARCHER 主導（技術）      ║
-   ║   G3   DEVELOPER 主導（計畫）       ║
+   ║   G3   PLANNER 主導（計畫）         ║
    ║                                     ║
    ║   文件即制衡規則：                  ║
    ║   每份只由主導者改寫；              ║
@@ -54,7 +54,7 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
    │ [開發]──多循環螺旋，每圈一個功能── │
    │                                       │
    │ 每圈（功能）：                         │
-   │  DEVELOPER 完成 + 三項說明             │
+   │  SECRETARY 完成 + 三項說明             │
    │     ▼                                  │
    │  該功能一個 commit（先提交，再驗收）   │
    │     ▼                                  │
@@ -102,12 +102,12 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
 
 ## 1. 制衡與讀圖規則
 
-1. **三權分立**：AUDITOR 主導 G1、RESEARCHER 主導 G2、DEVELOPER 主導 G3，三者權限對等。G1↔G2↔G3↔G1 三份文件兩兩雙向制衡。
+1. **三權分立**：AUDITOR 主導 G1、RESEARCHER 主導 G2、PLANNER 主導 G3，三者權限對等。G1↔G2↔G3↔G1 三份文件兩兩雙向制衡。
 2. **文件即制衡規則**：每份文件只由其主導者改寫；MUST NOT 直接改寫他人文件。不一致時，各方調整自己主導的文件以妥協，迫使三份重新兩兩一致。
 3. **單一面向、兩兩一致**：每份文件只回答自己主導的面向（G1 需求／驗收、G2 技術、G3 計畫），但三份 MUST 兩兩雙向一致才可開發。一致的對齊軸為 G1 需求項，判準（三對六向的正向承接＋反向回指）見 §10。
-4. **收斂循環**：開發採多循環螺旋——每圈一個功能、**先提交再階段驗收**（老闆確認功能正常＋AUDITOR 複驗寫回 G1，視需要輕量補 G2/G3 不重跑制衡），不合格返工並疊加新 commit，合格進入下一圈。開發中錯誤依**發現來源**處置：DEVELOPER 自驗（commit 前）發現的錯誤 MAY 直接修正；被獨立審核（含 DEVELOPER 自派子代理、AUDITOR、老闆）抓到的錯誤 MUST 跑流程，依本節 Minor／Major 分級處置。全部功能完成後，須以 `sb-review` skill 顯式觸發收斂（提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
+4. **收斂循環**：開發由**主對話 SECRETARY** 依 G3 計畫執行（repo 開發、commit、測試、自驗唯一執行者；PLANNER 主導計畫但不執行開發，子代理對 repo 一律唯讀，工作區限 `.shiftblame/`），採多循環螺旋——每圈一個功能、**先提交再階段驗收**（老闆確認功能正常＋AUDITOR 複驗寫回 G1，視需要輕量補 G2/G3 不重跑制衡），不合格返工並疊加新 commit，合格進入下一圈。開發中錯誤依**發現來源**處置：SECRETARY 自驗（commit 前）發現的錯誤 MAY 直接修正；被獨立審核（含 SECRETARY 自派子代理、AUDITOR、老闆）抓到的錯誤 MUST 跑流程，依本節 Minor／Major 分級處置。全部功能完成後，須以 `sb-review` skill 顯式觸發收斂（提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
 
-   **開發序列複雜度門檻**——任一成立時，DEVELOPER 將 G3 行動序列拆成 causal 小步；每步只能依賴已完成項；一致性的跨檔修改保持同一步：
+   **開發序列複雜度門檻**——任一成立時，SECRETARY 將 G3 行動序列拆成 causal 小步；每步只能依賴已完成項；一致性的跨檔修改保持同一步：
 
    | 複雜度訊號 | 門檻 |
    |------------|------|
@@ -115,9 +115,9 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
    | 跨檔數 | ≥ 4 |
    | 強依賴對 | ≥ 2 |
 
-   每圈：DEVELOPER 完成該功能並撰寫三項說明（**做了什麼／實現什麼功能／發生什麼事**）後，先跑自驗（commit 前）；自驗發現的錯誤 MAY 直接修正後再 commit。自驗通過後 MUST 先 commit 該功能（建立待驗對象），再進入階段驗收。
+   每圈：SECRETARY 完成該功能並撰寫三項說明（**做了什麼／實現什麼功能／發生什麼事**）後，先跑自驗（commit 前）；自驗發現的錯誤 MAY 直接修正後再 commit。自驗通過後 MUST 先 commit 該功能（建立待驗對象），再進入階段驗收。
 
-   **Minor／Major 分級**（適用於被獨立審核抓到的錯誤；DEVELOPER 自驗錯誤不適用）：
+   **Minor／Major 分級**（適用於被獨立審核抓到的錯誤；SECRETARY 自驗錯誤不適用）：
 
    | 類型 | 判準 | 路徑 |
    |------|------|------|
@@ -147,9 +147,9 @@ description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權�
 | SLUG | SECRETARY | 老闆已決定 `<slug>`／`<nnn>` 與節點；只記授權及目前快照 |
 | G1 | AUDITOR 角色子代理 | 需求制衡流程內；經 SECRETARY 核對 §10 後定稿 |
 | G2 | RESEARCHER 角色子代理 | 技術制衡流程內；經 SECRETARY 核對 §10 後定稿 |
-| G3 | DEVELOPER 角色子代理 | 計畫與開發流程內；經 SECRETARY 核對 §10 後定稿 |
-| repo | DEVELOPER 角色子代理 | G1／G2／G3 兩兩雙向一致（SECRETARY 核對 §10）且通過開發門檻 |
-| 子代理 | 無 | 可執行操作（寫檔、測試、grep、操作與 commit，須符合 §7）；**不得判決**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定由主對話 SECRETARY） |
+| G3 | PLANNER 角色子代理 | 計畫流程內；經 SECRETARY 核對 §10 後定稿。例外：G3 §2.5「階段驗收記錄」由 SECRETARY 補寫（記錄執行結果） |
+| repo | SECRETARY（主對話） | G1／G2／G3 兩兩雙向一致（SECRETARY 核對 §10）且通過開發門檻；唯一 repo 開發執行者（寫檔、測試、commit、自驗） |
+| 子代理 | 無 | 對 repo 一律唯讀、工作區限 `.shiftblame/`；只寫自己主導的管理文件（G1／G2／G3）；**不得判決**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定由主對話 SECRETARY）；MUST NOT 執行 repo 開發、測試、commit |
 
 保鮮分兩層（§0 收斂段；權威操作步驟見 §1.7.1／§1.7.2）：每個 `<nnn>` 完成做**輕量保鮮**（§1.7.1，只更新 SLUG 技術債／臨時租約，不動 SOP／ROADMAP／archive）；只有老闆對整個 `<slug>` 拍板 PASS（slug 結束）才做**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。兩層皆為既定維護動作，不需另行取得一次寫入授權；新增產品方向、改變產品邊界或把未完成項改成新需求，仍須老闆明確授權。
 
@@ -212,13 +212,13 @@ MUST（必須）｜SHOULD（應）｜MAY（得）｜MUST NOT（必須不）｜SH
 | **SECRETARY（主對話固定）** | — | 意圖揭露、忠實記錄路由、交接、收尾與文件保鮮；派發子代理、**親自核對 §10 一致性** | 主對話唯一角色；未授權前唯讀 |
 | AUDITOR | G1（需求／驗收標準） | 用 G1 制衡 G2（技術須滿足需求）、G3（計畫須對應驗收） | 由子代理承載（角色為任務參數） |
 | RESEARCHER | G2（技術方案） | 用 G2 制衡 G1（需求須技術可行）、G3（計畫須技術可落地） | 由子代理承載（角色為任務參數） |
-| DEVELOPER | G3（計畫／驗收操作） | 用 G3 制衡 G1（需求須可實作）、G2（技術須可排程） | 由子代理承載（角色為任務參數）；唯一 repo 寫入角色 |
+| PLANNER | G3（計畫／驗收操作） | 用 G3 制衡 G1（需求須可實作）、G2（技術須可排程） | 由子代理承載（角色為任務參數）；對 repo 唯讀，只寫 G3 計畫 |
 
-**主對話永遠是 SECRETARY**——不再於主對話切換三軌角色。AUDITOR／RESEARCHER／DEVELOPER 的工作由**子代理承載**：SECRETARY 派發子代理時指定角色（如「以 AUDITOR 角色產出 G1」），角色是子代理的**任務參數**而非子代理身份。**文件與角色不同**：G1／G2／G3 是文件（各有主導角色規範），文件歸屬由角色決定（AUDITOR→G1），不由承載它的子代理身份決定。
+**主對話永遠是 SECRETARY**——不再於主對話切換三軌角色。AUDITOR／RESEARCHER／PLANNER 的工作由**子代理承載**：SECRETARY 派發子代理時指定角色（如「以 AUDITOR 角色產出 G1」），角色是子代理的**任務參數**而非子代理身份。**文件與角色不同**：G1／G2／G3 是文件（各有主導角色規範），文件歸屬由角色決定（AUDITOR→G1），不由承載它的子代理身份決定。
 
 SECRETARY 在各角色子代理產出文件後，**親自核對 §10 兩兩雙向一致性**（三對六向）；不一致時要求對應角色子代理重做，一致後才放行進入下一階段。AUDITOR、RESEARCHER 角色子代理在文件定稿前 MUST 另派唯讀子代理取得外部獨立研究或內部獨立審核；開發後重審前，AUDITOR 角色子代理 MUST 另派唯讀審查子代理。SECRETARY MUST 複核子代理產出並承擔責任。無法取得所需獨立意見時，該文件不得定稿（開發後審核則標「未驗」）。應執行而未跑的 e2e MUST 標「未驗」。
 
-子代理可執行操作（寫檔、測試、grep、操作與 commit，須符合 §7 規範），但**判決性工作**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定）MUST 由主對話 SECRETARY 執行。AUDITOR 角色對 repo 永遠唯讀。**DEVELOPER 角色的檔案、字串、grep 等自驗只能證明實作存在，不能取代使用者可觀察的業務行為驗收**；PASS 只由老闆拍板。
+子代理對 repo 一律唯讀、工作區限 `.shiftblame/`，只寫自己主導的管理文件（G1／G2／G3）；MUST NOT 執行 repo 開發、測試或 commit（這些由主對話 SECRETARY 執行）。**判決性工作**（改需求方向、跨權協調、決定 commit 保留/reset、PASS、路由判定）MUST 由主對話 SECRETARY 執行。**SECRETARY 的檔案、字串、grep 等自驗只能證明實作存在，不能取代使用者可觀察的業務行為驗收**；PASS 只由老闆拍板。
 
 ## 4. 文件節點不變量
 
@@ -234,7 +234,7 @@ SECRETARY 在各角色子代理產出文件後，**親自核對 §10 兩兩雙�
 ## 5. Repo 紀律
 
 - 三份文件 MUST 兩兩雙向一致（三權制衡完成，判準見 §10），repo 才可改動。
-- 寫檔、測試、操作與 commit 由 DEVELOPER 角色子代理執行（SECRETARY 派發並指揮）；判決性工作（決定 commit 保留/reset、跨權協調、路由）MUST 由主對話 SECRETARY 執行。
+- 寫檔、測試、操作與 commit 由**主對話 SECRETARY** 執行（唯一 repo 開發執行者；子代理對 repo 一律唯讀，工作區限 `.shiftblame/`）；判決性工作（決定 commit 保留/reset、跨權協調、路由）亦由主對話 SECRETARY 執行。
 - 三者重審不通過 MUST 回三權制衡環形，非直接要求猜修法。
 - `.shiftblame/` MUST 經 `.gitignore` 排除，不得 commit。
 - 多人協作下既有 `docs/` 預設不得修改，除非老闆明確授權；其**寫法品質**判準見 `assets/DOCS.md`（規範怎麼寫才正確，不授予寫入權，與本條的寫入授權正交）。
@@ -271,7 +271,7 @@ SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用�
 
 - 訊息：`<type>: <繁中描述>`，**單行、10～30 字**（可超過但 MUST NOT 含功能詳細訊息）。**MUST NOT 含任何追蹤編號**——nnn 編號、slug 名稱、issue／ticket 號（如 `#123`、`PROJ-456`）、任何代號皆禁止；commit 訊息純描述變更本身，追蹤靠分支名與 merge 訊息。**slug 名稱只在 merge 訊息呈現**（合回主分支時），平時 feature commit 不得帶 slug。
 - **分支政策綁定 slug**：開 `<slug>` 時 MUST 切 `<type>/<slug>` 分支（如 `feat/<slug>`），slug 工作在分支上進行；**直接在 main 上工作是例外**（如不開 slug 的框架演化、緊急修復、輕量調整），不適用一般 slug 開發流程。
-- 開發採多循環螺旋（§1.4、§0）：按 G3 功能逐個推進，DEVELOPER 完成功能後 MUST 先精準 `git add` 並 commit 再驗收；階段驗收不合格 MUST 返工，修正後新 commit 疊加保留迭代證據；不得跨功能累積；不得夾帶範圍外檔案。
+- 開發採多循環螺旋（§1.4、§0）：SECRETARY 按 G3 功能逐個推進，完成功能後 MUST 先精準 `git add` 並 commit 再驗收；階段驗收不合格 MUST 返工，修正後新 commit 疊加保留迭代證據；不得跨功能累積；不得夾帶範圍外檔案。
 
 ## 8. 框架檔與工作區
 
@@ -281,7 +281,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 └── skills/
     ├── shiftblame/
     │   ├── SKILL.md
-    │   ├── references/{RESEARCHER,DEVELOPER,AUDITOR}.md
+    │   ├── references/{RESEARCHER,PLANNER,AUDITOR}.md
     │   └── assets/
     │       ├── DOCS.md
     │       ├── SOP.md
