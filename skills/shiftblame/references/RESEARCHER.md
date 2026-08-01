@@ -1,6 +1,6 @@
 ---
 name: RESEARCHER
-revision: 0.2.0
+revision: 0.2.1
 ---
 # RESEARCHER — 主導技術，制衡需求與計畫
 
