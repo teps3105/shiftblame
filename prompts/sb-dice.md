@@ -1,3 +1,7 @@
+---
+name: sb-dice
+description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main，不 archive，重新討論需求。
+---
 # sb-dice — 丟棄當前 slug，重新討論需求
 
 當使用者要求「丟棄這個 slug」「方向全錯重來」「sb-dice」時執行本 prompt。用於重大方向錯誤時，丟棄當前 slug 所有成果，回 main，不 archive，重新討論需求。

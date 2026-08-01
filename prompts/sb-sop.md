@@ -1,3 +1,7 @@
+---
+name: sb-sop
+description: 對 SOP 提出修改需求；無後標依上下文提建議，有後標顯式授權寫入（檢查硬分欄）。
+---
 # sb-sop — 修改 SOP
 
 當使用者要求「改 SOP」「更新規範」「加配置」時執行本 prompt。SOP 唯一寫入者為 SECRETARY，但新增專案規範須老闆明確授權（SKILL §1.7）。

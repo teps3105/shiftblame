@@ -1,3 +1,7 @@
+---
+name: sb-review
+description: 開發收斂——提交證據、三者重審、進入 nnn 完成（合併開發→證據→重審→nnn完成）。
+---
 # sb-review — 開發收斂，進入 nnn 完成
 
 當使用者要求「開發完成了」「提交驗收」「收斂」「sb-review」時執行本 prompt。用於開發完成後的收斂——提交證據、三者重審、進入 nnn 完成。

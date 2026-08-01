@@ -1,3 +1,7 @@
+---
+name: sb-end
+description: 結束當前 slug 並執行完整收尾保鮮；嚴格檢查 PASS 前置條件。
+---
 # sb-end — 結束 slug 並執行完整收尾保鮮
 
 當使用者要求「結束這個 slug」「收尾」「PASS」時執行本 prompt。老闆主動要求即表達結束意圖，對應 SKILL §2 的 PASS checkpoint 與 §6「結束 `<slug>`」路由。

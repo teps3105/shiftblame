@@ -1,3 +1,7 @@
+---
+name: sb-resume
+description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認後重走三權制衡。
+---
 # sb-resume — 繼續未完成的 slug/nnn
 
 當使用者要求「繼續上次」「resume」「恢復未完成的工作」時執行本 prompt。用於 session 中斷後恢復既有未完成的工作。

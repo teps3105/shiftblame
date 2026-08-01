@@ -1,3 +1,7 @@
+---
+name: sb-next
+description: 推進至下一個 slug 或 nnn；無後標提議待授權，有後標視為顯式授權。
+---
 # sb-next — 推進至下一個 slug 或 nnn
 
 當使用者要求「開下一個」「繼續下一個 nnn」「開新 slug」時執行本 prompt。是否帶後續文字決定授權狀態。

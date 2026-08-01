@@ -1,3 +1,7 @@
+---
+name: sb-save
+description: 記錄當前 slug 工作落點到 SLUG.md，供其他對話用 /sb-resume 無縫恢復。
+---
 # sb-save — 記錄當前 slug 工作落點
 
 當使用者要求「存檔」「記錄進度」「sb-save」「先存一下」時執行本 prompt。用於顯式記錄當前工作落點到 SLUG.md，讓其他對話能用 sb-resume 無縫恢復。

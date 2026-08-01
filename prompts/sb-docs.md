@@ -1,3 +1,7 @@
+---
+name: sb-docs
+description: 對當前專案 docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
+---
 # sb-docs — 修改專案 docs/ 文件
 
 當使用者要求「改文件」「更新 docs」「文件跟 code 不一致」時執行本 prompt。既有 `docs/` 預設不得修改，除非老闆明確授權（SKILL §5）；寫法品質判準見 `assets/DOCS.md`。

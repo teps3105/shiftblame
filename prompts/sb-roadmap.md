@@ -1,3 +1,7 @@
+---
+name: sb-roadmap
+description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，有後標顯式授權寫入（檢查硬分欄）。
+---
 # sb-roadmap — 修改 ROADMAP
 
 當使用者要求「改 ROADMAP」「更新路線圖」「加產品目標」時執行本 prompt。ROADMAP 唯一寫入者為 SECRETARY，但新增產品意圖／改變邊界須老闆明確授權（SKILL §1.7）。
