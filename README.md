@@ -120,8 +120,6 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 | 本地目錄 | 開發、自用、測試 | 本 repo 根目錄 |
 | Git（GitHub） | 分享、版本追蹤、更新 | `https://github.com/teps3105/shiftblame` |
 
-載入後 `shiftblame` 與各 `sb-*` skills 會自動被發現，無需手動複製檔案或 symlink。
-
 ## 使用
 
 shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務皆然）。直接描述目標即可：
