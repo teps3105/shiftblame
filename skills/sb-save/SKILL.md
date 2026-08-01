@@ -25,4 +25,3 @@ description: 記錄當前 slug 工作落點到 SLUG.md，供其他對話用 /sb-
 - sb-save 是**顯式記錄**；即使不執行 sb-save，sb-resume 仍能從 SLUG + G1~G3 恢復部分資訊，但可能遺漏「進行到哪」的細節。sb-save 確保落點完整，讓 resume 無縫接續而非重確認。
 - 可在任何節點執行，記錄當下落點。
 - `last_save` 是**待消費標記**：sb-resume 讀取後接續工作並清除它；只有再次 sb-save 才會有新標記。
-- 若有 loop 授權（§2 記錄），sb-save 保留該記錄不覆蓋。

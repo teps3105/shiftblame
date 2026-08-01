@@ -143,17 +143,17 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 
 ### sb-* 工作流指令
 
-下列 `sb-*` 指令對應各階段轉換——條件成立時 agent 自動觸發該 skill 推進。`sb-loop` 則在老闆授權後連續推進整個 slug（詳見 SKILL §11 授權範圍光譜）：
+下列 `sb-*` 指令對應各階段轉換——條件成立時 agent 自動觸發該 skill 推進：
 
 | 指令 | 用途 |
 |------|------|
-| [`sb-next`](skills/sb-next/SKILL.md) | 推進至下一個 slug／nnn；無後標提議，有後標視為授權 |
+| [`sb-slug`](skills/sb-slug/SKILL.md) | 開新 slug；無後標提議，有後標視為授權 |
+| [`sb-next`](skills/sb-next/SKILL.md) | 推進至下一個 nnn；無後標提議，有後標視為授權 |
 | [`sb-resume`](skills/sb-resume/SKILL.md) | 繼續未完成的 slug／nnn，重走三權制衡 |
 | [`sb-do`](skills/sb-do/SKILL.md) | 核對 §10 一致性，放行進入開發 |
 | [`sb-review`](skills/sb-review/SKILL.md) | 開發收斂：提交證據 → 三者重審 → nnn 完成 |
 | [`sb-end`](skills/sb-end/SKILL.md) | 結束 slug，執行完整收尾保鮮 |
 | [`sb-save`](skills/sb-save/SKILL.md) | 記錄工作落點到 SLUG.md，供 sb-resume 恢復 |
-| [`sb-loop`](skills/sb-loop/SKILL.md) | 老闆帶詳盡計畫，授權自主執行至所有 nnn 完成 |
 | [`sb-req`](skills/sb-req/SKILL.md) | 開發途中回 G1 重新確認需求 |
 | [`sb-meth`](skills/sb-meth/SKILL.md) | 開發途中回 G2 重新研究技術方法 |
 | [`sb-plan`](skills/sb-plan/SKILL.md) | 開發途中回 G3 重新設計實作計畫 |
