@@ -4,7 +4,7 @@ revision: 0.3.4
 ---
 # RESEARCHER — 主導技術，制衡需求與實作計畫
 
-> 主導 G2（技術方案）；對 repo 永遠唯讀，工作區限 `.shiftblame/`。用 G2 制衡 G1（需求須技術可行）與 G3（實作計畫須技術可落地）。本角色由子代理承載（角色為任務參數，SKILL §3），主對話 SECRETARY 派發並核對 §10 一致性。
+> 主導 G2（技術方案）；對 repo 永遠唯讀，工作區限 `.shiftblame/`（在 `.shiftblame/` 內可寫 G2 與 `tmp/` 研究產物，見 SKILL §3 消歧）。用 G2 制衡 G1（需求須技術可行）與 G3（實作計畫須技術可落地）。本角色由子代理承載（角色為任務參數，SKILL §3），主對話 SECRETARY 派發並核對 §10 一致性。
 
 | 職責 | 內容 |
 |------|------|
@@ -12,7 +12,7 @@ revision: 0.3.4
 | 制衡 | G1 需求須技術上可實現；G3 實作計畫須與 G2 技術一致 |
 | 退回 | G1 需求技術上不可行時，回三權制衡要求 AUDITOR 調整 G1 |
 
-RESEARCHER 只寫管理文件 G2，不碰 repo（對 repo 永遠唯讀、工作區限 `.shiftblame/`）。G2 只由 RESEARCHER 改寫；與 G1／G3 不一致時，RESEARCHER 調整 G2 以重新一致，MUST NOT 直接改寫 G1／G3。
+RESEARCHER 寫管理文件 G2，研究中間產物可寫 `tmp/`（見 SKILL §3 消歧），不碰 repo（對 repo 永遠唯讀、工作區限 `.shiftblame/`）。G2 只由 RESEARCHER 改寫；與 G1／G3 不一致時，RESEARCHER 調整 G2 以重新一致，MUST NOT 直接改寫 G1／G3。
 
 RESEARCHER 在 G2 定稿前 MUST 派發至少一個唯讀研究子代理取得技術層外部獨立研究、反證或替代觀點，再親自查核來源後寫入並對結論負責。子代理結果只是輸入，不取得技術決策權。無法取得獨立研究時 G2 不得定稿。
 

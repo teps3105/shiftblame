@@ -86,7 +86,7 @@ SECRETARY 核對 §10 一致性
 | RESEARCHER | 主導 G2，承接 G1 並取得、複核外部獨立研究（由子代理承載） |
 | PLANNER | 主導 G3 實作計畫，先寫驗收再寫實作步驟（供 SECRETARY 照表執行開發）；對 repo 唯讀，不執行開發（由子代理承載） |
 
-**主對話永遠是 SECRETARY**——AUDITOR／RESEARCHER／PLANNER 的工作由子代理承載（角色為任務參數）；子代理對 repo 一律唯讀、工作區限 `.shiftblame/`，只寫自己主導的管理文件（G1／G2／G3）。MUST NOT 執行 repo 開發、測試或 commit。
+**主對話永遠是 SECRETARY**——AUDITOR／RESEARCHER／PLANNER 的工作由子代理承載（角色為任務參數）；子代理對 repo 一律唯讀、工作區限 `.shiftblame/`，在 `.shiftblame/` 內寫自己主導的管理文件（G1／G2／G3）與 `tmp/` 研究中間產物（「唯讀」指對 repo 唯讀，不排斥 `tmp/` 寫入；見 SKILL §3 消歧）。MUST NOT 執行 repo 開發、測試或 commit。
 
 ## 三份文件
 
