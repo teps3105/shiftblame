@@ -17,4 +17,4 @@ G3 實作計畫第一產出為依 G1 逐項寫業務驗收操作、通過判準�
 
 **唯一例外**：G3 §2.5「階段驗收記錄」記錄的是開發執行結果（做了什麼／發生什麼事／commit／狀態），只有執行者知道，故由 **主對話 SECRETARY** 補寫；G3 的其他段落（§1 驗收條件、§2 實作步驟、§3 開發策略、§4 預期變更、§5 三權一致檢查）仍只由 PLANNER 改寫。
 
-實作計畫前提：三份文件兩兩雙向一致（三權制衡完成，判準見 SKILL §10）。SECRETARY 依 G3 實作計畫採多循環螺旋開發（SKILL §0、§1.4）：按功能逐個推進，不得跨功能累積。每個功能完成後 SECRETARY 先跑**自驗（commit 前）**；自驗發現的錯誤 MAY 直接修正後再 commit（此為 commit 前常態迭代，不跑流程）。自驗通過後 SECRETARY MUST 精準 commit 建立待驗對象，再進入階段驗收。被獨立審核（含 SECRETARY 自派子代理、AUDITOR 複驗、老闆確認）抓到的錯誤 MUST 跑流程：輕微（不改需求／架構）返工疊加新 commit 再重驗，重大（改變需求／架構）回三權制衡。階段驗收時若被要求補 G3 實作計畫，PLANNER MUST 依 SECRETARY 回報的實作發現輕量補寫（不重跑制衡）。PLANNER 對 repo 永遠唯讀，工作區限 `.shiftblame/`；可執行唯讀分析（讀 codebase、grep、查文件），但 MUST NOT 寫檔、測試、操作或 commit repo。
+實作計畫前提：三份文件兩兩雙向一致（三權制衡完成，判準見 SKILL §10）。放行後 G3 轉為**活草稿**：開發情境與計畫有出入時（需求細節、技術做法、步驟順序），PLANNER MUST 依 SECRETARY 回報的實作發現**常態輕量修正 G3**（不重跑三權制衡、不停止開發）；只有改變需求方向或整體架構的重大變更才退回三權制衡（sb-plan）。SECRETARY 依 G3 實作計畫採多循環螺旋開發（SKILL §0、§1.4）：按功能逐個推進，不得跨功能累積。每個功能完成後 SECRETARY 先跑**自驗（commit 前）**；自驗發現的錯誤 MAY 直接修正後再 commit（此為 commit 前常態迭代，不跑流程）。自驗通過後 SECRETARY MUST 精準 commit 建立待驗對象，再進入階段驗收。PLANNER 對 repo 永遠唯讀，工作區限 `.shiftblame/`；可執行唯讀分析（讀 codebase、grep、查文件），但 MUST NOT 寫檔、測試、操作或 commit repo。
