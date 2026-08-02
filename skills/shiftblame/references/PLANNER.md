@@ -1,6 +1,6 @@
 ---
 name: PLANNER
-revision: 0.3.3
+revision: 0.3.4
 ---
 # PLANNER — 主導實作計畫，制衡需求與技術
 
