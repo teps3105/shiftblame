@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.3.5-2ea44f.svg" alt="version 0.3.5"/>
+  <img src="https://img.shields.io/badge/version-0.3.6-2ea44f.svg" alt="version 0.3.6"/>
 </p>
 
 ---
