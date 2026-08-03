@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡，三份兩兩一致才開發；子代理一律由主對話 SECRETARY 派發，子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（子代理間唯一溝通橋樑），SECRETARY 讀 tmp/ 轉發派發以避免 context 丟失；開發由秘書在主對話依 G3 計畫執行、採多循環螺旋，驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，功能降為 commit 單位、階段驗收移到里程碑邊界觸發。",
   "skills": "./skills/"
 }

@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.3.7-2ea44f.svg" alt="version 0.3.7"/>
+  <img src="https://img.shields.io/badge/version-0.3.8-2ea44f.svg" alt="version 0.3.8"/>
 </p>
 
 ---
@@ -155,7 +155,7 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 | [`sb-end`](skills/sb-end/SKILL.md) | 結束 slug，執行完整收尾保鮮 |
 | [`sb-save`](skills/sb-save/SKILL.md) | 記錄工作落點到 SLUG.md，供 sb-resume 恢復 |
 | [`sb-req`](skills/sb-req/SKILL.md) | 開發途中回 G1 重新確認需求 |
-| [`sb-meth`](skills/sb-meth/SKILL.md) | 開發途中回 G2 重新研究技術方法 |
+| [`sb-method`](skills/sb-method/SKILL.md) | 開發途中回 G2 重新研究技術方法 |
 | [`sb-plan`](skills/sb-plan/SKILL.md) | 開發途中回 G3 重新設計實作計畫 |
 | [`sb-dice`](skills/sb-dice/SKILL.md) | 丟棄當前 slug 所有成果，回 main 重新討論 |
 | [`sb-docs`](skills/sb-docs/SKILL.md) | 對 docs/ 文件提出修改需求 |

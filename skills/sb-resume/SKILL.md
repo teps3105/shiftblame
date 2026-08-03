@@ -29,5 +29,5 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 
 - resume 是**恢復既有未完成工作**，不是開新 slug（那是 sb-slug）或開新 nnn（那是 sb-next）。
 - **二層判斷**：`last_save` 標記（接續落點）→ 無標記（重確認 G1~G3）。有 `last_save` 時接續不重確認，消費後清除標記。
-- 重新確認（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；若既有 G1~G3 已全失效，建議改用 sb-req／sb-meth／sb-plan 或開新 nnn。
+- 重新確認（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；若既有 G1~G3 已全失效，建議改用 sb-req／sb-method／sb-plan 或開新 nnn。
 - SLUG §3 節點依當前實際狀態標記。
