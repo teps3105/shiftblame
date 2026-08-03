@@ -20,7 +20,12 @@ description: 開新 slug；無後標依脈絡提議待授權，有後標視為�
 
 1. **記錄 slug 命題**：在 SLUG §1 忠實引用老闆命題，§2 記錄授權。
 2. **切分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）。
-3. **建立 slug 骨架**：建立 `.shiftblame/<slug>/` 目錄與 SLUG 骨架（§3 初始節點 `三權制衡（G1↔G2↔G3）`）。
+3. **建立 slug 骨架**（**定義單檔、結構分檔**，權威結構見 SKILL §8）：
+   - 建立 `.shiftblame/<slug>/` 目錄。
+   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三權制衡（G1↔G2↔G3）`）。
+   - 建立 `.shiftblame/<slug>/<nnn>/` 子目錄（初始 nnn 如 `001`）。
+   - 從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
+   - **不另建檔案、不建子目錄、不寫入非授權位置**；除 SLUG.md、`<nnn>/{G1,G2,G3}.md` 與 `tmp/` 外，MUST NOT 建立或寫入其他文件。
 4. **進入三權制衡**：由 sb-req／sb-method／sb-plan 接手產出 G1／G2／G3。
 
 ## 邊界

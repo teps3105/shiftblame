@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.3.8-2ea44f.svg" alt="version 0.3.8"/>
+  <img src="https://img.shields.io/badge/version-0.3.9-2ea44f.svg" alt="version 0.3.9"/>
 </p>
 
 ---
@@ -180,11 +180,25 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── DOCS.md            # 專案 docs/ 系統文件寫法判準
     │       ├── SOP.md
     │       ├── ROADMAP.md
-    │       └── SLUG.md             # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
+    │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三權範本（複製來源）
     └── sb-*/SKILL.md               # 各個可直接觸發的工作流 skill
 ```
 
-每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除，不得 commit。
+每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除，不得 commit。工作區為**結構分檔**（定義單檔、使用分檔）：
+
+```text
+.shiftblame/                       # 各專案工作區（MUST 經 .gitignore 排除）
+├── SOP.md
+├── ROADMAP.md
+├── <slug>/                        # 結構分檔：SLUG 主體 + 每 nnn 一子目錄
+│   ├── SLUG.md                    # SLUG 主體（§1-§7；不含 G1/G2/G3）
+│   └── nnn/                       # 每個 <nnn> 一個子目錄
+│       ├── G1.md                  # 需求／驗收標準（AUDITOR 主導）
+│       ├── G2.md                  # 技術分析（RESEARCHER 主導）
+│       └── G3.md                  # 實作計畫（PLANNER 主導）
+├── tmp/                           # 子代理間唯一溝通橋樑：跨子代理結論存此；SECRETARY 讀此轉發派發
+└── archive/
+```
 
 ## 提交規範
 

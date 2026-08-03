@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 0.3.8
+revision: 0.3.9
 description: 以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡（AUDITOR 主導 G1、RESEARCHER 主導 G2、PLANNER 主導 G3），三份兩兩一致才開發；子代理一律由主對話 SECRETARY 派發，子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（子代理間唯一溝通橋樑），SECRETARY 讀 tmp/ 轉發派發以避免 context 丟失；開發由秘書在主對話依 G3 實作計畫執行、採多循環螺旋，驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能——功能降為 commit 單位，每個功能自驗後 commit 建立待驗對象，老闆確認＋AUDITOR 複驗寫回 G1 移到里程碑邊界觸發，不合格返工疊加新 commit，所有里程碑驗收通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
@@ -295,13 +295,18 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── DOCS.md
     │       ├── SOP.md
     │       ├── ROADMAP.md
-    │       └── SLUG.md             # 單檔含 SLUG 主體 + G1/G2/G3 三權範本
+    │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三權範本（複製來源）
     └── sb-*/SKILL.md               # 各個可直接觸發的工作流 skill
 
 .shiftblame/                       # 各專案工作區（MUST 經 .gitignore 排除）
 ├── SOP.md
 ├── ROADMAP.md
-├── <slug>/
+├── <slug>/                        # 結構分檔：SLUG 主體 + 每 nnn 一子目錄
+│   ├── SLUG.md                    # SLUG 主體（§1-§7；不含 G1/G2/G3）
+│   └── nnn/                       # 每個 <nnn> 一個子目錄
+│       ├── G1.md                  # 需求／驗收標準（AUDITOR 主導）
+│       ├── G2.md                  # 技術分析（RESEARCHER 主導）
+│       └── G3.md                  # 實作計畫（PLANNER 主導）
 ├── tmp/                            # 子代理間唯一溝通橋樑：跨子代理的結論、研究產物、審核意見存此；SECRETARY 讀此轉發派發（§3）
 └── archive/
 ```
