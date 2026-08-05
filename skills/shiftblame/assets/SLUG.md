@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 sb-save skill 寫入；sb-resume skill 消費後清除
-revision: 0.4.1
+revision: 0.4.2
 ---
 # SLUG — `<slug>`
 
@@ -208,7 +208,7 @@ revision: 0.4.1
 
 - 「做了什麼／實現什麼價值／發生什麼事」由 SECRETARY 在該里程碑所有功能 commit 完成後撰寫（§2.5 是 G3 中唯一由 SECRETARY 補寫的段落），描述使用者可觀察的行為，不以檔案、字串、grep 命中代替。SECRETARY 讀 `tmp/` 中落地側三權（DEVELOPER/TESTER/ACCEPTOR）的結構化執行記錄彙整。
 - 老闆確認該里程碑的價值是否成立；AUDITOR 對照 G1 複驗並寫回 G1 驗收確認，依實作情況判斷是否要求 RESEARCHER 補 G2 或 PLANNER 補 G3（常態修正，不重跑制衡）。G1 本身亦隨實況常態修正（活草稿，SKILL §1.4）。
-- 狀態：待驗收／返工／合格。每個功能的合格/返工由 SECRETARY 讀過 `tmp/` 中落地側三權的執行記錄後**判決**；落地側三權如實整理各自產出、不下判決。返工分兩類：**常態修正**（與 G1/G2/G3 有出入但不改方向／架構——對應顧問側角色子代理直接修該份文件後，疊加新 commit 重驗）與**重大例外**（改方向／架構——停止開發，走 sb-req／sb-method／sb-plan 回三權制衡）。合格進入下一個里程碑。
+- 狀態：待驗收／返工／合格。每個功能的合格/返工由 SECRETARY 讀過 `tmp/` 中落地側三權的執行記錄後**判決**；落地側三權如實整理各自產出、不下判決。返工分兩類：**常態修正**（與 G1/G2/G3 有出入但不改方向／架構——對應顧問側角色子代理直接修該份文件後，疊加新 commit 重驗）與**重大例外**（改方向／架構——停止開發，走重大例外遷移回三權制衡，SKILL §1.4.1）。合格進入下一個里程碑。
 
 **3. 開發策略**
 

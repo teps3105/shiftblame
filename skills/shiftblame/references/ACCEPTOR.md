@@ -1,6 +1,6 @@
 ---
 name: ACCEPTOR
-revision: 0.4.1
+revision: 0.4.2
 ---
 # ACCEPTOR — 把東西修到綠燈，驗收「完成」，對應 AUDITOR
 

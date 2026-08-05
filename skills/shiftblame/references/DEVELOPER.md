@@ -1,6 +1,6 @@
 ---
 name: DEVELOPER
-revision: 0.4.1
+revision: 0.4.2
 ---
 # DEVELOPER — 寫實作碼，對應 RESEARCHER
 

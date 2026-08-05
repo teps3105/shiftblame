@@ -21,4 +21,4 @@ description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main�
 - sb-dice 是**不可逆丟棄**——分支 commit 與 slug 文件刪除後無法經框架恢復（僅 git reflog 期限內可救）。執行前 MUST 揭示範圍並取得確認。
 - **不 archive**：archive 保留成功歷史；dice 是方向錯誤的清除，不留軌跡。
 - 撤銷範圍限當前 slug 的分支與文件；不影響 main 已 merge 成果、不影響已 archive slug。
-- 適用**重大方向錯誤**（整個 slug 走偏）；單一 nnn 錯誤用 sb-req／sb-method／sb-plan 退回即可。
+- 適用**重大方向錯誤**（整個 slug 走偏）；單一 nnn 錯誤用重大例外遷移（SKILL §1.4.1）退回即可。

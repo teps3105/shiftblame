@@ -26,7 +26,7 @@ description: 開新 slug；無後標依脈絡提議待授權，有後標視為�
    - 建立 `.shiftblame/<slug>/<nnn>/` 子目錄（初始 nnn 如 `001`）。
    - 從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
    - **不另建檔案、不建子目錄、不寫入非授權位置**；除 SLUG.md、`<nnn>/{G1,G2,G3}.md` 與 `tmp/` 外，MUST NOT 建立或寫入其他文件。
-4. **進入三權制衡**：由 sb-req／sb-method／sb-plan 接手產出 G1／G2／G3。
+4. **進入三權制衡**：派發顧問側三角（AUDITOR→G1、RESEARCHER→G2、PLANNER→G3）產出三份文件。
 
 ## 邊界
 

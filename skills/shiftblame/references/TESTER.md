@@ -1,6 +1,6 @@
 ---
 name: TESTER
-revision: 0.4.1
+revision: 0.4.2
 ---
 # TESTER — 寫測試定義「過」，對應 PLANNER
 
