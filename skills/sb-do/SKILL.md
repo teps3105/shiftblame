@@ -4,6 +4,30 @@ description: 確認 G1~G3 完稿，核對 §10 一致後放行進入開發。
 ---
 # sb-do — 確認完稿，放行進入開發
 
+> **本指令在流程中的位置**：三權制衡完成、§10 一致 → 放行進入開發
+
+```mermaid
+flowchart LR
+    S0["意圖揭露"]
+    S1["路由指定"]
+    S2["三權制衡"]
+    S3["開發"]
+    S4["nnn完成"]
+    S5["老闆PASS"]
+    S6["收尾"]
+    S0 --> S1
+    S1 --> S2
+    S2 == "sb-do 放行" ==> S3
+    S2 -.->|不一致| S2
+    S3 -->|收斂| S4
+    S3 -->|收斂失敗| S2
+    S4 -->|sb-next| S2
+    S4 -->|sb-end| S5
+    S5 --> S6
+    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+```
+
+
 當使用者要求「完稿」「可以開始做了」「放行開發」「sb-do」時執行本 prompt。用於三權制衡完成、老闆確認完稿後，放行進入開發。
 
 先 `load skill: shiftblame`，主對話 SECRETARY 執行：

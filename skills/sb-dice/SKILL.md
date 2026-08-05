@@ -4,6 +4,34 @@ description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main�
 ---
 # sb-dice — 丟棄當前 slug，重新討論需求
 
+> **本指令在流程中的位置**：重大方向錯誤 → 丟棄當前 slug 所有成果，回 main 重新討論（不 archive）
+
+```mermaid
+flowchart LR
+    S0["意圖揭露"]
+    S1["路由指定"]
+    S2["三權制衡"]
+    S3["開發"]
+    S4["nnn完成"]
+    S5["老闆PASS"]
+    S6["收尾"]
+    S0 --> S1
+    S1 --> S2
+    S2 -->|sb-do 放行| S3
+    S2 -.->|不一致| S2
+    S3 -->|收斂| S4
+    S3 -->|收斂失敗| S2
+    S4 -->|sb-next| S2
+    S4 -->|sb-end| S5
+    S5 --> S6
+    DICE(["⚠ sb-dice<br/>丟棄重來"]):::special
+    S2 -. "重大方向錯誤<br/>回 main 重新討論" .-> DICE
+    S3 -.-> DICE
+    S4 -.-> DICE
+    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+```
+
+
 當使用者要求「丟棄這個 slug」「方向全錯重來」「sb-dice」時執行本 prompt。用於重大方向錯誤時，丟棄當前 slug 所有成果，回 main，不 archive，重新討論需求。
 
 先 `load skill: shiftblame`，主對話 SECRETARY 執行：

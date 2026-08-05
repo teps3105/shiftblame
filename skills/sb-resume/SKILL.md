@@ -4,6 +4,32 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 ---
 # sb-resume — 繼續未完成的 slug/nnn
 
+> **本指令在流程中的位置**：從任何中斷點恢復 → 重走三權制衡（基於既有 G1~G3 重新確認）
+
+```mermaid
+flowchart LR
+    S0["意圖揭露"]
+    S1["路由指定"]
+    S2["三權制衡"]
+    S3["開發"]
+    S4["nnn完成"]
+    S5["老闆PASS"]
+    S6["收尾"]
+    S0 --> S1
+    S1 --> S2
+    S2 -->|sb-do 放行| S3
+    S2 -.->|不一致| S2
+    S3 -->|收斂| S4
+    S3 -->|收斂失敗| S2
+    S4 -->|sb-next| S2
+    S4 -->|sb-end| S5
+    S5 --> S6
+    S2 ==>|sb-resume 恢復| S2
+    S3 -.->|可恢復| S2
+    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+```
+
+
 當使用者要求「繼續上次」「resume」「恢復未完成的工作」時執行本 prompt。用於 session 中斷後恢復既有未完成的工作。
 
 先 `load skill: shiftblame`，主對話 SECRETARY 依 SKILL §9 讀取脈絡，再執行：

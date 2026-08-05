@@ -4,6 +4,30 @@ description: 開新 slug；無後標依脈絡提議待授權，有後標視為�
 ---
 # sb-slug — 開新 slug
 
+> **本指令在流程中的位置**：老闆指定「開新 slug」路由 → 從三權制衡開始新循環
+
+```mermaid
+flowchart LR
+    S0["意圖揭露"]
+    S1["路由指定"]
+    S2["三權制衡"]
+    S3["開發"]
+    S4["nnn完成"]
+    S5["老闆PASS"]
+    S6["收尾"]
+    S0 --> S1
+    S1 ==> S2
+    S2 -->|sb-do 放行| S3
+    S2 -.->|不一致| S2
+    S3 -->|收斂| S4
+    S3 -->|收斂失敗| S2
+    S4 -->|sb-next| S2
+    S4 -->|sb-end| S5
+    S5 --> S6
+    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+```
+
+
 當使用者要求「開新 slug」「新功能」「新長程目標」時執行本 prompt。用於與既有功能幾乎無關的新功能需求（SKILL §6 關係原則），建立新 `<slug>` 並從三權制衡開始。是否帶後續文字決定授權狀態。
 
 先 `load skill: shiftblame`，讀取 SKILL §9 脈絡（SOP/ROADMAP/archive/當前 slug），再依下列分派：

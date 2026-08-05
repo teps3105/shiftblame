@@ -4,7 +4,7 @@ type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>
-revision: 0.4.2
+revision: 0.5.0
 authorized_by: owner
 ---
 
@@ -14,26 +14,66 @@ authorized_by: owner
 
 ## 1. 產品目標與固定邊界
 
-只寫老闆已採用的產品方向、長期邊界與不能偏離的產品結果；句子要像老闆在說產品，不要改寫成 Agent 的術語或方案。
+只寫老闆已採用的產品方向、長期邊界與不能偏離的產品結果；句子要像老闆在說產品，不要改寫成 Agent 的術語或方案。每個目標／邊界一個節點，有幾個加幾個。
 
-| 目標／邊界 | 說明 |
-|------------|------|
+```mermaid
+flowchart LR
+    Goal1["目標／邊界 1：（填）"] --> Desc1["說明：（填）"]
+    Goal2["目標／邊界 2：（填）"] --> Desc2["說明：（填）"]
+```
 
 ## 2. 待開發計畫索引
 
-每列只代表一個老闆想做、尚未完成的產品計畫；計畫名稱與「要做什麼」要忠實反映老闆原意，不寫技術解法。
+每個計畫只代表一個老闆想做、尚未完成的產品計畫；計畫名稱與「要做什麼」要忠實反映老闆原意，不寫技術解法。有幾個計畫加幾條鏈。
 
-| ID | 計畫 | 要做什麼 |
-|----|------|----------------------|
+```mermaid
+flowchart LR
+    P1["P1：（計畫名）"] --> P1Do["要做什麼：（填）"]
+    P2["P2：（計畫名）"] --> P2Do["要做什麼：（填）"]
+```
 
 ## 3. 准入與清理
+
+> ROADMAP 條目的生命週期——什麼時候能加、什麼時候要清、什麼動作需授權：
+
+```mermaid
+flowchart TD
+    subgraph Write["寫入者"]
+        SEC["SECRETARY（唯一寫入者）"]
+        Roles["三軌角色"]
+        Roles -.->|MUST NOT 修改| RR[(ROADMAP)]
+        SEC --> RR[(ROADMAP)]
+    end
+
+    New[新增／修改產品意圖] --> Auth{老闆明確授權？}
+    Auth -- 否 --> Reject["❌ 不得寫入<br/>路由提議只能在對話回報"]
+    Auth -- 是 --> Add["✅ SECRETARY 忠實記錄<br/>白話 · 不改寫成 Agent 術語<br/>ID 唯一穩定如 P3、P6"]
+
+    SlugEnd["slug 結束 · 收尾保鮮"] --> Read["SECRETARY 重讀 codebase<br/>＋ slug 文件 ＋ 證據"]
+    Read --> Clean{條目狀態？}
+    Clean -- "已完成" --> Remove["移除 · 不得留 DONE／IN PROGRESS"]
+    Clean -- "部分完成" --> Rewrite["改寫成剩餘方向<br/>固定邊界依實際修正"]
+    Clean -- "已不存在" --> Remove
+    Clean -- "仍有效" --> Keep["保留 · 不動"]
+
+    Remove -.->|不需另行授權| Note1["收尾保鮮<br/>＝ 忠實改寫"]
+    Rewrite -.->|不需另行授權| Note1
+    Add -.->|需老闆授權| Note2["新增產品意圖<br/>＝ 需授權"]
+
+    subgraph Forbidden["MUST NOT 寫入"]
+        F1["G1 需求／驗收 · G2 技術 · G3 步驟"]
+        F2["commit · 測試輸出 · 檔案清單"]
+        F3["排程 · 優先級 · 估算 · 負責人 · 進度"]
+        F4["討論 · 嘗試紀錄 · Agent 行為"]
+        F5["SKILL／references 流程規範副本"]
+    end
+```
+
+**規則要點**：
 
 - 新增或修改產品意圖 MUST 有老闆明確授權；SECRETARY 只能忠實記錄，不能把自己的建議寫成老闆意圖。收尾保鮮造成的完成項移除與剩餘方向改寫不屬於新增產品意圖。ID 只要方便人讀、唯一且穩定，例如 `P3`、`P6`。
 - 產品目標、固定邊界與待開發計畫可以在目前可實作或被阻塞時列入；ROADMAP 不要求填阻塞證據、解阻塞計畫或進度狀態。
 - 正文 MUST 使用白話；專有名詞只在老闆原意本來就需要時使用，不能把需求改寫成 `Given／When／Then`、API、模組、驗收碼或工作拆解。
-- 每個 `<slug>` 結束時，SECRETARY MUST 重新讀取當下 codebase、slug 文件與證據，從 ROADMAP 移除已開發完成或已不存在的計畫；部分完成的計畫改寫成目前仍要做的方向，固定邊界依實際結果修正。不得留下 `DONE`、`IN PROGRESS` 或更新流水。
 - 新增產品目標、改變產品邊界、取消尚未完成的需求或把剩餘方向擴張成新需求，仍須老闆明確授權；完成項的移除與剩餘方向的忠實改寫是收尾保鮮，不需另行授權。
 - 路由提議只能在對話回報，不得寫入 ROADMAP；`<slug>`／`<nnn>` 仍只由老闆決定。
-- ROADMAP MUST NOT 包含 G1 需求／驗收、G2 技術方案、G3 實作步驟、commit、測試輸出、檔案清單、排程、優先級、估算、負責人、進度、討論、嘗試紀錄或 Agent 行為。
-- ROADMAP MUST NOT 複製 SKILL、`references/` 或其他中央模板已定義的通用流程規範；只保留本專案的產品意圖與邊界。
 - ROADMAP 只能由 SECRETARY 寫入；三軌角色 MUST NOT 修改 ROADMAP。PASS、收尾與歸檔會觸發既定的文件保鮮動作，但不會自動授權新增產品意圖。
