@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.4.0-2ea44f.svg" alt="version 0.4.0"/>
+  <img src="https://img.shields.io/badge/version-0.4.1-2ea44f.svg" alt="version 0.4.1"/>
 </p>
 
 ---
@@ -28,6 +28,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話 SECRETARY 獨佔；子代理只提供輸入，不做決策。
 - **雙層三權分立。** 上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、對 repo 唯讀、互相制約，G1/G2/G3 兩兩雙向一致才放行；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約，產出供 SECRETARY 判決。每個落地角色垂直對應一個顧問角色。
 - **寫測試與跑測試分離。** TESTER 寫測試定義「過」、ACCEPTOR 跑測試驗收「完成」——分離確保不能「自己寫自己跑放水」。
+- **測試先行。** 落地側執行順序固定：TESTER 寫測試（紅燈）→ DEVELOPER 寫實作 → ACCEPTOR 修到綠燈。先寫測試再實作，與顧問側「驗收先於實作」對齊。
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟，不得倒序。
 - **G1/G2/G3 是活草稿。** 放行後三份文件不凍結——開發中發現與實作情境有出入，直接修正對應文件後繼續，不為流程而流程；只有改變方向／架構的重大變更才停止退回三權制衡。
 - **commit 集權。** 子代理（含落地側 DEVELOPER/TESTER）可在 SECRETARY 授權範圍內寫 repo，但 commit 一律由 SECRETARY 於判決合格後獨佔執行。
@@ -57,9 +58,9 @@ SECRETARY 意圖揭露
                       │
                       ▼
               ┌─── 落地側三權（互相制約 · 判決歸 SECRETARY）───┐
-              │ DEVELOPER 寫實作碼（依 G2）                    │
+              │ TESTER 寫測試定義「過」（依 G3）← 測試先行    │
               │     ▼                                          │
-              │ TESTER 寫測試定義「過」（依 G3）               │
+              │ DEVELOPER 寫實作碼（依 G2）                    │
               │     ▼                                          │
               │ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）│
               │     ▼                                          │

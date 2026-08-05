@@ -1,7 +1,7 @@
 ---
 name: shiftblame
-revision: 0.4.0
-description: 以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY（主對話），上三權是顧問側（AUDITOR/RESEARCHER/PLANNER 對 repo 唯讀，各主導 G1/G2/G3，互相制約、兩兩雙向一致才放行），下三權是落地側（DEVELOPER 寫實作碼對應 RESEARCHER、TESTER 寫測試定義「過」對應 PLANNER、ACCEPTOR 跑測試驗收「完成」對應 AUDITOR——寫測試與跑測試分離形成制約，互相制約）；秘書先揭露意圖，老闆授權後進入顧問側三權制衡，放行後秘書依 G3 派發下三權落地執行，每個功能（commit 單位）DEVELOPER 寫碼→TESTER 寫測試→ACCEPTOR 跑測試驗收→SECRETARY 判決合格才 commit（commit 與所有判決集權於 SECRETARY，子代理不得 commit）；子代理一律由主對話 SECRETARY 派發、子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（唯一溝通橋樑）；驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，不合格返工疊加新 commit，所有里程碑通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
+revision: 0.4.1
+description: 以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY（主對話），上三權是顧問側（AUDITOR/RESEARCHER/PLANNER 對 repo 唯讀，各主導 G1/G2/G3，互相制約、兩兩雙向一致才放行），下三權是落地側（DEVELOPER 寫實作碼對應 RESEARCHER、TESTER 寫測試定義「過」對應 PLANNER、ACCEPTOR 跑測試驗收「完成」對應 AUDITOR——寫測試與跑測試分離形成制約，互相制約）；秘書先揭露意圖，老闆授權後進入顧問側三權制衡，放行後秘書依 G3 派發下三權落地執行，每個功能（commit 單位）TESTER 寫測試→DEVELOPER 寫實作→ACCEPTOR 修到綠燈驗收→SECRETARY 判決合格才 commit（測試先行：先寫測試再實作，commit 與所有判決集權於 SECRETARY，子代理不得 commit）；子代理一律由主對話 SECRETARY 派發、子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（唯一溝通橋樑）；驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，不合格返工疊加新 commit，所有里程碑通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
 
@@ -59,11 +59,11 @@ description: 以雙層三權分立約束 agent——所有決策權中央集權�
    │ 里程碑（一組功能構成的可觀察完整價值）           │
    │     ▼                                             │
    │ 逐個功能（commit 單位）：                        │
-   │   DEVELOPER 寫實作碼（依 G2）                    │
-   │     ▼                                             │
    │   TESTER 寫測試、定義「過」（依 G3）             │
    │     ▼                                             │
-   │   ACCEPTOR 跑測試、驗收「完成」（對照 G1）       │
+   │   DEVELOPER 寫實作碼（依 G2）                    │
+   │     ▼                                             │
+   │   ACCEPTOR 修到綠燈、驗收「完成」（對照 G1）     │
    │     ▼                                             │
    │   SECRETARY 讀 tmp/ 三份產出，判決：             │
    │     合格 → SECRETARY commit（獨佔）              │
@@ -118,7 +118,7 @@ description: 以雙層三權分立約束 agent——所有決策權中央集權�
 1. **三權分立**：AUDITOR 主導 G1、RESEARCHER 主導 G2、PLANNER 主導 G3，三者權限對等。G1↔G2↔G3↔G1 三份文件兩兩雙向制衡。
 2. **文件即制約規則**：每份文件只由其主導者改寫，保持乾淨的決策結論；MUST NOT 直接改寫他人文件。**SECRETARY 有全域控制調配權**，決定流程調度、派發與段落寫入歸屬（如 G3 §2.5 由 SECRETARY 補寫）。落地側三權的執行中間產物存 `.shiftblame/tmp/`，不寫入 G1/G2/G3——G*.md 只放決策結論，不當流水帳。不一致時，各方調整自己主導的文件以妥協，迫使三份重新兩兩一致。
 3. **單一面向、兩兩一致**：每份文件只回答自己主導的面向（G1 需求／驗收、G2 技術、G3 實作計畫），但三份 MUST 兩兩雙向一致才可開發。一致的對齊軸為 G1 需求項，判準（三對六向的正向承接＋反向回指）見 §10。
-4. **收斂循環**：開發由**主對話 SECRETARY** 依 G3 實作計畫派發**落地側三權**執行（SECRETARY 是唯一決策中心：commit、判決合格/返工、放行、路由、reset、PASS 皆由 SECRETARY 獨佔；落地側子代理在 SECRETARY 授權範圍內可寫 repo，但不可 commit——子代理在 `.shiftblame/` 內的寫入範圍見 §3 消歧），採多循環螺旋——**驗收節點是「里程碑」而非單一功能**。里程碑 = 一組功能構成的使用者可觀察完整價值（由 PLANNER 在 G3 切分，AUDITOR 制衡其價值成立）；功能降為 **commit 單位**。開發按里程碑推進，每個里程碑內逐個功能：SECRETARY 派發**落地側三權**——DEVELOPER 寫實作碼（依 G2）→ TESTER 寫測試定義「過」（依 G3）→ ACCEPTOR 跑測試驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 三份產出後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER 返工並疊加證據。**低複雜度功能**（改一行、typo、加欄位）SECRETARY MAY 直接執行不派發落地側三權（裁量權）。該里程碑所有功能 commit 完成後，才在**里程碑邊界**觸發階段驗收（老闆確認里程碑價值＋AUDITOR 複驗寫回 G1），不合格返工並疊加新 commit，合格進入下一個里程碑。所有里程碑驗收通過後，以 `sb-review` skill 觸發收斂（提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
+4. **收斂循環**：開發由**主對話 SECRETARY** 依 G3 實作計畫派發**落地側三權**執行（SECRETARY 是唯一決策中心：commit、判決合格/返工、放行、路由、reset、PASS 皆由 SECRETARY 獨佔；落地側子代理在 SECRETARY 授權範圍內可寫 repo，但不可 commit——子代理在 `.shiftblame/` 內的寫入範圍見 §3 消歧），採多循環螺旋——**驗收節點是「里程碑」而非單一功能**。里程碑 = 一組功能構成的使用者可觀察完整價值（由 PLANNER 在 G3 切分，AUDITOR 制衡其價值成立）；功能降為 **commit 單位**。開發按里程碑推進，每個里程碑內逐個功能：SECRETARY 派發**落地側三權**——TESTER 寫測試定義「過」（依 G3）→ DEVELOPER 寫實作碼（依 G2）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 三份產出後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工並疊加證據。**測試先行**：先寫測試（此時紅燈）再實作，實作完成後由 ACCEPTOR 修到綠燈——這是落地側的核心紀律，與顧問側「驗收先於實作」（§1.3）對齊。**低複雜度功能**（改一行、typo、加欄位）SECRETARY MAY 直接執行不派發落地側三權（裁量權）。該里程碑所有功能 commit 完成後，才在**里程碑邊界**觸發階段驗收（老闆確認里程碑價值＋AUDITOR 複驗寫回 G1），不合格返工並疊加新 commit，合格進入下一個里程碑。所有里程碑驗收通過後，以 `sb-review` skill 觸發收斂（提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
 
    **G1／G2／G3 是活草稿**：三份文件在 `sb-do` 放行後不凍結——開發是對假設的實測，實作情境必然與計畫有出入。SECRETARY 隨開發進展**常態性地修正對應的 G1／G2／G3** 以反映實況，然後繼續開發，不為流程而流程。修正依主導者歸屬：需求層改 G1（AUDITOR 主導）、技術層改 G2（RESEARCHER 主導）、計畫層改 G3（PLANNER 主導；§2.5 階段驗收記錄由 SECRETARY 補寫）；SECRETAREY 派發對應角色子代理輕量補寫，**不重跑三權制衡**。
 
@@ -130,7 +130,7 @@ description: 以雙層三權分立約束 agent——所有決策權中央集權�
    | 跨檔數 | ≥ 4 |
    | 強依賴對 | ≥ 2 |
 
-   每個功能（commit 單位）：SECRETARY 派發落地側三權——DEVELOPER 寫實作碼（依 G2）→ TESTER 寫測試定義「過」（依 G3）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 中落地側三權各自**結構化整理**的執行記錄後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工。落地側三權的執行記錄存 `tmp/`，**各自整理成可判讀的結構化產出**（不是散落碎片讓 SECRETARY 拼湊），G*.md 保持乾淨只放決策結論。**判決（合格/返工、commit）由 SECRETARY 做**。該里程碑所有功能 commit 完成後才在里程碑邊界進入階段驗收（老闆確認＋AUDITOR 複驗）。**禁止把單一功能當成驗收節點**——功能是 commit 單位，驗收節點是里程碑。
+   每個功能（commit 單位）：SECRETARY 派發落地側三權——TESTER 寫測試定義「過」（依 G3）→ DEVELOPER 寫實作碼（依 G2）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 中落地側三權各自**結構化整理**的執行記錄後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工。落地側三權的執行記錄存 `tmp/`，**各自整理成可判讀的結構化產出**（不是散落碎片讓 SECRETARY 拼湊），G*.md 保持乾淨只放決策結論。**判決（合格/返工、commit）由 SECRETARY 做**。該里程碑所有功能 commit 完成後才在里程碑邊界進入階段驗收（老闆確認＋AUDITOR 複驗）。**禁止把單一功能當成驗收節點**——功能是 commit 單位，驗收節點是里程碑。
 
    **常態修正 vs 重大例外**——開發途中發現問題時的處置：
 
@@ -419,7 +419,7 @@ G2↔G3 兩向都以 G1 需求項為錨：步驟與其對應的技術分析 MUST
 | 老闆是否明確授權修改？ | 老闆指定路由 | 老闆授權 | 老闆已明確授權；未授權則停止寫入 | 停止寫入 |
 | 老闆指定路由 | 三權制衡 | `sb-slug`／`sb-next`／`sb-resume` skills | 老闆已明確指定開新 `<slug>`、開新 `<nnn>` 或沿用 `<nnn>` | 停止，不得由 SECRETARY 代決 |
 | 三權制衡 | 開發 | `sb-do` skill | G1、G2、G3 各由顧問側主導者產出；三份兩兩雙向一致（制衡完成，判準見 §10）；AUDITOR、RESEARCHER 已透過 SECRETARY 代派子代理複核對應外部獨立研究（結論存 `tmp/`） | 不一致者調整自己主導的文件，留在三權制衡 |
-| 開發 | `<nnn>` 完成 | `sb-review` skill | 合併收斂：所有里程碑驗收通過（每個功能經落地側三權 DEVELOPER→TESTER→ACCEPTOR 產出、SECRETARY 判決合格並 commit） → 提交行為證據 → 顧問側三者各自重審主導文件皆通過 → SECRETARY 已代派獨立審核子代理（結論存 `tmp/` 供 AUDITOR 複核） → 片段清空；含輕量保鮮 §1.7.1 | 任一不通過回三權制衡（同 `<nnn>`） |
+| 開發 | `<nnn>` 完成 | `sb-review` skill | 合併收斂：所有里程碑驗收通過（每個功能經落地側三權 TESTER→DEVELOPER→ACCEPTOR 產出、SECRETARY 判決合格並 commit） → 提交行為證據 → 顧問側三者各自重審主導文件皆通過 → SECRETARY 已代派獨立審核子代理（結論存 `tmp/` 供 AUDITOR 複核） → 片段清空；含輕量保鮮 §1.7.1 | 任一不通過回三權制衡（同 `<nnn>`） |
 | `<nnn>` 完成 → 開新 `<nnn>` | 新循環三權制衡 | `sb-next` skill | 老闆明確決定開新 `<nnn>`；SLUG §3 加新列；舊 `<nnn>` 列節點定為 `nnn 完成` | 老闆未決定則等待，SECRETARY 不得代決 |
 | `<nnn>` 完成 → 結束 `<slug>` | 老闆 PASS | `sb-end` skill | 老闆明確拍板整個 `<slug>` 結束 | 老闆未決定則等待 |
 

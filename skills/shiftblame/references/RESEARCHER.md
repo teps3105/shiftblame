@@ -1,6 +1,6 @@
 ---
 name: RESEARCHER
-revision: 0.4.0
+revision: 0.4.1
 ---
 # RESEARCHER — 主導技術，制約需求與實作計畫（顧問側）
 
