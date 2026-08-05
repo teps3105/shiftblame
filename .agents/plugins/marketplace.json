@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "shiftblame",
-      "description": "以三權分立約束 agent：秘書先揭露意圖，老闆授權後進入 G1↔G2↔G3 雙向制衡，三份兩兩一致才開發；開發採多循環螺旋，每圈一個功能、先提交再階段驗收。",
+      "description": "以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY；上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義該做什麼、互相制約；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行怎麼做、寫測試與跑測試分離互相制約；commit 與判決集權於 SECRETARY。",
       "source": {
         "source": "local",
         "path": "."
