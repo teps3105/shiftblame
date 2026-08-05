@@ -4,7 +4,7 @@ type: TWO_FILE
 role: sop
 status: active
 updated: <YYYY-MM-DD>
-revision: 0.3.9
+revision: 0.4.0
 ---
 # SOP — 專案本地配置與執行規範
 
@@ -65,7 +65,7 @@ SOP 不得寫：
 
 - ROADMAP 的產品目標、固定邊界或尚未完成的想做計畫。
 - 單一 `<slug>`／`<nnn>` 的需求、決策、技術方案、實作步驟、進度、驗收結果、討論、嘗試、返工或歷史流水。
-- shiftblame 的角色、授權、路由、G1／G2／G3、PASS、commit、分支、收尾、歸檔或子代理流程；這些由中央技能文件管理，不在專案 SOP 重述。
+- shiftblame 的角色、授權、路由、G1／G2／G3、雙層三權（顧問側／落地側）、PASS、commit、分支、收尾、歸檔或子代理流程；這些由中央技能文件管理，不在專案 SOP 重述。
 - 個人偏好的臨時 workaround、已失效配置、無來源的推測，以及「視情況」「之後再決定」等無固定判準的軟規範。
 
 ## 4. 與 README 的分工

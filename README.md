@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.3.9-2ea44f.svg" alt="version 0.3.9"/>
+  <img src="https://img.shields.io/badge/version-0.4.0-2ea44f.svg" alt="version 0.4.0"/>
 </p>
 
 ---
@@ -25,10 +25,12 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 核心原則：
 
 - **問題陳述不等於修改授權。** SECRETARY 必須先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
-- **三權分立。** G1（需求）、G2（技術）、G3（實作計畫）各由主導角色產出，互相制衡；三份兩兩雙向一致才可開發。一致以 G1 需求項為對齊軸，三對各須正向承接＋反向回指（判準見 SKILL §10）。
+- **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話 SECRETARY 獨佔；子代理只提供輸入，不做決策。
+- **雙層三權分立。** 上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、對 repo 唯讀、互相制約，G1/G2/G3 兩兩雙向一致才放行；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約，產出供 SECRETARY 判決。每個落地角色垂直對應一個顧問角色。
+- **寫測試與跑測試分離。** TESTER 寫測試定義「過」、ACCEPTOR 跑測試驗收「完成」——分離確保不能「自己寫自己跑放水」。
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟，不得倒序。
 - **G1/G2/G3 是活草稿。** 放行後三份文件不凍結——開發中發現與實作情境有出入，直接修正對應文件後繼續，不為流程而流程；只有改變方向／架構的重大變更才停止退回三權制衡。
-- **repo 開發權集中。** 主對話 SECRETARY 是唯一 repo 開發執行者；子代理對 repo 一律唯讀。
+- **commit 集權。** 子代理（含落地側 DEVELOPER/TESTER）可在 SECRETARY 授權範圍內寫 repo，但 commit 一律由 SECRETARY 於判決合格後獨佔執行。
 
 ## 流程概覽
 
@@ -42,24 +44,32 @@ SECRETARY 意圖揭露
 老闆指定路由
       │
       ▼
-G1 需求研究（AUDITOR 主導）
-      │
-      ▼
-G2 技術分析（RESEARCHER 主導）
-      │
-      ▼
-G3 先寫驗收，再寫實作步驟（PLANNER 主導）
-      │
-      ▼
-SECRETARY 核對 §10 一致性
-   ┌──┴──────────┐
- 不一致           一致
-   │              │
-   └──▶ 回三權    SECRETARY 依 G3 開發 → commit → 證據
-                         │
-                         ▼
-                   AUDITOR 對照 G1 複驗
-                      │不符 → 回三權制衡
+┌──────── 顧問側三權（對 repo 唯讀 · 互相制約）────────┐
+│ G1 需求（AUDITOR）↔ G2 技術（RESEARCHER）↔ G3 計畫（PLANNER）│
+└──────────────────────┬───────────────────────────────┘
+                       ▼
+            SECRETARY 核對 §10 一致性
+            ┌──┴──────────┐
+          不一致           一致
+            │              │
+            └──▶ 回三權    ▼
+                    SECRETARY 依 G3 里程碑推進，逐個功能派發：
+                      │
+                      ▼
+              ┌─── 落地側三權（互相制約 · 判決歸 SECRETARY）───┐
+              │ DEVELOPER 寫實作碼（依 G2）                    │
+              │     ▼                                          │
+              │ TESTER 寫測試定義「過」（依 G3）               │
+              │     ▼                                          │
+              │ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）│
+              │     ▼                                          │
+              │ SECRETARY 讀 tmp/ 判決 → 合格才 commit（獨佔） │
+              └──────────────────────┬─────────────────────────┘
+                                     ▼
+                    （里程碑所有功能 commit 完成）
+                                     ▼
+                    老闆確認價值 + AUDITOR 複驗（寫回 G1）
+                      │不符 → 返工疊加新 commit
                       ▼
                 nnn 完成（循環收斂）→ 輕量保鮮（更新 SLUG）
                       │
@@ -78,15 +88,30 @@ SECRETARY 核對 §10 一致性
 
 ## 角色
 
+**決策中樞**
+
 | 角色 | 工作 |
 |------|------|
 | 老闆 | 提出命題、授權修改、做決策、最終 PASS |
-| **SECRETARY（主對話固定）** | 揭露意圖、記錄路由、交接、收尾、文件保鮮、派發子代理、**親自核對 §10 一致性**；放行後**依 G3 親自執行 repo 開發、測試、commit、自驗**（唯一 repo 開發執行者）；執行**判決性工作**（commit 保留/reset、跨權協調、PASS、路由判定）；可提路由提議但不等於授權 |
-| AUDITOR | 主導 G1（需求／驗收）；開發前後都派唯讀子代理獨立審核，再複核並回頭對照 G1（由子代理承載） |
-| RESEARCHER | 主導 G2，承接 G1 並取得、複核外部獨立研究（由子代理承載） |
-| PLANNER | 主導 G3 實作計畫，先寫驗收再寫實作步驟（供 SECRETARY 照表執行開發）；對 repo 唯讀，不執行開發（由子代理承載） |
+| **SECRETARY（主對話固定）** | **唯一決策中心**：揭露意圖、記錄路由、交接、收尾、文件保鮮、派發上下六角色子代理、**親自核對 §10 一致性**、放行；開發中依 G3 派發落地側三權、讀產出後**判決合格/返工**、**獨佔 commit**；執行所有判決性工作（commit 保留/reset、跨權協調、PASS、路由判定）；可提路由提議但不等於授權 |
 
-**主對話永遠是 SECRETARY**——AUDITOR／RESEARCHER／PLANNER 的工作由子代理承載（角色為任務參數）；子代理對 repo 一律唯讀、工作區限 `.shiftblame/`，在 `.shiftblame/` 內寫自己主導的管理文件（G1／G2／G3）與 `tmp/` 研究中間產物（「唯讀」指對 repo 唯讀，不排斥 `tmp/` 寫入；見 SKILL §3 消歧）。MUST NOT 執行 repo 開發、測試或 commit。
+**顧問側（上三權）— 定義「該做什麼」· 對 repo 唯讀 · 互相制約**
+
+| 角色 | 工作 | 對應落地側 |
+|------|------|------------|
+| AUDITOR | 主導 G1（需求／驗收）；開發前後都派唯讀子代理獨立審核，再複核並回頭對照 G1（由子代理承載） | → ACCEPTOR |
+| RESEARCHER | 主導 G2，承接 G1 並取得、複核外部獨立研究（由子代理承載） | → DEVELOPER |
+| PLANNER | 主導 G3 實作計畫，先寫驗收再寫實作步驟（供 SECRETARY 照表執行開發）；對 repo 唯讀（由子代理承載） | → TESTER |
+
+**落地側（下三權）— 執行「怎麼做」· 互相制約 · 判決歸 SECRETARY**
+
+| 角色 | 工作 | 對應顧問側 |
+|------|------|------------|
+| DEVELOPER | 寫 repo 實作碼（依 G2）；可寫實作碼、不可 commit（由子代理承載） | ← RESEARCHER |
+| TESTER | 寫測試碼、定義「過」（依 G3）；可寫測試碼、不可 commit（由子代理承載） | ← PLANNER |
+| ACCEPTOR | 把東西修到綠燈、驗收「完成」（對照 G1）；不碰實作碼／測試邏輯、可寫測試環境配套（config/fixture/env）、可跑測試命令、不可 commit、**只回報不下判決**（由子代理承載） | ← AUDITOR |
+
+**主對話永遠是 SECRETARY**——六個角色的工作由子代理承載（角色為任務參數）。顧問側子代理對 repo 唯讀、工作區限 `.shiftblame/`，在 `.shiftblame/` 內寫自己主導的管理文件（G1／G2／G3）與 `tmp/` 研究中間產物。落地側子代理可在 SECRETARY 授權範圍內寫 repo（DEVELOPER 寫實作碼、TESTER 寫測試碼、ACCEPTOR 不碰實作碼／測試邏輯但可寫測試環境配套並可跑測試命令），產出存 `tmp/`，但**三者皆不可 commit**——commit 與判決一律由 SECRETARY 獨佔（見 SKILL §3 消歧）。
 
 ## 三份文件
 
@@ -173,9 +198,12 @@ shiftblame/                         # plugin 套件根（repo 根）
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
     │   ├── references/            # 角色定義（按需讀）
-    │   │   ├── AUDITOR.md
+    │   │   ├── AUDITOR.md         # 顧問側（上三權）
     │   │   ├── RESEARCHER.md
-    │   │   └── PLANNER.md
+    │   │   ├── PLANNER.md
+    │   │   ├── ACCEPTOR.md        # 落地側（下三權）
+    │   │   ├── DEVELOPER.md
+    │   │   └── TESTER.md
     │   └── assets/                # 範本與固定資產
     │       ├── DOCS.md            # 專案 docs/ 系統文件寫法判準
     │       ├── SOP.md
