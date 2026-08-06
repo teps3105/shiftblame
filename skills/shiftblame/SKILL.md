@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 0.5.0
+revision: 0.5.1
 description: 以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY（主對話），上三權是顧問側（AUDITOR/RESEARCHER/PLANNER 對 repo 唯讀，各主導 G1/G2/G3，互相制約、兩兩雙向一致才放行），下三權是落地側（DEVELOPER 寫實作碼對應 RESEARCHER、TESTER 寫測試定義「過」對應 PLANNER、ACCEPTOR 跑測試驗收「完成」對應 AUDITOR——寫測試與跑測試分離形成制約，互相制約）；秘書先揭露意圖，老闆授權後進入顧問側三權制衡，放行後秘書依 G3 派發下三權落地執行，每個功能（commit 單位）TESTER 寫測試→DEVELOPER 寫實作→ACCEPTOR 修到綠燈驗收→SECRETARY 判決合格才 commit（測試先行：先寫測試再實作，commit 與所有判決集權於 SECRETARY，子代理不得 commit）；子代理一律由主對話 SECRETARY 派發、子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（唯一溝通橋樑）；驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，不合格返工疊加新 commit，所有里程碑通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
@@ -63,7 +63,7 @@ flowchart TD
     LightFresh --> BossRoute{老闆路由}
     BossRoute -- 開新 nnn --> Consult
     BossRoute -- slug 結束 --> Pass([老闆 PASS])
-    Pass --> FullFresh["完整收尾保鮮（§1.7.2）<br/>重寫 SOP／ROADMAP<br/>＋ 移 slug/ 至 archive/"]
+    Pass --> FullFresh["完整收尾保鮮（§1.7.2）<br/>重寫 SOP／ROADMAP<br/>保鮮 docs/／README<br/>＋ 移 slug/ 至 archive/"]
 ```
 
 ## 1. 制衡與讀圖規則
@@ -71,7 +71,7 @@ flowchart TD
 1. **三權分立**：AUDITOR 主導 G1、RESEARCHER 主導 G2、PLANNER 主導 G3，三者權限對等。G1↔G2↔G3↔G1 三份文件兩兩雙向制衡。
 2. **文件即制約規則**：每份文件只由其主導者改寫，保持乾淨的決策結論；MUST NOT 直接改寫他人文件。**SECRETARY 有全域控制調配權**，決定流程調度、派發與段落寫入歸屬（如 G3 §2.5 由 SECRETARY 補寫）。落地側三權的執行中間產物存 `.shiftblame/tmp/`，不寫入 G1/G2/G3——G*.md 只放決策結論，不當流水帳。不一致時，各方調整自己主導的文件以妥協，迫使三份重新兩兩一致。
 3. **單一面向、兩兩一致**：每份文件只回答自己主導的面向（G1 需求／驗收、G2 技術、G3 實作計畫），但三份 MUST 兩兩雙向一致才可開發。一致的對齊軸為 G1 需求項，判準（三對六向的正向承接＋反向回指）見 §10。
-4. **收斂循環**：開發由**主對話 SECRETARY** 依 G3 實作計畫派發**落地側三權**執行（SECRETARY 是唯一決策中心：commit、判決合格/返工、放行、路由、reset、PASS 皆由 SECRETARY 獨佔；落地側子代理在 SECRETARY 授權範圍內可寫 repo，但不可 commit——子代理在 `.shiftblame/` 內的寫入範圍見 §3 消歧），採多循環螺旋——**驗收節點是「里程碑」而非單一功能**。里程碑 = 一組功能構成的使用者可觀察完整價值（由 PLANNER 在 G3 切分，AUDITOR 制衡其價值成立）；功能降為 **commit 單位**。開發按里程碑推進，每個里程碑內逐個功能：SECRETARY 派發**落地側三權**——TESTER 寫測試定義「過」（依 G3）→ DEVELOPER 寫實作碼（依 G2）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 三份產出後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工並疊加證據。**測試先行**：先寫測試（此時紅燈）再實作，實作完成後由 ACCEPTOR 修到綠燈——這是落地側的核心紀律，與顧問側「驗收先於實作」（§1.3）對齊。**低複雜度功能**（改一行、typo、加欄位）SECRETARY MAY 直接執行不派發落地側三權（裁量權）。該里程碑所有功能 commit 完成後，才在**里程碑邊界**觸發階段驗收（老闆確認里程碑價值＋AUDITOR 複驗寫回 G1），不合格返工並疊加新 commit，合格進入下一個里程碑。所有里程碑驗收通過後，自動觸發**收斂**（§1.4.2：提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
+4. **收斂循環**：開發由**主對話 SECRETARY** 依 G3 實作計畫派發**落地側三權**執行（SECRETARY 是唯一決策中心：commit、判決合格/返工、放行、路由、reset、PASS 皆由 SECRETARY 獨佔；落地側子代理在 SECRETARY 授權範圍內可寫 repo，但不可 commit——子代理在 `.shiftblame/` 內的寫入範圍見 §3 消歧），採多循環螺旋——**驗收節點是「里程碑」而非單一功能**。里程碑 = 一組功能構成的使用者可觀察完整價值（由 PLANNER 在 G3 切分，AUDITOR 制衡其價值成立）；功能降為 **commit 單位**。開發按里程碑推進，每個里程碑內逐個功能：SECRETARY 派發**落地側三權**——TESTER 寫測試定義「過」（依 G3）→ DEVELOPER 寫實作碼（依 G2）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 三份產出後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工並疊加證據。**測試先行**：先寫測試（此時紅燈）再實作，實作完成後由 ACCEPTOR 修到綠燈——這是落地側的核心紀律，與顧問側「驗收先於實作」（§1.3）對齊。**低複雜度功能**（改一行、typo、加欄位）SECRETARY MAY 直接執行不派發落地側三權（裁量權）。該里程碑所有功能 commit 完成後，才在**里程碑邊界**觸發階段驗收（老闆確認里程碑價值＋AUDITOR 複驗寫回 G1），不合格返工並疊加新 commit，合格進入下一個里程碑。所有里程碑驗收通過後，自動觸發**收斂**（§1.4.2：提交證據→三者重審→`<nnn>` 完成，§11）；發現新問題回三權制衡（同一 `<nnn>`）。**`<nnn>` 完成 ≠ slug PASS**：前者是單一子需求循環收斂，後者是整個 `<slug>` 結束。`<nnn>` 完成後只做**輕量保鮮**（§1.7.1，更新 SLUG 技術債／臨時租約），老闆隨後決定開新 `<nnn>`（回三權制衡新循環）或結束 `<slug>`；只有結束 `<slug>` 才走 PASS 與**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP、保鮮 docs/／README 並移 archive/）。是否開新 `<nnn>`／`<slug>`、是否 PASS 只由老闆決定。
 
    **G1／G2／G3 是活草稿**：三份文件在 `sb-do` 放行後不凍結——開發是對假設的實測，實作情境必然與計畫有出入。SECRETARY 隨開發進展**常態性地修正對應的 G1／G2／G3** 以反映實況，然後繼續開發，不為流程而流程。修正依主導者歸屬：需求層改 G1（AUDITOR 主導）、技術層改 G2（RESEARCHER 主導）、計畫層改 G3（PLANNER 主導；§2.5 階段驗收記錄由 SECRETARY 補寫）；SECRETAREY 派發對應角色子代理輕量補寫，**不重跑三權制衡**。
 
@@ -179,7 +179,7 @@ flowchart LR
     end
 ```
 
-保鮮分兩層（§0 收斂段；權威操作步驟見 §1.7.1／§1.7.2）：每個 `<nnn>` 完成做**輕量保鮮**（§1.7.1，只更新 SLUG 技術債／臨時租約，不動 SOP／ROADMAP／archive）；只有老闆對整個 `<slug>` 拍板 PASS（slug 結束）才做**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP 並移 archive/）。兩層皆為既定維護動作，不需另行取得一次寫入授權；新增產品方向、改變產品邊界或把未完成項改成新需求，仍須老闆明確授權。
+保鮮分兩層（§0 收斂段；權威操作步驟見 §1.7.1／§1.7.2）：每個 `<nnn>` 完成做**輕量保鮮**（§1.7.1，只更新 SLUG 技術債／臨時租約，不動 SOP／ROADMAP／archive）；只有老闆對整個 `<slug>` 拍板 PASS（slug 結束）才做**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP、保鮮 docs/／README 並移 archive/）。兩層皆為既定維護動作，不需另行取得一次寫入授權；新增產品方向、改變產品邊界或把未完成項改成新需求，仍須老闆明確授權。
 
 ### 1.7.1 輕量保鮮（每個 `<nnn>` 完成後）
 
@@ -200,12 +200,13 @@ flowchart LR
 2. 從當下 codebase、設定、測試入口、slug 文件與證據重寫需保鮮的 `SOP.md`；保留目前仍成立的本地配置與規範，刪除已取代、無法查核或只屬歷史的內容。這是收尾的既定維護動作，不需另行取得一次寫入授權。
 3. 重新整理 `ROADMAP.md`：移除已開發完成或已不存在的計畫；部分完成的計畫改寫成目前仍要做的方向；固定邊界依實際完成結果修正。不得藉保鮮新增未經老闆授權的產品需求。
 4. 新增產品目標、改變產品邊界或把剩餘方向擴張成新需求，仍須老闆明確授權；完成項的移除與剩餘方向的忠實改寫不屬於新增需求。
-5. 依 SOP 盤點測試資產；探索性內容留在 `.shiftblame/tmp/`。
-6. **保鮮是 merge 的 gate**——保鮮未完成 MUST NOT merge 回主分支。保鮮範圍依身分區分：
-   - **單人 owner**：merge 前完成所有保鮮（含 repo 內文件如 `docs/`、`README.md`）。
-   - **多人協作貢獻者**：只處理本地 `.shiftblame/SOP.md`、`ROADMAP.md` 保鮮（經 `.gitignore` 排除，不進 repo）；**repo 內文件是 owner 資產，貢獻者 MUST NOT 動**，由 owner 在 merge 後接手保鮮。
-7. 保鮮完成後依分支政策合併、推送與清理。
-8. 將 `.shiftblame/<slug>/` 移至 `archive/`。
+5. **保鮮 repo 內文件（`docs/`、`README.md`）**——這是與 SOP／ROADMAP 同級的獨立保鮮步驟，MUST NOT 跳過。逐項盤點：`docs/` 下描述的每個系統是否仍與當下 codebase 一一致（系統已移除 → 刪對應文件；系統行為已變 → 更新文件；本 slug 新完成的系統 → 補文件）；`README.md` 的專案說明、安裝、使用方式是否仍準確。寫法品質對照 `assets/DOCS.md` 判準（R1-R4）。這是收尾的既定維護動作，不需另行取得一次寫入授權——與 §5「既有 `docs/` 預設不得修改，除非老闆明確授權」的正交關係：§5 管「誰能改、何時能改」（寫入權），本步驟管「收尾時必須保鮮」（既定維護），保鮮不擴大為新增需求或重寫未變更系統。
+6. 依 SOP 盤點測試資產；探索性內容留在 `.shiftblame/tmp/`。
+7. **保鮮是 merge 的 gate**——保鮮未完成 MUST NOT merge 回主分支。保鮮範圍依身分區分：
+   - **單人 owner**：merge 前完成所有保鮮（含步驟 2-6 全部：SOP、ROADMAP、repo 內文件、測試資產盤點）。
+   - **多人協作貢獻者**：只處理本地 `.shiftblame/SOP.md`、`ROADMAP.md` 保鮮（經 `.gitignore` 排除，不進 repo）；**repo 內文件（`docs/`、`README.md`）是 owner 資產，貢獻者 MUST NOT 動**，由 owner 在 merge 後接手保鮮（含步驟 5 的 docs/ 保鮮）。
+8. 保鮮完成後依分支政策合併、推送與清理。
+9. 將 `.shiftblame/<slug>/` 移至 `archive/`。
 
 ## 2. 詞彙與意圖授權（RFC 2119）
 
