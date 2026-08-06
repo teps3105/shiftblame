@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.5.1-2ea44f.svg" alt="version 0.5.1"/>
+  <img src="https://img.shields.io/badge/version-0.6.0-2ea44f.svg" alt="version 0.6.0"/>
 </p>
 
 ---
@@ -83,63 +83,43 @@ flowchart TD
 
 ## 角色
 
-**決策中樞**
-
 ```mermaid
-flowchart LR
-    Boss["老闆"] --> BossW["工作：提出命題、授權修改、做決策、最終 PASS"]
-    SEC["SECRETARY（主對話固定）"] --> SECW["唯一決策中心：揭露意圖、記錄路由、交接、收尾、文件保鮮、<br/>派發上下六角色子代理、親自核對 §10 一致性、放行；<br/>開發中依 G3 派發落地側三權、讀產出後判決合格/返工、獨佔 commit；<br/>執行所有判決性工作（commit 保留/reset、跨權協調、PASS、路由判定）；<br/>可提路由提議但不等於授權"]
+flowchart TB
+    SEC["SECRETARY（主對話）<br/>唯一決策中心"]
+    subgraph Top["顧問側 · 定義「該做什麼」· 對 repo 唯讀"]
+        AUD["AUDITOR<br/>G1"] <-.制約.-> RES["RESEARCHER<br/>G2"]
+        RES <-.制約.-> PLA["PLANNER<br/>G3"]
+        PLA <-.制約.-> AUD
+    end
+    subgraph Bottom["落地側 · 執行「怎麼做」· 判決歸 SECRETARY"]
+        TST["TESTER<br/>寫測試"]
+        DEV["DEVELOPER<br/>寫實作"]
+        ACC["ACCEPTOR<br/>驗收"]
+    end
+    SEC -- 派發 --> Top & Bottom
+    AUD == 垂直對應 ==> ACC
+    RES == 垂直對應 ==> DEV
+    PLA == 垂直對應 ==> TST
 ```
 
-**顧問側（上三權）— 定義「該做什麼」· 對 repo 唯讀 · 互相制約**
-
-```mermaid
-flowchart LR
-    AUD["AUDITOR"] --> AUDW["主導 G1（需求／驗收）；開發前後都派唯讀子代理獨立審核，<br/>再複核並回頭對照 G1（由子代理承載）"]
-    AUDW --> AUDB["對應落地側 → ACCEPTOR"]
-    RES["RESEARCHER"] --> RESW["主導 G2，承接 G1 並取得、複核外部獨立研究（由子代理承載）"]
-    RESW --> RESB["對應落地側 → DEVELOPER"]
-    PLA["PLANNER"] --> PLAW["主導 G3 實作計畫，先寫驗收再寫實作步驟<br/>（供 SECRETARY 照表執行開發）；對 repo 唯讀（由子代理承載）"]
-    PLAW --> PLAB["對應落地側 → TESTER"]
-```
-
-**落地側（下三權）— 執行「怎麼做」· 互相制約 · 判決歸 SECRETARY**
-
-```mermaid
-flowchart LR
-    DEV["DEVELOPER"] --> DEVW["寫 repo 實作碼（依 G2）；可寫實作碼、不可 commit（由子代理承載）"]
-    DEVW --> DEVB["對應顧問側 ← RESEARCHER"]
-    TST["TESTER"] --> TSTW["寫測試碼、定義「過」（依 G3）；可寫測試碼、不可 commit（由子代理承載）"]
-    TSTW --> TSTB["對應顧問側 ← PLANNER"]
-    ACC["ACCEPTOR"] --> ACCW["把東西修到綠燈、驗收「完成」（對照 G1）；不碰實作碼／測試邏輯、<br/>可寫測試環境配套（config/fixture/env）、可跑測試命令、不可 commit、<br/>只回報不下判決（由子代理承載）"]
-    ACCW --> ACCB["對應顧問側 ← AUDITOR"]
-```
-
-**主對話永遠是 SECRETARY**——六個角色的工作由子代理承載（角色為任務參數）。顧問側子代理對 repo 唯讀、工作區限 `.shiftblame/`，在 `.shiftblame/` 內寫自己主導的管理文件（G1／G2／G3）與 `tmp/` 研究中間產物。落地側子代理可在 SECRETARY 授權範圍內寫 repo（DEVELOPER 寫實作碼、TESTER 寫測試碼、ACCEPTOR 不碰實作碼／測試邏輯但可寫測試環境配套並可跑測試命令），產出存 `tmp/`，但**三者皆不可 commit**——commit 與判決一律由 SECRETARY 獨佔（見 SKILL §3 消歧）。
+> - **老闆**：提出命題、授權修改、做決策、最終 PASS。
+> - **SECRETARY（主對話固定）**：唯一決策中心——意圖揭露、記錄路由、放行、判決合格/返工、獨佔 commit、路由判定、PASS。未授權前唯讀。
+> - **AUDITOR** → G1（需求／驗收）。**RESEARCHER** → G2（技術）。**PLANNER** → G3（實作計畫）。三者對 repo 唯讀、互相制約。
+> - **DEVELOPER** 寫實作碼。**TESTER** 寫測試定義「過」。**ACCEPTOR** 修到綠燈驗收「完成」。三者互相制約、皆不可 commit。
+> - 六角色由子代理承載（角色為任務參數）。顧問側工作區限 `.shiftblame/`；落地側產出存 `tmp/`。細節見 SKILL §3。
 
 ## 三份文件
 
-```mermaid
-flowchart LR
-    G1["G1 需求研究"] --> G1A["回答：What、Why、邊界、原始驗收條件"]
-    G1A --> G1N["不做：不寫技術解法"]
-    G2["G2 技術分析"] --> G2A["回答：How、測試方式、技術風險"]
-    G2A --> G2N["不做：不改寫需求"]
-    G3["G3 實作計畫"] --> G3A["回答：先寫業務驗收，再寫實作步驟"]
-    G3A --> G3N["不做：不新增需求、不讓實作步驟先於驗收"]
-```
+- **G1 需求研究** — 回答 What、Why、邊界、原始驗收條件。不寫技術解法。
+- **G2 技術分析** — 回答 How、測試方式、技術風險。不改寫需求。
+- **G3 實作計畫** — 先寫業務驗收，再寫實作步驟。不新增需求、不讓實作步驟先於驗收。
 
 ## SOP 與 ROADMAP 的硬邊界
 
 這兩份專案文件不是 Agent 的流水帳：
 
-```mermaid
-flowchart LR
-    SOP["SOP"] --> SOPCan["只能寫：本專案跨 slug 長期有效、可查核的本地配置、<br/>具體執行規範、資料／服務邊界與驗證入口；<br/>可使用段落、表格、命令與來源標註"]
-    SOPCan --> SOPNot["MUST NOT 寫：產品目標、ROADMAP 計畫、G1/G2/G3、<br/>中央流程副本、單一需求、過時規範、進度或流水帳"]
-    ROADMAP["ROADMAP"] --> RMCAN["只能寫：用白話寫產品目標、固定邊界與尚未完成的想做計畫"]
-    RMCAN --> RMNot["MUST NOT 寫：未授權想法、已完成事項、技術方案、G1/G2/G3、<br/>排程、優先級、任務、進度或流水帳"]
-```
+- **SOP** — 只能寫：本專案跨 `<slug>` 長期有效、可查核的本地配置、執行規範、資料／服務邊界與驗證入口。MUST NOT 寫：產品目標、ROADMAP 計畫、G1/G2/G3、中央流程副本、單一需求、進度或流水帳。
+- **ROADMAP** — 只能寫：用白話寫產品目標、固定邊界與尚未完成的想做計畫。MUST NOT 寫：未授權想法、已完成事項、技術方案、G1/G2/G3、排程、優先級、進度或流水帳。
 
 欄位模板與拒絕規則以 [`skills/shiftblame/assets/SOP.md`](skills/shiftblame/assets/SOP.md) 及 [`skills/shiftblame/assets/ROADMAP.md`](skills/shiftblame/assets/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
 

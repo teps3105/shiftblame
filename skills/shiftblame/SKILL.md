@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 0.5.1
+revision: 0.6.0
 description: 以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY（主對話），上三權是顧問側（AUDITOR/RESEARCHER/PLANNER 對 repo 唯讀，各主導 G1/G2/G3，互相制約、兩兩雙向一致才放行），下三權是落地側（DEVELOPER 寫實作碼對應 RESEARCHER、TESTER 寫測試定義「過」對應 PLANNER、ACCEPTOR 跑測試驗收「完成」對應 AUDITOR——寫測試與跑測試分離形成制約，互相制約）；秘書先揭露意圖，老闆授權後進入顧問側三權制衡，放行後秘書依 G3 派發下三權落地執行，每個功能（commit 單位）TESTER 寫測試→DEVELOPER 寫實作→ACCEPTOR 修到綠燈驗收→SECRETARY 判決合格才 commit（測試先行：先寫測試再實作，commit 與所有判決集權於 SECRETARY，子代理不得 commit）；子代理一律由主對話 SECRETARY 派發、子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（唯一溝通橋樑）；驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，不合格返工疊加新 commit，所有里程碑通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架
@@ -75,15 +75,7 @@ flowchart TD
 
    **G1／G2／G3 是活草稿**：三份文件在 `sb-do` 放行後不凍結——開發是對假設的實測，實作情境必然與計畫有出入。SECRETARY 隨開發進展**常態性地修正對應的 G1／G2／G3** 以反映實況，然後繼續開發，不為流程而流程。修正依主導者歸屬：需求層改 G1（AUDITOR 主導）、技術層改 G2（RESEARCHER 主導）、計畫層改 G3（PLANNER 主導；§2.5 階段驗收記錄由 SECRETARY 補寫）；SECRETAREY 派發對應角色子代理輕量補寫，**不重跑三權制衡**。
 
-   **開發序列複雜度門檻**——任一成立時，SECRETARY 將 G3 行動序列拆成 causal 小步；每步只能依賴已完成項；一致性的跨檔修改保持同一步：
-
-   ```mermaid
-   flowchart LR
-       Sig["複雜度訊號（任一成立）"]
-       Sig --> S1["行動數 ≥ 4"]
-       Sig --> S2["跨檔數 ≥ 4"]
-       Sig --> S3["強依賴對 ≥ 2"]
-   ```
+   **開發序列複雜度門檻**——任一成立時，SECRETARY 將 G3 行動序列拆成 causal 小步；每步只能依賴已完成項；一致性的跨檔修改保持同一步：行動數 ≥ 4、跨檔數 ≥ 4、強依賴對 ≥ 2。
 
    每個功能（commit 單位）：SECRETARY 派發落地側三權——TESTER 寫測試定義「過」（依 G3）→ DEVELOPER 寫實作碼（依 G2）→ ACCEPTOR 把東西修到綠燈、驗收「完成」（對照 G1）→ SECRETARY 讀 `tmp/` 中落地側三權各自**結構化整理**的執行記錄後**判決**：合格才 commit（獨佔，建立待驗對象），不合格回 DEVELOPER／TESTER 返工。落地側三權的執行記錄存 `tmp/`，**各自整理成可判讀的結構化產出**（不是散落碎片讓 SECRETARY 拼湊），G*.md 保持乾淨只放決策結論。**判決（合格/返工、commit）由 SECRETARY 做**。該里程碑所有功能 commit 完成後才在里程碑邊界進入階段驗收（老闆確認＋AUDITOR 複驗）。**禁止把單一功能當成驗收節點**——功能是 commit 單位，驗收節點是里程碑。
 
@@ -141,43 +133,19 @@ flowchart TD
    5. **輕量保鮮**（§1.7.1）：SECRETARY 更新 SLUG 技術債／臨時租約；不動 SOP／ROADMAP／archive。
 5. **圖文衝突時以圖為準**：其他文件只能解釋自己負責的面向與箭頭，不得另建流程。
 6. **SOP／ROADMAP 硬分欄**：SOP 寫本專案跨 `<slug>` 長期有效、可執行且可查核的本地配置、專案特有規範、資料／服務邊界與驗證入口，可用段落、表格、命令與來源標註完整保存實際值；MUST NOT 複製 SKILL 或 `references/` 中央模板已定義的通用流程。ROADMAP 只寫老闆明確授權的產品目標、固定邊界與尚未完成的想做計畫，需求不必先被阻塞。兩者 MUST NOT 寫需求流程、技術方案、實作計畫、進度、討論、角色行為、歷史流水或未授權方案；完整准入欄位與禁止項以 `assets/SOP.md`、`assets/ROADMAP.md` 為準。違規內容不得以「只寫結果」之名保留。
-7. **管理文件唯一寫入矩陣**——每份文件一條鏈，標明唯一寫入者與前置條件：
+7. **管理文件唯一寫入矩陣**：
 
-```mermaid
-flowchart LR
-    subgraph Mgmt["管理文件（.shiftblame/）"]
-        direction TB
-        SOP["SOP"] --> WS["寫入者：SECRETARY"]
-        WS --> PS["前置：新增規範需老闆授權<br/>每 slug 結束時自動保鮮"]
-        ROADMAP["ROADMAP"] --> WR["寫入者：SECRETARY"]
-        WR --> PR["前置：新增產品意圖需老闆授權<br/>每 slug 結束時移除完成項"]
-        SLUG["SLUG"] --> WSL["寫入者：SECRETARY"]
-        WSL --> PSL["前置：老闆已決定 slug/nnn 與節點<br/>只記授權及目前快照"]
-    end
-    subgraph Three["三權文件"]
-        direction TB
-        G1["G1"] --> WA["寫入者：AUDITOR（顧問側）"]
-        WA --> PA["前置：需求制衡流程內<br/>經 SECRETARY 核對 §10 後定稿"]
-        G2["G2"] --> WR2["寫入者：RESEARCHER（顧問側）"]
-        WR2 --> PR2["前置：技術制衡流程內<br/>經 SECRETARY 核對 §10 後定稿"]
-        G3["G3"] --> WP["寫入者：PLANNER（顧問側）"]
-        WP --> PP["前置：實作計畫流程內<br/>經 SECRETARY 核對 §10 後定稿<br/>例外：§2.5 階段驗收記錄由 SECRETARY 補寫"]
-    end
-    subgraph Repo["repo 檔案"]
-        direction TB
-        Code["實作碼"] --> WD["寫入者：DEVELOPER 或 SECRETARY"]
-        WD --> PD["前置：SECRETARY 依 G3 派發<br/>DEVELOPER 可寫但不可 commit<br/>低複雜度 SECRETARY MAY 直接寫"]
-        Test["測試碼"] --> WT["寫入者：TESTER 或 SECRETARY"]
-        WT --> PT["前置：SECRETARY 依 G3 派發<br/>TESTER 可寫（定義「過」）但不可 commit"]
-        Commit["repo commit"] --> WC["寫入者：SECRETARY 獨佔"]
-        WC --> PC["前置：G1/G2/G3 兩兩雙向一致（§10）<br/>落地側三權產出經判決合格後 commit"]
-    end
-    subgraph Agents["子代理（無寫入者欄 · 由 SECRETARY 派發）"]
-        direction TB
-        Consult["顧問側 AUDITOR/RESEARCHER/PLANNER<br/>對 repo 唯讀 · 工作區限 .shiftblame/<br/>在 .shiftblame/ 寫 G1/G2/G3 · 可寫 tmp/<br/>不得判決 · MUST NOT 寫 repo 碼/測試/commit"]
-        Landing["落地側 DEVELOPER/TESTER/ACCEPTOR<br/>DEVELOPER 可寫實作碼 · TESTER 可寫測試碼<br/>ACCEPTOR 可寫測試環境配套 · 三者皆不可 commit<br/>產出存 tmp/ · 不得判決 · 互相制約"]
-    end
-```
+   - **SOP** — 寫入者：SECRETARY。前置：新增規範需老闆授權；每 slug 結束時自動保鮮。
+   - **ROADMAP** — 寫入者：SECRETARY。前置：新增產品意圖需老闆授權；每 slug 結束時移除完成項。
+   - **SLUG** — 寫入者：SECRETARY。前置：老闆已決定 slug/nnn 與節點；只記授權及目前快照。
+   - **G1** — 寫入者：AUDITOR（顧問側）。前置：需求制衡流程內；經 SECRETARY 核對 §10 後定稿。
+   - **G2** — 寫入者：RESEARCHER（顧問側）。前置：技術制衡流程內；經 SECRETARY 核對 §10 後定稿。
+   - **G3** — 寫入者：PLANNER（顧問側）。前置：實作計畫流程內；經 SECRETARY 核對 §10 後定稿。例外：§2.5 階段驗收記錄由 SECRETARY 補寫。
+   - **repo 實作碼** — 寫入者：DEVELOPER 或 SECRETARY。前置：SECRETARY 依 G3 派發；DEVELOPER 可寫但不可 commit；低複雜度 SECRETARY MAY 直接寫。
+   - **repo 測試碼** — 寫入者：TESTER 或 SECRETARY。前置：SECRETARY 依 G3 派發；TESTER 可寫（定義「過」）但不可 commit。
+   - **repo commit** — 寫入者：**SECRETARY 獨佔**。前置：G1/G2/G3 兩兩雙向一致（§10）且通過開發門檻；落地側三權產出經判決合格後 commit。
+   - **顧問側子代理**（AUDITOR/RESEARCHER/PLANNER）— 無寫入者欄。對 repo 唯讀、工作區限 `.shiftblame/`；在 `.shiftblame/` 寫 G1/G2/G3，可寫 `tmp/`；不得判決；MUST NOT 寫 repo 碼/測試/commit。
+   - **落地側子代理**（DEVELOPER/TESTER/ACCEPTOR）— 無寫入者欄。DEVELOPER 可寫實作碼、TESTER 可寫測試碼、ACCEPTOR 可寫測試環境配套；三者皆不可 commit；產出存 `tmp/`；不得判決；互相制約。
 
 保鮮分兩層（§0 收斂段；權威操作步驟見 §1.7.1／§1.7.2）：每個 `<nnn>` 完成做**輕量保鮮**（§1.7.1，只更新 SLUG 技術債／臨時租約，不動 SOP／ROADMAP／archive）；只有老闆對整個 `<slug>` 拍板 PASS（slug 結束）才做**完整收尾保鮮**（§1.7.2，重寫 SOP／ROADMAP、保鮮 docs/／README 並移 archive/）。兩層皆為既定維護動作，不需另行取得一次寫入授權；新增產品方向、改變產品邊界或把未完成項改成新需求，仍須老闆明確授權。
 
@@ -267,36 +235,42 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    Boss["老闆"] --> BossD["職責：修改授權、決策、PASS<br/>執行方式：決定範圍"]
-    SEC["SECRETARY（主對話固定）"] --> SECD["唯一決策中心：意圖揭露、忠實記錄路由、交接、<br/>收尾與文件保鮮；派發上下六角色子代理、<br/>親自核對 §10 一致性、放行；<br/>開發中依 G3 派發落地側三權、讀產出後判決合格/返工、<br/>獨佔 commit；執行所有判決性工作<br/>（commit 保留/reset、跨權協調、PASS、路由判定）<br/>執行方式：主對話唯一角色；未授權前唯讀"]
+    Boss(["老闆"]) -->|授權| SEC["SECRETARY<br/>（主對話）"]
+    SEC -->|放行 · 判決 · commit<br/>路由 · reset · PASS| Boss
 ```
+
+> - **老闆**：提出命題、授權修改、做決策、最終 PASS。決定範圍。
+> - **SECRETARY（主對話固定）**：唯一決策中心。意圖揭露、忠實記錄路由、交接、收尾與文件保鮮；派發上下六角色子代理、親自核對 §10 一致性、放行；開發中依 G3 派發落地側三權、讀產出後判決合格/返工、獨佔 commit；執行所有判決性工作（commit 保留/reset、跨權協調、PASS、路由判定）。主對話唯一角色；未授權前唯讀。
 
 ### 顧問側（上三權）— 定義「該做什麼」· 對 repo 唯讀 · 互相制約
 
 ```mermaid
-flowchart LR
-    AUD["AUDITOR"] --> AUDF["主導文件：G1（需求／驗收標準）"]
-    AUDF --> AUC["制約：用 G1 制約 G2（技術須滿足需求）、<br/>G3（實作計畫須對應驗收）"]
-    AUC --> AUE["執行方式：由子代理承載（角色為任務參數）；對 repo 唯讀"]
-    RES["RESEARCHER"] --> RESF["主導文件：G2（技術方案）"]
-    RESF --> REC["制約：用 G2 制約 G1（需求須技術可行）、<br/>G3（實作計畫須技術可落地）"]
-    REC --> REE["執行方式：由子代理承載（角色為任務參數）；對 repo 唯讀"]
-    PLA["PLANNER"] --> PLAF["主導文件：G3（實作計畫）"]
-    PLAF --> PLC["制約：用 G3 制約 G1（需求須可實作）、<br/>G2（技術須可排程）"]
-    PLC --> PLE["執行方式：由子代理承載（角色為任務參數）；對 repo 唯讀"]
+flowchart TB
+    G1["G1 需求<br/>AUDITOR"] <-.制約.-> G2["G2 技術<br/>RESEARCHER"]
+    G2 <-.制約.-> G3["G3 計畫<br/>PLANNER"]
+    G3 <-.制約.-> G1
 ```
+
+> - **AUDITOR** → G1（需求／驗收標準）。制約 G2（技術須滿足需求）、G3（計畫須對應驗收）。
+> - **RESEARCHER** → G2（技術方案）。制約 G1（需求須技術可行）、G3（計畫須技術可落地）。
+> - **PLANNER** → G3（實作計畫）。制約 G1（需求須可實作）、G2（技術須可排程）。
+> - 三者皆由子代理承載（角色為任務參數）；對 repo 唯讀。
 
 ### 落地側（下三權）— 執行「怎麼做」· 互相制約 · 判決歸 SECRETARY
 
 ```mermaid
-flowchart LR
-    DEV["DEVELOPER"] --> DEVD["對應顧問：RESEARCHER（G2）<br/>職責：寫 repo 實作碼"]
-    DEVD --> DEVP["repo 權限：可寫實作碼、不可 commit<br/>執行方式：由子代理承載（角色為任務參數）"]
-    TST["TESTER"] --> TSTD["對應顧問：PLANNER（G3）<br/>職責：寫測試碼、定義「過」"]
-    TSTD --> TSTP["repo 權限：可寫測試碼、不可 commit<br/>執行方式：由子代理承載（角色為任務參數）"]
-    ACC["ACCEPTOR"] --> ACCD["對應顧問：AUDITOR（G1）<br/>職責：把東西修到綠燈、驗收「完成」"]
-    ACCD --> ACCP["repo 權限：不碰實作碼／測試邏輯、<br/>可寫測試環境配套（config/fixture/env vars）、<br/>可跑測試命令、不可 commit<br/>執行方式：由子代理承載（角色為任務參數）"]
+flowchart TB
+    TST["TESTER<br/>寫測試"] -->|定義「過」| ACC["ACCEPTOR<br/>跑測試"]
+    DEV["DEVELOPER<br/>寫實作"] -->|實作被測| ACC
+    ACC -->|綠燈＝完成| Judge{{"SECRETARY<br/>判決"}}
+    Judge -->|合格| Commit["commit"]
+    Judge -->|返工| TST
 ```
+
+> - **DEVELOPER** ← RESEARCHER（G2）：寫 repo 實作碼；可寫碼、不可 commit。
+> - **TESTER** ← PLANNER（G3）：寫測試碼、定義「過」；可寫測試碼、不可 commit。
+> - **ACCEPTOR** ← AUDITOR（G1）：修到綠燈、驗收「完成」；不碰實作碼／測試邏輯、可寫測試環境配套（config/fixture/env）、可跑測試命令、不可 commit。
+> - 三者皆由子代理承載（角色為任務參數）。
 
 **垂直對應**（同面向的定義層 ↔ 執行層）：AUDITOR↔ACCEPTOR（驗收）、RESEARCHER↔DEVELOPER（技術）、PLANNER↔TESTER（計畫）。
 
@@ -317,16 +291,11 @@ SECRETARY 在顧問側各角色子代理產出文件後，**親自核對 §10 �
 
 ## 4. 文件節點不變量
 
-```mermaid
-flowchart LR
-    Inv["文件節點不變量"]
-    Inv --> I1["單一面向：一份文件只回答其主導角色負責的面向<br/>但三份 MUST 兩兩雙向一致（制衡，判準見 §10）"]
-    Inv --> I2["只寫結果：不記輪次、辯論過程或角色表演<br/>過去事實由 git 歷史承擔"]
-    Inv --> I3["當下快照：可從老闆命題、codebase 與另兩份文件重建"]
-    Inv --> I4["資料表格化：可比較的清單、屬性與狀態使用表格"]
-    Inv --> I5["可追溯：老闆意圖引用 SLUG 原始命題<br/>codebase／外部事實附 path:line 或來源"]
-    Inv --> I6["狀態分離：流程位置記於 SLUG<br/>不混入 G1／G2／G3 結論"]
-```
+- **單一面向** — 一份文件只回答其主導角色負責的面向；但三份 MUST 兩兩雙向一致（制衡，判準見 §10）。
+- **只寫結果** — 不記輪次、辯論過程或角色表演；過去事實由 git 歷史承擔。
+- **當下快照** — 可從老闆命題、codebase 與另兩份文件重建。
+- **可追溯** — 老闆意圖引用 SLUG 原始命題；codebase／外部事實附 `<路徑>:<行號>` 或來源。
+- **狀態分離** — 流程位置記於 SLUG，不混入 G1／G2／G3 結論。
 
 ## 5. Repo 紀律
 
@@ -342,35 +311,18 @@ flowchart LR
 
 ## 6. 老闆指定路由
 
-是否建立或沿用 `<slug>/<nnn>` 只由老闆決定。
-
-```mermaid
-flowchart LR
-    Slug["&lt;slug&gt;"] --> SlugD["承載：跨循環不變的老闆原始命題、<br/>目標、授權邊界與租約"]
-    Nnn["&lt;nnn&gt;"] --> NnnD["承載：一次三權制衡→開發→<br/>三者重審的收斂循環"]
-```
+是否建立或沿用 `<slug>/<nnn>` 只由老闆決定。`<slug>` 承載跨循環不變的老闆原始命題、目標、授權邊界與租約；`<nnn>` 承載一次三權制衡→開發→三者重審的收斂循環。
 
 SLUG 只記目前位於主圖哪個節點，合法節點名稱：`三權制衡（G1↔G2↔G3）／開發／證據／三者重審／nnn 完成／老闆 PASS／收尾`。退回時改成 `三權制衡（G1↔G2↔G3）` 並重走箭頭。
 
-下表只說明各路由的關係，不授權 SECRETARY 代為判定：
+下列只說明各路由的關係，不授權 SECRETARY 代為判定：
 
-下圖只說明各路由的關係，不授權 SECRETARY 代為判定：
-
-```mermaid
-flowchart LR
-    R1["沿用目前 nnn"] --> R1R["關係：同一子需求的擴充"]
-    R1R --> R1P["路徑：從目前循環的三權制衡重走"]
-    R2["既有 slug 開新 nnn"] --> R2R["關係：同一大需求中的新子需求"]
-    R2R --> R2P["路徑：前置—目前 nnn 已完成（§0）；不需先 PASS<br/>在該 slug 建新循環並從三權制衡開始"]
-    R3["開新 slug"] --> R3R["關係：與既有功能幾乎無關的新功能需求"]
-    R3R --> R3P["路徑：建立新長程目標並從三權制衡開始"]
-    R4["結束 slug"] --> R4R["關係：整個 slug 所有子需求完成，老闆拍板結束"]
-    R4R --> R4P["路徑：老闆 PASS → 完整收尾保鮮（§1.7.2）→ 移 archive/"]
-    R5["直接實行"] --> R5R["關係：老闆指定為明確的低複雜度設定或開關"]
-    R5R --> R5P["路徑：主圖直接實行路徑"]
-    R6["框架演化"] --> R6R["關係：老闆指定修改 shiftblame 自身"]
-    R6R --> R6P["路徑：不開 slug；先揭露方案並取得授權"]
-```
+- **沿用目前 `<nnn>`** — 同一子需求的擴充。路徑：從目前循環的三權制衡重走。
+- **既有 `<slug>` 開新 `<nnn>`** — 同一大需求中的新子需求。路徑：前置—目前 `<nnn>` 已完成（§0）；不需先 PASS。在該 `<slug>` 建新循環並從三權制衡開始。
+- **開新 `<slug>`** — 與既有功能幾乎無關的新功能需求。路徑：建立新長程目標並從三權制衡開始。
+- **結束 `<slug>`** — 整個 `<slug>` 所有子需求完成，老闆拍板結束。路徑：老闆 PASS → 完整收尾保鮮（§1.7.2）→ 移 archive/。
+- **直接實行** — 老闆指定為明確的低複雜度設定或開關。路徑：主圖直接實行路徑。
+- **框架演化** — 老闆指定修改 shiftblame 自身。路徑：不開 slug；先揭露方案並取得授權。
 
 SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用／開新 `<nnn>`、開新 `<slug>`、直接實行、框架演化），提議須附脈絡依據。**提議不等於授權**：建立 `<slug>/<nnn>` 與預建檔案均須老闆明確拍板，SECRETARY MUST NOT 在授權前自行建立或執行。老闆尚未決定時，SECRETARY 陳述提議與脈絡後等待裁決。
 
@@ -419,32 +371,20 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 載入本 skill 後，SECRETARY MUST 依序唯讀：
 
-```mermaid
-flowchart LR
-    L1["順序 1"] --> L1R["讀取：.shiftblame/SOP.md、ROADMAP.md"]
-    L1R --> L1P["目的：理解專案規則與路線圖"]
-    L1P --> L2["順序 2"]
-    L2 --> L2R["讀取：.shiftblame/archive/"]
-    L2R --> L2P["目的：理解歷史開發脈絡"]
-    L2P --> L3["順序 3"]
-    L3 --> L3R["讀取：當下未歸檔的 slug（目前節點）"]
-    L3R --> L3P["目的：理解當下開發脈絡"]
-```
+1. `.shiftblame/SOP.md`、`.shiftblame/ROADMAP.md` — 理解專案規則與路線圖。
+2. `.shiftblame/archive/` — 理解歷史開發脈絡。
+3. 當下未歸檔的 `<slug>`（目前節點）— 理解當下開發脈絡。
 
 檔案不存在時如實回報缺漏，不視為錯誤。
 
 讀完後，當老闆命題到來，SECRETARY 基於上述脈絡產出**路由提議**：
 
-```mermaid
-flowchart TD
-    Ctx[/脈絡判定/] --> Q{命題屬於？}
-    Q -- "當下 nnn 仍在收斂、<br/>命題屬同一子需求擴充" --> P1["提議路由：沿用目前 nnn"]
-    Q -- "同一 slug 中的新子需求" --> P2["提議路由：開新 nnn"]
-    Q -- "命題與既有功能幾乎無關" --> P3["提議路由：開新 slug"]
-    Q -- "明確的低複雜度設定或開關" --> P4["提議路由：直接實行"]
-    Q -- "命題為修改 shiftblame 自身" --> P5["提議路由：框架演化"]
-    Q -- "命題是老闆已授權的產品目標／<br/>固定邊界／待開發計畫" --> P6["依授權寫入 ROADMAP<br/>若授權尚未明確，只能在對話提議<br/>仍待老闆決定"]
-```
+- 當下 `<nnn>` 仍在收斂、命題屬同一子需求擴充 → 提議：沿用目前 `<nnn>`。
+- 同一 `<slug>` 中的新子需求 → 提議：開新 `<nnn>`。
+- 命題與既有功能幾乎無關 → 提議：開新 `<slug>`。
+- 明確的低複雜度設定或開關 → 提議：直接實行。
+- 命題為修改 shiftblame 自身 → 提議：框架演化。
+- 命題是老闆已授權的產品目標／固定邊界／待開發計畫 → 依授權寫入 ROADMAP；若授權尚未明確，只能在對話提議，仍待老闆決定。
 
 上表與 §6 路由表同義；提議路由的判定一律以 §6 關係原則為準（例如「開新 `<slug>`」指 §6「與既有功能幾乎無關」，不以「是否無當下 `<slug>`」判定）。
 
@@ -456,27 +396,9 @@ flowchart TD
 
 「一致」的對齊軸為 **G1 的需求項**：G2、G3 皆以 G1 需求項為根，逐項承接。「雙向」=每對同時成立**正向承接**與**反向回指**：
 
-```mermaid
-flowchart LR
-    subgraph Pair12["配對 G1↔G2"]
-        direction TB
-        F12["正向承接（G1→G2）：<br/>G1 每項需求在 G2 有對應技術分析"]
-        B12["反向回指（G2→G1）：<br/>G2 每項技術分析能回指其所承接的 G1 需求"]
-        F12 <--> B12
-    end
-    subgraph Pair13["配對 G1↔G3"]
-        direction TB
-        F13["正向承接（G1→G3）：<br/>G1 每項需求在 G3 實作計畫有對應項<br/>（驗收操作＋實作步驟）<br/>G3 每個里程碑指向一項 G1 可觀察完整價值"]
-        B13["反向回指（G3→G1）：<br/>G3 實作計畫每項能回指所支持的 G1 需求<br/>每個里程碑能回指其構成的 G1 可觀察價值"]
-        F13 <--> B13
-    end
-    subgraph Pair23["配對 G2↔G3"]
-        direction TB
-        F23["正向承接（G2→G3）：<br/>G3 每個實作步驟對應一項 G2 技術分析<br/>且兩者指向同一 G1 需求"]
-        B23["反向回指（G3→G2）：<br/>G2 每項技術分析在 G3 實作步驟中被落實<br/>且與該步驟指向同一 G1 需求"]
-        F23 <--> B23
-    end
-```
+- **G1↔G2** — 正向：G1 每項需求在 G2 有對應技術分析。反向：G2 每項技術分析能回指所承接的 G1 需求。
+- **G1↔G3** — 正向：G1 每項需求在 G3 實作計畫有對應項（驗收操作＋實作步驟）；G3 每個里程碑指向一項 G1 可觀察完整價值。反向：G3 實作計畫每項能回指所支持的 G1 需求；每個里程碑能回指其構成的 G1 可觀察價值。
+- **G2↔G3** — 正向：G3 每個實作步驟對應一項 G2 技術分析，且兩者指向**同一** G1 需求。反向：G2 每項技術分析在 G3 實作步驟中被落實，且與該步驟指向同一 G1 需求。
 
 G2↔G3 兩向都以 G1 需求項為錨：步驟與其對應的技術分析 MUST 指向同一 G1 需求，不得分屬不同需求。**里程碑錨定**：G3 每個里程碑 MUST 指向一項 G1 可觀察價值（一組功能構成的完整價值），由 PLANNER 切分、AUDITOR 制衡價值成立；單一功能不構成里程碑。
 
@@ -490,14 +412,7 @@ G2↔G3 兩向都以 G1 需求項為錨：步驟與其對應的技術分析 MUST
 >
 > 主圖與 SLUG 合法節點清單中的「證據」「三者重審」是**收斂**（§1.4.2）的**內部子節點**（合併收斂），非獨立階段——它們包在收斂的一次自動觸發內完成。
 >
-> **授權範圍光譜**——下列模式決定 SECRETARY 單次可連續推進的範圍；不論哪種模式，每個被觸發的 skill 仍走完整內部流程：
->
-> ```mermaid
-> flowchart LR
->     Mode["一般模式"] --> Trigger["觸發：各階段條件分別成立"]
->     Trigger --> Scope["單次連續推進範圍：單一階段（一次觸發一個 skill）"]
->     Scope --> Stop["停止點：該階段完成後等待下一條件"]
-> ```
+> **授權範圍光譜**——一般模式：各階段條件分別成立時觸發，單次連續推進範圍為單一階段（一次觸發一個 skill），該階段完成後等待下一條件。不論哪種模式，每個被觸發的 skill 仍走完整內部流程。
 
 ```mermaid
 stateDiagram-v2
