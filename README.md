@@ -24,7 +24,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 
 核心原則：
 
-- **問題陳述不等於修改授權。** SECRETARY 必須先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
+- **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
+- **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話 SECRETARY 獨佔；子代理只提供輸入，不做決策。
 - **雙層三權分立。** 上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、對 repo 唯讀、互相制約，G1/G2/G3 兩兩雙向一致才放行；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約，產出供 SECRETARY 判決。每個落地角色垂直對應一個顧問角色。
 - **寫測試與跑測試分離。** TESTER 寫測試定義「過」、ACCEPTOR 跑測試驗收「完成」——分離確保不能「自己寫自己跑放水」。
@@ -37,10 +38,9 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 
 ```mermaid
 flowchart TD
-    Boss([老闆原始命題]) --> Reveal[SECRETARY 意圖揭露]
-    Reveal -- 無修改授權 --> Stop[停止寫入]
-    Reveal --> Route[老闆指定路由]
-    Route --> Check
+    Boss([老闆任何輸入]) --> Think["sb-think · 唯一閘口<br/>理解 · 對齊 · 分發<br/>═══ 責任轉移線 ═══"]
+    Think --> Route{老闆拍板路由}
+    Route -- 新需求 --> Start["sb-start 建骨架"] --> Check
 
     subgraph Check["顧問側三權制衡 · 對 repo 唯讀 · 互相制約"]
         direction LR
@@ -71,11 +71,14 @@ flowchart TD
 
     Next -- 否 --> NnnDone["nnn 完成<br/>（循環收斂）"]
     NnnDone --> LightFresh["輕量保鮮<br/>更新 SLUG"]
-    LightFresh --> BossRoute{老闆路由}
-    BossRoute -- 開新 nnn --> Check
-    BossRoute -- slug 結束 --> Pass([老闆 PASS])
+    LightFresh --> Decide{"需要老闆決策？"}
+    Decide -- 是（PASS／開新nnn／重大例外） --> Think
+    Decide -- 否 --> Dev
+    Think -- 老闆拍板結束 slug --> Pass([老闆 PASS])
     Pass --> FullFresh["完整收尾保鮮<br/>移 archive"]
 ```
+
+**所有老闆輸入第一步路由回 sb-think，不字面執行指令。** sb-think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。執行中不需老闆決策的事 agents 自主處理，需要決策才路由回 sb-think。
 
 **`<nnn>` 完成是單一子需求循環收斂，不等於整個 `<slug>` 結束。** 老闆在同一 `<slug>` 開新 `<nnn>` 不需先 PASS；只有結束整個 `<slug>` 才走 PASS 與完整收尾保鮮。
 
@@ -142,9 +145,9 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 幫我用三權制衡流程重構登入流程
 ```
 
-SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判定。可依既有脈絡提出路由提議，但提議只能回報給老闆，不寫入 ROADMAP，也不等於授權。老闆指定後，SECRETARY 才忠實記錄與交接。
+**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖、結構化呈現讓老闆確認，確認後才分發到對應流程。sb-think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。
 
-路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定）：
+路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定，在 sb-think 中拍板）：
 
 - **沿用 `<nnn>`**——同一子需求的擴充。
 - **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 `<nnn>` 已完成，不需先 PASS）。
@@ -155,10 +158,10 @@ SECRETARY 會先揭露意圖，等待老闆指定路由；不得代替老闆判�
 
 ### sb-* 工作流指令
 
-狀態遷移由條件自動觸發（重大例外遷移 §1.4.1、收斂 §1.4.2），不需指令；下列 `sb-*` 指令處理 slug／nnn 生命週期：
+**sb-think 是唯一閘口**——所有輸入先過 sb-think 理解、對齊、分發，下列指令是 sb-think 分發後的執行目標，老闆不直達：
 
-- [`sb-slug`](skills/sb-slug/SKILL.md)——開新 slug；無後標提議，有後標視為授權。
-- [`sb-next`](skills/sb-next/SKILL.md)——推進至下一個 nnn；無後標提議，有後標視為授權。
+- [`sb-think`](skills/sb-think/SKILL.md)——唯一閘口；所有輸入第一步路由回此，不字面執行，先理解意圖再分發。
+- [`sb-start`](skills/sb-start/SKILL.md)——新需求路由；建骨架（開 slug 或 nnn）→ 三權制衡。
 - [`sb-resume`](skills/sb-resume/SKILL.md)——繼續未完成的 slug／nnn，重走三權制衡。
 - [`sb-do`](skills/sb-do/SKILL.md)——核對 §10 一致性，放行進入開發。
 - [`sb-end`](skills/sb-end/SKILL.md)——結束 slug，執行完整收尾保鮮。
@@ -190,7 +193,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md
     │       ├── ROADMAP.md
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三權範本（複製來源）
-    └── sb-*/SKILL.md               # 各個可直接觸發的工作流 skill
+    └── sb-*/SKILL.md               # sb-think 唯一閘口、sb-start 新需求路由、其他為 sb-think 分發目標
 ```
 
 每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除，不得 commit。工作區為**結構分檔**（定義單檔、使用分檔）：

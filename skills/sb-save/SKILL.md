@@ -1,38 +1,12 @@
 ---
 name: sb-save
-description: 記錄當前 slug 工作落點到 SLUG.md，供其他對話用 /sb-resume 無縫恢復。
+description: 記錄當前 slug 工作落點到 SLUG.md，供其他對話用 sb-resume 無縫恢復。
 ---
 # sb-save — 記錄當前 slug 工作落點
 
-> **本指令在流程中的位置**：在當前任意節點記錄落點到 SLUG，供 sb-resume 恢復（不改變節點）
+> **sb-think 分發目標**：sb-think 理解老闆要存檔記錄後分發至此。位置：在當前任意節點記錄落點到 SLUG，供 sb-resume 恢復（不改變節點）。
 
-```mermaid
-flowchart LR
-    S0["意圖揭露"]
-    S1["路由指定"]
-    S2["三權制衡"]
-    S3["開發"]
-    S4["nnn完成"]
-    S5["老闆PASS"]
-    S6["收尾"]
-    S0 --> S1
-    S1 --> S2
-    S2 -->|sb-do 放行| S3
-    S2 -.->|不一致| S2
-    S3 -->|收斂| S4
-    S3 -->|收斂失敗| S2
-    S4 -->|sb-next| S2
-    S4 -->|sb-end| S5
-    S5 --> S6
-    SAVE(["💾 sb-save<br/>記錄落點"]):::special
-    S2 -. "記錄到 SLUG" .-> SAVE
-    S3 -.-> SAVE
-    S4 -.-> SAVE
-    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
-```
-
-
-當使用者要求「存檔」「記錄進度」「sb-save」「先存一下」時執行本 prompt。用於顯式記錄當前工作落點到 SLUG.md，讓其他對話能用 sb-resume 無縫恢復。
+當老闆要記錄當前工作落點時執行（由 sb-think 分發）。用於顯式記錄當前工作落點到 SLUG.md，讓其他對話能用 sb-resume 無縫恢復。
 
 先 `load skill: shiftblame`，主對話 SECRETARY 執行：
 

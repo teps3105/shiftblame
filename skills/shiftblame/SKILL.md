@@ -10,19 +10,17 @@ description: 以雙層三權分立約束 agent——所有決策權中央集權�
 
 ## 0. 權威拓樸
 
-本圖是流程權威。**雙層三權分立**運作：所有決策權中央集權到 SECRETARY（主對話）；上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、互相制約、對 repo 唯讀；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約、產出供 SECRETARY 判決。session 冷啟動的載入程序見 §9。
+本圖是流程權威。**雙層三權分立**運作：所有決策權中央集權到 SECRETARY（主對話）；上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、互相制約、對 repo 唯讀；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約、產出供 SECRETARY 判決。**所有老闆輸入第一步路由回 sb-think，不字面執行**（§6）。session 冷啟動的載入程序見 §9。
 
 ```mermaid
 flowchart TD
-    Boss([老闆原始命題]) --> Reveal[SECRETARY 意圖揭露]
-    Reveal --> Auth{老闆是否明確<br/>授權修改？}
-    Auth -- 否 --> Wait[停止寫入 · 只讀／等待老闆]
-    Auth -- 是 --> Route{老闆指定路由}
+    Boss([老闆任何輸入]) --> Think["sb-think · 唯一閘口<br/>理解 · 對齊 · 分發<br/>═══ 責任轉移線 ═══"]
+    Think --> Route{老闆拍板路由}
 
     Route -- 低複雜度／配置 --> Direct[直接實行]
     Direct --> Ev1[證據] --> Boss1([老闆])
     Route -- 框架演化 --> FrameEvolve[改檔 + 自洽檢查]
-    Route -- 開發需求 --> Consult
+    Route -- 新需求 --> Start["sb-start · 建骨架"] --> Consult
 
     subgraph Consult["顧問側三權制衡 · 定義該做什麼 · 對 repo 唯讀"]
         direction LR
@@ -60,11 +58,14 @@ flowchart TD
     end
 
     NnnDone --> LightFresh["輕量保鮮（§1.7.1）<br/>更新 SLUG 技術債／臨時租約"]
-    LightFresh --> BossRoute{老闆路由}
-    BossRoute -- 開新 nnn --> Consult
-    BossRoute -- slug 結束 --> Pass([老闆 PASS])
+    LightFresh --> Decide{"需要老闆決策？"}
+    Decide -- 是（PASS／開新nnn／重大例外） --> Think
+    Decide -- 否 --> Dev
+    Think -- 老闆拍板結束 slug --> Pass([老闆 PASS])
     Pass --> FullFresh["完整收尾保鮮（§1.7.2）<br/>重寫 SOP／ROADMAP<br/>保鮮 docs/／README<br/>＋ 移 slug/ 至 archive/"]
 ```
+
+> **sb-think 是唯一閘口**：所有老闆輸入（指令名、自然語言、計畫書）第一步路由回 sb-think，不字面執行——先理解背後意圖、結構化呈現讓老闆確認，確認後才分發。sb-think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。執行中不需老闆決策的事 agents 自主處理，不回 sb-think；需要老闆決策才路由回 sb-think。完整規範見 `skills/sb-think/SKILL.md`。
 
 ## 1. 制衡與讀圖規則
 
@@ -82,20 +83,23 @@ flowchart TD
    **常態修正 vs 重大例外**——開發途中發現問題時，SECRETARY 依下圖判定處置路徑：
 
    ```mermaid
-   flowchart TD
-       Issue[開發途中發現與 G1/G2/G3 有出入] --> Q{改變需求方向<br/>或整體架構<br/>或需老闆重新授權？}
-       Q -- "否（常態修正）" --> Normal["SECRETARY 派發對應角色子代理<br/>直接修正 G1/G2/G3（草稿修訂）"]
-       Normal --> Continue[繼續開發 · 返工疊加新 commit<br/>不停止 · 不重跑三權制衡]
-       Q -- "是（重大例外）" --> Major["停止開發<br/>依重大例外遷移（§1.4.1）<br/>自動退回對應權"]
-       Major --> Direction{方向錯在哪？}
-       Direction -- 需求方向 --> RG1["回 G1 · AUDITOR 重做"]
-       Direction -- 技術方向 --> RG2["回 G2 · RESEARCHER 重做"]
-       Direction -- 架構方向 --> RG3["回 G3 · PLANNER 重做"]
-       RG1 --> Reset
-       RG2 --> Reset
-       RG3 --> Reset
-       Reset["SECRETARY 比對已 commit 工作<br/>符合新方向 → 保留<br/>偏離新方向 → git reset 回退"]
-       Reset --> Reconsult[三份重新兩兩一致 · 回三權制衡]
+   sequenceDiagram
+        participant SEC as SECRETARY
+        participant Agent as 角色子代理
+        participant Consult as 三權制衡
+
+        SEC->>SEC: 開發途中發現與 G1/G2/G3 有出入
+        SEC->>SEC: 判定：改變需求方向／架構／需重新授權？
+
+        alt 否（常態修正）
+            SEC->>Agent: 派發直接修正對應 G1/G2/G3（草稿修訂）
+            Note over SEC,Agent: 繼續開發 · 返工疊加新 commit<br/>不停止 · 不重跑三權制衡
+        else 是（重大例外）
+            SEC->>SEC: 停止開發（§1.4.1）
+            SEC->>SEC: 依方向錯的權退回：需求→G1／技術→G2／架構→G3
+            SEC->>SEC: 比對已 commit 工作：符合新方向保留，偏離則 git reset
+            SEC->>Consult: 三份重新兩兩一致 · 回三權制衡
+        end
    ```
 
    常態修正的 commit 訊息遵循 §7 通用格式（`<type>: <繁中描述>`），用語意對應的標準類型（如 `fix:`、`refactor:`）；重大例外不會自動建立新 `<nnn>/<slug>`，須老闆授權。
@@ -107,25 +111,38 @@ flowchart TD
    老闆以自然語言表達意圖時，SECRETARY 依下圖翻譯並自動執行對應狀態遷移（自然語言即授權，不另等確認）：
 
    ```mermaid
-   flowchart TD
-       Input[老闆意圖] --> Match{對應哪種遷移？}
-       Match -- "需求方向錯了／要重新確認需求" --> M1[重大例外遷移回 G1<br/>AUDITOR 重做 G1]
-       Match -- "技術方案整個不對／要重新分析技術" --> M2[重大例外遷移回 G2<br/>RESEARCHER 重做 G2]
-       Match -- "計畫要重新設計／實作架構不對" --> M3[重大例外遷移回 G3<br/>PLANNER 重做 G3]
-       Match -- "開發完成了／可以驗收了" --> M4[收斂<br/>證據 → 重審 → nnn 完成]
-       Match -- 無法明確對應 --> Confirm["SECRETARY 揭露翻譯結果<br/>請老闆確認遷移方向<br/>不得猜測後徑行遷移"]
+   sequenceDiagram
+        participant B as 老闆
+        participant SEC as SECRETARY
+
+        B->>SEC: 開發期間表達意圖（自然語言）
+        SEC->>SEC: 翻譯意圖 · 判定對應哪種遷移
+
+        alt 需求方向錯了／要重新確認需求
+            SEC->>SEC: 重大例外遷移回 G1 · AUDITOR 重做
+        else 技術方案整個不對／要重新分析技術
+            SEC->>SEC: 重大例外遷移回 G2 · RESEARCHER 重做
+        else 計畫要重新設計／實作架構不對
+            SEC->>SEC: 重大例外遷移回 G3 · PLANNER 重做
+        else 開發完成了／可以驗收了
+            SEC->>SEC: 收斂（證據 → 重審 → nnn 完成）
+        else 無法明確對應
+            SEC->>B: 揭露翻譯結果 · 請確認遷移方向
+            Note over SEC: 不得猜測後徑行遷移
+            B-->>SEC: 確認方向
+        end
    ```
 
    此路由**僅適用開發期間**；其他節點的老闆指示依 §2 意圖揭露與 §9 路由提議處理。
 
-   **1.4.1 重大例外遷移**（取代原獨立退回指令）：SECRETARY 依「重大例外」判準（改變需求方向、整體架構，或需老闆重新授權）自動觸發：
+   **1.4.1 重大例外遷移**：SECRETARY 依「重大例外」判準（改變需求方向、整體架構，或需老闆重新授權）自動觸發：
    1. **停止開發**：凍結當前進行中的開發工作，不再推進新 commit。
    2. **SLUG 節點回退**：將 SLUG §3 目前節點改回 `三權制衡（G1↔G2↔G3）`（§6）。
    3. **對應權重重做**：需求方向錯 → AUDITOR 重新確認 G1（G2／G3 待 G1 定稿後由 RESEARCHER／PLANNER 重寫）；技術方向錯 → RESEARCHER 重新研究 G2（G1 不變除非需求不可行；G3 待定稿後重寫）；架構方向錯 → PLANNER 重新設計 G3（G1／G2 不變除非無法排程）。三份重新兩兩一致（§10）。
    4. **commit 方向判定**（SECRETARY 主導——判決性工作不交子代理）：逐個比對開發途中已 commit 的工作與新方向，**符合新方向** → 保留作為新循環基礎；**偏離新方向** → `git reset` 回退（用 reset 非 revert：方向錯誤的嘗試不留反向 commit 噪音，保持線性歷史）。
    5. **範圍**：僅限當前 `<nnn>` 的開發途中工作；不回退其他 `<nnn>` 或已 PASS 歸檔成果。
 
-   **1.4.2 收斂**（取代原獨立收斂指令）：SECRETARY 在**所有里程碑驗收通過**時自動觸發（開發完成即收斂，不需等待指令）：
+   **1.4.2 收斂**：SECRETARY 在**所有里程碑驗收通過**時自動觸發（開發完成即收斂，不需等待指令）：
    1. **確認開發完成**：G3 所有里程碑驗收合格（每個功能經落地側三權 TESTER→DEVELOPER→ACCEPTOR 產出、SECRETARY 判決合格並 commit）。
    2. **提交證據**：彙整 G3 行為證據與未驗項；證據描述使用者可觀察的行為，不以檔案、字串、grep 命中代替。落地側三權的 `tmp/` 產出為證據來源之一，由 SECRETARY 轉譯為可觀察行為描述。
    3. **顧問側三者各自重審主導文件**（SECRETARY 派發三個顧問側角色子代理）：AUDITOR 對照 G1 驗收、回報符合／未驗／駁回，MUST 請 SECRETARY 代派唯讀審查子代理取得獨立意見（結論存 `tmp/`）；RESEARCHER 對照 G2 技術；PLANNER 對照 G3 實作計畫。
@@ -180,27 +197,14 @@ flowchart TD
 
 MUST（必須）｜SHOULD（應）｜MAY（得）｜MUST NOT（必須不）｜SHOULD NOT（應不）。
 
-**問題揭露不等於修改授權。** 現況描述、疑問、缺陷回報與「研究如何改善」只授權唯讀分析。SECRETARY 在任何寫入前 MUST 先揭露：
-
-```text
-【SECRETARY｜意圖揭露】
-原始命題：老闆實際提出的問題或目標
-意圖翻譯：不加入解法的可驗證期望
-邊界／未知：尚未由老闆決定的事項
-候選方案：秘書提出，非老闆原始命題；可含基於脈絡的路由提議，但建立 slug／nnn 仍待老闆授權（§9）
-預計修改：檔案與行為範圍
-授權狀態：未授權／已由老闆明確授權
-```
+**問題揭露不等於修改授權。** 現況描述、疑問、缺陷回報與「研究如何改善」只授權唯讀分析。**意圖揭露由 sb-think 承載**——sb-think 是唯一閘口，所有老闆輸入第一步路由回 sb-think 理解、對齊、分發（§6）。sb-think 的結構化呈現涵蓋六欄：原始命題、意圖翻譯、邊界／未知、候選方案、預計修改、授權狀態。
 
 原始命題、意圖翻譯與候選方案 MUST 分開；模型 MUST NOT 以自己的方案改寫老闆命題。框架演化只免除 slug，不免除方案揭露與修改授權。
 
 **兩個老闆 checkpoint**：
 
-```mermaid
-flowchart LR
-    CP1["Checkpoint 1：意圖揭露"] --> CP1Done["完成條件：SECRETARY 已分開呈現<br/>原始命題、意圖翻譯、未知、候選方案與修改範圍<br/>授權由下一個獨立節點判斷"]
-    CP2["Checkpoint 2：PASS"] --> CP2Done["完成條件：老闆在 nnn 完成後決定結束整個 slug 時拍板<br/>前置：三者重審皆通過、輕量保鮮完成、證據完整<br/>「未驗／駁回」不得進入 PASS<br/>PASS 只經「結束 slug」分支到達，不因單一 nnn 完成而自動觸發"]
-```
+- **Checkpoint 1：sb-think** — 完成條件：老闆在 sb-think 中確認理解正確（原始命題、意圖翻譯、未知、候選方案與修改範圍已分開呈現）；授權由 sb-think 分發判斷。
+- **Checkpoint 2：PASS** — 完成條件：老闆在 nnn 完成後決定結束整個 slug 時拍板；前置：三者重審皆通過、輕量保鮮完成、證據完整；「未驗／駁回」不得進入 PASS；PASS 只經「結束 slug」分支到達，不因單一 nnn 完成而自動觸發。
 
 ## 3. 角色與文件主導
 
@@ -311,22 +315,24 @@ SECRETARY 在顧問側各角色子代理產出文件後，**親自核對 §10 �
 
 ## 6. 老闆指定路由
 
+**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖（規範見 `skills/sb-think/SKILL.md`）。sb-think 理解、老闆確認後，才分發到下列對應流程。
+
 是否建立或沿用 `<slug>/<nnn>` 只由老闆決定。`<slug>` 承載跨循環不變的老闆原始命題、目標、授權邊界與租約；`<nnn>` 承載一次三權制衡→開發→三者重審的收斂循環。
 
 SLUG 只記目前位於主圖哪個節點，合法節點名稱：`三權制衡（G1↔G2↔G3）／開發／證據／三者重審／nnn 完成／老闆 PASS／收尾`。退回時改成 `三權制衡（G1↔G2↔G3）` 並重走箭頭。
 
-下列只說明各路由的關係，不授權 SECRETARY 代為判定：
+下列是 sb-think 分發後的執行路由（各路由只說明關係，不授權 SECRETARY 代為判定）：
 
 - **沿用目前 `<nnn>`** — 同一子需求的擴充。路徑：從目前循環的三權制衡重走。
-- **既有 `<slug>` 開新 `<nnn>`** — 同一大需求中的新子需求。路徑：前置—目前 `<nnn>` 已完成（§0）；不需先 PASS。在該 `<slug>` 建新循環並從三權制衡開始。
-- **開新 `<slug>`** — 與既有功能幾乎無關的新功能需求。路徑：建立新長程目標並從三權制衡開始。
+- **既有 `<slug>` 開新 `<nnn>`** — 同一大需求中的新子需求。路徑：前置—目前 `<nnn>` 已完成（§0）；不需先 PASS。由 sb-start 建骨架並從三權制衡開始。
+- **開新 `<slug>`** — 與既有功能幾乎無關的新功能需求。路徑：由 sb-start 建立新長程目標並從三權制衡開始。
 - **結束 `<slug>`** — 整個 `<slug>` 所有子需求完成，老闆拍板結束。路徑：老闆 PASS → 完整收尾保鮮（§1.7.2）→ 移 archive/。
 - **直接實行** — 老闆指定為明確的低複雜度設定或開關。路徑：主圖直接實行路徑。
 - **框架演化** — 老闆指定修改 shiftblame 自身。路徑：不開 slug；先揭露方案並取得授權。
 
-SECRETARY MAY 基於 §9 載入程序的脈絡主動提出路由提議（沿用／開新 `<nnn>`、開新 `<slug>`、直接實行、框架演化），提議須附脈絡依據。**提議不等於授權**：建立 `<slug>/<nnn>` 與預建檔案均須老闆明確拍板，SECRETARY MUST NOT 在授權前自行建立或執行。老闆尚未決定時，SECRETARY 陳述提議與脈絡後等待裁決。
+> **sb-start**：sb-think 分發新需求後的執行器。只做建骨架（開 slug 或 nnn 目錄、複製 G1/G2/G3 範本）→ 三權制衡；不做需求對齊（那在 sb-think 由老闆打磨完成）。規範見 `skills/sb-start/SKILL.md`。
 
-`/shiftblame <text>`：SECRETARY 先揭露意圖，待老闆指定路由後忠實記錄與交接。`/shiftblame`：列出未歸檔 `<slug>`，並 MAY 基於 §9 脈絡附上路由提議；提議仍待老闆授權。
+SECRETARY MAY 基於 §9 載入程序的脈絡在 sb-think 中主動提出路由提議（沿用／開新 `<nnn>`、開新 `<slug>`、直接實行、框架演化），提議須附脈絡依據。**提議不等於授權**：建立 `<slug>/<nnn>` 與預建檔案均須老闆明確拍板，SECRETARY MUST NOT 在授權前自行建立或執行。老闆尚未決定時，SECRETARY 陳述提議與脈絡後等待裁決。
 
 ## 7. 提交規範
 
@@ -350,7 +356,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md
     │       ├── ROADMAP.md
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三權範本（複製來源）
-    └── sb-*/SKILL.md               # 各個可直接觸發的工作流 skill
+    └── sb-*/SKILL.md               # 各個工作流 skill（sb-think 唯一閘口、sb-start 新需求路由、其他為 sb-think 分發目標）
 
 .shiftblame/                       # 各專案工作區（MUST 經 .gitignore 排除）
 ├── SOP.md
@@ -367,7 +373,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 ## 9. 啟動載入程序與脈絡提議
 
-> session 冷啟動時建立脈絡，讓 SECRETARY 的路由提議有依據；先於 §0 主圖的「老闆原始命題」。
+> session 冷啟動時建立脈絡，讓 sb-think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 sb-think 的前置——sb-think 第一步就是讀脈絡。
 
 載入本 skill 後，SECRETARY MUST 依序唯讀：
 
@@ -377,7 +383,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 檔案不存在時如實回報缺漏，不視為錯誤。
 
-讀完後，當老闆命題到來，SECRETARY 基於上述脈絡產出**路由提議**：
+讀完後，當老闆命題到來，sb-think 基於上述脈絡產出**路由提議**：
 
 - 當下 `<nnn>` 仍在收斂、命題屬同一子需求擴充 → 提議：沿用目前 `<nnn>`。
 - 同一 `<slug>` 中的新子需求 → 提議：開新 `<nnn>`。
@@ -388,7 +394,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 上表與 §6 路由表同義；提議路由的判定一律以 §6 關係原則為準（例如「開新 `<slug>`」指 §6「與既有功能幾乎無關」，不以「是否無當下 `<slug>`」判定）。
 
-提議須附脈絡依據（引用 SOP／ROADMAP／archive／當前節點）。**提議不等於授權**：建立 `<slug>/<nnn>`、預建檔案與寫入 repo 仍須老闆明確拍板（§6）；SECRETARY MUST NOT 在授權前預建或執行。本程序只把「不提供路由意見」修正為「給出有依據的提議待裁決」，不改變問題揭露不等於修改授權（§2）。
+提議須附脈絡依據（引用 SOP／ROADMAP／archive／當前節點）。**提議不等於授權**：建立 `<slug>/<nnn>`、預建檔案與寫入 repo 仍須老闆明確拍板（§6）；SECRETARY MUST NOT 在授權前預建或執行。本程序只把「不提供路由意見」修正為「給出有依據的提議待裁決」，不改變問題揭露不等於修改授權（§2）。路由提議在 sb-think 中呈現，由老闆確認後分發。
 
 ## 10. 兩兩雙向一致判準（唯一權威定義）
 
@@ -416,32 +422,32 @@ G2↔G3 兩向都以 G1 需求項為錨：步驟與其對應的技術分析 MUST
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 意圖揭露
-    意圖揭露 --> 授權判斷: 老闆命題
-    授權判斷 --> 意圖揭露: 未授權 · 停止寫入
-    授權判斷 --> 路由指定: 老闆明確授權
-    路由指定 --> 三權制衡: sb-slug／sb-next／sb-resume
+    [*] --> sb-think
+    sb-think --> sb-think: 理解有誤 · 老闆再打磨
+    sb-think --> 路由指定: 老闆確認理解 · 拍板路由
+    路由指定 --> 三權制衡: sb-start（建骨架／沿用重走）
     三權制衡 --> 三權制衡: 不一致 · 調整各自文件
     三權制衡 --> 開發: sb-do（§10 一致放行）
     開發 --> 三權制衡: 收斂失敗 · 回同 nnn
     開發 --> nnn完成: 自動觸發收斂（§1.4.2）
-    nnn完成 --> 三權制衡: sb-next · 開新 nnn
-    nnn完成 --> 老闆PASS: sb-end · 結束 slug
-    老闆PASS --> 收尾: 完整保鮮 + archive
+    nnn完成 --> sb-think: 開新 nnn · 需老闆決策
+    nnn完成 --> sb-think: sb-end · 結束 slug（老闆 PASS）
+    sb-think --> 收尾: 老闆 PASS 確認 · 完整保鮮 + archive
     收尾 --> [*]
 ```
 
 **箭頭條件細節表**（搭配上圖，每列對應一條邊的通過／不通過判準）：
 
-**箭頭條件細節**（搭配上圖，每條對應狀態機的一條邊）：
-
-- **意圖揭露 → 授權判斷**（觸發：老闆命題）
-  - 通過：原始命題、意圖翻譯、未知、候選方案與修改範圍已分開揭露
-  - 不通過：留在 SECRETARY
-- **授權判斷 → 路由指定**（觸發：老闆授權）
-  - 通過：老闆已明確授權
-  - 不通過：未授權則停止寫入
-- **路由指定 → 三權制衡**（觸發：`sb-slug`／`sb-next`／`sb-resume` skills）
+- **→ sb-think**（觸發：老闆任何輸入）
+  - 通過：所有老闆輸入第一步路由回 sb-think，不字面執行
+  - 不通過：無例外——所有輸入（指令名、自然語言、計畫書）一律先過 sb-think
+- **sb-think → sb-think**（理解有誤）
+  - 通過：老闆在 sb-think 中確認理解有誤／要追加修改
+  - 不通過：留在 sb-think 繼續打磨
+- **sb-think → 路由指定**（老闆確認理解）
+  - 通過：老闆確認理解正確並拍板路由
+  - 不通過：老闆未確認則留在 sb-think
+- **路由指定 → 三權制衡**（觸發：`sb-start` skill）
   - 通過：老闆已明確指定開新 `<slug>`、開新 `<nnn>` 或沿用 `<nnn>`
   - 不通過：停止，不得由 SECRETARY 代決
 - **三權制衡 → 開發**（觸發：`sb-do` skill）
@@ -450,11 +456,47 @@ stateDiagram-v2
 - **開發 → nnn 完成**（觸發：自動觸發收斂 §1.4.2）
   - 通過：合併收斂——所有里程碑驗收通過（每個功能經落地側三權 TESTER→DEVELOPER→ACCEPTOR 產出、SECRETARY 判決合格並 commit）→ 提交行為證據 → 顧問側三者各自重審主導文件皆通過 → SECRETARY 已代派獨立審核子代理（結論存 `tmp/` 供 AUDITOR 複核）→ 片段清空；含輕量保鮮 §1.7.1
   - 不通過：任一不通過回三權制衡（同 `<nnn>`）
-- **nnn 完成 → 開新 nnn**（觸發：`sb-next` skill）
-  - 通過：老闆明確決定開新 `<nnn>`；SLUG §3 加新列；舊 `<nnn>` 列節點定為 `nnn 完成`
+- **nnn 完成 → sb-think**（觸發：開新 nnn 需老闆決策；或 `sb-end` 結束 slug）
+  - 通過：開新 nnn——老闆明確決定開新 `<nnn>`；SLUG §3 加新列；舊 `<nnn>` 列節點定為 `nnn 完成`。結束 slug——老闆明確拍板整個 `<slug>` 結束。
   - 不通過：老闆未決定則等待，SECRETARY 不得代決
-- **nnn 完成 → 老闆 PASS**（觸發：`sb-end` skill）
-  - 通過：老闆明確拍板整個 `<slug>` 結束
-  - 不通過：老闆未決定則等待
 
 退回箭頭（開發途中）：**重大例外遷移**（§1.4.1）依方向錯的權重回對應權重走三權制衡——需求方向錯回 G1、技術方向錯回 G2、架構方向錯回 G3。G1、G2、G3 各由其主導者負責；三份 MUST 兩兩雙向一致才可開發，不得跳過任一份。
+
+## 12. 圖表使用判準
+
+> 框架內所有圖表的選用依本節判準。核心原則：**先問「這段內容的資訊本質是什麼」，再選圖——不是所有內容都該視覺化。**
+
+### 12.1 圖表類型選擇（流程 vs 結構）
+
+- **描繪流程**（推進、時序、先後、迴圈、決策路徑）→ **時序圖**（`sequenceDiagram`）或 **狀態機**（`stateDiagram-v2`）。
+- **描繪架構**（組成、關係、層級、包含、角色）→ **結構圖**（`flowchart`）。
+- **獨立任務、待辦、步驟清單** → **純文字清單**，不畫圖。
+
+### 12.2 流程類的三個物種（最易誤用）
+
+「流程」太籠統，實際是三種不同本質：
+
+- **時序型**（誰跟誰說話、訊息先後）→ `sequenceDiagram`。判準：有「誰跟誰說話」的訊息交換。
+- **狀態轉換**（事件驅動、狀態可循環重訪）→ `stateDiagram-v2`。判準：物件的行為取決於當前狀態、狀態會回到舊狀態。
+- **結構關係**（組成、依賴、繼承）→ `flowchart` 或 `classDiagram`。根本不是流程，用結構圖。
+
+多角色平行／交接的情境，優先用 `sequenceDiagram`（participant 當 lifeline 表達「誰」），多數情況能取代泳道圖的「誰跟誰交接」需求。必須用泳道視覺化責任分區時，用 `flowchart` + `subgraph` 模擬——這是近似，沒有原生泳道的責任邊界語意與 fork/join 平行 bar。
+
+### 12.3 不該畫圖的反模式（命中即改用文字/清單）
+
+- **待辦清單偽裝成流程圖**——節點一條線、無分支無判斷，讀者只需編號清單。*這是最常見的錯誤。*
+- **沒有真實流向的節點串**——節點間無因果、先後、依賴，箭頭是硬加的。
+- **低密度噪音圖**——3-5 個要點佔整頁；圖形開銷大於收益。
+- **查詢/精確值/排名** → 用表格，不用圖。
+- **極少數值（≤5）** → 用句子，不用圖。
+
+### 12.4 判準速查
+
+| 資訊特徵（內容含有…） | 用 | 不用 |
+|---|---|---|
+| 多參與者訊息交換、流程推進 | `sequenceDiagram` | `flowchart`（沒有「誰」） |
+| 事件驅動、狀態循環重訪 | `stateDiagram-v2` | `flowchart`（把狀態畫成節點串） |
+| 多角色平行／交接 | `sequenceDiagram`（首選）或 `flowchart`+`subgraph`（模擬泳道） | 純 `flowchart`（無責任分區） |
+| 組成、依賴、角色關係 | `flowchart` | 時序圖（無時序） |
+| 獨立任務、待辦、步驟清單 | 編號清單 | `flowchart`（偽流程） |
+| 查詢、精確值、排名 | 表格 | 圖表（誤導或低增益） |

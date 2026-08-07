@@ -4,33 +4,9 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 ---
 # sb-resume — 繼續未完成的 slug/nnn
 
-> **本指令在流程中的位置**：從任何中斷點恢復 → 重走三權制衡（基於既有 G1~G3 重新確認）
+> **sb-think 分發目標**：sb-think 理解老闆要恢復未完成工作後分發至此。位置：從任何中斷點恢復 → 重走三權制衡（基於既有 G1~G3 重新確認）。
 
-```mermaid
-flowchart LR
-    S0["意圖揭露"]
-    S1["路由指定"]
-    S2["三權制衡"]
-    S3["開發"]
-    S4["nnn完成"]
-    S5["老闆PASS"]
-    S6["收尾"]
-    S0 --> S1
-    S1 --> S2
-    S2 -->|sb-do 放行| S3
-    S2 -.->|不一致| S2
-    S3 -->|收斂| S4
-    S3 -->|收斂失敗| S2
-    S4 -->|sb-next| S2
-    S4 -->|sb-end| S5
-    S5 --> S6
-    S2 ==>|sb-resume 恢復| S2
-    S3 -.->|可恢復| S2
-    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
-```
-
-
-當使用者要求「繼續上次」「resume」「恢復未完成的工作」時執行本 prompt。用於 session 中斷後恢復既有未完成的工作。
+當老闆要恢復未完成工作時執行（由 sb-think 分發）。用於 session 中斷後恢復既有未完成的工作。
 
 先 `load skill: shiftblame`，主對話 SECRETARY 依 SKILL §9 讀取脈絡，再執行：
 
@@ -40,7 +16,7 @@ flowchart LR
 1. **找出未完成的 slug/nnn**：
    - 僅一個未完成 → 提議 resume 它。
    - 多個未完成 → 列出供老闆選，**等待老闆指定**後才 resume（提議不等於授權）。
-   - 無未完成 → 提示「無未完成 slug，請用 sb-slug 開新工作」。
+   - 無未完成 → 提示「無未完成 slug，請透過 sb-think 開新工作」。
    - 老闆指定 → 直接 resume 指定者。
 2. **偵測 sb-save 落點**：檢查 SLUG frontmatter 是否有 `last_save`。
    - **有 `last_save`** → **接續工作**（不重確認）：讀 SLUG §7 交接摘要的工作落點，直接從記錄的「下一步」繼續（如落點在 `開發` 則續跑開發、在 `三權制衡` 則從未完成的權續跑）。**清除 `last_save` 標記**（存檔點已消費）。跳過 step 3-4。
@@ -53,7 +29,7 @@ flowchart LR
 
 ## 邊界
 
-- resume 是**恢復既有未完成工作**，不是開新 slug（那是 sb-slug）或開新 nnn（那是 sb-next）。
+- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 nnn（那是 sb-start 由 sb-think 分發）。
 - **二層判斷**：`last_save` 標記（接續落點）→ 無標記（重確認 G1~G3）。有 `last_save` 時接續不重確認，消費後清除標記。
 - 重新確認（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；若既有 G1~G3 已全失效，建議走重大例外遷移（SKILL §1.4.1）或開新 nnn。
 - SLUG §3 節點依當前實際狀態標記。

@@ -4,31 +4,9 @@ description: 結束當前 slug 並執行完整收尾保鮮；嚴格檢查 PASS �
 ---
 # sb-end — 結束 slug 並執行完整收尾保鮮
 
-> **本指令在流程中的位置**：nnn 完成後老闆 PASS → 完整收尾保鮮 → archive
+> **sb-think 分發目標**：sb-think 理解老闆要結束 slug（PASS）後分發至此。位置：nnn 完成後老闆 PASS → 完整收尾保鮮 → archive。
 
-```mermaid
-flowchart LR
-    S0["意圖揭露"]
-    S1["路由指定"]
-    S2["三權制衡"]
-    S3["開發"]
-    S4["nnn完成"]
-    S5["老闆PASS"]
-    S6["收尾"]
-    S0 --> S1
-    S1 --> S2
-    S2 -->|sb-do 放行| S3
-    S2 -.->|不一致| S2
-    S3 -->|收斂| S4
-    S3 -->|收斂失敗| S2
-    S4 -->|sb-next| S2
-    S4 == "sb-end" ==> S5
-    S5 ==> S6
-    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
-```
-
-
-當使用者要求「結束這個 slug」「收尾」「PASS」時執行本 prompt。老闆主動要求即表達結束意圖，對應 SKILL §2 的 PASS checkpoint 與 §6「結束 `<slug>`」路由。
+當老闆要結束這個 slug 時執行（由 sb-think 分發）。對應 SKILL §2 的 PASS checkpoint 與 §6「結束 `<slug>`」路由。
 
 先 `load skill: shiftblame`，再執行：
 

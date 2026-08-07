@@ -1,0 +1,62 @@
+---
+name: sb-start
+description: 新需求路由；建骨架（開 slug 或 nnn）→ 三權制衡。
+---
+# sb-start — 新需求路由
+
+> **本指令在流程中的位置**：sb-think 分發新需求後的執行器——只建骨架，不做需求對齊（那在 sb-think 做完）
+
+```mermaid
+sequenceDiagram
+    participant T as sb-think
+    participant S as sb-start
+    participant A as 三權制衡
+
+    T->>S: 分派已對齊的新需求
+    Note over S: ① 判定 slug 還是 nnn<br/>（老闆在 sb-think 已拍板）
+    Note over S: ② 建骨架<br/>開目錄 · 複製 G1/G2/G3 範本
+    S->>A: 進入三權制衡
+```
+
+sb-start 是 sb-think 分發新需求後的執行器。它**不做需求對齊**（那在 sb-think 由老闆打磨完成）——接到的是已對齊、已決定路由的新需求，只負責把骨架建好交給三權制衡。
+
+## 前置
+
+sb-think 已完成需求理解與對齊，老闆已拍板路由（開新 `<slug>`、開新 `<nnn>`、或沿用 `<nnn>`）。sb-start 接到的是已對齊的新需求。
+
+先 `load skill: shiftblame`，讀取 SKILL §9 脈絡（SOP/ROADMAP/archive/當前 slug），再依老闆拍板的路由執行：
+
+## 開新 `<slug>`（與既有功能幾乎無關的新功能需求）
+
+1. **記錄 slug 命題**：在 SLUG §1 忠實引用老闆命題，§2 記錄授權。
+2. **切分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）。
+3. **建立 slug 骨架**（**定義單檔、結構分檔**，權威結構見 SKILL §8）：
+   - 建立 `.shiftblame/<slug>/` 目錄。
+   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三權制衡（G1↔G2↔G3）`）。
+   - 建立 `.shiftblame/<slug>/<nnn>/` 子目錄（初始 nnn 如 `001`）。
+   - 從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
+4. **進入三權制衡**：派發顧問側三角（AUDITOR→G1、RESEARCHER→G2、PLANNER→G3）產出三份文件。
+
+## 開新 `<nnn>`（同一 `<slug>` 中的新子需求）
+
+前置：當前 `<nnn>` 已完成（§6）。
+
+1. **SLUG §3 加新列**：在 `.shiftblame/<slug>/SLUG.md` §3 目前節點表新增該 `<nnn>` 列（初始節點 `三權制衡（G1↔G2↔G3）`）。
+2. **建立 nnn 子目錄**：`.shiftblame/<slug>/<nnn>/`。
+3. **複製三權範本為分檔**：從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
+4. **進入三權制衡**：派發顧問側三角產出三份文件。
+
+## 沿用目前 `<nnn>`（同一子需求的擴充）
+
+直接從目前循環的三權制衡重走，不建骨架。
+
+## 寫入邊界
+
+- 除 SLUG.md（加列）、`<nnn>/{G1,G2,G3}.md` 與 `tmp/` 外，MUST NOT 建立或寫入其他文件。
+- 不另建檔案、不建子目錄、不寫入非授權位置。
+
+## 邊界
+
+- **sb-start 是執行器，不是閘口。** 需求對齊在 sb-think 完成；sb-start 只建骨架。
+- **路由由老闆在 sb-think 拍板。** sb-start 不自行判定開新 `<slug>` 還是開新 `<nnn>`——依老闆已決定的路由執行。
+- sb-start 不開「直接實行」「框架演化」——那些是 sb-think 的其他路由，不由 sb-start 處理。

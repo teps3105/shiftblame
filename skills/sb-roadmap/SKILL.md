@@ -4,31 +4,9 @@ description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，�
 ---
 # sb-roadmap — 修改 ROADMAP
 
-> **本指令在流程中的位置**：對 ROADMAP 提出修改需求（需老闆授權）；不涉及主流程節點遷移
+> **sb-think 分發目標**：sb-think 理解老闆要修改 ROADMAP 後分發至此。位置：對 ROADMAP 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
 
-```mermaid
-flowchart LR
-    S0["意圖揭露"]
-    S1["路由指定"]
-    S2["三權制衡"]
-    S3["開發"]
-    S4["nnn完成"]
-    S5["老闆PASS"]
-    S6["收尾"]
-    S0 --> S1
-    S1 --> S2
-    S2 -->|sb-do 放行| S3
-    S2 -.->|不一致| S2
-    S3 -->|收斂| S4
-    S3 -->|收斂失敗| S2
-    S4 -->|sb-next| S2
-    S4 -->|sb-end| S5
-    S5 --> S6
-    classDef special fill:#ffccbc,stroke:#d84315,stroke-width:2px;
-```
-
-
-當使用者要求「改 ROADMAP」「更新路線圖」「加產品目標」時執行本 prompt。ROADMAP 唯一寫入者為 SECRETARY，但新增產品意圖／改變邊界須老闆明確授權（SKILL §1.7）。
+當老闆要修改 ROADMAP 時執行（由 sb-think 分發）。ROADMAP 唯一寫入者為 SECRETARY，但新增產品意圖／改變邊界須老闆明確授權（SKILL §1.7）。
 
 先 `load skill: shiftblame`，再依下列分派：
 
