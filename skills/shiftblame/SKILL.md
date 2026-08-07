@@ -1,6 +1,6 @@
 ---
 name: shiftblame
-revision: 0.6.0
+revision: 0.6.1
 description: 以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY（主對話），上三權是顧問側（AUDITOR/RESEARCHER/PLANNER 對 repo 唯讀，各主導 G1/G2/G3，互相制約、兩兩雙向一致才放行），下三權是落地側（DEVELOPER 寫實作碼對應 RESEARCHER、TESTER 寫測試定義「過」對應 PLANNER、ACCEPTOR 跑測試驗收「完成」對應 AUDITOR——寫測試與跑測試分離形成制約，互相制約）；秘書先揭露意圖，老闆授權後進入顧問側三權制衡，放行後秘書依 G3 派發下三權落地執行，每個功能（commit 單位）TESTER 寫測試→DEVELOPER 寫實作→ACCEPTOR 修到綠燈驗收→SECRETARY 判決合格才 commit（測試先行：先寫測試再實作，commit 與所有判決集權於 SECRETARY，子代理不得 commit）；子代理一律由主對話 SECRETARY 派發、子代理間不直接溝通，跨子代理的結論與證據一律存於 .shiftblame/tmp/（唯一溝通橋樑）；驗收節點是里程碑（一組功能構成的使用者可觀察完整價值）而非單一功能，不合格返工疊加新 commit，所有里程碑通過後三者重審、nnn 完成後做輕量保鮮，老闆決定開新 nnn 或結束 slug，結束 slug 才走 PASS 與完整收尾保鮮。
 ---
 # shiftblame — 三權分立的 agent 協作框架

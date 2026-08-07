@@ -4,7 +4,7 @@ type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>
-revision: 0.6.0
+revision: 0.6.1
 authorized_by: owner
 ---
 
