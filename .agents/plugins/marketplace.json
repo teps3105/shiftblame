@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "shiftblame",
-      "description": "以雙層三權分立約束 agent——所有決策權中央集權到 SECRETARY；上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義該做什麼、互相制約；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行怎麼做、測試先行、寫測試與跑測試分離互相制約；commit 與判決集權於 SECRETARY。",
+      "description": "以時序制衡約束 agent——秘書（主對話）是唯一持久角色，調控時序進程到合適工作階段（審計→研究→規劃→測試→開發→驗收，全部去人化）。定義層（G1/G2/G3）兩兩雙向一致才放行；承載歸屬依對外視窗控制——研究/開發（G2）由主對話親自執行，其餘由子代理執行。子代理是無思想外包單元，不可 commit；commit 與判決集權於秘書。",
       "source": {
         "source": "local",
         "path": "."

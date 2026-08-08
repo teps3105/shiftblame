@@ -8,7 +8,7 @@ description: 記錄當前 slug 工作落點到 SLUG.md，供其他對話用 sb-r
 
 當老闆要記錄當前工作落點時執行（由 sb-think 分發）。用於顯式記錄當前工作落點到 SLUG.md，讓其他對話能用 sb-resume 無縫恢復。
 
-先 `load skill: shiftblame`，主對話 SECRETARY 執行：
+先 `load skill: shiftblame`，主對話 秘書 執行：
 
 ## 流程
 

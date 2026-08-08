@@ -8,7 +8,7 @@ description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main�
 
 當老闆要丟棄這個 slug 重來時執行（由 sb-think 分發）。用於重大方向錯誤時，丟棄當前 slug 所有成果，回 main，不 archive，重新討論需求。
 
-先 `load skill: shiftblame`，主對話 SECRETARY 執行：
+先 `load skill: shiftblame`，主對話 秘書 執行：
 
 ## 流程
 

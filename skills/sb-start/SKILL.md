@@ -1,6 +1,6 @@
 ---
 name: sb-start
-description: 新需求路由；建骨架（開 slug 或 nnn）→ 三權制衡。
+description: 新需求路由；建骨架（開 slug 或 nnn）→ 三面向制衡。
 ---
 # sb-start — 新需求路由
 
@@ -10,15 +10,15 @@ description: 新需求路由；建骨架（開 slug 或 nnn）→ 三權制衡�
 sequenceDiagram
     participant T as sb-think
     participant S as sb-start
-    participant A as 三權制衡
+    participant A as 三面向制衡
 
     T->>S: 分派已對齊的新需求
     Note over S: ① 判定 slug 還是 nnn<br/>（老闆在 sb-think 已拍板）
     Note over S: ② 建骨架<br/>開目錄 · 複製 G1/G2/G3 範本
-    S->>A: 進入三權制衡
+    S->>A: 進入三面向制衡
 ```
 
-sb-start 是 sb-think 分發新需求後的執行器。它**不做需求對齊**（那在 sb-think 由老闆打磨完成）——接到的是已對齊、已決定路由的新需求，只負責把骨架建好交給三權制衡。
+sb-start 是 sb-think 分發新需求後的執行器。它**不做需求對齊**（那在 sb-think 由老闆打磨完成）——接到的是已對齊、已決定路由的新需求，只負責把骨架建好交給三面向制衡。
 
 ## 前置
 
@@ -32,23 +32,23 @@ sb-think 已完成需求理解與對齊，老闆已拍板路由（開新 `<slug>
 2. **切分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）。
 3. **建立 slug 骨架**（**定義單檔、結構分檔**，權威結構見 SKILL §8）：
    - 建立 `.shiftblame/<slug>/` 目錄。
-   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三權制衡（G1↔G2↔G3）`＋級別欄）。
+   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三面向制衡（G1↔G2↔G3）`＋級別欄）。
    - 建立 `.shiftblame/<slug>/<nnn>/` 子目錄（初始 nnn 如 `001`）。
-   - 從 `assets/SLUG.md`「三權範本」段複製：**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份（G2/G3 免）。
-4. **進入制衡**：**L 級**派發顧問側三角（AUDITOR→G1、RESEARCHER→G2、PLANNER→G3）產出三份文件；**M 級**SECRETARY 依 sb-think 對齊的意圖直接產 G1 單份（不派三顧問）。
+   - 從 `assets/SLUG.md`「三面向範本」段複製：**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份（G2/G3 免）。
+4. **進入制衡**：**L 級**依承載歸屬推進定義層時序——審計→G1（子代理）、研究→G2（主對話）、規劃→G3（子代理）——產出三份文件（承載細節見 SKILL §3）；**M 級**秘書依 sb-think 對齊的意圖直接產 G1 單份（不派子代理）。
 
 ## 開新 `<nnn>`（同一 `<slug>` 中的新子需求）
 
 前置：當前 `<nnn>` 已完成（§6）。
 
-1. **SLUG §3 加新列**：在 `.shiftblame/<slug>/SLUG.md` §3 目前節點表新增該 `<nnn>` 列（初始節點 `三權制衡（G1↔G2↔G3）`＋級別）。
+1. **SLUG §3 加新列**：在 `.shiftblame/<slug>/SLUG.md` §3 目前節點表新增該 `<nnn>` 列（初始節點 `三面向制衡（G1↔G2↔G3）`＋級別）。
 2. **建立 nnn 子目錄**：`.shiftblame/<slug>/<nnn>/`。
-3. **複製範本為分檔**：從 `assets/SLUG.md`「三權範本」段複製——**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份。
-4. **進入制衡**：**L 級**派發顧問側三角產出三份文件；**M 級**SECRETARY 直接產 G1 單份。
+3. **複製範本為分檔**：從 `assets/SLUG.md`「三面向範本」段複製——**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份。
+4. **進入制衡**：**L 級**派發定義層時序產出三份文件；**M 級**秘書直接產 G1 單份。
 
 ## 沿用目前 `<nnn>`（同一子需求的擴充）
 
-直接從目前循環的三權制衡重走，不建骨架。
+直接從目前循環的三面向制衡重走，不建骨架。
 
 ## 寫入邊界
 
