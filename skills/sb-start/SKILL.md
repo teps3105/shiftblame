@@ -24,7 +24,7 @@ sb-start 是 sb-think 分發新需求後的執行器。它**不做需求對齊**
 
 sb-think 已完成需求理解與對齊，老闆已拍板路由（開新 `<slug>`、開新 `<nnn>`、或沿用 `<nnn>`）。sb-start 接到的是已對齊的新需求。
 
-先 `load skill: shiftblame`，讀取 SKILL §9 脈絡（SOP/ROADMAP/archive/當前 slug），再依老闆拍板的路由執行：
+先 `load skill: shiftblame`，讀取 SKILL §9 脈絡（SOP/ROADMAP/archive/當前 slug），再依老闆拍板的路由執行。**建骨架依 §0.1 規模分級**：M 級僅建 G1 單份；L 級建 G1/G2/G3 三份。
 
 ## 開新 `<slug>`（與既有功能幾乎無關的新功能需求）
 
@@ -32,19 +32,19 @@ sb-think 已完成需求理解與對齊，老闆已拍板路由（開新 `<slug>
 2. **切分支**：依 §7 分支政策切 `<type>/<slug>` 分支（從乾淨 main 開出）。
 3. **建立 slug 骨架**（**定義單檔、結構分檔**，權威結構見 SKILL §8）：
    - 建立 `.shiftblame/<slug>/` 目錄。
-   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三權制衡（G1↔G2↔G3）`）。
+   - 複製 `assets/SLUG.md` 範本 → `.shiftblame/<slug>/SLUG.md`（SLUG 主體 §1-§7；§3 初始節點 `三權制衡（G1↔G2↔G3）`＋級別欄）。
    - 建立 `.shiftblame/<slug>/<nnn>/` 子目錄（初始 nnn 如 `001`）。
-   - 從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
-4. **進入三權制衡**：派發顧問側三角（AUDITOR→G1、RESEARCHER→G2、PLANNER→G3）產出三份文件。
+   - 從 `assets/SLUG.md`「三權範本」段複製：**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份（G2/G3 免）。
+4. **進入制衡**：**L 級**派發顧問側三角（AUDITOR→G1、RESEARCHER→G2、PLANNER→G3）產出三份文件；**M 級**SECRETARY 依 sb-think 對齊的意圖直接產 G1 單份（不派三顧問）。
 
 ## 開新 `<nnn>`（同一 `<slug>` 中的新子需求）
 
 前置：當前 `<nnn>` 已完成（§6）。
 
-1. **SLUG §3 加新列**：在 `.shiftblame/<slug>/SLUG.md` §3 目前節點表新增該 `<nnn>` 列（初始節點 `三權制衡（G1↔G2↔G3）`）。
+1. **SLUG §3 加新列**：在 `.shiftblame/<slug>/SLUG.md` §3 目前節點表新增該 `<nnn>` 列（初始節點 `三權制衡（G1↔G2↔G3）`＋級別）。
 2. **建立 nnn 子目錄**：`.shiftblame/<slug>/<nnn>/`。
-3. **複製三權範本為分檔**：從 `assets/SLUG.md`「三權範本」段複製 G1→`<nnn>/G1.md`、G2→`<nnn>/G2.md`、G3→`<nnn>/G3.md`。
-4. **進入三權制衡**：派發顧問側三角產出三份文件。
+3. **複製範本為分檔**：從 `assets/SLUG.md`「三權範本」段複製——**L 級** → G1/G2/G3 三份；**M 級** → 僅 G1 一份。
+4. **進入制衡**：**L 級**派發顧問側三角產出三份文件；**M 級**SECRETARY 直接產 G1 單份。
 
 ## 沿用目前 `<nnn>`（同一子需求的擴充）
 

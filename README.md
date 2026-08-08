@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.6.1-2ea44f.svg" alt="version 0.6.1"/>
+  <img src="https://img.shields.io/badge/version-0.6.2-2ea44f.svg" alt="version 0.6.2"/>
 </p>
 
 ---
@@ -28,8 +28,11 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話 SECRETARY 獨佔；子代理只提供輸入，不做決策。
 - **雙層三權分立。** 上三權（顧問側 AUDITOR/RESEARCHER/PLANNER）定義「該做什麼」、對 repo 唯讀、互相制約，G1/G2/G3 兩兩雙向一致才放行；下三權（落地側 DEVELOPER/TESTER/ACCEPTOR）執行「怎麼做」、互相制約，產出供 SECRETARY 判決。每個落地角色垂直對應一個顧問角色。
+- **規模分級。** 流程深度隨需求規模（§0.1）：S 級微修直接實行、M 級小需求輕量循環（G1 單份）、L 級大需求完整三權制衡。微小變更不背流程。
+- **預設直接修正。** 功能（commit 單位）未觸發重流程條件（① 行為改變 ② 介面改變 ③ 多檔協同 ④ 跨層級 ⑤ 老闆指定）時，SECRETARY 直接改並 commit——不為每個功能派發落地側三權。
+- **假測試判返工。** 走落地側三權的測試 MUST 有真實斷言、對應 G1 驗收項或可觀察行為；無斷言／測實作細節／mock 過度／形式化湊數的假測試，SECRETARY 判決時判返工回 TESTER。
 - **寫測試與跑測試分離。** TESTER 寫測試定義「過」、ACCEPTOR 跑測試驗收「完成」——分離確保不能「自己寫自己跑放水」。
-- **測試先行。** 落地側執行順序固定：TESTER 寫測試（紅燈）→ DEVELOPER 寫實作 → ACCEPTOR 修到綠燈。先寫測試再實作，與顧問側「驗收先於實作」對齊。
+- **測試先行（L 級觸發重流程時）。** 落地側執行順序固定：TESTER 寫測試（紅燈）→ DEVELOPER 寫實作 → ACCEPTOR 修到綠燈。先寫測試再實作，與顧問側「驗收先於實作」對齊。
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟，不得倒序。
 - **G1/G2/G3 是活草稿。** 放行後三份文件不凍結——開發中發現與實作情境有出入，直接修正對應文件後繼續，不為流程而流程；只有改變方向／架構的重大變更才停止退回三權制衡。
 - **commit 集權。** 子代理（含落地側 DEVELOPER/TESTER）可在 SECRETARY 授權範圍內寫 repo，但 commit 一律由 SECRETARY 於判決合格後獨佔執行。
@@ -40,7 +43,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何把需求�
 flowchart TD
     Boss([老闆任何輸入]) --> Think["sb-think · 唯一閘口<br/>理解 · 對齊 · 分發<br/>═══ 責任轉移線 ═══"]
     Think --> Route{老闆拍板路由}
-    Route -- 新需求 --> Start["sb-start 建骨架"] --> Check
+    Route -- "新需求（M/L 級）" --> Start["sb-start 建骨架"] --> Check
+    Route -- "S 級微修" --> Direct["直接實行"]
 
     subgraph Check["顧問側三權制衡 · 對 repo 唯讀 · 互相制約"]
         direction LR
@@ -149,11 +153,11 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 
 路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定，在 sb-think 中拍板）：
 
-- **沿用 `<nnn>`**——同一子需求的擴充。
-- **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 `<nnn>` 已完成，不需先 PASS）。
-- **開新 `<slug>`**——與既有功能幾乎無關的新功能。
+- **沿用 `<nnn>`**——同一子需求的擴充（級別沿用）。
+- **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 `<nnn>` 已完成，不需先 PASS；依 §0.1 定級 M/L）。
+- **開新 `<slug>`**——與既有功能幾乎無關的新功能（依 §0.1 定級 M/L）。
 - **結束 `<slug>`**——老闆 PASS → 完整收尾保鮮 → 移 archive/。
-- **直接實行**——明確的低複雜度設定或開關。
+- **直接實行（S 級微修）**——§0.1 S 級判準成立（無行為變化的微修／單一設定或開關）。
 - **框架演化**——修改 shiftblame 自身；不開 slug，仍須先揭露方案取得授權。
 
 ### sb-* 工作流指令
