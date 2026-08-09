@@ -1,8 +1,8 @@
 ---
 name: sb-resume
-description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認後重走三面向制衡。
+description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新確認後重走三面向制衡。
 ---
-# sb-resume — 繼續未完成的 slug/nnn
+# sb-resume — 繼續未完成的 slug/ms
 
 > **sb-think 分發目標**：sb-think 理解老闆要恢復未完成工作後分發至此。位置：從任何中斷點恢復 → 重走三面向制衡（基於既有 G1~G3 重新確認）。
 
@@ -13,7 +13,7 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 ## 流程
 
 0. **秘書讀取脈絡**（主對話）：依 §9 依序唯讀 `SOP.md`、`ROADMAP.md`、`archive/`、未歸檔的 `<slug>`。
-1. **找出未完成的 slug/nnn**：
+1. **找出未完成的 slug/ms**：
    - 僅一個未完成 → 提議 resume 它。
    - 多個未完成 → 列出供老闆選，**等待老闆指定**後才 resume（提議不等於授權）。
    - 無未完成 → 提示「無未完成 slug，請透過 sb-think 開新工作」。
@@ -29,7 +29,7 @@ description: 繼續之前未完成的 slug/nnn，基於既有 G1~G3 重新確認
 
 ## 邊界
 
-- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 nnn（那是 sb-start 由 sb-think 分發）。
+- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 ms（那是 sb-start 由 sb-think 分發）。
 - **二層判斷**：`last_save` 標記（接續落點）→ 無標記（重確認 G1~G3）。有 `last_save` 時接續不重確認，消費後清除標記。
-- 重新確認（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；若既有 G1~G3 已全失效，建議走重大例外遷移（SKILL §1.4.1）或開新 nnn。
+- 重新確認（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；若既有 G1~G3 已全失效，建議走重大例外遷移（SKILL §1.4.1）或開新 ms。
 - SLUG §4 節點依當前實際狀態標記。

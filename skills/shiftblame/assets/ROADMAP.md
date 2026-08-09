@@ -4,7 +4,7 @@ type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>
-revision: 0.7.2
+revision: 0.7.3
 authorized_by: owner
 ---
 
@@ -39,5 +39,5 @@ authorized_by: owner
 - 產品目標、固定邊界與待開發計畫可以在目前可實作或被阻塞時列入；ROADMAP 不要求填阻塞證據、解阻塞計畫或進度狀態。
 - 正文 MUST 使用白話；專有名詞只在老闆原意本來就需要時使用，不能把需求改寫成 `Given／When／Then`、API、模組、驗收碼或工作拆解。
 - 新增產品目標、改變產品邊界、取消尚未完成的需求或把剩餘方向擴張成新需求，仍須老闆明確授權；完成項的移除與剩餘方向的忠實改寫是收尾保鮮，不需另行授權。
-- 路由提議只能在對話回報，不得寫入 ROADMAP；`<slug>`／`<nnn>` 仍只由老闆決定。
+- 路由提議只能在對話回報，不得寫入 ROADMAP；`<slug>`／`<ms>` 仍只由老闆決定。
 - ROADMAP 只能由 秘書 寫入；其他角色 MUST NOT 修改 ROADMAP。PASS、收尾與歸檔會觸發既定的文件保鮮動作，但不會自動授權新增產品意圖。
