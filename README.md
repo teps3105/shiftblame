@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.7.0-2ea44f.svg" alt="version 0.7.0"/>
+  <img src="https://img.shields.io/badge/version-0.7.4-2ea44f.svg" alt="version 0.7.4"/>
 </p>
 
 ---
@@ -190,6 +190,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ├── .codex-plugin/plugin.json      # plugin manifest（各平台對應 manifest）
 ├── .claude-plugin/marketplace.json
 ├── .agents/plugins/marketplace.json
+├── agents/                        # 子代理定義檔（中性描述：audit/plan/test/verify/explore/operate/vision/analyze）
 └── skills/
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
