@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.7.6-2ea44f.svg" alt="version 0.7.6"/>
+  <img src="https://img.shields.io/badge/version-0.7.7-2ea44f.svg" alt="version 0.7.7"/>
 </p>
 
 ---
@@ -168,6 +168,22 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 - **直接實行（S 級微修）**——§0.1 S 級判準成立（無行為變化的微修／單一設定或開關）。
 - **框架演化**——修改 shiftblame 自身；不開 slug，仍須先揭露方案取得授權。
 
+### 子代理安裝（npm CLI：sb-agents）
+
+子代理定義不隨 plugin 攜帶（避免與各平台載入機制重複導入）——由 npm CLI `sb-agents` 安裝到各平台**使用者層** agents 目錄：
+
+```text
+npm install -g ./cli        # 從 repo 安裝（或 npm i -g shiftblame-agents）
+sb-agents install --platform all              # 安裝到 zcode/claude/codex 三平台
+sb-agents install --platform zcode --model "custom:xxx:yyy"   # 指定模型
+sb-agents list                                  # 檢視已安裝狀態
+```
+
+- 中性定義來源：`cli/templates/*.md`（四階段 audit／plan／test／verify＋四配套 explore／operate／vision／analyze，共 8 檔）。
+- 安裝目標：zcode → `~/.zcode/agents/*.md`、claude → `~/.claude/agents/*.md`、codex → `~/.codex/agents/*.toml`。
+- `model` 為配置點：`--model` 指定時寫入；未指定採平台默認語義值（zcode 省略欄位＝繼承默認、claude 填 `inherit`、codex 註解標示）。
+- 已存在檔案預設略過（`--force` 覆蓋）——不覆寫使用者的既有配置。
+
 ### sb-* 工作流指令
 
 **sb-think 是唯一閘口**——所有輸入先過 sb-think 理解、對齊、分發，下列指令是 sb-think 分發後的執行目標，老闆不直達：
@@ -190,8 +206,10 @@ shiftblame/                         # plugin 套件根（repo 根）
 ├── .codex-plugin/plugin.json      # plugin manifest（各平台對應 manifest）
 ├── .claude-plugin/marketplace.json
 ├── .agents/plugins/marketplace.json
-├── agents/                        # 子代理定義檔（雙格式同源 · Claude Code 讀 .md：audit/plan/test/verify/explore/operate/vision/analyze）
-├── .codex/agents/                 # 子代理定義檔（雙格式同源 · Codex 讀 .toml：內容與 agents/ 同源）
+├── cli/                            # npm CLI（sb-agents）：子代理定義安裝到各平台使用者層
+│   ├── package.json               # bin: sb-agents
+│   ├── bin/sb-agents.mjs          # install/list（--platform zcode|claude|codex|all、--model、--force）
+│   └── templates/                  # 中性定義唯一來源（audit/plan/test/verify/explore/operate/vision/analyze）
 └── skills/
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾

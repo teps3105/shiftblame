@@ -1,2 +1,4 @@
 # shiftblame 工作區（SKILL §5：MUST 經 .gitignore 排除，不得 commit）
 .shiftblame/
+# npm CLI（sb-agents）依賴
+cli/node_modules/
