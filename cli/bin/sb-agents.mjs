@@ -50,7 +50,7 @@ function renderMarkdown(fm, body, model) {
   return lines.join('\n') + body + '\n';
 }
 
-function renderToml(fm, body, model) {
+function renderToml(fm, body, model, effort) {
   const inst = body.trim();
   const lines = [
     `name = "${fm.name}"`,
@@ -62,13 +62,14 @@ function renderToml(fm, body, model) {
   } else {
     lines.push(`# model = "<模型 ID>"  # 配置點：安裝時以 --model 指定，未指定＝平台默認`);
   }
+  if (effort) lines.push(`model_reasoning_effort = "${effort}"`);
   lines.push(`developer_instructions = """`, inst, `"""`, '');
   return lines.join('\n');
 }
 
-function render(platform, template, model) {
+function render(platform, template, model, effort) {
   const { fm, body } = parseTemplate(template);
-  if (platform === 'codex') return renderToml(fm, body, model);
+  if (platform === 'codex') return renderToml(fm, body, model, effort);
   return renderMarkdown(fm, body, model);
 }
 
@@ -83,6 +84,8 @@ function usage() {
         codex  → ~/.codex/agents/*.toml
       --model 指定模型（所有已安裝檔）；未指定採平台默認語義值
         （zcode 省略欄位＝繼承默認；claude 填 inherit；codex 註解配置點）
+      --effort 指定思考強度（僅 codex 寫入 model_reasoning_effort；
+        如 --effort max；支援 low/medium/high/xhigh/max 依模型而定）
       --force 覆蓋已存在檔案；預設已存在則略過
   sb-agents list
       列出各平台已安裝的定義檔
@@ -101,7 +104,7 @@ function listInstalled() {
   }
 }
 
-function install(platform, model, force) {
+function install(platform, model, effort, force) {
   const templates = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.md')).sort();
   const dir = PLATFORMS[platform].dir();
   mkdirSync(dir, { recursive: true });
@@ -116,9 +119,9 @@ function install(platform, model, force) {
       skipped++;
       continue;
     }
-    const content = render(platform, join(TEMPLATES_DIR, t), model ?? PLATFORMS[platform].defaultModel);
+    const content = render(platform, join(TEMPLATES_DIR, t), model ?? PLATFORMS[platform].defaultModel, effort);
     writeFileSync(outPath, content, 'utf-8');
-    console.log(`  安裝 ${outName}${model ? `（model: ${model}）` : ''}`);
+    console.log(`  安裝 ${outName}${model ? `（model: ${model}${effort ? `, effort: ${effort}` : ''}）` : ''}`);
     installed++;
   }
   console.log(`[${platform}] ${installed} 安裝、${skipped} 略過 @ ${dir}`);
@@ -155,6 +158,7 @@ for (const p of platforms) {
   }
 }
 const model = opt('--model');
+const effort = opt('--effort');
 const force = args.includes('--force');
 
 // 模板完整性預檢
@@ -166,4 +170,4 @@ for (const t of readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.md'))) {
   if (!SANDBOX_VALUES.has(fm.sandbox)) throw new Error(`模板 ${t} sandbox 值非法：${fm.sandbox}`);
 }
 
-for (const p of platforms) install(p, model, force);
+for (const p of platforms) install(p, model, effort, force);
