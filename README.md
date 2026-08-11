@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.7.9-2ea44f.svg" alt="version 0.7.9"/>
+  <img src="https://img.shields.io/badge/version-0.8.0-2ea44f.svg" alt="version 0.8.0"/>
 </p>
 
 ---
@@ -198,6 +198,7 @@ sb-agents list                                  # 檢視已安裝狀態
 - [`sb-docs`](skills/sb-docs/SKILL.md)——對 docs/ 文件提出修改需求。
 - [`sb-sop`](skills/sb-sop/SKILL.md)——對 SOP 提出修改需求。
 - [`sb-roadmap`](skills/sb-roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
+- [`sb-todo`](skills/sb-todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
 
 ## 文件結構
 
