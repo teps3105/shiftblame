@@ -24,12 +24,12 @@ description: 結束當前 slug 並執行完整收尾保鮮；嚴格檢查 PASS �
 ## 2. 前置通過 → 執行完整收尾保鮮（SKILL §1.7.2）
 
 1. SLUG `status` 改為 `passed`。
-2. 從當下 codebase、設定、測試入口重寫 `SOP.md`；保留仍成立的配置與規範，刪除已取代或無法查核者。
-3. 重新整理 `ROADMAP.md`：移除已完成項，部分完成者改寫為剩餘方向；不得藉保鮮新增未授權需求。
-4. **保鮮 repo 內文件（`docs/`、`README.md`）**——逐項盤點 docs/ 下每個系統文件是否與 codebase 一致（系統已移除→刪文件；行為已變→更新；新完成系統→補文件）；README 的說明、安裝、使用是否仍準確。寫法對照 `assets/DOCS.md` 判準。與 SOP／ROADMAP 同級，MUST NOT 跳過。
-5. 依 SOP 盤點測試資產；探索性內容留 `.shiftblame/tmp/`。
+2. 從當下 codebase、設定、測試入口重寫 `<repo>/.shiftblame/SOP.md`；保留仍成立的配置與規範，刪除已取代或無法查核者。
+3. 重新整理 `<repo>/.shiftblame/ROADMAP.md`：移除已完成項，部分完成者改寫為剩餘方向；不得藉保鮮新增未授權需求。
+4. **保鮮 repo 內文件（`<repo>/docs/`、`<repo>/README.md`）**——逐項盤點 <repo>/docs/ 下每個系統文件是否與 codebase 一致（系統已移除→刪文件；行為已變→更新；新完成系統→補文件）；README 的說明、安裝、使用是否仍準確。寫法對照 `assets/DOCS.md` 判準。與 SOP／ROADMAP 同級，MUST NOT 跳過。
+5. 依 SOP 盤點測試資產；探索性內容留 `<repo>/.shiftblame/tmp/`。
 6. 依分支政策合併、推送與清理。
-7. 將 `.shiftblame/<slug>/` 移至 `archive/`。
+7. 將 `<repo>/.shiftblame/<slug>/` 移至 `<repo>/.shiftblame/archive/`。
 
 ## 邊界
 

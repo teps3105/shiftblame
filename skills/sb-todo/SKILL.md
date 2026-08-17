@@ -6,9 +6,9 @@ description: 將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清
 
 > **sb-think 分發目標**：sb-think 理解老闆想在當前 slug 加一個功能（但不立即開 ms）後分發至此。位置：任意節點——只新增條目到 SLUG §3 待辦清單，不開 ms、不動節點。
 
-當老闆要在當前 slug 增加待辦時執行（由 sb-think 分發）。用於把老闆想做但尚未排定開工的功能，忠實記錄到 `.shiftblame/<slug>/SLUG.md` §3 待辦清單（一句價值簡述，純短名，無編號）。
+當老闆要在當前 slug 增加待辦時執行（由 sb-think 分發）。用於把老闆想做但尚未排定開工的功能，忠實記錄到 `<repo>/.shiftblame/<slug>/SLUG.md` §3 待辦清單（一句價值簡述，純短名，無編號）。
 
-先 `load skill: shiftblame`，主對話秘書執行（SLUG.md 寫入者＝秘書，§7 管理文件唯一寫入矩陣）：
+先 `load skill: shiftblame`，主對話秘書執行（<repo>/.shiftblame/<slug>/SLUG.md 寫入者＝秘書，§7 管理文件唯一寫入矩陣）：
 
 ## 有後續文字 → 顯式授權寫入
 

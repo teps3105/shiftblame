@@ -12,7 +12,7 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新確認�
 
 ## 流程
 
-0. **秘書讀取脈絡**（主對話）：依 §9 依序唯讀 `SOP.md`、`ROADMAP.md`、`archive/`、未歸檔的 `<slug>`。
+0. **秘書讀取脈絡**（主對話）：依 §9 依序唯讀 `<repo>/.shiftblame/SOP.md`、`<repo>/.shiftblame/ROADMAP.md`、`<repo>/.shiftblame/archive/`、未歸檔的 `<slug>`。
 1. **找出未完成的 slug/ms**：
    - 僅一個未完成 → 提議 resume 它。
    - 多個未完成 → 列出供老闆選，**等待老闆指定**後才 resume（提議不等於授權）。

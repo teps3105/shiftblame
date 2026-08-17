@@ -12,7 +12,7 @@ description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，�
 
 ## 無後續文字 → 依上下文提建議，待授權
 
-讀取當前 `ROADMAP.md`、`SOP.md`、當前 `<slug>` 與 archive 脈絡，判定修改意圖並提出建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。
+讀取當前 `<repo>/.shiftblame/ROADMAP.md`、`<repo>/.shiftblame/SOP.md`、當前 `<slug>` 與 archive 脈絡，判定修改意圖並提出建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。
 
 ## 有後續文字 → 顯式授權寫入
 

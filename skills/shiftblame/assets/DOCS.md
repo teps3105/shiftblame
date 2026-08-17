@@ -1,10 +1,10 @@
 ---
 name: DOCS
-revision: 0.8.2
+revision: 0.8.3
 ---
 # DOCS — 專案系統文件的寫法判準
 
-> 本檔規範專案 `docs/` 系統文件的**寫法品質**，不改變流程與寫入授權（流程看 SKILL §0 主圖，授權看 SKILL §2、§5、§6）。判準提煉自 `dnd-prototype` `system-documentation-audit` 002 的三輪修正（rev1 code 導覽作廢、rev2 揣測意圖作廢、rev3 純實作陳述 PASS）。
+> 本檔規範專案 `<repo>/docs/` 系統文件的**寫法品質**，不改變流程與寫入授權（流程看 SKILL §0 主圖，授權看 SKILL §2、§5、§6）。判準提煉自 `dnd-prototype` `system-documentation-audit` 002 的三輪修正（rev1 code 導覽作廢、rev2 揣測意圖作廢、rev3 純實作陳述 PASS）。
 
 ## 0. 適用範圍（硬性釘死）
 
@@ -12,15 +12,15 @@ revision: 0.8.2
 flowchart TD
     File[/待判文件/] --> Type{文件類型？}
     Type -- "docs/ 系統文件" --> Apply["✅ 適用<br/>執行 R1-R4 ＋ grep 查核"]
-    Type -- ".shiftblame/ 管理文件" --> NoApply["❌ MUST NOT 套用"]
-    Type -- ".shiftblame/SOP.md" --> NoApply
+    Type -- "<repo>/.shiftblame/ 管理文件" --> NoApply["❌ MUST NOT 套用"]
+    Type -- "<repo>/.shiftblame/SOP.md" --> NoApply
 ```
 
-- **適用**：專案 `docs/` 目錄下的系統文件（描述 codebase 實際運作）。
-- **MUST NOT 套用**：`.shiftblame/` 管理文件（G1／G2／G3／SOP／ROADMAP／SLUG）——寫 Why、技術理由、需求動機是這些文件的法定職責，套反向詞清單會誤殺核心內容。
-- **MUST NOT 套用**：`.shiftblame/SOP.md`——SOP 保留真實路徑／命令／行號是法定職責，與 R3「無 code 導覽」有意分工：SOP 寫「怎麼跑／配置在哪」，docs/ 寫「系統怎麼運作」。
+- **適用**：專案 `<repo>/docs/` 目錄下的系統文件（描述 codebase 實際運作）。
+- **MUST NOT 套用**：`<repo>/.shiftblame/` 管理文件（G1／G2／G3／SOP／ROADMAP／SLUG）——寫 Why、技術理由、需求動機是這些文件的法定職責，套反向詞清單會誤殺核心內容。
+- **MUST NOT 套用**：`<repo>/.shiftblame/SOP.md`——SOP 保留真實路徑／命令／行號是法定職責，與 R3「無 code 導覽」有意分工：SOP 寫「怎麼跑／配置在哪」，<repo>/docs/ 寫「系統怎麼運作」。
 
-本檔的 grep 反向詞清單（§2）只在 `docs/` 執行；MUST NOT 對 `.shiftblame/` 或 SOP 執行。
+本檔的 grep 反向詞清單（§2）只在 `<repo>/docs/` 執行；MUST NOT 對 `<repo>/.shiftblame/` 或 SOP 執行。
 
 ## 1. 角色落點
 
@@ -64,7 +64,7 @@ flowchart TD
 - **MUST NOT**：把文件寫成 code 的劣化複製品——code 一改文件即過時。
 - **grep 特徵（MUST NOT 命中）**：行號引用 `:[0-9]`、簽章 `func`／`enum`／`signal`／`var`／`const`／`await`、常數賦值 `= [0-9]`／`= true`／`= false`、檔案路徑作敘事主軸 `.gd`／`src/...`。
 - **界線**：偶爾為查證引用檔名 MAY，但拿檔名當章節骨架 MUST NOT。
-- **與 SOP 分工**：R3 僅規範 `docs/`；SOP 保留真實路徑／命令／行號是法定職責（見 §0）。
+- **與 SOP 分工**：R3 僅規範 `<repo>/docs/`；SOP 保留真實路徑／命令／行號是法定職責（見 §0）。
 
 ### R4 各領域覆蓋
 
@@ -76,7 +76,7 @@ flowchart TD
 - **數字保留** — 描述行為的數字保留（「25×18」「三層」「48px」）；不變成常數定義列舉（`MAP_W=25`）。界線：「描述行為的量」保留，「程式常數定義」禁止。
 - **跨文件引用** — 同一規則只在一處定義，他處用相對路徑指標。MUST NOT 在多處重複定義造成雙重真相。
 - **章節標題** — 用行為／規則／領域名命名（「察覺條件」「五狀態與各自行為」）；MUST NOT 用檔名／類別名／函式名命名。
-- **測試／配置歸屬** — docs/ 描述「測試驗證了哪些行為」；具體命令、配置檔路徑、版本值屬 SOP 職責。
+- **測試／配置歸屬** — <repo>/docs/ 描述「測試驗證了哪些行為」；具體命令、配置檔路徑、版本值屬 SOP 職責。
 
 ## 4. 可驗證方法（grep）
 
@@ -95,8 +95,8 @@ flowchart TD
 
 ## 6. 與其他文件的關係
 
-- **SKILL §5**：規範 docs/ 寫入權（預設不得改，須授權）；本檔規範寫法品質。正交。
+- **SKILL §5**：規範 <repo>/docs/ 寫入權（預設不得改，須授權）；本檔規範寫法品質。正交。
 - **SKILL §8**：框架檔結構含本檔。
-- **SKILL §3**：開發後審計階段對照 G1 驗收；文件化工作裡審計階段 MAY 引用本檔作為 docs/ 驗收尺。
-- **SOP.md §1.3**：SOP 保留真實路徑／命令／行號，與本檔 R3 分工（見 §0）。
+- **SKILL §3**：開發後審計階段對照 G1 驗收；文件化工作裡審計階段 MAY 引用本檔作為 <repo>/docs/ 驗收尺。
+- **<repo>/.shiftblame/SOP.md §1.3**：SOP 保留真實路徑／命令／行號，與本檔 R3 分工（見 §0）。
 - **references/AUDIT.md**：本檔不取代 審計階段主導的 G1 驗收。

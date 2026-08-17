@@ -12,10 +12,10 @@ description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main�
 
 ## 流程
 
-0. **確認意圖**（主對話）：老闆主動要求即表達丟棄意圖。秘書揭示將丟棄的範圍（當前 slug 的分支、commit、`.shiftblame/<slug>/`），請老闆確認。
+0. **確認意圖**（主對話）：老闆主動要求即表達丟棄意圖。秘書揭示將丟棄的範圍（當前 slug 的分支、commit、`<repo>/.shiftblame/<slug>/`），請老闆確認。
 1. **切回 main**：`git checkout main`。
 2. **刪除分支**：`git branch -D <type>/<slug>`（強制刪除，commit 一併消失）。
-3. **刪除 slug 文件**：刪除 `.shiftblame/<slug>/`。**不 archive**——archive 是成功歸檔，dice 是失敗丟棄。
+3. **刪除 slug 文件**：刪除 `<repo>/.shiftblame/<slug>/`。**不 archive**——archive 是成功歸檔，dice 是失敗丟棄。
 4. **重新討論需求**：路由回 sb-think 重新打磨意圖（§2：意圖揭露由 sb-think 承載），與老闆重新討論需求方向。
 
 ## 邊界

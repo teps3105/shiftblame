@@ -1,18 +1,18 @@
 ---
 name: sb-docs
-description: 對當前專案 docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
+description: 對當前專案 <repo>/docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
 ---
-# sb-docs — 修改專案 docs/ 文件
+# sb-docs — 修改專案 <repo>/docs/ 文件
 
-> **sb-think 分發目標**：sb-think 理解老闆要修改 docs/ 文件後分發至此。位置：對 docs/ 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
+> **sb-think 分發目標**：sb-think 理解老闆要修改 <repo>/docs/ 文件後分發至此。位置：對 <repo>/docs/ 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
 
-當老闆要修改 docs/ 文件時執行（由 sb-think 分發）。既有 `docs/` 預設不得修改，除非老闆明確授權（SKILL §5）；寫法品質判準見 `assets/DOCS.md`。
+當老闆要修改 <repo>/docs/ 文件時執行（由 sb-think 分發）。既有 `<repo>/docs/` 預設不得修改，除非老闆明確授權（SKILL §5）；寫法品質判準見 `assets/DOCS.md`。
 
 先 `load skill: shiftblame`，再依下列分派：
 
 ## 無後續文字 → 依上下文提建議，待授權
 
-讀取當前 `docs/` 文件與 codebase 對應系統，比對文件與實作一致性，判定修改意圖並提出建議（附 `<路徑>:<行號>` 與實作依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。實際寫入由主對話 秘書 執行（§5）。
+讀取當前 `<repo>/docs/` 文件與 codebase 對應系統，比對文件與實作一致性，判定修改意圖並提出建議（附 `<路徑>:<行號>` 與實作依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。實際寫入由主對話 秘書 執行（§5）。
 
 ## 有後續文字 → 顯式授權修改
 
@@ -21,7 +21,7 @@ description: 對當前專案 docs/ 文件提出修改需求；無後標依上下
 - **R1 只描述真實實作**：陳述操作→行為、條件→結果，與 codebase 一致
 - **R2 不揣測意圖**：grep 意圖詞（為了／讓玩家／避免／調和…）須 0 命中
 - **R3 無 code 導覽**：grep code 特徵（`:[0-9]`／`func `／`enum `／`.gd`）須 0 命中
-- **R4 各領域覆蓋**：文件清單與 `docs/` 實際齊全
+- **R4 各領域覆蓋**：文件清單與 `<repo>/docs/` 實際齊全
 
 - 符合判準 → 主對話 秘書 執行寫入。
 - 違反判準 → **拒絕寫入**，提示具體違規項。
@@ -29,5 +29,5 @@ description: 對當前專案 docs/ 文件提出修改需求；無後標依上下
 ## 邊界
 
 - 寫法品質判準權威定義在 `assets/DOCS.md`；本 prompt 引用該檔，不另建標準。
-- DOCS.md 判準僅規範 `docs/`；MUST NOT 套用到 `.shiftblame/` 管理文件或 SOP。
+- DOCS.md 判準僅規範 `<repo>/docs/`；MUST NOT 套用到 `<repo>/.shiftblame/` 管理文件或 SOP。
 - 文件化過程發現的文件-code 不一致，授權當場修正（文件錯改文件、code 錯改 code）。

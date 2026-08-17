@@ -12,7 +12,7 @@ description: 對 SOP 提出修改需求；無後標依上下文提建議，有�
 
 ## 無後續文字 → 依上下文提建議，待授權
 
-讀取當前 `SOP.md`、`ROADMAP.md`、codebase 設定與測試入口脈絡，判定修改意圖並提出建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。
+讀取當前 `<repo>/.shiftblame/SOP.md`、`<repo>/.shiftblame/ROADMAP.md`、codebase 設定與測試入口脈絡，判定修改意圖並提出建議（附脈絡依據）。**提議不等於授權**（SKILL §2、§9）；MUST NOT 在授權前寫入。
 
 ## 有後續文字 → 顯式授權寫入
 

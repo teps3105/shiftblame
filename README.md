@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.8.2-2ea44f.svg" alt="version 0.8.2"/>
+  <img src="https://img.shields.io/badge/version-0.8.3-2ea44f.svg" alt="version 0.8.3"/>
 </p>
 
 ---
@@ -68,7 +68,7 @@ flowchart TD
             direction LR
             T["① 測試階段 · G1 落地<br/>子代理 · 依 G1 寫測試<br/>定義「過」（鎖定）"] --> D["② 實作階段 · G2 落地<br/>主對話 · 依 G2 寫實作碼"]
             D --> A["③ 驗收階段 · G3 落地<br/>子代理 · 照 G3 跑 CI 測試<br/>驗收「完成」"]
-            A --> Judge{秘書讀 tmp/ 判決<br/>含測試鎖定核對}
+            A --> Judge{秘書讀 <repo>/.shiftblame/tmp/ 判決<br/>含測試鎖定核對}
             Judge -- 合格 --> Commit["秘書 commit（獨佔）"]
             Judge -- "返工（實作→實作<br/>測試定義→測試）" --> T
         end
@@ -111,7 +111,7 @@ flowchart TB
         DEV --> ACC["驗收階段 · G3 落地<br/>子代理"]
     end
     SEC -- 調控時序 --> Consult
-    SEC -- 調控時序<br/>讀 tmp/ 判決 --> Build
+    SEC -- 調控時序<br/>讀 <repo>/.shiftblame/tmp/ 判決 --> Build
     G1 == "定義↔落地<br/>測試" ==> TST
     G2 == "定義↔落地<br/>實作" ==> DEV
     G3 == "定義↔落地<br/>驗收" ==> ACC
@@ -138,7 +138,7 @@ flowchart TB
 
 欄位模板與拒絕規則以 [`skills/shiftblame/assets/SOP.md`](skills/shiftblame/assets/SOP.md) 及 [`skills/shiftblame/assets/ROADMAP.md`](skills/shiftblame/assets/ROADMAP.md) 為準；不符合模板准入條件的內容不得寫入。
 
-每個 `<slug>` 結束時的文件保鮮是收尾的固定動作：ROADMAP 移除已完成條目並修正剩餘方向，SOP 依當前 codebase 更新事實並刪除過時內容，`docs/` 與 `README.md` 盤點是否與 codebase 一致（過時更新、移除的系統刪文件、新完成的補文件）。這是維護既有文件，不等於授權新增產品需求；新增方向與產品邊界仍須 owner 明確授權。
+每個 `<slug>` 結束時的文件保鮮是收尾的固定動作：ROADMAP 移除已完成條目並修正剩餘方向，SOP 依當前 codebase 更新事實並刪除過時內容，`<repo>/docs/` 與 `<repo>/README.md` 盤點是否與 codebase 一致（過時更新、移除的系統刪文件、新完成的補文件）。這是維護既有文件，不等於授權新增產品需求；新增方向與產品邊界仍須 owner 明確授權。
 
 ## 安裝
 
@@ -164,7 +164,7 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 - **沿用 `<nnn>`**——同一子需求的擴充。
 - **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 `<nnn>` 已完成，不需先 PASS）。
 - **開新 `<slug>`**——與既有功能幾乎無關的新功能。
-- **結束 `<slug>`**——老闆 PASS → 完整收尾保鮮 → 移 archive/。
+- **結束 `<slug>`**——老闆 PASS → 完整收尾保鮮 → 移 <repo>/.shiftblame/archive/。
 - **直接實行（不開 slug）**——框架演化、微修或老闆指定不開 slug 的輕量變更。
 - **框架演化**——修改 shiftblame 自身；不開 slug，仍須先揭露方案取得授權。
 
@@ -193,9 +193,9 @@ sb-agents list                                  # 檢視已安裝狀態
 - [`sb-resume`](skills/sb-resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
 - [`sb-do`](skills/sb-do/SKILL.md)——核對 §10 一致性，放行進入開發。
 - [`sb-end`](skills/sb-end/SKILL.md)——結束 slug，執行完整收尾保鮮。
-- [`sb-save`](skills/sb-save/SKILL.md)——記錄工作落點到 SLUG.md，供 sb-resume 恢復。
+- [`sb-save`](skills/sb-save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 sb-resume 恢復。
 - [`sb-dice`](skills/sb-dice/SKILL.md)——丟棄當前 slug 所有成果，回 main 重新討論。
-- [`sb-docs`](skills/sb-docs/SKILL.md)——對 docs/ 文件提出修改需求。
+- [`sb-docs`](skills/sb-docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
 - [`sb-sop`](skills/sb-sop/SKILL.md)——對 SOP 提出修改需求。
 - [`sb-roadmap`](skills/sb-roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
 - [`sb-todo`](skills/sb-todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
@@ -223,16 +223,16 @@ shiftblame/                         # plugin 套件根（repo 根）
     │   │   └── TEST.md
     │   └── assets/                # 範本與固定資產
     │       ├── DOCS.md            # 專案 docs/ 系統文件寫法判準
-    │       ├── SOP.md
-    │       ├── ROADMAP.md
+    │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）
+    │       ├── ROADMAP.md         # ROADMAP 准入欄位中央模板（複製來源）
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三面向範本（複製來源）
     └── sb-*/SKILL.md               # sb-think 唯一閘口、sb-start 新需求路由、其他為 sb-think 分發目標
 ```
 
-每個專案的工作區位於 `.shiftblame/`，並且 MUST 經 `.gitignore` 排除，不得 commit。工作區為**結構分檔**（定義單檔、使用分檔）：
+每個專案的工作區位於 `<repo>/.shiftblame/`（`<repo>` = 使用者專案根目錄的絕對路徑），並且 MUST 經 `.gitignore` 排除，不得 commit。工作區為**結構分檔**（定義單檔、使用分檔）：
 
 ```text
-.shiftblame/                       # 各專案工作區（MUST 經 .gitignore 排除）
+<repo>/.shiftblame/                # 各專案工作區（MUST 經 .gitignore 排除；樹內子項由樹根錨定）
 ├── SOP.md
 ├── ROADMAP.md
 ├── <slug>/                        # 結構分檔：SLUG 主體 + 每 nnn 一子目錄
@@ -248,7 +248,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ## 提交規範
 
 - 訊息：`<type>: <繁中描述>`，**單行、10～30 字**。MUST NOT 含任何追蹤編號（nnn、slug 名稱、issue/ticket 號）；純描述變更本身。
-- 精準 `git add`；不得提交 `.shiftblame/`，不得夾帶範圍外檔案。
+- 精準 `git add`；不得提交 `<repo>/.shiftblame/`，不得夾帶範圍外檔案。
 - 分支政策綁定 slug：開 `<slug>` 時 MUST 切 `<type>/<slug>` 分支；框架演化、緊急修復、輕量調整 MAY 直接在 main。
 - 開發採多循環螺旋：功能是 commit 單位、里程碑是驗收節點；不合格返工疊加新 commit。
 
