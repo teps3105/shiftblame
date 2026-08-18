@@ -1,10 +1,11 @@
 {
   "name": "shiftblame-agents",
-  "version": "0.8.3",
-  "description": "shiftblame 子代理定義安裝 CLI——把中性定義檔安裝到各平台使用者層 agents 目錄（zcode／claude／codex），並依平台格式設置 model。",
+  "version": "0.9.0",
+  "description": "shiftblame CLI——sb：流程狀態機閘門（不自知推進與四假對策）；sb-agents：子代理定義安裝。",
   "type": "module",
   "bin": {
-    "sb-agents": "bin/sb-agents.mjs"
+    "sb-agents": "bin/sb-agents.mjs",
+    "sb": "bin/sb.mjs"
   },
   "files": [
     "bin/",

@@ -1,0 +1,297 @@
+#!/usr/bin/env node
+// sb — shiftblame 流程狀態機 CLI：把流程規範鎖死為可機械查核的閘門。
+//
+// 對抗兩類系統性問題：
+//   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
+//      對策：單向節點鏈＋每個推進點的前置閘門；推進 MUST 跑 `sb next`，閘門
+//      不過即擋（exit 1）。老闆決策點 MUST 帶 --boss-ok（顯性留痕）。
+//   2. 「四假」——假需求（G1 驗收不可查核）、假規劃（G3 無失敗模式/步驟）、
+//      假測試（無斷言）、假驗收（反證敷衍/未驗寫「無」）。
+//      對策：各階段閘門內建機械訊號檢查（見 CHECKS）。
+//
+// 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
+// 執行；寫入僅 <repo>/.shiftblame/（狀態檔 flow-state.json 與 tmp/）。
+// exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
+
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { join, isAbsolute, resolve } from 'node:path';
+import { execSync } from 'node:child_process';
+
+const SB_DIR = '.shiftblame';
+const TMP = join(SB_DIR, 'tmp');
+const STATE_FILE = join(SB_DIR, 'flow-state.json');
+const LOCK_FILE = join(TMP, 'test-lock.json');
+
+// ———— 檢查規則常數（四假訊號，日後按需調整） ————
+
+// 假需求：驗收標準不得含不可查核的模糊謂詞
+const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好', '友好', '自如', '更好', '優化用戶體驗', 'works properly', 'user-friendly'];
+// 假測試：測試碼至少出現一次斷言 API（跨語言常見集）
+const ASSERT_RE = /\b(assert\w*|expect\w*|should(?:\.\w+)?|assertEq|assertAlmostEqual|CHECK|FAIL\(|t\.Error|t\.Fatal|expectException|toBe|toEqual|to_be)\b/;
+// 敷衍詞（段落全為此類 = 假）
+const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
+
+// ———— 節點鏈（單向；next = 允許的下一步） ————
+
+const FLOW = {
+  think:    { next: ['audit'], desc: 'sb-think 意圖確認' },
+  audit:    { next: ['research'], desc: '審計 G1' },
+  research: { next: ['plan'], desc: '研究 G2' },
+  plan:     { next: ['release'], desc: '規劃 G3' },
+  release:  { next: ['test', 'commit'], desc: '放行（§10 核對後）' },  // release→commit --direct = 預設直接修正
+  test:     { next: ['build'], desc: '測試碼定義＋lock' },
+  build:    { next: ['verify'], desc: '實作＋實機驗證' },
+  verify:   { next: ['verdict'], desc: '驗收到綠燈＋報告' },
+  verdict:  { next: ['commit'], desc: '秘書判決' },
+  commit:   { next: ['converge'], desc: 'commit 建立待驗對位' },
+  converge: { next: ['ms-done'], desc: 'ms 收斂（三面向重審）' },
+  'ms-done': { next: ['audit', 'pass'], desc: '老闆決定：開新 ms 或結束 slug' },
+  pass:     { next: [], desc: 'slug PASS（終態，收尾保鮮＋archive 由 sb-end 執行）' },
+};
+
+const BOSS_NODES = new Set(['audit', 'release', 'ms-done', 'pass']); // 這些推進 MUST --boss-ok
+
+// ———— 小工具 ————
+
+const out = (m) => console.log(m);
+const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) console.error(`  ✗ ${m}`); process.exit(code); };
+const fin = (msgs) => { console.log('PASS'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
+const usage = () => {
+  console.error(`sb — shiftblame 流程狀態機（在 <repo> 專案根執行）
+
+用法：
+  sb init <slug>                        開 slug：建立 flow-state.json（節點 think）
+  sb state                              顯示目前節點、可走下一步與其前置條件
+  sb next <node> [--boss-ok] [--direct] 推進節點（閘門不過即擋）
+                                        --boss-ok：老闆拍板點的顯性留痕
+                                        --direct：release→commit 預設直接修正路徑
+  sb lock <測試碼...>                    測試定稿：斷言初篩＋sha256 鎖定基準`);
+  process.exit(2);
+};
+
+const readJson = (p) => JSON.parse(readFileSync(p, 'utf-8'));
+const mdOf = (p) => (existsSync(p) ? readFileSync(p, 'utf-8') : null);
+
+// 取含關鍵詞的標題段內容（到同級/更高等級標題前）
+function section(text, keyword) {
+  const lines = text.split('\n');
+  let start = -1, level = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
+    if (!m) continue;
+    if (start >= 0 && m[1].length <= level) break;
+    if (start < 0 && m[2].includes(keyword)) { start = i; level = m[1].length; }
+  }
+  return start < 0 ? null : lines.slice(start + 1).join('\n').trim();
+}
+
+// 段落實質性：非空、有效字數達標、非全敷衍行
+function substantive(body, minLen = 20) {
+  if (!body) return false;
+  const s = body.replace(/^[>#\-\s*]+/gm, '').replace(/\s+/g, '');
+  if (s.length < minLen) return false;
+  const lines = body.split('\n').map((l) => l.replace(/^[>#\-\s*]+/, '').trim()).filter(Boolean);
+  return lines.length > 0 && !lines.every((l) => COP_OUT.test(l));
+}
+
+const msDir = (st) => join(SB_DIR, st.slug, st.ms);
+const gPath = (st, n) => join(msDir(st), `G${n}.md`);
+
+// ———— 各節點推進閘門（target = 要進入的節點） ————
+
+function gate(st, target, opts) {
+  const problems = [];
+  const passes = [];
+
+  if (BOSS_NODES.has(target)) {
+    if (!opts.bossOk) problems.push(`「${target}」是老闆拍板點——MUST 帶 --boss-ok（顯性留痕，不可由 agent 自行推進）`);
+    else passes.push('老闆拍板留痕（--boss-ok）');
+  }
+
+  const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
+  const latestVerify = () => {
+    if (!existsSync(TMP)) return null;
+    const c = readdirSync(TMP).filter((f) => /^verify-.*\.md$/i.test(f)).sort();
+    return c.length ? { name: c.at(-1), text: readFileSync(join(TMP, c.at(-1)), 'utf-8') } : null;
+  };
+  const latestBuild = () => {
+    if (!existsSync(TMP)) return null;
+    const c = readdirSync(TMP).filter((f) => /^build-.*\.md$/i.test(f)).sort();
+    return c.length ? join(TMP, c.at(-1)) : null;
+  };
+
+  switch (target) {
+    case 'research': // 假需求閘
+      if (!g1) problems.push('G1 不存在（.shiftblame/<slug>/<ms>/G1.md）');
+      else {
+        const acc = section(g1, '驗收');
+        if (acc === null) problems.push('G1 缺「驗收」段——需求沒有可查核的「完成」定義（假需求訊號）');
+        else {
+          if (!substantive(acc)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
+          const vague = VAGUE.filter((v) => acc.includes(v));
+          if (vague.length) problems.push(`G1 驗收段含模糊謂詞「${vague.join('、')}」——不可查核（假需求訊號），改寫為可觀察的行為/狀態`);
+          if (!problems.length) passes.push('G1 驗收標準可查核（存在＋實質＋無模糊謂詞）');
+        }
+      }
+      break;
+
+    case 'plan':
+      if (!g2) problems.push('G2 不存在');
+      else if (!substantive(g2, 30)) problems.push('G2 內容空泛——研究產出無實質內容，規劃無依據（薄研究也要有真結論，不是空話）');
+      else passes.push('G2 實質存在');
+      break;
+
+    case 'release': { // 假規劃閘（起始效應）
+      if (!g3) problems.push('G3 不存在');
+      else {
+        const fm = section(g3, '失敗模式');
+        if (fm === null) problems.push('G3 缺「失敗模式」段——premortem：假設計畫失敗了，最可能 2-3 個原因是什麼（假規劃/起始效應訊號）');
+        else if (!substantive(fm, 10)) problems.push('G3「失敗模式」段敷衍——列不出真實失敗點＝沒想過會怎麼失敗');
+        else passes.push('G3 失敗模式（premortem）非敷衍');
+        const steps = section(g3, '實作步驟');
+        if (steps === null) problems.push('G3 缺「實作步驟」段——計畫沒有可執行的步驟（假規劃訊號）');
+        else if (!substantive(steps, 10)) problems.push('G3「實作步驟」段敷衍');
+        else passes.push('G3 實作步驟實質存在');
+      }
+      const align = mdOf(join(TMP, 'alignment-check.md'));
+      if (!align) problems.push(`${TMP}/alignment-check.md 不存在——放行前 §10 三對六向一致性核對 MUST 落記錄（G1↔G2、G2↔G3、G1↔G3）`);
+      else if (!align.includes('G1') || !align.includes('G3')) problems.push('alignment-check.md 缺三對核對內容');
+      else passes.push('§10 三對六向核對記錄存在');
+      break;
+    }
+
+    case 'test':
+      if (st.node !== 'release') break; // 僅 release→test 路徑（ms-done→audit 是新 ms 重啟）
+      break;
+
+    case 'build': // 假測試閘（lock 存在＝斷言初篩已過）
+      if (!existsSync(LOCK_FILE)) problems.push(`${LOCK_FILE} 不存在——測試階段定稿後 MUST 跑 sb lock（含無斷言初篩），鎖定前不得寫實作`);
+      else passes.push('測試已鎖定（sb lock 已跑，斷言初篩通過）');
+      break;
+
+    case 'verify':
+      if (!latestBuild()) problems.push(`${TMP}/build-*.md 不存在——實作完成 MUST 落實機驗證記錄（含驗證方式與結果），未驗證不得進驗收`);
+      else passes.push('實作＋實機驗證記錄存在');
+      break;
+
+    case 'verdict': { // 假驗收閘（完成效應）
+      const rpt = latestVerify();
+      if (!rpt) { problems.push(`${TMP}/verify-*.md 不存在——驗收 MUST 落結構化報告`); break; }
+      const fals = section(rpt.text, '反證嘗試');
+      if (fals === null) problems.push(`${rpt.name} 缺「反證嘗試」段——做了什麼嘗試讓它失敗（邊界輸入/拔依賴/極端情境）與結果（假驗收/完成效應訊號）`);
+      else if (!substantive(fals, 10)) problems.push(`${rpt.name}「反證嘗試」段敷衍（全為 無/無法/不適用）`);
+      else passes.push('反證嘗試實質存在');
+      const unv = section(rpt.text, '未驗');
+      if (unv === null) problems.push(`${rpt.name} 缺「未驗」段——未覆蓋面向清單`);
+      else if (/^(無|none|n\/?a|沒有|暫無)[。.\s]*$/i.test(unv)) problems.push(`${rpt.name}「未驗」寫「無」——總有未覆蓋的面向，寫「無」即不自知（假驗收訊號）`);
+      else if (!substantive(unv, 10)) problems.push(`${rpt.name}「未驗」段敷衍`);
+      else passes.push('未驗清單實質存在');
+      break;
+    }
+
+    case 'commit': {
+      if (opts.direct) { passes.push('直接修正路徑（未觸發重流程條件，--direct 留痕）'); break; }
+      if (!existsSync(LOCK_FILE)) { problems.push('無 test-lock.json——重流程路徑判決前必查測試鎖定'); break; }
+      const { entries } = readJson(LOCK_FILE);
+      for (const e of entries) {
+        if (!existsSync(e.file)) { problems.push(`測試碼被刪除：${e.file}`); continue; }
+        const now = createHash('sha256').update(readFileSync(e.file)).digest('hex');
+        if (now !== e.sha256) problems.push(`測試碼被變更（違反測試鎖定）：${e.file}`);
+      }
+      if (!problems.length) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變`);
+      break;
+    }
+
+    case 'converge':
+      try {
+        const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
+        if (dirty.trim()) problems.push('working tree 不乾淨——收斂前 commit MUST 已建立待驗對位（先精準 add＋commit）');
+        else passes.push('working tree 乾淨（commit 對位已建立）');
+      } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
+      break;
+
+    case 'audit':
+      if (st.node === 'ms-done') { st.ms = String(Number(st.ms) + 1).padStart(3, '0'); passes.push(`開新 ms：${st.ms}（新里程碑回三面向制衡）`); }
+      break; // think→audit 僅 bossOk
+    case 'ms-done':
+    case 'pass':
+      break;
+  }
+  return { problems, passes };
+}
+
+// ———— 指令 ————
+
+function cmdInit(slug) {
+  if (!slug) usage();
+  writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'think', history: [] }, null, 2));
+  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, '目前節點：think（sb-think 意圖確認）']);
+}
+
+function cmdState() {
+  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
+  const st = readJson(STATE_FILE);
+  out(`slug: ${st.slug}   ms: ${st.ms}   node: ${st.node}（${FLOW[st.node].desc}）`);
+  for (const n of FLOW[st.node].next) {
+    const { problems, passes } = gate({ ...st }, n, {});
+    out(`  → ${n}（${FLOW[n].desc}）`);
+    for (const p of passes) out(`      ✓ ${p}`);
+    for (const p of problems) out(`      ✗ ${p}`);
+  }
+}
+
+function cmdNext(target, opts) {
+  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
+  const st = readJson(STATE_FILE);
+  if (!(target in FLOW)) die([`未知節點「${target}」。可用：${Object.keys(FLOW).join(' → ')}`], 2);
+  const allowed = FLOW[st.node].next.includes(target) && (target !== 'commit' || st.node !== 'release' || opts.direct);
+  if (st.node === 'release' && target === 'commit' && !opts.direct) {
+    die([`release→commit 是「預設直接修正」路徑，MUST 帶 --direct 留痕；重流程走 test→build→verify→verdict→commit`]);
+  }
+  if (!FLOW[st.node].next.includes(target)) {
+    die([`不合法推進：${st.node} → ${target}（單向節點鏈，当前可走：${FLOW[st.node].next.join(' / ')}）`]);
+  }
+  const { problems, passes } = gate(st, target, opts);
+  if (problems.length) die(problems);
+  const prev = st.node;
+  st.node = target;
+  st.history.push({ from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct });
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([`${prev} → ${target}`, ...passes]);
+}
+
+function cmdLock(files) {
+  if (!files.length) usage();
+  const problems = [];
+  const entries = [];
+  for (const f of files) {
+    const abs = isAbsolute(f) ? f : resolve(f);
+    if (!existsSync(abs)) { problems.push(`測試碼不存在：${f}`); continue; }
+    const code = readFileSync(abs, 'utf-8');
+    if (!ASSERT_RE.test(code)) problems.push(`${f} 疑似無斷言（找不到任何斷言 API）——假測試訊號，測試碼 MUST 有真實斷言`);
+    entries.push({ file: abs, sha256: createHash('sha256').update(code).digest('hex') });
+  }
+  if (problems.length) die(problems);
+  writeFileSync(LOCK_FILE, JSON.stringify({ lockedAt: new Date().toISOString(), entries }, null, 2));
+  fin([`鎖定 ${entries.length} 個測試碼（斷言初篩通過）→ ${LOCK_FILE}`]);
+}
+
+// ———— main ————
+
+const [cmd, ...rest] = process.argv.slice(2);
+if (!cmd) usage();
+const flags = { bossOk: false, direct: false };
+const pos = [];
+for (let i = 0; i < rest.length; i++) {
+  if (rest[i] === '--boss-ok') flags.bossOk = true;
+  else if (rest[i] === '--direct') flags.direct = true;
+  else pos.push(rest[i]);
+}
+switch (cmd) {
+  case 'init': cmdInit(pos[0]); break;
+  case 'state': cmdState(); break;
+  case 'next': cmdNext(pos[0], flags); break;
+  case 'lock': cmdLock(pos); break;
+  default: usage();
+}

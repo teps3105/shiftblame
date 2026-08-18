@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 sb-save skill 寫入；sb-resume skill 消費後清除
-revision: 0.8.3
+revision: 0.9.0
 ---
 # SLUG — `<slug>`
 
@@ -266,6 +266,13 @@ flowchart LR
 > 由秘書在本 ms 所有功能 commit 完成後、觸發收斂時撰寫，描述使用者可觀察的行為。讀 `<repo>/.shiftblame/tmp/` 中執行層時序的執行記錄彙整。
 
 - **本 ms** — 做了什麼：（填）｜實現價值：（填）｜發生什麼事：（填）｜各功能 commit：（填）｜老闆確認 ms 價值：（填）｜審計 複驗：（填）｜三面向重審：（填）｜狀態：待收斂／返工／合格
+
+**2.7 失敗模式（premortem）**
+
+- **失敗點 1**：假設本計畫上線後失敗，最可能的原因（填）
+- **失敗點 2**：（填）
+
+> 起始效應對策（SKILL §1.8）：規劃完美盲信的制衡——列不出真實失敗點＝沒想過會怎麼失敗。`sb next release` 閘門查核本段非敷衍；敷衍（無／無風險）即擋。
 
 **3. 開發策略**
 

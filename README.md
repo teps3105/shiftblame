@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.8.3-2ea44f.svg" alt="version 0.8.3"/>
+  <img src="https://img.shields.io/badge/version-0.9.0-2ea44f.svg" alt="version 0.9.0"/>
 </p>
 
 ---
@@ -168,6 +168,19 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 - **直接實行（不開 slug）**——框架演化、微修或老闆指定不開 slug 的輕量變更。
 - **框架演化**——修改 shiftblame 自身；不開 slug，仍須先揭露方案取得授權。
 
+### 流程狀態機（npm CLI：sb）
+
+流程規範以腳本鎖死（不自知推進與四假對策，見 SKILL §1.8）——每個 slug 開始跑 `sb init <slug>`，每個階段推進跑 `sb next <node>`，閘門不過（exit 1）不得推進；老闆拍板點必須 `--boss-ok` 留痕：
+
+```bash
+npm install -g <shiftblame repo>/cli
+sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.json
+sb state                           # 目前節點與各下一步前置條件
+sb next release --boss-ok          # 放行閘（G3 失敗模式＋實作步驟＋§10 核對記錄）
+sb lock <測試碼...>                 # 測試定稿：斷言初篩＋sha256 鎖定
+sb next verdict                    # 判決閘（測試鎖定 hash＋驗收報告反證/未驗段）
+```
+
 ### 子代理安裝（npm CLI：sb-agents）
 
 子代理定義不隨 plugin 攜帶（避免與各平台載入機制重複導入）——由 npm CLI `sb-agents` 安裝到各平台**使用者層** agents 目錄：
@@ -207,7 +220,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ├── .codex-plugin/plugin.json      # plugin manifest（各平台對應 manifest）
 ├── .claude-plugin/marketplace.json
 ├── .agents/plugins/marketplace.json
-├── cli/                            # npm CLI（sb-agents）：子代理定義安裝到各平台使用者層
+├── cli/                            # npm CLI（sb 流程狀態機閘門＋sb-agents 子代理定義安裝）
 │   ├── package.json               # bin: sb-agents
 │   ├── bin/sb-agents.mjs          # install/list（--platform zcode|claude|codex|all、--model、--force）
 │   └── templates/                  # 中性定義唯一來源（audit/plan/test/verify/explore/operate/vision/analyze）
