@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.9.1-2ea44f.svg" alt="version 0.9.1"/>
+  <img src="https://img.shields.io/badge/version-0.9.2-2ea44f.svg" alt="version 0.9.2"/>
 </p>
 
 ---
@@ -179,7 +179,7 @@ sb state                           # 目前節點與各下一步前置條件
 sb next release --boss-ok          # 放行閘（G3 失敗模式＋實作步驟＋§10 核對記錄）
 sb lock <測試碼...>                 # 測試定稿：斷言初篩＋sha256 鎖定
 sb next verdict                    # 判決閘（測試鎖定 hash＋驗收報告反證/未驗段）
-sb report                          # 自包含外部審計報告 → tmp/report-*.md
+sb report                          # 自包含外部審計報告 → tmp/report-*.md（開新 slug/ms 前強制；開發中老闆隨時）
 ```
 
 ### 子代理安裝（npm CLI：sb-agents）

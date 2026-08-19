@@ -213,9 +213,17 @@ function gate(st, target, opts) {
       } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
       break;
 
-    case 'audit':
+    case 'audit': {
+      // 開新 slug／ms 前的需求審計（外部 sb-report）為強制閘門——報告在推進前的節點產出，檔名自帶證據
+      const needNode = st.node === 'ms-done' ? 'ms-done' : 'think';
+      const needMs = st.node === 'ms-done' ? st.ms : '001';
+      const re = new RegExp(`^report-${st.slug}-${needMs}-${needNode}-.*\.md$`, 'i');
+      const hasRpt = existsSync(TMP) && readdirSync(TMP).some((x) => re.test(x));
+      if (!hasRpt) problems.push(`開新 ${st.node === 'ms-done' ? 'ms' : 'slug'} 前缺少需求審計報告——MUST 先跑 sb report（於 ${needNode} 節點產出 tmp/report-${st.slug}-${needMs}-${needNode}-*.md）供外部審計（SKILL §1.8）`);
+      else passes.push(`需求審計報告存在（${needNode} 節點）`);
       if (st.node === 'ms-done') { st.ms = String(Number(st.ms) + 1).padStart(3, '0'); passes.push(`開新 ms：${st.ms}（新里程碑回三面向制衡）`); }
-      break; // think→audit 僅 bossOk
+      break;
+    }
     case 'ms-done':
     case 'pass':
       break;
