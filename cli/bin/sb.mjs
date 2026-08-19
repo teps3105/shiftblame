@@ -66,7 +66,9 @@ const usage = () => {
   sb next <node> [--boss-ok] [--direct] 推進節點（閘門不過即擋）
                                         --boss-ok：老闆拍板點的顯性留痕
                                         --direct：release→commit 預設直接修正路徑
-  sb lock <測試碼...>                    測試定稿：斷言初篩＋sha256 鎖定基準`);
+  sb lock <測試碼...>                    測試定稿：斷言初篩＋sha256 鎖定基準
+  sb report                              彙整自包含外部審計報告 → tmp/report-*.md
+                                        （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）`);
   process.exit(2);
 };
 
@@ -261,6 +263,99 @@ function cmdNext(target, opts) {
   fin([`${prev} → ${target}`, ...passes]);
 }
 
+
+function cmdReport() {
+  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
+  const st = readJson(STATE_FILE);
+  const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
+  const outPath = join(TMP, `report-${st.slug}-${st.ms}-${st.node}-${stamp}.md`);
+  const g = (n) => mdOf(gPath(st, n)) ?? `（G${n} 尚未建立）`;
+  const tmpMd = (re) => {
+    if (!existsSync(TMP)) return null;
+    const c = readdirSync(TMP).filter((f) => re.test(f)).sort();
+    return c.length ? { name: c.at(-1), text: readFileSync(join(TMP, c.at(-1)), 'utf-8') } : null;
+  };
+  const align = tmpMd(/^alignment-check\.md$/i);
+  const build = tmpMd(/^build-.*\.md$/i);
+  const verify = tmpMd(/^verify-.*\.md$/i);
+  let lock = '（無鎖定記錄——未走重流程或測試未定稿）';
+  if (existsSync(LOCK_FILE)) {
+    const { entries, lockedAt } = readJson(LOCK_FILE);
+    lock = `鎖定時間 ${lockedAt}，${entries.length} 個測試碼 sha256 基準（判決前 sb next commit 重算核對，任何變更即擋）`;
+  }
+  let gitlog = '（非 git 環境）';
+  try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
+  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}）`).join('\n') || '（尚無推進記錄）';
+
+  const rpt = `# shiftblame 外部審計報告 — ${st.slug}/${st.ms} @ ${st.node}
+
+> **本報告自包含**：供無法讀取原始碼與專案文件的外部審計 agent 使用。以下內容＝審計所需的全部材料，不需存取任何 repo 檔案。由 \`sb report\` 機械彙整客觀事實；§8 脈絡與審計問題由秘書補充。
+
+## 0. 給外部審計者的說明
+
+你是獨立外部審計者。請基於本報告材料與 §1 判準，審計這個開發流程的當前節點是否成立——重點不是「內容寫得好不好」，而是**流程誠實性**：有沒有假需求、假規劃、假測試、假驗收；有沒有跳過檢查的不自知推進。請給出：成立／不成立＋具體理由＋你發現的矛盾。
+
+## 1. 審計判準（框架規則摘要）
+
+- **節點鏈（單向）**：think→audit→research→plan→release→test→build→verify→verdict→commit→converge→ms-done→(新 ms audit｜pass)。每個推進過腳本閘門（機械查核），老闆拍板點（開工/放行/ms 價值/PASS）必須 --boss-ok 留痕。
+- **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
+- **四假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）。
+- **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
+- **證據分工**：測試階段寫測試（定義「過」）；實作階段寫碼＋實機驗證；驗收階段跑 CI 到綠燈＋反證嘗試；判決與 commit 由主對話秘書獨佔。
+
+## 2. 流程狀態
+
+- **slug**: ${st.slug}　**ms**: ${st.ms}　**當前節點**: ${st.node}
+- **推進歷史**：
+${hist}
+
+## 3. G1 需求／驗收標準（全文）
+
+${g(1)}
+
+## 4. G2 技術分析（全文）
+
+${g(2)}
+
+## 5. G3 實作計畫（全文）
+
+${g(3)}
+
+## 6. 執行層證據
+
+### 6.1 §10 一致性核對記錄
+
+${align ? align.text : '（尚無 alignment-check.md——未到放行或未落記錄）'}
+
+### 6.2 測試鎖定
+
+${lock}
+
+### 6.3 實作＋實機驗證記錄（最新）
+
+${build ? build.text : '（尚無 build 記錄）'}
+
+### 6.4 驗收報告（最新，含反證嘗試與未驗清單）
+
+${verify ? verify.text : '（尚無驗收報告）'}
+
+## 7. Git 記錄（最近 10 筆）
+
+\u0060\u0060\u0060
+${gitlog}
+\u0060\u0060\u0060
+
+## 8. 秘書補充：本次審計問題（老闆／秘書填）
+
+（秘書複核後填：本次想請外部審計回答的具體問題，如「G3 失敗模式是否涵蓋 G2 指出的最大技術風險」「驗收反證嘗試是否足以支撐合格判決」）
+
+---
+產生：${new Date().toISOString()}　工具：sb report（shiftblame ${process.env.SB_VERSION ?? ''}）
+`;
+  writeFileSync(outPath, rpt);
+  fin([`外部審計報告已產生 → ${outPath}`, '秘書複核＋填 §8 審計問題後交付老闆（外部 agent 無法讀 repo，本檔即全部材料）']);
+}
+
 function cmdLock(files) {
   if (!files.length) usage();
   const problems = [];
@@ -293,5 +388,6 @@ switch (cmd) {
   case 'state': cmdState(); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'lock': cmdLock(pos); break;
+  case 'report': cmdReport(); break;
   default: usage();
 }
