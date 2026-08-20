@@ -68,7 +68,9 @@ const usage = () => {
                                         --direct：release→commit 預設直接修正路徑
   sb lock <測試碼...>                    測試定稿：斷言初篩＋sha256 鎖定基準
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
-                                        （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）`);
+                                        （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
+  sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）
+                                        任何 commit 前 MUST 通過（sb-commit 技能）`);
   process.exit(2);
 };
 
@@ -272,6 +274,23 @@ function cmdNext(target, opts) {
 }
 
 
+
+function cmdCommitmsg(msg) {
+  if (!msg) usage();
+  const problems = [];
+  const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
+  if (!m) problems.push('缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）');
+  else {
+    const body = m.at(-1);
+    if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
+    if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，MUST NOT 含功能詳細訊息`);
+    if (/[a-zA-Z]{3,}-\d+|#\d+/.test(body)) problems.push('含追蹤編號（#123、PROJ-456 等）——commit 訊息純描述變更本身，追蹤靠分支名與 merge 訊息');
+    if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
+  }
+  if (problems.length) die(problems);
+  fin([`提交訊息合格：${msg}`]);
+}
+
 function cmdReport() {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
@@ -397,5 +416,6 @@ switch (cmd) {
   case 'next': cmdNext(pos[0], flags); break;
   case 'lock': cmdLock(pos); break;
   case 'report': cmdReport(); break;
+  case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();
 }

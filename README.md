@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.9.2-2ea44f.svg" alt="version 0.9.2"/>
+  <img src="https://img.shields.io/badge/version-0.9.3-2ea44f.svg" alt="version 0.9.3"/>
 </p>
 
 ---
@@ -180,6 +180,7 @@ sb next release --boss-ok          # 放行閘（G3 失敗模式＋實作步驟�
 sb lock <測試碼...>                 # 測試定稿：斷言初篩＋sha256 鎖定
 sb next verdict                    # 判決閘（測試鎖定 hash＋驗收報告反證/未驗段）
 sb report                          # 自包含外部審計報告 → tmp/report-*.md（開新 slug/ms 前強制；開發中老闆隨時）
+sb commitmsg "<訊息>"               # 提交訊息機械驗證（任何 commit 前必過，sb-commit 技能）
 ```
 
 ### 子代理安裝（npm CLI：sb-agents）
@@ -211,6 +212,7 @@ sb-agents list                                  # 檢視已安裝狀態
 - [`sb-dice`](skills/sb-dice/SKILL.md)——丟棄當前 slug 所有成果，回 main 重新討論。
 - [`sb-docs`](skills/sb-docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
 - [`sb-report`](skills/sb-report/SKILL.md)——整理自包含外部審計報告，供無法讀取 repo 的外部 agent 審計當前節點。
+- [`sb-commit`](skills/sb-commit/SKILL.md)——提交規範封裝：任何 commit 前經範圍盤點＋sb commitmsg 機械驗證。
 - [`sb-sop`](skills/sb-sop/SKILL.md)——對 SOP 提出修改需求。
 - [`sb-roadmap`](skills/sb-roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
 - [`sb-todo`](skills/sb-todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
