@@ -57,8 +57,8 @@ const BOSS_NODES = new Set(['audit', 'release', 'ms-done', 'pass']); // 這些�
 const out = (m) => console.log(m);
 const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) console.error(`  ✗ ${m}`); process.exit(code); };
 const fin = (msgs) => { console.log('PASS'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
-const usage = () => {
-  console.error(`sb — shiftblame 流程狀態機（在 <repo> 專案根執行）
+const usage = (code = 2) => {
+  console[code ? 'error' : 'log'](`sb — shiftblame 流程狀態機（在 <repo> 專案根執行）
 
 用法：
   sb init <slug>                        開 slug：建立 flow-state.json（節點 think）
@@ -71,7 +71,7 @@ const usage = () => {
                                         （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）
                                         任何 commit 前 MUST 通過（sb-commit 技能）`);
-  process.exit(2);
+  process.exit(code);
 };
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf-8'));
@@ -403,6 +403,7 @@ function cmdLock(files) {
 
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
+if (cmd === '--help' || rest.includes('--help')) usage(0);
 const flags = { bossOk: false, direct: false };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
