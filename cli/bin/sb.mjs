@@ -41,10 +41,10 @@ const FLOW = {
   plan:     { next: ['release'], desc: '規劃 G3' },
   release:  { next: ['test', 'commit'], desc: '放行（§10 核對後）' },  // release→commit --direct = 預設直接修正
   test:     { next: ['build'], desc: '測試碼定義＋lock' },
-  build:    { next: ['verify'], desc: '實作＋實機驗證' },
-  verify:   { next: ['verdict'], desc: '驗收到綠燈＋報告' },
-  verdict:  { next: ['commit'], desc: '秘書判決' },
-  commit:   { next: ['converge'], desc: 'commit 建立待驗對位' },
+  build:    { next: ['commit'], desc: '實作＋實機驗證' },
+  commit:   { next: ['verify', 'converge'], desc: 'commit 存檔＝建立待驗對象（先於驗收）' },
+  verify:   { next: ['verdict'], desc: '對存檔跑 CI 到綠燈＋報告' },
+  verdict:  { next: ['converge', 'test'], desc: '秘書判決：通過→收斂或開下一功能小循環' },
   converge: { next: ['ms-done'], desc: 'ms 收斂（三面向重審）' },
   'ms-done': { next: ['audit', 'pass'], desc: '老闆決定：開新 ms 或結束 slug' },
   pass:     { next: [], desc: 'slug PASS（終態，收尾保鮮＋archive 由 sb-end 執行）' },
@@ -166,7 +166,7 @@ function gate(st, target, opts) {
     }
 
     case 'test':
-      if (st.node !== 'release') break; // 僅 release→test 路徑（ms-done→audit 是新 ms 重啟）
+      // release→test（重流程首個功能）或 verdict→test（判決通過開下一功能小循環）
       break;
 
     case 'build': // 假測試閘（lock 存在＝斷言初篩已過）
@@ -174,12 +174,16 @@ function gate(st, target, opts) {
       else passes.push('測試已鎖定（sb lock 已跑，斷言初篩通過）');
       break;
 
-    case 'verify':
+    case 'verify': {
+      // 待驗對象＝重流程存檔（build→commit）；直接修正（release→commit --direct）無測試可驗
+      const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
+      if (!commitIn || commitIn.from !== 'build') problems.push('commit 節點非重流程存檔（build→commit）——直接修正無測試可驗，不得進驗收');
       if (!latestBuild()) problems.push(`${TMP}/build-*.md 不存在——實作完成 MUST 落實機驗證記錄（含驗證方式與結果），未驗證不得進驗收`);
       else passes.push('實作＋實機驗證記錄存在');
       break;
+    }
 
-    case 'verdict': { // 假驗收閘（完成效應）
+    case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）
       const rpt = latestVerify();
       if (!rpt) { problems.push(`${TMP}/verify-*.md 不存在——驗收 MUST 落結構化報告`); break; }
       const fals = section(rpt.text, '反證嘗試');
@@ -191,29 +195,44 @@ function gate(st, target, opts) {
       else if (/^(無|none|n\/?a|沒有|暫無)[。.\s]*$/i.test(unv)) problems.push(`${rpt.name}「未驗」寫「無」——總有未覆蓋的面向，寫「無」即不自知（假驗收訊號）`);
       else if (!substantive(unv, 10)) problems.push(`${rpt.name}「未驗」段敷衍`);
       else passes.push('未驗清單實質存在');
+      if (existsSync(LOCK_FILE)) {
+        const { entries } = readJson(LOCK_FILE);
+        let lockOk = true;
+        for (const e of entries) {
+          if (!existsSync(e.file)) { problems.push(`測試碼被刪除（違反測試鎖定）：${e.file}`); lockOk = false; continue; }
+          const now = createHash('sha256').update(readFileSync(e.file)).digest('hex');
+          if (now !== e.sha256) { problems.push(`測試碼被變更（違反測試鎖定）：${e.file}`); lockOk = false; }
+        }
+        if (lockOk) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變`);
+      }
       break;
     }
 
     case 'commit': {
       if (opts.direct) { passes.push('直接修正路徑（未觸發重流程條件，--direct 留痕）'); break; }
-      if (!existsSync(LOCK_FILE)) { problems.push('無 test-lock.json——重流程路徑判決前必查測試鎖定'); break; }
+      if (!existsSync(LOCK_FILE)) { problems.push('無 test-lock.json——重流程路徑存檔前必查測試鎖定'); break; }
       const { entries } = readJson(LOCK_FILE);
       for (const e of entries) {
         if (!existsSync(e.file)) { problems.push(`測試碼被刪除：${e.file}`); continue; }
         const now = createHash('sha256').update(readFileSync(e.file)).digest('hex');
         if (now !== e.sha256) problems.push(`測試碼被變更（違反測試鎖定）：${e.file}`);
       }
-      if (!problems.length) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變`);
+      if (!problems.length) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變（存檔即待驗對象，先於驗收）`);
       break;
     }
 
-    case 'converge':
+    case 'converge': {
       try {
         const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
-        if (dirty.trim()) problems.push('working tree 不乾淨——收斂前 commit MUST 已建立待驗對位（先精準 add＋commit）');
+        if (dirty.trim()) problems.push('working tree 不乾淨——收斂前所有功能的存檔 MUST 已 commit（先精準 add＋commit）');
         else passes.push('working tree 乾淨（commit 對位已建立）');
       } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
+      const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
+      if (commitIn && commitIn.from === 'build' && st.node !== 'verdict') {
+        problems.push('重流程存檔（build→commit）未經驗收（verify）＋判決（verdict）即收斂——commit 存檔先於驗收，MUST 判決通過才收斂');
+      }
       break;
+    }
 
     case 'audit': {
       // 開新 slug／ms 前的需求審計（外部 sb-report）為強制閘門——報告在推進前的節點產出，檔名自帶證據
@@ -259,7 +278,7 @@ function cmdNext(target, opts) {
   if (!(target in FLOW)) die([`未知節點「${target}」。可用：${Object.keys(FLOW).join(' → ')}`], 2);
   const allowed = FLOW[st.node].next.includes(target) && (target !== 'commit' || st.node !== 'release' || opts.direct);
   if (st.node === 'release' && target === 'commit' && !opts.direct) {
-    die([`release→commit 是「預設直接修正」路徑，MUST 帶 --direct 留痕；重流程走 test→build→verify→verdict→commit`]);
+    die([`release→commit 是「預設直接修正」路徑，MUST 帶 --direct 留痕；重流程走 test→build→commit→verify→verdict（commit 存檔先於驗收）`]);
   }
   if (!FLOW[st.node].next.includes(target)) {
     die([`不合法推進：${st.node} → ${target}（單向節點鏈，当前可走：${FLOW[st.node].next.join(' / ')}）`]);
@@ -308,7 +327,7 @@ function cmdReport() {
   let lock = '（無鎖定記錄——未走重流程或測試未定稿）';
   if (existsSync(LOCK_FILE)) {
     const { entries, lockedAt } = readJson(LOCK_FILE);
-    lock = `鎖定時間 ${lockedAt}，${entries.length} 個測試碼 sha256 基準（判決前 sb next commit 重算核對，任何變更即擋）`;
+    lock = `鎖定時間 ${lockedAt}，${entries.length} 個測試碼 sha256 基準（存檔 sb next commit 與判決 sb next verdict 時重算核對，任何變更即擋）`;
   }
   let gitlog = '（非 git 環境）';
   try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
@@ -324,11 +343,11 @@ function cmdReport() {
 
 ## 1. 審計判準（框架規則摘要）
 
-- **節點鏈（單向）**：think→audit→research→plan→release→test→build→verify→verdict→commit→converge→ms-done→(新 ms audit｜pass)。每個推進過腳本閘門（機械查核），老闆拍板點（開工/放行/ms 價值/PASS）必須 --boss-ok 留痕。
+- **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為判決通過後開下一功能小循環的回邊。commit＝存檔（建立待驗對象，先於驗收）。每個推進過腳本閘門（機械查核），老闆拍板點（開工/放行/ms 價值/PASS）必須 --boss-ok 留痕。
 - **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
 - **四假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）。
 - **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
-- **證據分工**：測試階段寫測試（定義「過」）；實作階段寫碼＋實機驗證；驗收階段跑 CI 到綠燈＋反證嘗試；判決與 commit 由主對話秘書獨佔。
+- **證據分工**：測試階段寫測試（定義「過」）；實作階段寫碼＋實機驗證；實作完成即由秘書 commit 存檔（建立待驗對象）；驗收階段對存檔跑 CI 到綠燈＋反證嘗試；判決（通過/返工）由主對話秘書獨佔——通過才開下一個功能。
 
 ## 2. 流程狀態
 
