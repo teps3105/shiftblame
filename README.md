@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.9.6-2ea44f.svg" alt="version 0.9.6"/>
+  <img src="https://img.shields.io/badge/version-0.9.7-2ea44f.svg" alt="version 0.9.7"/>
 </p>
 
 ---
@@ -212,7 +212,7 @@ sb-agents list                                  # 檢視已安裝狀態
 - [`sb-do`](skills/sb-do/SKILL.md)——核對 §10 一致性，放行進入開發。
 - [`sb-end`](skills/sb-end/SKILL.md)——結束 slug，執行完整收尾保鮮。
 - [`sb-save`](skills/sb-save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 sb-resume 恢復。
-- [`sb-dice`](skills/sb-dice/SKILL.md)——丟棄當前 slug 所有成果，回 main 重新討論。
+- [`sb-dice`](skills/sb-dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
 - [`sb-docs`](skills/sb-docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
 - [`sb-report`](skills/sb-report/SKILL.md)——整理自包含外部審計報告，供無法讀取 repo 的外部 agent 審計當前節點。
 - [`sb-commit`](skills/sb-commit/SKILL.md)——提交規範封裝：任何 commit 前經範圍盤點＋sb commitmsg 機械驗證。

@@ -1,6 +1,6 @@
 {
   "name": "shiftblame-agents",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "shiftblame CLI——sb：流程狀態機閘門（不自知推進與四假對策）；sb-agents：子代理定義安裝。",
   "type": "module",
   "scripts": {

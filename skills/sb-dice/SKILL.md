@@ -1,26 +1,37 @@
 ---
 name: sb-dice
-description: 丟棄當前 slug 所有成果（重大方向錯誤），回 main，不 archive，重新討論需求。
+description: 依證據選擇最小充分範圍丟棄失敗成果；可只丟未提交變更、當前功能或當前 ms，只有整個方向失效才丟棄 slug。
 ---
-# sb-dice — 丟棄當前 slug，重新討論需求
+# sb-dice — 按失敗範圍丟棄成果
 
-> **sb-think 分發目標**：sb-think 理解老闆要丟棄重來後分發至此。位置：重大方向錯誤 → 丟棄當前 slug 所有成果，回 main 重新討論（不 archive）。
+> **sb-think 分發目標**：sb-think 理解老闆要放棄失敗成果後分發至此。`dice` 只表達丟棄意圖，不代表已授權刪除整個 slug；實際範圍由證據判定並再次確認。
 
-當老闆要丟棄這個 slug 重來時執行（由 sb-think 分發）。用於重大方向錯誤時，丟棄當前 slug 所有成果，回 main，不 archive，重新討論需求。
+當老闆要放棄失敗成果、回到可重新推進的乾淨基準時執行（由 sb-think 分發）。
 
-先 `load skill: shiftblame`，主對話 秘書 執行：
+先 `load skill: shiftblame`，主對話秘書執行：
 
 ## 流程
 
-0. **確認意圖**（主對話）：老闆主動要求即表達丟棄意圖。秘書揭示將丟棄的範圍（當前 slug 的分支、commit、`<repo>/.shiftblame/<slug>/`），請老闆確認。
-1. **切回 main**：`git checkout main`。
-2. **刪除分支**：`git branch -D <type>/<slug>`（強制刪除，commit 一併消失）。
-3. **刪除 slug 文件**：刪除 `<repo>/.shiftblame/<slug>/`。**不 archive**——archive 是成功歸檔，dice 是失敗丟棄。
-4. **重新討論需求**：路由回 sb-think 重新打磨意圖（§2：意圖揭露由 sb-think 承載），與老闆重新討論需求方向。
+0. **停止推進**：凍結當前開發，不再新增變更。
+1. **盤點邊界**：讀取當前 branch／slug／ms／節點、`git status`、working tree diff，以及相對最後已知良好 commit 的提交範圍。逐項標成「保留／應提交／丟棄／未決」；未決項存在時 MUST NOT 執行丟棄。
+2. **選最小充分層級**：由小到大選第一個足以移除失敗成果的範圍，不得因較大範圍操作較容易而升級：
+   - **未提交變更**：只丟棄已確認的 path／hunk；其他使用者變更與無關變更保留。
+   - **當前功能**：只回退該功能從最後已知良好 commit 起的連續、可證明屬於本功能的 commit；保留同 ms 其他已通過功能。
+   - **當前 ms**：依 SKILL §1.4.1 只處理當前 ms 的工作與文件；保留較早 ms 與 slug。
+   - **整個 slug**：只有證據顯示 G1／產品方向整體失效、任何較小範圍都不足時，才丟棄 slug 分支與 `<repo>/.shiftblame/<slug>/`。
+3. **揭示並確認**：列出所選層級、精確 path／commit 範圍、保留項、回復點與不可逆部分，取得老闆對此範圍的明確確認。老闆最初說「dice／丟棄」不是範圍確認。
+4. **執行**：
+   - 未提交變更只對已確認 path／hunk 執行精確還原；MUST NOT 使用無範圍的 `reset --hard`、`clean` 或遞迴刪除。
+   - 當前功能只有在 working tree 已乾淨、目標 commit 是未共享 branch 的 HEAD 連續尾段、基準 commit 已核實時才可 reset；否則停止，改走顯式修約／修正 commit，不改寫共享歷史。
+   - 當前 ms 走 SKILL §1.4.1 的清帳、保留／回退與回指流程。
+   - 整個 slug 才切回 `main`、刪除已確認的 slug branch 與 slug 文件；**不 archive**——archive 是成功歸檔，dice 是失敗丟棄。
+5. **驗證落點**：核對 branch／HEAD、預定保留項仍存在、預定丟棄項已消失、無額外檔案受影響。凡要回指 G1，working tree 必須先完成「該提交的提交／該捨棄的捨棄」並保持乾淨。
+6. **重新路由**：局部丟棄後回到相應的功能／ms／重大例外節點；整個 slug 丟棄後才路由回 sb-think 重新討論需求方向。
 
 ## 邊界
 
-- sb-dice 是**不可逆丟棄**——分支 commit 與 slug 文件刪除後無法經框架恢復（僅 git reflog 期限內可救）。執行前 MUST 揭示範圍並取得確認。
-- **不 archive**：archive 保留成功歷史；dice 是方向錯誤的清除，不留軌跡。
-- 撤銷範圍限當前 slug 的分支與文件；不影響 main 已 merge 成果、不影響已 archive slug。
-- 適用**重大方向錯誤**（整個 slug 走偏）；單一 ms 錯誤用重大例外遷移（SKILL §1.4.1）退回即可。
+- 秘書獨佔範圍判定、reset、commit、路由與執行後驗證；子代理不得代為決定或執行。
+- MUST 選擇**最小充分丟棄範圍**；證據只能證明局部失敗時，不得推定整個 ms 或 slug 失效。
+- MUST 保護無關變更、使用者既有變更、較早已通過 ms 與已 PASS 歸檔成果。
+- 無法唯一切出 commit／path 範圍，或回復點未核實時，判定為未決並停止；不得以一刀切消除不確定性。
+- 完整 slug 丟棄是最後手段且近乎不可逆（僅 git reflog 期限內可能救回）；執行前 MUST 再次揭示精確範圍並取得確認。
