@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 sb-save skill 寫入；sb-resume skill 消費後清除
-revision: 0.9.4
+revision: 0.9.5
 ---
 # SLUG — `<slug>`
 
@@ -103,7 +103,7 @@ flowchart LR
 
 ### G1 範本 — 需求／驗收標準（審計階段主導）
 
-> 審計階段主導，一次確認定稿（一次定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。G1 只由審計階段改寫，保持乾淨的決策結論；執行記錄不寫入 G1。定稿後 G2／G3 向前對齊，G1 不因制衡往返回改。
+> 審計階段主導，一次確認定稿（一次定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。G1 只由審計階段改寫；`sb-do` 放行後由 CLI hash 封存，執行記錄與複驗結果寫 tmp，不寫回 G1。契約不足／衝突只能經 `tmp/amendment.md`＋老闆確認＋`sb amend --boss-ok` 顯式修約。
 
 **0. 需求架構索引**（老闆入口——一眼看懂這個 ms 要做什麼）
 
@@ -283,8 +283,8 @@ flowchart LR
 
 **4. 預期變更**
 
-- **風險 1**：（填）— 常態修正／重大例外：（填）｜處置：（填）
-- **風險 2**：（填）— 常態修正／重大例外：（填）｜處置：（填）
+- **風險 1**：（填）— CONFORMS／UNDERSPECIFIED／CONFLICTS：（填）｜處置：（填）
+- **風險 2**：（填）— CONFORMS／UNDERSPECIFIED／CONFLICTS：（填）｜處置：（填）
 
 **5. 一致前自查（彈性段——依複雜度薄填或從缺）**
 

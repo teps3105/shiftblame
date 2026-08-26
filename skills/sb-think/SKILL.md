@@ -28,7 +28,7 @@ sequenceDiagram
 
     loop 執行中
         A->>A: 自主判斷：這需要老闆決策嗎？
-        alt 不需要 · 常態修正／技術細節
+        alt 不需要 · CONFORMS 技術細節
             A->>A: 自主處理 不回 sb-think
         else 需要 · PASS／開新ms／重大例外／路由變更
             A-->>T: 路由回 sb-think
@@ -110,8 +110,8 @@ sb-start、sb-do、sb-save 等都是 sb-think 分發後的執行目標，老闆�
 
 sb-think 分發後，agents 在執行中保有自主判斷權：
 
-- **不需要老闆決策**（常態修正、技術細節、繼續推進）→ agents 自主處理，**不路由回 sb-think**。
-- **需要老闆決策**（PASS、開新 ms、重大例外、路由變更）→ 統一路由回 sb-think，老闆確認後才重新分派。
+- **不需要老闆決策**（不改變封存 G1 滿足集合的 CONFORMS 技術細節、繼續推進）→ agents 自主處理，**不路由回 sb-think**。
+- **需要老闆決策**（PASS、開新 ms、重大例外、路由變更）→ 統一路由回 sb-think，老闆確認後先由秘書清帳；凡回指 G1，working tree 必須完成「該提交的提交／該捨棄的捨棄」並保持乾淨，才重新分派審計階段。
 
 agents 不是無腦執行器——判斷「要不要回 sb-think」本身就是 agents 的職責。這個判斷權沒被沒收；被收緊的是入口端，agents 不能再「看到老闆指令就直接啟動」。
 

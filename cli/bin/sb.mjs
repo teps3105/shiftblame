@@ -14,7 +14,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, isAbsolute, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -22,6 +22,7 @@ const SB_DIR = '.shiftblame';
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');
 const LOCK_FILE = join(TMP, 'test-lock.json');
+const CONTRACT_FILE = join(TMP, 'g1-contract.md');
 
 // ———— 檢查規則常數（四假訊號，日後按需調整） ————
 
@@ -66,6 +67,7 @@ const usage = (code = 2) => {
   sb next <node> [--boss-ok] [--direct] 推進節點（閘門不過即擋）
                                         --boss-ok：老闆拍板點的顯性留痕
                                         --direct：release→commit 預設直接修正路徑
+  sb amend --boss-ok                    顯式修約：解除 G1 鎖定並退回 audit
   sb lock <測試碼...>                    測試定稿：斷言初篩＋sha256 鎖定基準
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
                                         （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
@@ -101,12 +103,29 @@ function substantive(body, minLen = 20) {
 
 const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
+const sha256 = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
+
+function checkCleanWorktree(problems, passes, timing) {
+  try {
+    const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
+    if (dirty.trim()) problems.push(`${timing} working tree 必須乾淨——該提交的先依 sb-commit 精準提交，該捨棄的明確捨棄，不得把未分類變更帶回 G1`);
+    else passes.push(`working tree 乾淨（${timing}已完成提交／捨棄判定）`);
+  } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
+}
 
 // ———— 各節點推進閘門（target = 要進入的節點） ————
 
 function gate(st, target, opts) {
   const problems = [];
   const passes = [];
+
+  if (st.g1Contract?.ms === st.ms) {
+    const path = st.g1Contract.file;
+    if (!path || !existsSync(path)) problems.push(`G1 契約檔不存在：${path ?? '缺失'}——不得繼續；以 sb amend --boss-ok 顯式修約`);
+    else if (sha256(path) !== st.g1Contract.sha256) problems.push('G1 已偏離放行時契約——局部技術模型不得改義；以 sb amend --boss-ok 顯式修約');
+    if (!st.g1Contract.snapshot || !existsSync(st.g1Contract.snapshot) || sha256(st.g1Contract.snapshot) !== st.g1Contract.sha256) problems.push('G1 契約快照遺失或被修改——不得繼續；以 sb amend --boss-ok 顯式修約');
+    if (!problems.length) passes.push(`G1 契約鎖定核對：${st.g1Contract.sha256.slice(0, 12)}`);
+  }
 
   if (BOSS_NODES.has(target)) {
     if (!opts.bossOk) problems.push(`「${target}」是老闆拍板點——MUST 帶 --boss-ok（顯性留痕，不可由 agent 自行推進）`);
@@ -147,6 +166,7 @@ function gate(st, target, opts) {
       break;
 
     case 'release': { // 假規劃閘（起始效應）
+      if (!g1) problems.push('G1 不存在——無法封存需求契約');
       if (!g3) problems.push('G3 不存在');
       else {
         const fm = section(g3, '失敗模式');
@@ -222,11 +242,7 @@ function gate(st, target, opts) {
     }
 
     case 'converge': {
-      try {
-        const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
-        if (dirty.trim()) problems.push('working tree 不乾淨——收斂前所有功能的存檔 MUST 已 commit（先精準 add＋commit）');
-        else passes.push('working tree 乾淨（commit 對位已建立）');
-      } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
+      checkCleanWorktree(problems, passes, '收斂前');
       const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
       if (commitIn && commitIn.from === 'build' && st.node !== 'verdict') {
         problems.push('重流程存檔（build→commit）未經驗收（verify）＋判決（verdict）即收斂——commit 存檔先於驗收，MUST 判決通過才收斂');
@@ -235,6 +251,7 @@ function gate(st, target, opts) {
     }
 
     case 'audit': {
+      if (st.node === 'ms-done') checkCleanWorktree(problems, passes, '回指 G1 前');
       // 開新 slug／ms 前的需求審計（外部 sb-report）為強制閘門——報告在推進前的節點產出，檔名自帶證據
       const needNode = st.node === 'ms-done' ? 'ms-done' : 'think';
       const needMs = st.node === 'ms-done' ? st.ms : '001';
@@ -264,6 +281,7 @@ function cmdState() {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
   out(`slug: ${st.slug}   ms: ${st.ms}   node: ${st.node}（${FLOW[st.node].desc}）`);
+  if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of FLOW[st.node].next) {
     const { problems, passes } = gate({ ...st }, n, {});
     out(`  → ${n}（${FLOW[n].desc}）`);
@@ -287,9 +305,37 @@ function cmdNext(target, opts) {
   if (problems.length) die(problems);
   const prev = st.node;
   st.node = target;
+  if (target === 'release') {
+    const file = gPath(st, 1);
+    writeFileSync(CONTRACT_FILE, readFileSync(file));
+    st.g1Contract = { ms: st.ms, file, snapshot: CONTRACT_FILE, sha256: sha256(file), lockedAt: new Date().toISOString() };
+    passes.push(`G1 契約已封存：${st.g1Contract.sha256.slice(0, 12)}`);
+  }
   st.history.push({ from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct });
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
+}
+
+function cmdAmend(opts) {
+  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
+  if (!opts.bossOk) die(['G1 修約是老闆拍板點——MUST 帶 --boss-ok（顯性留痕，不可由 agent 自行推進）']);
+  const st = readJson(STATE_FILE);
+  if (!st.g1Contract || st.g1Contract.ms !== st.ms) die(['目前 ms 尚無已放行的 G1 契約可修約']);
+  if (!new Set(['release', 'test', 'build', 'commit', 'verify', 'verdict', 'converge']).has(st.node)) die([`目前節點 ${st.node} 不允許修約`]);
+  const amendment = mdOf(join(TMP, 'amendment.md'));
+  if (!amendment || !['原條款', '新條款', '影響範圍'].every((x) => amendment.includes(x))) {
+    die([`${TMP}/amendment.md 必須先記錄「原條款／新條款／影響範圍」，不得以局部技術結論直接改寫 G1`]);
+  }
+  const problems = [], passes = [];
+  checkCleanWorktree(problems, passes, '回指 G1 前');
+  if (problems.length) die(problems);
+  const prev = st.node;
+  st.history.push({ from: prev, to: 'audit', at: new Date().toISOString(), bossOk: true, amendment: true });
+  st.node = 'audit';
+  delete st.g1Contract;
+  if (existsSync(LOCK_FILE)) unlinkSync(LOCK_FILE);
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([`${prev} → audit（G1 顯式修約）`, ...passes, '修約差異已記錄；原 G1 契約與測試鎖定已解除；G1 定稿後須重新對齊 G2/G3 並重新 release']);
 }
 
 
@@ -322,6 +368,7 @@ function cmdReport() {
     return c.length ? { name: c.at(-1), text: readFileSync(join(TMP, c.at(-1)), 'utf-8') } : null;
   };
   const align = tmpMd(/^alignment-check\.md$/i);
+  const amendment = tmpMd(/^amendment\.md$/i);
   const build = tmpMd(/^build-.*\.md$/i);
   const verify = tmpMd(/^verify-.*\.md$/i);
   let lock = '（無鎖定記錄——未走重流程或測試未定稿）';
@@ -329,9 +376,12 @@ function cmdReport() {
     const { entries, lockedAt } = readJson(LOCK_FILE);
     lock = `鎖定時間 ${lockedAt}，${entries.length} 個測試碼 sha256 基準（存檔 sb next commit 與判決 sb next verdict 時重算核對，任何變更即擋）`;
   }
+  const contract = st.g1Contract?.ms === st.ms
+    ? `鎖定時間 ${st.g1Contract.lockedAt}，G1 sha256 ${st.g1Contract.sha256}，快照 ${st.g1Contract.snapshot ?? '缺失'}（目前${st.g1Contract.file && existsSync(st.g1Contract.file) && sha256(st.g1Contract.file) === st.g1Contract.sha256 && st.g1Contract.snapshot && existsSync(st.g1Contract.snapshot) && sha256(st.g1Contract.snapshot) === st.g1Contract.sha256 ? '一致' : '已偏離'}；任何變更即擋，須 sb amend --boss-ok）`
+    : '（尚未放行，無 G1 契約鎖定）';
   let gitlog = '（非 git 環境）';
   try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
-  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}）`).join('\n') || '（尚無推進記錄）';
+  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
 
   const rpt = `# shiftblame 外部審計報告 — ${st.slug}/${st.ms} @ ${st.node}
 
@@ -343,10 +393,11 @@ function cmdReport() {
 
 ## 1. 審計判準（框架規則摘要）
 
-- **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為判決通過後開下一功能小循環的回邊。commit＝存檔（建立待驗對象，先於驗收）。每個推進過腳本閘門（機械查核），老闆拍板點（開工/放行/ms 價值/PASS）必須 --boss-ok 留痕。
+- **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。
 - **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
 - **四假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）。
 - **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
+- **G1 契約鎖定**：放行即 sha256 封存，後續每次推進重算；局部技術模型不得改義，變更只能經 \`sb amend --boss-ok\` 顯式修約。
 - **證據分工**：測試階段寫測試（定義「過」）；實作階段寫碼＋實機驗證；實作完成即由秘書 commit 存檔（建立待驗對象）；驗收階段對存檔跑 CI 到綠燈＋反證嘗試；判決（通過/返工）由主對話秘書獨佔——通過才開下一個功能。
 
 ## 2. 流程狀態
@@ -356,6 +407,8 @@ function cmdReport() {
 ${hist}
 
 ## 3. G1 需求／驗收標準（全文）
+
+**契約鎖定**：${contract}
 
 ${g(1)}
 
@@ -368,6 +421,10 @@ ${g(2)}
 ${g(3)}
 
 ## 6. 執行層證據
+
+### 6.0 G1 顯式修約差異
+
+${amendment ? amendment.text : '（尚無 G1 修約記錄）'}
 
 ### 6.1 §10 一致性核對記錄
 
@@ -434,6 +491,7 @@ switch (cmd) {
   case 'init': cmdInit(pos[0]); break;
   case 'state': cmdState(); break;
   case 'next': cmdNext(pos[0], flags); break;
+  case 'amend': cmdAmend(flags); break;
   case 'lock': cmdLock(pos); break;
   case 'report': cmdReport(); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
