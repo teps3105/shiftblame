@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-0.9.5-2ea44f.svg" alt="version 0.9.5"/>
+  <img src="https://img.shields.io/badge/version-0.9.6-2ea44f.svg" alt="version 0.9.6"/>
 </p>
 
 ---
@@ -33,7 +33,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **承載歸屬依對外視窗控制。** 涉及對外視窗控制的階段（研究 G2、開發 G2）由主對話親自執行；不涉及對外視窗的階段（審計 G1、規劃 G3、測試 G3、驗收 G1）由秘書派發子代理執行。子代理完全不碰對外視窗。
 - **認知探索外包、控制驗證留主對話。** 研究/實作階段的無副作用認知工作（讀 codebase、grep、查證）外包給唯讀探索子代理；需要對外視窗的實機驗證留主對話——避免 context 爆炸，控制權不外流。
 - **不開 slug 的事直接做。** 框架演化、微修或老闆指定不開 slug 的輕量變更，直接實行不建骨架；一旦開 slug，一律完整三面向制衡，無中途降級。
-- **預設直接修正。** 功能（commit 單位）未觸發重流程條件（① 行為改變 ② 介面改變 ③ 多檔協同 ④ 跨層級 ⑤ 老闆指定）時，秘書直接改並 commit——不為每個功能走執行層時序。
+- **預設直接修正。** 僅限不改變使用者可觀察行為，須以 `tmp/direct-change.md` 聲明 `USER_OBSERVABLE=NO` 並填實理由；此路徑不得取代 G1 驗收。
 - **假測試判返工。** 走執行層時序的測試 MUST 有真實斷言、對應 G1 驗收項或可觀察行為；無斷言／測實作細節／mock 過度／形式化湊數的假測試，秘書判決時判返工回測試階段。
 - **寫測試與跑測試分離。** 測試階段依 G1 寫測試定義「過」、驗收階段照 G3 跑 CI 測試驗收「完成」——分離確保不能「自己寫自己跑放水」。**測試鎖定**：測試碼一經測試階段定義即鎖定，任何角色（實作、驗收、秘書）不得為了綠燈逕改——紅燈只有兩條路：實作問題返工回實作、測試定義有誤返工回測試子代理重新定義；判決前機械核對測試碼未被竄改。
 - **測試可自動化。** G3 每項驗收 MUST 設計成可自動化執行（CI 可跑、驗收階段子代理獨立執行），不依賴對外視窗——無法自動化者是 G3 測試設計缺陷，回規劃階段重新設計，不由主對話代跑。
@@ -41,6 +41,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟，不得倒序。
 - **G1 是封存契約。** 放行時 CLI 保存完整 G1 快照並記錄 SHA-256，後續每次推進核對原檔與快照；局部技術模型只能在不改變 G1 滿足集合下單調細化 G2／G3。契約不足或衝突時停止，記錄原條款／新條款／影響範圍，經老闆確認後 `sb amend --boss-ok` 修約並重新放行。
 - **回指 G1 前先清帳。** 修約或開新 ms 回到審計階段前，working tree MUST 乾淨：可保留成果先依 `sb-commit` 精準提交，不應保留的變更明確捨棄；不得讓未分類工作污染下一輪需求定義。
+- **驗收使用者需求，不驗收結構幻象。** G1 每項需求使用唯一 AC-ID 與 BEHAVIOR 契約；G3、測試鎖定、驗收報告逐項回指。CI 綠燈或結構正確不能單獨判定完成；必填 AC 必須有錨定 G1 hash、ms、commit，以及實際輸出／日誌／截圖證據檔 SHA-256 的 SATISFIED 行為證據，收斂時缺一即擋。
 - **commit 集權。** 子代理可在秘書授權範圍內寫 repo，但 commit 一律由秘書於判決合格後獨佔執行。
 
 ## 流程概覽
@@ -179,7 +180,7 @@ sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.js
 sb state                           # 目前節點與各下一步前置條件
 sb next release --boss-ok          # 放行閘（G3 失敗模式＋實作步驟＋§10 核對記錄）
 sb amend --boss-ok                 # G1 顯式修約（須先寫 amendment.md 且 working tree 乾淨）
-sb lock <測試碼...>                 # 測試定稿：斷言初篩＋sha256 鎖定
+sb lock <測試碼...>                 # 測試定稿：斷言＋AC-ID 回指＋G1/測試 hash 鎖定
 sb next verdict                    # 判決閘（測試鎖定 hash＋驗收報告反證/未驗段）
 sb report                          # 自包含外部審計報告 → tmp/report-*.md（開新 slug/ms 前強制；開發中老闆隨時）
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（任何 commit 前必過，sb-commit 技能）

@@ -18,9 +18,9 @@ writeFileSync(join(root, 'app.txt'), 'base\n');
 assert.equal(git('add', '.gitignore', 'app.txt').status, 0);
 assert.equal(git('-c', 'user.name=shiftblame-test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'test: initial').status, 0);
 writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'plan', history: [] }));
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n使用者送出合法輸入後會看見完整結果。');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=操作服務的人 | 前置=已輸入合法資料 | 操作=送出資料 | 可觀察結果=畫面顯示完整結果 | 失敗邊界=不得顯示部分結果 | 證據=BEHAVIOR');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界。');
-writeFileSync(join(ms, 'G3.md'), '# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
+writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 writeFileSync(join(root, '.shiftblame/tmp/alignment-check.md'), 'G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致');
 
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });

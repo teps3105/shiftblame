@@ -1,10 +1,10 @@
 {
   "name": "shiftblame-agents",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "shiftblame CLI——sb：流程狀態機閘門（不自知推進與四假對策）；sb-agents：子代理定義安裝。",
   "type": "module",
   "scripts": {
-    "test": "node test/sb-contract-lock.mjs"
+    "test": "node test/sb-contract-lock.mjs && node test/sb-user-acceptance.mjs"
   },
   "bin": {
     "sb-agents": "bin/sb-agents.mjs",
