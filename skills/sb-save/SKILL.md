@@ -1,6 +1,6 @@
 ---
 name: sb-save
-description: 記錄當前 slug 工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供其他對話用 sb-resume 無縫恢復。
+description: 記錄當前 slug 工作落點到專案 .shiftblame 的 SLUG.md，供其他對話用 sb-resume 無縫恢復。
 ---
 # sb-save — 記錄當前 slug 工作落點
 

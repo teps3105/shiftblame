@@ -1,18 +1,16 @@
 {
-  "name": "shiftblame-agents",
-  "version": "0.9.7",
-  "description": "shiftblame CLI——sb：流程狀態機閘門（不自知推進與四假對策）；sb-agents：子代理定義安裝。",
+  "name": "shiftblame-cli",
+  "version": "1.0.0",
+  "description": "shiftblame CLI——sb 流程狀態機閘門、契約鎖定與驗收證據檢查。",
   "type": "module",
   "scripts": {
     "test": "node test/sb-contract-lock.mjs && node test/sb-user-acceptance.mjs"
   },
   "bin": {
-    "sb-agents": "bin/sb-agents.mjs",
     "sb": "bin/sb.mjs"
   },
   "files": [
-    "bin/",
-    "templates/"
+    "bin/"
   ],
   "engines": {
     "node": ">=18"
@@ -20,10 +18,8 @@
   "license": "MIT",
   "keywords": [
     "shiftblame",
-    "subagent",
-    "agent",
-    "zcode",
-    "claude-code",
+    "workflow",
+    "governance",
     "codex"
   ]
 }

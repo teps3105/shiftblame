@@ -1,6 +1,6 @@
 ---
 name: sb-report
-description: 整理自包含外部審計報告到 <repo>/.shiftblame/tmp/，供老闆複製給無法讀取原始碼與專案文件的外部 agent 審計當前節點。
+description: 整理自包含外部審計報告到專案 .shiftblame/tmp/，供老闆複製給無法讀取原始碼與專案文件的外部 agent 審計當前節點。
 ---
 # sb-report — 外部審計報告
 

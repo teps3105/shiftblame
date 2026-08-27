@@ -1,6 +1,6 @@
 ---
 name: sb-docs
-description: 對當前專案 <repo>/docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
+description: 對當前專案 docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
 ---
 # sb-docs — 修改專案 <repo>/docs/ 文件
 
