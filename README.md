@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.0.0-2ea44f.svg" alt="version 1.0.0"/>
+  <img src="https://img.shields.io/badge/version-1.0.1-2ea44f.svg" alt="version 1.0.1"/>
 </p>
 
 ---
@@ -24,11 +24,13 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 
 核心原則：
 
-- **一次定律。** 定義層單向一次推進——G1 需求一次確認定稿後，薄研究（G2）、薄規劃（G3）直接推進到實作，不在定義流程打轉。每階段一次產出、產出即定稿、向前對齊；§10 兩兩一致於放行前一次核對，缺漏由責任面向一次補正，重大例外才退回。
+- **一次定律。** 定義層單向一次推進——G1 承接 sb-think 已確認的完整語義直接定稿，薄研究（G2）、薄規劃（G3）直接推進到實作，不在 G1 或階段邊界重問。每階段一次產出、產出即定稿、向前對齊；§10 兩兩一致於放行前一次核對，缺漏由責任面向一次補正，重大例外才退回。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
+- **確認綁定決策，不綁階段。** 同一份 sb-think 理解只確認一次；確認訊息直接被消費並分發，audit、release、ms-done 等工作狀態邊界不得再次詢問或要求 `--boss-ok`。只有語義範圍改變、顯式修約、精確破壞性操作與最終 PASS 才建立新決策。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換審計→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
+- **階段完成不是停點。** `1.0.x` 移除階段子代理後，主對話承擔原本由上層隱性完成的吸收責任：吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
 - **三面向雙面結構。** G1/G2/G3 不只在定義層——每個面向都有定義與落地兩面：測試＝G1 落地（驗收條件可執行化）、實作＝G2 落地（技術方案落地為碼）、驗收＝G3 落地（照計畫執行收證據）；執行層時序與定義層 G1→G2→G3 正向同構。任何 G2/G3 與 G1 不一致退回 G1 重新正確定義——G1 定義權唯一，G2/G3 不得自行詮釋吸收。
 - **不同視角按需取得。** Shiftblame 不提供持久外部分工配置，也不因階段切換自動委派；只有複雜、高風險、無先例、證據矛盾、反覆卡關或老闆指定時，才取得一次自包含的唯讀檢閱意見。
 - **階段內認知控制。** 任務依 fast／full／loop 分級；長程工作以 `Goal／Core／Verified／Open／Next` 短帳本跨 seam 保持狀態，所有「已驗證」都要附方法與涵蓋範圍。
@@ -56,7 +58,7 @@ flowchart TD
 
     subgraph Check["定義層三面向制衡 · 一次定律：單向一次推進"]
         direction LR
-        G1["G1 需求<br/>審計狀態<br/>主對話<br/>一次確認定稿"] -->|薄研究<br/>向前對齊| G2["G2 技術<br/>研究狀態<br/>主對話<br/>一次定稿"]
+        G1["G1 需求<br/>審計狀態<br/>承接 sb-think 已確認語義<br/>直接定稿"] -->|薄研究<br/>向前對齊| G2["G2 技術<br/>研究狀態<br/>主對話<br/>一次定稿"]
         G2 -->|薄規劃<br/>向前對齊| G3["G3 計畫<br/>規劃狀態<br/>主對話<br/>一次定稿"]
     end
 
@@ -76,7 +78,7 @@ flowchart TD
             Judge -- 合格 --> Done["本功能完成"]
             Judge -- "返工（實作→實作<br/>測試定義→測試）" --> T
         end
-        Loop -- 里程碑所有功能 commit --> MA{"老闆確認價值<br/>審計階段對照封存 G1 複驗"}
+        Loop -- 里程碑所有功能 commit --> MA{"秘書審計價值<br/>對照封存 G1 複驗"}
         MA -- 不符 --> Loop
         MA -- 合格 --> Next{還有下一個<br/>里程碑？}
         Next -- 是 --> MS
@@ -161,7 +163,7 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 幫我用三面向制衡流程重構登入流程
 ```
 
-**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖、結構化呈現讓老闆確認，確認後才分發到對應流程。sb-think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。
+**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖、結構化呈現讓老闆確認，確認後才分發到對應流程。若輸入本身是對上一份理解的確認，sb-think 直接消費並分發，不得要求確認第二次。sb-think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。
 
 路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定，在 sb-think 中拍板）：
 
@@ -174,13 +176,14 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 
 ### 流程狀態機（npm CLI：sb）
 
-流程規範以腳本鎖死（不自知推進與四假對策，見 SKILL §1.8）——每個 slug 開始跑 `sb init <slug>`，每個階段推進跑 `sb next <node>`，閘門不過（exit 1）不得推進；老闆拍板點必須 `--boss-ok` 留痕：
+流程規範以腳本鎖死（不自知推進與四假對策，見 SKILL §1.8）——每個 slug 開始跑 `sb init <slug>`，每個階段推進跑 `sb next <node>`，閘門不過（exit 1）不得推進。一般階段沿用既有授權，不帶 `--boss-ok`；只有最終 PASS 與顯式修約等真正語義決策留痕：
 
 ```bash
 npm install -g <shiftblame repo>/cli
 sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.json
 sb state                           # 目前節點與各下一步前置條件
-sb next release --boss-ok          # 放行閘（G3 失敗模式＋實作步驟＋§10 核對記錄）
+sb next release                    # 放行閘（既定狀態推進，不另確認）
+sb next pass --boss-ok             # 已取得最終 PASS 決策後留痕
 sb amend --boss-ok                 # G1 顯式修約（須先寫 amendment.md 且 working tree 乾淨）
 sb lock <測試碼...>                 # 測試定稿：斷言＋AC-ID 回指＋G1/測試 hash 鎖定
 sb next verdict                    # 判決閘（測試鎖定 hash＋驗收報告反證/未驗段）

@@ -33,13 +33,13 @@ writeFileSync(join(ms, 'G1.md'), `# 驗收
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 writeFileSync(join(tmp, 'alignment-check.md'), 'G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致');
-assert.match(run('next', 'release', '--boss-ok').stderr, /G1 AC-02 缺實質欄位：使用者/);
+assert.match(run('next', 'release').stderr, /G1 AC-02 缺實質欄位：使用者/);
 writeFileSync(join(ms, 'G1.md'), `# 驗收
 - AC-01 | 需求=R1 | 使用者=送出資料的人 | 前置=資料合法 | 操作=送出資料 | 可觀察結果=看到完整結果 | 失敗邊界=不得出現部分結果 | 證據=BEHAVIOR
 - AC-02 | 需求=R2 | 使用者=送出錯誤資料的人 | 前置=資料不合法 | 操作=送出資料 | 可觀察結果=看到明確錯誤 | 失敗邊界=不得誤報成功 | 證據=BEHAVIOR`);
-assert.match(run('next', 'release', '--boss-ok').stderr, /G3 未逐項承接 G1：AC-02/);
+assert.match(run('next', 'release').stderr, /G3 未逐項承接 G1：AC-02/);
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出\n- AC-02 | 驗收操作=送出不合法資料 | 通過判準=看到明確錯誤 | 需要的證據=實際錯誤輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-assert.equal(run('next', 'release', '--boss-ok').status, 0);
+assert.equal(run('next', 'release').status, 0);
 assert.match(run('next', 'commit', '--direct').stderr, /USER_OBSERVABLE=NO/);
 const contract = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'))).g1Contract;
 
@@ -88,3 +88,7 @@ const evidenceHash2 = createHash('sha256').update(readFileSync(evidence2)).diges
 writeFileSync(join(tmp, 'verify-002.md'), report('AC-02', 'SATISFIED', 'BEHAVIOR', commit2, '使用者看到明確錯誤', evidence2, evidenceHash2));
 assert.equal(run('next', 'verdict').status, 0);
 assert.equal(run('next', 'converge').status, 0);
+assert.match(run('next', 'ms-done', '--boss-ok').stderr, /工作狀態邊界/);
+assert.equal(run('next', 'ms-done').status, 0);
+assert.match(run('next', 'pass').stderr, /需要新的老闆語義決策/);
+assert.equal(run('next', 'pass', '--boss-ok').status, 0);

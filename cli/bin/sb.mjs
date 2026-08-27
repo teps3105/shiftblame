@@ -4,7 +4,7 @@
 // 對抗兩類系統性問題：
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
 //      對策：單向節點鏈＋每個推進點的前置閘門；推進 MUST 跑 `sb next`，閘門
-//      不過即擋（exit 1）。老闆決策點 MUST 帶 --boss-ok（顯性留痕）。
+//      不過即擋（exit 1）。階段邊界不是老闆決策；只有真正的語義決策才留痕。
 //   2. 「四假」——假需求（G1 驗收不可查核）、假規劃（G3 無失敗模式/步驟）、
 //      假測試（無斷言）、假驗收（反證敷衍/未驗寫「無」）。
 //      對策：各階段閘門內建機械訊號檢查（見 CHECKS）。
@@ -47,11 +47,13 @@ const FLOW = {
   verify:   { next: ['verdict'], desc: '對存檔跑 CI 到綠燈＋報告' },
   verdict:  { next: ['converge', 'test'], desc: '秘書判決：通過→收斂或開下一功能小循環' },
   converge: { next: ['ms-done'], desc: 'ms 收斂（三面向重審）' },
-  'ms-done': { next: ['audit', 'pass'], desc: '老闆決定：開新 ms 或結束 slug' },
+  'ms-done': { next: ['audit', 'pass'], desc: 'ms 已完成：承接已授權的新 ms 或最終 PASS' },
   pass:     { next: [], desc: 'slug PASS（終態，收尾保鮮＋archive 由 sb-end 執行）' },
 };
 
-const BOSS_NODES = new Set(['audit', 'release', 'ms-done', 'pass']); // 這些推進 MUST --boss-ok
+// --boss-ok 只證明已取得真正的語義決策，不是階段切換許可證。
+// audit／release／ms-done 都是同一授權工作內的狀態推進；不得因此重問。
+const APPROVAL_NODES = new Set(['pass']);
 
 // ———— 小工具 ————
 
@@ -65,7 +67,7 @@ const usage = (code = 2) => {
   sb init <slug>                        開 slug：建立 flow-state.json（節點 think）
   sb state                              顯示目前節點、可走下一步與其前置條件
   sb next <node> [--boss-ok] [--direct] 推進節點（閘門不過即擋）
-                                        --boss-ok：老闆拍板點的顯性留痕
+                                        --boss-ok：已取得最終 PASS 決策的留痕；一般階段不得使用
                                         --direct：release→commit 預設直接修正路徑
   sb amend --boss-ok                    顯式修約：解除 G1 鎖定並退回 audit
   sb lock <測試碼...>                    測試定稿：斷言＋AC-ID 回指＋G1/測試 hash 鎖定
@@ -226,9 +228,11 @@ function gate(st, target, opts) {
     if (!problems.length) passes.push(`G1 契約鎖定核對：${st.g1Contract.sha256.slice(0, 12)}`);
   }
 
-  if (BOSS_NODES.has(target)) {
-    if (!opts.bossOk) problems.push(`「${target}」是老闆拍板點——MUST 帶 --boss-ok（顯性留痕，不可由 agent 自行推進）`);
-    else passes.push('老闆拍板留痕（--boss-ok）');
+  if (opts.bossOk && !APPROVAL_NODES.has(target)) {
+    problems.push(`「${target}」是工作狀態邊界，不是新的老闆決策——不得帶 --boss-ok 或再次詢問；沿用 sb-think 已取得的授權`);
+  } else if (APPROVAL_NODES.has(target)) {
+    if (!opts.bossOk) problems.push(`「${target}」需要新的老闆語義決策——MUST 帶 --boss-ok 記錄已取得的明確授權`);
+    else passes.push('老闆語義決策留痕（--boss-ok）');
   }
 
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
@@ -530,7 +534,7 @@ function cmdReport() {
 
 ## 1. 審計判準（框架規則摘要）
 
-- **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。
+- **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。audit／release／ms-done 是工作狀態邊界，不是新決策，不得重問確認或帶 \`--boss-ok\`；只有最終 PASS 與顯式修約記錄已取得的語義授權。
 - **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
 - **四假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）。
 - **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。

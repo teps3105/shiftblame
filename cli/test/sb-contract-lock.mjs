@@ -24,7 +24,8 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 writeFileSync(join(root, '.shiftblame/tmp/alignment-check.md'), 'G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致');
 
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
-assert.equal(run('next', 'release', '--boss-ok').status, 0);
+assert.match(run('next', 'release', '--boss-ok').stderr, /工作狀態邊界/);
+assert.equal(run('next', 'release').status, 0);
 const locked = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json')));
 assert.match(locked.g1Contract.sha256, /^[a-f0-9]{64}$/);
 assert.equal(readFileSync(join(root, locked.g1Contract.snapshot), 'utf8'), readFileSync(join(ms, 'G1.md'), 'utf8'));
@@ -45,7 +46,8 @@ assert.equal(amended.g1Contract, undefined);
 writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ ...amended, node: 'ms-done' }));
 writeFileSync(join(root, '.shiftblame/tmp/report-demo-001-ms-done-test.md'), '# report\n需求審計證據。');
 writeFileSync(join(root, 'app.txt'), '未分類的新里程碑變更\n');
-assert.match(run('next', 'audit', '--boss-ok').stderr, /回指 G1 前 working tree 必須乾淨/);
+assert.match(run('next', 'audit', '--boss-ok').stderr, /工作狀態邊界/);
+assert.match(run('next', 'audit').stderr, /回指 G1 前 working tree 必須乾淨/);
 writeFileSync(join(root, 'app.txt'), 'base\n');
-assert.equal(run('next', 'audit', '--boss-ok').status, 0);
+assert.equal(run('next', 'audit').status, 0);
 assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'))).ms, '002');
