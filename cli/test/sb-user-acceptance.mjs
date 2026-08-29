@@ -39,9 +39,27 @@ writeFileSync(join(ms, 'G1.md'), `# 驗收
 - AC-02 | 需求=R2 | 使用者=送出錯誤資料的人 | 前置=資料不合法 | 操作=送出資料 | 可觀察結果=看到明確錯誤 | 失敗邊界=不得誤報成功 | 證據=BEHAVIOR`);
 assert.match(run('next', 'release').stderr, /G3 未逐項承接 G1：AC-02/);
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出\n- AC-02 | 驗收操作=送出不合法資料 | 通過判準=看到明確錯誤 | 需要的證據=實際錯誤輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
+const g3Sha = createHash('sha256').update(readFileSync(join(ms, 'G3.md'))).digest('hex');
+writeFileSync(join(tmp, 'alignment-check.md'), `G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致\nG3-SHA256=${g3Sha}`);
+writeFileSync(join(tmp, 'review-plan-demo-001-1.md'), `# 對抗方向檢閱
+G3-SHA256=${g3Sha}
+
+## 對抗要點
+
+- AC-01 與 AC-02 只驗送出路徑，攻擊：錯誤邊界（AC-02）若被同一入口吞掉，計畫缺獨立的錯誤驗證步驟。
+- 攻擊：兩項驗收共用同一入口，若入口本身行為分裂，合法與不合法路徑的判準會互相污染。
+
+## 複核結論
+
+G3 已為 AC-02 排定不合法輸入驗收並要求實際錯誤輸出，入口行為單一可重現，攻擊不成立，計畫照放行。`);
 assert.equal(run('next', 'release').status, 0);
 assert.match(run('next', 'commit', '--direct').stderr, /USER_OBSERVABLE=NO/);
 const contract = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'))).g1Contract;
+writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
+
+計畫：以既有入口完成 AC-01 與 AC-02 的驗收與實作。
+對抗檢閱：review-plan-demo-001-1.md 的要點與複核已納入，無自攻降級。
+§10 核對：三對六向成立，即進入開發。`);
 
 assert.equal(run('next', 'test').status, 0);
 writeFileSync(join(root, 'test-1.mjs'), '// AC-01\nimport assert from "node:assert/strict";\nassert.equal("完整結果", "完整結果");\n');
@@ -68,6 +86,23 @@ assert.match(run('next', 'verdict').stderr, /證據 MUST 為 BEHAVIOR/);
 writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'UNVERIFIED', 'BEHAVIOR', commit1, '尚未觀察', evidence1, evidenceHash1));
 assert.match(run('next', 'verdict').stderr, /AC-01=UNVERIFIED/);
 writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'SATISFIED', 'BEHAVIOR', commit1, '使用者看到完整結果', evidence1, evidenceHash1));
+const reviewVerify = (name, file) => {
+  const sha = createHash('sha256').update(readFileSync(join(tmp, file))).digest('hex');
+  writeFileSync(join(tmp, name), `# 對抗成果檢閱
+
+錨定驗收報告：${file}
+報告SHA256=${sha}
+
+## 對抗要點
+
+- 攻擊 ${file} 的 SATISFIED 證據：反證嘗試是否真的操作過邊界輸入，還是紙上推演。
+- 攻擊證據檔：SHA-256 只證明檔案未變，不證明內容由實際執行產生，需查產生方式。
+
+## 複核結論
+
+證據檔由實際執行產生並附 SHA-256，反證嘗試有具體輸入，攻擊駁回，判決可通過。`);
+};
+reviewVerify('review-verify-demo-001-1.md', 'verify-001.md');
 assert.equal(run('next', 'verdict').status, 0);
 writeFileSync(evidence1, '證據遭到替換。\n');
 assert.match(run('next', 'converge').stderr, /證據SHA256 缺失或與證據檔不符/);
@@ -86,7 +121,19 @@ const evidence2 = join(tmp, 'evidence-002.txt');
 writeFileSync(evidence2, '實際操作後，使用者看到明確錯誤。\n');
 const evidenceHash2 = createHash('sha256').update(readFileSync(evidence2)).digest('hex');
 writeFileSync(join(tmp, 'verify-002.md'), report('AC-02', 'SATISFIED', 'BEHAVIOR', commit2, '使用者看到明確錯誤', evidence2, evidenceHash2));
+reviewVerify('review-verify-demo-001-2.md', 'verify-002.md');
 assert.equal(run('next', 'verdict').status, 0);
+writeFileSync(join(tmp, 'review-converge-demo-001-1.md'), `# 對抗成果檢閱（收斂複驗）
+G1-SHA256=${contract.sha256}
+
+## 對抗要點
+
+- 攻擊 AC-01 與 AC-02 的 SATISFIED 證據是否出自同一次執行環境，若共用環境，一次偏差即整體失效。
+- 攻擊兩個功能的反證嘗試敘述相近，可能是複製貼上而非各自執行。
+
+## 複核結論
+
+兩項證據分屬不同 commit 的獨立執行並各自附 SHA-256，反證輸入不同，攻擊駁回，ms 價值複驗成立。`);
 assert.equal(run('next', 'converge').status, 0);
 assert.match(run('next', 'ms-done', '--boss-ok').stderr, /工作狀態邊界/);
 assert.equal(run('next', 'ms-done').status, 0);

@@ -67,9 +67,12 @@ const usage = (code = 2) => {
 用法：
   sb init <slug>                        開 slug：建立 flow-state.json（節點 think）
   sb state                              顯示目前節點、可走下一步與其前置條件
-  sb next <node> [--boss-ok] [--direct] 推進節點（閘門不過即擋）
+  sb next <node> [--boss-ok] [--direct] [--self-attack]
+                                        推進節點（閘門不過即擋）
                                         --boss-ok：已取得最終 PASS 決策的留痕；一般階段不得使用
                                         --direct：release→commit 預設直接修正路徑
+                                        --self-attack：本次對抗檢閱為身分切換自攻（外部子代理不可用）
+                                        降級留痕；記錄宣告自攻但未帶旗標（或反向）即擋
   sb amend --boss-ok                    顯式修約：解除 G1 鎖定並退回 audit
   sb lock <測試碼...>                    測試定稿：斷言＋AC-ID 回指＋G1/測試 hash 鎖定
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
@@ -78,8 +81,10 @@ const usage = (code = 2) => {
                                         任何 commit 前 MUST 通過（sb-commit 技能）
 
 放行／判決／收斂閘門另強制外部子代理對抗檢閱記錄：
-  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（含「對抗要點」與「複核結論」段；
-  外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級來源，向老闆揭露）`);
+  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（含 ## 對抗要點 與 ## 複核結論；
+  錨定 plan=G3-SHA256＋G1 全 AC-ID、verify=報告檔名＋報告SHA256、converge=G1-SHA256；
+  外部子代理不可用時切換身分自攻最嚴厲攻擊，推進帶 --self-attack 並向老闆揭露）
+release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md（引用 review-plan 記錄）`);
   process.exit(code);
 };
 
@@ -125,6 +130,7 @@ function acRows(text) {
 
 const filled = (value) => typeof value === 'string' && value.trim().length > 0 && !/^([（(]填[）)]|填|待填|todo|tbd|<[^>]+>)$/i.test(value.trim());
 const unique = (values) => [...new Set(values)];
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function validateG1Acceptance(g1, problems, passes) {
   const rows = acRows(g1);
@@ -220,30 +226,56 @@ function checkCleanWorktree(problems, passes, timing) {
 }
 
 // ———— 對抗檢閱閘（SKILL §3 固定強制時點） ————
-// plan＝放行前對抗方向；verify＝判決前對抗成果（錨定本次驗收報告檔名，防重用舊檔）；
-// converge＝收斂複驗對抗成果。記錄 MUST 含「對抗要點」與「複核結論」兩段。
-// 外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級來源：閘門不阻塞，
-// 但 passes 帶揭露要求；自攻記錄同受段落實質性檢查，敷衍攻擊即擋。
+// plan＝放行前對抗方向；verify＝判決前對抗成果（錨定本次驗收報告）；converge＝收斂複驗對抗成果。
+// 錨定用內容 hash（G3-SHA256／報告SHA256／G1-SHA256）：被檢對象一改，舊記錄自然失效，
+// 防修約後重用舊 review、防同名報告重寫後舊 review 續用。mtime 排序防檔名遊戲與 ≥10 檔字典序錯亂。
+// 自攻降級：記錄宣告與 --self-attack 旗標 MUST 一致（無聲降級即擋）；自攻攻擊深度要求 ≥60 字實質。
+// 推進時把採用記錄的 sha256 寫入 flow-state history，ms-done 門核對事後未遭刪改。
 
-function checkAdversarialReview(st, kind, label, anchors, problems, passes) {
-  const glob = `review-${kind}-${st.slug}-${st.ms}-*.md`;
-  const noFile = `${TMP}/${glob} 不存在——${label} MUST 先取得一次外部子代理對抗檢閱並複核落檔（SKILL §3 固定時點；外部子代理不可用時切換身分自執行最嚴厲攻擊並標示降級來源）`;
+function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, problems, passes) {
+  const noFile = `${TMP}/review-${kind}-${st.slug}-${st.ms}-*.md 不存在——${label} MUST 先取得一次外部子代理對抗檢閱並複核落檔（SKILL §3 固定時點；外部子代理不可用時切換身分自執行最嚴厲攻擊，推進帶 --self-attack 並於記錄標示降級）`;
   if (!existsSync(TMP)) { problems.push(noFile); return; }
-  const re = new RegExp(`^review-${kind}-${st.slug}-${st.ms}-.*\\.md$`, 'i');
-  const candidates = readdirSync(TMP).filter((f) => re.test(f)).sort();
+  const re = new RegExp(`^review-${kind}-${escapeRe(st.slug)}-${st.ms}-.*\\.md$`, 'i');
+  const candidates = readdirSync(TMP).filter((f) => re.test(f))
+    .map((f) => ({ f, m: statSync(join(TMP, f)).mtimeMs }))
+    .sort((a, b) => a.m - b.m || a.f.localeCompare(b.f));
   if (!candidates.length) { problems.push(noFile); return; }
-  const name = candidates.at(-1);
-  const text = readFileSync(join(TMP, name), 'utf-8');
+  const name = candidates.at(-1).f;
+  const path = join(TMP, name);
+  const raw = readFileSync(path, 'utf-8');
+  // 錨定與段落檢查以可見文字為準——HTML 註解內的錨定字串或隱藏標記不算數
+  const text = raw.replace(/<!--[\s\S]*?-->/g, '');
+  st.reviewUsed = { name, sha256: createHash('sha256').update(raw).digest('hex') };
+  const selfAttackText = /身分切換自攻|外部子代理不可用/.test(text);
   for (const sec of ['對抗要點', '複核結論']) {
     const body = section(text, sec);
-    if (body === null) problems.push(`${name} 缺「${sec}」段——對抗檢閱記錄 MUST 含攻擊點與主對話逐點複核`);
-    else if (!substantive(body, 10)) problems.push(`${name}「${sec}」段敷衍——攻擊與複核都要實質內容，不是空話`);
+    const min = sec === '對抗要點' && selfAttackText ? 60 : 10;
+    if (body === null) problems.push(`${name} 缺「${sec}」段——對抗檢閱記錄 MUST 以 ATX 標題（## ${sec}）含攻擊點與主對話逐點複核`);
+    else if (!substantive(body, min)) problems.push(`${name}「${sec}」段敷衍${min > 10 ? '（自攻降級要求最嚴厲攻擊：≥60 字實質並附不可用具體事實）' : ''}——攻擊與複核都要實質內容`);
+    else if (sec === '對抗要點') {
+      const pts = body.split('\n').filter((l) => /^\s*(?:[-*•]|\d+[.、)])\s+\S/.test(l)).length;
+      if (pts < 2) problems.push(`${name}「對抗要點」少於 2 個列點攻擊——一句泛用句是樣板，不是對抗`);
+    }
   }
-  for (const a of anchors) {
-    if (!text.includes(a)) problems.push(`${name} 未回指 ${a}——對抗檢閱 MUST 錨定本次對象，不得重用舊檔`);
+  for (const a of anchors) if (!text.includes(a)) problems.push(`${name} 未含錨定 ${a}——記錄 MUST 錨定本次被檢對象（對象內容變更即失效，不得重用舊檔）`);
+  const mtime = statSync(path).mtimeMs;
+  for (const ap of anchorPaths ?? []) {
+    if (existsSync(ap) && statSync(ap).mtimeMs > mtime + 1000) problems.push(`${name} 寫入時間早於被檢對象 ${ap}——先有對象才有對抗，不得預寫或重用`);
   }
-  if (/身分切換自攻|外部子代理不可用/.test(text)) passes.push(`${name} 為身分切換自攻（外部子代理不可用降級）——${label}時 MUST 向老闆醒目揭露`);
+  if (selfAttackText && !opts.selfAttack) problems.push(`${name} 宣告身分切換自攻（外部子代理不可用）——推進 MUST 帶 --self-attack 留痕，降級不得無聲通過`);
+  if (opts.selfAttack && !selfAttackText) problems.push(`推進帶 --self-attack 但 ${name} 未宣告自攻降級——旗標與記錄 MUST 一致`);
+  if (selfAttackText) passes.push(`${name} 身分切換自攻（--self-attack 留痕）——${label}時 MUST 向老闆醒目揭露降級`);
   else passes.push(`對抗檢閱記錄實質存在：${name}`);
+}
+
+function checkReviewIntegrity(st, problems, passes) {
+  const reviewed = st.history.filter((h) => h.review);
+  for (const h of reviewed) {
+    const p = join(TMP, h.review.name);
+    if (!existsSync(p)) problems.push(`對抗檢閱記錄已被刪除：${h.review.name}——對抗證據不得事後抹除`);
+    else if (sha256(p) !== h.review.sha256) problems.push(`對抗檢閱記錄已被竄改：${h.review.name}（推進時 sha256=${h.review.sha256.slice(0, 12)}）`);
+  }
+  if (reviewed.length && !problems.length) passes.push(`對抗檢閱記錄完整性：${reviewed.length} 份推進時雜湊未變`);
 }
 
 // ———— 各節點推進閘門（target = 要進入的節點） ————
@@ -323,13 +355,38 @@ function gate(st, target, opts) {
       const align = mdOf(join(TMP, 'alignment-check.md'));
       if (!align) problems.push(`${TMP}/alignment-check.md 不存在——放行前 §10 三對六向一致性核對 MUST 落記錄（G1↔G2、G2↔G3、G1↔G3）`);
       else if (!align.includes('G1') || !align.includes('G3')) problems.push('alignment-check.md 缺三對核對內容');
-      else passes.push('§10 三對六向核對記錄存在');
-      checkAdversarialReview(st, 'plan', '放行前（對抗方向）', [], problems, passes);
+      else if (!align.includes(`G3-SHA256=${sha256(gPath(st, 3))}`)) problems.push('alignment-check.md 未含 G3-SHA256=<本次 G3 雜湊> 錨定——修約或重寫後舊核對記錄失效，MUST 重落');
+      else passes.push('§10 三對六向核對記錄存在（錨定本次 G3）');
+      if (g3) {
+        const planAnchors = [`G3-SHA256=${sha256(gPath(st, 3))}`, ...g1Ids];
+        checkAdversarialReview(st, 'plan', '放行前（對抗方向）', planAnchors, [gPath(st, 3)], opts, problems, passes);
+      }
       break;
     }
 
     case 'test':
       // release→test（重流程首個功能）或 verdict→test（判決通過開下一功能小循環）
+      // 層間停靠機械訊號：release→test 是定義層→執行層邊界，MUST 先落放行簡報
+      if (st.node === 'release') {
+        const briefNo = `${TMP}/release-brief-${st.slug}-${st.ms}-*.md 不存在——放行邊界是層間停靠點，MUST 先落放行簡報（計畫摘要＋對抗要點與複核結論＋降級狀態）再進開發（SKILL §11）`;
+        if (!existsSync(TMP)) problems.push(briefNo);
+        else {
+          const bre = new RegExp(`^release-brief-${escapeRe(st.slug)}-${st.ms}-.*\\.md$`, 'i');
+          const briefs = readdirSync(TMP).filter((f) => bre.test(f))
+            .map((f) => ({ f, m: statSync(join(TMP, f)).mtimeMs }))
+            .sort((a, b) => a.m - b.m || a.f.localeCompare(b.f));
+          if (!briefs.length) problems.push(briefNo);
+          else {
+            const brief = readFileSync(join(TMP, briefs.at(-1).f), 'utf-8');
+            const refs = brief.match(/review-plan-[^\s`*＊]+/g) ?? [];
+            const existing = unique(refs.filter((r) => existsSync(join(TMP, r))));
+            if (!brief.includes('review-plan-')) problems.push('release-brief 未引用對抗檢閱記錄（review-plan-*.md）——放行簡報 MUST 含對抗要點與複核結論摘要');
+            else if (!existing.length) problems.push('release-brief 引用的 review-plan 檔名不存在於 tmp——MUST 引用實際採用的檢閱記錄檔名，不是泛指字串');
+            else if (!substantive(brief, 30)) problems.push('release-brief 敷衍——放行簡報要有實質內容');
+            else passes.push(`層間停靠放行簡報存在（引用 ${existing[0]}）`);
+          }
+        }
+      }
       break;
 
     case 'build': // 假測試閘（lock 存在＝斷言初篩已過）
@@ -354,7 +411,7 @@ function gate(st, target, opts) {
     case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）
       const rpt = latestVerify();
       if (!rpt) { problems.push(`${TMP}/verify-*.md 沒有錨定目前 G1 契約與 ms 的報告——驗收 MUST 落結構化報告`); break; }
-      checkAdversarialReview(st, 'verify', '判決前（對抗成果）', [rpt.name], problems, passes);
+      checkAdversarialReview(st, 'verify', '判決前（對抗成果）', [rpt.name, `報告SHA256=${sha256(join(TMP, rpt.name))}`], [join(TMP, rpt.name)], opts, problems, passes);
       const fals = section(rpt.text, '反證嘗試');
       if (fals === null) problems.push(`${rpt.name} 缺「反證嘗試」段——做了什麼嘗試讓它失敗（邊界輸入/拔依賴/極端情境）與結果（假驗收/完成效應訊號）`);
       else if (!substantive(fals, 10)) problems.push(`${rpt.name}「反證嘗試」段敷衍（全為 無/無法/不適用）`);
@@ -403,7 +460,14 @@ function gate(st, target, opts) {
 
     case 'converge': {
       checkCleanWorktree(problems, passes, '收斂前');
-      checkAdversarialReview(st, 'converge', '收斂（對抗成果）', [], problems, passes);
+      if (st.g1Contract?.sha256) {
+        // 收斂檢閱 MUST 晚於本契約最後一份驗收報告——防放行當下預寫備用
+        const vr = verifyReports()?.filter((report) => {
+          const scope = reportScope(report.text);
+          return scope.sha256 === st.g1Contract?.sha256 && scope.ms === st.ms;
+        }) ?? [];
+        checkAdversarialReview(st, 'converge', '收斂（對抗成果）', [`G1-SHA256=${st.g1Contract.sha256}`], vr.length ? [join(TMP, vr.at(-1).name)] : [], opts, problems, passes);
+      }
       const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
       if (commitIn && commitIn.from === 'build' && st.node !== 'verdict') {
         problems.push('重流程存檔（build→commit）未經驗收（verify）＋判決（verdict）即收斂——commit 存檔先於驗收，MUST 判決通過才收斂');
@@ -428,7 +492,7 @@ function gate(st, target, opts) {
       // 開新 slug／ms 前的需求審計（外部 sb-report）為強制閘門——報告在推進前的節點產出，檔名自帶證據
       const needNode = st.node === 'ms-done' ? 'ms-done' : 'think';
       const needMs = st.node === 'ms-done' ? st.ms : '001';
-      const re = new RegExp(`^report-${st.slug}-${needMs}-${needNode}-.*\.md$`, 'i');
+      const re = new RegExp(`^report-${escapeRe(st.slug)}-${needMs}-${needNode}-.*\.md$`, 'i');
       const hasRpt = existsSync(TMP) && readdirSync(TMP).some((x) => re.test(x));
       if (!hasRpt) problems.push(`開新 ${st.node === 'ms-done' ? 'ms' : 'slug'} 前缺少需求審計報告——MUST 先跑 sb report（於 ${needNode} 節點產出 tmp/report-${st.slug}-${needMs}-${needNode}-*.md）供外部審計（SKILL §1.8）`);
       else passes.push(`需求審計報告存在（${needNode} 節點）`);
@@ -436,7 +500,12 @@ function gate(st, target, opts) {
       break;
     }
     case 'ms-done':
+      // 對抗證據不得事後抹除：核對歷次推進採用的 review 檔仍存在且 hash 未變
+      checkReviewIntegrity(st, problems, passes);
+      break;
     case 'pass':
+      // 最終 PASS 前再核一次——ms-done 到 pass 之間的刪改同樣不得放行
+      checkReviewIntegrity(st, problems, passes);
       break;
   }
   return { problems, passes };
@@ -446,7 +515,9 @@ function gate(st, target, opts) {
 
 function cmdInit(slug) {
   if (!slug) usage();
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
   mkdirSync(SB_DIR, { recursive: true });
+  mkdirSync(TMP, { recursive: true });
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'think', history: [] }, null, 2));
   fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, '目前節點：think（sb-think 意圖確認）']);
 }
@@ -485,7 +556,12 @@ function cmdNext(target, opts) {
     st.g1Contract = { ms: st.ms, file, snapshot: CONTRACT_FILE, sha256: sha256(file), lockedAt: new Date().toISOString() };
     passes.push(`G1 契約已封存：${st.g1Contract.sha256.slice(0, 12)}`);
   }
-  st.history.push({ from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct });
+  const entry = { from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct, selfAttack: !!opts.selfAttack };
+  if (st.reviewUsed && (target === 'release' || target === 'verdict' || target === 'converge')) {
+    entry.review = st.reviewUsed;
+    delete st.reviewUsed;
+  }
+  st.history.push(entry);
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
 }
@@ -558,7 +634,8 @@ function cmdReport() {
     : '（尚未放行，無 G1 契約鎖定）';
   let gitlog = '（非 git 環境）';
   try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
-  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
+  const reviews = existsSync(TMP) ? readdirSync(TMP).filter((f) => /^review-(plan|verify|converge)-.*\.md$/i.test(f)).sort().map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') })) : [];
+  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.selfAttack ? '，自攻降級' : ''}${h.review ? `，review=${h.review.name}(${h.review.sha256.slice(0, 12)})` : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
 
   const rpt = `# shiftblame 外部審計報告 — ${st.slug}/${st.ms} @ ${st.node}
 
@@ -572,7 +649,7 @@ function cmdReport() {
 
 - **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。audit／release／ms-done 是工作狀態邊界，不是新決策，不得重問確認或帶 \`--boss-ok\`；只有最終 PASS 與顯式修約記錄已取得的語義授權。
 - **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
-- **四假＋假對抗訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）；假對抗（放行/判決/收斂缺外部子代理對抗檢閱記錄 review-plan|verify|converge-*.md，或「對抗要點／複核結論」段敷衍；外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級）。
+- **五假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）；假對抗（放行/判決/收斂缺外部子代理對抗檢閱記錄 review-plan|verify|converge-*.md、錨定 hash 不符或「對抗要點／複核結論」段敷衍；外部子代理不可用時主對話切換身分自攻並以 --self-attack 留痕，降級記錄要求更高攻擊深度）。
 - **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
 - **G1 契約鎖定**：放行即 sha256 封存，後續每次推進重算；局部技術模型不得改義，變更只能經 \`sb amend --boss-ok\` 顯式修約。
 - **使用者驗收鏈**：G1 AC-ID → G3 驗收 → test-lock → verify 報告逐項回指；必填 AC 必須是 SATISFIED＋BEHAVIOR，並錨定 G1 hash、ms 與 commit。結構正確與 CI 綠燈不能單獨代替使用者需求。
@@ -619,6 +696,10 @@ ${build ? build.text : '（尚無 build 記錄）'}
 ### 6.4 驗收報告（最新，含反證嘗試與未驗清單）
 
 ${verify ? verify.text : '（尚無驗收報告）'}
+
+### 6.5 對抗檢閱記錄（review-plan／verify／converge 全文）
+
+${reviews.length ? reviews.map((r) => `#### ${r.name}\n\n${r.text}`).join('\n\n') : '（尚無對抗檢閱記錄）'}
 
 ## 7. Git 記錄（最近 10 筆）
 
@@ -672,11 +753,12 @@ function cmdLock(files) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, direct: false };
+const flags = { bossOk: false, direct: false, selfAttack: false };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--direct') flags.direct = true;
+  else if (rest[i] === '--self-attack') flags.selfAttack = true;
   else pos.push(rest[i]);
 }
 switch (cmd) {

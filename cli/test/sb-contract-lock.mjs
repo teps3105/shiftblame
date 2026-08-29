@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -21,7 +22,19 @@ writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=操作服務的人 | 前置=已輸入合法資料 | 操作=送出資料 | 可觀察結果=畫面顯示完整結果 | 失敗邊界=不得顯示部分結果 | 證據=BEHAVIOR');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-writeFileSync(join(root, '.shiftblame/tmp/alignment-check.md'), 'G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致');
+const g3Sha = createHash('sha256').update(readFileSync(join(ms, 'G3.md'))).digest('hex');
+writeFileSync(join(root, '.shiftblame/tmp/alignment-check.md'), `G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致\nG3-SHA256=${g3Sha}`);
+writeFileSync(join(root, '.shiftblame/tmp/review-plan-demo-001-1.md'), `# 對抗方向檢閱
+G3-SHA256=${g3Sha}
+
+## 對抗要點
+
+- AC-01 的驗收只看實際輸出，攻擊：既有入口若吞掉錯誤，失敗邊界不可觀察，計畫漏驗錯誤路徑。
+- 攻擊：實作步驟只寫「沿用既有入口」，未指明如何驗證輸出，執行時可能跳過驗證。
+
+## 複核結論
+
+既有入口保留錯誤邊界且步驟含輸出驗證，兩項攻擊不成立；補一條錯誤輸入驗證後計畫照放行。`);
 
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 assert.match(run('next', 'release', '--boss-ok').stderr, /工作狀態邊界/);
