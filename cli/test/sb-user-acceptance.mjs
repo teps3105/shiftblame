@@ -51,7 +51,17 @@ G3-SHA256=${g3Sha}
 
 ## 複核結論
 
-G3 已為 AC-02 排定不合法輸入驗收並要求實際錯誤輸出，入口行為單一可重現，攻擊不成立，計畫照放行。`);
+- 駁回第一項：G3.md:1 已為 AC-02 排定不合法輸入驗收並要求實際錯誤輸出，錯誤驗證不缺。
+- 駁回第二項：G2.md:1 載明入口行為單一可重現，合法與不合法路徑判準不會互相污染。
+
+## 反向對抗
+
+對照攻擊點與複核結論：兩項駁回分別引 G3.md 與 G2.md 內容，出處可查且語義相符，複核誠實。
+反向對抗判定：成立
+
+## 附錄：外部子代理原始輸出
+
+（外部子代理全文）攻擊一：AC-01 與 AC-02 只驗送出路徑，錯誤邊界若被同一入口吞掉，計畫缺獨立錯誤驗證。攻擊二：兩項驗收共用同一入口，入口行為分裂時判準互相污染。`);
 assert.equal(run('next', 'release').status, 0);
 assert.match(run('next', 'commit', '--direct').stderr, /USER_OBSERVABLE=NO/);
 const contract = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'))).g1Contract;
@@ -100,7 +110,17 @@ const reviewVerify = (name, file) => {
 
 ## 複核結論
 
-證據檔由實際執行產生並附 SHA-256，反證嘗試有具體輸入，攻擊駁回，判決可通過。`);
+- 駁回第一項：輸出：${file} 反證嘗試段列有具體邊界輸入與回傳結果，非紙上推演。
+- 駁回第二項：證據檔：SHA-256 由實際執行輸出計算，可重算核對。
+
+## 反向對抗
+
+對照攻擊點與複核結論：駁回理由分別指向反證段落與證據 hash，出處可查，複核誠實。
+反向對抗判定：成立
+
+## 附錄：外部子代理原始輸出
+
+（外部子代理全文）攻擊一：SATISFIED 證據的反證嘗試是否真的操作過邊界輸入。攻擊二：SHA-256 只證明檔案未變，不證明內容由實際執行產生。`);
 };
 reviewVerify('review-verify-demo-001-1.md', 'verify-001.md');
 assert.equal(run('next', 'verdict').status, 0);
@@ -133,7 +153,17 @@ G1-SHA256=${contract.sha256}
 
 ## 複核結論
 
-兩項證據分屬不同 commit 的獨立執行並各自附 SHA-256，反證輸入不同，攻擊駁回，ms 價值複驗成立。`);
+- 駁回第一項：AC-01 與 AC-02 證據分屬不同 commit 的獨立執行，各自的證據檔附 SHA-256 可重算。
+- 駁回第二項：命令：diff verify-001.md verify-002.md 反證段——輸入不同（完整結果／明確錯誤），非複製貼上。
+
+## 反向對抗
+
+對照攻擊點與複核結論：兩項駁回分別引 commit 與報告反證段，出處可查，複核誠實。
+反向對抗判定：成立
+
+## 附錄：外部子代理原始輸出
+
+（外部子代理全文）攻擊一：AC-01 與 AC-02 的 SATISFIED 證據若出自同一次執行環境，一次偏差即整體失效。攻擊二：兩個功能的反證嘗試敘述相近，可能是複製貼上而非各自執行。`);
 assert.equal(run('next', 'converge').status, 0);
 assert.match(run('next', 'ms-done', '--boss-ok').stderr, /工作狀態邊界/);
 assert.equal(run('next', 'ms-done').status, 0);

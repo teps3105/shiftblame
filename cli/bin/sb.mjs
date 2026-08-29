@@ -33,6 +33,10 @@ const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好',
 const ASSERT_RE = /\b(assert\w*|expect\w*|should(?:\.\w+)?|assertEq|assertAlmostEqual|CHECK|FAIL\(|t\.Error|t\.Fatal|expectException|toBe|toEqual|to_be)\b/;
 // 敷衍詞（段落全為此類 = 假）
 const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
+// 複核結論列點的出處 token：AC-ID／檔:行／長 hex（hash）／命令、輸出、證據檔標記
+const CITATION_RE = /(AC-\d{2,}|\S+\.\w+:\d+|[a-f0-9]{40,}|命令[:：]|輸出[:：]|證據檔[:：])/;
+// 列點：標記後空格可有可無（CJK 慣例 `-重點`、`1、重點` 都算），但標記後必須有實字
+const BULLET_RE = /^\s*(?:[-*•]|\d+[.、)])[ \t]*\S/;
 
 // ———— 節點鏈（單向；next = 允許的下一步） ————
 
@@ -81,7 +85,8 @@ const usage = (code = 2) => {
                                         任何 commit 前 MUST 通過（sb-commit 技能）
 
 放行／判決／收斂閘門另強制外部子代理對抗檢閱記錄：
-  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（含 ## 對抗要點 與 ## 複核結論；
+  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（四段：## 對抗要點（≥2 列點）、
+  ## 複核結論（每列點綁出處）、## 反向對抗（複核誠實性判定，不成立即擋）、## 附錄（原始輸出全文）；
   錨定 plan=G3-SHA256＋G1 全 AC-ID、verify=報告檔名＋報告SHA256、converge=G1-SHA256；
   外部子代理不可用時切換身分自攻最嚴厲攻擊，推進帶 --self-attack 並向老闆揭露）
 release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md（引用 review-plan 記錄）`);
@@ -91,14 +96,14 @@ release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf-8'));
 const mdOf = (p) => (existsSync(p) ? readFileSync(p, 'utf-8') : null);
 
-// 取含關鍵詞的標題段內容（到同級/更高等級標題前）
+// 取含關鍵詞的標題段內容（到同級/更高等級標題前——slice 有終點，段不蔓延到檔尾）
 function section(text, keyword) {
   const lines = text.split('\n');
   let start = -1, level = 0;
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
     if (!m) continue;
-    if (start >= 0 && m[1].length <= level) break;
+    if (start >= 0 && m[1].length <= level) return lines.slice(start + 1, i).join('\n').trim();
     if (start < 0 && m[2].includes(keyword)) { start = i; level = m[1].length; }
   }
   return start < 0 ? null : lines.slice(start + 1).join('\n').trim();
@@ -247,14 +252,34 @@ function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, pro
   const text = raw.replace(/<!--[\s\S]*?-->/g, '');
   st.reviewUsed = { name, sha256: createHash('sha256').update(raw).digest('hex') };
   const selfAttackText = /身分切換自攻|外部子代理不可用/.test(text);
-  for (const sec of ['對抗要點', '複核結論']) {
-    const body = section(text, sec);
-    const min = sec === '對抗要點' && selfAttackText ? 60 : 10;
-    if (body === null) problems.push(`${name} 缺「${sec}」段——對抗檢閱記錄 MUST 以 ATX 標題（## ${sec}）含攻擊點與主對話逐點複核`);
-    else if (!substantive(body, min)) problems.push(`${name}「${sec}」段敷衍${min > 10 ? '（自攻降級要求最嚴厲攻擊：≥60 字實質並附不可用具體事實）' : ''}——攻擊與複核都要實質內容`);
-    else if (sec === '對抗要點') {
-      const pts = body.split('\n').filter((l) => /^\s*(?:[-*•]|\d+[.、)])\s+\S/.test(l)).length;
-      if (pts < 2) problems.push(`${name}「對抗要點」少於 2 個列點攻擊——一句泛用句是樣板，不是對抗`);
+  // 四段制：對抗要點（攻擊）→ 複核結論（裁定＋出處）→ 反向對抗（獨立方查複核誠實性）→ 附錄（原文保全）
+  const secRules = [
+    { sec: '對抗要點', min: selfAttackText ? 60 : 10, bullets: 2 },
+    { sec: '複核結論', min: 10, citations: true },
+    { sec: '反向對抗', min: 10, verdict: true },
+    { sec: '附錄', min: 30 },
+  ];
+  for (const rule of secRules) {
+    const body = section(text, rule.sec);
+    if (body === null) { problems.push(`${name} 缺「${rule.sec}」段——記錄 MUST 以 ATX 標題含四段（對抗要點／複核結論／反向對抗／附錄）`); continue; }
+    if (!substantive(body, rule.min)) { problems.push(`${name}「${rule.sec}」段敷衍${rule.min > 10 ? `（要求 ≥${rule.min} 字實質）` : ''}——不是空話`); continue; }
+    const lines = body.split('\n');
+    if (rule.bullets) {
+      const pts = lines.filter((l) => BULLET_RE.test(l)).length;
+      if (pts < rule.bullets) problems.push(`${name}「對抗要點」少於 ${rule.bullets} 個列點攻擊——一句泛用句是樣板，不是對抗`);
+    }
+    if (rule.citations) {
+      const bullets = lines.filter((l) => BULLET_RE.test(l));
+      if (!bullets.length) problems.push(`${name}「複核結論」無列點裁定——每項接受／駁回 MUST 以列點呈現並引出處，散文式結論規避出處檢查即擋`);
+      else {
+        const bare = bullets.filter((l) => !CITATION_RE.test(l));
+        if (bare.length) problems.push(`${name}「複核結論」有 ${bare.length} 個列點裁定無可查證出處（AC-ID／檔:行／命令與輸出／證據檔 SHA-256）——空口接受或駁回是複核造假入口`);
+      }
+    }
+    if (rule.verdict) {
+      const tail = lines.filter((l) => l.trim()).slice(-3).join('\n');
+      if (!/反向對抗判定[：:]\s*(?:成立|不成立)/.test(tail)) problems.push(`${name}「反向對抗」段末缺「反向對抗判定：成立／不成立」結論行——獨立方對複核誠實性的判定 MUST 明示於本段段末`);
+      else if (/反向對抗判定[：:]\s*不成立/.test(tail)) problems.push(`${name} 反向對抗判定「不成立」——複核未過獨立誠實性檢閱，MUST 修正複核或重新檢閱`);
     }
   }
   for (const a of anchors) if (!text.includes(a)) problems.push(`${name} 未含錨定 ${a}——記錄 MUST 錨定本次被檢對象（對象內容變更即失效，不得重用舊檔）`);
