@@ -5,8 +5,9 @@
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
 //      對策：單向節點鏈＋每個推進點的前置閘門；推進 MUST 跑 `sb next`，閘門
 //      不過即擋（exit 1）。階段邊界不是老闆決策；只有真正的語義決策才留痕。
-//   2. 「四假」——假需求（G1 驗收不可查核）、假規劃（G3 無失敗模式/步驟）、
-//      假測試（無斷言）、假驗收（反證敷衍/未驗寫「無」）。
+//   2. 「五假」——假需求（G1 驗收不可查核）、假規劃（G3 無失敗模式/步驟）、
+//      假測試（無斷言）、假驗收（反證敷衍/未驗寫「無」）、假對抗（放行/判決/
+//      收斂缺外部子代理對抗檢閱記錄）。
 //      對策：各階段閘門內建機械訊號檢查（見 CHECKS）。
 //
 // 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
@@ -14,7 +15,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
 import { join, isAbsolute, relative, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -24,7 +25,7 @@ const STATE_FILE = join(SB_DIR, 'flow-state.json');
 const LOCK_FILE = join(TMP, 'test-lock.json');
 const CONTRACT_FILE = join(TMP, 'g1-contract.md');
 
-// ———— 檢查規則常數（四假訊號，日後按需調整） ————
+// ———— 檢查規則常數（五假訊號，日後按需調整） ————
 
 // 假需求：驗收標準不得含不可查核的模糊謂詞
 const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好', '友好', '自如', '更好', '優化用戶體驗', 'works properly', 'user-friendly'];
@@ -74,7 +75,11 @@ const usage = (code = 2) => {
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
                                         （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）
-                                        任何 commit 前 MUST 通過（sb-commit 技能）`);
+                                        任何 commit 前 MUST 通過（sb-commit 技能）
+
+放行／判決／收斂閘門另強制外部子代理對抗檢閱記錄：
+  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（含「對抗要點」與「複核結論」段；
+  外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級來源，向老闆揭露）`);
   process.exit(code);
 };
 
@@ -214,6 +219,33 @@ function checkCleanWorktree(problems, passes, timing) {
   } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
 }
 
+// ———— 對抗檢閱閘（SKILL §3 固定強制時點） ————
+// plan＝放行前對抗方向；verify＝判決前對抗成果（錨定本次驗收報告檔名，防重用舊檔）；
+// converge＝收斂複驗對抗成果。記錄 MUST 含「對抗要點」與「複核結論」兩段。
+// 外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級來源：閘門不阻塞，
+// 但 passes 帶揭露要求；自攻記錄同受段落實質性檢查，敷衍攻擊即擋。
+
+function checkAdversarialReview(st, kind, label, anchors, problems, passes) {
+  const glob = `review-${kind}-${st.slug}-${st.ms}-*.md`;
+  const noFile = `${TMP}/${glob} 不存在——${label} MUST 先取得一次外部子代理對抗檢閱並複核落檔（SKILL §3 固定時點；外部子代理不可用時切換身分自執行最嚴厲攻擊並標示降級來源）`;
+  if (!existsSync(TMP)) { problems.push(noFile); return; }
+  const re = new RegExp(`^review-${kind}-${st.slug}-${st.ms}-.*\\.md$`, 'i');
+  const candidates = readdirSync(TMP).filter((f) => re.test(f)).sort();
+  if (!candidates.length) { problems.push(noFile); return; }
+  const name = candidates.at(-1);
+  const text = readFileSync(join(TMP, name), 'utf-8');
+  for (const sec of ['對抗要點', '複核結論']) {
+    const body = section(text, sec);
+    if (body === null) problems.push(`${name} 缺「${sec}」段——對抗檢閱記錄 MUST 含攻擊點與主對話逐點複核`);
+    else if (!substantive(body, 10)) problems.push(`${name}「${sec}」段敷衍——攻擊與複核都要實質內容，不是空話`);
+  }
+  for (const a of anchors) {
+    if (!text.includes(a)) problems.push(`${name} 未回指 ${a}——對抗檢閱 MUST 錨定本次對象，不得重用舊檔`);
+  }
+  if (/身分切換自攻|外部子代理不可用/.test(text)) passes.push(`${name} 為身分切換自攻（外部子代理不可用降級）——${label}時 MUST 向老闆醒目揭露`);
+  else passes.push(`對抗檢閱記錄實質存在：${name}`);
+}
+
 // ———— 各節點推進閘門（target = 要進入的節點） ————
 
 function gate(st, target, opts) {
@@ -292,6 +324,7 @@ function gate(st, target, opts) {
       if (!align) problems.push(`${TMP}/alignment-check.md 不存在——放行前 §10 三對六向一致性核對 MUST 落記錄（G1↔G2、G2↔G3、G1↔G3）`);
       else if (!align.includes('G1') || !align.includes('G3')) problems.push('alignment-check.md 缺三對核對內容');
       else passes.push('§10 三對六向核對記錄存在');
+      checkAdversarialReview(st, 'plan', '放行前（對抗方向）', [], problems, passes);
       break;
     }
 
@@ -321,6 +354,7 @@ function gate(st, target, opts) {
     case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）
       const rpt = latestVerify();
       if (!rpt) { problems.push(`${TMP}/verify-*.md 沒有錨定目前 G1 契約與 ms 的報告——驗收 MUST 落結構化報告`); break; }
+      checkAdversarialReview(st, 'verify', '判決前（對抗成果）', [rpt.name], problems, passes);
       const fals = section(rpt.text, '反證嘗試');
       if (fals === null) problems.push(`${rpt.name} 缺「反證嘗試」段——做了什麼嘗試讓它失敗（邊界輸入/拔依賴/極端情境）與結果（假驗收/完成效應訊號）`);
       else if (!substantive(fals, 10)) problems.push(`${rpt.name}「反證嘗試」段敷衍（全為 無/無法/不適用）`);
@@ -369,6 +403,7 @@ function gate(st, target, opts) {
 
     case 'converge': {
       checkCleanWorktree(problems, passes, '收斂前');
+      checkAdversarialReview(st, 'converge', '收斂（對抗成果）', [], problems, passes);
       const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
       if (commitIn && commitIn.from === 'build' && st.node !== 'verdict') {
         problems.push('重流程存檔（build→commit）未經驗收（verify）＋判決（verdict）即收斂——commit 存檔先於驗收，MUST 判決通過才收斂');
@@ -411,6 +446,7 @@ function gate(st, target, opts) {
 
 function cmdInit(slug) {
   if (!slug) usage();
+  mkdirSync(SB_DIR, { recursive: true });
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'think', history: [] }, null, 2));
   fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, '目前節點：think（sb-think 意圖確認）']);
 }
@@ -530,13 +566,13 @@ function cmdReport() {
 
 ## 0. 給外部審計者的說明
 
-你是獨立外部審計者。請基於本報告材料與 §1 判準，審計這個開發流程的當前節點是否成立——重點不是「內容寫得好不好」，而是**流程誠實性**：有沒有假需求、假規劃、假測試、假驗收；有沒有跳過檢查的不自知推進。請給出：成立／不成立＋具體理由＋你發現的矛盾。
+你是獨立外部審計者。請基於本報告材料與 §1 判準，審計這個開發流程的當前節點是否成立——重點不是「內容寫得好不好」，而是**流程誠實性**：有沒有假需求、假規劃、假測試、假驗收、假對抗；有沒有跳過檢查的不自知推進。請給出：成立／不成立＋具體理由＋你發現的矛盾。
 
 ## 1. 審計判準（框架規則摘要）
 
 - **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。audit／release／ms-done 是工作狀態邊界，不是新決策，不得重問確認或帶 \`--boss-ok\`；只有最終 PASS 與顯式修約記錄已取得的語義授權。
 - **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
-- **四假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）。
+- **四假＋假對抗訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）；假對抗（放行/判決/收斂缺外部子代理對抗檢閱記錄 review-plan|verify|converge-*.md，或「對抗要點／複核結論」段敷衍；外部子代理不可用時主對話切換身分自執行最嚴厲攻擊並標示降級）。
 - **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
 - **G1 契約鎖定**：放行即 sha256 封存，後續每次推進重算；局部技術模型不得改義，變更只能經 \`sb amend --boss-ok\` 顯式修約。
 - **使用者驗收鏈**：G1 AC-ID → G3 驗收 → test-lock → verify 報告逐項回指；必填 AC 必須是 SATISFIED＋BEHAVIOR，並錨定 G1 hash、ms 與 commit。結構正確與 CI 綠燈不能單獨代替使用者需求。
