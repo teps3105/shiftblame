@@ -104,7 +104,8 @@ const usage = (code = 2) => {
   ## 複核結論（每列點綁出處）、## 反向對抗（複核誠實性判定，不成立即擋）、## 附錄（原始輸出全文）；
   錨定 plan=G3-SHA256＋G1 全 AC-ID、verify=報告檔名＋報告SHA256、converge=G1-SHA256；
   外部子代理不可用時切換身分自攻最嚴厲攻擊，推進帶 --self-attack 並向老闆揭露）
-release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md（引用 review-plan 記錄）`);
+release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md（引用 review-plan 記錄＋## 人話 段）
+verify 報告另需 ## 人話 段（做了什麼／修了什麼／改了什麼——SKILL §3 人話三時點③）`);
   process.exit(code);
 };
 
@@ -421,10 +422,13 @@ function gate(st, target, opts) {
             const brief = readFileSync(join(TMP, briefs.at(-1).f), 'utf-8');
             const refs = brief.match(/review-plan-[^\s`*＊]+/g) ?? [];
             const existing = unique(refs.filter((r) => existsSync(join(TMP, r))));
+            const human = section(brief, '人話');
             if (!brief.includes('review-plan-')) problems.push('release-brief 未引用對抗檢閱記錄（review-plan-*.md）——放行簡報 MUST 含對抗要點與複核結論摘要');
             else if (!existing.length) problems.push('release-brief 引用的 review-plan 檔名不存在於 tmp——MUST 引用實際採用的檢閱記錄檔名，不是泛指字串');
+            else if (human === null) problems.push('release-brief 缺「## 人話」段——G1~G3 整體翻譯（要做什麼、為什麼、老闆會得到什麼、UI/UX/UE 上會感覺到什麼），SKILL §3 人話三時點②');
+            else if (!substantive(human, 30)) problems.push('release-brief「人話」段敷衍——老闆讀不懂即放行不通過（人話七判準）');
             else if (!substantive(brief, 30)) problems.push('release-brief 敷衍——放行簡報要有實質內容');
-            else passes.push(`層間停靠放行簡報存在（引用 ${existing[0]}）`);
+            else passes.push(`層間停靠放行簡報存在（引用 ${existing[0]}，含人話翻譯）`);
           }
         }
       }
@@ -468,6 +472,10 @@ function gate(st, target, opts) {
       else if (/^(無|none|n\/?a|沒有|暫無)[。.\s]*$/i.test(unv)) problems.push(`${rpt.name}「未驗」寫「無」——總有未覆蓋的面向，寫「無」即不自知（假驗收訊號）`);
       else if (!substantive(unv, 10)) problems.push(`${rpt.name}「未驗」段敷衍`);
       else passes.push('未驗清單實質存在');
+      const humanV = section(rpt.text, '人話');
+      if (humanV === null) problems.push(`${rpt.name} 缺「## 人話」段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈），SKILL §3 人話三時點③`);
+      else if (!substantive(humanV, 30)) problems.push(`${rpt.name}「人話」段敷衍——老闆讀不懂即判決不通過（人話七判準）`);
+      else passes.push('人話翻譯實質存在');
       if (existsSync(LOCK_FILE)) {
         const { entries, acceptanceIds = [] } = readJson(LOCK_FILE);
         let lockOk = true;

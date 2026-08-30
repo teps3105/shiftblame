@@ -72,6 +72,18 @@ writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
 §10 核對：三對六向成立，即進入開發。`);
 
 assert.match(run('next', 'test').stderr, /老闆決策點/);
+assert.match(run('next', 'test', '--boss-ok').stderr, /缺「## 人話」段/);
+
+writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
+
+計畫：以既有入口完成 AC-01 與 AC-02 的驗收與實作。
+對抗檢閱：review-plan-demo-001-1.md 的要點與複核已納入，無自攻降級。
+§10 核對：三對六向成立，即進入開發。
+
+## 人話
+
+這次開發完成後，使用者送出資料時：送對的資料會看到完整結果，送錯的資料會看到清楚的錯誤提示，不再出現「看起來成功但其實沒進去」的模糊狀態。操作流程不變，結果回饋變得可靠。
+`);
 assert.equal(run('next', 'test', '--boss-ok').status, 0);
 writeFileSync(join(root, 'test-1.mjs'), '// AC-01\nimport assert from "node:assert/strict";\nassert.equal("完整結果", "完整結果");\n');
 assert.equal(run('lock', 'test-1.mjs').status, 0);
@@ -88,11 +100,14 @@ MS=001
 使用邊界輸入嘗試讓結果失敗，系統回傳可判讀結果。
 # 未驗
 不同作業系統與極端負載尚未涵蓋，不影響本項必填行為判定。
+# 人話
+本次功能把「送資料看結果」修可靠：問題來源是結果回饋含糊，處置是在既有入口加上完整結果與明確錯誤兩種回饋，結果是使用者能一眼分辨成功與失敗。
 `;
 const evidence1 = join(tmp, 'evidence-001.txt');
 writeFileSync(evidence1, '實際操作後，使用者看到完整結果。\n');
 const evidenceHash1 = createHash('sha256').update(readFileSync(evidence1)).digest('hex');
-writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'SATISFIED', 'STRUCTURE', commit1, '檔案與節點存在', evidence1, evidenceHash1));
+writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'SATISFIED', 'STRUCTURE', commit1, '檔案與節點存在', evidence1, evidenceHash1).replace(/# 人話[sS]*$/, ''));
+assert.match(run('next', 'verdict').stderr, /缺「## 人話」段|證據 MUST 為 BEHAVIOR/);
 assert.match(run('next', 'verdict').stderr, /證據 MUST 為 BEHAVIOR/);
 writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'UNVERIFIED', 'BEHAVIOR', commit1, '尚未觀察', evidence1, evidenceHash1));
 assert.match(run('next', 'verdict').stderr, /AC-01=UNVERIFIED/);
