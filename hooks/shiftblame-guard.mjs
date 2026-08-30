@@ -49,6 +49,8 @@ const CARD = [
   '②三時點強制對抗（放行前方向／判決前成果／收斂複驗），記錄四段、複核列點綁出處、反向對抗判定。',
   '③驗收不得自寫自測即宣稱通過；commit 必過 sb commitmsg（hooks 已機械硬擋）。',
   '④層內連續、層間停靠；階段完成不是停點。',
+  '⑤人話三時點：意圖揭露的「意圖翻譯」＝老闆讀得懂的白話；release 簡報與 verify 報告必含 ## 人話 段（七判準：邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂——任一不合格即不通過）。',
+  '⑥版號屬老闆決策——不得自行升版或預設版號，版號待老闆指定。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -56,6 +58,7 @@ const SESSION_CARD = [
   '',
   '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前節點）。載入後 sb-think 的路由提議才有脈絡依據。',
   '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／PreToolUse）；commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
+  '[版號] 版本號屬老闆決策——不得自行升版或預設版號，揭露表寫「版號待老闆指定」。',
 ].join('\n');
 
 function nodeLine(root) {
@@ -65,7 +68,7 @@ function nodeLine(root) {
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
-    if (st.node === 'release') hint = '——放行簡報揭露後停等老闆確認，推進帶 sb next test --boss-ok（層間 checkpoint）';
+    if (st.node === 'release') hint = '——放行簡報揭露後停等老闆確認（簡報含 ## 人話 段），推進帶 sb next test --boss-ok（層間 checkpoint）';
     if (st.node === 'plan') hint = '——放行前先備齊對抗方向檢閱與 §10 記錄';
     return `\n[節點] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）；G1 契約鎖定中，改 G1 須 sb amend --boss-ok。`;
   } catch { return ''; }
@@ -338,12 +341,22 @@ try {
       // 狀態寫入矩陣優先：節點越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
-      const detail = JSON.stringify(input.tool_input ?? {});
-      if (/SKILL\.md|hooks[\\/]/.test(detail)) {
-        inject('[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：若尚未經老闆確認，MUST 先意圖揭露取得授權，並依三步序 文件修正→實作 推進（SKILL §2）；已授權則照授權範圍執行。');
-      } else if (/direct-change\.md/.test(detail)) {
+      // 提醒比對只認路徑鍵（防 content 字串誤觸）；release-brief／verify 逐鍵精確匹配
+      const pathKeys = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path'];
+      const pathStr = pathKeys.map((k) => input.tool_input?.[k]).filter((v) => typeof v === 'string').join(' ');
+      const isBrief = /(^|[\\/])release-brief-[^\\/]+\.md($|\s)/i.test(pathStr);
+      const isVerify = /(^|[\\/])verify-[^\\/]+\.md($|\s)/i.test(pathStr) && !/(^|[\\/])review-verify-/i.test(pathStr);
+      if (/SKILL\.md|hooks[\\/]|package\.json|plugin\.json|marketplace\.json/i.test(pathStr)) {
+        inject(/[\\/](package|plugin|marketplace)\.json/i.test(pathStr)
+          ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
+          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：若尚未經老闆確認，MUST 先意圖揭露取得授權，並依三步序 文件修正→實作 推進（SKILL §2）；已授權則照授權範圍執行。');
+      } else if (isBrief) {
+        inject('[shiftblame] 放行簡報 MUST 含 ## 人話 段——G1~G3 整體翻譯：要做什麼、為什麼、老闆會得到什麼、UI/UX/UE 上會感覺到什麼；七判準（邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂）任一不合格即放行不通過（SKILL §3 人話三時點②）。');
+      } else if (isVerify) {
+        inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。');
+      } else if (/direct-change\.md/.test(pathStr)) {
         inject('[shiftblame] direct-change.md 的 來源= 僅限 agent 自行循環發現的微修可宣告——老闆發現的意圖不豁免，回 sb-think 意圖路由；虛報來源屬造假。');
-      } else if (/commit-stamp\.json/.test(detail)) {
+      } else if (/commit-stamp\.json/.test(pathStr)) {
         inject('[shiftblame] commit-stamp.json 僅由 sb commitmsg 產生——手寫印章屬偽造（SKILL §1.8），將於外部審計暴露。');
       }
       process.exit(0);

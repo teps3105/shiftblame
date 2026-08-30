@@ -30,18 +30,42 @@ const run = (payload) => {
 };
 const ctxOf = (r) => JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
 
-// 1. SessionStart：載入程序＋不變量卡
+// 1. SessionStart：載入程序＋不變量卡（含人話三時點與版號規則）
 const s = run({ hook_event_name: 'SessionStart' });
 assert.equal(s.status, 0);
 assert.match(ctxOf(s), /冷啟動載入/);
 assert.match(ctxOf(s), /sb-think/);
+assert.match(ctxOf(s), /人話三時點/);
+assert.match(ctxOf(s), /七判準/);
+assert.match(ctxOf(s), /版本號屬老闆決策/);
 
 // 2. UserPromptSubmit（非治理目錄）：核心卡、無節點行
 const u1 = run({ hook_event_name: 'UserPromptSubmit', prompt: '隨便做點什麼' });
 assert.equal(u1.status, 0);
 assert.match(ctxOf(u1), /三步序/);
 assert.match(ctxOf(u1), /反向對抗/);
+assert.match(ctxOf(u1), /人話三時點/);
 assert.ok(!ctxOf(u1).includes('[節點]'), '非治理目錄不應注入節點');
+
+// 2b. 寫入 release-brief／verify 檔 → 注入人話段提醒
+const wb = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame', 'tmp', 'release-brief-demo-001-2.md') } });
+assert.equal(wb.status, 0);
+assert.match(ctxOf(wb), /## 人話/);
+assert.match(ctxOf(wb), /UI\/UX\/UE/);
+const wv = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame', 'tmp', 'verify-002.md') } });
+assert.equal(wv.status, 0);
+assert.match(ctxOf(wv), /問題來源/);
+
+// 2c. 複核修補回歸：content 誤觸不注入、review-verify 誤觸不注入、版號檔提醒
+const noTrig = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'notes.md'), content: 'see release-brief-demo-001-2.md for details' } });
+assert.equal(noTrig.status, 0);
+assert.equal(noTrig.stdout.trim(), '');
+const noRev = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame', 'tmp', 'review-verify-demo-001-1.md') } });
+assert.equal(noRev.status, 0);
+assert.equal(noRev.stdout.trim(), '');
+const ver = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'cli', 'package.json') } });
+assert.equal(ver.status, 0);
+assert.match(ctxOf(ver), /版號屬老闆決策/);
 
 // 3. UserPromptSubmit（治理目錄）：加注節點
 mkdirSync(join(root, '.shiftblame'), { recursive: true });

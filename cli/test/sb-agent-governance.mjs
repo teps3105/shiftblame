@@ -43,6 +43,8 @@ assert.match(reviewSection, /## 反向對抗/);
 assert.match(reviewSection, /## 附錄/);
 assert.match(skill, /追加意圖三步序/);
 assert.match(skill, /人話翻譯三時點/);
+assert.match(skill, /版號屬老闆決策/);
+assert.match(skill, /版號待老闆指定/);
 assert.match(skill, /人話七判準/);
 assert.match(skill, /意圖翻譯 MUST 是人話/);
 assert.match(skill, /hooks 機械注入/);
