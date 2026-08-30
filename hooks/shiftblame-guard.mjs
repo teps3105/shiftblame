@@ -14,8 +14,8 @@
  * 煙霧測試：printf '%s' '{"hook_event_name":"UserPromptSubmit","cwd":"."}' | node hooks/shiftblame-guard.mjs
  */
 
-import { existsSync, readFileSync, unlinkSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+import { existsSync, readFileSync, realpathSync, unlinkSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
 
@@ -80,6 +80,71 @@ function checkLayerStopover(root, cmd) {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
     if (st.node === 'release') return '層間停靠：release→test 是老闆確認點——放行簡報經老闆確認後帶 --boss-ok 推進，不得自行進入實作層（SKILL §11）';
   } catch { /* 非治理工作區 */ }
+  return null;
+}
+
+// ———— 狀態寫入攔截：把 §1.7 寫入矩陣機械化 ————
+// 測試碼（test-lock.json 所列或測試慣例路徑）僅 test 節點可寫；實作碼（.shiftblame/ 外 repo 檔）
+// 白名單＝build（實作狀態）／release（direct 微修窗）／pass（收尾保鮮）；其餘節點 repo 唯讀。
+// Bash 內寫檔與 MCP 讀取類工具不在此層（殘餘；shell 漂移由 verdict 樹檢查兜底）。
+
+const IMPL_WRITE_NODES = new Set(['build', 'release', 'pass']);
+// 測試碼認定：真實測試「目錄」或副檔名慣例——不含 _test_ 中綴（避免 src/test_utils.js 誤判）
+const TEST_PATH_RE = /(^|\/)(tests?|__tests__|spec)\//i;
+const TEST_FILE_RE = /\.(test|spec)\.[A-Za-z0-9]+$|(^|\/)[A-Za-z0-9._-]+_test\.[A-Za-z0-9]+$/i;
+// 寫檔類工具名（含刪／搬／更名／雙用途 manage/put）；明顯讀取類豁免（不攔唯讀）
+const WRITE_TOOL_RE = /write|edit|patch|save|create|apply|delete|remove|move|rename|truncate|put|manage|store|upload|set_|update/i;
+const READ_EXEMPT_RE = /read|list|search|stat|exists|get|query|fetch|browse|tree|info|show|find|screenshot|cursor|mouse|key\b|scroll|click/i;
+
+const nodeOf = (root) => {
+  try { return JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).node ?? null; }
+  catch { return null; }
+};
+
+// 路徑正規化：剝 `\\?\`／`\\?\UNC\` 裝置前綴（防 relative() 失效全繞）；Win32 尾端點與尾空白；
+// 已存在路徑解析 realpath（防 junction／短名偽裝）
+function canonicalPath(p) {
+  let s = p.replace(/^\\\\\?\\UNC\\/i, '\\\\').replace(/^\\\\\?\\/i, '');
+  s = s.split(/[\\/]/).map((seg) => seg.replace(/[. ]+$/, '')).join('/');
+  try {
+    if (existsSync(s)) return realpathSync(s);
+  } catch { /* 不存在＝新建檔，用字面正規化結果 */ }
+  return s;
+}
+
+function checkStateWriteMatrix(root, toolInput) {
+  if (!root) return null;
+  // 抽取所有路徑類鍵（蛇形與駝峰；uri 去除 scheme）——逐一生效，防 decoy 鍵欺騙
+  const keys = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
+  const targets = [];
+  for (const k of keys) {
+    const v = toolInput?.[k];
+    if (typeof v === 'string' && v.trim() && !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) targets.push(v);
+  }
+  if (typeof toolInput?.uri === 'string' && /^file:/i.test(toolInput.uri)) targets.push(toolInput.uri.replace(/^file:\/\//i, ''));
+  if (!targets.length) return null; // 無可辨識路徑：不猜測
+  let lockedTests = [];
+  try {
+    const lock = JSON.parse(readFileSync(join(root, '.shiftblame', 'tmp', 'test-lock.json'), 'utf8'));
+    lockedTests = (lock.entries ?? []).map((e) => e.file);
+  } catch { /* 尚無測試鎖定 */ }
+  const norm = (x) => { try { return resolve(canonicalPath(x)).toLowerCase(); } catch { return String(x).toLowerCase(); } };
+  const lockedNorm = new Set(lockedTests.map(norm));
+  const rootNorm = norm(root);
+  const node = nodeOf(root);
+  if (!node) return null; // 非治理工作區（無狀態檔）
+  for (const target of targets) {
+    const p = canonicalPath(isAbsolute(target) ? target : resolve(root, target));
+    const rel = relative(root, p).replace(/\\/g, '/');
+    if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
+    if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
+    const isTest = lockedNorm.has(resolve(p).toLowerCase()) || TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
+    if (isTest) {
+      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已鎖定——節點 ${node} 不得修改測試；顯式回測試狀態須經 verdict→test 回邊並附定義錯誤理由（SKILL §1.7 寫入矩陣）`;
+    } else if (!IMPL_WRITE_NODES.has(node)) {
+      return `[shiftblame] 節點 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 狀態（或 release 之 direct 微修、pass 收尾保鮮）（SKILL §1.7 寫入矩陣）`;
+    }
+  }
   return null;
 }
 
@@ -167,6 +232,9 @@ function scanScriptFile(cmd, root) {
   const m = cmd.match(/(?:^|\s)(?:python3?|py(?:\s+-\d)?|node)\s+(?:-[A-Za-z]+\s+)*(")?([^"&|;\s]+?\.(?:py|js|mjs|cjs|ts))\1/);
   if (!m) return null;
   const scriptPath = resolve(root ?? process.cwd(), m[2]);
+  const scriptRel = relative(root ?? process.cwd(), scriptPath).replace(/\\/g, '/');
+  // 測試碼內容本就含破壞字串 fixtures——測試路徑的腳本免除內容掃描（否則直跑測試被自己的防護擋下）
+  if (TEST_PATH_RE.test(scriptRel) || TEST_FILE_RE.test(scriptRel) || /(^|\/)(tests?|__tests__|spec)\//i.test(scriptRel)) return null;
   let text;
   try {
     text = readFileSync(scriptPath, 'utf-8');
@@ -266,7 +334,10 @@ try {
       }
       process.exit(0); // 各段通過：靜默放行
     }
-    if (/Write|Edit|ApplyPatch/i.test(tool)) {
+    if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
+      // 狀態寫入矩陣優先：節點越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
+      const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
+      if (matrix) deny(matrix);
       const detail = JSON.stringify(input.tool_input ?? {});
       if (/SKILL\.md|hooks[\\/]/.test(detail)) {
         inject('[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：若尚未經老闆確認，MUST 先意圖揭露取得授權，並依三步序 文件修正→實作 推進（SKILL §2）；已授權則照授權範圍執行。');

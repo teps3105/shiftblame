@@ -26,13 +26,12 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Write|Edit|ApplyPatch",
         "hooks": [
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: commit 印章與框架文件防護"
+            "statusMessage": "shiftblame: 節點矩陣、commit 印章與路徑防護"
           }
         ]
       }

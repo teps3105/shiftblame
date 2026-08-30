@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.2.0"
+  version: "1.2.1"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載需求、技術、計畫、測試、實作與驗收等工作狀態；階段是同一上下文中的狀態，不是身份、委派邊界或停止點。三份文件依一次定律、兩兩一致與測試鎖定落地。外部子代理檢閱有三個強制對抗時點——計畫放行前對抗方向、每個功能驗收後判決前對抗成果、收斂複驗對抗成果——複核結論強制出處綁定、原文保全與反向對抗；另有技術證據不足時的強制技術意見；主對話一律複核後自行裁定，不得把純技術選擇轉嫁給老闆。commit、判決、放行、路由、reset、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -170,6 +170,8 @@ flowchart TD
    - **repo 測試碼** — 寫入者：主對話的測試狀態；離開該狀態即鎖定。鎖定後只有附定義錯誤理由顯式回到測試狀態才可修改；不得在實作或驗收狀態為綠燈逕改。G3 每項驗收 MUST 可自動化執行且不依賴對外視窗。
    - **repo commit** — 寫入者：**秘書獨佔**。前置：G1/G2/G3 兩兩雙向一致（§10）且通過開發門檻；§1.4 判定（直接修正，或執行層小循環實作完成即 commit 存檔——存檔先於驗收，驗收後判決通過才開下一個功能）。
 
+   **寫入矩陣機械攔截（hooks＋CLI）**：測試碼（`test-lock.json` 所列或測試慣例路徑）僅 `test` 節點可寫，離開即鎖定；實作碼（`.shiftblame/` 以外 repo 檔）寫入白名單＝`build`（實作狀態）、`release`（direct 微修窗）、`pass`（收尾保鮮），其餘節點（think/audit/research/plan/test/commit/verify/verdict/converge/ms-done）對 repo 唯讀；`.shiftblame/` 內永遠可寫。hooks 對寫檔類工具（Edit/Write/ApplyPatch/MCP 寫檔）比對節點即攔；`sb next verdict` 另核對 working tree 未偏離待驗存檔（`git status --porcelain`，`.shiftblame/` 已排除）——驗收期間改實作碼在判決閘被擋。Bash 內的檔案寫入與 MCP 讀取類工具不在矩陣內（殘餘，如實標註）。
+
 保鮮分兩層（§0 收斂段；權威操作步驟見 §1.7.1／§1.7.2）：每個 `<ms>` 完成做**輕量保鮮**（§1.7.1，只更新 SLUG 技術債／臨時租約，不動 SOP／ROADMAP／archive）；只有老闆對整個 `<slug>` 拍板 PASS（slug 結束）才做**完整收尾保鮮**（§1.7.2，重寫 `<repo>/.shiftblame/SOP.md`／`<repo>/.shiftblame/ROADMAP.md`、保鮮 `<repo>/docs/`／`<repo>/README.md` 並移 `<repo>/.shiftblame/archive/`）。兩層皆為既定維護動作，不需另行取得一次寫入授權；新增產品方向、改變產品邊界或把未完成項改成新需求，仍須老闆明確授權。
 
 ### 1.7.1 輕量保鮮（每個 `<ms>` 完成後）
@@ -209,6 +211,7 @@ flowchart TD
   - **假規劃**：G3 缺「失敗模式」（premortem：假設計畫失敗了，最可能 2-3 個原因）或「實作步驟」段、放行前無 §10 三對六向核對記錄（`<repo>/.shiftblame/tmp/alignment-check.md`，含 `G3-SHA256=` 錨定——修約或重寫後舊記錄失效）→ 擋。
   - **假測試**：測試碼無任何斷言 API → `sb lock` 拒絕鎖定（鎖定未建立不得進實作）。
   - **假驗收**：驗收報告（`<repo>/.shiftblame/tmp/verify-*.md`）缺「反證嘗試」（做了什麼嘗試讓它失敗與結果）或「未驗」段、反證全為「無法／不適用」、「未驗」寫「無」→ 擋。
+  - **狀態越界寫檔**：hooks 對寫檔工具比對 flow-state 節點——測試碼非 test 節點、實作碼非白名單節點（build/release/pass）即 exit 2 擋；`sb next verdict` 核對 working tree 與待驗存檔一致，驗收期間的 repo 變更（含透過 shell）在判決閘擋下 → 擋。
   - **假對抗**：放行、判決或收斂閘門缺對應的外部子代理對抗檢閱記錄（`<repo>/.shiftblame/tmp/review-plan|verify|converge-<slug>-<ms>-*.md`，含「對抗要點」（≥2 列點）、「複核結論」（每列點綁可查證出處——空口裁定是複核造假入口）、「反向對抗」（判定不成立即擋）與「附錄」（原始輸出全文）四段；錨定 hash 不符、時序顛倒或錨定藏於 HTML 註解）→ 擋。release→test 缺層間停靠放行簡報（`tmp/release-brief-*.md`，引用實際存在的 review-plan 檔名）→ 擋。ms-done 與 pass 門核對歷次推進採用的檢閱記錄未被刪改（推進時 sha256 留痕於 flow-state）→ 刪改即擋。外部子代理不可用時主對話切換身分自執行最嚴厲攻擊，記錄標示降級來源且推進帶 `--self-attack`（宣告與旗標不一致即擋）；不阻塞推進，但放行／判決／收斂時 MUST 向老闆揭露此降級。
 
 **commit 印章硬擋（hooks）**：`sb commitmsg` 通過時寫入 `<repo>/.shiftblame/tmp/commit-stamp.json`（訊息＋時間＋cwd）；`PreToolUse` hook 偵測 `git commit` 時驗印章——無印章、逾期（>10 分鐘）或訊息不符即 exit 2 阻擋。機械層不再依賴「記得走 sb-commit」。訊息 MUST 以 `-m` 傳遞（`-F` 無法驗證即擋）。
@@ -431,7 +434,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 > session 冷啟動時建立脈絡，讓 sb-think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 sb-think 的前置——sb-think 第一步就是讀脈絡。
 
-**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；`type: command`＋`${CLAUDE_PLUGIN_ROOT}`——ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。三事件：`SessionStart` 注入本載入程序與不變量卡；`UserPromptSubmit` 每則老闆輸入注入精簡不變量卡（路由 sb-think、追加語義三步序、三時點對抗、複核出處與反向對抗），偵測到 `<repo>/.shiftblame/` 時加注當前節點；`PreToolUse` 偵測 `git commit` 時執行**印章硬擋**——訊息未經 `sb commitmsg` 驗證（10 分鐘內印章且訊息相符）即 exit 2 阻擋，修改框架文件（skills／hooks）時注入三步序提醒。hooks 故障時靜默放行（不因防護損壞工作），注入與硬擋失效即回到文件與 CLI 閘門層。
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；`type: command`＋`${CLAUDE_PLUGIN_ROOT}`——ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。三事件：`SessionStart` 注入本載入程序與不變量卡；`UserPromptSubmit` 每則老闆輸入注入精簡不變量卡（路由 sb-think、追加語義三步序、三時點對抗、複核出處與反向對抗），偵測到 `<repo>/.shiftblame/` 時加注當前節點；`PreToolUse` 偵測 `git commit` 時執行**印章硬擋**——訊息未經 `sb commitmsg` 驗證（10 分鐘內印章且訊息相符）即 exit 2 阻擋，修改框架文件（skills／hooks）時注入三步序提醒；**狀態寫入攔截**——對所有寫檔類工具（Edit/Write/ApplyPatch／MCP 寫檔）比對節點與目標路徑，把 §1.7 寫入矩陣機械化（測試碼僅 test 節點可寫；實作碼限 build/release/pass；驗收與判決節點對 repo 完全唯讀）。hooks 故障時靜默放行（不因防護損壞工作），注入與硬擋失效即回到文件與 CLI 閘門層。
 
 **路徑錨定與破壞性命令防護**：相對路徑展開到錯誤資料夾（遞迴刪除、覆蓋指令、各語言刪除腳本——`shutil.rmtree`、`fs.rm(recursive)`、`Remove-Item -Recurse`、`del /s`、`rm -rf`、重定向截斷 `>`）是破壞的共同入口。hooks 對「破壞性模式＋相對路徑」exit 2 硬擋，要求以絕對路徑改寫；`git clean -f`／`reset --hard` 未以 `-C <絕對路徑>` 錨定即擋；直跑腳本檔含遞迴刪除 API 時——相對字面路徑即擋、僅含 API 注入警告。hook 的專案根只認平台給的絕對 `cwd`，不猜測不 fallback；`sb` CLI 由執行目錄向上錨定 `.git`／`.shiftblame` 為根，狀態與印章一律寫在根，杜絕子目錄執行產生流浪工作區。
 

@@ -221,6 +221,72 @@ writeFileSync(join(tmp, 'commit-stamp.json'), JSON.stringify({ message: 'feat: s
 const segc = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `foo -C ${other2 ?? root} build && git commit -m "feat: seg"` } });
 assert.equal(segc.status, 0);
 
+// 24e. 狀態寫入矩陣：測試碼僅 test 節點；實作碼白名單 build/release/pass；其餘擋
+const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n }));
+writeFileSync(join(tmp, 'test-lock.json'), JSON.stringify({ entries: [{ file: join(root, 'test', 'app.test.js'), sha256: 'x' }] }));
+const W = (node, tool, target) => {
+  setNode(node);
+  return spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: tool, tool_input: { file_path: target } }), encoding: 'utf8' });
+};
+// verify 節點改實作碼（本案違規場景）→ 擋
+const v1 = W('verify', 'Edit', 'src/class_actor.gd');
+assert.equal(v1.status, 2);
+assert.match(v1.stderr, /寫入矩陣/);
+assert.match(v1.stderr, /verify/);
+// verdict 節點改實作碼 → 擋；MCP 寫檔工具（write_file）同擋
+assert.equal(W('verdict', 'Write', 'src/app.js').status, 2);
+const mcp = spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: 'mcp__ide__write_file', tool_input: { path: 'src/app.js', content: 'x' } }), encoding: 'utf8' });
+assert.equal(mcp.status, 2);
+// build / release / pass 節點寫實作碼 → 放行
+assert.equal(W('build', 'Edit', 'src/app.js').status, 0);
+assert.equal(W('release', 'Edit', 'src/app.js').status, 0);
+assert.equal(W('pass', 'Edit', 'docs/guide.md').status, 0);
+// 鎖定測試碼：test 節點放行；build/verify 節點擋
+assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0);
+const tb = W('build', 'Edit', 'test/app.test.js');
+assert.equal(tb.status, 2);
+assert.match(tb.stderr, /測試碼/);
+assert.equal(W('verify', 'Edit', 'test/app.test.js').status, 2);
+// 測試慣例路徑（未鎖定）在非 test 節點也擋（build 新增 spec 檔）
+assert.equal(W('build', 'Write', 'src/app.spec.js').status, 2);
+// test 節點寫實作碼 → 擋（測試狀態只寫測試）
+const timpl = W('test', 'Edit', 'src/app.js');
+assert.equal(timpl.status, 2);
+assert.match(timpl.stderr, /實作檔/);
+// .shiftblame 內永遠可寫；讀取類工具不攔
+assert.equal(W('verify', 'Edit', '.shiftblame/tmp/evidence.txt').status, 0);
+const rd = spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: 'mcp__ide__read_file', tool_input: { path: 'src/app.js' } }), encoding: 'utf8' });
+assert.equal(rd.status, 0);
+// 專案外檔案不歸矩陣管
+assert.equal(W('verify', 'Edit', 'C:/Windows/Temp/x.txt').status, 0);
+setNode('verify');
+
+// 24f. 實攻修復回歸：_test_ 中綴不再誤判、裝置前綴、decoy 鍵、put/manage 工具、駝峰鍵
+// build 寫「名含 test_ 的實作檔」→ 放行（誤擋消除）
+assert.equal(W('build', 'Edit', 'src/test_utils.js').status, 0);
+assert.equal(W('build', 'Edit', 'src/renamed_test_helper.js').status, 0);
+// test 節點寫 src 內非測試慣例檔 → 仍擋（實作檔）
+assert.equal(W('test', 'Edit', 'src/renamed_test_helper.js').status, 2);
+// 副檔名慣例保留：foo.test.js / foo_test.py 於非 test 節點擋
+assert.equal(W('build', 'Write', 'src/foo.test.js').status, 2);
+assert.equal(W('build', 'Write', 'src/foo_test.py').status, 2);
+// `\\?\` 裝置前綴 → 擋（相對 root 的 src；於 verify 節點）
+setNode('verify');
+const dev = spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: 'Write', tool_input: { file_path: '\\\\?\\' + root.replace(/\//g, '\\') + '\\src\\app.js' } }), encoding: 'utf8' });
+assert.equal(dev.status, 2);
+// decoy 鍵：file_path 指工作區但 path 指實作碼 → 擋
+const decoy = spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: 'mcp__ide__write_file', tool_input: { file_path: '.shiftblame/tmp/x.txt', path: 'src/app.js' } }), encoding: 'utf8' });
+assert.equal(decoy.status, 2);
+// 駝峰鍵 filePath → 擋
+const camel = spawnSync(process.execPath, [hook], { input: JSON.stringify({ hook_event_name: 'PreToolUse', cwd: root, tool_name: 'Write', tool_input: { filePath: 'src/app.js' } }), encoding: 'utf8' });
+assert.equal(camel.status, 2);
+// 工具名 put／filesystem_manage（雙用途）於 verify 寫 src → 擋
+assert.equal(W('verify', 'mcp__fs__put', 'src/app.js').status, 2);
+assert.equal(W('verify', 'mcp__godot__filesystem_manage', 'src/app.js').status, 2);
+// 讀取豁免：read_file 於 verify 讀 src → 放行
+assert.equal(W('verify', 'mcp__ide__read_file', 'src/app.js').status, 0);
+setNode('verify');
+
 // 25. sb 根錨定：在 git 根的子目錄執行 sb init，狀態檔落在根
 const projRoot = mkdtempSync(join(tmpdir(), 'sb-anchor-'));
 mkdirSync(join(projRoot, 'sub/deeper'), { recursive: true });
@@ -229,4 +295,11 @@ const sbInit = spawnSync(process.execPath, [join(repo, 'cli', 'bin', 'sb.mjs'), 
 assert.equal(sbInit.status, 0);
 assert.ok(existsSyncFn(join(projRoot, '.shiftblame', 'flow-state.json')), '狀態檔必須落在專案根，不是子目錄');
 assert.ok(!existsSyncFn(join(projRoot, 'sub/deeper/.shiftblame')), '子目錄不得長出流浪 .shiftblame');
+// sb init 落實 .gitignore（verdict 樹檢查依賴）
+assert.match(readFileSync(join(projRoot, '.gitignore'), 'utf8'), /\.shiftblame\//);
+// commitmsg 於 verify 節點 → 拒（防驗收期間偷改＋偷 commit 洗白鏈）
+writeFileSync(join(projRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify' }));
+const cmVer = spawnSync(process.execPath, [join(repo, 'cli', 'bin', 'sb.mjs'), 'commitmsg', 'feat: 偷蓋'], { cwd: projRoot, encoding: 'utf8' });
+assert.equal(cmVer.status, 1);
+assert.match(cmVer.stderr, /不得產生 commit 印章/);
 rmSync(projRoot, { recursive: true, force: true });

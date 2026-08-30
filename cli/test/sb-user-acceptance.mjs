@@ -123,6 +123,9 @@ const reviewVerify = (name, file) => {
 
 （外部子代理全文）攻擊一：SATISFIED 證據的反證嘗試是否真的操作過邊界輸入。攻擊二：SHA-256 只證明檔案未變，不證明內容由實際執行產生。`);
 };
+writeFileSync(join(root, 'seed.txt'), '驗收期間被偷改\n');
+assert.match(run('next', 'verdict').stderr, /偏離待驗存檔/);
+writeFileSync(join(root, 'seed.txt'), 'seed\n');
 reviewVerify('review-verify-demo-001-1.md', 'verify-001.md');
 assert.equal(run('next', 'verdict').status, 0);
 writeFileSync(evidence1, '證據遭到替換。\n');

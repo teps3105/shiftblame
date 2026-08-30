@@ -15,7 +15,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
 import { dirname, join, isAbsolute, relative, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -449,7 +449,13 @@ function gate(st, target, opts) {
       break;
     }
 
-    case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）
+    case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）＋待驗存檔樹漂移核對
+      // 驗收期間 repo 不得變更（.shiftblame/ 已 gitignore）——實作碼在驗收狀態被改即擋（狀態寫入矩陣）
+      try {
+        const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
+        if (dirty.trim()) problems.push('驗收期間 working tree 已偏離待驗存檔——實作碼／測試碼在驗收狀態被修改（狀態寫入矩陣違規）；MUST 回實作狀態修正後建立新存檔重新驗收');
+        else passes.push('working tree 與待驗存檔一致（驗收期間未動 repo）');
+      } catch { /* 非 git 環境略過 */ }
       const rpt = latestVerify();
       if (!rpt) { problems.push(`${TMP}/verify-*.md 沒有錨定目前 G1 契約與 ms 的報告——驗收 MUST 落結構化報告`); break; }
       checkAdversarialReview(st, 'verify', '判決前（對抗成果）', [rpt.name, `報告SHA256=${sha256(join(TMP, rpt.name))}`], [join(TMP, rpt.name)], opts, problems, passes);
@@ -566,6 +572,12 @@ function cmdInit(slug) {
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
+  // 落實 §5：.shiftblame/ MUST 經 .gitignore 排除——缺漏即補（verdict 樹漂移檢查依賴此排除）
+  try {
+    const giPath = join(ROOT, '.gitignore');
+    const gi = existsSync(giPath) ? readFileSync(giPath, 'utf-8') : '';
+    if (!/(^|\n)\.shiftblame\/?(\n|$)/.test(gi)) appendFileSync(giPath, (gi && !gi.endsWith('\n') ? '\n' : '') + '.shiftblame/\n');
+  } catch { /* 非 git 環境略過 */ }
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'think', history: [] }, null, 2));
   fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, `目前節點：think（sb-think 意圖確認）`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
@@ -640,6 +652,14 @@ function cmdAmend(opts) {
 
 function cmdCommitmsg(msg) {
   if (!msg) usage();
+  // 驗收／判決狀態不得產生印章——防「驗收期間偷改＋偷 commit」的洗白鏈（印章應於實作完成時取得）
+  try {
+    const stPath = join(ROOT, '.shiftblame', 'flow-state.json');
+    if (existsSync(stPath)) {
+      const node = JSON.parse(readFileSync(stPath, 'utf-8')).node;
+      if (node === 'verify' || node === 'verdict') die([`節點 ${node} 不得產生 commit 印章——驗收／判決狀態對 repo 唯讀（寫入矩陣）；回實作狀態（經判決返工）後才可存檔`]);
+    }
+  } catch (e) { if (e && e.code === 'ERR_STRING_TOO_LONG') throw e; /* 狀態檔異常視為無狀態 */ }
   const problems = [];
   const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
   if (!m) problems.push('缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）');
