@@ -1,6 +1,6 @@
 {
   "name": "shiftblame-cli",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "shiftblame CLI——sb 流程狀態機閘門、契約鎖定與驗收證據檢查。",
   "type": "module",
   "scripts": {

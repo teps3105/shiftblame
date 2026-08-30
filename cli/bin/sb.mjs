@@ -1,22 +1,21 @@
 #!/usr/bin/env node
-// sb — shiftblame 流程狀態機 CLI：把流程規範鎖死為可機械查核的閘門。
+// sb — shiftblame 流程狀態機 CLI：閘門只讀 git 事實與 flow-state.json（1.4）。
 //
 // 對抗兩類系統性問題：
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
 //      對策：單向節點鏈＋每個推進點的前置閘門；推進 MUST 跑 `sb next`，閘門
 //      不過即擋（exit 1）。階段邊界不是老闆決策；只有真正的語義決策才留痕。
-//   2. 「五假」——假需求（G1 驗收不可查核）、假規劃（G3 無失敗模式/步驟）、
-//      假測試（無斷言）、假驗收（反證敷衍/未驗寫「無」）、假對抗（放行/判決/
-//      收斂缺外部子代理對抗檢閱記錄）。
-//      對策：各階段閘門內建機械訊號檢查（見 CHECKS）。
+//   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假測試（test 節點
+//      無定稿 commit）由 git 判定；假驗收、假對抗屬文件層義務——由層間停靠
+//      老闆 checkpoint、時點對抗與 sb report 外部審計承擔（閘門不讀 tmp）。
 //
 // 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
 // 執行；寫入僅 <repo>/.shiftblame/（狀態檔 flow-state.json 與 tmp/）。
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
-import { dirname, join, isAbsolute, relative, resolve } from 'node:path';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame——子目錄執行不得在錯誤位置長出流浪工作區
@@ -34,21 +33,13 @@ const ROOT = findRoot();
 const SB_DIR = join(ROOT, '.shiftblame');
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');
-const LOCK_FILE = join(TMP, 'test-lock.json');
-const CONTRACT_FILE = join(TMP, 'g1-contract.md');
 
 // ———— 檢查規則常數（五假訊號，日後按需調整） ————
 
 // 假需求：驗收標準不得含不可查核的模糊謂詞
 const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好', '友好', '自如', '更好', '優化用戶體驗', 'works properly', 'user-friendly'];
-// 假測試：測試碼至少出現一次斷言 API（跨語言常見集）
-const ASSERT_RE = /\b(assert\w*|expect\w*|should(?:\.\w+)?|assertEq|assertAlmostEqual|CHECK|FAIL\(|t\.Error|t\.Fatal|expectException|toBe|toEqual|to_be)\b/;
 // 敷衍詞（段落全為此類 = 假）
 const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
-// 複核結論列點的出處 token：AC-ID／檔:行／長 hex（hash）／命令、輸出、證據檔標記
-const CITATION_RE = /(AC-\d{2,}|\S+\.\w+:\d+|[a-f0-9]{40,}|命令[:：]|輸出[:：]|證據檔[:：])/;
-// 列點：標記後空格可有可無（CJK 慣例 `-重點`、`1、重點` 都算），但標記後必須有實字
-const BULLET_RE = /^\s*(?:[-*•]|\d+[.、)])[ \t]*\S/;
 
 // ———— 節點鏈（單向；next = 允許的下一步） ————
 
@@ -58,12 +49,12 @@ const FLOW = {
   research: { next: ['plan'], desc: '研究 G2' },
   plan:     { next: ['release'], desc: '規劃 G3' },
   release:  { next: ['test', 'commit'], desc: '放行（§10 核對後）' },  // release→commit --direct = 預設直接修正
-  test:     { next: ['build'], desc: '測試碼定義＋lock' },
+  test:     { next: ['build'], desc: '測試碼定義＋定稿 commit' },
   build:    { next: ['commit'], desc: '實作＋實機驗證' },
   commit:   { next: ['verify', 'converge'], desc: 'commit 存檔＝建立待驗對象（先於驗收）' },
   verify:   { next: ['verdict'], desc: '對存檔跑 CI 到綠燈＋報告' },
   verdict:  { next: ['converge', 'test'], desc: '秘書判決：通過→收斂或開下一功能小循環' },
-  converge: { next: ['ms-done'], desc: 'ms 收斂（三面向重審）' },
+  converge: { next: ['test', 'ms-done'], desc: 'ms 收斂（三面向重審；不合格→test 返工回同 ms）' },
   'ms-done': { next: ['audit', 'pass'], desc: 'ms 已完成：承接已授權的新 ms 或最終 PASS' },
   pass:     { next: [], desc: 'slug PASS（終態，收尾保鮮＋archive 由 sb-end 執行）' },
 };
@@ -90,22 +81,19 @@ const usage = (code = 2) => {
                                         （老闆決策點：最終 pass、release→test 層間放行）
                                         --direct：release→commit 預設直接修正路徑
                                         --self-attack：本次對抗檢閱為身分切換自攻（外部子代理不可用）
-                                        降級留痕；記錄宣告自攻但未帶旗標（或反向）即擋
+                                        的 history 留痕（1.4：旗標僅記錄降級事實，揭露義務見 SKILL §3）
   sb amend --boss-ok                    顯式修約：解除 G1 鎖定並退回 audit
-  sb lock <測試碼...>                    測試定稿：斷言＋AC-ID 回指＋G1/測試 hash 鎖定
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
                                         （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）
                                         任何 commit 前 MUST 通過（sb-commit 技能）；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
-放行／判決／收斂閘門另強制外部子代理對抗檢閱記錄：
-  tmp/review-plan|verify|converge-<slug>-<ms>-*.md（四段：## 對抗要點（≥2 列點）、
-  ## 複核結論（每列點綁出處）、## 反向對抗（複核誠實性判定，不成立即擋）、## 附錄（原始輸出全文）；
-  錨定 plan=G3-SHA256＋G1 全 AC-ID、verify=報告檔名＋報告SHA256、converge=G1-SHA256；
-  外部子代理不可用時切換身分自攻最嚴厲攻擊，推進帶 --self-attack 並向老闆揭露）
-release→test 另需層間停靠放行簡報 tmp/release-brief-<slug>-<ms>-*.md（引用 review-plan 記錄＋## 人話 段）
-verify 報告另需 ## 人話 段（做了什麼／修了什麼／改了什麼——SKILL §3 人話三時點③）`);
+閘門只讀 git 事實與 flow-state.json（SKILL §3：tmp 是自由傾倒區，流程零依賴）：
+  G1 契約＝放行時 hash 記入 flow-state，每次推進重算核對
+  測試定稿＝test 節點期間的 commit（git 判定）；驗收期間 working tree 與待驗 commit 一致
+  對抗三時點與驗收報告為文件層義務（SKILL §3）：記錄寫 tmp 自由區，
+  由層間停靠簡報（老闆 checkpoint）與 sb report 外部審計消費`);
   process.exit(code);
 };
 
@@ -172,18 +160,6 @@ function section(text, keyword) {
   return start < 0 ? null : lines.slice(start + 1).join('\n').trim();
 }
 
-// 人話段專用：以渲染可見文字為準（剝註解與圍籬）、精確 `## 人話` 標題（容許 CommonMark
-// ≤3 前導空白與尾端閉合 #）、內容到下一個 H1/H2 為止（防置頂吞文、防註解／圍籬偽段）
-function humanSection(text) {
-  const lines = visibleText(text).split('\n');
-  let start = -1;
-  for (let i = 0; i < lines.length; i++) if (/^ {0,3}##\s+人話\s*#*\s*$/.test(lines[i])) { start = i; break; }
-  if (start < 0) return null;
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) if (/^ {0,3}#{1,6}\s+\S/.test(lines[i])) { end = i; break; } // 任何層級標題即段終——防 H3 吞越撐字數
-  return lines.slice(start + 1, end).join('\n').trim();
-}
-
 // 段落實質性：非空、有效字數達標、非全敷衍行
 function substantive(body, minLen = 20) {
   if (!body) return false;
@@ -196,7 +172,6 @@ function substantive(body, minLen = 20) {
 const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
 const sha256 = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
-const AC_RE = /\bAC-\d{2,}\b/g;
 
 function acRows(text) {
   if (typeof text !== 'string') return [];
@@ -210,7 +185,6 @@ function acRows(text) {
 
 const filled = (value) => typeof value === 'string' && value.trim().length > 0 && !/^([（(]填[）)]|填|待填|todo|tbd|<[^>]+>)$/i.test(value.trim());
 const unique = (values) => [...new Set(values)];
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function validateG1Acceptance(g1, problems, passes) {
   const rows = acRows(g1);
@@ -229,7 +203,7 @@ function validateG1Acceptance(g1, problems, passes) {
 
 function validateG3Acceptance(g3, g1Ids, problems, passes) {
   const rows = acRows(g3);
-  const required = ['驗收操作', '通過判準', '需要的證據'];
+  const required = ['驗收操作', '通過判準', '需要的證據', '測試'];
   for (const row of rows) {
     const missing = required.filter((key) => !filled(row.fields[key]));
     if (missing.length) problems.push(`G3 ${row.id} 缺實質欄位：${missing.join('、')}`);
@@ -243,128 +217,12 @@ function validateG3Acceptance(g3, g1Ids, problems, passes) {
   if (!problems.length) passes.push(`G3 已逐項排程 ${g1Ids.length} 個 G1 驗收條件`);
 }
 
-function reportScope(text) {
-  return {
-    sha256: text.match(/^G1-SHA256\s*[:：=]\s*([a-f0-9]{64})\s*$/im)?.[1],
-    ms: text.match(/^MS\s*[:：=]\s*(\d{3})\s*$/im)?.[1],
-  };
-}
-
-function validateAcceptanceReport(st, report, g1Ids, expectedIds, expectedCommit, problems, passes) {
-  const scope = reportScope(report.text);
-  if (scope.sha256 !== st.g1Contract?.sha256 || scope.ms !== st.ms) {
-    problems.push(`${report.name} 未錨定目前 G1 契約（MUST 含 G1-SHA256=${st.g1Contract?.sha256} 與 MS=${st.ms}）`);
-    return [];
-  }
-  const rows = acRows(report.text);
-  const ids = rows.map((row) => row.id);
-  if (unique(ids).length !== ids.length) problems.push(`${report.name} 含重複 AC-ID`);
-  const missing = expectedIds.filter((id) => !ids.includes(id));
-  if (missing.length) problems.push(`${report.name} 缺本次鎖定測試對應的驗收結果：${missing.join('、')}`);
-  const unknown = unique(ids).filter((id) => !g1Ids.includes(id));
-  if (unknown.length) problems.push(`${report.name} 含不存在於 G1 的驗收 ID：${unknown.join('、')}`);
-  const valid = [];
-  for (const row of rows) {
-    let evidenceOk = false;
-    const status = row.fields['結果'];
-    if (!['SATISFIED', 'UNSATISFIED', 'UNVERIFIED'].includes(status)) problems.push(`${report.name} ${row.id} 結果 MUST 為 SATISFIED／UNSATISFIED／UNVERIFIED`);
-    else if (status !== 'SATISFIED') problems.push(`${report.name} ${row.id}=${status}——必填 G1 驗收未滿足，不得判決通過`);
-    if (row.fields['證據'] !== 'BEHAVIOR') problems.push(`${report.name} ${row.id} 證據 MUST 為 BEHAVIOR——檔案、字串、節點或 schema 正確不足以驗收使用者需求`);
-    for (const key of ['操作', '觀察']) if (!filled(row.fields[key])) problems.push(`${report.name} ${row.id} 缺實質「${key}」證據`);
-    const evidenceFile = row.fields['證據檔'];
-    const evidenceHash = row.fields['證據SHA256'];
-    const evidencePath = filled(evidenceFile) ? resolve(evidenceFile) : null;
-    const evidenceRelative = evidencePath ? relative(resolve(TMP), evidencePath) : null;
-    if (!evidencePath || !evidenceRelative || evidenceRelative.startsWith('..') || isAbsolute(evidenceRelative) || evidencePath === resolve(join(TMP, report.name))) problems.push(`${report.name} ${row.id} 證據檔 MUST 是 ${TMP} 內獨立於報告的檔案`);
-    else if (!existsSync(evidencePath)) problems.push(`${report.name} ${row.id} 證據檔不存在：${evidenceFile}`);
-    else {
-      try {
-        if (!statSync(evidencePath).isFile()) problems.push(`${report.name} ${row.id} 證據路徑不是檔案：${evidenceFile}`);
-        else if (!/^[a-f0-9]{64}$/i.test(evidenceHash ?? '') || sha256(evidencePath) !== evidenceHash.toLowerCase()) problems.push(`${report.name} ${row.id} 證據SHA256 缺失或與證據檔不符`);
-        else evidenceOk = true;
-      } catch { problems.push(`${report.name} ${row.id} 證據檔無法讀取：${evidenceFile}`); }
-    }
-    const commit = row.fields['commit'];
-    if (!/^[a-f0-9]{7,40}$/i.test(commit ?? '')) problems.push(`${report.name} ${row.id} 缺合法 commit`);
-    else if (expectedCommit && !expectedCommit.startsWith(commit) && !commit.startsWith(expectedCommit)) problems.push(`${report.name} ${row.id} 驗收 commit ${commit} 不是目前待驗存檔 ${expectedCommit}`);
-    else if (!expectedCommit) {
-      try { execSync(`git merge-base --is-ancestor ${commit} HEAD`, { stdio: 'ignore' }); }
-      catch { problems.push(`${report.name} ${row.id} 驗收 commit ${commit} 不是目前 HEAD 的祖先`); }
-    }
-    if (status === 'SATISFIED' && row.fields['證據'] === 'BEHAVIOR' && filled(row.fields['操作']) && filled(row.fields['觀察']) && evidenceOk && /^[a-f0-9]{7,40}$/i.test(commit ?? '')) valid.push(row.id);
-  }
-  if (!problems.length) passes.push(`${report.name} 使用者驗收證據成立：${unique(valid).join('、')}`);
-  return unique(valid);
-}
-
 function checkCleanWorktree(problems, passes, timing) {
   try {
     const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
     if (dirty.trim()) problems.push(`${timing} working tree 必須乾淨——該提交的先依 sb-commit 精準提交，該捨棄的明確捨棄，不得把未分類變更帶回 G1`);
     else passes.push(`working tree 乾淨（${timing}已完成提交／捨棄判定）`);
   } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
-}
-
-// ———— 對抗檢閱閘（SKILL §3 固定強制時點） ————
-// plan＝放行前對抗方向；verify＝判決前對抗成果（錨定本次驗收報告）；converge＝收斂複驗對抗成果。
-// 錨定用內容 hash（G3-SHA256／報告SHA256／G1-SHA256）：被檢對象一改，舊記錄自然失效，
-// 防修約後重用舊 review、防同名報告重寫後舊 review 續用。mtime 排序防檔名遊戲與 ≥10 檔字典序錯亂。
-// 自攻降級：記錄宣告與 --self-attack 旗標 MUST 一致（無聲降級即擋）；自攻攻擊深度要求 ≥60 字實質。
-// review 記錄是可拋棄的衍生證據（SKILL §3 權威唯一原則）——只在當次推進查核，無事後完整性執法。
-
-function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, problems, passes) {
-  const noFile = `${TMP}/review-${kind}-${st.slug}-${st.ms}-*.md 不存在——${label} MUST 先取得一次外部子代理對抗檢閱並複核落檔（SKILL §3 固定時點；外部子代理不可用時切換身分自執行最嚴厲攻擊，推進帶 --self-attack 並於記錄標示降級）`;
-  if (!existsSync(TMP)) { problems.push(noFile); return; }
-  const re = new RegExp(`^review-${kind}-${escapeRe(st.slug)}-${st.ms}-.*\\.md$`, 'i');
-  const candidates = readdirSync(TMP).filter((f) => re.test(f))
-    .map((f) => ({ f, m: statSync(join(TMP, f)).mtimeMs }))
-    .sort((a, b) => a.m - b.m || a.f.localeCompare(b.f));
-  if (!candidates.length) { problems.push(noFile); return; }
-  const name = candidates.at(-1).f;
-  const path = join(TMP, name);
-  const raw = readFileSync(path, 'utf-8');
-  // 錨定與段落檢查以可見文字為準——HTML 註解內的錨定字串或隱藏標記不算數
-  const text = raw.replace(/<!--[\s\S]*?-->/g, '');
-  const selfAttackText = /身分切換自攻|外部子代理不可用/.test(text);
-  // 四段制：對抗要點（攻擊）→ 複核結論（裁定＋出處）→ 反向對抗（獨立方查複核誠實性）→ 附錄（原文保全）
-  const secRules = [
-    { sec: '對抗要點', min: selfAttackText ? 60 : 10, bullets: 2 },
-    { sec: '複核結論', min: 10, citations: true },
-    { sec: '反向對抗', min: 10, verdict: true },
-    { sec: '附錄', min: 30 },
-  ];
-  for (const rule of secRules) {
-    const body = section(text, rule.sec);
-    if (body === null) { problems.push(`${name} 缺「${rule.sec}」段——記錄 MUST 以 ATX 標題含四段（對抗要點／複核結論／反向對抗／附錄）`); continue; }
-    if (!substantive(body, rule.min)) { problems.push(`${name}「${rule.sec}」段敷衍${rule.min > 10 ? `（要求 ≥${rule.min} 字實質）` : ''}——不是空話`); continue; }
-    const lines = body.split('\n');
-    if (rule.bullets) {
-      const pts = lines.filter((l) => BULLET_RE.test(l)).length;
-      if (pts < rule.bullets) problems.push(`${name}「對抗要點」少於 ${rule.bullets} 個列點攻擊——一句泛用句是樣板，不是對抗`);
-    }
-    if (rule.citations) {
-      const bullets = lines.filter((l) => BULLET_RE.test(l));
-      if (!bullets.length) problems.push(`${name}「複核結論」無列點裁定——每項接受／駁回 MUST 以列點呈現並引出處，散文式結論規避出處檢查即擋`);
-      else {
-        const bare = bullets.filter((l) => !CITATION_RE.test(l));
-        if (bare.length) problems.push(`${name}「複核結論」有 ${bare.length} 個列點裁定無可查證出處（AC-ID／檔:行／命令與輸出／證據檔 SHA-256）——空口接受或駁回是複核造假入口`);
-      }
-    }
-    if (rule.verdict) {
-      const tail = lines.filter((l) => l.trim()).slice(-3).join('\n');
-      if (!/反向對抗判定[：:]\s*(?:成立|不成立)/.test(tail)) problems.push(`${name}「反向對抗」段末缺「反向對抗判定：成立／不成立」結論行——獨立方對複核誠實性的判定 MUST 明示於本段段末`);
-      else if (/反向對抗判定[：:]\s*不成立/.test(tail)) problems.push(`${name} 反向對抗判定「不成立」——複核未過獨立誠實性檢閱，MUST 修正複核或重新檢閱`);
-    }
-  }
-  for (const a of anchors) if (!text.includes(a)) problems.push(`${name} 未含錨定 ${a}——記錄 MUST 錨定本次被檢對象（對象內容變更即失效，不得重用舊檔）`);
-  const mtime = statSync(path).mtimeMs;
-  for (const ap of anchorPaths ?? []) {
-    if (existsSync(ap) && statSync(ap).mtimeMs > mtime + 1000) problems.push(`${name} 寫入時間早於被檢對象 ${ap}——先有對象才有對抗，不得預寫或重用`);
-  }
-  if (selfAttackText && !opts.selfAttack) problems.push(`${name} 宣告身分切換自攻（外部子代理不可用）——推進 MUST 帶 --self-attack 留痕，降級不得無聲通過`);
-  if (opts.selfAttack && !selfAttackText) problems.push(`推進帶 --self-attack 但 ${name} 未宣告自攻降級——旗標與記錄 MUST 一致`);
-  if (selfAttackText) passes.push(`${name} 身分切換自攻（--self-attack 留痕）——${label}時 MUST 向老闆醒目揭露降級`);
-  else passes.push(`對抗檢閱記錄實質存在：${name}`);
 }
 
 // ———— 各節點推進閘門（target = 要進入的節點） ————
@@ -376,8 +234,7 @@ function gate(st, target, opts) {
     const path = st.g1Contract.file;
     if (!path || !existsSync(path)) problems.push(`G1 契約檔不存在：${path ?? '缺失'}——不得繼續；以 sb amend --boss-ok 顯式修約`);
     else if (sha256(path) !== st.g1Contract.sha256) problems.push('G1 已偏離放行時契約——局部技術模型不得改義；以 sb amend --boss-ok 顯式修約');
-    if (!st.g1Contract.snapshot || !existsSync(st.g1Contract.snapshot) || sha256(st.g1Contract.snapshot) !== st.g1Contract.sha256) problems.push('G1 契約快照遺失或被修改——不得繼續；以 sb amend --boss-ok 顯式修約');
-    if (!problems.length) passes.push(`G1 契約鎖定核對：${st.g1Contract.sha256.slice(0, 12)}`);
+    else passes.push(`G1 契約 hash 核對：${st.g1Contract.sha256.slice(0, 12)}（封存於 flow-state）`);
   }
 
   if (opts.bossOk && !needsBossOk(st.node, target)) {
@@ -389,19 +246,17 @@ function gate(st, target, opts) {
   }
 
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
-  const verifyReports = () => {
-    if (!existsSync(TMP)) return null;
-    const c = readdirSync(TMP).filter((f) => /^verify-.*\.md$/i.test(f)).sort();
-    return c.map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') }));
-  };
-  const latestVerify = () => verifyReports()?.filter((report) => {
-    const scope = reportScope(report.text);
-    return !!st.g1Contract && scope.sha256 === st.g1Contract.sha256 && scope.ms === st.ms;
-  }).at(-1) ?? null;
-  const latestBuild = () => {
-    if (!existsSync(TMP)) return null;
-    const c = readdirSync(TMP).filter((f) => /^build-.*\.md$/i.test(f)).sort();
-    return c.length ? join(TMP, c.at(-1)) : null;
+  // 測試定稿判準＝git 事實：test 節點進入時記 baseline HEAD（cmdNext），期間有新 commit 即定稿存在
+  const gitHead = () => { try { return execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim(); } catch { return null; } };
+  const testCommitExists = () => {
+    // 判準＝git 事實：test 節點期間存在新 commit。不驗 commit 內容與斷言——
+    // 假測試（無斷言、空殼）由文件層判準擋下（SKILL §1.8、TEST.md 假測試判準）。
+    if (!st.testBaseline) return { ok: true, note: '⚠ 無 test baseline（repo 尚無任何 commit）——測試定稿未經 git 判定，如實揭露' };
+    const head = gitHead();
+    if (!head) return { ok: true, note: '⚠ 非 git 環境——測試定稿未經 git 判定，如實揭露' };
+    return head === st.testBaseline
+      ? { ok: false, note: 'test 節點期間無新 commit——測試定稿 MUST commit（假測試判準見 TEST.md，文件層擋下），定稿前不得寫實作' }
+      : { ok: true, note: 'test 節點期間存在新 commit（不驗內容；假測試由文件層判準擋下）' };
   };
 
   switch (target) {
@@ -426,7 +281,7 @@ function gate(st, target, opts) {
       else passes.push('G2 實質存在');
       break;
 
-    case 'release': { // 假規劃閘（起始效應）
+    case 'release': { // 假規劃閘（起始效應）；§10 一致性核對與對抗方向檢閱為文件層義務（SKILL §1.1、§3）
       if (!g1) problems.push('G1 不存在——無法封存需求契約');
       const g1Ids = g1 ? validateG1Acceptance(g1, problems, passes) : [];
       if (!g3) problems.push('G3 不存在');
@@ -441,170 +296,67 @@ function gate(st, target, opts) {
         else passes.push('G3 實作步驟實質存在');
         if (g1) validateG3Acceptance(g3, g1Ids, problems, passes);
       }
-      const align = mdOf(join(TMP, 'alignment-check.md'));
-      if (!align) problems.push(`${TMP}/alignment-check.md 不存在——放行前 §10 三對六向一致性核對 MUST 落記錄（G1↔G2、G2↔G3、G1↔G3）`);
-      else if (!align.includes('G1') || !align.includes('G3')) problems.push('alignment-check.md 缺三對核對內容');
-      else if (!align.includes(`G3-SHA256=${sha256(gPath(st, 3))}`)) problems.push('alignment-check.md 未含 G3-SHA256=<本次 G3 雜湊> 錨定——修約或重寫後舊核對記錄失效，MUST 重落');
-      else passes.push('§10 三對六向核對記錄存在（錨定本次 G3）');
-      if (g3) {
-        const planAnchors = [`G3-SHA256=${sha256(gPath(st, 3))}`, ...g1Ids];
-        checkAdversarialReview(st, 'plan', '放行前（對抗方向）', planAnchors, [gPath(st, 3)], opts, problems, passes);
-      }
       break;
     }
 
     case 'test':
-      // release→test（重流程首個功能）或 verdict→test（判決通過開下一功能小循環）
-      // 層間停靠機械訊號：release→test 是定義層→執行層邊界，MUST 先落放行簡報
-      if (st.node === 'release') {
-        const briefNo = `${TMP}/release-brief-${st.slug}-${st.ms}-*.md 不存在——放行邊界是層間停靠點，MUST 先落放行簡報（計畫摘要＋對抗要點與複核結論＋降級狀態）再進開發（SKILL §11）`;
-        if (!existsSync(TMP)) problems.push(briefNo);
-        else {
-          const bre = new RegExp(`^release-brief-${escapeRe(st.slug)}-${st.ms}-.*\\.md$`, 'i');
-          const briefs = readdirSync(TMP).filter((f) => bre.test(f))
-            .map((f) => ({ f, m: statSync(join(TMP, f)).mtimeMs }))
-            .sort((a, b) => a.m - b.m || a.f.localeCompare(b.f));
-          if (!briefs.length) problems.push(briefNo);
-          else {
-            const brief = readFileSync(join(TMP, briefs.at(-1).f), 'utf-8');
-            const refs = brief.match(/review-plan-[^\s`*＊]+/g) ?? [];
-            const existing = unique(refs.filter((r) => existsSync(join(TMP, r))));
-            const human = humanSection(brief);
-            if (!brief.includes('review-plan-')) problems.push('release-brief 未引用對抗檢閱記錄（review-plan-*.md）——放行簡報 MUST 含對抗要點與複核結論摘要');
-            else if (!existing.length) problems.push('release-brief 引用的 review-plan 檔名不存在於 tmp——MUST 引用實際採用的檢閱記錄檔名，不是泛指字串');
-            else if (human === null) problems.push('release-brief 缺「## 人話」段——G1~G3 整體翻譯（要做什麼、為什麼、老闆會得到什麼、UI/UX/UE 上會感覺到什麼），SKILL §3 人話三時點②');
-            else if (!substantive(human, 30)) problems.push('release-brief「人話」段敷衍——老闆讀不懂即放行不通過（人話七判準）');
-            else if (!substantive(brief, 30)) problems.push('release-brief 敷衍——放行簡報要有實質內容');
-            else passes.push(`層間停靠放行簡報存在（引用 ${existing[0]}，含人話翻譯）`);
-          }
-        }
-      }
+      // release→test（重流程首個功能）或 verdict→test（判決通過開下一功能小循環）。
+      // 層間停靠（release→test）的老闆 checkpoint 由 needsBossOk 的 --boss-ok 機械把關；
+      // 放行簡報（含人話與對抗要點）以 commentary 揭露、由老闆消費（SKILL §11）——閘門不讀 tmp。
       break;
 
-    case 'build': // 假測試閘（lock 存在＝斷言初篩已過）
-      if (!existsSync(LOCK_FILE)) problems.push(`${LOCK_FILE} 不存在——測試階段定稿後 MUST 跑 sb lock（含無斷言初篩），鎖定前不得寫實作`);
-      else {
-        const lock = readJson(LOCK_FILE);
-        if (lock.ms !== st.ms || lock.g1Sha256 !== st.g1Contract?.sha256) problems.push('test-lock.json 不屬於目前 G1 契約——MUST 重新 sb lock');
-        else if (!lock.acceptanceIds?.length) problems.push('test-lock.json 沒有 AC-ID——MUST 重新 sb lock，斷言存在不等於驗收使用者需求');
-        else passes.push(`測試已鎖定並回指 ${lock.acceptanceIds.join('、')}`);
-      }
-      break;
-
-    case 'verify': {
-      // 待驗對象＝重流程存檔（build→commit）；直接修正（release→commit --direct）無測試可驗
-      const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
-      if (!commitIn || commitIn.from !== 'build') problems.push('commit 節點非重流程存檔（build→commit）——直接修正無測試可驗，不得進驗收');
-      if (!latestBuild()) problems.push(`${TMP}/build-*.md 不存在——實作完成 MUST 落實機驗證記錄（含驗證方式與結果），未驗證不得進驗收`);
-      else passes.push('實作＋實機驗證記錄存在');
+    case 'build': { // 假測試閘：測試定稿＝test 節點期間的 commit（git 判定）
+      const tc = testCommitExists();
+      if (!tc.ok) problems.push(tc.note);
+      else passes.push(tc.note);
       break;
     }
 
-    case 'verdict': { // 假驗收閘（完成效應）＋測試鎖定核對（判決含鎖定核對）＋待驗存檔樹漂移核對
-      // 驗收期間 repo 不得變更（.shiftblame/ 已 gitignore）——實作碼在驗收狀態被改即擋（狀態寫入矩陣）
+    case 'verify': {
+      // 待驗對象＝重流程存檔（build→commit）；直接修正（release→commit --direct）無測試可驗。
+      // 實機驗證記錄與驗收報告為文件層義務（SKILL §1 驗收鏈）——記錄寫 tmp 自由區，閘門不讀。
+      const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
+      if (!commitIn || commitIn.from !== 'build') problems.push('commit 節點非重流程存檔（build→commit）——直接修正無測試可驗，不得進驗收');
+      else passes.push('待驗對象＝重流程存檔（build→commit）');
+      break;
+    }
+
+    case 'verdict': { // 判決閘：working tree 與待驗 commit 一致（git 判定）；驗收證據與判決為文件層義務（SKILL §1 驗收鏈）
       try {
         const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
-        if (dirty.trim()) problems.push('驗收期間 working tree 已偏離待驗存檔——實作碼／測試碼在驗收狀態被修改（狀態寫入矩陣違規）；MUST 回實作狀態修正後建立新存檔重新驗收');
-        else passes.push('working tree 與待驗存檔一致（驗收期間未動 repo）');
+        if (dirty.trim()) problems.push('驗收期間 working tree 已偏離待驗 commit——實作碼／測試碼在驗收狀態被修改（狀態寫入矩陣違規）；MUST 回實作狀態修正後建立新 commit 重新驗收');
+        else passes.push('working tree 與待驗 commit 一致（驗收期間未動 repo）');
       } catch { /* 非 git 環境略過 */ }
-      const rpt = latestVerify();
-      if (!rpt) { problems.push(`${TMP}/verify-*.md 沒有錨定目前 G1 契約與 ms 的報告——驗收 MUST 落結構化報告`); break; }
-      checkAdversarialReview(st, 'verify', '判決前（對抗成果）', [rpt.name, `報告SHA256=${sha256(join(TMP, rpt.name))}`], [join(TMP, rpt.name)], opts, problems, passes);
-      const fals = section(rpt.text, '反證嘗試');
-      if (fals === null) problems.push(`${rpt.name} 缺「反證嘗試」段——做了什麼嘗試讓它失敗（邊界輸入/拔依賴/極端情境）與結果（假驗收/完成效應訊號）`);
-      else if (!substantive(fals, 10)) problems.push(`${rpt.name}「反證嘗試」段敷衍（全為 無/無法/不適用）`);
-      else passes.push('反證嘗試實質存在');
-      const unv = section(rpt.text, '未驗');
-      if (unv === null) problems.push(`${rpt.name} 缺「未驗」段——未覆蓋面向清單`);
-      else if (/^(無|none|n\/?a|沒有|暫無)[。.\s]*$/i.test(unv)) problems.push(`${rpt.name}「未驗」寫「無」——總有未覆蓋的面向，寫「無」即不自知（假驗收訊號）`);
-      else if (!substantive(unv, 10)) problems.push(`${rpt.name}「未驗」段敷衍`);
-      else passes.push('未驗清單實質存在');
-      const humanV = humanSection(rpt.text);
-      if (humanV === null) problems.push(`${rpt.name} 缺「## 人話」段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈），SKILL §3 人話三時點③`);
-      else if (!substantive(humanV, 30)) problems.push(`${rpt.name}「人話」段敷衍——老闆讀不懂即判決不通過（人話七判準）`);
-      else passes.push('人話翻譯實質存在');
-      if (existsSync(LOCK_FILE)) {
-        const { entries, acceptanceIds = [] } = readJson(LOCK_FILE);
-        let lockOk = true;
-        for (const e of entries) {
-          if (!existsSync(e.file)) { problems.push(`測試碼被刪除（違反測試鎖定）：${e.file}`); lockOk = false; continue; }
-          const now = createHash('sha256').update(readFileSync(e.file)).digest('hex');
-          if (now !== e.sha256) { problems.push(`測試碼被變更（違反測試鎖定）：${e.file}`); lockOk = false; }
-        }
-        if (lockOk) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變`);
-        const g1Ids = validateG1Acceptance(g1, problems, passes);
-        let head = null;
-        try { head = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim(); }
-        catch { problems.push('無法取得待驗 commit——使用者驗收證據無法錨定'); }
-        validateAcceptanceReport(st, rpt, g1Ids, acceptanceIds, head, problems, passes);
-      } else problems.push('test-lock.json 遺失——無法確認本次驗收對應哪些 G1 AC-ID');
       break;
     }
 
     case 'commit': {
       if (opts.direct) {
-        if (st.node !== 'release') problems.push(`--direct 僅限 release→commit（預設直接修正路徑）；目前節點 ${st.node} 的 commit 邊必須走重流程（測試鎖定核對）`);
-        const declaration = mdOf(join(TMP, 'direct-change.md'));
-        // 唯一宣告：鍵的全部宣告恰一筆且值正確——矛盾雙宣告（自行發現＋老闆指示並存）即擋
-        const sole = (keyRe, valRe) => {
-          const decls = declaration ? [...declaration.matchAll(keyRe)] : [];
-          return decls.length === 1 && valRe.test(decls[0][1] ?? decls[0][0]);
-        };
-        if (!declaration || !sole(/^USER_OBSERVABLE\s*=\s*(.+)$/gim, /^NO\s*$/) || !sole(/^理由\s*=\s*(.+)$/gim, /^\S.+$/)) problems.push(`${TMP}/direct-change.md 必須「唯一」聲明 USER_OBSERVABLE=NO 並填實理由（矛盾雙宣告即擋）——使用者可觀察行為不得繞過驗收`);
-        else if (!sole(/^來源\s*=\s*(.+)$/gim, /^自行發現\s*$/)) problems.push('direct 豁免僅限 agent 自行循環發現的微修（direct-change.md MUST「唯一」聲明 來源=自行發現，矛盾雙宣告即擋）——老闆發現的意圖不豁免，回 sb-think 意圖路由（SKILL §2、§1.4）');
-        else passes.push('直接修正已唯一聲明不改變使用者可觀察行為且來源為自行發現（仍須於收斂滿足全部 G1 驗收）');
+        // 直接修正聲明（USER_OBSERVABLE=NO、來源=自行發現）為文件層義務（SKILL §1.4）——閘門不讀 tmp
+        if (st.node !== 'release') problems.push(`--direct 僅限 release→commit（預設直接修正路徑）；目前節點 ${st.node} 的 commit 邊必須走重流程`);
+        else passes.push('直接修正路徑（聲明義務見 SKILL §1.4；收斂時仍須滿足全部 G1 驗收）');
         break;
       }
-      if (!existsSync(LOCK_FILE)) { problems.push('無 test-lock.json——重流程路徑存檔前必查測試鎖定'); break; }
-      const { entries, acceptanceIds = [], ms, g1Sha256 } = readJson(LOCK_FILE);
-      if (ms !== st.ms || g1Sha256 !== st.g1Contract?.sha256 || !acceptanceIds.length) problems.push('test-lock.json 未錨定目前 G1 契約與 AC-ID——MUST 重新 sb lock');
-      for (const e of entries) {
-        if (!existsSync(e.file)) { problems.push(`測試碼被刪除：${e.file}`); continue; }
-        const now = createHash('sha256').update(readFileSync(e.file)).digest('hex');
-        if (now !== e.sha256) problems.push(`測試碼被變更（違反測試鎖定）：${e.file}`);
-      }
-      if (!problems.length) passes.push(`測試鎖定核對：${entries.length} 個測試碼 hash 未變（存檔即待驗對象，先於驗收）`);
+      const tc = testCommitExists();
+      if (!tc.ok) problems.push(tc.note);
+      else passes.push(tc.note);
       break;
     }
 
     case 'converge': {
       checkCleanWorktree(problems, passes, '收斂前');
-      if (st.g1Contract?.sha256) {
-        // 收斂檢閱 MUST 晚於本契約最後一份驗收報告——防放行當下預寫備用
-        const vr = verifyReports()?.filter((report) => {
-          const scope = reportScope(report.text);
-          return scope.sha256 === st.g1Contract?.sha256 && scope.ms === st.ms;
-        }) ?? [];
-        checkAdversarialReview(st, 'converge', '收斂（對抗成果）', [`G1-SHA256=${st.g1Contract.sha256}`], vr.length ? [join(TMP, vr.at(-1).name)] : [], opts, problems, passes);
-      }
       const commitIn = st.history.filter((h) => h.to === 'commit').at(-1);
       if (commitIn && commitIn.from === 'build' && st.node !== 'verdict') {
         problems.push('重流程存檔（build→commit）未經驗收（verify）＋判決（verdict）即收斂——commit 存檔先於驗收，MUST 判決通過才收斂');
       }
-      if (g1) {
-        const g1Ids = validateG1Acceptance(g1, problems, passes);
-        const reports = verifyReports()?.filter((report) => {
-          const scope = reportScope(report.text);
-          return scope.sha256 === st.g1Contract?.sha256 && scope.ms === st.ms;
-        }) ?? [];
-        const satisfied = [];
-        for (const report of reports) satisfied.push(...validateAcceptanceReport(st, report, g1Ids, [], null, problems, passes));
-        const missing = g1Ids.filter((id) => !satisfied.includes(id));
-        if (missing.length) problems.push(`收斂缺使用者需求驗收證據：${missing.join('、')}——結構正確或直接修正聲明不能代替 G1 驗收`);
-        else if (g1Ids.length) passes.push(`本 ms 全部 G1 使用者驗收成立：${g1Ids.join('、')}`);
-      }
+      // 收斂的 G1 逐項驗收彙總與時點③對抗為文件層義務（SKILL §1.4.2）——由秘書審計、SLUG §4 記錄、sb report 審計
+      if (g1) validateG1Acceptance(g1, problems, passes);
       break;
     }
 
     case 'audit': {
       if (st.node === 'ms-done') checkCleanWorktree(problems, passes, '回指 G1 前');
-      // 開新 slug／ms 前的需求審計（外部 sb-report）為強制閘門——報告在推進前的節點產出，檔名自帶證據
-      const needNode = st.node === 'ms-done' ? 'ms-done' : 'think';
-      const needMs = st.node === 'ms-done' ? st.ms : '001';
-      const re = new RegExp(`^report-${escapeRe(st.slug)}-${needMs}-${needNode}-.*\.md$`, 'i');
-      const hasRpt = existsSync(TMP) && readdirSync(TMP).some((x) => re.test(x));
-      if (!hasRpt) problems.push(`開新 ${st.node === 'ms-done' ? 'ms' : 'slug'} 前缺少需求審計報告——MUST 先跑 sb report（於 ${needNode} 節點產出 tmp/report-${st.slug}-${needMs}-${needNode}-*.md）供外部審計（SKILL §1.8）`);
-      else passes.push(`需求審計報告存在（${needNode} 節點）`);
+      // 開新 slug／ms 前的需求審計（sb report）為文件層強制義務（SKILL §1.8）——閘門不讀 tmp 報告檔
       if (st.node === 'ms-done') { st.ms = String(Number(st.ms) + 1).padStart(3, '0'); passes.push(`開新 ms：${st.ms}（新里程碑回三面向制衡）`); }
       break;
     }
@@ -649,7 +401,6 @@ function cmdNext(target, opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
   if (!(target in FLOW)) die([`未知節點「${target}」。可用：${Object.keys(FLOW).join(' → ')}`], 2);
-  const allowed = FLOW[st.node].next.includes(target) && (target !== 'commit' || st.node !== 'release' || opts.direct);
   if (st.node === 'release' && target === 'commit' && !opts.direct) {
     die([`release→commit 是「預設直接修正」路徑，MUST 帶 --direct 留痕；重流程走 test→build→commit→verify→verdict（commit 存檔先於驗收）`]);
   }
@@ -661,10 +412,15 @@ function cmdNext(target, opts) {
   const prev = st.node;
   st.node = target;
   if (target === 'release') {
+    // G1 封存＝hash 記入 flow-state（唯一機械依賴檔）；不可變性由 git 與此 hash 核對承擔
     const file = gPath(st, 1);
-    writeFileSync(CONTRACT_FILE, readFileSync(file));
-    st.g1Contract = { ms: st.ms, file, snapshot: CONTRACT_FILE, sha256: sha256(file), lockedAt: new Date().toISOString() };
-    passes.push(`G1 契約已封存：${st.g1Contract.sha256.slice(0, 12)}`);
+    st.g1Contract = { ms: st.ms, file, sha256: sha256(file), lockedAt: new Date().toISOString() };
+    passes.push(`G1 契約已封存（flow-state）：${st.g1Contract.sha256.slice(0, 12)}`);
+  }
+  if (target === 'test') {
+    // 測試定稿判準的 baseline：test 節點期間的新 commit＝測試定稿 commit（git 判定）
+    try { st.testBaseline = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim(); }
+    catch { st.testBaseline = null; }
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct, selfAttack: !!opts.selfAttack };
   st.history.push(entry);
@@ -678,10 +434,7 @@ function cmdAmend(opts) {
   const st = readJson(STATE_FILE);
   if (!st.g1Contract || st.g1Contract.ms !== st.ms) die(['目前 ms 尚無已放行的 G1 契約可修約']);
   if (!new Set(['release', 'test', 'build', 'commit', 'verify', 'verdict', 'converge']).has(st.node)) die([`目前節點 ${st.node} 不允許修約`]);
-  const amendment = mdOf(join(TMP, 'amendment.md'));
-  if (!amendment || !['原條款', '新條款', '影響範圍'].every((x) => amendment.includes(x))) {
-    die([`${TMP}/amendment.md 必須先記錄「原條款／新條款／影響範圍」，不得以局部技術結論直接改寫 G1`]);
-  }
+  // 修約差異（原條款／新條款／影響範圍）為文件層義務——amendment 寫 tmp 自由區，閘門不讀（SKILL §1.4.1）
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, '回指 G1 前');
   if (problems.length) die(problems);
@@ -689,9 +442,8 @@ function cmdAmend(opts) {
   st.history.push({ from: prev, to: 'audit', at: new Date().toISOString(), bossOk: true, amendment: true });
   st.node = 'audit';
   delete st.g1Contract;
-  if (existsSync(LOCK_FILE)) unlinkSync(LOCK_FILE);
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([`${prev} → audit（G1 顯式修約）`, ...passes, '修約差異已記錄；原 G1 契約與測試鎖定已解除；G1 定稿後須重新對齊 G2/G3 並重新 release']);
+  fin([`${prev} → audit（G1 顯式修約）`, ...passes, '修約差異已記錄（amendment 寫 tmp）；原 G1 契約已解除；G1 定稿後須重新對齊 G2/G3 並重新 release']);
 }
 
 
@@ -737,21 +489,18 @@ function cmdReport() {
   const align = tmpMd(/^alignment-check\.md$/i);
   const amendment = tmpMd(/^amendment\.md$/i);
   const build = tmpMd(/^build-.*\.md$/i);
-  const verify = existsSync(TMP) ? readdirSync(TMP).filter((f) => /^verify-.*\.md$/i.test(f)).sort().map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') })).filter((report) => {
-    const scope = reportScope(report.text);
-    return !!st.g1Contract && scope.sha256 === st.g1Contract.sha256 && scope.ms === st.ms;
-  }).at(-1) ?? null : null;
-  let lock = '（無鎖定記錄——未走重流程或測試未定稿）';
-  if (existsSync(LOCK_FILE)) {
-    const { entries, lockedAt, acceptanceIds = [], g1Sha256, ms } = readJson(LOCK_FILE);
-    lock = `鎖定時間 ${lockedAt}，ms ${ms ?? '缺失'}，G1 ${g1Sha256 ?? '缺失'}，AC ${acceptanceIds.join('、') || '缺失'}，${entries.length} 個測試碼 sha256 基準`;
-  }
+  const verify = tmpMd(/^verify-.*\.md$/i);
   const contract = st.g1Contract?.ms === st.ms
-    ? `鎖定時間 ${st.g1Contract.lockedAt}，G1 sha256 ${st.g1Contract.sha256}，快照 ${st.g1Contract.snapshot ?? '缺失'}（目前${st.g1Contract.file && existsSync(st.g1Contract.file) && sha256(st.g1Contract.file) === st.g1Contract.sha256 && st.g1Contract.snapshot && existsSync(st.g1Contract.snapshot) && sha256(st.g1Contract.snapshot) === st.g1Contract.sha256 ? '一致' : '已偏離'}；任何變更即擋，須 sb amend --boss-ok）`
-    : '（尚未放行，無 G1 契約鎖定）';
+    ? `封存時間 ${st.g1Contract.lockedAt}，G1 sha256 ${st.g1Contract.sha256}（目前${st.g1Contract.file && existsSync(st.g1Contract.file) && sha256(st.g1Contract.file) === st.g1Contract.sha256 ? '一致' : '已偏離'}；任何變更即擋，須 sb amend --boss-ok）`
+    : '（尚未放行，無 G1 契約封存）';
   let gitlog = '（非 git 環境）';
   try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
-  const reviews = existsSync(TMP) ? readdirSync(TMP).filter((f) => /^review-(plan|verify|converge)-.*\.md$/i.test(f)).sort().map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') })) : [];
+  let testCommits = '（無 test baseline——未進入執行層或非 git 環境）';
+  if (st.testBaseline) {
+    try { testCommits = execSync(`git log --oneline ${st.testBaseline}..HEAD`, { encoding: 'utf-8' }).trim() || '（test baseline 之後無 commit——測試未定稿）'; }
+    catch { testCommits = '（無法讀取 test baseline 之後的 commit）'; }
+  }
+  const reviews = existsSync(TMP) ? readdirSync(TMP).filter((f) => /^review-.*\.md$/i.test(f)).sort().map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') })) : [];
   const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.selfAttack ? '，自攻降級' : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
 
   const rpt = `# shiftblame 外部審計報告 — ${st.slug}/${st.ms} @ ${st.node}
@@ -765,11 +514,12 @@ function cmdReport() {
 ## 1. 審計判準（框架規則摘要）
 
 - **節點鏈（單向）**：think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)；verdict→test 為下一功能回邊，\`sb amend --boss-ok\` 為開發期 G1 顯式修約回 audit 的唯一例外。commit＝存檔（建立待驗對象，先於驗收）。audit／release／ms-done 是工作狀態邊界，不是新決策，不得重問確認或帶 \`--boss-ok\`；只有最終 PASS 與顯式修約記錄已取得的語義授權。
-- **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次並落記錄。
-- **五假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼，鎖定時被擋）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）；假對抗（放行/判決/收斂缺外部子代理對抗檢閱記錄 review-plan|verify|converge-*.md、錨定 hash 不符或「對抗要點／複核結論」段敷衍；外部子代理不可用時主對話切換身分自攻並以 --self-attack 留痕，降級記錄要求更高攻擊深度）。
-- **測試鎖定**：測試定稿即 sha256 鎖定，判決前重算，被改過即返工——防「為綠燈逕改測試」。
-- **G1 契約鎖定**：放行即 sha256 封存，後續每次推進重算；局部技術模型不得改義，變更只能經 \`sb amend --boss-ok\` 顯式修約。
-- **使用者驗收鏈**：G1 AC-ID → G3 驗收 → test-lock → verify 報告逐項回指；必填 AC 必須是 SATISFIED＋BEHAVIOR，並錨定 G1 hash、ms 與 commit。結構正確與 CI 綠燈不能單獨代替使用者需求。
+- **§10 兩兩一致**：G1↔G2、G2↔G3、G1↔G3 三對六向，放行前核對一次（記錄寫 tmp 自由區）。
+- **五假訊號**：假需求（G1 驗收含模糊謂詞/敷衍）；假規劃（G3 缺失敗模式 premortem/實作步驟）；假測試（無斷言 API 的測試碼）；假驗收（反證嘗試敷衍或全「不適用」、未驗清單寫「無」）；假對抗（三時點對抗檢閱缺席或攻擊點空洞無出處；外部子代理不可用時主對話切換身分自攻並向老闆揭露）。
+- **測試定稿（git 承擔）**：測試於 test 節點定稿 commit，之後不得修改；不可變性由 git 承擔，驗收期間 working tree 與待驗 commit 一致（判決閘核對）。
+- **G1 契約封存**：放行即 sha256 記入 flow-state，後續每次推進重算；局部技術模型不得改義，變更只能經 \`sb amend --boss-ok\` 顯式修約。
+- **使用者驗收鏈**：G1 AC-ID → G3 驗收排程（AC-ID 與測試的映射由 G3 承載，MUST NOT 進程式碼）→ 驗收報告逐項 SATISFIED＋BEHAVIOR。結構正確與 CI 綠燈不能單獨代替使用者需求。
+- **閘門分工（1.4）**：閘門只讀 git 事實與 flow-state.json；tmp 是自由傾倒區，流程零依賴。三時點對抗、驗收報告、direct 聲明為文件層義務，由層間停靠（老闆 checkpoint）、SLUG §4 自然語言記錄與本報告外部審計消費。
 - **證據分工**：測試階段寫測試（定義「過」）；實作階段寫碼＋實機驗證；實作完成即由秘書 commit 存檔（建立待驗對象）；驗收階段對存檔跑 CI 到綠燈＋反證嘗試；判決（通過/返工）由主對話秘書獨佔——通過才開下一個功能。
 
 ## 2. 流程狀態
@@ -780,7 +530,7 @@ ${hist}
 
 ## 3. G1 需求／驗收標準（全文）
 
-**契約鎖定**：${contract}
+**契約封存**：${contract}
 
 ${g(1)}
 
@@ -802,9 +552,9 @@ ${amendment ? amendment.text : '（尚無 G1 修約記錄）'}
 
 ${align ? align.text : '（尚無 alignment-check.md——未到放行或未落記錄）'}
 
-### 6.2 測試鎖定
+### 6.2 測試定稿 commit（test baseline 之後，git 判定）
 
-${lock}
+${testCommits}
 
 ### 6.3 實作＋實機驗證記錄（最新）
 
@@ -814,7 +564,7 @@ ${build ? build.text : '（尚無 build 記錄）'}
 
 ${verify ? verify.text : '（尚無驗收報告）'}
 
-### 6.5 對抗檢閱記錄（review-plan／verify／converge 全文）
+### 6.5 對抗檢閱記錄（tmp 內全部 review-*.md 全文）
 
 ${reviews.length ? reviews.map((r) => `#### ${r.name}\n\n${r.text}`).join('\n\n') : '（尚無對抗檢閱記錄）'}
 
@@ -835,36 +585,6 @@ ${gitlog}
   fin([`外部審計報告已產生 → ${outPath}`, '秘書複核＋填 §8 審計問題後交付老闆（外部 agent 無法讀 repo，本檔即全部材料）']);
 }
 
-function cmdLock(files) {
-  if (!files.length) usage();
-  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readJson(STATE_FILE);
-  if (!st.g1Contract || st.g1Contract.ms !== st.ms) die(['目前 ms 尚無已放行的 G1 契約——不得鎖定無需求依據的測試']);
-  if (st.node !== 'test') die([`目前節點 ${st.node} 不允許鎖定測試——MUST 先進入 test`]);
-  if (!existsSync(st.g1Contract.file) || sha256(st.g1Contract.file) !== st.g1Contract.sha256 || !existsSync(st.g1Contract.snapshot) || sha256(st.g1Contract.snapshot) !== st.g1Contract.sha256) die(['G1 原檔或封存快照已偏離——不得鎖定測試；先走顯式修約']);
-  const g1Problems = [], g1Passes = [];
-  const g1Ids = validateG1Acceptance(mdOf(gPath(st, 1)), g1Problems, g1Passes);
-  if (g1Problems.length) die(g1Problems);
-  const problems = [];
-  const entries = [];
-  const acceptanceIds = [];
-  for (const f of files) {
-    const abs = isAbsolute(f) ? f : resolve(f);
-    if (!existsSync(abs)) { problems.push(`測試碼不存在：${f}`); continue; }
-    const code = readFileSync(abs, 'utf-8');
-    if (!ASSERT_RE.test(code)) problems.push(`${f} 疑似無斷言（找不到任何斷言 API）——假測試訊號，測試碼 MUST 有真實斷言`);
-    const ids = unique(code.match(AC_RE) ?? []);
-    const unknown = ids.filter((id) => !g1Ids.includes(id));
-    if (unknown.length) problems.push(`${f} 回指不存在於 G1 的驗收 ID：${unknown.join('、')}`);
-    acceptanceIds.push(...ids);
-    entries.push({ file: abs, sha256: createHash('sha256').update(code).digest('hex'), acceptanceIds: ids });
-  }
-  if (!acceptanceIds.length) problems.push('鎖定測試沒有任何 AC-ID——斷言存在不等於驗收使用者需求');
-  if (problems.length) die(problems);
-  writeFileSync(LOCK_FILE, JSON.stringify({ lockedAt: new Date().toISOString(), ms: st.ms, g1Sha256: st.g1Contract.sha256, acceptanceIds: unique(acceptanceIds), entries }, null, 2));
-  fin([`鎖定 ${entries.length} 個測試碼，回指 ${unique(acceptanceIds).join('、')} → ${LOCK_FILE}`]);
-}
-
 // ———— main ————
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -883,7 +603,6 @@ switch (cmd) {
   case 'state': cmdState(); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'amend': cmdAmend(flags); break;
-  case 'lock': cmdLock(pos); break;
   case 'report': cmdReport(); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();

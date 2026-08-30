@@ -70,7 +70,8 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'release') hint = '——放行簡報揭露後停等老闆確認（簡報含 ## 人話 段），推進帶 sb next test --boss-ok（層間 checkpoint）';
-    if (st.node === 'plan') hint = '——放行前先備齊對抗方向檢閱與 §10 記錄';
+    if (st.node === 'plan') hint = '——放行前先備齊對抗方向檢閱與 §10 核對';
+    if (st.node === 'converge') hint = '——收斂前：時點③對抗成果檢閱（涵蓋本 ms 全部 direct 變更）＋sb report 供老闆 PASS 前判讀';
     return `\n[節點] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）；G1 契約鎖定中，改 G1 須 sb amend --boss-ok。`;
   } catch { return ''; }
 }
@@ -88,8 +89,9 @@ function checkLayerStopover(root, cmd) {
 }
 
 // ———— 狀態寫入攔截：把 §1.7 寫入矩陣機械化 ————
-// 測試碼（test-lock.json 所列或測試慣例路徑）僅 test 節點可寫；實作碼（.shiftblame/ 外 repo 檔）
+// 測試碼（測試慣例路徑）僅 test 節點可寫；實作碼（.shiftblame/ 外 repo 檔）
 // 白名單＝build（實作狀態）／release（direct 微修窗）／pass（收尾保鮮）；其餘節點 repo 唯讀。
+// 測試不可變性由 git 承擔（1.4：無 test-lock.json，閘門不讀 tmp）。
 // Bash 內寫檔與 MCP 讀取類工具不在此層（殘餘；shell 漂移由 verdict 樹檢查兜底）。
 
 const IMPL_WRITE_NODES = new Set(['build', 'release', 'pass']);
@@ -127,13 +129,7 @@ function checkStateWriteMatrix(root, toolInput) {
   }
   if (typeof toolInput?.uri === 'string' && /^file:/i.test(toolInput.uri)) targets.push(toolInput.uri.replace(/^file:\/\//i, ''));
   if (!targets.length) return null; // 無可辨識路徑：不猜測
-  let lockedTests = [];
-  try {
-    const lock = JSON.parse(readFileSync(join(root, '.shiftblame', 'tmp', 'test-lock.json'), 'utf8'));
-    lockedTests = (lock.entries ?? []).map((e) => e.file);
-  } catch { /* 尚無測試鎖定 */ }
   const norm = (x) => { try { return resolve(canonicalPath(x)).toLowerCase(); } catch { return String(x).toLowerCase(); } };
-  const lockedNorm = new Set(lockedTests.map(norm));
   const rootNorm = norm(root);
   const node = nodeOf(root);
   if (!node) return null; // 非治理工作區（無狀態檔）
@@ -142,7 +138,7 @@ function checkStateWriteMatrix(root, toolInput) {
     const rel = relative(root, p).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
-    const isTest = lockedNorm.has(resolve(p).toLowerCase()) || TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
+    const isTest = TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
     if (isTest) {
       if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已鎖定——節點 ${node} 不得修改測試；顯式回測試狀態須經 verdict→test 回邊並附定義錯誤理由（SKILL §1.7 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
@@ -342,17 +338,14 @@ try {
       // 狀態寫入矩陣優先：節點越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
-      // 提醒比對只認路徑鍵（防 content 字串誤觸）；release-brief／verify 逐鍵精確匹配
+      // 提醒比對只認路徑鍵（防 content 字串誤觸）；verify 報告逐鍵精確匹配
       const pathKeys = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
       const pathStr = pathKeys.map((k) => input.tool_input?.[k]).filter((v) => typeof v === 'string').join(' ');
-      const isBrief = /(^|[\\/])release-brief-[^\\/]+\.md($|\s)/i.test(pathStr);
       const isVerify = /(^|[\\/])verify-[^\\/]+\.md($|\s)/i.test(pathStr) && !/(^|[\\/])review-verify-/i.test(pathStr);
       if (/SKILL\.md|hooks[\\/]|package\.json|plugin\.json|marketplace\.json/i.test(pathStr)) {
         inject(/[\\/](package|plugin|marketplace)\.json/i.test(pathStr)
           ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
           : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：若尚未經老闆確認，MUST 先意圖揭露取得授權，並依三步序 文件修正→實作 推進（SKILL §2）；已授權則照授權範圍執行。');
-      } else if (isBrief) {
-        inject('[shiftblame] 放行簡報 MUST 含 ## 人話 段——G1~G3 整體翻譯：要做什麼、為什麼、老闆會得到什麼、UI/UX/UE 上會感覺到什麼；七判準（邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂）任一不合格即放行不通過（SKILL §3 人話三時點②）。');
       } else if (isVerify) {
         inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。');
       }

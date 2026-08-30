@@ -48,11 +48,10 @@ assert.match(ctxOf(u1), /反向對抗/);
 assert.match(ctxOf(u1), /人話三時點/);
 assert.ok(!ctxOf(u1).includes('[節點]'), '非治理目錄不應注入節點');
 
-// 2b. 寫入 release-brief／verify 檔 → 注入人話段提醒
+// 2b. 1.4：release-brief 提醒已除（層間停靠簡報為 commentary 揭露）→ 靜默；verify 檔仍注入人話提醒
 const wb = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame', 'tmp', 'release-brief-demo-001-2.md') } });
 assert.equal(wb.status, 0);
-assert.match(ctxOf(wb), /## 人話/);
-assert.match(ctxOf(wb), /UI\/UX\/UE/);
+assert.equal(wb.stdout.trim(), '', 'release-brief 已無機械提醒（1.4）');
 const wv = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame', 'tmp', 'verify-002.md') } });
 assert.equal(wv.status, 0);
 assert.match(ctxOf(wv), /問題來源/);

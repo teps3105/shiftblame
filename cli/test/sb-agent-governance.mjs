@@ -12,9 +12,9 @@ const readme = read('README.md');
 const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
-assert.equal(manifest.version, '1.3.0');
+assert.equal(manifest.version, '1.4.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.3\.0"/);
+assert.match(skill, /version: "1\.4\.0"/);
 
 const reviewSection = skill.match(/### 臨時外部子代理唯讀檢閱([\s\S]*?)### 時序調控與一致性核對/)?.[1];
 assert.ok(reviewSection, '缺少外部子代理唯讀檢閱權威段落');
@@ -34,9 +34,9 @@ assert.match(reviewSection, /不得改問老闆純技術題/);
 assert.match(reviewSection, /固定時點① 計畫完成/);
 assert.match(reviewSection, /固定時點② 每個功能驗收後/);
 assert.match(reviewSection, /固定時點③ 收斂複驗/);
-assert.match(reviewSection, /G3-SHA256=.*與 G1 全部 AC-ID/);
+assert.match(reviewSection, /G3-SHA256.*與 G1 全部 AC-ID|plan 類註明被檢 G3 的 `G3-SHA256` 與 G1 全部 AC-ID/);
 assert.match(reviewSection, /無事實的降級宣告或把自攻包裝成外部結論屬假對抗/);
-assert.match(reviewSection, /複核造假是執行者誠信違規，不是設計極限/);
+assert.match(reviewSection, /複核造假的責任歸執行者/);
 assert.match(reviewSection, /每個列點 MUST 引可查證出處/);
 assert.match(reviewSection, /反向對抗判定：成立／不成立/);
 assert.match(reviewSection, /## 反向對抗/);
@@ -69,7 +69,7 @@ assert.match(manifest.description, /不得轉嫁給老闆/);
 
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.3\.0/);
+  assert.match(reference, /revision: 1\.4\.0/);
   assert.match(reference, /外部子代理/);
   assert.match(reference, /主對話/);
   assert.match(reference, /老闆/);

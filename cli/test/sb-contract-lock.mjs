@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+// 1.4：G1 契約封存＝hash 記入 flow-state（無快照檔）；閘門只讀 git 與 flow-state
 const root = mkdtempSync(join(tmpdir(), 'sb-contract-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -21,44 +21,20 @@ assert.equal(git('-c', 'user.name=shiftblame-test', '-c', 'user.email=test@examp
 writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'plan', history: [] }));
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=操作服務的人 | 前置=已輸入合法資料 | 操作=送出資料 | 可觀察結果=畫面顯示完整結果 | 失敗邊界=不得顯示部分結果 | 證據=BEHAVIOR');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界。');
-writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-const g3Sha = createHash('sha256').update(readFileSync(join(ms, 'G3.md'))).digest('hex');
-writeFileSync(join(root, '.shiftblame/tmp/alignment-check.md'), `G1↔G2：一致\nG2↔G3：一致\nG1↔G3：一致\nG3-SHA256=${g3Sha}`);
-writeFileSync(join(root, '.shiftblame/tmp/review-plan-demo-001-1.md'), `# 對抗方向檢閱
-G3-SHA256=${g3Sha}
-
-## 對抗要點
-
-- AC-01 的驗收只看實際輸出，攻擊：既有入口若吞掉錯誤，失敗邊界不可觀察，計畫漏驗錯誤路徑。
-- 攻擊：實作步驟只寫「沿用既有入口」，未指明如何驗證輸出，執行時可能跳過驗證。
-
-## 複核結論
-
-- 駁回第一項：G3.md:1 失敗模式段已列輸入邊界漏驗為首要風敗點，AC-01 的失敗邊界有實際輸出可觀察。
-- 駁回第二項：G3.md:5 實作步驟明文「沿用既有入口並驗證輸出」，驗證不可跳過。
-
-## 反向對抗
-
-對照攻擊點與複核結論逐項查證：兩項駁回均引到 G3.md 對應行，出處存在且語義相符，複核誠實。
-反向對抗判定：成立
-
-## 附錄：外部子代理原始輸出
-
-（外部子代理全文）攻擊一：驗收只看實際輸出，若既有入口吞掉錯誤，失敗邊界不可觀察，計畫漏驗錯誤路徑。攻擊二：實作步驟未指明如何驗證輸出，執行時可能跳過驗證。建議補錯誤輸入驗證以強化邊界。`);
+writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 assert.match(run('next', 'release', '--boss-ok').stderr, /工作狀態邊界/);
 assert.equal(run('next', 'release').status, 0);
 const locked = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json')));
 assert.match(locked.g1Contract.sha256, /^[a-f0-9]{64}$/);
-assert.equal(readFileSync(locked.g1Contract.snapshot, 'utf8'), readFileSync(join(ms, 'G1.md'), 'utf8')); // snapshot 已是絕對路徑
-writeFileSync(locked.g1Contract.snapshot, '# 被竄改的契約快照'); // snapshot 為絕對路徑（根錨定）
-assert.match(run('next', 'test').stderr, /G1 契約快照遺失或被修改/);
-writeFileSync(locked.g1Contract.snapshot, readFileSync(join(ms, 'G1.md')));
+assert.equal(locked.g1Contract.snapshot, undefined); // 1.4：無快照檔——hash 只記 flow-state
+assert.equal(locked.g1Contract.file, join(ms, 'G1.md'));
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'test').stderr, /G1 已偏離放行時契約/);
-assert.match(run('amend', '--boss-ok').stderr, /原條款／新條款／影響範圍/);
-writeFileSync(join(root, '.shiftblame/tmp/amendment.md'), '# 原條款\n原驗收。\n# 新條款\n新驗收。\n# 影響範圍\nG2、G3、測試與既有實作。');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=操作服務的人 | 前置=已輸入合法資料 | 操作=送出資料 | 可觀察結果=畫面顯示完整結果 | 失敗邊界=不得顯示部分結果 | 證據=BEHAVIOR');
+// 修約後還原 G1 原文（此測試只驗契約核對與修約路徑）
+// 修約：amendment 為文件層義務（閘門不讀 tmp）；clean worktree 由 git 判定
 writeFileSync(join(root, 'app.txt'), '未分類變更\n');
 assert.match(run('amend', '--boss-ok').stderr, /回指 G1 前 working tree 必須乾淨/);
 writeFileSync(join(root, 'app.txt'), 'base\n');
@@ -67,10 +43,10 @@ const amended = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'
 assert.equal(amended.node, 'audit');
 assert.equal(amended.g1Contract, undefined);
 writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ ...amended, node: 'ms-done' }));
-writeFileSync(join(root, '.shiftblame/tmp/report-demo-001-ms-done-test.md'), '# report\n需求審計證據。');
 writeFileSync(join(root, 'app.txt'), '未分類的新里程碑變更\n');
 assert.match(run('next', 'audit', '--boss-ok').stderr, /工作狀態邊界/);
 assert.match(run('next', 'audit').stderr, /回指 G1 前 working tree 必須乾淨/);
 writeFileSync(join(root, 'app.txt'), 'base\n');
 assert.equal(run('next', 'audit').status, 0);
 assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'))).ms, '002');
+console.log('sb-contract-lock: PASS');
