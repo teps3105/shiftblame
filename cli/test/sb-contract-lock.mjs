@@ -51,10 +51,10 @@ assert.match(run('next', 'release', '--boss-ok').stderr, /工作狀態邊界/);
 assert.equal(run('next', 'release').status, 0);
 const locked = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json')));
 assert.match(locked.g1Contract.sha256, /^[a-f0-9]{64}$/);
-assert.equal(readFileSync(join(root, locked.g1Contract.snapshot), 'utf8'), readFileSync(join(ms, 'G1.md'), 'utf8'));
-writeFileSync(join(root, locked.g1Contract.snapshot), '# 被竄改的契約快照');
+assert.equal(readFileSync(locked.g1Contract.snapshot, 'utf8'), readFileSync(join(ms, 'G1.md'), 'utf8')); // snapshot 已是絕對路徑
+writeFileSync(locked.g1Contract.snapshot, '# 被竄改的契約快照'); // snapshot 為絕對路徑（根錨定）
 assert.match(run('next', 'test').stderr, /G1 契約快照遺失或被修改/);
-writeFileSync(join(root, locked.g1Contract.snapshot), readFileSync(join(ms, 'G1.md')));
+writeFileSync(locked.g1Contract.snapshot, readFileSync(join(ms, 'G1.md')));
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'test').stderr, /G1 已偏離放行時契約/);
 assert.match(run('amend', '--boss-ok').stderr, /原條款／新條款／影響範圍/);

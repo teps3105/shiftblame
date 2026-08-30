@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.1.2"
+  version: "1.2.0"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載需求、技術、計畫、測試、實作與驗收等工作狀態；階段是同一上下文中的狀態，不是身份、委派邊界或停止點。三份文件依一次定律、兩兩一致與測試鎖定落地。外部子代理檢閱有三個強制對抗時點——計畫放行前對抗方向、每個功能驗收後判決前對抗成果、收斂複驗對抗成果——複核結論強制出處綁定、原文保全與反向對抗；另有技術證據不足時的強制技術意見；主對話一律複核後自行裁定，不得把純技術選擇轉嫁給老闆。commit、判決、放行、路由、reset、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -84,7 +84,7 @@ flowchart TD
 
    每個功能（commit 單位）：未觸發重流程者直接修正；觸發者由主對話依序進入測試、實作、commit、驗收、判決狀態，功能內完整走完才開下一個。執行記錄存 `<repo>/.shiftblame/tmp/` 並整理成可判讀的結構化產出，G*.md 只放決策結論。判決含測試真實性與鎖定核對；測試無真實斷言或與 G1／G3 無對應即返工回測試狀態。本 ms 所有功能小循環完成後才觸發收斂。**功能是 commit 單位，ms 是驗收節點**。
 
-   上述「直接修正」只限不改變使用者可觀察行為，且 `tmp/direct-change.md` 必須填 `USER_OBSERVABLE=NO` 與實質理由；此聲明不是 G1 驗收證據。使用者可觀察行為一律走驗收，收斂時全部 G1 AC-ID 仍須已有 SATISFIED 行為證據。direct 路徑不經判決前對抗（時點②），累積的直接修正由收斂時點③對抗成果檢閱一併對抗——該檢閱 MUST 涵蓋本 ms 全部 direct 變更的挑戰。
+   上述「直接修正」只限不改變使用者可觀察行為，且 `tmp/direct-change.md` 必須填 `USER_OBSERVABLE=NO` 與實質理由；此聲明不是 G1 驗收證據。使用者可觀察行為一律走驗收，收斂時全部 G1 AC-ID 仍須已有 SATISFIED 行為證據。direct 路徑不經判決前對抗（時點②），累積的直接修正由收斂時點③對抗成果檢閱一併對抗——該檢閱 MUST 涵蓋本 ms 全部 direct 變更的挑戰。**豁免僅限 agent 自行循環內發現的微修**：`tmp/direct-change.md` MUST 聲明 `來源=自行發現`；**老闆發現的意圖不豁免**——老闆提出或指示的工作一律回 sb-think 意圖路由走對應流程，不得以 direct 短路（宣告 `來源=老闆指示` 即被 CLI 擋下）。
 
    **單調細化 vs 顯式修約**——開發途中發現問題時，秘書依下圖判定處置路徑：
 
@@ -203,13 +203,15 @@ flowchart TD
 
 流程規範以腳本鎖死，不依賴敘述性 MUST 的自覺遵守。**每個 slug 開始時 MUST 跑 `sb init <slug>`**（`cli/bin/sb.mjs`，npm 安裝後為 `sb` 指令），之後**每個階段推進 MUST 跑 `sb next <node>`——以腳本輸出為準，閘門不過（exit 1）MUST NOT 推進**。對抗兩類系統性問題：
 
-- **不自知推進**（自以為該推進就推進、跳過檢查而不自覺）：單向節點鏈 `think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)`（`verdict→test` 為判決通過後開下一功能小循環的回邊；commit＝存檔先於驗收），每個推進點有機械前置檢查。audit／release／ms-done 是同一授權工作的狀態邊界，MUST 自動承接且不得要求 `--boss-ok`；只有最終 PASS 及 `sb amend --boss-ok` 等真正的新語義決策記錄既有授權。
+- **不自知推進**（自以為該推進就推進、跳過檢查而不自覺）：單向節點鏈 `think→audit→research→plan→release→test→build→commit→verify→verdict→converge→ms-done→(新 ms audit｜pass)`（`verdict→test` 為判決通過後開下一功能小循環的回邊；commit＝存檔先於驗收），每個推進點有機械前置檢查。audit／release／ms-done 是同一授權工作的狀態邊界，MUST 自動承接且不得要求 `--boss-ok`；真正的老闆決策點有三——最終 PASS、`sb amend --boss-ok` 修約、以及 **release→test 層間放行**（`sb next test --boss-ok`，§11 停靠 checkpoint）。
 - **五假**（形式上完成、實質上造假）：
   - **假需求**：G1 驗收標準含模糊謂詞（完善／正常運作／順利等不可查核詞）或敷衍 → 擋。
   - **假規劃**：G3 缺「失敗模式」（premortem：假設計畫失敗了，最可能 2-3 個原因）或「實作步驟」段、放行前無 §10 三對六向核對記錄（`<repo>/.shiftblame/tmp/alignment-check.md`，含 `G3-SHA256=` 錨定——修約或重寫後舊記錄失效）→ 擋。
   - **假測試**：測試碼無任何斷言 API → `sb lock` 拒絕鎖定（鎖定未建立不得進實作）。
   - **假驗收**：驗收報告（`<repo>/.shiftblame/tmp/verify-*.md`）缺「反證嘗試」（做了什麼嘗試讓它失敗與結果）或「未驗」段、反證全為「無法／不適用」、「未驗」寫「無」→ 擋。
   - **假對抗**：放行、判決或收斂閘門缺對應的外部子代理對抗檢閱記錄（`<repo>/.shiftblame/tmp/review-plan|verify|converge-<slug>-<ms>-*.md`，含「對抗要點」（≥2 列點）、「複核結論」（每列點綁可查證出處——空口裁定是複核造假入口）、「反向對抗」（判定不成立即擋）與「附錄」（原始輸出全文）四段；錨定 hash 不符、時序顛倒或錨定藏於 HTML 註解）→ 擋。release→test 缺層間停靠放行簡報（`tmp/release-brief-*.md`，引用實際存在的 review-plan 檔名）→ 擋。ms-done 與 pass 門核對歷次推進採用的檢閱記錄未被刪改（推進時 sha256 留痕於 flow-state）→ 刪改即擋。外部子代理不可用時主對話切換身分自執行最嚴厲攻擊，記錄標示降級來源且推進帶 `--self-attack`（宣告與旗標不一致即擋）；不阻塞推進，但放行／判決／收斂時 MUST 向老闆揭露此降級。
+
+**commit 印章硬擋（hooks）**：`sb commitmsg` 通過時寫入 `<repo>/.shiftblame/tmp/commit-stamp.json`（訊息＋時間＋cwd）；`PreToolUse` hook 偵測 `git commit` 時驗印章——無印章、逾期（>10 分鐘）或訊息不符即 exit 2 阻擋。機械層不再依賴「記得走 sb-commit」。訊息 MUST 以 `-m` 傳遞（`-F` 無法驗證即擋）。
 
 配套指令：`sb state`（目前節點與閘門）、`sb amend --boss-ok`（修約且回指前工作區乾淨）、`sb lock <測試碼...>`（斷言初篩＋AC-ID／G1 hash／ms／測試碼 sha256 鎖定）、`sb report`（自包含外部審計報告）。G1→G3→測試→驗收的 AC-ID 追溯由 CLI 機械查核；驗收語意由審計面向判斷。`--direct` 只限 `tmp/direct-change.md` 聲明 `USER_OBSERVABLE=NO` 的工作，且不能取代收斂時的 G1 驗收證據。
 
@@ -221,7 +223,7 @@ MUST（必須）｜SHOULD（應）｜MAY（得）｜MUST NOT（必須不）｜SH
 
 原始命題、意圖翻譯與候選方案 MUST 分開；模型 MUST NOT 以自己的方案改寫老闆命題。框架演化只免除 slug，不免除方案揭露與修改授權。
 
-**追加意圖三步序**：老闆任何新輸入（含執行中途的 steering、修正、補充）凡新增或改變語義、範圍、破壞性目標或授權集合，agents MUST 依固定順序處理，不得把老闆當下的話直接吸收執行：①**意圖揭露**——結構化呈現新語義與既有授權的差異（改變什麼、影響哪些條文），取得老闆一次確認；②**文件修正**——確認後先把新語義寫入權威文件（SKILL／skill／README）定稿；③**實作**——文件定稿後才動 CLI、測試或程式碼。執行中收到語義類 steering 時 MUST 暫停實作回到①；只解釋既有根因、不改變授權集合的技術性補充不觸發本序，吸收後繼續。
+**追加意圖三步序**：老闆任何新輸入（含執行中途的 steering、修正、補充）凡新增或改變語義、範圍、破壞性目標或授權集合，agents MUST 依固定順序處理，不得把老闆當下的話直接吸收執行：①**意圖揭露**——結構化呈現新語義與既有授權的差異（改變什麼、影響哪些條文），取得老闆一次確認；②**文件修正**——確認後先把新語義寫入權威文件（SKILL／skill／README）定稿；③**實作**——文件定稿後才動 CLI、測試或程式碼。執行中收到語義類 steering 時 MUST 暫停實作回到①；只解釋既有根因、不改變授權集合的技術性補充不觸發本序，吸收後繼續。**老闆發現的意圖不適用任何自行豁免**——流程中的豁免（如 direct 微修）僅限 agent 自行循環內的發現，老闆指示的工作永遠走正式路由。
 
 **契約可以被執行解讀，但不得被未授權改義。** codebase 與技術證據只決定可行性及做法，不具有反向改寫已確認 G1 的需求權威；重複確認不取代封存，局部模型的 CONFORMS 判定不取代老闆對修約的授權。
 
@@ -429,6 +431,10 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 > session 冷啟動時建立脈絡，讓 sb-think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 sb-think 的前置——sb-think 第一步就是讀脈絡。
 
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；`type: command`＋`${CLAUDE_PLUGIN_ROOT}`——ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。三事件：`SessionStart` 注入本載入程序與不變量卡；`UserPromptSubmit` 每則老闆輸入注入精簡不變量卡（路由 sb-think、追加語義三步序、三時點對抗、複核出處與反向對抗），偵測到 `<repo>/.shiftblame/` 時加注當前節點；`PreToolUse` 偵測 `git commit` 時執行**印章硬擋**——訊息未經 `sb commitmsg` 驗證（10 分鐘內印章且訊息相符）即 exit 2 阻擋，修改框架文件（skills／hooks）時注入三步序提醒。hooks 故障時靜默放行（不因防護損壞工作），注入與硬擋失效即回到文件與 CLI 閘門層。
+
+**路徑錨定與破壞性命令防護**：相對路徑展開到錯誤資料夾（遞迴刪除、覆蓋指令、各語言刪除腳本——`shutil.rmtree`、`fs.rm(recursive)`、`Remove-Item -Recurse`、`del /s`、`rm -rf`、重定向截斷 `>`）是破壞的共同入口。hooks 對「破壞性模式＋相對路徑」exit 2 硬擋，要求以絕對路徑改寫；`git clean -f`／`reset --hard` 未以 `-C <絕對路徑>` 錨定即擋；直跑腳本檔含遞迴刪除 API 時——相對字面路徑即擋、僅含 API 注入警告。hook 的專案根只認平台給的絕對 `cwd`，不猜測不 fallback；`sb` CLI 由執行目錄向上錨定 `.git`／`.shiftblame` 為根，狀態與印章一律寫在根，杜絕子目錄執行產生流浪工作區。
+
 載入本 skill 後，秘書 MUST 依序唯讀：
 
 1. `<repo>/.shiftblame/SOP.md`、`<repo>/.shiftblame/ROADMAP.md` — 理解專案規則與路線圖。
@@ -472,7 +478,7 @@ G2↔G3 兩向都以 G1 需求項為錨：步驟與其對應的技術分析 MUST
 >
 > 主圖與 SLUG 合法節點清單中的「證據」「三者重審」是**收斂**（§1.4.2）的**內部子節點**（合併收斂），非獨立階段——它們包在收斂的一次自動觸發內完成。
 >
-> **授權連續性**——各階段條件分別成立時觸發，但單一 skill 完成不是停點。主對話吸收產出後立即檢查下一條件；條件成立就自動觸發下一狀態，只有遇到新的語義決策、整體完成或真正阻塞才停止。不論連續推進多少階段，每個被觸發的 skill 仍走完整內部流程。**層間停靠例外**：連續以層為界——定義層內部（審計→研究→規劃）與執行層內部（測試→實作→commit→驗收→判決）依本連續性推進不停；但定義層→執行層的放行邊界（plan→release→test）是**強制停靠點**：G3 定稿後 MUST NOT 無縫銜接 test，先完成固定時點①對抗方向檢閱與 §10 核對，秘書以 commentary 向老闆揭露放行簡報（計畫摘要、對抗要點與複核結論、降級揭露）後才推進開發。停靠只要求先揭露後推進，不等待老闆批准，不構成死鎖。
+> **授權連續性**——各階段條件分別成立時觸發，但單一 skill 完成不是停點。主對話吸收產出後立即檢查下一條件；條件成立就自動觸發下一狀態，只有遇到新的語義決策、整體完成或真正阻塞才停止。不論連續推進多少階段，每個被觸發的 skill 仍走完整內部流程。**層間停靠例外**：連續以層為界——定義層內部（審計→研究→規劃）與執行層內部（測試→實作→commit→驗收→判決）依本連續性推進不停；但定義層→執行層的放行邊界（plan→release→test）是**強制停靠點**：G3 定稿後 MUST NOT 無縫銜接 test，先完成固定時點①對抗方向檢閱與 §10 核對，秘書以 commentary 向老闆揭露放行簡報（計畫摘要、對抗要點與複核結論、降級揭露）後才推進開發。停靠是**老闆確認點**：揭露放行簡報後停等老闆確認，確認後以 `sb next test --boss-ok` 推進（留痕於 flow-state）；不等確認自行推進入實作層即繞過老闆 checkpoint，CLI 與 hooks 雙重攔截。
 
 ```mermaid
 stateDiagram-v2

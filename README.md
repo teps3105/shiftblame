@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.1.2-2ea44f.svg" alt="version 1.1.2"/>
+  <img src="https://img.shields.io/badge/version-1.2.0-2ea44f.svg" alt="version 1.2.0"/>
 </p>
 
 ---
@@ -33,7 +33,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **階段完成不是停點。** `1.0.x` 移除階段子代理後，主對話承擔原本由上層隱性完成的吸收責任：吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
 - **三面向雙面結構。** G1/G2/G3 不只在定義層——每個面向都有定義與落地兩面：測試＝G1 落地（驗收條件可執行化）、實作＝G2 落地（技術方案落地為碼）、驗收＝G3 落地（照計畫執行收證據）；執行層時序與定義層 G1→G2→G3 正向同構。任何 G2/G3 與 G1 不一致退回 G1 重新正確定義——G1 定義權唯一，G2/G3 不得自行詮釋吸收。
 - **純技術裁定不外包給老闆。** repo／第一方文件／實機證據不足或矛盾、無法可靠裁定時，主對話必須立即取得一次外部子代理的自包含唯讀技術意見，複核後自行裁定；不必先反覆失敗。只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定。
-- **對抗檢閱三時點強制。** 計畫放行前強制子代理**對抗方向**、每個功能驗收後判決前強制**對抗成果**、收斂複驗強制**對抗成果**，記錄落 `tmp/review-plan|verify|converge-*.md`（含「對抗要點」「複核結論」「反向對抗」「附錄」四段；複核結論每項裁定綁可查證出處，反向對抗判定不成立即擋——複核造假是執行者誠信違規，不是設計極限）並經 CLI 閘門查核；層內連續、層間停靠——放行邊界先揭露後推進，不得無縫銜接。外部子代理不可用時，主對話切換身分以對抗者立場執行最嚴厲攻擊並標示降級來源，放行／判決／收斂時向老闆揭露。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見，其餘高風險情境按需取得。
+- **對抗檢閱三時點強制。** 計畫放行前強制子代理**對抗方向**、每個功能驗收後判決前強制**對抗成果**、收斂複驗強制**對抗成果**，記錄落 `tmp/review-plan|verify|converge-*.md`（含「對抗要點」「複核結論」「反向對抗」「附錄」四段；複核結論每項裁定綁可查證出處，反向對抗判定不成立即擋——複核造假是執行者誠信違規，不是設計極限）並經 CLI 閘門查核；層內連續、層間停靠——放行邊界揭露簡報後停等老闆確認（`sb next test --boss-ok`），不得無縫銜接；direct 豁免僅限 agent 自行發現的微修，老闆意圖不豁免。外部子代理不可用時，主對話切換身分以對抗者立場執行最嚴厲攻擊並標示降級來源，放行／判決／收斂時向老闆揭露。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見，其餘高風險情境按需取得。
 - **階段內認知控制。** 任務依 fast／full／loop 分級；長程工作以 `Goal／Core／Verified／Open／Next` 短帳本跨 seam 保持狀態，所有「已驗證」都要附方法與涵蓋範圍。
 - **最小充分解。** 依序選擇重用既有能力、標準函式庫、平台原生能力、既有依賴與最少可用實作；修 bug 修共用根因，不簡化安全、資料保護、無障礙或明確需求。
 - **不開 slug 的事直接做。** 框架演化、微修或老闆指定不開 slug 的輕量變更，直接實行不建骨架；一旦開 slug，一律完整三面向制衡，無中途降級。
@@ -149,7 +149,9 @@ flowchart TB
 
 ## 安裝
 
-shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／PreToolUse：不變量卡、節點提醒、commit 印章硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+
+**hooks 生效說明**：hooks 同時提供路徑安全防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；`sb` CLI 一律錨定專案根。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 

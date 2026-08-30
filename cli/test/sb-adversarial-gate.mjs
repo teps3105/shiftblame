@@ -95,3 +95,17 @@ const ok = run('next', 'release', '--self-attack');
 assert.equal(ok.status, 0);
 assert.match(ok.stdout, /身分切換自攻/);
 assert.match(ok.stdout, /醒目揭露/);
+
+// 9. direct 來源閘：老闆指示不得走 direct 豁免；自行發現才可（目前節點=release，--direct 邊合法）
+writeFileSync(join(tmp, 'direct-change.md'), 'USER_OBSERVABLE = NO\n理由 = 不改變使用者可觀察行為的微修\n來源 = 老闆指示\n');
+assert.match(run('next', 'commit', '--direct').stderr, /老闆發現的意圖不豁免/);
+writeFileSync(join(tmp, 'direct-change.md'), 'USER_OBSERVABLE = NO\n理由 = 不改變使用者可觀察行為的微修\n來源 = 自行發現\n');
+const direct = run('next', 'commit', '--direct');
+assert.equal(direct.status, 0);
+assert.match(direct.stdout, /來源為自行發現/);
+// 10. direct 矛盾雙宣告即擊：自行發現與老闆指示並存不過
+writeFileSync(join(tmp, 'direct-change.md'), 'USER_OBSERVABLE = NO\n理由 = 微修\n來源 = 自行發現\n來源 = 老闆指示\n');
+const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json')));
+st.node = 'release';
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st));
+assert.match(run('next', 'commit', '--direct').stderr, /唯一|矛盾/);

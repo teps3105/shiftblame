@@ -16,10 +16,22 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, mkdirSync } from 'node:fs';
-import { join, isAbsolute, relative, resolve } from 'node:path';
+import { dirname, join, isAbsolute, relative, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
-const SB_DIR = '.shiftblame';
+// 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame——子目錄執行不得在錯誤位置長出流浪工作區
+// （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
+function findRoot(start) {
+  let dir = resolve(start ?? process.cwd());
+  for (;;) {
+    if (existsSync(join(dir, '.git')) || existsSync(join(dir, '.shiftblame'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return resolve(start ?? process.cwd());
+    dir = parent;
+  }
+}
+const ROOT = findRoot();
+const SB_DIR = join(ROOT, '.shiftblame');
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');
 const LOCK_FILE = join(TMP, 'test-lock.json');
@@ -57,8 +69,9 @@ const FLOW = {
 };
 
 // --boss-ok 只證明已取得真正的語義決策，不是階段切換許可證。
-// audit／release／ms-done 都是同一授權工作內的狀態推進；不得因此重問。
-const APPROVAL_NODES = new Set(['pass']);
+// 老闆決策點（按轉移邊）：最終 PASS、release→test 層間放行（§11 停靠 checkpoint）。
+// audit／release／ms-done 等工作狀態邊界不得要求 --boss-ok；amend 另行在 cmdAmend 強制。
+const needsBossOk = (from, to) => to === 'pass' || (from === 'release' && to === 'test');
 
 // ———— 小工具 ————
 
@@ -73,7 +86,8 @@ const usage = (code = 2) => {
   sb state                              顯示目前節點、可走下一步與其前置條件
   sb next <node> [--boss-ok] [--direct] [--self-attack]
                                         推進節點（閘門不過即擋）
-                                        --boss-ok：已取得最終 PASS 決策的留痕；一般階段不得使用
+                                        --boss-ok：已取得老闆語義決策的留痕；一般階段不得使用
+                                        （老闆決策點：最終 pass、release→test 層間放行）
                                         --direct：release→commit 預設直接修正路徑
                                         --self-attack：本次對抗檢閱為身分切換自攻（外部子代理不可用）
                                         降級留痕；記錄宣告自攻但未帶旗標（或反向）即擋
@@ -82,7 +96,8 @@ const usage = (code = 2) => {
   sb report                              彙整自包含外部審計報告 → tmp/report-*.md
                                         （當前節點＋G1/G2/G3 全文＋執行證據＋審計判準）
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）
-                                        任何 commit 前 MUST 通過（sb-commit 技能）
+                                        任何 commit 前 MUST 通過（sb-commit 技能）；
+                                        通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
 放行／判決／收斂閘門另強制外部子代理對抗檢閱記錄：
   tmp/review-plan|verify|converge-<slug>-<ms>-*.md（四段：## 對抗要點（≥2 列點）、
@@ -317,11 +332,12 @@ function gate(st, target, opts) {
     if (!problems.length) passes.push(`G1 契約鎖定核對：${st.g1Contract.sha256.slice(0, 12)}`);
   }
 
-  if (opts.bossOk && !APPROVAL_NODES.has(target)) {
-    problems.push(`「${target}」是工作狀態邊界，不是新的老闆決策——不得帶 --boss-ok 或再次詢問；沿用 sb-think 已取得的授權`);
-  } else if (APPROVAL_NODES.has(target)) {
-    if (!opts.bossOk) problems.push(`「${target}」需要新的老闆語義決策——MUST 帶 --boss-ok 記錄已取得的明確授權`);
-    else passes.push('老闆語義決策留痕（--boss-ok）');
+  if (opts.bossOk && !needsBossOk(st.node, target)) {
+    problems.push(`「${st.node} → ${target}」是工作狀態邊界，不是新的老闆決策——不得帶 --boss-ok 或再次詢問；沿用 sb-think 已取得的授權`);
+  } else if (needsBossOk(st.node, target) && !opts.bossOk) {
+    problems.push(`「${st.node} → ${target}」是老闆決策點——${target === 'pass' ? '最終 PASS' : '層間停靠放行（放行簡報經老闆確認後）'}MUST 帶 --boss-ok 記錄已取得的明確授權（SKILL §11）`);
+  } else if (opts.bossOk) {
+    passes.push('老闆語義決策留痕（--boss-ok）');
   }
 
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
@@ -466,9 +482,16 @@ function gate(st, target, opts) {
 
     case 'commit': {
       if (opts.direct) {
+        if (st.node !== 'release') problems.push(`--direct 僅限 release→commit（預設直接修正路徑）；目前節點 ${st.node} 的 commit 邊必須走重流程（測試鎖定核對）`);
         const declaration = mdOf(join(TMP, 'direct-change.md'));
-        if (!declaration || !/^USER_OBSERVABLE\s*=\s*NO\s*$/im.test(declaration) || !/^理由\s*=\s*\S.+$/im.test(declaration)) problems.push(`${TMP}/direct-change.md 必須聲明 USER_OBSERVABLE=NO 並填實理由——使用者可觀察行為不得繞過驗收`);
-        else passes.push('直接修正已聲明不改變使用者可觀察行為（仍須於收斂滿足全部 G1 驗收）');
+        // 唯一宣告：鍵的全部宣告恰一筆且值正確——矛盾雙宣告（自行發現＋老闆指示並存）即擋
+        const sole = (keyRe, valRe) => {
+          const decls = declaration ? [...declaration.matchAll(keyRe)] : [];
+          return decls.length === 1 && valRe.test(decls[0][1] ?? decls[0][0]);
+        };
+        if (!declaration || !sole(/^USER_OBSERVABLE\s*=\s*(.+)$/gim, /^NO\s*$/) || !sole(/^理由\s*=\s*(.+)$/gim, /^\S.+$/)) problems.push(`${TMP}/direct-change.md 必須「唯一」聲明 USER_OBSERVABLE=NO 並填實理由（矛盾雙宣告即擋）——使用者可觀察行為不得繞過驗收`);
+        else if (!sole(/^來源\s*=\s*(.+)$/gim, /^自行發現\s*$/)) problems.push('direct 豁免僅限 agent 自行循環發現的微修（direct-change.md MUST「唯一」聲明 來源=自行發現，矛盾雙宣告即擋）——老闆發現的意圖不豁免，回 sb-think 意圖路由（SKILL §2、§1.4）');
+        else passes.push('直接修正已唯一聲明不改變使用者可觀察行為且來源為自行發現（仍須於收斂滿足全部 G1 驗收）');
         break;
       }
       if (!existsSync(LOCK_FILE)) { problems.push('無 test-lock.json——重流程路徑存檔前必查測試鎖定'); break; }
@@ -544,7 +567,7 @@ function cmdInit(slug) {
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'think', history: [] }, null, 2));
-  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, '目前節點：think（sb-think 意圖確認）']);
+  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, `目前節點：think（sb-think 意圖確認）`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 function cmdState() {
@@ -628,7 +651,10 @@ function cmdCommitmsg(msg) {
     if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
   }
   if (problems.length) die(problems);
-  fin([`提交訊息合格：${msg}`]);
+  // 印章：hooks PreToolUse 對 git commit 硬擋的憑證（10 分鐘內、訊息相符才放行）
+  mkdirSync(TMP, { recursive: true });
+  writeFileSync(join(TMP, 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: ROOT, issuedAt: new Date().toISOString() }, null, 2));
+  fin([`提交訊息合格：${msg}`, `印章已寫入 ${join(TMP, 'commit-stamp.json')}——10 分鐘內以相同訊息 git commit -m 可過 hooks 硬擋`]);
 }
 
 function cmdReport() {

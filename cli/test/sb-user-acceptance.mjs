@@ -71,7 +71,8 @@ writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
 對抗檢閱：review-plan-demo-001-1.md 的要點與複核已納入，無自攻降級。
 §10 核對：三對六向成立，即進入開發。`);
 
-assert.equal(run('next', 'test').status, 0);
+assert.match(run('next', 'test').stderr, /老闆決策點/);
+assert.equal(run('next', 'test', '--boss-ok').status, 0);
 writeFileSync(join(root, 'test-1.mjs'), '// AC-01\nimport assert from "node:assert/strict";\nassert.equal("完整結果", "完整結果");\n');
 assert.equal(run('lock', 'test-1.mjs').status, 0);
 assert.equal(run('next', 'build').status, 0);
@@ -167,5 +168,5 @@ G1-SHA256=${contract.sha256}
 assert.equal(run('next', 'converge').status, 0);
 assert.match(run('next', 'ms-done', '--boss-ok').stderr, /工作狀態邊界/);
 assert.equal(run('next', 'ms-done').status, 0);
-assert.match(run('next', 'pass').stderr, /需要新的老闆語義決策/);
+assert.match(run('next', 'pass').stderr, /老闆決策點/);
 assert.equal(run('next', 'pass', '--boss-ok').status, 0);

@@ -19,3 +19,7 @@ description: 提交規範的封裝執行——任何 commit MUST 經 sb-commit �
 - sb-commit 只管提交動作本身的規範；**commit＝存檔**——實作完成即存檔建立不可變待驗對象，先於驗收與判決；判決不通過走返工、修復後疊加新存檔，而非禁止提交。
 - 不取代 §7 分支政策與 merge 規範（合回主分支時 slug 名稱寫在 merge 訊息）。
 - 框架演化直接在 main 提交同樣走本流程（範圍盤點＋commitmsg 驗證不豁免）。
+
+## 印章硬擋（hooks 機械強制）
+
+`sb commitmsg` 通過時自動寫入 `<repo>/.shiftblame/tmp/commit-stamp.json`（訊息＋時間＋cwd，10 分鐘有效）；ZCode 的 `PreToolUse` hook 偵測 `git commit` 時驗印章——無印章、逾期或訊息不符即 exit 2 阻擋，`-F` 檔案訊息無法驗證即擋。commit 訊息 MUST 以 `-m` 傳遞且與印章完全一致；多指令行（如 `sb commitmsg "…" && git commit -m "…"`）同訊息可過。
