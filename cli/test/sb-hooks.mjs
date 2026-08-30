@@ -38,6 +38,7 @@ assert.match(ctxOf(s), /sb-think/);
 assert.match(ctxOf(s), /人話三時點/);
 assert.match(ctxOf(s), /七判準/);
 assert.match(ctxOf(s), /版本號屬老闆決策/);
+assert.match(ctxOf(s), /對抗—修復—再對抗閉環/);
 
 // 2. UserPromptSubmit（非治理目錄）：核心卡、無節點行
 const u1 = run({ hook_event_name: 'UserPromptSubmit', prompt: '隨便做點什麼' });

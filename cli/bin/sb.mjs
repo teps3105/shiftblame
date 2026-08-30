@@ -112,28 +112,75 @@ verify 報告另需 ## 人話 段（做了什麼／修了什麼／改了什麼�
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf-8'));
 const mdOf = (p) => (existsSync(p) ? readFileSync(p, 'utf-8') : null);
 
-// 取含關鍵詞的標題段內容（到同級/更高等級標題前——slice 有終點，段不蔓延到檔尾）
+// 前處理：以「遮罩」呈現渲染後可見文字——HTML 註解與圍籬（行首 ```／~~~，含未閉合與
+// ```` 包 ``` 錯配）以空白替換但保留行列位置：行中註解後的 `##` 不會位移成行首標題、
+// 未閉合結構到檔尾一律隱藏。閘門判斷以老闆看得到的文字為準。
+const visibleText = (text) => {
+  const src = text.replace(/\r\n?/g, '\n').split('\n'); // CRLF 正規化——Windows 產檔日常
+  const out = [];
+  let fence = null; // { ch: '`' | '~', len } 開籬後狀態
+  let inComment = false;
+  for (const line of src) {
+    if (fence) {
+      // 閉合籬：標記後僅允許半形空白/tab 到行尾（CommonMark §4.5）；其餘一律是籬內容
+      const closeM = line.match(/^[ \t]{0,3}(`{3,}|~{3,})[ \t]*$/);
+      if (closeM && closeM[1][0] === fence.ch && closeM[1].length >= fence.len) {
+        fence = null;
+        out.push(' '.repeat(line.length));
+      } else {
+        out.push(' '.repeat(line.length));
+      }
+      continue;
+    }
+    if (inComment) {
+      const close = line.indexOf('-->');
+      if (close < 0) { out.push(' '.repeat(line.length)); continue; }
+      out.push(' '.repeat(close + 3) + line.slice(close + 3));
+      inComment = false;
+      continue;
+    }
+    // 開籬：行首（僅半形空白/tab）三個以上反引號或波浪號；info string 允許
+    const open = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
+    if (open) { fence = { ch: open[1][0], len: open[1].length }; out.push(' '.repeat(line.length)); continue; }
+    let res = '';
+    let rest = line;
+    for (;;) {
+      const c = rest.indexOf('<!--');
+      if (c < 0) { res += rest; break; }
+      res += rest.slice(0, c) + ' '.repeat(4);
+      rest = rest.slice(c + 4);
+      const close = rest.indexOf('-->');
+      if (close < 0) { res += ' '.repeat(rest.length); inComment = true; break; }
+      res += ' '.repeat(close + 3);
+      rest = rest.slice(close + 3);
+    }
+    out.push(res);
+  }
+  return out.join('\n');
+};
+
+// 取含關鍵詞的標題段內容（任何後續 ATX 標題（含 ≤3 縮排）即段終——防遮蔽空段吞越相鄰段）
 function section(text, keyword) {
-  const lines = text.split('\n');
-  let start = -1, level = 0;
+  const lines = visibleText(text).split('\n');
+  let start = -1;
   for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
-    if (!m) continue;
-    if (start >= 0 && m[1].length <= level) return lines.slice(start + 1, i).join('\n').trim();
-    if (start < 0 && m[2].includes(keyword)) { start = i; level = m[1].length; }
+    const h = lines[i].match(/^ {0,3}(#{1,6})\s+(.*)$/);
+    if (!h) continue;
+    if (start >= 0) return lines.slice(start + 1, i).join('\n').trim();
+    if (h[2].includes(keyword)) start = i;
   }
   return start < 0 ? null : lines.slice(start + 1).join('\n').trim();
 }
 
-// 人話段專用：剝 HTML 註解（渲染後老闆看不到的字不算數）、精確 `## 人話` 標題、
-// 內容到下一個 H1/H2 為止（防 `# 人話` 置頂吞整份技術內容、防註解偽段）
+// 人話段專用：以渲染可見文字為準（剝註解與圍籬）、精確 `## 人話` 標題（容許 CommonMark
+// ≤3 前導空白與尾端閉合 #）、內容到下一個 H1/H2 為止（防置頂吞文、防註解／圍籬偽段）
 function humanSection(text) {
-  const lines = text.replace(/<!--[\s\S]*?-->/g, '').split('\n');
+  const lines = visibleText(text).split('\n');
   let start = -1;
-  for (let i = 0; i < lines.length; i++) if (/^##\s+人話\s*$/.test(lines[i])) { start = i; break; }
+  for (let i = 0; i < lines.length; i++) if (/^ {0,3}##\s+人話\s*#*\s*$/.test(lines[i])) { start = i; break; }
   if (start < 0) return null;
   let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) if (/^#{1,2}\s+\S/.test(lines[i])) { end = i; break; }
+  for (let i = start + 1; i < lines.length; i++) if (/^ {0,3}#{1,6}\s+\S/.test(lines[i])) { end = i; break; } // 任何層級標題即段終——防 H3 吞越撐字數
   return lines.slice(start + 1, end).join('\n').trim();
 }
 
@@ -153,7 +200,7 @@ const AC_RE = /\bAC-\d{2,}\b/g;
 
 function acRows(text) {
   if (typeof text !== 'string') return [];
-  return text.split('\n').flatMap((line) => {
+  return text.replace(/\r\n?/g, '\n').split('\n').flatMap((line) => {
     const match = line.match(/^\s*-\s*(AC-\d{2,})\s*\|\s*(.+)$/);
     if (!match) return [];
     const fields = Object.fromEntries(match[2].split('|').map((part) => part.trim().split(/\s*=\s*/, 2)).filter(([key, value]) => key && value));
@@ -800,7 +847,7 @@ ${gitlog}
 
 ## 8. 秘書補充：本次審計問題（老闆／秘書填）
 
-（秘書複核後填：本次想請外部審計回答的具體問題，如「G3 失敗模式是否涵蓋 G2 指出的最大技術風險」「驗收反證嘗試是否足以支撐合格判決」）
+（秘書複核後填：本次想請外部審計回答的具體問題，如「G3 失敗模式是否涵蓋 G2 指出的最大技術風險」「驗收反證嘗試是否足以支撐合格判決」；若本輪是對抗後的修復，必問「修復是否真正解決了上一輪必修項、有無引入新問題」——對抗—修復—再對抗閉環）
 
 ---
 產生：${new Date().toISOString()}　工具：sb report（shiftblame ${process.env.SB_VERSION ?? ''}）

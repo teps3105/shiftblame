@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { utimesSync } from 'node:fs';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -73,6 +74,42 @@ writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
 
 assert.match(run('next', 'test').stderr, /老闆決策點/);
 assert.match(run('next', 'test', '--boss-ok').stderr, /缺「## 人話」段/);
+writeFileSync(join(tmp, 'release-brief-fence.md'), '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n\n範例說明：\n```\n## 人話\n這裡是超過三十個字的填充內容用來騙過長度檢查的圍籬偽段攻擊示範文字。\n```\n');
+assert.match(run('next', 'test', '--boss-ok').stderr, /缺「## 人話」段/);
+// 未閉合圍籬（```／~~~ 到檔尾）、四反引號錯配、行中註解偽標題、未閉合註解——全遮
+const fenceVariants = [
+  ['unclosed-tick', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n```\n## 人話\n超過三十個字的未閉合圍籬偽段填充內容示範文字。'],
+  ['unclosed-tilde', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n~~~\n## 人話\n超過三十個字的未閉合波浪圍籬偽段填充內容示範文字。'],
+  ['quad-mismatch', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n````\n```\n## 人話\n```\n超過三十個字的四反引號錯配偽段填充內容示範文字。\n````'],
+  ['midline-comment', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n<!-- 註解 --> ## 人話\n超過三十個字的行中註解偽標題填充內容示範文字。'],
+  ['unclosed-comment', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n<!--\n## 人話\n超過三十個字的未閉合註解偽段填充內容示範文字。'],
+  ['close-tail', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n```\n``` tail\n## 人話\n超過三十個字的閉合行尾文字偽段填充內容示範文字。'],
+  ['close-fullwidth', '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n```\n```　\n## 人話\n超過三十個字的閉合行全形空白偽段填充內容示範文字。'],
+];
+for (const [name, content] of fenceVariants) {
+  writeFileSync(join(tmp, `release-brief-demo-001-${name}.md`), content);
+  assert.match(run('next', 'test', '--boss-ok').stderr, /缺「## 人話」段/, name);
+}
+// CRLF 合法 brief（含合法圍籬＋真人話段）→ 過（勿誤擋）；縮排吞越 → 擋
+const crlfBrief = ['# 放行簡報', '', '計畫：x。', '對抗檢閱：review-plan-demo-001-1.md 已納入。', '', '```', 'code', '```', '', '## 人話', '', '這次完成後，送對的資料會看到完整結果，送錯的會看到清楚錯誤，不再有模糊狀態。', ''].join('\r\n');
+writeFileSync(join(tmp, 'release-brief-demo-001-crlf.md'), crlfBrief);
+utimesSync(join(tmp, 'release-brief-demo-001-crlf.md'), new Date(Date.now() + 200), new Date(Date.now() + 200)); // mtime 必須嚴格晚於先前變體（同毫秒 tie-break 會挑字典序後者）
+assert.equal(run('next', 'test', '--boss-ok').status, 0);
+{ // 回復節點：本案例只驗「不誤擋」，不推進主流程
+  const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json')));
+  st.node = 'release';
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st));
+}
+// 縮排吞越：`## 人話` 空段＋` ### 填充` → 擋（縮排標題也是段終）
+writeFileSync(join(tmp, 'release-brief-demo-001-indent.md'), '# 放行簡報\n\n計畫：x。\n對抗檢閱：review-plan-demo-001-1.md 已納入。\n\n## 人話\n\n### 技術細節\n這裡是超過三十個字的縮排標題吞越填充內容用來撐人話段字數的攻擊示範文字。\n');
+utimesSync(join(tmp, 'release-brief-demo-001-indent.md'), new Date(Date.now() + 400), new Date(Date.now() + 400)); // 晚於 crlf 的未來 mtime
+assert.match(run('next', 'test', '--boss-ok').stderr, /「人話」段敷衍/);
+// 變體檔 mtime 撥回過去，還給主流程 brief「最新」地位
+const past = new Date(Date.now() - 60000);
+utimesSync(join(tmp, 'release-brief-demo-001-indent.md'), past, past);
+utimesSync(join(tmp, 'release-brief-demo-001-crlf.md'), past, past);
+
+
 
 writeFileSync(join(tmp, 'release-brief-demo-001-1.md'), `# 放行簡報
 
@@ -142,6 +179,18 @@ const reviewVerify = (name, file) => {
 writeFileSync(join(root, 'seed.txt'), '驗收期間被偷改\n');
 assert.match(run('next', 'verdict').stderr, /偏離待驗存檔/);
 writeFileSync(join(root, 'seed.txt'), 'seed\n');
+// 註解包反證/未驗（真人話段）→ verdict 擋——渲染可見原則貫穿所有必查段
+const hiddenReport = report('AC-01', 'SATISFIED', 'BEHAVIOR', commit1, '使用者看到完整結果', evidence1, evidenceHash1)
+  .replace(/# 反證嘗試[\s\S]*?可判讀結果。/, '<!-- # 反證嘗試\n隱藏的反證內容足夠長度可以騙過檢查的填充文字填充文字填充文字。 -->')
+  .replace(/# 未驗[\s\S]*?判定。/, '<!-- # 未驗\n隱藏的未驗清單同樣填充到足以通過長度檢查的文字內容。 -->');
+writeFileSync(join(tmp, 'verify-001.md'), hiddenReport);
+assert.match(run('next', 'verdict').stderr, /缺「反證嘗試」段|缺「未驗」段/);
+// quad 錨於 verdict 閘：遮蔽空段不得吞越人話段撐實質（R2）
+const quadReport = report('AC-01', 'SATISFIED', 'BEHAVIOR', commit1, '使用者看到完整結果', evidence1, evidenceHash1)
+  .replace(/# 反證嘗試[\s\S]*?判定。\n## 人話[\s\S]*?失敗。/, '````\n```\n# 反證嘗試\n```\n````\n# 未驗\n四反引號錯配遮蔽後由後方人話段吞越填充的攻擊內容。\n## 人話\n\n本次把送資料看結果修可靠：問題來源是回饋含糊，處置是加完整與明確錯誤兩種回饋，結果是一眼分辨成敗。');
+writeFileSync(join(tmp, 'verify-001.md'), quadReport);
+assert.match(run('next', 'verdict').stderr, /缺「反證嘗試」段|缺「未驗」段/);
+writeFileSync(join(tmp, 'verify-001.md'), report('AC-01', 'SATISFIED', 'BEHAVIOR', commit1, '使用者看到完整結果', evidence1, evidenceHash1));
 reviewVerify('review-verify-demo-001-1.md', 'verify-001.md');
 assert.equal(run('next', 'verdict').status, 0);
 writeFileSync(evidence1, '證據遭到替換。\n');

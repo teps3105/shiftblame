@@ -51,6 +51,7 @@ const CARD = [
   '④層內連續、層間停靠；階段完成不是停點。',
   '⑤人話三時點：意圖揭露的「意圖翻譯」＝老闆讀得懂的白話；release 簡報與 verify 報告必含 ## 人話 段（七判準：邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂——任一不合格即不通過）。',
   '⑥版號屬老闆決策——不得自行升版或預設版號，版號待老闆指定。',
+  '⑦對抗—修復—再對抗閉環：對抗檢閱的必修項修復後 MUST 再對抗（針對修復本身），至零必修項才可提交；修復一次即宣稱修好＝假完成。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -342,7 +343,7 @@ try {
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
       // 提醒比對只認路徑鍵（防 content 字串誤觸）；release-brief／verify 逐鍵精確匹配
-      const pathKeys = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path'];
+      const pathKeys = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
       const pathStr = pathKeys.map((k) => input.tool_input?.[k]).filter((v) => typeof v === 'string').join(' ');
       const isBrief = /(^|[\\/])release-brief-[^\\/]+\.md($|\s)/i.test(pathStr);
       const isVerify = /(^|[\\/])verify-[^\\/]+\.md($|\s)/i.test(pathStr) && !/(^|[\\/])review-verify-/i.test(pathStr);
