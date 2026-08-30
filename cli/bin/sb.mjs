@@ -310,7 +310,7 @@ function checkCleanWorktree(problems, passes, timing) {
 // 錨定用內容 hash（G3-SHA256／報告SHA256／G1-SHA256）：被檢對象一改，舊記錄自然失效，
 // 防修約後重用舊 review、防同名報告重寫後舊 review 續用。mtime 排序防檔名遊戲與 ≥10 檔字典序錯亂。
 // 自攻降級：記錄宣告與 --self-attack 旗標 MUST 一致（無聲降級即擋）；自攻攻擊深度要求 ≥60 字實質。
-// 推進時把採用記錄的 sha256 寫入 flow-state history，ms-done 門核對事後未遭刪改。
+// review 記錄是可拋棄的衍生證據（SKILL §3 權威唯一原則）——只在當次推進查核，無事後完整性執法。
 
 function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, problems, passes) {
   const noFile = `${TMP}/review-${kind}-${st.slug}-${st.ms}-*.md 不存在——${label} MUST 先取得一次外部子代理對抗檢閱並複核落檔（SKILL §3 固定時點；外部子代理不可用時切換身分自執行最嚴厲攻擊，推進帶 --self-attack 並於記錄標示降級）`;
