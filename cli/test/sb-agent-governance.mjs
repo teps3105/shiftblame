@@ -12,9 +12,9 @@ const readme = read('README.md');
 const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
-assert.equal(manifest.version, '1.2.3');
+assert.equal(manifest.version, '1.3.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.2\.3"/);
+assert.match(skill, /version: "1\.3\.0"/);
 
 const reviewSection = skill.match(/### 臨時外部子代理唯讀檢閱([\s\S]*?)### 時序調控與一致性核對/)?.[1];
 assert.ok(reviewSection, '缺少外部子代理唯讀檢閱權威段落');
@@ -69,7 +69,7 @@ assert.match(manifest.description, /不得轉嫁給老闆/);
 
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.2\.3/);
+  assert.match(reference, /revision: 1\.3\.0/);
   assert.match(reference, /外部子代理/);
   assert.match(reference, /主對話/);
   assert.match(reference, /老闆/);

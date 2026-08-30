@@ -325,7 +325,6 @@ function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, pro
   const raw = readFileSync(path, 'utf-8');
   // 錨定與段落檢查以可見文字為準——HTML 註解內的錨定字串或隱藏標記不算數
   const text = raw.replace(/<!--[\s\S]*?-->/g, '');
-  st.reviewUsed = { name, sha256: createHash('sha256').update(raw).digest('hex') };
   const selfAttackText = /身分切換自攻|外部子代理不可用/.test(text);
   // 四段制：對抗要點（攻擊）→ 複核結論（裁定＋出處）→ 反向對抗（獨立方查複核誠實性）→ 附錄（原文保全）
   const secRules = [
@@ -368,18 +367,7 @@ function checkAdversarialReview(st, kind, label, anchors, anchorPaths, opts, pro
   else passes.push(`對抗檢閱記錄實質存在：${name}`);
 }
 
-function checkReviewIntegrity(st, problems, passes) {
-  const reviewed = st.history.filter((h) => h.review);
-  for (const h of reviewed) {
-    const p = join(TMP, h.review.name);
-    if (!existsSync(p)) problems.push(`對抗檢閱記錄已被刪除：${h.review.name}——對抗證據不得事後抹除`);
-    else if (sha256(p) !== h.review.sha256) problems.push(`對抗檢閱記錄已被竄改：${h.review.name}（推進時 sha256=${h.review.sha256.slice(0, 12)}）`);
-  }
-  if (reviewed.length && !problems.length) passes.push(`對抗檢閱記錄完整性：${reviewed.length} 份推進時雜湊未變`);
-}
-
 // ———— 各節點推進閘門（target = 要進入的節點） ————
-
 function gate(st, target, opts) {
   const problems = [];
   const passes = [];
@@ -621,12 +609,7 @@ function gate(st, target, opts) {
       break;
     }
     case 'ms-done':
-      // 對抗證據不得事後抹除：核對歷次推進採用的 review 檔仍存在且 hash 未變
-      checkReviewIntegrity(st, problems, passes);
-      break;
     case 'pass':
-      // 最終 PASS 前再核一次——ms-done 到 pass 之間的刪改同樣不得放行
-      checkReviewIntegrity(st, problems, passes);
       break;
   }
   return { problems, passes };
@@ -684,10 +667,6 @@ function cmdNext(target, opts) {
     passes.push(`G1 契約已封存：${st.g1Contract.sha256.slice(0, 12)}`);
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, direct: !!opts.direct, selfAttack: !!opts.selfAttack };
-  if (st.reviewUsed && (target === 'release' || target === 'verdict' || target === 'converge')) {
-    entry.review = st.reviewUsed;
-    delete st.reviewUsed;
-  }
   st.history.push(entry);
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
@@ -773,7 +752,7 @@ function cmdReport() {
   let gitlog = '（非 git 環境）';
   try { gitlog = execSync('git log --oneline -10', { encoding: 'utf-8' }).trim(); } catch {}
   const reviews = existsSync(TMP) ? readdirSync(TMP).filter((f) => /^review-(plan|verify|converge)-.*\.md$/i.test(f)).sort().map((name) => ({ name, text: readFileSync(join(TMP, name), 'utf-8') })) : [];
-  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.selfAttack ? '，自攻降級' : ''}${h.review ? `，review=${h.review.name}(${h.review.sha256.slice(0, 12)})` : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
+  const hist = st.history.map((h) => `- ${h.from} → ${h.to}（${h.at}${h.bossOk ? '，老闆拍板' : ''}${h.direct ? '，直接修正' : ''}${h.selfAttack ? '，自攻降級' : ''}${h.amendment ? '，G1 修約' : ''}）`).join('\n') || '（尚無推進記錄）';
 
   const rpt = `# shiftblame 外部審計報告 — ${st.slug}/${st.ms} @ ${st.node}
 

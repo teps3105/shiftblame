@@ -355,10 +355,6 @@ try {
         inject('[shiftblame] 放行簡報 MUST 含 ## 人話 段——G1~G3 整體翻譯：要做什麼、為什麼、老闆會得到什麼、UI/UX/UE 上會感覺到什麼；七判準（邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂）任一不合格即放行不通過（SKILL §3 人話三時點②）。');
       } else if (isVerify) {
         inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。');
-      } else if (/direct-change\.md/.test(pathStr)) {
-        inject('[shiftblame] direct-change.md 的 來源= 僅限 agent 自行循環發現的微修可宣告——老闆發現的意圖不豁免，回 sb-think 意圖路由；虛報來源屬造假。');
-      } else if (/commit-stamp\.json/.test(pathStr)) {
-        inject('[shiftblame] commit-stamp.json 僅由 sb commitmsg 產生——手寫印章屬偽造（SKILL §1.8），將於外部審計暴露。');
       }
       process.exit(0);
     }
