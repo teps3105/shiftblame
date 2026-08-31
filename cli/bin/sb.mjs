@@ -87,13 +87,13 @@ const usage = (code = 2) => {
 用法：
   sb init <slug>                        開 slug：建立 flow-state.json（節點 intent）
   sb state                              顯示目前段、可走下一步與其前置條件
-  sb unlock --quoted "<老闆原句>" [--stamp done|pass|newMs]
-                                        解鎖對話鎖：逐字引用老闆「當前輸入」（最後一則）中承載
-                                        授權語義的原句——引句必須覆蓋該則的非否定候選詞（hooks 於
-                                        輸入時刻掃描標記；時序元規則：每則覆蓋前一則，消費即失效）；
-                                        捏造／跳時序／無候選／否定候選皆機械擋；--stamp 寫對應授權
-                                        印章（done→verify→done；pass→sb end；newMs→done→intent 時 ms++）；
-                                        引句於老闆下則輸入自動展示（必然曝光）
+  sb unlock --quoted "<老闆原句>" --as "<理解宣告>" [--stamp done|pass|newMs]
+                                        解鎖＝理解宣告制：先路由 sb-think（hooks 標記 thinkRouted，
+                                        未路由即擋）→ 逐字引用老闆「當前輸入」中承載授權語義的原句
+                                        （逐字錨定：捏造／跳時序擋；時序元規則：每則覆蓋前一則，
+                                        消費即失效）→ --as 一句話宣告這授權了什麼（語義由宣告承擔，
+                                        機械不掃詞）；--stamp 印章類型亦由宣告支撐；引句＋宣告於
+                                        老闆下則輸入自動展示（必然曝光，理解有誤即越權當場可見）
   sb adversarial <報告檔>                對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
                                         （不通過＝必修未清，不得發章）；commit 時由 hooks 消費（一對一）
@@ -441,35 +441,44 @@ function cmdNext(target, opts) {
 }
 
 // PASS 動作（done 態上；非段推進）：老闆「PASS」印章＋--boss-ok 留痕；收尾保鮮為文件層動作清單（SKILL done 慵說明）
-// —— 解鎖驗證鏈（全機械；時序元規則：只認當前輸入＝最後一則老闆輸入）——
-// ①逐字錨定：--quoted 必須是當前輸入原文的子串——捏造即擋；無當前輸入＝翻舊帳即擋（覆蓋式：舊則不存在）。
-// ②候選覆蓋：引句必須覆蓋至少一個非否定候選詞（hooks 輸入時刻掃描標記；英文詞比照掃描層 \b 邊界，
-//   引 book/look 不得借道 ok）——引無候選／否定候選即擋。
+// —— 解鎖＝理解宣告制（1.5.6）：語義認定權歸理解，機械只驗事實 ——
+// ①必經路由：thinkRouted（本則輸入已過 sb-think——理解的制度化入口；hooks 於 Skill 調用時標記）
+// ②逐字錨定：--quoted 必須是當前輸入原文的子串——捏造即擋；無當前輸入＝翻舊帳即擋（覆蓋式：舊則不存在）。
 // ③消費即失效：同一則輸入只可解鎖一次——授權生命週期＝一則輸入。
 // ④unlockLog 唯增雜湊鏈：每條 hash=sha256(前條hash+引句+時間)——「中間條目刪改」與「整體刪除重建」
 //   中，刪改中間條目即斷鏈擋死；整體刪除（空鏈 trivially 通過）與完整重算重寫不防——發動於解鎖窗口，
 //   屬通道層天花板（SKILL 如實揭露），老闆抽查 unlockLog 與對話實蹟對照終審。
 // 必然曝光：unlockLog 引句於老闆下則輸入由 hooks 自動展示；曝光行是老闆終審。
-const wordHits = (word, s) => (word.charCodeAt(0) > 127 ? s.includes(word) : new RegExp(`\\b${word}\\b`, 'i').test(s));
 
 function verifyUnlockChain(log) {
   let prev = '';
   for (const e of log) {
-    const expect = createHash('sha256').update(prev + String(e.quoted) + String(e.at)).digest('hex').slice(0, 16);
+    const expect = createHash('sha256').update(prev + String(e.quoted) + String(e.as ?? '') + String(e.at)).digest('hex').slice(0, 16);
     if (e.hash !== expect) return false;
     prev = e.hash;
   }
   return true;
 }
 
+// —— 解鎖＝理解宣告制（1.5.6）：語義認定權歸理解，機械只驗事實 ——
+// ①必經路由：thinkRouted（本則輸入已過 sb-think——理解的制度化入口；hooks 於 Skill 調用時標記）
+// ②逐字錨定：--quoted 必須是當前輸入原文的子串——捏造／跳時序即擋（事實，非語義）
+// ③理解宣告：--as 必填——「理解到授權」的制度形式（一句話說明這授權了什麼）；語義由宣告承擔，
+//   機械不掃關鍵詞、不標否定、不做印章類型對照（理解的官僚替代品全撤）
+// ④消費即失效＋雜湊鏈＋曝光：unlockLog 記 {quoted, as, stamp}——曝光行展示引句＋理解宣告，老闆終審
 function cmdUnlock(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
   const quoted = opts.quoted;
+  const as = opts.as;
   const inp = st.input;
-  if (!quoted) die(['缺 --quoted "<老闆原句>"——解鎖 MUST 逐字引用老闆當前輸入（最後一則）中承載授權語義的原句']);
+  if (!quoted) die(['缺 --quoted "<老闆原句>"——解鎖 MUST 逐字引用老闆當前輸入中承載授權語義的原句']);
+  if (!as || !as.trim()) die(['缺 --as "<理解宣告>"——理解到授權 MUST 以宣告落地（一句話：這授權了什麼）；語義由宣告承擔，是曝光與老闆終審的對象']);
+  if (/[\r\n\u2028\u2029\u000B\u000C\u0085]/.test(as)) die(['--as 不得含換行——理解宣告 MUST 單行（一句話）；多行內容屬報告，不是宣告']);
+  if ([...as.trim()].length > 200) die(['--as 過長（上限 200 字）——理解宣告是「這授權了什麼」的一句話；膨脹式宣告即擋（曝光通道容量防護）']);
   if (opts.stamp && !['done', 'pass', 'newMs'].includes(opts.stamp)) die([`--stamp 值無效（${opts.stamp}）——done｜pass｜newMs`]);
   if (!verifyUnlockChain(st.unlockLog ?? [])) die(['unlockLog 雜湊鏈斷裂——記錄被刪改（曝光洗除）即擋；完整性由老闆抽查對話實蹟終審']);
+  if (!st.thinkRouted) die(['本則輸入未路由 sb-think——理解必經制度化入口（Skill 調用 sb-think 後 hooks 標記 thinkRouted），未路由不得解鎖']);
   if (!inp || typeof inp.text !== 'string' || !inp.text.length) {
     die(['無當前輸入可引（input 空）——翻舊帳即擋；等老闆實際輸入後再解鎖']);
   }
@@ -477,34 +486,20 @@ function cmdUnlock(opts) {
   if (!inp.text.includes(quoted)) {
     die([`引句非當前輸入（最後一則）的逐字內容——捏造／跳時序即擋。當前輸入：「${inp.text.slice(0, 80)}」`]);
   }
-  const covered = (inp.candidates ?? []).filter((c) => wordHits(c.word, quoted));
-  const ok = covered.filter((c) => !c.negated);
-  if (!covered.length) {
-    die([`引句未覆蓋任何候選詞——無候選即不可解鎖（fail-closed）。本則候選：${(inp.candidates ?? []).map((c) => c.word + (c.negated ? '（否定）' : '')).join('、') || '無'}`]);
-  }
-  if (!ok.length) {
-    die([`引句覆蓋的候選全為否定標記（否定詞共現）——引否定候選即擋；若老闆語義確為授權，等老闆改述或下一則`]);
-  }
-  if (opts.stamp) {
-    const stampType = { done: 'done', pass: 'pass', newMs: 'newMs' }[opts.stamp];
-    const typeOk = ok.some((c) => c.type === stampType) || ok.some((c) => c.type === 'go' || c.type === 'nod');
-    if (!typeOk) {
-      die([`--stamp ${opts.stamp} 與引句覆蓋的候選類型不符（覆蓋：${ok.map((c) => c.type).join('、')}）——印章類型由引句的候選語義支撐`]);
-    }
-    st.stamps = { [stampType]: new Date().toISOString() }; // 單一授權單一印章
-  }
+  if (opts.stamp) st.stamps = { [opts.stamp]: new Date().toISOString() }; // 印章類型由理解宣告承擔（--as），錯用＝曝光可見
   st.dialogueLock = false;
   st.input.consumed = true; // 消費即失效——同一則不得再引
   const at = new Date().toISOString();
   const prevHash = (st.unlockLog ?? []).at(-1)?.hash ?? '';
-  const hash = createHash('sha256').update(prevHash + String(quoted) + at).digest('hex').slice(0, 16);
-  (st.unlockLog ??= []).push({ at, quoted, stamp: opts.stamp ?? null, node: st.node ?? null, reviewed: false, hash });
+  // 鏈算式與存量一致：hash 用正規化後的 as（trim）——寫入/驗證對稱，空白差異不得燒死通道
+  const hash = createHash('sha256').update(prevHash + String(quoted) + String(as.trim()) + at).digest('hex').slice(0, 16);
+  (st.unlockLog ??= []).push({ at, quoted, as: as.trim(), stamp: opts.stamp ?? null, node: st.node ?? null, reviewed: false, hash });
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
     `解鎖（引句錨定當前輸入 @${inp.at.slice(0, 19)}）：「${quoted}」`,
-    `覆蓋候選：${ok.map((c) => `${c.word}(${c.type})`).join('、')}`,
+    `理解宣告：「${as.trim()}」`,
     ...(opts.stamp ? [`授權印章 ${opts.stamp} 已寫入（一次性；消費即焚）`] : []),
-    '解鎖引句於老闆下則輸入自動展示（必然曝光——斷章即越權，當場可見）',
+    '引句＋理解宣告於老闆下則輸入自動展示（必然曝光——理解有誤即越權，當場可見）',
   ]);
 }
 
@@ -605,13 +600,14 @@ function cmdCommitmsg(msg) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, quoted: null, stamp: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, quoted: null, as: null, stamp: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--adversarial') flags.adversarial = true;
   else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
   else if (rest[i] === '--quoted') flags.quoted = rest[++i] ?? '';
+  else if (rest[i] === '--as') flags.as = rest[++i] ?? '';
   else if (rest[i] === '--stamp') flags.stamp = rest[++i] ?? '';
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯或已移除者）不得靜默落入 positional——解析器衛生
   else pos.push(rest[i]);

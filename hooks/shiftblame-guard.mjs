@@ -49,8 +49,8 @@ const CARD = [
   '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）：補充／修正→回 intent 同 ms 重走線性；確認／開工→分發執行。',
   '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修）；前進要鑰匙（--boss-ok 留痕＋對話鎖＋授權印章）。',
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
-  '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted 引本則非否定候選原句解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
-  '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
+  '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted --as 解鎖（先路由 sb-think——thinkRouted 未標記即擋）；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
+  '⑤授權＝理解宣告制：理解授權意圖是制度事件——sb-think 路由（thinkRouted 機械標記，未路由即擋）→ sb unlock --quoted "原句" --as "理解宣告"（一句話：這授權了什麼）→ 直接進入下一步；機械只驗事實（逐字錨定／時序覆蓋／消費即失效／雜湊鏈），語義由宣告承擔（不掃詞、不標否定、不對照類型）；引句＋宣告於老闆下則輸入自動展示（必然曝光——理解有誤即越權）；不防刻意直改 flow-state 偽造（老闆抽查承擔）。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義禁止；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
@@ -79,79 +79,59 @@ function nodeLine(root) {
   } catch { return ''; }
 }
 
-// —— 對話鎖（令行靜止）＋授權機械過濾（時序元規則）——
+// —— 對話鎖（令行靜止）＋當前輸入覆蓋記錄（時序元規則）——
 // 時序元規則：每則老闆輸入「覆蓋」前一則（flow-state 只存當前輸入）——跳時序不是被擋，是無物可引。
-// 抗壓縮：對話壓縮把過程變摘要；機械層（檔案事實）永遠持有最後一則原文與標記——時序判定只依賴機械事實。
-// 輸入時刻過濾：候選詞（自然語言寬表）掃描＋否定共現標記（否定詞與候選同句→該候選標否定），
-// 回流給 agent 的是過濾產物（原文＋候選標記）——理解只能在候選內運作，不能創造候選。
+// 抗壓縮：對話壓縮把過程變摘要；機械層（檔案事實）永遠持有最後一則原文與狀態——時序判定只依賴機械事實。
+// 理解宣告制（1.5.6）：機械只記事實（原文、是否已路由 sb-think、是否已消費）——語義認定權歸理解（sb-think＋--as 宣告），
+// 機械不掃關鍵詞、不標否定、不做類型對照（理解的官僚替代品全撤；事實防線：逐字錨定/時序/thinkRouted/曝光）。
 function handleBossInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { slug: null, ms: null, node: null, history: [] };
-    const text = String(prompt ?? '');
-    st.input = { at: new Date().toISOString(), text, candidates: scanConsent(text), consumed: false }; // 覆蓋：最新輸入是唯一有效語境
-    st.dialogueLock = true; // 新鎖定期：唯 sb unlock --quoted 引本則非否定候選原句可解
+    st.input = { at: new Date().toISOString(), text: String(prompt ?? ''), consumed: false }; // 覆蓋：最新輸入是唯一有效語境
+    st.thinkRouted = false; // 每則輸入重置——sb unlock 前必須重新路由 sb-think（理解必經制度化入口）
+    st.dialogueLock = true; // 新鎖定期：唯 sb unlock --quoted --as（先過 sb-think）可解
     st.stamps = {};          // 陳舊授權失效（印章只隨對應 unlock 寫入）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 候選詞集（自然語言寬表；語例非判準——機械只標候選，真假由 agent 於候選內判讀）
-const CONSENT_WORDS = {
-  go:    ['開工', '開始', '繼續', '去做', '去吧', '放行', '就這樣', '動工', 'go', 'ok'],
-  nod:   ['確認', '沒錯', '對', '可以', '好', '行'],
-  done:  ['done', '完成', '收工'],
-  pass:  ['pass', '通過', '過了'],
-  newMs: ['下一個', '開新的', '新開一個'],
-};
-// 肯定複合詞（含否定字但語義為肯定）——先於否定判定剔除並登記為非否定候選
-const AFFIRM_COMPOUND = ['沒錯', '不錯'];
-// 否定共現：否定詞與候選詞同「句」（中英標點切分）→ 該候選標否定；
-// 中文含「不」（不行/不好/不可以/不對/好久不見/對不起…fail-closed 標否定）；英文 not/don't/never/stop/wait/no 同列
-const NEG_RE = /(還沒|尚未|沒有|沒|未|別|不要|先不|不|非|\bnot\b|\bdon'?t\b|\bnever\b|\bstop\b|\bwait\b|\bno\b)/i;
-
-// 掃描當前輸入的候選詞與否定標記（英文不分大小寫；回傳 [{word, type, negated}]）
-// 每句重建無 g 正則（防 lastIndex 汙染跨句漏標）；肯定複合詞先剔除再判否定（「沒錯」非否定、「不行」否定）
-// 分句含半形標點（. , ; ! ?）——英文輸入「ok. not ok? ok!」逐句判定
-function scanConsent(text) {
-  const out = [];
-  // 數字內標點保護（3.14／1,000）——先佔位再分句，防止數字小數點偽句界使否定判定跨句分離；
-  // 佔位符不參與任何詞匹配（候選與否定詞皆不含數字標點），無需還原
-  const guarded = text.replace(/(?<=\d)[.,](?=\d)/g, '\u0000');
-  const sentences = guarded.split(/(?<=[，。！？；、\n,.!?;])/); // 保留分隔符的切分——否定判定以句為單位
-  for (const sen of sentences) {
-    let rest = sen;
-    for (const aff of AFFIRM_COMPOUND) {
-      const re = new RegExp(aff, 'i');
-      while (re.test(rest)) {
-        out.push({ word: aff, type: 'nod', negated: false });
-        rest = rest.replace(re, '　'); // 剔除已登記的肯定複合詞——剩餘片段不再參與否定/候選判定
-      }
-    }
-    const negated = NEG_RE.test(rest);
-    for (const [type, words] of Object.entries(CONSENT_WORDS)) {
-      for (const w of words) {
-        if (new RegExp(w.charCodeAt(0) > 127 ? w : `\\b${w}\\b`, 'i').test(rest)) {
-          out.push({ word: w, type, negated });
-        }
-      }
-    }
-  }
-  return out;
+// sb-think 路由標記：PreToolUse 偵測 Skill 調用且目標錨定為 sb-think → 本則輸入已完成制度化理解入口
+// （錨定 `^|:` 前綴＋ `$` 結尾——`fake-sb-think-evil`、`xx_sb-think_yy` 等偽技能名不得偽造路由事實）
+function markThinkRouted(root, tool, toolInput) {
+  if (!root || !/^skill$/i.test(String(tool ?? ''))) return;
+  const target = String(toolInput?.skill ?? toolInput?.name ?? '');
+  if (!/(?:^|:)sb-think$/i.test(target)) return;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    st.thinkRouted = true;
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+  } catch { /* 狀態異常靜默 */ }
 }
 
-// 過濾產物回流：agent 拿到的注入是「當前輸入＋機械標記」，不是原始輸入再自行過濾
+// 狀態回流：當前輸入原文＋路由狀態（理解宣告制——機械只呈事實，理解由 sb-think 承擔）
 function inputLine(root) {
   if (!root) return '';
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return '';
-    const inp = JSON.parse(readFileSync(statePath, 'utf8')).input;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    const inp = st.input;
     if (!inp || typeof inp.text !== 'string') return '';
-    const parts = (inp.candidates ?? []).map((c) => `${c.word}(${c.type}${c.negated ? '，否定' : ''})`);
-    return `\n[當前輸入]${inp.consumed ? '（已消費——同一則不得再引，等老闆下一則）' : ''}「${inp.text}」候選：${parts.join('、') || '無（fail-closed：無候選則不可解鎖，停等老闆澄清）'}——解鎖僅可引本則非否定候選原句（sb unlock --quoted）。`;
+    const routed = st.thinkRouted ? '已路由 sb-think' : '未路由 sb-think（解鎖前 MUST 先路由）';
+    return `\n[當前輸入]${inp.consumed ? '（已消費——同一則不得再引，等老闆下一則）' : ''}「${inp.text}」｜${routed}——理解成立即 sb unlock --quoted "承載授權語義的原句" --as "理解宣告"（語義由宣告承擔，機械不掃詞）。`;
   } catch { return ''; }
+}
+
+// 曝光行單行化：折疊所有空白類字元（含 U+2028/U+2029 等類換行）＋截斷（200 字）——
+// 防存量／手改 unlockLog 條目於注入文本偽造多行框架內容（寫入側已擋換行與超長；此為展示側同判，純事實防護非語義掃描）
+function flatOneLine(s, n = 200) {
+  const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+  const cps = [...t];
+  return cps.length > n ? cps.slice(0, n).join('') + '…' : t;
 }
 
 // 必然曝光：老闆每則輸入時展示未審視的解鎖引句（斷章即當場可見）；mark=true 時標記已審
@@ -168,7 +148,7 @@ function unlockReviewLine(root, mark = true) {
       for (const e of pending) e.reviewed = true;
       writeFileSync(statePath, JSON.stringify(st, null, 2));
     }
-    return `\n[解鎖審視] ${pending.map((e) => `「${e.quoted}」${e.stamp ? `（印章 ${e.stamp}）` : ''}@${e.node ?? '?'} ${e.at}`).join('；')}——非你授權即屬 agent 越權，請立即指出。`;
+    return `\n[解鎖審視] ${pending.map((e) => `「${flatOneLine(e.quoted)}」→理解宣告「${flatOneLine(e.as)}」${e.stamp ? `（印章 ${flatOneLine(e.stamp)}）` : ''}@${flatOneLine(e.node)} ${flatOneLine(e.at)}`).join('；')}——理解有誤即屬 agent 越權，請立即指出。`;
   } catch { return ''; }
 }
 
@@ -500,8 +480,8 @@ try {
   }
 
   if (event === 'UserPromptSubmit') {
-    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋機械過濾（覆蓋式當前輸入＋候選標記）
-    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root)); // 過濾產物回流＋解鎖引句必然曝光
+    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋覆蓋式當前輸入記錄（時序元規則；每則重置 thinkRouted）
+    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root)); // 狀態回流＋解鎖引句必然曝光
   }
 
   if (event === 'Stop') {
@@ -530,6 +510,7 @@ try {
   if (event === 'PreToolUse') {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
+    markThinkRouted(root, tool, input.tool_input); // sb-think 路由標記（理解必經制度化入口——unlock 前置事實）
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
       // 解鎖通道放行僅限「單體」sb unlock 命令：整條命令按 \n ; & | 切段後必須恰一段，
       // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋；

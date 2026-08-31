@@ -1,4 +1,4 @@
-// sb-hooks：對話鎖＋機械過濾（時序元規則）＋sb unlock 通道放行＋曝光＋Stop＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護
+// sb-hooks：對話鎖＋當前輸入記錄（時序元規則）＋thinkRouted 標記＋sb unlock 通道放行＋曝光＋Stop＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,48 +15,39 @@ const run = (payload) => spawnSync(process.execPath, [hook], { input: JSON.strin
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
 const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
 
-// —— 1. 對話鎖＋機械過濾（UserPromptSubmit；覆蓋式當前輸入＋候選掃描＋否定標記＋清印章）——
+// —— 1. 對話鎖＋理解宣告制（UserPromptSubmit：覆蓋式當前輸入＋thinkRouted 重置；機械不掃詞）——
 const up = (prompt) => run({ hook_event_name: 'UserPromptSubmit', prompt });
-let r = up('隨便做點什麼');
+let r = up('隨便說什麼都行');
 assert.equal(r.status, 0);
 assert.equal(state().dialogueLock, true, '每則老闆輸入上鎖');
-assert.equal(state().input.text, '隨便做點什麼', '當前輸入記錄');
-assert.equal(state().input.candidates.length, 0, '無候選詞');
-assert.ok(r.stdout.includes('無（fail-closed'), '過濾產物回流：無候選提示');
-
-r = up('還沒開始，先別動');
-assert.equal(state().input.text, '還沒開始，先別動', '覆蓋：最新輸入取代舊則');
-const negCand = state().input.candidates.find((c) => c.word === '開始');
-assert.ok(negCand && negCand.negated, '否定共現標記（還沒＋開始同句）');
-assert.ok(r.stdout.includes('否定'), '注入含否定標記');
-
-r = up('繼續');
-const goCand = state().input.candidates.find((c) => c.word === '繼續');
-assert.ok(goCand && !goCand.negated && goCand.type === 'go', '非否定候選（go 類）');
+assert.equal(state().input.text, '隨便說什麼都行', '當前輸入記錄（原文，無掃描標記）');
+assert.equal(state().input.candidates, undefined, '機械不掃詞（理解由 sb-think＋--as 承擔）');
+assert.equal(state().thinkRouted, false, 'thinkRouted 每則重置');
+assert.ok(r.stdout.includes('未路由 sb-think'), 'inputLine 呈現路由狀態');
+// Skill(sb-think) 調用→標記
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: 'x' } });
+assert.equal(r.status, 0, 'Skill 調用放行');
+assert.equal(state().thinkRouted, true, 'Skill(sb-think)→thinkRouted 標記');
+r = up('下一則');
+assert.equal(state().thinkRouted, false, '新輸入重置路由標記');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-save', args: 'x' } });
+assert.equal(state().thinkRouted, false, '非 sb-think 技能不標記');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-sb-think-evil' } });
+assert.equal(state().thinkRouted, false, '偽技能名（含 sb-think 子字串）不標記——錨定 ^|: 前綴＋$ 結尾');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'xx_sb-think_yy' } });
+assert.equal(state().thinkRouted, false, '中綴 sb-think 不標記');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name: 'shiftblame:sb-think' } });
+assert.equal(state().thinkRouted, true, 'name fallback 錨定匹配 sb-think 仍標記');
+r = up('再一則');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think' } });
+assert.equal(state().thinkRouted, true, '裸名 sb-think 錨定匹配標記');
 assert.deepEqual(state().stamps, {}, '新輸入清未用印章');
-
-// —— 1b. 掃描層攻擊面：否定詞／肯定複合／lastIndex／英文邊界 ——
-up('不行');
-assert.ok(state().input.candidates.some((c) => c.word === '行' && c.negated), '「不行」→行 標否定（含「不」）');
-up('沒錯');
-const mm = state().input.candidates.filter((c) => c.word === '沒錯');
-assert.ok(mm.length === 1 && !mm[0].negated, '「沒錯」肯定複合先剔除→非否定 nod 候選');
-up('好久不見');
-assert.ok(state().input.candidates.some((c) => c.word === '好' && c.negated), '「好久不見」→好 標否定');
-up('對不起，我打錯字了');
-assert.ok(state().input.candidates.some((c) => c.word === '對' && c.negated), '「對不起」→對 標否定');
-up('好。好。好。');
-assert.equal(state().input.candidates.filter((c) => c.word === '好').length, 3, 'lastIndex 不污染——每句各標一次');
-up('這樣 ok 嗎？先把 book 拿走再說');
-assert.ok(state().input.candidates.some((c) => c.word === 'ok' && !c.negated), 'ok 候選');
-assert.ok(!state().input.candidates.some((c) => /book|拿走/.test(c.word)), 'book 不產生候選（\\b 邊界）');
-up('繼續'); // 回到可解鎖基線
 
 // —— 2. 鎖定期寫入矩陣：唯「單體」sb unlock 命令放行；借道全擋 ——
 assert.equal(state().dialogueLock, true);
 const lockedBash = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
 assert.equal(lockedBash.status, 2, '鎖定期一般 Bash 擋');
-const unlockPass = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "繼續"' } });
+const unlockPass = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "繼續" --as "行動許可"' } });
 assert.equal(unlockPass.status, 0, '單體解鎖命令放行');
 const unlockPass2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs unlock --quoted 繼續' } });
 assert.equal(unlockPass2.status, 0, 'node sb.mjs unlock 單體放行');
@@ -83,9 +74,6 @@ const hijack9 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inp
 assert.equal(hijack9.status, 2, '.shiftblame 冒名路徑擋');
 const hijack10 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node x_sb.mjs unlock --quoted 繼續' } });
 assert.equal(hijack10.status, 2, '非 sb.mjs 檔名擋');
-// 數字內標點保護：3.14 不偽句界——「ok 3.14 沒過」ok 與否定詞同句
-up('ok 3.14 沒過');
-assert.ok(state().input.candidates.some((c) => c.word === 'ok' && c.negated), '數字小數點不分句——否定同句標記');
 const lockedWrite = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'app.js') } });
 assert.equal(lockedWrite.status, 2, '鎖定期寫檔擋');
 const readOnly = run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.js') } });

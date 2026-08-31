@@ -19,7 +19,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 不變量卡＋對話鎖與機械授權過濾"
+            "statusMessage": "shiftblame: 不變量卡＋對話鎖與當前輸入記錄"
           }
         ]
       }

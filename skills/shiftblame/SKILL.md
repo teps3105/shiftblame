@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.5.5"
+  version: "1.5.6"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→audit→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（對話鎖 sb unlock 引老闆原句＋授權印章 done/pass/newMs）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；時序元規則（每則輸入覆蓋前一則、消費即失效）由機械層承擔，抗上下文壓縮。三時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋SLUG.md 對照。技術證據不足時強制外部唯讀技術意見，主對話複核後自行裁定，不得轉嫁給老闆。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -50,9 +50,9 @@ flowchart TD
 
 > **確認綁定語義決策，不綁定階段箭頭**：老闆確認 sb-think 的完整理解後，該授權由 G1、G2、G3、放行邊、測試、實作、驗收與完成共同承接；同一語義不得在文件定稿、skill 觸發或 CLI 推進時再次詢問。`--boss-ok` 是留痕（記錄 agent 宣稱的老闆授權），不是要求再問一次的訊號；實質鑰匙是對話鎖（`sb unlock`）與授權印章。
 >
-> **時序元規則（機械承擔，抗上下文壓縮）**：每則老闆輸入由 hooks 覆蓋記錄為「當前輸入」（最新覆蓋舊則——跳時序不是被擋，是無物可引）＋機械掃描候選詞（自然語言寬表：行動許可 開工/開始/繼續/去做/去吧/放行/就這樣/動工/go/ok；點頭 確認/沒錯/對/可以/好/行；完成 done/完成/收工；通過 pass/通過/過了；新里程碑 下一個/開新的/新開一個——語例非判準）＋否定共現標記（否定詞與候選同句→標否定；肯定複合詞 沒錯/不錯 先剔除不誤標），過濾產物注入回流。解鎖唯 `sb unlock --quoted "引句"`：引句逐字錨定當前輸入、須覆蓋非否定候選（英文詞比照掃描層單字邊界——book/look 不得借道 ok）、消費即失效（授權生命週期＝一則輸入）；解鎖通道僅放行單體 `sb unlock` 命令（註解、字串內嵌、`&&`/`;`/`|` 借道全擋）。agent 的判讀只在機械標記的候選內運作——不能創造候選、不能跳時序、不能引否定、不能捏造。上下文壓縮把過程變摘要，機械層（檔案事實）永遠持有最後一則原文——時序判定只依賴機械事實；SessionStart 於壓縮後自動注入動態狀態卡回流。解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）；每則輸入是獨立授權語境，MUST NOT 疊加歷史推論或跨則合併解讀。
+> **理解宣告制（1.5.6，機械承擔事實、理解承擔語義）**：「理解授權意圖」是制度事件——sb-think 路由（hooks 偵測 Skill 調用標記 thinkRouted，每則輸入重置；未路由不得解鎖）→ `sb unlock --quoted "承載授權語義的原句" --as "理解宣告"`（一句話：這授權了什麼）→ 直接進入下一步。機械只驗事實：每則輸入由 hooks 覆蓋記錄為「當前輸入」（最新覆蓋舊則——跳時序不是被擋，是無物可引；機械抗上下文壓縮，SessionStart 於壓縮後自動注入動態狀態卡）、引句逐字錨定（捏造即擋）、消費即失效（授權生命週期＝一則輸入）、unlockLog 唯增雜湊鏈（刪改即斷鏈擋）、解鎖通道僅放行單體 `sb unlock` 命令（代入／借道全擋）。語義認定權歸理解——機械不掃關鍵詞、不標否定、不做印章類型對照（理解的官僚替代品全撤；理解成立 MUST 立即宣告進入下一步，MUST NOT 停等關鍵詞或要求老闆改述，理解不明才發問且不解鎖）。引句＋理解宣告於老闆下則輸入自動展示（必然曝光——理解有誤即越權，當場可見）；每則輸入是獨立授權語境，MUST NOT 疊加歷史推論或跨則合併解讀。
 >
-> **如實天花板（通道層，不防刻意偽造）**：hooks 輸入事件無來源鑑別——解鎖態的 agent 可自行調用 hooks 偽造 UserPromptSubmit（寫入的 input 格式與真實輸入無從區分），藉此自寫候選、解鎖、並洗除曝光審視標記；unlockLog 唯增雜湊鏈僅使「刪改中間條目」斷鏈擋死，不防完整重算重寫（整體刪除重建同）。手改 flow-state（含偽造 history 條目與 ms 欄、回撥 adversarialConsumed）不防；對抗宣告無 TTL 且跨老闆輸入存活——unlock 後舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度與報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。中文無詞邊界——子詞誤命中（「通行」含「行」、「再確認一下」含「確認」）與英文詞義歧異（pass 兼動詞）屬詞集天險：機械只認形式，語義真假屬候選內判讀＋曝光終審。此為通道層結構限制，非流程可封閉——最終由老闆抽查 unlockLog 與對話實蹟對照承擔；曝光依賴平台渲染 hooks 注入文本，平台不渲染則曝光承諾不成立。
+> **如實天花板（通道層，不防刻意偽造）**：hooks 輸入事件無來源鑑別——解鎖態的 agent 可自行調用 hooks 偽造 UserPromptSubmit（寫入的 input 格式與真實輸入無從區分），藉此自導自演「當前輸入＋quoted＋理解宣告」全套並洗除曝光審視標記；unlockLog 唯增雜湊鏈僅使「刪改中間條目」斷鏈擋死，不防完整重算重寫（整體刪除重建同）。手改 flow-state（含 thinkRouted、偽造 history 條目與 ms 欄、回撥 adversarialConsumed）不防；對抗宣告無 TTL 且跨老闆輸入存活——unlock 後舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度與報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。理解宣告制自身的天花板：`--as` 是無約束的 agent 文本，機械不驗——「路由了但理解是假的」（引老闆疑問句卻宣告行動許可）機械照樣通過，語義真假只能靠曝光行完整展示引句＋宣告原文、由老闆終審。此為通道層結構限制，非流程可封閉——最終由老闆抽查 unlockLog 與對話實蹟對照承擔；曝光依賴平台渲染 hooks 注入文本，平台不渲染則曝光承諾不成立。
 
 ## 1. 制衡與讀圖規則
 
@@ -434,7 +434,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 > session 冷啟動時建立脈絡，讓 sb-think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 sb-think 的前置——sb-think 第一步就是讀脈絡。
 
-**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。四事件：`SessionStart` 注入載入程序＋不變量卡＋動態狀態卡（壓縮後自動回流段位／鎖態／當前輸入原文與標記——抗上下文壓縮）；`UserPromptSubmit` 每則老闆輸入——**對話鎖＋機械過濾**（上鎖；覆蓋式記錄當前輸入＋候選詞掃描＋否定共現標記；過濾產物與未審解鎖引句注入回流）＋不變量卡與當前段；`Stop` 偵測 agent 輸出含〔待確認〕→上鎖（執行中呈現新決策）；`PreToolUse`——對話鎖期間擋一切寫入（含 Bash 與 .shiftblame；唯 `sb unlock` 命令自身放行——解鎖通道不得被鎖封閉）、`git commit` 驗 `sb commitmsg` 印章、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended）、老闆決策邊雙重鎖（intent→audit／plan→test／verify→done 三邊的 `sb next` 缺 --boss-ok 即擋）。hooks 故障時靜默放行，注入與硬擋失效即回到文件與 CLI 閘門層。**路徑展開元規則（系統性）**：hooks／CLI 的一切路徑判斷 MUST 展開為 repo root 錨定的絕對路徑——相對路徑一律以 repo root 展開，MUST NOT 以進程 cwd 展開（進程 cwd 與 repo 無關，錨錯即判錯對象）；git 操作錨定唯一正道＝`-C <絕對root>`，重定向（GIT_DIR／`--git-dir`／`--work-tree`）使錨定失效，掃到即擋。
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。四事件：`SessionStart` 注入載入程序＋不變量卡＋動態狀態卡（壓縮後自動回流段位／鎖態／當前輸入原文與路由狀態——抗上下文壓縮）；`UserPromptSubmit` 每則老闆輸入——**對話鎖＋理解宣告制**（上鎖；覆蓋式記錄當前輸入原文＋thinkRouted 重置；狀態與未審解鎖引句＋理解宣告注入回流）＋不變量卡與當前段；`Stop` 偵測 agent 輸出含〔待確認〕→上鎖（執行中呈現新決策）；`PreToolUse`——對話鎖期間擋一切寫入（含 Bash 與 .shiftblame；唯 `sb unlock` 命令自身放行——解鎖通道不得被鎖封閉）、`git commit` 驗 `sb commitmsg` 印章、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended）、老闆決策邊雙重鎖（intent→audit／plan→test／verify→done 三邊的 `sb next` 缺 --boss-ok 即擋）。hooks 故障時靜默放行，注入與硬擋失效即回到文件與 CLI 閘門層。**路徑展開元規則（系統性）**：hooks／CLI 的一切路徑判斷 MUST 展開為 repo root 錨定的絕對路徑——相對路徑一律以 repo root 展開，MUST NOT 以進程 cwd 展開（進程 cwd 與 repo 無關，錨錯即判錯對象）；git 操作錨定唯一正道＝`-C <絕對root>`，重定向（GIT_DIR／`--git-dir`／`--work-tree`）使錨定失效，掃到即擋。
 
 **路徑錨定與破壞性命令防護**：相對路徑展開到錯誤資料夾（遞迴刪除、覆蓋指令、各語言刪除腳本——`shutil.rmtree`、`fs.rm(recursive)`、`Remove-Item -Recurse`、`del /s`、`rm -rf`、重定向截斷 `>`）是破壞的共同入口。hooks 對「破壞性模式＋相對路徑」exit 2 硬擋，要求以絕對路徑改寫；`git clean -f`／`reset --hard` 未以 `-C <絕對路徑>` 錨定即擋；直跑腳本檔含遞迴刪除 API 時——相對字面路徑即擋、僅含 API 注入警告。hook 的專案根只認平台給的絕對 `cwd`，不猜測不 fallback；`sb` CLI 由執行目錄向上錨定 `.git`／`.shiftblame` 為根，狀態與印章一律寫在根，杜絕子目錄執行產生流浪工作區。
 
