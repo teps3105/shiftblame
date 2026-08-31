@@ -1,6 +1,6 @@
 ---
 name: 研究
-revision: 1.5.3
+revision: 1.5.4
 ---
 # research 段 — 定義技術，制約需求與實作計畫（定義層 · 主對話承載）
 

@@ -15,6 +15,7 @@
  */
 
 import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -50,7 +51,7 @@ const CARD = [
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
   '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted 引本則非否定候選原句解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
   '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；驗收段（verify）對 repo 唯讀。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 暫存不入庫（tmp/ 與 .shiftblame/——hooks 讀 git 展開事實清單擋）；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
 ].join('\n');
@@ -386,6 +387,53 @@ const commitSegments = (cmd) =>
 
 const normPath = (p) => { try { return resolve(String(p)).toLowerCase(); } catch { return String(p).toLowerCase(); } };
 
+// 暫存不入庫：不解析 git add 的 pathspec（相對路徑/./萬用/絕對——命令字串解析永遠追不上 git 展開規則），
+// 讀 git 自己展開後的事實清單（diff --cached --name-only，輸出相對 repo root）比對禁入模式。
+// tmp/＝repo 根暫存傾倒區（含根層名為 tmp 的檔案）；.shiftblame/＝流程本地檔（含其 tmp）全程不追蹤——MUST gitignore。
+// 大小寫不敏感（Windows 檔案系統 TMP/ 同目錄）；quotePath=false（CJK 檔名不引號逃逸）；
+// --diff-filter=ACMRTUB——純刪除（D）放行：git rm --cached 的清理 commit 是唯一合法減少通道。
+const STAGED_BAN_RE = /^(?:tmp|\.shiftblame)(?:\/|$)/i;
+function checkStaged(root) {
+  if (!root) return null;
+  try {
+    const out = execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUB'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const hits = out.split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => STAGED_BAN_RE.test(p));
+    if (hits.length) return `暫存目錄不得入庫——staged 含 ${hits.slice(0, 5).join('、')}${hits.length > 5 ? ` 等 ${hits.length} 檔` : ''}（tmp/ 與 .shiftblame/ MUST gitignore；先 git restore --staged 移除再提交）`;
+  } catch { /* git 不可用（非 git repo）→ 印章層照常把關 */ }
+  return null;
+}
+
+// commit-time 暫存繞過：commit 子命令後的 token 白名單制——只允許 -m/--message（＋訊息值）與已知安全無值旗標；
+// 其餘任何 token（-a/--only/合體旗標/裸 pathspec/-m 之後的 pathspec/-- 後一切）即擋：
+// 這些形態在 commit 內部展開暫存，hooks 跑時 diff --cached 尚未含——MUST 先 git add 顯式暫存，以無 pathspec 之 commit 提交。
+// 訊息值整體跳過（引號區段為單一 token——訊息內含「-a」等字樣不誤傷）；commit 定位只認獨立 token（-c 鍵名內的 commit 不誤傷）。
+const COMMIT_SAFE_FLAGS = new Set(['-m', '--message', '-q', '--quiet', '-v', '--verbose', '-n', '--no-verify', '-s', '--signoff', '--no-edit', '--allow-empty', '--amend', '--no-gpg-sign', '--allow-empty-message']);
+function checkCommitTimeStaging(seg) {
+  const cm = /(?:^|\s)commit(?=\s|$)/g;
+  let last = null, m2;
+  while ((m2 = cm.exec(seg))) last = m2; // 取最後一個獨立 commit token（-c key=…commit… 不含獨立 token）
+  if (!last) return null;
+  const tail = seg.slice(last.index + last[0].length);
+  const tokens = tail.match(/"[^"]*"|'[^']*'|[^\s"']+/g) ?? [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t === '-m' || t === '--message') { i++; continue; } // 跳過訊息值（引號 token 或單詞）
+    if (COMMIT_SAFE_FLAGS.has(t)) continue;
+    if (t.startsWith('--message=')) continue;
+    return `commit-time 暫存繞過（「${t}」）——commit 子命令後僅允許 -m/--message 與安全旗標（${[...COMMIT_SAFE_FLAGS].slice(0, 6).join(' ')}…）；MUST 先 git add 顯式暫存，以無 pathspec 之 commit 提交`;
+  }
+  return null;
+}
+
+// git alias 定義禁止：alias 可把 commit 包進無「commit」字樣的子命令，繞過印章／對抗／staged／commit-time 四閘
+// （CARD⑥：commit 必過 sb commitmsg）。既有 alias 屬環境事實（SKILL 天花板：老闆抽查 git config --get-regexp ^alias.）。
+function checkGitAliasWrite(cmd) {
+  if (/\bgit\b[^\n|;&]*\sconfig\b[^\n]*alias\./.test(cmd)) {
+    return 'git alias 定義禁止——alias 可包裝 commit 繞過全部 commit 閘（印章／對抗宣告／staged／commit-time）；MUST 使用完整 git 指令';
+  }
+  return null;
+}
+
 function checkCommitStamp(root, seg) {
   const extracted = extractCommitMessage(seg);
   if (extracted.error) return extracted.error;
@@ -484,6 +532,9 @@ try {
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);
+      // git alias 定義禁止（alias 可包裝 commit 繞過四閘）
+      const aliasWrite = checkGitAliasWrite(cmd);
+      if (aliasWrite) deny(aliasWrite);
       // 先擋破壞性＋相對路徑（含行內各語言刪除 API 與直跑腳本檔掃描）
       const destructive = scanInlineDestructive(cmd);
       if (destructive) deny(destructive);
@@ -494,6 +545,12 @@ try {
       const segs = commitSegments(cmd);
       for (const seg of segs) {
         if (!root) process.exit(0); // 無絕對錨定可用：不猜測，交由其他層
+        // commit-time 暫存繞過（-a/--only/pathspec）先擋——diff --cached 看不見提交期展開
+        const cts = checkCommitTimeStaging(seg);
+        if (cts) deny(cts);
+        // 暫存不入庫（staged 事實清單）先擋——髒內容不得燒掉印章消費
+        const staged = checkStaged(root);
+        if (staged) deny(staged);
         const reason = checkCommitStamp(root, seg);
         if (reason) deny(reason);
       }

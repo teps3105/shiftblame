@@ -565,6 +565,13 @@ function cmdCommitmsg(msg) {
     const st = readJson(STATE_FILE);
     if (!st.adversarialAt || st.adversarialConsumed) die(['提交前需對抗記錄——本次返工/變更後重新以子代理對抗並 sb adversarial <報告檔> 宣告（判定「通過」才可發章；每 commit 一對一消費）']);
   }
+  // 發章前 staged 同檢（與 hooks 同判據——雙層一致）：讀 git 展開的事實清單，禁入 tmp/ 與 .shiftblame/
+  // （大小寫不敏感＋quotePath=false 防引號逃逸＋--diff-filter 排除純刪除——清理通道放行；非 git 工作區跳過）
+  try {
+    const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^(?:tmp|\.shiftblame)(?:\/|$)/i.test(p));
+    if (staged.length) die([`暫存目錄不得入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（tmp/ 與 .shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
+  } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   try {
     const stPath = join(ROOT, '.shiftblame', 'flow-state.json');

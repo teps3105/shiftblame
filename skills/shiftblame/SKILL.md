@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.5.3"
+  version: "1.5.4"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→audit→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（對話鎖 sb unlock 引老闆原句＋授權印章 done/pass/newMs）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；時序元規則（每則輸入覆蓋前一則、消費即失效）由機械層承擔，抗上下文壓縮。三時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋SLUG.md 對照。技術證據不足時強制外部唯讀技術意見，主對話複核後自行裁定，不得轉嫁給老闆。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -151,7 +151,7 @@ flowchart TD
    - **G1** — 寫入者：主對話的 audit 段。前置：經老闆意圖確認（intent→audit 邊）後定稿。
    - **G2** — 寫入者：主對話的 research 段。
    - **G3** — 寫入者：主對話的 plan 段。例外：§2.5 收斂執行記錄由秘書補寫。
-   - **repo 實作碼** — 寫入者：主對話的 build 段。不可自行 commit，commit 訊息必過 `sb commitmsg`（印章）。
+   - **repo 實作碼** — 寫入者：主對話的 build 段。不可自行 commit，commit 訊息必過 `sb commitmsg`（印章）。**檔案位置遵循專案慣例**：寫入任何新檔前 MUST 盤點同類既有檔案的位置（測試碼→既有測試目錄、文件→docs 慣例、專案日誌→專案日誌位置——MUST NOT 丟 `.shiftblame/tmp/`、配置→既有配置位置）；專案慣例明確時 MUST NOT 自創位置或以「方便」為由偏離；無慣例可循→位置由 G2/G3 定義並於放行簡報揭露。時點②③對抗必查「本次新增檔案清單 vs 專案同類分佈」。**暫存不入庫**：`<repo>/tmp/`（暫存傾倒區）與 `.shiftblame/`（流程本地檔，含其 tmp）全程不追蹤、MUST gitignore——`sb commitmsg` 與 hooks 於 commit 前讀 `git diff --cached --name-only`（git 展開的事實清單，不解析 add pathspec），staged 命中即擋（大小寫不敏感；`git commit` MUST 無 pathspec／`-a`／`--only`——提交期暫存繞過即擋；git alias 定義禁止——alias 可包裝 commit 繞過四閘；純刪除放行＝`git rm --cached` 清理通道。殘餘：子目錄傾倒 `pkg/tmp/`、junction 別名與既有 alias 不在此閘範圍——禁入僅 repo 根 `tmp/` 與 `.shiftblame/`，既有 alias 由老闆 `git config --get-regexp ^alias.` 抽查）。
    - **repo 測試碼** — 寫入者：主對話的test 段；離開該狀態即鎖定。鎖定後只有附定義錯誤理由顯式回到test 段才可修改；不得在實作或verify 段為綠燈逕改。G3 每項驗收 MUST 可自動化執行且不依賴對外視窗。
    - **repo commit** — 寫入者：**秘書獨佔**。前置：G1/G2/G3 兩兩雙向一致（§10）且通過開發門檻；§1.4 判定（直接修正，或執行層小循環實作完成即 commit 存檔——存檔先於驗收，驗收後判決通過才開下一個功能）。
 

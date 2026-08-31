@@ -146,4 +146,91 @@ assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對�
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
 
+// —— staged 暫存不入庫（1.5.4）：雙端同判據——讀 git 展開事實清單，tmp/ 與 .shiftblame/ 命中即擋 ——
+writeFileSync(reportPath, '# 對抗報告\nstaged 閘測試。\n對抗判定：通過（零必修）');
+r = run('adversarial', reportPath);
+assert.equal(r.status, 0);
+// staged 含 tmp/ → commitmsg 不發章
+mkdirSync(join(root, 'tmp'), { recursive: true });
+writeFileSync(join(root, 'tmp', 'junk.txt'), 'junk\n');
+assert.equal(git('add', 'tmp/junk.txt').status, 0);
+r = run('commitmsg', 'feat: 暫存攔截驗證訊息');
+assert.equal(r.status, 1, 'staged 含 tmp/ → commitmsg 擋');
+assert.match(r.stderr, /暫存目錄不得入庫/);
+// staged 含 .shiftblame/ → hooks commit 擋（繞過 commitmsg 的手寫章路徑也被此層攔）
+assert.equal(git('add', 'tmp/junk.txt', '-f', join(root, '.shiftblame', 'flow-state.json')).status, 0, '強制 add .shiftblame（模擬繞過 gitignore）');
+writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 暫存攔截驗證訊息', cwd: root, issuedAt: new Date().toISOString() }));
+const hs = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 暫存攔截驗證訊息"` } });
+assert.equal(hs.status, 2, 'staged 含 tmp/ 與 .shiftblame/ → hooks commit 擋（髒內容先擋，不燒印章）');
+assert.match(hs.stderr, /暫存目錄不得入庫/);
+// 清空 staged → commitmsg 可發章（宣告未被燒）
+assert.equal(git('restore', '--staged', 'tmp/junk.txt', join(root, '.shiftblame', 'flow-state.json')).status, 0);
+r = run('commitmsg', 'feat: 暫存攔截驗證訊息');
+assert.equal(r.status, 0, 'staged 清空→發章（先前擋未燒宣告）');
+
+// —— 攻擊面（1.5.4 閘環六必修回歸）——
+// -a 提交期繞過：已追蹤 tmp 檔修改不 add，commit -a——hooks 擋（diff --cached 看不見提交期展開）
+mkdirSync(join(root, 'tmp'), { recursive: true });
+writeFileSync(join(root, 'tmp', 'tracked.txt'), 'v1\n');
+assert.equal(git('add', '-f', 'tmp/tracked.txt').status, 0);
+writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 種入追蹤檔', cwd: root, issuedAt: new Date().toISOString() }));
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: 種入追蹤檔').status, 0, '種入已追蹤 tmp 檔（gitignore 前遺留態）');
+{ const st = state(); st.adversarialConsumed = false; writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st)); }
+writeFileSync(join(root, 'tmp', 'tracked.txt'), 'v2 modified\n'); // 修改不 add
+writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 提交期繞過嘗試', cwd: root, issuedAt: new Date().toISOString() }));
+const ha = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -a -m "feat: 提交期繞過嘗試"` } });
+assert.equal(ha.status, 2, 'commit -a（提交期暫存）→hooks 擋');
+assert.match(ha.stderr, /commit-time 暫存繞過/);
+const hp = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit --only tmp/tracked.txt -m "feat: 提交期繞過嘗試"` } });
+assert.equal(hp.status, 2, 'commit --only <path> →hooks 擋');
+// 大小寫：目錄原生叫 TMP（乾淨沙盒——已有小寫 tmp 時 git 會正規化，測不到 i 旗標）——staged 記 TMP/ 仍命中
+const root2 = mkdtempSync(join(tmpdir(), 'sb-adv-case-'));
+try {
+  const git2 = (...a) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', ...a], { cwd: root2, encoding: 'utf8' });
+  const run2 = (...a) => spawnSync(process.execPath, [cli, ...a], { cwd: root2, encoding: 'utf8' });
+  assert.equal(git2('init').status, 0);
+  mkdirSync(join(root2, 'TMP'), { recursive: true });
+  writeFileSync(join(root2, 'TMP', 'case.txt'), 'x\n');
+  assert.equal(git2('add', '-f', 'TMP/case.txt').status, 0);
+  assert.ok(git2('ls-files').stdout.includes('TMP/case.txt'), 'index 原生記大寫 TMP/');
+  mkdirSync(join(root2, '.shiftblame', 'tmp'), { recursive: true });
+  writeFileSync(join(root2, '.shiftblame', 'tmp', 'r.md'), '# r\n對抗判定：通過');
+  assert.equal(run2('adversarial', '.shiftblame/tmp/r.md').status, 0);
+  r = run2('commitmsg', 'feat: 大小寫繞過驗證');
+  assert.equal(r.status, 1, 'staged 含 TMP/（大小寫不敏感）→commitmsg 擋');
+} finally { rmSync(root2, { recursive: true, force: true }); }
+// 回主沙盒：CJK 檔名（quotePath 引號逃逸——關閉後原樣輸出命中）
+writeFileSync(join(root, 'tmp', '報告.txt'), '中\n');
+assert.equal(git('add', '-f', 'tmp/報告.txt').status, 0);
+r = run('commitmsg', 'feat: CJK 檔名繞過驗證');
+assert.equal(r.status, 1, 'staged 含 tmp/報告.txt（quotePath=false）→commitmsg 擋');
+// 清理通道：git rm --cached（純刪除 D）放行
+assert.equal(git('rm', '--cached', 'tmp/報告.txt').status, 0);
+r = run('commitmsg', 'feat: 清理通道驗證');
+assert.equal(r.status, 0, '純刪除（git rm --cached）→清理通道放行');
+// —— tokenizer 白名單制回歸（3 必修複核）——
+// -m 之後的 pathspec → 擋（提交期繞過）
+const hm1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 提交期繞過嘗試" tmp/tracked.txt` } });
+assert.equal(hm1.status, 2, 'pathspec 在 -m 之後→hooks 擋');
+assert.match(hm1.stderr, /commit-time 暫存繞過/);
+const hm2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 提交期繞過嘗試" -- tmp/` } });
+assert.equal(hm2.status, 2, '-- 之後 pathspec→hooks 擋');
+// 引號訊息內含旗標字樣 → 不誤傷（訊息是單一引號 token 整體跳過）；前置獨立宣告＋章
+const armHook = (msg) => {
+  writeFileSync(reportPath, '# r\n對抗判定：通過');
+  assert.equal(run('adversarial', reportPath).status, 0);
+  writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: root, issuedAt: new Date().toISOString() }));
+};
+armHook('fix: 擋下 -a 提交期繞過');
+const hm3 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "fix: 擋下 -a 提交期繞過"` } });
+assert.equal(hm3.status, 0, '訊息含 -a 字樣→不誤傷（印章相符放行）');
+// -c 鍵名含 commit（commit.gpgsign）→ 不誤傷（commit 定位只認獨立 token）
+armHook('fix: gpgsign 鍵名驗證');
+const hm4 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} -c commit.gpgsign=false commit -m "fix: gpgsign 鍵名驗證"` } });
+assert.equal(hm4.status, 0, '-c commit.gpgsign 鍵名→不誤傷');
+// git alias 定義 → 擋（alias 可包裝 commit 繞過四閘）
+const ha1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} config alias.z "commit -a"` } });
+assert.equal(ha1.status, 2, 'git alias 定義→hooks 擋');
+assert.match(ha1.stderr, /git alias 定義禁止/);
+
 console.log('sb-adversarial-gate: PASS');
