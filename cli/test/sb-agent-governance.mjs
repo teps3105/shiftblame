@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.5.4');
+assert.equal(manifest.version, '1.5.5');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.5\.4"/);
+assert.match(skill, /version: "1\.5\.5"/);
 
 // 八段詞彙落地
 assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
@@ -63,7 +63,7 @@ for (const f of files) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.5\.4/);
+  assert.match(reference, /revision: 1\.5\.5/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

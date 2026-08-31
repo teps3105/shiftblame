@@ -1,6 +1,6 @@
 ---
 name: 測試
-revision: 1.5.4
+revision: 1.5.5
 ---
 # test 段 — 依 G1 寫測試定義「過」＝G1 的落地（執行層）
 

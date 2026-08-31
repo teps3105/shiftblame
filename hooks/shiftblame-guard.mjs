@@ -51,7 +51,7 @@ const CARD = [
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
   '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted 引本則非否定候選原句解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
   '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 暫存不入庫（tmp/ 與 .shiftblame/——hooks 讀 git 展開事實清單擋）；驗收段（verify）對 repo 唯讀。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義禁止；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
 ].join('\n');
@@ -224,10 +224,13 @@ const nodeOf = (root) => {
   catch { return null; }
 };
 
-// 路徑正規化：剝 `\\?\`／`\\?\UNC\` 裝置前綴（防 relative() 失效全繞）；Win32 尾端點與尾空白；
-// 已存在路徑解析 realpath（防 junction／短名偽裝）
-function canonicalPath(p) {
-  let s = p.replace(/^\\\\\?\\UNC\\/i, '\\\\').replace(/^\\\\\?\\/i, '');
+// 路徑展開元規則（系統性）：一切判斷路徑 MUST 展開為 repo root 錨定的絕對路徑——
+// 相對路徑一律以 root 展開，MUST NOT 以進程 cwd 展開（process.cwd 是 hooks 進程所在，與 repo 無關）。
+// 正規化：剝 `\\?\`／`\\?\UNC\` 裝置前綴（防 relative() 失效全繞）；Win32 尾端點與尾空白；
+// 已存在路徑解析 realpath（防 junction／短名偽裝）。
+function absPath(root, p) {
+  const anchored = isAbsolute(p) ? p : join(root, p); // root 必參：呼叫點皆有 root 早退——無 root 場景不該走到這
+  let s = anchored.replace(/^\\\\\?\\UNC\\/i, '\\\\').replace(/^\\\\\?\\/i, '');
   s = s.split(/[\\/]/).map((seg) => seg.replace(/[. ]+$/, '')).join('/');
   try {
     if (existsSync(s)) return realpathSync(s);
@@ -246,12 +249,10 @@ function checkStateWriteMatrix(root, toolInput) {
   }
   if (typeof toolInput?.uri === 'string' && /^file:/i.test(toolInput.uri)) targets.push(toolInput.uri.replace(/^file:\/\//i, ''));
   if (!targets.length) return null; // 無可辨識路徑：不猜測
-  const norm = (x) => { try { return resolve(canonicalPath(x)).toLowerCase(); } catch { return String(x).toLowerCase(); } };
-  const rootNorm = norm(root);
   const node = nodeOf(root);
   if (!node) return null; // 非治理工作區（無狀態檔）
   for (const target of targets) {
-    const p = canonicalPath(isAbsolute(target) ? target : resolve(root, target));
+    const p = absPath(root, target);
     const rel = relative(root, p).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
@@ -348,8 +349,9 @@ function scanInlineDestructive(cmd) {
 function scanScriptFile(cmd, root) {
   const m = cmd.match(/(?:^|\s)(?:python3?|py(?:\s+-\d)?|node)\s+(?:-[A-Za-z]+\s+)*(")?([^"&|;\s]+?\.(?:py|js|mjs|cjs|ts))\1/);
   if (!m) return null;
-  const scriptPath = resolve(root ?? process.cwd(), m[2]);
-  const scriptRel = relative(root ?? process.cwd(), scriptPath).replace(/\\/g, '/');
+  if (!root) return null;
+  const scriptPath = absPath(root, m[2]); // root 錨定展開（元規則：不以進程 cwd 展開）
+  const scriptRel = relative(root, scriptPath).replace(/\\/g, '/');
   // 測試碼內容本就含破壞字串 fixtures——測試路徑的腳本免除內容掃描（否則直跑測試被自己的防護擋下）
   if (TEST_PATH_RE.test(scriptRel) || TEST_FILE_RE.test(scriptRel) || /(^|\/)(tests?|__tests__|spec)\//i.test(scriptRel)) return null;
   let text;
@@ -385,20 +387,21 @@ function extractCommitMessage(seg) {
 const commitSegments = (cmd) =>
   cmd.split(/[;\n]|&&|\|\|/).filter((seg) => /\bgit\b/i.test(seg) && /\bcommit\b/i.test(seg));
 
-const normPath = (p) => { try { return resolve(String(p)).toLowerCase(); } catch { return String(p).toLowerCase(); } };
+const normPath = (root, p) => { try { return absPath(root, String(p)).toLowerCase(); } catch { return String(p).toLowerCase(); } }; // root 錨定（防偽造章相對 cwd 比對錯位）
 
-// 暫存不入庫：不解析 git add 的 pathspec（相對路徑/./萬用/絕對——命令字串解析永遠追不上 git 展開規則），
-// 讀 git 自己展開後的事實清單（diff --cached --name-only，輸出相對 repo root）比對禁入模式。
-// tmp/＝repo 根暫存傾倒區（含根層名為 tmp 的檔案）；.shiftblame/＝流程本地檔（含其 tmp）全程不追蹤——MUST gitignore。
-// 大小寫不敏感（Windows 檔案系統 TMP/ 同目錄）；quotePath=false（CJK 檔名不引號逃逸）；
-// --diff-filter=ACMRTUB——純刪除（D）放行：git rm --cached 的清理 commit 是唯一合法減少通道。
-const STAGED_BAN_RE = /^(?:tmp|\.shiftblame)(?:\/|$)/i;
+// staged 不入庫（系統檔）：不解析 git add 的 pathspec，讀 git 展開後的事實清單，一律 absPath(root, p)
+// 展開為絕對（路徑展開元規則）再判系統檔（.shiftblame/——傾倒區唯一，全程不追蹤 MUST gitignore）。
+// repo 根 tmp/ 不立法：系統不認識此概念，放錯位置由檔案位置慣例條文＋對抗＋抽查承擔（SKILL §3）。
+// quotePath=false（CJK 檔名不引號逃逸）；--diff-filter=ACMRTUB——純刪除（D）放行＝git rm --cached 清理通道。
 function checkStaged(root) {
   if (!root) return null;
   try {
     const out = execFileSync('git', ['-C', root, '-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUB'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    const hits = out.split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => STAGED_BAN_RE.test(p));
-    if (hits.length) return `暫存目錄不得入庫——staged 含 ${hits.slice(0, 5).join('、')}${hits.length > 5 ? ` 等 ${hits.length} 檔` : ''}（tmp/ 與 .shiftblame/ MUST gitignore；先 git restore --staged 移除再提交）`;
+    const hits = out.split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => {
+      const rel = (() => { try { return relative(root, absPath(root, p)).replace(/\\/g, '/').toLowerCase(); } catch { return p.toLowerCase(); } })();
+      return rel === '.shiftblame' || rel.startsWith('.shiftblame/'); // toLowerCase：realpathSync 保留輸入大小寫不校正為磁碟真名
+    });
+    if (hits.length) return `系統檔不入庫——staged 含 ${hits.slice(0, 5).join('、')}${hits.length > 5 ? ` 等 ${hits.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再提交）`;
   } catch { /* git 不可用（非 git repo）→ 印章層照常把關 */ }
   return null;
 }
@@ -434,6 +437,19 @@ function checkGitAliasWrite(cmd) {
   return null;
 }
 
+// git 路徑重定向禁止（路徑展開元規則的閘面）：重定向改變 git 的路徑語義——staged 檢查與印章 cwd 比對
+// 都以 input.cwd 錨定，看不見重定向，章可攜至未驗 repo（對抗者實證）。一律掃即擋；錨定唯一正道＝-C <絕對root>。
+function checkGitRedirect(cmd) {
+  // 大小寫不敏感（Windows 環境變數查找不敏感——git_dir= 同 GIT_DIR=）＋反斜線正規化副本雙掃
+  // （bash 引號移除吞反斜線：env GIT_DIR\= 與 GIT\_DIR= 仍是重定向）
+  const scan = /(?:^|[^A-Za-z0-9_])(?:GIT_DIR|GIT_WORK_TREE|GIT_INDEX_FILE|GIT_OBJECT_DIRECTORY|GIT_CEILING_DIRECTORIES|GIT_COMMON_DIR|GIT_ALTERNATE_OBJECT_DIRECTORIES)\s*=/i;
+  if (scan.test(cmd) || scan.test(cmd.replace(/\\/g, ''))
+    || /(?:^|\s)--(?:git-dir|work-tree|index-file|object-dir(?:ectory)?|super-prefix)(?=[\s=])/.test(cmd)) {
+    return 'git 路徑重定向禁止（GIT_DIR／--git-dir／--work-tree 等，含大小寫與反斜線跳脫形態）——重定向使 staged 與印章檢查的 root 錨定失效；MUST 以 -C <絕對root> 錨定';
+  }
+  return null;
+}
+
 function checkCommitStamp(root, seg) {
   const extracted = extractCommitMessage(seg);
   if (extracted.error) return extracted.error;
@@ -441,7 +457,7 @@ function checkCommitStamp(root, seg) {
   const c = seg.match(/(?:^|\s)-C\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|]+))/);
   if (c) {
     const target = c[1] ?? c[2] ?? c[3] ?? '';
-    if (!isAbs(target) || normPath(target) !== normPath(root)) {
+    if (!isAbs(target) || normPath(root, target) !== normPath(root, root)) {
       return 'git -C 目標與印章專案不符——印章不可攜帶到其他 repo；在目標專案重跑 sb commitmsg，且 -C 使用絕對路徑';
     }
   }
@@ -450,7 +466,7 @@ function checkCommitStamp(root, seg) {
   try {
     const stamp = JSON.parse(readFileSync(stampPath, 'utf8'));
     if (!stamp.cwd || !stamp.message || !stamp.issuedAt) return 'commit 印章欄位不全（偽造跡象）——重跑 sb commitmsg';
-    if (normPath(stamp.cwd) !== normPath(root)) return 'commit 印章屬於其他專案——在本專案重跑 sb commitmsg';
+    if (!isAbs(stamp.cwd) || normPath(root, stamp.cwd) !== normPath(root, root)) return 'commit 印章 cwd 非絕對或屬於其他專案——在本專案重跑 sb commitmsg（合法章 cwd 恆為絕對 ROOT）';
     const age = Date.now() - new Date(stamp.issuedAt).getTime();
     if (age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）——重跑 sb commitmsg "<訊息>"';
     if (age < -60000) return 'commit 印章時間戳在未來——僅接受剛產生的印章，重跑 sb commitmsg';
@@ -535,6 +551,9 @@ try {
       // git alias 定義禁止（alias 可包裝 commit 繞過四閘）
       const aliasWrite = checkGitAliasWrite(cmd);
       if (aliasWrite) deny(aliasWrite);
+      // git 路徑重定向禁止：GIT_DIR/--git-dir/--work-tree 改變 git 路徑語義，繞過 root 錨定的 staged／印章檢查
+      const redirect = checkGitRedirect(cmd);
+      if (redirect) deny(redirect);
       // 先擋破壞性＋相對路徑（含行內各語言刪除 API 與直跑腳本檔掃描）
       const destructive = scanInlineDestructive(cmd);
       if (destructive) deny(destructive);
