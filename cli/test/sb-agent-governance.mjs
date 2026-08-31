@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.5.2');
+assert.equal(manifest.version, '1.5.3');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.5\.2"/);
+assert.match(skill, /version: "1\.5\.3"/);
 
 // 八段詞彙落地
 assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
@@ -49,7 +49,7 @@ assert.match(read('hooks', 'shiftblame-guard.mjs'), /isUnlockCmd/, 'Bash 攔截�
 
 // 舊機制詞零殘留（1.5.0 的「唯開工解鎖／獨立成行／老闆詞印章 hooks 偵測」；SKILL／README／references／sb.mjs／hooks）
 const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正',
-  '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs'];
+  '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/sb-think/SKILL.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/AUDIT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
@@ -63,7 +63,7 @@ for (const f of files) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.5\.2/);
+  assert.match(reference, /revision: 1\.5\.3/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

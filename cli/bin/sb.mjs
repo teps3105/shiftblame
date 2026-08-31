@@ -14,8 +14,8 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame——子目錄執行不得在錯誤位置長出流浪工作區
@@ -94,10 +94,10 @@ const usage = (code = 2) => {
                                         捏造／跳時序／無候選／否定候選皆機械擋；--stamp 寫對應授權
                                         印章（done→verify→done；pass→sb end；newMs→done→intent 時 ms++）；
                                         引句於老闆下則輸入自動展示（必然曝光）
-  sb adversarial "<對抗記錄出處>"          對抗宣告（提交時點的鑰匙）：真跑對抗、記錄落檔後宣告留痕；
-                                        commitmsg 消費本宣告（一次性）——每個 commit 前都需要新的對抗
-                                        （返工修復必然終於 commit，閘必然觸發；虛假宣告屬假對抗）
-  sb next <段> [--boss-ok] [--adversarial] [--self-attack] [--rerun impl|definition]
+  sb adversarial <報告檔>                對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文
+                                        落檔 tmp 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
+                                        （不通過＝必修未清，不得發章）；commit 時由 hooks 消費（一對一）
+  sb next <段> [--boss-ok] [--adversarial] [--rerun impl|definition]
                                         推進（閘門不過即擋）
                                         --boss-ok：老闆授權留痕（intent→audit、plan→test、verify→done 邊）
                                         --rerun：返工直通（僅限同 ms 曾達 test 後的重走；時點①分流判定——
@@ -429,7 +429,7 @@ function cmdNext(target, opts) {
     }
   }
   if (prev === 'verify' && target === 'done' && st.stamps?.done) delete st.stamps.done; // 完成印章一次性
-  const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial, selfAttack: !!opts.selfAttack };
+  const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
   if (prev === 'verify' && target === 'done') {
     const reruns = (st.history ?? []).filter((h) => h.rerun && h.ms === st.ms);
@@ -527,19 +527,31 @@ function cmdEnd(opts) {
 
 
 
-// —— 對抗宣告（提交時點的鑰匙）：真跑對抗、記錄落檔（tmp/review-*.md 慣例）後宣告留痕 ——
-// 虛假宣告（沒真跑）屬假對抗（SKILL §3）——閘門保證觸發（提交必消費），真實性由出處留痕＋老闆抽查承擔。
-function cmdAdversarial(note) {
-  if (!note || !note.trim()) die(['缺記錄出處——sb adversarial "<對抗記錄出處/要點>"（真跑對抗、記錄落檔後宣告；虛假宣告屬假對抗）']);
-  mkdirSync(SB_DIR, { recursive: true }); // 無 .shiftblame 目錄的 repo（框架演化場景）直接建立最小狀態檔
+// —— 對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文落檔後引用 ——
+// 機械驗三條：報告檔存在（.shiftblame/tmp 內）→ 含判定行（「對抗判定：通過/不通過」）→ 判定「通過」才可發章
+// （不通過＝必修未清，閘環未達零必修，不得發章）。自代無合法介面（旗標已移除）——
+// 子代理工具不可用＝流程阻塞等待，MUST NOT 以任何形式自代；偽造報告檔屬手改造假（天花板：抽查承擔）。
+function cmdAdversarial(report) {
+  if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔>（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
+  mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = existsSync(STATE_FILE) ? readJson(STATE_FILE) : { slug: null, ms: null, node: null, history: [] };
+  const file = resolve(ROOT, report.trim());
+  // 邊界正規判定（startsWith 無分隔符會放過 .shiftblame-evil 前綴）：必須在 SB_DIR 之內或就是 SB_DIR
+  const rel = relative(SB_DIR, file);
+  const inside = rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+  if (!inside || !existsSync(file) || !statSync(file).isFile()) die([`報告檔不存在、非檔案或不在 .shiftblame 內：${report}——子代理對抗報告原文落檔後引用（SKILL §3：對抗 MUST 外部唯讀子代理，無自代介面）`]);
+  const text = readFileSync(file, 'utf8');
+  const verdicts = [...text.matchAll(/對抗判定[：:]\s*(通過|不通過)/g)].map((m) => m[1]);
+  const verdict = verdicts.at(-1); // 取最後一個判定行（多輪引用舊判定時以最終判定為準；判定行應唯一）
+  if (!verdict) die(['報告缺判定行（「對抗判定：通過／不通過」）——子代理報告 MUST 含判定行；缺行屬假對抗']);
+  if (verdict !== '通過') die([`對抗判定「${verdict}」＝必修未清——修復後 MUST 再對抗至「通過」才可提交（閘環零必修機械化）`]);
   st.adversarialAt = new Date().toISOString();
   st.adversarialConsumed = false;
-  (st.adversarialLog ??= []).push({ at: st.adversarialAt, note, node: st.node ?? null });
+  (st.adversarialLog ??= []).push({ at: st.adversarialAt, report: report.trim(), verdict, node: st.node ?? null });
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
-    `對抗宣告留痕（@${st.node ?? '未入段'}）：${note}`,
-    'commitmsg 將消費本宣告（一次性）——每個 commit 前都需要新的對抗（返工修復至提交必然觸發）',
+    `對抗宣告留痕（@${st.node ?? '未入段'}）：${report.trim()}（判定：${verdict}）`,
+    'commitmsg 將驗本宣告（不消費）；hooks 於實際 commit 時消費（一對一）——每個 commit 前都需要新的子代理對抗',
   ]);
 }
 
@@ -547,11 +559,11 @@ function cmdCommitmsg(msg) {
   if (!msg) usage();
   // 提交對抗閘：提交＝對抗時點（機制時點，非階段；所有 repo 統一）——
   // 每個 commit 需未消費的對抗宣告；返工修復必然終於 commit，閘在此必然觸發（CARD⑧ 機械化）
-  // 消費在訊息合格發章時（訊息不合格重試不燒宣告）
-  if (!existsSync(STATE_FILE)) die(['提交前需對抗記錄——真跑對抗、記錄落檔後 sb adversarial "<出處>" 宣告（每個 commit 消費一次）']);
+  // 發章只驗不消費——消費由 hooks 於實際 git commit 時執行（一對一；訊息不合格重試不燒宣告）
+  if (!existsSync(STATE_FILE)) die(['提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」）']);
   {
     const st = readJson(STATE_FILE);
-    if (!st.adversarialAt || st.adversarialConsumed) die(['提交前需對抗記錄——本次返工/變更後重新對抗並 sb adversarial "<出處>" 宣告（宣告為一次性：每個 commit 消費一次；返工修復至提交必然觸發此閘）']);
+    if (!st.adversarialAt || st.adversarialConsumed) die(['提交前需對抗記錄——本次返工/變更後重新以子代理對抗並 sb adversarial <報告檔> 宣告（判定「通過」才可發章；每 commit 一對一消費）']);
   }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   try {
@@ -585,15 +597,15 @@ function cmdCommitmsg(msg) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, selfAttack: false, quoted: null, stamp: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, quoted: null, stamp: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--adversarial') flags.adversarial = true;
-  else if (rest[i] === '--self-attack') flags.selfAttack = true;
   else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
   else if (rest[i] === '--quoted') flags.quoted = rest[++i] ?? '';
   else if (rest[i] === '--stamp') flags.stamp = rest[++i] ?? '';
+  else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯或已移除者）不得靜默落入 positional——解析器衛生
   else pos.push(rest[i]);
 }
 switch (cmd) {

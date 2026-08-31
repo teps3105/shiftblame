@@ -69,43 +69,80 @@ writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：舊記錄\n
 assert.match(run('next', 'test', '--adversarial').stderr, /SLUG\.md 缺「時點②對抗」/);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點②對抗：功能循環對抗完成\n');
 assert.equal(run('next', 'test', '--adversarial').status, 0);
-// —— 提交對抗閘（1.5.2）：提交＝對抗時點；每個 commit 消費一次 sb adversarial 宣告 ——
-// commitmsg 無宣告即擋
-let r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 1, '無對抗宣告→commitmsg 擋');
+// —— 提交對抗閘（1.5.3）：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
+const tmpDir = join(root, '.shiftblame', 'tmp');
+const reportPath = join(tmpDir, 'review-test.md');
+let r;
+// --self-attack 無合法介面：解析層拒絕（未知旗標 usage——合法命令邊驗證，非僥倖擋）
+r = run('adversarial', '--self-attack', reportPath);
+assert.equal(r.status, 2, '--self-attack 已移除（解析器對未知旗標 usage 擋）');
+r = run('adversarial', '--unknown-flag');
+assert.equal(r.status, 2, '拼錯旗標同樣 usage 擋（解析器衛生）');
+// 前綴繞過回歸：.shiftblame-evil 目錄不得通過（startsWith 無分隔符邊界缺陷已修——relative 判定）
+mkdirSync(join(root, '.shiftblame-evil'), { recursive: true });
+writeFileSync(join(root, '.shiftblame-evil', 'review.md'), '# 對抗報告\n對抗判定：通過（零必修）');
+r = run('adversarial', join('.shiftblame-evil', 'review.md'));
+assert.equal(r.status, 1, '.shiftblame-evil 前綴繞過擋');
+// 報告指向目錄擋（非檔案）
+r = run('adversarial', '.shiftblame/tmp');
+assert.equal(r.status, 1, '目錄非報告檔擋');
+// 多判定行取最後（多輪引用舊判定以最終為準）
+writeFileSync(reportPath, '# 對抗報告\n前次對抗判定：不通過（2 必修）\n修復後本次對抗判定：通過（零必修）');
+r = run('adversarial', reportPath);
+assert.equal(r.status, 0, '多判定行取最後（最終判定：通過）');
+{ const st = state(); st.adversarialConsumed = true; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); } // 恢復無未消費宣告狀態
+// 無報告檔→commitmsg 擋（無宣告）
+r = run('commitmsg', 'feat: 對抗閘測試提交');
+assert.equal(r.status, 1, '無宣告→commitmsg 擋');
 assert.match(r.stderr, /提交前需對抗記錄/);
-// 宣告缺出處擋
+// 缺報告參數擋
 r = run('adversarial');
 assert.equal(r.status, 1);
-assert.match(r.stderr, /缺記錄出處/);
-// 宣告→發章（不消費；消費點唯一化於 hooks 實際 commit 時）→模擬 hooks 消費後擋
-r = run('adversarial', 'review-x.md 時點③');
-assert.equal(r.status, 0, '對抗宣告留痕');
-assert.ok(state().adversarialLog.at(-1).note === 'review-x.md 時點③');
+assert.match(r.stderr, /缺報告檔/);
+// 報告不存在擋
+r = run('adversarial', 'review-missing.md');
+assert.equal(r.status, 1);
+assert.match(r.stderr, /報告檔不存在/);
+// 報告缺判定行擋
+writeFileSync(reportPath, '# 對抗報告\n有些攻擊內容但沒有判定行。');
+r = run('adversarial', reportPath);
+assert.equal(r.status, 1, '缺判定行擋');
+assert.match(r.stderr, /缺判定行/);
+// 判定「不通過」擋（必修未清不得發章）
+writeFileSync(reportPath, '# 對抗報告\n攻擊點……\n對抗判定：不通過（2 必修）');
+r = run('adversarial', reportPath);
+assert.equal(r.status, 1, '不通過擋——閘環零必修機械化');
+assert.match(r.stderr, /必修未清/);
+// 判定「通過」→宣告→發章（不消費；hooks 消費）
+writeFileSync(reportPath, '# 對抗報告\n攻擊點……\n對抗判定：通過（零必修）');
+r = run('adversarial', reportPath);
+assert.equal(r.status, 0, '通過→宣告留痕');
+assert.ok(state().adversarialLog.at(-1).report === reportPath && state().adversarialLog.at(-1).verdict === '通過');
 r = run('commitmsg', 'feat: 對抗閘測試提交');
 assert.equal(r.status, 0, '有未消費宣告→發章');
-assert.equal(state().adversarialConsumed, false, '發章不消費（消費點唯一化於 hooks commit）');
-// 模擬 hooks 已消費（實際 commit 發生後）→再 commitmsg 擋（每 commit 需新對抗）
+assert.equal(state().adversarialConsumed, false, '發章不消費（hooks 消費點）');
+// 模擬 hooks 已消費→再 commitmsg 擋（每 commit 一對一）
 { const st = state(); st.adversarialConsumed = true; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 1, '消費後再 commitmsg→擋（每 commit 需新對抗）');
-// 返工修復後（新對抗）再提交可過
-r = run('adversarial', 'review-x2.md 修復後再對抗');
+assert.equal(r.status, 1, '消費後再 commitmsg→擋');
+// 返工修復後（新報告＋新宣告）再提交可過
+writeFileSync(reportPath, '# 對抗報告\n修復後再對抗。\n對抗判定：通過（零必修）');
+r = run('adversarial', reportPath);
 assert.equal(r.status, 0);
 r = run('commitmsg', 'feat: 對抗閘測試提交');
 assert.equal(r.status, 0, '返工後重新對抗→可提交');
 
-// —— 全鏈串接（N1 回歸）：adversarial→commitmsg→hooks commit 放行且一併消費（單次宣告單次 commit）——
+// —— 全鏈串接：adversarial→commitmsg→hooks commit 放行且一併消費 ——
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
-r = run('adversarial', 'review-x3.md 全鏈時點');
+writeFileSync(reportPath, '# 對抗報告\n全鏈時點對抗。\n對抗判定：通過（零必修）');
+r = run('adversarial', reportPath);
 assert.equal(r.status, 0);
 r = run('commitmsg', 'feat: 全鏈提交驗證訊息');
 assert.equal(r.status, 0, '發章（不消費）');
 const hc = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
-assert.equal(hc.status, 0, '全鏈：hooks commit 放行——單次宣告單次 commit（雙消費點矛盾回歸）');
+assert.equal(hc.status, 0, '全鏈：hooks commit 放行——單次宣告單次 commit');
 assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對抗宣告');
-// 消費後同印章再 commit→擋（一對一）
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
 

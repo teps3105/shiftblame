@@ -52,7 +52,7 @@ const CARD = [
   '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
-  '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb commitmsg 消費 sb adversarial 宣告（一次性，每個 commit 需新對抗）；返工修復必然終於 commit，閘必然觸發；虛假宣告屬假對抗（出處留痕＋老闆抽查）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
+  '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -413,7 +413,7 @@ function checkCommitStamp(root, seg) {
     let st = null;
     try { st = JSON.parse(readFileSync(statePath, 'utf8')); } catch { /* 無狀態檔 */ }
     if (!st || !st.adversarialAt || st.adversarialConsumed) {
-      return '提交前需對抗記錄——真跑對抗、記錄落檔後 sb adversarial "<出處>" 宣告（印章檔不得繞過對抗閘；每 commit 消費一次）';
+      return '提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」；印章檔不得繞過對抗閘）';
     }
     st.adversarialConsumed = true;
     writeFileSync(statePath, JSON.stringify(st, null, 2));
