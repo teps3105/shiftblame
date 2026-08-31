@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // 1.5 八段全流程：intent→audit→research→plan→test→build→verify→done→（重修／開新 ms／PASS）
-// 授權三層：--boss-ok 留痕、--adversarial×SLUG 對照、老闆詞印章（本測試直接寫 flow-state.stamps 模擬 hooks 偵測）
+// 授權三層：--boss-ok 留痕、--adversarial×SLUG 對照、授權印章（本測試直接寫 flow-state.stamps 模擬 sb unlock --stamp 寫入）
 const root = mkdtempSync(join(tmpdir(), 'sb-eight-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -99,7 +99,7 @@ assert.equal(run('next', 'verify').status, 0);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點③對抗：二輪完成\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 
-// done→intent：無印章＝同 ms；有開新 ms 印章＝ms++
+// done→intent：無印章＝同 ms；有 newMs 印章＝ms++
 assert.equal(run('next', 'intent').status, 0);
 assert.equal(state().ms, '001'); // 同 ms
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
@@ -116,7 +116,7 @@ writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：三輪完�
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 { const st = state(); st.stamps = { newMs: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 assert.equal(run('next', 'intent').status, 0);
-assert.equal(state().ms, '002'); // 開新 ms 印章→ms++
+assert.equal(state().ms, '002'); // newMs 印章→ms++
 
 // PASS：sb end 需 done 態＋PASS 印章＋--boss-ok
 assert.match(run('end', '--boss-ok').stderr, /done 態|sb end 僅限/);
@@ -136,11 +136,11 @@ writeFileSync(join(root, 'seed.txt'), 'seed for second ms feature\n');
 commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0);
-assert.match(run('end', '--boss-ok').stderr, /缺 PASS 印章|僅限 done/);
+assert.match(run('end', '--boss-ok').stderr, /缺 pass 印章|僅限 done/);
 { const st = state(); st.stamps = { done: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：ms2 done\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.match(run('end', '--boss-ok').stderr, /缺 PASS 印章/);
+assert.match(run('end', '--boss-ok').stderr, /缺 pass 印章/);
 { const st = state(); st.stamps = { pass: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 assert.equal(run('end', '--boss-ok').status, 0);
 assert.equal(state().node, 'ended');

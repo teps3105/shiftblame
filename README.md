@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.5.0-2ea44f.svg" alt="version 1.5.0"/>
+  <img src="https://img.shields.io/badge/version-1.5.1-2ea44f.svg" alt="version 1.5.1"/>
 </p>
 
 ---
@@ -27,7 +27,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **一次定律。** 定義層單向一次推進——G1 承接 sb-think 已確認的完整語義直接定稿，薄研究（G2）、薄規劃（G3）直接推進到實作，不在 G1 或階段邊界重問。每階段一次產出、產出即定稿、向前對齊；§10 兩兩一致於放行前一次核對，缺漏由責任面向一次補正，重大例外才退回。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
-- **令行靜止（對話鎖）。** 每則老闆輸入自動上鎖，唯老闆「開工」解鎖；鎖定期間只讀不寫。agent 呈現待決方案以〔待確認〕結尾自動上鎖。
+- **令行靜止（對話鎖）。** 每則老闆輸入自動上鎖並由 hooks 機械過濾（覆蓋式記錄當前輸入＋候選詞掃描＋否定標記）；解鎖唯 `sb unlock --quoted` 引本則非否定候選原句（時序元規則：最新輸入覆蓋舊則、消費即失效——機械抗上下文壓縮）。鎖定期間只讀不寫。agent 呈現待決方案以〔待確認〕結尾自動上鎖；解鎖引句於老闆下則輸入自動展示（必然曝光）。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換審計→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
@@ -130,7 +130,7 @@ flowchart TB
 
 shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、待確認上鎖、commit 印章硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**對話鎖**（每則老闆輸入上鎖、唯「開工」解鎖，鎖定期間擋一切寫入；`Stop` 事件偵測回合輸出含〔待確認〕即上鎖）＋**老闆詞印章**（done／PASS／開新 ms 偵測寫入，授權詞 MUST 獨立成行）；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；`git commit` 驗印章；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——tmp 是自由傾倒區，流程零依賴。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
+**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**對話鎖＋機械過濾**（每則老闆輸入上鎖並覆蓋記錄當前輸入＋候選詞掃描＋否定共現標記，過濾產物注入回流；解鎖唯 `sb unlock --quoted` 引本則非否定候選原句——逐字錨定、候選覆蓋、消費即失效，捏造／跳時序／無候選／否定候選皆機械擋；`Stop` 事件偵測回合輸出含〔待確認〕即上鎖；解鎖引句於老闆下則輸入自動展示）＋**授權印章**（`sb unlock --stamp done|pass|newMs` 隨引句寫入）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／鎖態／當前輸入原文與標記——抗上下文壓縮）；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；`git commit` 驗印章；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——tmp 是自由傾倒區，流程零依賴。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 

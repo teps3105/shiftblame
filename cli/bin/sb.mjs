@@ -51,15 +51,15 @@ const FLOW = {
   test:    { next: ['build'], desc: '測試段：測試碼定義＋定稿 commit' },
   build:   { next: ['verify'], desc: '實作段：實作＋實機驗證＋存檔 commit' },
   verify:  { next: ['test', 'intent', 'done'], desc: '驗收段：跑驗收＋判決；中間態——老闆未宣稱 done 前停留於此' },
-  done:    { next: ['test', 'intent'], desc: '完成態：老闆已宣稱 done；重修→test、補充/追加→intent；動作：開新 ms、PASS（sb end）' },
+  done:    { next: ['test', 'intent'], desc: '完成態：老闆已授權完成；重修→test、補充/追加→intent；動作：開新里程碑（--stamp newMs）、PASS（sb end）' },
 };
 
 // 回頭自由，前進要鑰匙：任意節點→intent 永遠合法（同 ms 重走）；done→test 重修回邊零旗標。
 const backEdge = (from, to) => to === 'intent' || (from === 'done' && to === 'test');
 
 // 前進鑰匙三層（SKILL 授權章）：
-//   ① 對話鎖（hooks 層）：每則老闆輸入上鎖、「開工」解鎖——擋一切寫入，CLI 不重複驗
-//   ② 老闆詞印章（hooks 寫入 flow-state.stamps）：done／PASS／開新 ms——完成類推進的唯一鑰匙
+//   ① 對話鎖（hooks 層）：每則老闆輸入上鎖、sb unlock --quoted 引原句解鎖——擋一切寫入，CLI 不重複驗
+//   ② 授權印章（sb unlock --stamp 寫入 flow-state.stamps）：done／pass／newMs——完成類推進的唯一鑰匙
 //   ③ --boss-ok 旗標：留痕（記錄 agent 宣稱的老闆授權），非鑰匙；缺失仍擋以保留形式邊界
 const needsBossOk = (from, to) =>
   (from === 'intent' && to === 'audit') || (from === 'plan' && to === 'test') || (from === 'verify' && to === 'done');
@@ -82,24 +82,32 @@ const usage = (code = 2) => {
 
 八段：intent → audit → research → plan → test → build → verify → done
       （回頭自由：任意節點→intent 同 ms 重走；done→test 重修——皆零旗標）
-      （前進要鑰匙：對話鎖「開工」、老闆詞印章 done／PASS／開新 ms、--boss-ok 留痕）
+      （前進要鑰匙：對話鎖 sb unlock 引老闆原句、授權印章 done／pass／newMs、--boss-ok 留痕）
 
 用法：
   sb init <slug>                        開 slug：建立 flow-state.json（節點 intent）
   sb state                              顯示目前段、可走下一步與其前置條件
+  sb unlock --quoted "<老闆原句>" [--stamp done|pass|newMs]
+                                        解鎖對話鎖：逐字引用老闆「當前輸入」（最後一則）中承載
+                                        授權語義的原句——引句必須覆蓋該則的非否定候選詞（hooks 於
+                                        輸入時刻掃描標記；時序元規則：每則覆蓋前一則，消費即失效）；
+                                        捏造／跳時序／無候選／否定候選皆機械擋；--stamp 寫對應授權
+                                        印章（done→verify→done；pass→sb end；newMs→done→intent 時 ms++）；
+                                        引句於老闆下則輸入自動展示（必然曝光）
   sb next <段> [--boss-ok] [--adversarial] [--self-attack]
                                         推進（閘門不過即擋）
                                         --boss-ok：老闆授權留痕（intent→audit、plan→test、verify→done 邊）
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 SLUG.md 含對應時點對抗記錄，不一致即擋
-  sb end --boss-ok                      PASS 動作（僅 done 態；需 PASS 印章）：收尾保鮮＋archive
+  sb end --boss-ok                      PASS 動作（僅 done 態；需 pass 印章）：收尾保鮮＋archive
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
-完成類鑰匙＝老闆詞印章（hooks 偵測寫入 flow-state.stamps，一次性；授權詞 MUST 獨立成行）：
-  老闆輸入「done」→ verify→done 放行；「PASS」→ sb end 放行；「開新 ms」→ done→intent 時 ms++
-  每則新老闆輸入清未用印章（陳舊授權失效，老闆重新說了才算）
-  防無意識繞過＋事後稽核（SLUG 對照＋history）；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
+完成類鑰匙＝授權印章（sb unlock --stamp 引老闆原句寫入 flow-state.stamps，一次性）：
+  理解老闆「完成／done」→ sb unlock --stamp done；「PASS／通過」→ --stamp pass；「下一個／開新的」→ --stamp newMs
+  語義由 agent 依上下文閱讀理解（語例非判準）；引句逐字錨定＋解鎖必然曝光
+  捏造／翻舊帳機械擋；斷章（引真話但非授權）屬越權，老闆每則輸入可見解鎖引句
+  防無意識繞過＋必然曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
   process.exit(code);
 };
 
@@ -248,14 +256,14 @@ function gate(st, target, opts) {
   if (opts.bossOk && !needsBossOk(st.node, target)) {
     problems.push(`「${st.node} → ${target}」不是老闆決策邊——不得帶 --boss-ok；回頭邊零旗標，工作邊沿用既有授權`);
   } else if (needsBossOk(st.node, target) && !opts.bossOk) {
-    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（實質鑰匙：對話鎖「開工」＋完成印章）`);
+    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（實質鑰匙：對話鎖 sb unlock 引原句＋授權印章）`);
   } else if (opts.bossOk) {
     passes.push('老闆授權留痕（--boss-ok）');
   }
 
-  // 完成印章：verify→done 的唯一鑰匙（hooks 偵測老闆輸入「done」寫入，一次性）
+  // 完成印章：verify→done 的唯一鑰匙（sb unlock --stamp done 引老闆原句寫入，一次性）
   if (st.node === 'verify' && target === 'done') {
-    if (!st.stamps?.done) problems.push('缺完成印章——老闆輸入含「done」才產生（flow-state.stamps，一次性）；老闆未宣稱前停留在 verify 中間態（防無意識繞過；刻意偽造由稽核承擔）');
+    if (!st.stamps?.done) problems.push('缺完成印章——理解老闆完成授權後 sb unlock --stamp done --quoted "原句" 才產生（flow-state.stamps，一次性）；老闆未授權前停留在 verify 中間態（防無意識繞過；斷章由必然曝光承擔）');
     else passes.push(`完成印章存在（${st.stamps.done}）`);
   }
 
@@ -335,8 +343,8 @@ function gate(st, target, opts) {
       if (g1) validateG1Acceptance(g1, problems, passes);
       break;
 
-    case 'intent': // 回頭自由：補充／重修／追加子需求／修約——同 ms 重走；done＋開新 ms 印章時 ms++（cmdNext）
-      passes.push(st.node === 'done' && st.stamps?.newMs ? '開新 ms 印章存在——回 intent 且 ms++' : '回 intent（同 ms 重走線性）');
+    case 'intent': // 回頭自由：補充／重修／追加子需求／修約——同 ms 重走；done＋newMs 印章時 ms++（cmdNext）
+      passes.push(st.node === 'done' && st.stamps?.newMs ? 'newMs 印章存在——回 intent 且 ms++' : '回 intent（同 ms 重走線性）');
       break;
   }
   return { problems, passes };
@@ -366,7 +374,7 @@ function cmdState() {
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
-      out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；有開新 ms 印章則 ms++' : ''}）`);
+      out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；有 newMs 印章則 ms++' : ''}）`);
       continue;
     }
     const { problems, passes } = gate({ ...st }, n, {});
@@ -374,7 +382,7 @@ function cmdState() {
     for (const p of passes) out(`      ✓ ${p}`);
     for (const p of problems) out(`      ✗ ${p}`);
   }
-  if (st.node === 'done') out(`  動作：sb end --boss-ok（PASS，需 PASS 印章）`);
+  if (st.node === 'done') out(`  動作：sb end --boss-ok（PASS，需 pass 印章）`);
 }
 
 function cmdNext(target, opts) {
@@ -395,12 +403,12 @@ function cmdNext(target, opts) {
     passes.push(`G1 契約已封存（flow-state）：${st.g1Contract.sha256.slice(0, 12)}`);
   }
   if (target === 'intent') {
-    // 回頭自由：同 ms 重走；done＋開新 ms 印章→ms++（一次性消費）
+    // 回頭自由：同 ms 重走；done＋newMs 印章→ms++（一次性消費）
     delete st.g1Contract;
     if (prev === 'done' && st.stamps?.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.stamps.newMs;
-      passes.push(`開新 ms：${st.ms}（老闆「開新 ms」印章已消費）`);
+      passes.push(`新里程碑：${st.ms}（newMs 印章已消費）`);
     }
   }
   if (prev === 'verify' && target === 'done' && st.stamps?.done) delete st.stamps.done; // 完成印章一次性
@@ -411,12 +419,78 @@ function cmdNext(target, opts) {
 }
 
 // PASS 動作（done 態上；非段推進）：老闆「PASS」印章＋--boss-ok 留痕；收尾保鮮為文件層動作清單（SKILL done 慵說明）
+// —— 解鎖驗證鏈（全機械；時序元規則：只認當前輸入＝最後一則老闆輸入）——
+// ①逐字錨定：--quoted 必須是當前輸入原文的子串——捏造即擋；無當前輸入＝翻舊帳即擋（覆蓋式：舊則不存在）。
+// ②候選覆蓋：引句必須覆蓋至少一個非否定候選詞（hooks 輸入時刻掃描標記；英文詞比照掃描層 \b 邊界，
+//   引 book/look 不得借道 ok）——引無候選／否定候選即擋。
+// ③消費即失效：同一則輸入只可解鎖一次——授權生命週期＝一則輸入。
+// ④unlockLog 唯增雜湊鏈：每條 hash=sha256(前條hash+引句+時間)——中間條目被刪（曝光洗除）即斷鏈擋死；
+//   不防完整重算重寫（天花板：偽造全序列無法與真實區分，老闆抽查對話實蹟承擔）。
+// 必然曝光：unlockLog 引句於老闆下則輸入由 hooks 自動展示；曝光行是老闆終審。
+const wordHits = (word, s) => (word.charCodeAt(0) > 127 ? s.includes(word) : new RegExp(`\\b${word}\\b`, 'i').test(s));
+
+function verifyUnlockChain(log) {
+  let prev = '';
+  for (const e of log) {
+    const expect = createHash('sha256').update(prev + String(e.quoted) + String(e.at)).digest('hex').slice(0, 16);
+    if (e.hash !== expect) return false;
+    prev = e.hash;
+  }
+  return true;
+}
+
+function cmdUnlock(opts) {
+  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
+  const st = readJson(STATE_FILE);
+  const quoted = opts.quoted;
+  const inp = st.input;
+  if (!quoted) die(['缺 --quoted "<老闆原句>"——解鎖 MUST 逐字引用老闆當前輸入（最後一則）中承載授權語義的原句']);
+  if (opts.stamp && !['done', 'pass', 'newMs'].includes(opts.stamp)) die([`--stamp 值無效（${opts.stamp}）——done｜pass｜newMs`]);
+  if (!verifyUnlockChain(st.unlockLog ?? [])) die(['unlockLog 雜湊鏈斷裂——記錄被刪改（曝光洗除）即擋；完整性由老闆抽查對話實蹟終審']);
+  if (!inp || typeof inp.text !== 'string' || !inp.text.length) {
+    die(['無當前輸入可引（input 空）——翻舊帳即擋；等老闆實際輸入後再解鎖']);
+  }
+  if (inp.consumed) die(['當前輸入已消費——同一則不得再引（授權生命週期＝一則輸入）；等老闆下一則']);
+  if (!inp.text.includes(quoted)) {
+    die([`引句非當前輸入（最後一則）的逐字內容——捏造／跳時序即擋。當前輸入：「${inp.text.slice(0, 80)}」`]);
+  }
+  const covered = (inp.candidates ?? []).filter((c) => wordHits(c.word, quoted));
+  const ok = covered.filter((c) => !c.negated);
+  if (!covered.length) {
+    die([`引句未覆蓋任何候選詞——無候選即不可解鎖（fail-closed）。本則候選：${(inp.candidates ?? []).map((c) => c.word + (c.negated ? '（否定）' : '')).join('、') || '無'}`]);
+  }
+  if (!ok.length) {
+    die([`引句覆蓋的候選全為否定標記（否定詞共現）——引否定候選即擋；若老闆語義確為授權，等老闆改述或下一則`]);
+  }
+  if (opts.stamp) {
+    const stampType = { done: 'done', pass: 'pass', newMs: 'newMs' }[opts.stamp];
+    const typeOk = ok.some((c) => c.type === stampType) || ok.some((c) => c.type === 'go' || c.type === 'nod');
+    if (!typeOk) {
+      die([`--stamp ${opts.stamp} 與引句覆蓋的候選類型不符（覆蓋：${ok.map((c) => c.type).join('、')}）——印章類型由引句的候選語義支撐`]);
+    }
+    st.stamps = { [stampType]: new Date().toISOString() }; // 單一授權單一印章
+  }
+  st.dialogueLock = false;
+  st.input.consumed = true; // 消費即失效——同一則不得再引
+  const at = new Date().toISOString();
+  const prevHash = (st.unlockLog ?? []).at(-1)?.hash ?? '';
+  const hash = createHash('sha256').update(prevHash + String(quoted) + at).digest('hex').slice(0, 16);
+  (st.unlockLog ??= []).push({ at, quoted, stamp: opts.stamp ?? null, node: st.node ?? null, reviewed: false, hash });
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([
+    `解鎖（引句錨定當前輸入 @${inp.at.slice(0, 19)}）：「${quoted}」`,
+    `覆蓋候選：${ok.map((c) => `${c.word}(${c.type})`).join('、')}`,
+    ...(opts.stamp ? [`授權印章 ${opts.stamp} 已寫入（一次性；消費即焚）`] : []),
+    '解鎖引句於老闆下則輸入自動展示（必然曝光——斷章即越權，當場可見）',
+  ]);
+}
+
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
-  if (st.node !== 'done') die([`sb end 僅限 done 態（目前 ${st.node}）——完成（verify→done，需「done」印章）先於 PASS`]);
+  if (st.node !== 'done') die([`sb end 僅限 done 態（目前 ${st.node}）——完成（verify→done，需 done 印章）先於 PASS`]);
   if (!opts.bossOk) die(['PASS 是老闆決策——MUST 帶 --boss-ok 留痕']);
-  if (!st.stamps?.pass) die(['缺 PASS 印章——老闆輸入含「PASS」才產生（flow-state.stamps，一次性）；刻意偽造由稽核承擔']);
+  if (!st.stamps?.pass) die(['缺 pass 印章——理解老闆通過授權後 sb unlock --stamp pass --quoted "原句" 才產生（flow-state.stamps，一次性）；斷章由必然曝光承擔']);
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, 'PASS 前');
   if (problems.length) die(problems);
@@ -462,17 +536,20 @@ function cmdCommitmsg(msg) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, selfAttack: false };
+const flags = { bossOk: false, adversarial: false, selfAttack: false, quoted: null, stamp: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--adversarial') flags.adversarial = true;
   else if (rest[i] === '--self-attack') flags.selfAttack = true;
+  else if (rest[i] === '--quoted') flags.quoted = rest[++i] ?? '';
+  else if (rest[i] === '--stamp') flags.stamp = rest[++i] ?? '';
   else pos.push(rest[i]);
 }
 switch (cmd) {
   case 'init': cmdInit(pos[0]); break;
   case 'state': cmdState(); break;
+  case 'unlock': cmdUnlock(flags); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;

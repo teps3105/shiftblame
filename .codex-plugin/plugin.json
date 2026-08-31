@@ -1,7 +1,7 @@
 {
   "name": "shiftblame",
-  "version": "1.5.0",
-  "description": "以時序制衡約束 agent——八段流程 intent→audit→research→plan→test→build→verify→done；回頭自由（回 intent 同 ms 重走）、前進要鑰匙（對話鎖「開工」＋老闆詞印章 done／PASS／開新 ms）；三時點對抗採 --adversarial 宣告＋SLUG.md 對照；閘門只讀 git 事實與 flow-state.json；主對話秘書連續承載所有段，技術證據不足時強制外部唯讀意見，不得轉嫁給老闆；commit、判決、放行、路由、PASS 由主對話獨佔。",
+  "version": "1.5.1",
+  "description": "以時序制衡約束 agent——八段流程 intent→audit→research→plan→test→build→verify→done；回頭自由（回 intent 同 ms 重走）、前進要鑰匙（對話鎖 sb unlock 引老闆原句＋授權印章 done/pass/newMs；時序元規則機械抗壓縮）；三時點對抗採 --adversarial 宣告＋SLUG.md 對照；閘門只讀 git 事實與 flow-state.json；主對話秘書連續承載所有段，技術證據不足時強制外部唯讀意見，不得轉嫁給老闆；commit、判決、放行、路由、PASS 由主對話獨佔。",
   "author": {
     "name": "teps3105"
   },

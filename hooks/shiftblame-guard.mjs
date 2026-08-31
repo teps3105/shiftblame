@@ -46,10 +46,10 @@ const projectRoot = (input) => {
 const CARD = [
   '[shiftblame 不變量]',
   '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）：補充／修正→回 intent 同 ms 重走線性；確認／開工→分發執行。',
-  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修）；前進要鑰匙（--boss-ok 留痕＋對話鎖＋老闆詞印章）。',
+  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修）；前進要鑰匙（--boss-ok 留痕＋對話鎖＋授權印章）。',
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
-  '④令行靜止：每則老闆輸入上鎖，唯老闆「開工」解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
-  '⑤老闆詞印章（一次性；授權詞 MUST 獨立成行——done／PASS／開工／開新 ms 單獨一行說才算，句中出現不算）：done→verify→done 放行；PASS→sb end；開新 ms→done→intent 時 ms++；開工→解鎖。防無意識繞過＋事後稽核；不防刻意直改 flow-state 的偽造（老闆抽查承擔）。',
+  '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted 引本則非否定候選原句解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
+  '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環：必修項修復後 MUST 再對抗至零必修項；修復一次即宣稱修好＝假完成。',
@@ -59,7 +59,7 @@ const SESSION_CARD = [
   CARD,
   '',
   '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 sb-think 的路由提議才有脈絡依據。',
-  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；對話鎖、老闆詞印章與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
+  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；對話鎖、授權錨定與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
   '[版號] 版本號屬老闆決策——不得自行升版或預設版號，揭露表寫「版號待老闆指定」。',
 ].join('\n');
 
@@ -71,33 +71,101 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——sb-think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
-    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆「開工」後帶 --boss-ok 推進）';
+    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆授權 sb unlock 後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms（印章）或 sb end（PASS 印章）';
-    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）${st.dialogueLock ? '；對話鎖中（唯讀，等老闆「開工」）' : ''}。`;
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）${st.dialogueLock ? '；對話鎖中（唯讀，等 sb unlock 引老闆原句）' : ''}。`;
   } catch { return ''; }
 }
 
-// —— 對話鎖（令行靜止）＋老闆詞印章：防無意識繞過＋可稽核；不防刻意直改 flow-state 的偽造（如實天花板）——
-// 授權詞＝獨立成行（^done$／^PASS$／^開工$／^開新 ms$，容許尾標點）——純形式判準，
-// 不做否定／疑問語境猜測（「還沒 done」「done 了嗎」「還沒開工」皆不匹配；老闆單獨一行說才算）。
-// 「開工」行解鎖且不清本則未出現的舊印章（「done」→「開工」兩句式可通）；非開工輸入清未用印章（陳舊授權失效）。
+// —— 對話鎖（令行靜止）＋授權機械過濾（時序元規則）——
+// 時序元規則：每則老闆輸入「覆蓋」前一則（flow-state 只存當前輸入）——跳時序不是被擋，是無物可引。
+// 抗壓縮：對話壓縮把過程變摘要；機械層（檔案事實）永遠持有最後一則原文與標記——時序判定只依賴機械事實。
+// 輸入時刻過濾：候選詞（自然語言寬表）掃描＋否定共現標記（否定詞與候選同句→該候選標否定），
+// 回流給 agent 的是過濾產物（原文＋候選標記）——理解只能在候選內運作，不能創造候選。
 function handleBossInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { slug: null, ms: null, node: null, history: [] };
     const text = String(prompt ?? '');
-    const LINE = (w) => new RegExp(`^\\s*${w}\\s*[。！!，,]?\\s*$`, 'im');
-    const stamps = {};
-    if (LINE('done').test(text)) stamps.done = new Date().toISOString();
-    if (LINE('PASS').test(text)) stamps.pass = new Date().toISOString();
-    if (LINE('開新\\s*ms').test(text)) stamps.newMs = new Date().toISOString();
-    const isGo = LINE('開工').test(text);
-    if (!isGo || Object.keys(stamps).length) st.stamps = stamps;
-    st.dialogueLock = !isGo;
+    st.input = { at: new Date().toISOString(), text, candidates: scanConsent(text), consumed: false }; // 覆蓋：最新輸入是唯一有效語境
+    st.dialogueLock = true; // 新鎖定期：唯 sb unlock --quoted 引本則非否定候選原句可解
+    st.stamps = {};          // 陳舊授權失效（印章只隨對應 unlock 寫入）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 狀態異常靜默 */ }
+}
+
+// 候選詞集（自然語言寬表；語例非判準——機械只標候選，真假由 agent 於候選內判讀）
+const CONSENT_WORDS = {
+  go:    ['開工', '開始', '繼續', '去做', '去吧', '放行', '就這樣', '動工', 'go', 'ok'],
+  nod:   ['確認', '沒錯', '對', '可以', '好', '行'],
+  done:  ['done', '完成', '收工'],
+  pass:  ['pass', '通過', '過了'],
+  newMs: ['下一個', '開新的', '新開一個'],
+};
+// 肯定複合詞（含否定字但語義為肯定）——先於否定判定剔除並登記為非否定候選
+const AFFIRM_COMPOUND = ['沒錯', '不錯'];
+// 否定共現：否定詞與候選詞同「句」（中英標點切分）→ 該候選標否定；
+// 中文含「不」（不行/不好/不可以/不對/好久不見/對不起…fail-closed 標否定）；英文 not/don't/never/stop/wait/no 同列
+const NEG_RE = /(還沒|尚未|沒有|沒|未|別|不要|先不|不|非|\bnot\b|\bdon'?t\b|\bnever\b|\bstop\b|\bwait\b|\bno\b)/i;
+
+// 掃描當前輸入的候選詞與否定標記（英文不分大小寫；回傳 [{word, type, negated}]）
+// 每句重建無 g 正則（防 lastIndex 汙染跨句漏標）；肯定複合詞先剔除再判否定（「沒錯」非否定、「不行」否定）
+// 分句含半形標點（. , ; ! ?）——英文輸入「ok. not ok? ok!」逐句判定
+function scanConsent(text) {
+  const out = [];
+  const sentences = text.split(/(?<=[，。！？；、\n,.!?;])/); // 保留分隔符的切分——否定判定以句為單位
+  for (const sen of sentences) {
+    let rest = sen;
+    for (const aff of AFFIRM_COMPOUND) {
+      const re = new RegExp(aff, 'i');
+      while (re.test(rest)) {
+        out.push({ word: aff, type: 'nod', negated: false });
+        rest = rest.replace(re, '　'); // 剔除已登記的肯定複合詞——剩餘片段不再參與否定/候選判定
+      }
+    }
+    const negated = NEG_RE.test(rest);
+    for (const [type, words] of Object.entries(CONSENT_WORDS)) {
+      for (const w of words) {
+        if (new RegExp(w.charCodeAt(0) > 127 ? w : `\\b${w}\\b`, 'i').test(rest)) {
+          out.push({ word: w, type, negated });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// 過濾產物回流：agent 拿到的注入是「當前輸入＋機械標記」，不是原始輸入再自行過濾
+function inputLine(root) {
+  if (!root) return '';
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return '';
+    const inp = JSON.parse(readFileSync(statePath, 'utf8')).input;
+    if (!inp || typeof inp.text !== 'string') return '';
+    const parts = (inp.candidates ?? []).map((c) => `${c.word}(${c.type}${c.negated ? '，否定' : ''})`);
+    return `\n[當前輸入]${inp.consumed ? '（已消費——同一則不得再引，等老闆下一則）' : ''}「${inp.text}」候選：${parts.join('、') || '無（fail-closed：無候選則不可解鎖，停等老闆澄清）'}——解鎖僅可引本則非否定候選原句（sb unlock --quoted）。`;
+  } catch { return ''; }
+}
+
+// 必然曝光：老闆每則輸入時展示未審視的解鎖引句（斷章即當場可見）；mark=true 時標記已審
+// （UserPromptSubmit 用 mark=true；SessionStart 壓縮後注入用 mark=false——保留老闆輸入時的曝光）
+function unlockReviewLine(root, mark = true) {
+  if (!root) return '';
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return '';
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    const pending = (st.unlockLog ?? []).filter((e) => !e.reviewed);
+    if (!pending.length) return '';
+    if (mark) {
+      for (const e of pending) e.reviewed = true;
+      writeFileSync(statePath, JSON.stringify(st, null, 2));
+    }
+    return `\n[解鎖審視] ${pending.map((e) => `「${e.quoted}」${e.stamp ? `（印章 ${e.stamp}）` : ''}@${e.node ?? '?'} ${e.at}`).join('；')}——非你授權即屬 agent 越權，請立即指出。`;
+  } catch { return ''; }
 }
 
 function checkDialogueLock(root) {
@@ -106,7 +174,7 @@ function checkDialogueLock(root) {
     const p = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(p)) return null;
     const st = JSON.parse(readFileSync(p, 'utf8'));
-    if (st.dialogueLock) return '對話鎖中——老闆尚未說「開工」；理解／呈現／唯讀自由，一切寫入被擋（令行靜止，SKILL 授權章）。呈現待決方案以〔待確認〕結尾。';
+    if (st.dialogueLock) return '對話鎖中——理解老闆輸入後以 sb unlock --quoted 引本鎖定期內原句解鎖（閱讀理解＋留痕曝光）；理解／呈現／唯讀自由，一切寫入被擋（令行靜止，SKILL 授權章）。';
   } catch { return null; }
   return null;
 }
@@ -120,7 +188,7 @@ function checkLayerStopover(root, cmd) {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
     const edge = { intent: 'audit', plan: 'test', verify: 'done' }[st.node];
     const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/)?.[1];
-    if (edge && edge === target) return `老闆決策邊：${st.node}→${target}——經老闆確認（對話鎖「開工」）後帶 --boss-ok 推進，不得自行越過（SKILL 授權章）`;
+    if (edge && edge === target) return `老闆決策邊：${st.node}→${target}——經老闆授權（sb unlock 引原句）後帶 --boss-ok 推進，不得自行越過（SKILL 授權章）`;
   } catch { /* 非治理工作區 */ }
   return null;
 }
@@ -341,12 +409,14 @@ try {
   const root = projectRoot(input);
 
   if (event === 'SessionStart') {
-    inject(SESSION_CARD);
+    // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
+    // 機械事實（段位／鎖態／當前輸入原文與標記／未審引句）立即回流對話，恢復依據檔案非摘要。
+    inject(SESSION_CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root, false));
   }
 
   if (event === 'UserPromptSubmit') {
-    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋老闆詞印章（令行靜止；唯「開工」解鎖）
-    inject(CARD + nodeLine(root));
+    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋機械過濾（覆蓋式當前輸入＋候選標記）
+    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root)); // 過濾產物回流＋解鎖引句必然曝光
   }
 
   if (event === 'Stop') {
@@ -376,9 +446,15 @@ try {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
-      // 對話鎖最高優先：鎖定期間 Bash 全擋（唯讀研究用平台讀檔工具）
-      const lock = checkDialogueLock(root);
-      if (lock) deny(lock);
+      // 解鎖通道放行僅限「單體」sb unlock 命令：整條命令按 \n ; & | 切段後必須恰一段，
+      // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋
+      const unlockSegs = cmd.split(/[\n;&|]/).map((s) => s.trim()).filter(Boolean);
+      const isUnlockCmd = unlockSegs.length === 1 && /^(?:node\s+\S*sb(?:\.mjs)?|sb)\s+unlock\b/.test(unlockSegs[0]);
+      // 對話鎖最高優先：鎖定期間 Bash 全擋（唯讀研究用平台讀檔工具；sb unlock 除外——否則死鎖）
+      if (!isUnlockCmd) {
+        const lock = checkDialogueLock(root);
+        if (lock) deny(lock);
+      }
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);
