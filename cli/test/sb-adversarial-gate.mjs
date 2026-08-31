@@ -146,7 +146,7 @@ assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對�
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
 
-// —— staged 系統檔不入庫（1.5.5：.shiftblame/ 唯一立法；repo 根 tmp 不立法——位置錯置由檔案位置慣例承擔）——
+// —— staged 系統檔不入庫（1.5.5：禁入僅系統檔 .shiftblame/——其他位置一律放行，回歸鎖定禁入範圍）——
 writeFileSync(reportPath, '# 對抗報告\nstaged 閘測試。\n對抗判定：通過（零必修）');
 r = run('adversarial', reportPath);
 assert.equal(r.status, 0);
@@ -160,13 +160,13 @@ writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.string
 const hs = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 系統檔攔截驗證訊息"` } });
 assert.equal(hs.status, 2, 'staged 含 .shiftblame/ → hooks commit 擋（髒內容先擋，不燒印章）');
 assert.match(hs.stderr, /系統檔不入庫/);
-// repo 根 tmp/ 不立法：staged 含 tmp/ → 雙端放行（系統不認識此概念）
+// 非系統位置 staged → 放行（回歸鎖定：禁入清單僅系統檔，不得擴及任意位置）
 assert.equal(git('restore', '--staged', join(root, '.shiftblame', 'flow-state.json')).status, 0);
 mkdirSync(join(root, 'tmp'), { recursive: true });
 writeFileSync(join(root, 'tmp', 'junk.txt'), 'junk\n');
 assert.equal(git('add', 'tmp/junk.txt').status, 0);
 r = run('commitmsg', 'feat: 系統檔攔截驗證訊息');
-assert.equal(r.status, 0, 'staged 含 tmp/（非系統檔）→放行——不為不存在的事物立法');
+assert.equal(r.status, 0, '非系統位置 staged →放行（禁入僅系統檔）');
 // 清空 staged
 assert.equal(git('restore', '--staged', 'tmp/junk.txt').status, 0);
 

@@ -566,7 +566,7 @@ function cmdCommitmsg(msg) {
     if (!st.adversarialAt || st.adversarialConsumed) die(['提交前需對抗記錄——本次返工/變更後重新以子代理對抗並 sb adversarial <報告檔> 宣告（判定「通過」才可發章；每 commit 一對一消費）']);
   }
   // 發章前 staged 同檢（與 hooks 同判據——雙層一致）：讀 git 展開的事實清單（cwd=ROOT 錨定），
-  // 判系統檔 .shiftblame/（傾倒區唯一）；repo 根 tmp 等非系統位置不立法（SKILL §3 檔案位置慣例承擔）。
+  // 判系統檔 .shiftblame/（傾倒區唯一）。
   // quotePath=false 防引號逃逸＋--diff-filter 排除純刪除——清理通道放行；非 git 工作區跳過
   try {
     const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })

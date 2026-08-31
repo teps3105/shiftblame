@@ -391,7 +391,6 @@ const normPath = (root, p) => { try { return absPath(root, String(p)).toLowerCas
 
 // staged 不入庫（系統檔）：不解析 git add 的 pathspec，讀 git 展開後的事實清單，一律 absPath(root, p)
 // 展開為絕對（路徑展開元規則）再判系統檔（.shiftblame/——傾倒區唯一，全程不追蹤 MUST gitignore）。
-// repo 根 tmp/ 不立法：系統不認識此概念，放錯位置由檔案位置慣例條文＋對抗＋抽查承擔（SKILL §3）。
 // quotePath=false（CJK 檔名不引號逃逸）；--diff-filter=ACMRTUB——純刪除（D）放行＝git rm --cached 清理通道。
 function checkStaged(root) {
   if (!root) return null;
