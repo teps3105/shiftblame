@@ -52,7 +52,7 @@ const CARD = [
   '⑤授權＝機械過濾＋候選內判讀：hooks 於每則老闆輸入時覆蓋記錄當前輸入（時序元規則：最新覆蓋舊則，機械抗壓縮）＋掃描候選詞（自然語言寬表）＋標記否定共現，注入過濾產物；解鎖（sb unlock --quoted "引句"）僅可引本則原文且須覆蓋非否定候選，消費即失效；--stamp done|pass|newMs 寫授權印章。捏造／跳時序／無候選／否定候選皆機械擋；解鎖引句於老闆下則輸入自動展示（必然曝光，老闆終審）。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
-  '⑧對抗—修復—再對抗閉環：必修項修復後 MUST 再對抗至零必修項；修復一次即宣稱修好＝假完成。',
+  '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb commitmsg 消費 sb adversarial 宣告（一次性，每個 commit 需新對抗）；返工修復必然終於 commit，閘必然觸發；虛假宣告屬假對抗（出處留痕＋老闆抽查）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -115,7 +115,10 @@ const NEG_RE = /(還沒|尚未|沒有|沒|未|別|不要|先不|不|非|\bnot\b|
 // 分句含半形標點（. , ; ! ?）——英文輸入「ok. not ok? ok!」逐句判定
 function scanConsent(text) {
   const out = [];
-  const sentences = text.split(/(?<=[，。！？；、\n,.!?;])/); // 保留分隔符的切分——否定判定以句為單位
+  // 數字內標點保護（3.14／1,000）——先佔位再分句，防止數字小數點偽句界使否定判定跨句分離；
+  // 佔位符不參與任何詞匹配（候選與否定詞皆不含數字標點），無需還原
+  const guarded = text.replace(/(?<=\d)[.,](?=\d)/g, '\u0000');
+  const sentences = guarded.split(/(?<=[，。！？；、\n,.!?;])/); // 保留分隔符的切分——否定判定以句為單位
   for (const sen of sentences) {
     let rest = sen;
     for (const aff of AFFIRM_COMPOUND) {
@@ -180,6 +183,7 @@ function checkDialogueLock(root) {
 }
 
 // 老闆決策邊雙重鎖：三邊（intent→audit／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
+// --rerun 返工直通與 CLI 同判據放行（同 ms 曾達 test、非 verify 出發）——兩層判定必須一致，否則直通死路＋假留痕
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
@@ -188,7 +192,15 @@ function checkLayerStopover(root, cmd) {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
     const edge = { intent: 'audit', plan: 'test', verify: 'done' }[st.node];
     const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/)?.[1];
-    if (edge && edge === target) return `老闆決策邊：${st.node}→${target}——經老闆授權（sb unlock 引原句）後帶 --boss-ok 推進，不得自行越過（SKILL 授權章）`;
+    if (edge && edge === target) {
+      const rerun = /(^|\s)--rerun\s+(impl|definition)(?=\s|$)/.exec(clean);
+      if (rerun && st.node !== 'verify') {
+        const reached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
+        if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；verify→done 永不直通）
+        return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊不得以返工直通繞過`;
+      }
+      return `老闆決策邊：${st.node}→${target}——經老闆授權（sb unlock 引原句）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
+    }
   } catch { /* 非治理工作區 */ }
   return null;
 }
@@ -395,6 +407,16 @@ function checkCommitStamp(root, seg) {
     if (age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）——重跑 sb commitmsg "<訊息>"';
     if (age < -60000) return 'commit 印章時間戳在未來——僅接受剛產生的印章，重跑 sb commitmsg';
     if (stamp.message !== extracted.msg) return 'commit 訊息與印章不符——以完全相同的訊息重跑 sb commitmsg 後再 commit';
+    // 提交對抗閘（與 sb commitmsg 同判據）：手寫印章檔繞過 commitmsg 的路徑在此補死——
+    // 消費印章同時核對 flow-state 對抗宣告（存在且未消費）並一併消費（返工修復至提交必然觸發，CARD⑧）
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    let st = null;
+    try { st = JSON.parse(readFileSync(statePath, 'utf8')); } catch { /* 無狀態檔 */ }
+    if (!st || !st.adversarialAt || st.adversarialConsumed) {
+      return '提交前需對抗記錄——真跑對抗、記錄落檔後 sb adversarial "<出處>" 宣告（印章檔不得繞過對抗閘；每 commit 消費一次）';
+    }
+    st.adversarialConsumed = true;
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
     unlinkSync(stampPath); // 一次性消費：一枚印章授權一次 commit，重複 commit 須重新驗證
     return null; // 通過
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }
@@ -447,9 +469,13 @@ try {
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
       // 解鎖通道放行僅限「單體」sb unlock 命令：整條命令按 \n ; & | 切段後必須恰一段，
-      // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋
+      // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋；
+      // 命令代入（$()／反引號／<()／>()——shell 在命令查找前展開）與冒名路徑（.shiftblame 髒區、
+      // 非 sb.mjs 檔名）同為非單體，擋（SKILL 天花板：非 .shiftblame 冒名 sb.mjs 屬殘餘，曝光承擔）
       const unlockSegs = cmd.split(/[\n;&|]/).map((s) => s.trim()).filter(Boolean);
-      const isUnlockCmd = unlockSegs.length === 1 && /^(?:node\s+\S*sb(?:\.mjs)?|sb)\s+unlock\b/.test(unlockSegs[0]);
+      const isUnlockCmd = unlockSegs.length === 1
+        && !/[$]\(|`|<\(|>\(/.test(unlockSegs[0])
+        && /^(?:node\s+(?!\S*\.shiftblame)\S*[\\/]sb\.mjs|sb)\s+unlock\b/.test(unlockSegs[0]);
       // 對話鎖最高優先：鎖定期間 Bash 全擋（唯讀研究用平台讀檔工具；sb unlock 除外——否則死鎖）
       if (!isUnlockCmd) {
         const lock = checkDialogueLock(root);

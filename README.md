@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.5.1-2ea44f.svg" alt="version 1.5.1"/>
+  <img src="https://img.shields.io/badge/version-1.5.2-2ea44f.svg" alt="version 1.5.2"/>
 </p>
 
 ---
@@ -28,6 +28,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
 - **令行靜止（對話鎖）。** 每則老闆輸入自動上鎖並由 hooks 機械過濾（覆蓋式記錄當前輸入＋候選詞掃描＋否定標記）；解鎖唯 `sb unlock --quoted` 引本則非否定候選原句（時序元規則：最新輸入覆蓋舊則、消費即失效——機械抗上下文壓縮）。鎖定期間只讀不寫。agent 呈現待決方案以〔待確認〕結尾自動上鎖；解鎖引句於老闆下則輸入自動展示（必然曝光）。
+- **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb commitmsg` 發章前消費 `sb adversarial "<記錄出處>"` 宣告，一次性：每個 commit 前都需要新的對抗。返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在。
+- **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正；對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換審計→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。

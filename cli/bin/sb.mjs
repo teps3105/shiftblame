@@ -94,9 +94,15 @@ const usage = (code = 2) => {
                                         捏造／跳時序／無候選／否定候選皆機械擋；--stamp 寫對應授權
                                         印章（done→verify→done；pass→sb end；newMs→done→intent 時 ms++）；
                                         引句於老闆下則輸入自動展示（必然曝光）
-  sb next <段> [--boss-ok] [--adversarial] [--self-attack]
+  sb adversarial "<對抗記錄出處>"          對抗宣告（提交時點的鑰匙）：真跑對抗、記錄落檔後宣告留痕；
+                                        commitmsg 消費本宣告（一次性）——每個 commit 前都需要新的對抗
+                                        （返工修復必然終於 commit，閘必然觸發；虛假宣告屬假對抗）
+  sb next <段> [--boss-ok] [--adversarial] [--self-attack] [--rerun impl|definition]
                                         推進（閘門不過即擋）
                                         --boss-ok：老闆授權留痕（intent→audit、plan→test、verify→done 邊）
+                                        --rerun：返工直通（僅限同 ms 曾達 test 後的重走；時點①分流判定——
+                                        實作級 impl／定義級 definition 直通免停靠，根本性不帶旗標走完整確認；
+                                        verify→done 完成時點永不直通）
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 SLUG.md 含對應時點對抗記錄，不一致即擋
   sb end --boss-ok                      PASS 動作（僅 done 態；需 pass 印章）：收尾保鮮＋archive
@@ -252,13 +258,24 @@ function gate(st, target, opts) {
     else passes.push(`G1 契約 hash 核對：${st.g1Contract.sha256.slice(0, 12)}（封存於 flow-state）`);
   }
 
-  // --boss-ok：留痕層（缺仍擋，保留形式邊界；實質鑰匙在對話鎖與印章）
+  // --rerun 返工直通：時點①意圖分流（實作級/定義級）→ 免停靠直通；根本性不帶旗標走完整確認
+  // 僅限「同 ms」返工重走（history 中本 ms 曾達 test 及之後）——首次推進或跨 ms 帶 --rerun 即繞過老闆邊，必擋
+  // （history entry 帶 ms；無 ms 欄位的舊條目 fail-closed 視為他 ms）
+  const rerunReached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
+  if (opts.rerun && !rerunReached) {
+    problems.push('--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進或跨 ms 之老闆決策邊不得以返工直通繞過');
+  }
+  const rerunExempt = opts.rerun && rerunReached && st.node !== 'verify'; // verify→done（完成時點）永不直通——老闆終審不可省
+
+  // --boss-ok：留痕層（缺仍擋，保留形式邊界；實質鑰匙在對話鎖與印章）；--rerun 直通豁免非完成邊
   if (opts.bossOk && !needsBossOk(st.node, target)) {
     problems.push(`「${st.node} → ${target}」不是老闆決策邊——不得帶 --boss-ok；回頭邊零旗標，工作邊沿用既有授權`);
-  } else if (needsBossOk(st.node, target) && !opts.bossOk) {
-    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（實質鑰匙：對話鎖 sb unlock 引原句＋授權印章）`);
+  } else if (needsBossOk(st.node, target) && !opts.bossOk && !rerunExempt) {
+    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（實質鑰匙：對話鎖 sb unlock 引原句＋授權印章）；返工直通改帶 --rerun（時點①分流判定，SKILL §3）`);
   } else if (opts.bossOk) {
     passes.push('老闆授權留痕（--boss-ok）');
+  } else if (rerunExempt && needsBossOk(st.node, target)) {
+    passes.push(`返工直通（--rerun ${opts.rerun}）：時點①分流判定留痕，完成時點曝光彙總`);
   }
 
   // 完成印章：verify→done 的唯一鑰匙（sb unlock --stamp done 引老闆原句寫入，一次性）
@@ -412,7 +429,12 @@ function cmdNext(target, opts) {
     }
   }
   if (prev === 'verify' && target === 'done' && st.stamps?.done) delete st.stamps.done; // 完成印章一次性
-  const entry = { from: prev, to: target, at: new Date().toISOString(), bossOk: !!opts.bossOk, adversarial: !!opts.adversarial, selfAttack: !!opts.selfAttack };
+  const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial, selfAttack: !!opts.selfAttack };
+  if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
+  if (prev === 'verify' && target === 'done') {
+    const reruns = (st.history ?? []).filter((h) => h.rerun && h.ms === st.ms);
+    if (reruns.length) passes.push(`返工直通曝光彙總：本 ms ${reruns.length} 次（${reruns.map((h) => `${h.from}→${h.to}(${h.rerun})`).join('、')}）——判定正確性由老闆終審`);
+  }
   st.history.push(entry);
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
@@ -424,8 +446,9 @@ function cmdNext(target, opts) {
 // ②候選覆蓋：引句必須覆蓋至少一個非否定候選詞（hooks 輸入時刻掃描標記；英文詞比照掃描層 \b 邊界，
 //   引 book/look 不得借道 ok）——引無候選／否定候選即擋。
 // ③消費即失效：同一則輸入只可解鎖一次——授權生命週期＝一則輸入。
-// ④unlockLog 唯增雜湊鏈：每條 hash=sha256(前條hash+引句+時間)——中間條目被刪（曝光洗除）即斷鏈擋死；
-//   不防完整重算重寫（天花板：偽造全序列無法與真實區分，老闆抽查對話實蹟承擔）。
+// ④unlockLog 唯增雜湊鏈：每條 hash=sha256(前條hash+引句+時間)——「中間條目刪改」與「整體刪除重建」
+//   中，刪改中間條目即斷鏈擋死；整體刪除（空鏈 trivially 通過）與完整重算重寫不防——發動於解鎖窗口，
+//   屬通道層天花板（SKILL 如實揭露），老闆抽查 unlockLog 與對話實蹟對照終審。
 // 必然曝光：unlockLog 引句於老闆下則輸入由 hooks 自動展示；曝光行是老闆終審。
 const wordHits = (word, s) => (word.charCodeAt(0) > 127 ? s.includes(word) : new RegExp(`\\b${word}\\b`, 'i').test(s));
 
@@ -497,15 +520,39 @@ function cmdEnd(opts) {
   delete st.stamps.pass;
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
-  st.history.push({ from: 'done', to: 'ended', at: st.endedAt, bossOk: true, pass: true });
+  st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin(['done → ended（PASS）', '收尾保鮮（文件層動作，SKILL done 慵說明）：重寫 SOP.md／ROADMAP.md、盤點 docs/ 與 README、移 <slug> 至 archive/', ...passes]);
 }
 
 
 
+// —— 對抗宣告（提交時點的鑰匙）：真跑對抗、記錄落檔（tmp/review-*.md 慣例）後宣告留痕 ——
+// 虛假宣告（沒真跑）屬假對抗（SKILL §3）——閘門保證觸發（提交必消費），真實性由出處留痕＋老闆抽查承擔。
+function cmdAdversarial(note) {
+  if (!note || !note.trim()) die(['缺記錄出處——sb adversarial "<對抗記錄出處/要點>"（真跑對抗、記錄落檔後宣告；虛假宣告屬假對抗）']);
+  mkdirSync(SB_DIR, { recursive: true }); // 無 .shiftblame 目錄的 repo（框架演化場景）直接建立最小狀態檔
+  const st = existsSync(STATE_FILE) ? readJson(STATE_FILE) : { slug: null, ms: null, node: null, history: [] };
+  st.adversarialAt = new Date().toISOString();
+  st.adversarialConsumed = false;
+  (st.adversarialLog ??= []).push({ at: st.adversarialAt, note, node: st.node ?? null });
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([
+    `對抗宣告留痕（@${st.node ?? '未入段'}）：${note}`,
+    'commitmsg 將消費本宣告（一次性）——每個 commit 前都需要新的對抗（返工修復至提交必然觸發）',
+  ]);
+}
+
 function cmdCommitmsg(msg) {
   if (!msg) usage();
+  // 提交對抗閘：提交＝對抗時點（機制時點，非階段；所有 repo 統一）——
+  // 每個 commit 需未消費的對抗宣告；返工修復必然終於 commit，閘在此必然觸發（CARD⑧ 機械化）
+  // 消費在訊息合格發章時（訊息不合格重試不燒宣告）
+  if (!existsSync(STATE_FILE)) die(['提交前需對抗記錄——真跑對抗、記錄落檔後 sb adversarial "<出處>" 宣告（每個 commit 消費一次）']);
+  {
+    const st = readJson(STATE_FILE);
+    if (!st.adversarialAt || st.adversarialConsumed) die(['提交前需對抗記錄——本次返工/變更後重新對抗並 sb adversarial "<出處>" 宣告（宣告為一次性：每個 commit 消費一次；返工修復至提交必然觸發此閘）']);
+  }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   try {
     const stPath = join(ROOT, '.shiftblame', 'flow-state.json');
@@ -528,7 +575,9 @@ function cmdCommitmsg(msg) {
   // 印章：hooks PreToolUse 對 git commit 硬擋的憑證（10 分鐘內、訊息相符才放行）
   mkdirSync(TMP, { recursive: true });
   writeFileSync(join(TMP, 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: ROOT, issuedAt: new Date().toISOString() }, null, 2));
-  fin([`提交訊息合格：${msg}`, `印章已寫入 ${join(TMP, 'commit-stamp.json')}——10 分鐘內以相同訊息 git commit -m 可過 hooks 硬擋`]);
+  // 對抗宣告消費點唯一化：發章只驗不消費——由 hooks 於實際 git commit 時消費並焚章
+  // （對抗授予的是 commit 本身；訊息不合格重試與發章至 commit 的間隔不燒宣告）
+  fin([`提交訊息合格：${msg}`, `印章已寫入 ${join(TMP, 'commit-stamp.json')}——10 分鐘內以相同訊息 git commit -m 可過 hooks 硬擋（對抗宣告於 commit 時由 hooks 消費）`]);
 }
 
 // ———— main ————
@@ -542,6 +591,7 @@ for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--adversarial') flags.adversarial = true;
   else if (rest[i] === '--self-attack') flags.selfAttack = true;
+  else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
   else if (rest[i] === '--quoted') flags.quoted = rest[++i] ?? '';
   else if (rest[i] === '--stamp') flags.stamp = rest[++i] ?? '';
   else pos.push(rest[i]);
@@ -550,6 +600,7 @@ switch (cmd) {
   case 'init': cmdInit(pos[0]); break;
   case 'state': cmdState(); break;
   case 'unlock': cmdUnlock(flags); break;
+  case 'adversarial': cmdAdversarial(pos.join(' ')); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;

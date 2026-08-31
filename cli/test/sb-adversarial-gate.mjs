@@ -69,4 +69,44 @@ writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：舊記錄\n
 assert.match(run('next', 'test', '--adversarial').stderr, /SLUG\.md 缺「時點②對抗」/);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點②對抗：功能循環對抗完成\n');
 assert.equal(run('next', 'test', '--adversarial').status, 0);
+// —— 提交對抗閘（1.5.2）：提交＝對抗時點；每個 commit 消費一次 sb adversarial 宣告 ——
+// commitmsg 無宣告即擋
+let r = run('commitmsg', 'feat: 對抗閘測試提交');
+assert.equal(r.status, 1, '無對抗宣告→commitmsg 擋');
+assert.match(r.stderr, /提交前需對抗記錄/);
+// 宣告缺出處擋
+r = run('adversarial');
+assert.equal(r.status, 1);
+assert.match(r.stderr, /缺記錄出處/);
+// 宣告→發章（不消費；消費點唯一化於 hooks 實際 commit 時）→模擬 hooks 消費後擋
+r = run('adversarial', 'review-x.md 時點③');
+assert.equal(r.status, 0, '對抗宣告留痕');
+assert.ok(state().adversarialLog.at(-1).note === 'review-x.md 時點③');
+r = run('commitmsg', 'feat: 對抗閘測試提交');
+assert.equal(r.status, 0, '有未消費宣告→發章');
+assert.equal(state().adversarialConsumed, false, '發章不消費（消費點唯一化於 hooks commit）');
+// 模擬 hooks 已消費（實際 commit 發生後）→再 commitmsg 擋（每 commit 需新對抗）
+{ const st = state(); st.adversarialConsumed = true; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
+r = run('commitmsg', 'feat: 對抗閘測試提交');
+assert.equal(r.status, 1, '消費後再 commitmsg→擋（每 commit 需新對抗）');
+// 返工修復後（新對抗）再提交可過
+r = run('adversarial', 'review-x2.md 修復後再對抗');
+assert.equal(r.status, 0);
+r = run('commitmsg', 'feat: 對抗閘測試提交');
+assert.equal(r.status, 0, '返工後重新對抗→可提交');
+
+// —— 全鏈串接（N1 回歸）：adversarial→commitmsg→hooks commit 放行且一併消費（單次宣告單次 commit）——
+const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
+const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
+r = run('adversarial', 'review-x3.md 全鏈時點');
+assert.equal(r.status, 0);
+r = run('commitmsg', 'feat: 全鏈提交驗證訊息');
+assert.equal(r.status, 0, '發章（不消費）');
+const hc = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
+assert.equal(hc.status, 0, '全鏈：hooks commit 放行——單次宣告單次 commit（雙消費點矛盾回歸）');
+assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對抗宣告');
+// 消費後同印章再 commit→擋（一對一）
+const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
+assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
+
 console.log('sb-adversarial-gate: PASS');

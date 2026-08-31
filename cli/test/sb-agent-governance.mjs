@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.5.1');
+assert.equal(manifest.version, '1.5.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.5\.1"/);
+assert.match(skill, /version: "1\.5\.2"/);
 
 // 八段詞彙落地
 assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
@@ -28,6 +28,15 @@ assert.match(skill, /令行靜止|--adversarial 宣告/);
 assert.match(skill, /節錄快照/);
 assert.match(skill, /自由傾倒區/);
 assert.match(skill, /SB\.md|SLUG\.md/);
+
+// 1.5.2 提交對抗閘與返工直通落地
+assert.match(skill, /提交對抗閘/);
+assert.match(skill, /sb adversarial/);
+assert.match(skill, /返工直通/);
+assert.match(skill, /--rerun/);
+assert.match(read('cli', 'bin', 'sb.mjs'), /cmdAdversarial/);
+assert.match(readme, /提交對抗閘/);
+assert.match(readme, /返工直通/);
 
 // 1.5.1 時序元規則落地
 assert.match(skill, /時序元規則/);
@@ -54,7 +63,7 @@ for (const f of files) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.5\.1/);
+  assert.match(reference, /revision: 1\.5\.2/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

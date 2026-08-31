@@ -71,6 +71,21 @@ const hijack4 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inp
 assert.equal(hijack4.status, 2, '註解偽裝擋');
 const hijack5 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo "sb unlock --quoted 繼續" && node -e "x"' } });
 assert.equal(hijack5.status, 2, '字串內嵌偽裝擋');
+// 命令代入穿透（1.5.1 複核必修 1）：$()／反引號／<() 於解鎖段內即非單體，擋
+const hijack6 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "$(node -e \'require("fs").writeFileSync("pwn.txt","x")\')"' } });
+assert.equal(hijack6.status, 2, '$() 命令代入擋');
+const hijack7 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "`node -e x`"' } });
+assert.equal(hijack7.status, 2, '反引號代入擋');
+const hijack8 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted <(node -e x)' } });
+assert.equal(hijack8.status, 2, '<() 進程代入擋');
+// 冒名檔名（複核必修 2）：.shiftblame 髒區與非 sb.mjs 檔名不取得解鎖豁免
+const hijack9 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node .shiftblame/tmp/pwn_sb unlock --quoted 繼續' } });
+assert.equal(hijack9.status, 2, '.shiftblame 冒名路徑擋');
+const hijack10 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node x_sb.mjs unlock --quoted 繼續' } });
+assert.equal(hijack10.status, 2, '非 sb.mjs 檔名擋');
+// 數字內標點保護：3.14 不偽句界——「ok 3.14 沒過」ok 與否定詞同句
+up('ok 3.14 沒過');
+assert.ok(state().input.candidates.some((c) => c.word === 'ok' && c.negated), '數字小數點不分句——否定同句標記');
 const lockedWrite = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'app.js') } });
 assert.equal(lockedWrite.status, 2, '鎖定期寫檔擋');
 const readOnly = run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.js') } });
@@ -131,22 +146,44 @@ assert.equal(W('ended', 'Edit', 'docs/guide.md').status, 0, 'ended 收尾保鮮'
 assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0, 'test 段寫測試碼');
 assert.equal(W('build', 'Edit', 'test/app.test.js').status, 2, '非 test 段改測試碼即擋');
 
-// —— 7. 層間停靠雙重鎖：plan 段 sb next test 無 --boss-ok 即擋 ——
+// —— 7. 層間停靠雙重鎖：plan 段 sb next test 缺 --boss-ok 即擋；--rerun 直通與 CLI 同判據 ——
 setNode('plan');
 const st1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --adversarial' } });
 assert.equal(st1.status, 2);
 assert.match(st1.stderr, /plan→test|老闆決策邊/);
 const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --boss-ok --adversarial' } });
 assert.equal(st2.status, 0, '帶 --boss-ok 放行');
+// --rerun：本 ms 未達 test（history 無本 ms 記錄）→擋
+const st3 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
+assert.equal(st3.status, 2, '首走 --rerun 擋（hooks 同判據）');
+assert.match(st3.stderr, /--rerun 僅限同 ms/);
+// --rerun：本 ms 曾達 test →直通放行（兩層判據一致）
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'plan', history: [{ from: 'plan', to: 'test', at: '2026-01-01T00:00:00Z', ms: '001', bossOk: true }] }));
+const st4 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
+assert.equal(st4.status, 0, '同 ms 返工直通放行（hooks 同判據）');
+// --rerun：history 達 test 但屬他 ms →擋（跨 ms 繞過防線）
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '002', node: 'plan', history: [{ from: 'plan', to: 'test', at: '2026-01-01T00:00:00Z', ms: '001', bossOk: true }] }));
+const st5 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
+assert.equal(st5.status, 2, '跨 ms --rerun 擋');
 
-// —— 8. commit 印章 ——
+// —— 8. commit 印章＋提交對抗閘（hooks 端：手寫印章不得繞過對抗閘）——
 setNode('build');
 const noStamp = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
 assert.equal(noStamp.status, 2);
 assert.match(noStamp.stderr, /缺少 commit 印章/);
 writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: root, issuedAt: new Date().toISOString() }));
+const forgedStamp = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
+assert.equal(forgedStamp.status, 2, '手寫印章但無對抗宣告→擋');
+assert.match(forgedStamp.stderr, /提交前需對抗記錄/);
+{ // 有未消費對抗宣告→過（且一併消費）
+  const stv = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
+  stv.adversarialAt = new Date().toISOString(); stv.adversarialConsumed = false;
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stv));
+}
+writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: root, issuedAt: new Date().toISOString() }));
 const ok = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
 assert.equal(ok.status, 0);
+assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).adversarialConsumed, true, 'hooks 消費印章時一併消費對抗宣告');
 
 // —— 9. 破壞性命令：相對路徑＋重定向截斷 ——
 const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo hi > out.txt' } });

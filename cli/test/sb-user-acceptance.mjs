@@ -31,8 +31,9 @@ assert.equal(run('init', 'demo').status, 0);
 assert.equal(state().node, 'intent');
 
 // 回頭自由：intent 自身不可回（無意義），其他段可。先走八段——
-// intent→audit：--boss-ok 邊
+// intent→audit：--boss-ok 邊；首走不得以 --rerun 直通繞過（返工直通僅限曾達 test 後的重走）
 assert.match(run('next', 'audit').stderr, /MUST 帶 --boss-ok/);
+assert.match(run('next', 'audit', '--rerun', 'impl').stderr, /--rerun 僅限同 ms 返工重走/, '首走防繞');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 // audit→research：G1 假需求閘
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=送出資料的人 | 前置=資料合法 | 操作=送出資料 | 可觀察結果=看到完整結果 | 失敗邊界=不得出現部分結果 | 證據=BEHAVIOR\n- AC-02 | 需求=R2 | 使用者=送出錯誤資料的人 | 前置=資料不合法 | 操作=送出資料 | 可觀察結果=看到明確錯誤 | 失敗邊界=不得誤報成功 | 證據=BEHAVIOR');
@@ -62,7 +63,9 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n被改動。');
 assert.match(run('next', 'build').stderr, /G1 已偏離/);
 assert.equal(run('next', 'intent').status, 0); // 回 intent 同 ms 重走，零旗標
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=送出資料的人 | 前置=資料合法 | 操作=送出資料 | 可觀察結果=看到完整結果 | 失敗邊界=不得出現部分結果 | 證據=BEHAVIOR\n- AC-02 | 需求=R2 | 使用者=送出錯誤資料的人 | 前置=資料不合法 | 操作=送出資料 | 可觀察結果=看到明確錯誤 | 失敗邊界=不得誤報成功 | 證據=BEHAVIOR');
-assert.equal(run('next', 'audit', '--boss-ok').status, 0);
+// 返工直通：曾達 test 的重走，--rerun 免 --boss-ok（時點①分流判定留痕；老闆決策邊被豁免）
+assert.equal(run('next', 'audit', '--rerun', 'definition').status, 0, '返工直通：定義級免停靠');
+assert.ok(state().history.at(-1).rerun === 'definition', '直通留痕於 history');
 assert.equal(run('next', 'research').status, 0);
 assert.equal(run('next', 'plan').status, 0);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點①對抗：重走後再次對抗完成，反向對抗判定成立\n');
@@ -127,6 +130,8 @@ const ms2 = join(root, '.shiftblame/demo/002');
 writeFileSync(join(ms2, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=u | 前置=p | 操作=o | 可觀察結果=r | 失敗邊界=f | 證據=BEHAVIOR');
 writeFileSync(join(ms2, 'G2.md'), '# 技術\n沿用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴。');
 writeFileSync(join(ms2, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=o | 通過判準=r | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，這是真實的失敗點描述。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
+// 跨 ms 繞過防線：ms002 的老闆邊不得以 --rerun 直通（history 的 test 記錄屬 ms001）
+assert.match(run('next', 'audit', '--rerun', 'impl').stderr, /--rerun 僅限同 ms/, '跨 ms --rerun 擋');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 assert.equal(run('next', 'plan').status, 0);
