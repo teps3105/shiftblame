@@ -14,7 +14,7 @@
  * 煙霧測試：printf '%s' '{"hook_event_name":"UserPromptSubmit","cwd":"."}' | node hooks/shiftblame-guard.mjs
  */
 
-import { existsSync, readFileSync, realpathSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -45,20 +45,21 @@ const projectRoot = (input) => {
 
 const CARD = [
   '[shiftblame 不變量]',
-  '①老闆輸入先路由 sb-think 理解後分發，不字面執行；追加語義 steering 走三步序：意圖揭露→文件修正→實作。',
-  '②三時點強制對抗（放行前方向／判決前成果／收斂複驗），記錄四段、複核列點綁出處、反向對抗判定。',
-  '③驗收不得自寫自測即宣稱通過；commit 必過 sb commitmsg（hooks 已機械硬擋）。',
-  '④層內連續、層間停靠；階段完成不是停點。',
-  '⑤人話三時點：意圖揭露的「意圖翻譯」＝老闆讀得懂的白話；release 簡報與 verify 報告必含 ## 人話 段（七判準：邏輯、問題來源、無語病、時序、因果、UI/UX/UE、老闆讀得懂——任一不合格即不通過）。',
-  '⑥版號屬老闆決策——不得自行升版或預設版號，版號待老闆指定。',
-  '⑦對抗—修復—再對抗閉環：對抗檢閱的必修項修復後 MUST 再對抗（針對修復本身），至零必修項才可提交；修復一次即宣稱修好＝假完成。',
+  '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）：補充／修正→回 intent 同 ms 重走線性；確認／開工→分發執行。',
+  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修）；前進要鑰匙（--boss-ok 留痕＋對話鎖＋老闆詞印章）。',
+  '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
+  '④令行靜止：每則老闆輸入上鎖，唯老闆「開工」解鎖；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
+  '⑤老闆詞印章（一次性；授權詞 MUST 獨立成行——done／PASS／開工／開新 ms 單獨一行說才算，句中出現不算）：done→verify→done 放行；PASS→sb end；開新 ms→done→intent 時 ms++；開工→解鎖。防無意識繞過＋事後稽核；不防刻意直改 flow-state 的偽造（老闆抽查承擔）。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；驗收段（verify）對 repo 唯讀。',
+  '⑦版號屬老闆決策——不得自行升版或預設版號。',
+  '⑧對抗—修復—再對抗閉環：必修項修復後 MUST 再對抗至零必修項；修復一次即宣稱修好＝假完成。',
 ].join('\n');
 
 const SESSION_CARD = [
   CARD,
   '',
-  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前節點）。載入後 sb-think 的路由提議才有脈絡依據。',
-  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／PreToolUse）；commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
+  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 sb-think 的路由提議才有脈絡依據。',
+  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；對話鎖、老闆詞印章與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
   '[版號] 版本號屬老闆決策——不得自行升版或預設版號，揭露表寫「版號待老闆指定」。',
 ].join('\n');
 
@@ -69,32 +70,67 @@ function nodeLine(root) {
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
-    if (st.node === 'release') hint = '——放行簡報揭露後停等老闆確認（簡報含 ## 人話 段），推進帶 sb next test --boss-ok（層間 checkpoint）';
-    if (st.node === 'plan') hint = '——放行前先備齊對抗方向檢閱與 §10 核對';
-    if (st.node === 'converge') hint = '——收斂前：時點③對抗成果檢閱（涵蓋本 ms 全部 direct 變更）＋sb report 供老闆 PASS 前判讀';
-    return `\n[節點] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）；G1 契約鎖定中，改 G1 須 sb amend --boss-ok。`;
+    if (st.node === 'intent') hint = '——sb-think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
+    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆「開工」後帶 --boss-ok 推進）';
+    if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決＋時點②對抗；不滿意→test 重修或回 intent';
+    if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms（印章）或 sb end（PASS 印章）';
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）${st.dialogueLock ? '；對話鎖中（唯讀，等老闆「開工」）' : ''}。`;
   } catch { return ''; }
 }
 
-// 層間停靠雙重鎖：node=release 時 `sb next test`（含 sb.mjs 形）無 --boss-ok 即擋；註解中的旗標不算
+// —— 對話鎖（令行靜止）＋老闆詞印章：防無意識繞過＋可稽核；不防刻意直改 flow-state 的偽造（如實天花板）——
+// 授權詞＝獨立成行（^done$／^PASS$／^開工$／^開新 ms$，容許尾標點）——純形式判準，
+// 不做否定／疑問語境猜測（「還沒 done」「done 了嗎」「還沒開工」皆不匹配；老闆單獨一行說才算）。
+// 「開工」行解鎖且不清本則未出現的舊印章（「done」→「開工」兩句式可通）；非開工輸入清未用印章（陳舊授權失效）。
+function handleBossInput(root, prompt) {
+  if (!root || !existsSync(join(root, '.shiftblame'))) return;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { slug: null, ms: null, node: null, history: [] };
+    const text = String(prompt ?? '');
+    const LINE = (w) => new RegExp(`^\\s*${w}\\s*[。！!，,]?\\s*$`, 'im');
+    const stamps = {};
+    if (LINE('done').test(text)) stamps.done = new Date().toISOString();
+    if (LINE('PASS').test(text)) stamps.pass = new Date().toISOString();
+    if (LINE('開新\\s*ms').test(text)) stamps.newMs = new Date().toISOString();
+    const isGo = LINE('開工').test(text);
+    if (!isGo || Object.keys(stamps).length) st.stamps = stamps;
+    st.dialogueLock = !isGo;
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+  } catch { /* 狀態異常靜默 */ }
+}
+
+function checkDialogueLock(root) {
+  if (!root) return null;
+  try {
+    const p = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(p)) return null;
+    const st = JSON.parse(readFileSync(p, 'utf8'));
+    if (st.dialogueLock) return '對話鎖中——老闆尚未說「開工」；理解／呈現／唯讀自由，一切寫入被擋（令行靜止，SKILL 授權章）。呈現待決方案以〔待確認〕結尾。';
+  } catch { return null; }
+  return null;
+}
+
+// 老闆決策邊雙重鎖：三邊（intent→audit／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+test\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    if (st.node === 'release') return '層間停靠：release→test 是老闆確認點——放行簡報經老闆確認後帶 --boss-ok 推進，不得自行進入實作層（SKILL §11）';
+    const edge = { intent: 'audit', plan: 'test', verify: 'done' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/)?.[1];
+    if (edge && edge === target) return `老闆決策邊：${st.node}→${target}——經老闆確認（對話鎖「開工」）後帶 --boss-ok 推進，不得自行越過（SKILL 授權章）`;
   } catch { /* 非治理工作區 */ }
   return null;
 }
 
-// ———— 狀態寫入攔截：把 §1.7 寫入矩陣機械化 ————
-// 測試碼（測試慣例路徑）僅 test 節點可寫；實作碼（.shiftblame/ 外 repo 檔）
-// 白名單＝build（實作狀態）／release（direct 微修窗）／pass（收尾保鮮）；其餘節點 repo 唯讀。
-// 測試不可變性由 git 承擔（1.4：無 test-lock.json，閘門不讀 tmp）。
-// Bash 內寫檔與 MCP 讀取類工具不在此層（殘餘；shell 漂移由 verdict 樹檢查兜底）。
+// ———— 狀態寫入攔截：把寫入矩陣機械化 ————
+// 測試碼（測試慣例路徑）僅 test 段可寫；實作碼（.shiftblame/ 外 repo 檔）
+// 白名單＝build（實作段）／ended（PASS 後收尾保鮮）；其餘段對 repo 唯讀（verify 驗收唯讀、done 等待態唯讀）。
+// 測試不可變性由 git 承擔；Bash 內寫檔不在此層（殘餘；shell 漂移由 verify 邊樹檢查兜底）。
 
-const IMPL_WRITE_NODES = new Set(['build', 'release', 'pass']);
+const IMPL_WRITE_NODES = new Set(['build', 'ended']);
 // 測試碼認定：真實測試「目錄」或副檔名慣例——不含 _test_ 中綴（避免 src/test_utils.js 誤判）
 const TEST_PATH_RE = /(^|\/)(tests?|__tests__|spec)\//i;
 const TEST_FILE_RE = /\.(test|spec)\.[A-Za-z0-9]+$|(^|\/)[A-Za-z0-9._-]+_test\.[A-Za-z0-9]+$/i;
@@ -140,9 +176,9 @@ function checkStateWriteMatrix(root, toolInput) {
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
     const isTest = TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
     if (isTest) {
-      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已鎖定——節點 ${node} 不得修改測試；顯式回測試狀態須經 verdict→test 回邊並附定義錯誤理由（SKILL §1.7 寫入矩陣）`;
+      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿——段 ${node} 不得修改測試；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 節點 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 狀態（或 release 之 direct 微修、pass 收尾保鮮）（SKILL §1.7 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾保鮮）；回 intent 重走或 done→test 重修後才可寫（SKILL 寫入矩陣）`;
     }
   }
   return null;
@@ -282,7 +318,7 @@ function checkCommitStamp(root, seg) {
     }
   }
   const stampPath = join(root, '.shiftblame', 'tmp', 'commit-stamp.json');
-  if (!existsSync(stampPath)) return '缺少 commit 印章——先跑 sb commitmsg "<訊息>"（sb-commit 流程，SKILL §7）再以相同訊息 commit';
+  if (!existsSync(stampPath)) return '缺少 commit 印章——先跑 sb commitmsg "<訊息>"（SKILL 提交規範）再以相同訊息 commit';
   try {
     const stamp = JSON.parse(readFileSync(stampPath, 'utf8'));
     if (!stamp.cwd || !stamp.message || !stamp.issuedAt) return 'commit 印章欄位不全（偽造跡象）——重跑 sb commitmsg';
@@ -309,14 +345,41 @@ try {
   }
 
   if (event === 'UserPromptSubmit') {
+    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋老闆詞印章（令行靜止；唯「開工」解鎖）
     inject(CARD + nodeLine(root));
+  }
+
+  if (event === 'Stop') {
+    // agent 回合結束輸出含〔待確認〕→上鎖（執行中呈現新決策；平台未提供輸出文本時靜默跳過）
+    const texts = (v) => { // 遞迴攤平字串／陣列／{content|text} 嵌套為字串陣列（blocks 形平台）
+      if (typeof v === 'string') return [v];
+      if (Array.isArray(v)) return v.flatMap(texts);
+      if (v && typeof v === 'object') return texts(v.content ?? v.text ?? '');
+      return [];
+    };
+    const msgs = [].concat(input.messages ?? []).map(texts).filter((parts) => parts.join('').trim());
+    const last = texts(input.last_message ?? input.lastMessage ?? msgs.at(-1) ?? []).join('');
+    if (root && typeof last === 'string' && last.includes('〔待確認〕')) {
+      try {
+        const p = join(root, '.shiftblame', 'flow-state.json');
+        if (existsSync(p)) {
+          const st = JSON.parse(readFileSync(p, 'utf8'));
+          st.dialogueLock = true;
+          writeFileSync(p, JSON.stringify(st, null, 2));
+        }
+      } catch { /* 靜默 */ }
+    }
+    process.exit(0);
   }
 
   if (event === 'PreToolUse') {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
-    if (/^bash$/i.test(tool)) {
-      // 層間停靠雙重鎖（先於其他檢查：繞過 checkpoint 進實作層是最高優先攔截）
+    if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
+      // 對話鎖最高優先：鎖定期間 Bash 全擋（唯讀研究用平台讀檔工具）
+      const lock = checkDialogueLock(root);
+      if (lock) deny(lock);
+      // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);
       // 先擋破壞性＋相對路徑（含行內各語言刪除 API 與直跑腳本檔掃描）
@@ -335,7 +398,10 @@ try {
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
-      // 狀態寫入矩陣優先：節點越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
+      // 對話鎖最高優先：鎖定期間一切寫入擋（含 .shiftblame 內——未授權內容不得落任何檔）
+      const lock = checkDialogueLock(root);
+      if (lock) deny(lock);
+      // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
       // 提醒比對只認路徑鍵（防 content 字串誤觸）；verify 報告逐鍵精確匹配
@@ -345,7 +411,7 @@ try {
       if (/SKILL\.md|hooks[\\/]|package\.json|plugin\.json|marketplace\.json/i.test(pathStr)) {
         inject(/[\\/](package|plugin|marketplace)\.json/i.test(pathStr)
           ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
-          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：若尚未經老闆確認，MUST 先意圖揭露取得授權，並依三步序 文件修正→實作 推進（SKILL §2）；已授權則照授權範圍執行。');
+          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認並說「開工」後才可執行（令行靜止）；已授權則照授權範圍執行。');
       } else if (isVerify) {
         inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。');
       }

@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.4.0-2ea44f.svg" alt="version 1.4.0"/>
+  <img src="https://img.shields.io/badge/version-1.5.0-2ea44f.svg" alt="version 1.5.0"/>
 </p>
 
 ---
@@ -27,77 +27,55 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **一次定律。** 定義層單向一次推進——G1 承接 sb-think 已確認的完整語義直接定稿，薄研究（G2）、薄規劃（G3）直接推進到實作，不在 G1 或階段邊界重問。每階段一次產出、產出即定稿、向前對齊；§10 兩兩一致於放行前一次核對，缺漏由責任面向一次補正，重大例外才退回。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
-- **確認綁定決策，不綁階段。** 同一份 sb-think 理解只確認一次；確認訊息直接被消費並分發，audit、release、ms-done 等工作狀態邊界不得再次詢問或要求 `--boss-ok`。只有語義範圍改變、顯式修約、精確破壞性操作與最終 PASS 才建立新決策。
+- **令行靜止（對話鎖）。** 每則老闆輸入自動上鎖，唯老闆「開工」解鎖；鎖定期間只讀不寫。agent 呈現待決方案以〔待確認〕結尾自動上鎖。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換審計→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
 - **三面向雙面結構。** G1/G2/G3 不只在定義層——每個面向都有定義與落地兩面：測試＝G1 落地（驗收條件可執行化）、實作＝G2 落地（技術方案落地為碼）、驗收＝G3 落地（照計畫執行收證據）；執行層時序與定義層 G1→G2→G3 正向同構。任何 G2/G3 與 G1 不一致退回 G1 重新正確定義——G1 定義權唯一，G2/G3 不得自行詮釋吸收。
 - **純技術裁定不外包給老闆。** repo／第一方文件／實機證據不足或矛盾、無法可靠裁定時，主對話必須立即取得一次外部子代理的自包含唯讀技術意見，複核後自行裁定；不必先反覆失敗。只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定。
-- **對抗檢閱三時點強制。** 計畫放行前強制子代理**對抗方向**、每個功能驗收後判決前強制**對抗成果**、收斂複驗強制**對抗成果**——記錄寫 tmp 自由區（建議「對抗要點」「複核結論」「反向對抗」「附錄」四段；複核結論每項裁定綁可查證出處，反向對抗判定不成立即不得推進），由層間停靠簡報、SLUG §4 與 `sb report` 外部審計消費（閘門不讀 tmp）；層內連續、層間停靠——放行邊界以 commentary 揭露簡報後停等老闆確認（`sb next test --boss-ok`），不得無縫銜接；direct 豁免僅限 agent 自行發現的微修，老闆意圖不豁免。外部子代理不可用時，主對話切換身分以對抗者立場執行最嚴厲攻擊並標示降級來源，放行／判決／收斂時向老闆揭露。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見，其餘高風險情境按需取得。
+- **三時點對抗＋SLUG 對照。** plan→test（①對抗方向）、verify→test（②對抗成果）、verify→done（③對抗成果）——推進帶 `--adversarial` 宣告，CLI 逐字對照 SLUG.md 時點對抗記錄，不一致即擋；複核結論每項裁定綁可查證出處，反向對抗判定不成立即不得推進。外部子代理不可用時主對話切換身分自攻並標示降級，向老闆揭露。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見。
 - **階段內認知控制。** 任務依 fast／full／loop 分級；長程工作以 `Goal／Core／Verified／Open／Next` 短帳本跨 seam 保持狀態，所有「已驗證」都要附方法與涵蓋範圍。
 - **最小充分解。** 依序選擇重用既有能力、標準函式庫、平台原生能力、既有依賴與最少可用實作；修 bug 修共用根因，不簡化安全、資料保護、無障礙或明確需求。
 - **資產分離與流程代號禁入。** `.shiftblame/tmp/` 是 agents 自由傾倒區——流程閘門零依賴（唯一例外：commit 印章即生即滅）；專案工具鏈或專案運行產生的檔案（日誌、快取、匯出物）屬專案資產，MUST NOT 整檔收進 tmp，驗收引用以**節錄快照**為證據。tmp 只準寫入、不準清理，清理由老闆手動執行。流程代號（ms 編號、G1/G2/G3 引用、AC-ID、sb 指令名、流程歷史）MUST NOT 以任何形式出現在程式碼——註解、識別字、字串與測試名稱皆同；流程資訊由 commit message 與 `.shiftblame/` 承載，AC-ID 與測試的映射由 G3 承載。
 - **不開 slug 的事直接做。** 框架演化、微修或老闆指定不開 slug 的輕量變更，直接實行不建骨架；一旦開 slug，一律完整三面向制衡，無中途降級。
-- **預設直接修正。** 僅限不改變使用者可觀察行為，須以 `tmp/direct-change.md` 聲明 `USER_OBSERVABLE=NO` 並填實理由；此路徑不得取代 G1 驗收。
+- **回頭自由重修。** 成果不滿意隨時返工（verify→test／done→test／任意→intent），返工疊加新 commit；agent MUST NOT 以已完成狀態拒絕重修或導向開新 ms。
 - **假測試判返工。** 走執行層時序的測試 MUST 有真實斷言、對應 G1 驗收項或可觀察行為；無斷言／測實作細節／mock 過度／形式化湊數的假測試，秘書判決時判返工回測試階段。
 - **寫測試與跑測試以狀態分離。** 測試狀態依 G1 定義「過」後即鎖定；實作與驗收狀態不得為綠燈修改測試。紅燈只有兩條路：實作問題回實作狀態，或附定義錯誤理由回測試狀態重新定義。
 - **測試可自動化，驗收必須是使用者行為。** G3 每項驗收 MUST 可重現執行；CI 綠燈與結構正確不能單獨判定完成，仍須逐項提供 G1 使用者可觀察的 BEHAVIOR 證據。
 - **測試先行＝G1 先落地（觸發重流程時）。** 執行層執行順序固定：測試階段依 G1 寫測試（紅燈）→ 實作階段依 G2 寫實作 → 驗收階段照 G3 跑 CI 到綠燈。先寫測試再實作，與定義層「驗收先於實作」對齊。
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，再依 G2 寫實作步驟，不得倒序。
-- **G1 是封存契約。** 放行時 CLI 將 G1 的 SHA-256 封存於 flow-state.json，後續每次推進重算核對原檔；局部技術模型只能在不改變 G1 滿足集合下單調細化 G2／G3。契約不足或衝突時停止，記錄原條款／新條款／影響範圍，經老闆確認後 `sb amend --boss-ok` 修約並重新放行。
-- **回指 G1 前先清帳。** 修約或開新 ms 回到審計階段前，working tree MUST 乾淨：可保留成果先依 `sb-commit` 精準提交，不應保留的變更明確捨棄；不得讓未分類工作污染下一輪需求定義。
-- **驗收使用者需求，不驗收結構幻象。** G1 每項需求使用唯一 AC-ID 與 BEHAVIOR 契約；G3 驗收表逐項排程並映射測試。CI 綠燈或結構正確不能單獨判定完成；必填 AC 必須有 commit 與實際操作／觀察的 SATISFIED 行為證據（引用專案輸出以節錄快照為證）——判決由秘書判定，時點②對抗與 `sb report` 外部審計承擔查核（閘門核對 git 一致性）。
-- **commit 集權。** commit 一律由主對話秘書依 `sb-commit` 執行；實作完成先 commit 建立不可變待驗對象，再驗收與判決。
+- **G1 是封存契約。** plan→test 放行時 CLI 將 G1 的 SHA-256 封存於 flow-state.json，後續每次推進重算核對；局部技術模型只能在不改變 G1 滿足集合下單調細化 G2／G3。契約不足或衝突＝回 intent（老闆補充路徑）重定義後重新放行。
+- **回 intent 前先清帳。** 回 intent 重走前，working tree MUST 乾淨：可保留成果先依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄。
+- **驗收使用者需求，不驗收結構幻象。** G1 每項需求使用唯一 AC-ID 與 BEHAVIOR 契約；G3 驗收表逐項排程並映射測試。CI 綠燈或結構正確不能單獨判定完成；必填 AC 必須有 commit 與實際操作／觀察的 SATISFIED 行為證據（引用專案輸出以節錄快照為證）——判決由秘書判定，時點②對抗承擔查核（verify 邊核對 git 一致性）。
+- **commit 集權。** commit 一律由主對話秘書執行且必過 `sb commitmsg`（hooks 印章硬擋）；build 段完成即存檔（commit 先於驗收）。
 
 ## 流程概覽
 
 ```mermaid
 flowchart TD
-    Boss([老闆任何輸入]) --> Think["sb-think · 唯一閘口<br/>理解 · 對齊 · 分發<br/>═══ 責任轉移線 ═══"]
-    Think --> Route{老闆拍板路由}
-    Route -- "開 slug" --> Start["sb-start 建骨架"] --> Check
-    Route -- "不開 slug<br/>（框架演化／微修）" --> Direct["直接實行"]
+    Boss([老闆任何輸入]) --> Think["sb-think · 全域路由（不屬於任何段）<br/>═══ 責任轉移線 ═══"]
+    Think -- 補充／修正 --> I["回 intent 同 ms 重走"]
+    Think -- 確認／開工 --> Exec["分發執行"]
 
-    subgraph Check["定義層三面向制衡 · 一次定律：單向一次推進"]
+    subgraph Eight["八段 · 一個 ms 走一次"]
         direction LR
-        G1["G1 需求<br/>審計狀態<br/>承接 sb-think 已確認語義<br/>直接定稿"] -->|薄研究<br/>向前對齊| G2["G2 技術<br/>研究狀態<br/>主對話<br/>一次定稿"]
-        G2 -->|薄規劃<br/>向前對齊| G3["G3 計畫<br/>規劃狀態<br/>主對話<br/>一次定稿"]
+        I[intent 意圖<br/>老闆確認] --> A[audit 需求<br/>G1] --> R[research 研究<br/>G2] --> P[plan 計畫<br/>G3＋§10＋時點①對抗]
+        P -- "放行 --boss-ok --adversarial" --> T[test 測試<br/>定稿 commit]
+        T --> B[build 實作<br/>存檔 commit]
+        B --> V[verify 驗收<br/>判決＋時點②對抗<br/>＝中間態]
     end
-
-    Check --> Consist{秘書核對<br/>§10 一致性<br/>一次核對}
-    Consist -- 缺漏 · 責任面向一次補正 --> Check
-    Consist -- "對抗方向檢閱＋§10 一致<br/>停靠揭露後放行" --> Dev
-
-    subgraph Dev["開發 · 秘書依 G3 里程碑推進 · 逐個功能推進時序"]
-        direction TB
-        MS["里程碑"] --> Loop
-        subgraph Loop["執行層時序 · G1→G2→G3 依序落地（與定義層同構）· 判決歸秘書"]
-            direction LR
-            T["① 測試狀態 · G1 落地<br/>主對話 · 依 G1 寫測試<br/>定義「過」（鎖定）"] --> D["② 實作狀態 · G2 落地<br/>主對話 · 依 G2 寫實作碼"]
-            D --> Commit["③ 秘書 commit 存檔<br/>建立不可變待驗對象"]
-            Commit --> A["④ 驗收狀態 · G3 落地<br/>主對話 · 照 G3 跑 CI 與行為驗收"]
-            A --> Judge{秘書判決<br/>對抗成果檢閱複核<br/>git 一致性與行為證據核對}
-            Judge -- 合格 --> Done["本功能完成"]
-            Judge -- "返工（實作→實作<br/>測試定義→測試）" --> T
-        end
-        Loop -- 里程碑所有功能 commit --> MA{"秘書審計價值<br/>對照封存 G1 複驗<br/>＋對抗成果檢閱"}
-        MA -- 不符 --> Loop
-        MA -- 合格 --> Next{還有下一個<br/>里程碑？}
-        Next -- 是 --> MS
-    end
-
-    Next -- 否 --> NnnDone["nnn 完成<br/>（循環收斂）"]
-    NnnDone --> LightFresh["輕量保鮮<br/>更新 SLUG"]
-    LightFresh --> Decide{"需要老闆決策？"}
-    Decide -- 是（PASS／開新nnn／產品語義或授權重大例外） --> Think
-    Decide -- 否 --> Dev
-    Think -- 老闆拍板結束 slug --> Pass([老闆 PASS])
-    Pass --> FullFresh["完整收尾保鮮<br/>移 archive"]
+    Exec --> Eight
+    V -- 功能循環 --adversarial --> T
+    V -- 重修／追加（回頭自由） --> I
+    V -- "老闆 done 印章＋--adversarial" --> D[done 完成態]
+    D -- 重修（零旗標） --> T
+    D -- "開新 ms 印章" --> I
+    D -- "PASS 印章 → sb end" --> E([收尾保鮮＋archive])
 ```
 
 **所有老闆輸入第一步路由回 sb-think，不字面執行指令。** sb-think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 PASS 等非技術決策才路由回 sb-think。
 
-**`<nnn>` 完成是單一子需求循環收斂，不等於整個 `<slug>` 結束。** 老闆在同一 `<slug>` 開新 `<nnn>` 不需先 PASS；只有結束整個 `<slug>` 才走 PASS 與完整收尾保鮮。
+**done 是 ms 完成態，不等於 slug 結束。** 老闆說「開新 ms」（印章）開新輪；說「PASS」（印章）＋`sb end` 才結束 slug（收尾保鮮＋archive）。未宣稱 done 前流程停在 verify 中間態——成果不滿意隨時重修（verify→test 或回 intent，零旗標）。
 
 讀圖規則：①沿箭頭前進，不得跳點；②下游發現缺口，沿退回箭頭處理；③每個節點只產出自己的內容；④圖文衝突時，以權威圖為準。
 
@@ -150,9 +128,9 @@ flowchart TB
 
 ## 安裝
 
-shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／PreToolUse：不變量卡、節點提醒、commit 印章硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、待確認上鎖、commit 印章硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；寫檔工具比對流程節點（測試碼僅 test 節點、實作碼限 build/release/pass、驗收判決節點 repo 唯讀）；`git commit` 驗印章（10 分鐘一次性自動消費）；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——tmp 是自由傾倒區，流程零依賴。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
+**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**對話鎖**（每則老闆輸入上鎖、唯「開工」解鎖，鎖定期間擋一切寫入；`Stop` 事件偵測回合輸出含〔待確認〕即上鎖）＋**老闆詞印章**（done／PASS／開新 ms 偵測寫入，授權詞 MUST 獨立成行）；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；`git commit` 驗印章；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——tmp 是自由傾倒區，流程零依賴。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 
@@ -186,30 +164,23 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 npm install -g <shiftblame repo>/cli
 sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.json
 sb state                           # 目前節點與各下一步前置條件
-sb next release                    # 放行閘（G1/G3 結構查核；§10 與對抗方向檢閱為文件層義務）
-sb next test --boss-ok             # 層間停靠（老闆確認點）＋記錄測試 baseline
-sb next build                      # 假測試閘（git 判定 test 節點期間有定稿 commit）
-sb next verdict                    # 判決閘（working tree 與待驗 commit 一致，git 判定）
-sb next pass --boss-ok             # 已取得最終 PASS 決策後留痕
-sb amend --boss-ok                 # G1 顯式修約（修約差異寫 tmp；working tree 乾淨）
-sb report                          # 自包含外部審計報告 → tmp/report-*.md（開新 slug/ms 前強制；開發中老闆隨時）
-sb commitmsg "<訊息>"               # 提交訊息機械驗證（任何 commit 前必過，sb-commit 技能）
+sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋SLUG 對照＋G1 hash 封存）
+sb next verify                     # 進驗收（working tree 乾淨＝實作已存檔，git 判定）
+sb next done --boss-ok --adversarial  # 完成邊（需老闆「done」印章＋時點③對抗＋SLUG 對照）
+sb next intent                     # 回頭自由：補充／重修／追加（同 ms 重走，零旗標）
+sb end --boss-ok                   # PASS（done 態；需老闆「PASS」印章）→ 收尾保鮮＋archive
+sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 印章硬擋提交）
 ```
 
 ### sb-* 工作流指令
 
 **sb-think 是唯一閘口**——所有輸入先過 sb-think 理解、對齊、分發，下列指令是 sb-think 分發後的執行目標，老闆不直達：
 
-- [`sb-think`](skills/sb-think/SKILL.md)——唯一閘口；所有輸入第一步路由回此，不字面執行，先理解意圖再分發。
-- [`sb-start`](skills/sb-start/SKILL.md)——新需求路由；建骨架（開 slug 或 nnn）→ 三面向制衡。
+- [`sb-think`](skills/sb-think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回 intent 同 ms 重走；確認／開工→分發執行。
 - [`sb-resume`](skills/sb-resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
-- [`sb-do`](skills/sb-do/SKILL.md)——強制對抗方向檢閱、核對 §10 一致性，層間停靠揭露後放行進入開發。
-- [`sb-end`](skills/sb-end/SKILL.md)——結束 slug，執行完整收尾保鮮。
 - [`sb-save`](skills/sb-save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 sb-resume 恢復。
 - [`sb-dice`](skills/sb-dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
 - [`sb-docs`](skills/sb-docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
-- [`sb-report`](skills/sb-report/SKILL.md)——整理自包含外部審計報告，供無法讀取 repo 的外部 agent 審計當前節點。
-- [`sb-commit`](skills/sb-commit/SKILL.md)——提交規範封裝：任何 commit 前經範圍盤點＋sb commitmsg 機械驗證。
 - [`sb-sop`](skills/sb-sop/SKILL.md)——對 SOP 提出修改需求。
 - [`sb-roadmap`](skills/sb-roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
 - [`sb-todo`](skills/sb-todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
@@ -223,7 +194,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ├── .agents/plugins/marketplace.json
 ├── cli/                            # npm CLI：sb 流程狀態機與契約／證據閘門
 │   ├── package.json               # package: shiftblame-cli
-│   └── bin/sb.mjs                 # init/state/next/amend/lock/report/commitmsg
+│   └── bin/sb.mjs                 # init/state/next/end/commitmsg
 └── skills/
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
@@ -239,7 +210,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）
     │       ├── ROADMAP.md         # ROADMAP 准入欄位中央模板（複製來源）
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三面向範本（複製來源）
-    └── sb-*/SKILL.md               # sb-think 唯一閘口、sb-start 新需求路由、其他為 sb-think 分發目標
+    └── sb-*/SKILL.md               # 功能型技能：sb-think 全域路由＋save/resume/dice/docs/sop/roadmap/todo
 ```
 
 每個專案的工作區位於 `<repo>/.shiftblame/`（`<repo>` = 使用者專案根目錄的絕對路徑），並且 MUST 經 `.gitignore` 排除，不得 commit。工作區為**結構分檔**（定義單檔、使用分檔）：

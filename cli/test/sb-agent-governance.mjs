@@ -12,73 +12,55 @@ const readme = read('README.md');
 const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
-assert.equal(manifest.version, '1.4.0');
+// 版號一致
+assert.equal(manifest.version, '1.5.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.4\.0"/);
+assert.match(skill, /version: "1\.5\.0"/);
 
-const reviewSection = skill.match(/### 臨時外部子代理唯讀檢閱([\s\S]*?)### 時序調控與一致性核對/)?.[1];
-assert.ok(reviewSection, '缺少外部子代理唯讀檢閱權威段落');
+// 八段詞彙落地
+assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
+assert.match(skill, /回 intent/);
+assert.match(skill, /時點①對抗/);
+assert.match(skill, /對話鎖/);
+assert.match(skill, /完成印章/);
+assert.match(skill, /回頭自由/);
+assert.match(skill, /流程代號不進程式碼/);
+assert.match(skill, /令行靜止|--adversarial 宣告/);
+assert.match(skill, /節錄快照/);
+assert.match(skill, /自由傾倒區/);
+assert.match(skill, /SB\.md|SLUG\.md/);
 
-const rows = reviewSection.split(/\r?\n/).filter((line) => line.startsWith('|'));
-const sufficient = rows.find((line) => line.includes('證據足以可靠裁定'));
-const uncertain = rows.find((line) => line.includes('證據不足或矛盾'));
-const semantic = rows.find((line) => line.includes('選項改變產品語義'));
+// 舊節點詞零殘留（SKILL／README／references／sb.mjs／hooks）
+const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正'];
+const files = ['README.md', 'skills/shiftblame/SKILL.md', 'skills/sb-think/SKILL.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
+  'skills/shiftblame/references/AUDIT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
+  'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
+for (const f of files) {
+  const text = read(...f.split('/'));
+  for (const w of legacy) {
+    assert.equal(text.includes(w), false, `${f} 殘留舊詞：${w}`);
+  }
+}
 
-assert.match(sufficient ?? '', /直接裁定並繼續 \| 否 \|/);
-assert.match(uncertain ?? '', /\*\*MUST\*\* 立即取得一次外部子代理唯讀技術檢閱/);
-assert.match(uncertain ?? '', /不必先反覆失敗 \| 否 \|/);
-assert.match(semantic ?? '', /先翻譯成使用者可理解的後果 \| 是，經 sb-think \|/);
-assert.match(reviewSection, /純技術不可可靠裁定本身就是強制理由，不得把它誤分類為老闆決策/);
-assert.match(reviewSection, /不得改問老闆純技術題/);
-
-assert.match(reviewSection, /固定時點① 計畫完成/);
-assert.match(reviewSection, /固定時點② 每個功能驗收後/);
-assert.match(reviewSection, /固定時點③ 收斂複驗/);
-assert.match(reviewSection, /G3-SHA256.*與 G1 全部 AC-ID|plan 類註明被檢 G3 的 `G3-SHA256` 與 G1 全部 AC-ID/);
-assert.match(reviewSection, /無事實的降級宣告或把自攻包裝成外部結論屬假對抗/);
-assert.match(reviewSection, /複核造假的責任歸執行者/);
-assert.match(reviewSection, /每個列點 MUST 引可查證出處/);
-assert.match(reviewSection, /反向對抗判定：成立／不成立/);
-assert.match(reviewSection, /## 反向對抗/);
-assert.match(reviewSection, /## 附錄/);
-assert.match(skill, /追加意圖三步序/);
-assert.match(skill, /人話翻譯三時點/);
-assert.match(skill, /版號屬老闆決策/);
-assert.match(skill, /對抗—修復—再對抗閉環/);
-assert.match(skill, /零必修項/);
-assert.match(skill, /版號待老闆指定/);
-assert.match(skill, /人話七判準/);
-assert.match(skill, /意圖翻譯 MUST 是人話/);
-assert.match(skill, /hooks 機械注入/);
-assert.match(skill, /Codex（0\.149\+ hooks 已 stable/);
-assert.match(skill, /commit-stamp/);
-assert.match(skill, /①\*\*意圖揭露\*\*/);
-assert.match(skill, /②\*\*文件修正\*\*/);
-assert.match(skill, /③\*\*實作\*\*/);
-
-assert.match(think, /MUST 立即取得一次外部子代理的自包含唯讀技術意見/);
-assert.match(think, /不得把純技術選擇轉嫁給老闆/);
-assert.match(think, /符合 G1 的架構改選仍是 agents 的技術裁定/);
-assert.match(think, /不得要求老闆代答技術題/);
-
-assert.match(readme, /純技術裁定不外包給老闆/);
-assert.match(readme, /只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定/);
-assert.match(manifest.description, /三時點強制外部子代理對抗檢閱/);
-assert.match(manifest.description, /唯讀技術意見/);
-assert.match(manifest.description, /不得轉嫁給老闆/);
-
+// references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.4\.0/);
-  assert.match(reference, /外部子代理/);
-  assert.match(reference, /主對話/);
-  assert.match(reference, /老闆/);
+  assert.match(reference, /revision: 1\.5\.0/);
 }
 
-for (const legacy of [
-  '只有此時確實需要不同視角，才臨時取得一次唯讀檢閱意見',
-  '主對話在同一瓶頸反覆失敗，或老闆明確指定',
-  'G1／G2 組合無法排成可行實作計畫屬重大例外',
-]) {
-  assert.equal(skill.includes(legacy), false, `仍殘留會延遲技術外援的舊規則：${legacy}`);
+// 技能清單：8 個功能型存在；5 個流程型已刪
+import { existsSync } from 'node:fs';
+for (const k of ['sb-think', 'sb-save', 'sb-resume', 'sb-dice', 'sb-docs', 'sb-sop', 'sb-roadmap', 'sb-todo', 'shiftblame']) {
+  assert.ok(existsSync(join(repo, 'skills', k, 'SKILL.md')), `技能 ${k} 應存在`);
 }
+for (const k of ['sb-start', 'sb-do', 'sb-end', 'sb-commit', 'sb-report']) {
+  assert.equal(existsSync(join(repo, 'skills', k, 'SKILL.md')), false, `技能 ${k} 應已刪除`);
+}
+
+// sb-think 核心語義
+assert.match(think, /全域路由|唯一閘口/);
+assert.match(think, /回 intent|回think/);
+assert.match(readme, /八段|intent → audit/);
+assert.match(readme, /對話鎖/);
+assert.match(readme, /老闆詞印章|印章/);
+assert.match(manifest.description, /八段/);

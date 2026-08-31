@@ -19,7 +19,19 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 不變量卡"
+            "statusMessage": "shiftblame: 不變量卡＋對話鎖與老闆詞印章"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
+            "timeout": 10,
+            "statusMessage": "shiftblame: 呈現待確認偵測（〔待確認〕→上鎖）"
           }
         ]
       }

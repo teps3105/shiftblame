@@ -47,7 +47,7 @@ sequenceDiagram
 
 ## 絕對規則
 
-**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——`sb-do`、`sb-save`、`sb-start`、自然語言、甚至一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖。
+**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、甚至一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖。sb-think 不屬於八段任何一段——它是站在流程之上的全域路由：**補充／修正／追加→回 intent（`sb next intent`，同 ms 重走線性）；確認／開工→分發執行（流程原地續跑）**。
 
 - **意圖翻譯 MUST 是人話。** 老闆能直接讀懂的白話（做什麼、為什麼、會得到什麼）；通不過人話七判準（SKILL §3）者老闆不應確認——讀不懂即揭露不通過。
 - **指令字面 ≠ 老闆意圖。** 老闆可能打錯指令、意圖不同於指令字面、或需要附帶條件。sb-think 的職責是揭開字面背後的意圖，不假設「打了什麼就是要做什麼」。
@@ -101,18 +101,18 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     T["sb-think 老闆滿意"] --> R{"路由"}
-    R -- "開 slug" --> S["sb-start<br/>建骨架 → 制衡"]
+    R -- "開 slug" --> S["sb init<br/>建骨架 → 八段"]
     R -- "不開 slug<br/>（框架演化／微修）" --> D7["直接實行"]
-    R -- 放行 --> D1["sb-do"]
+    R -- 開工/放行 --> D1["分發執行<br/>（plan→test 邊）"]
     R -- 存檔 --> D2["sb-save"]
     R -- 恢復 --> D3["sb-resume"]
-    R -- 結束 --> D4["sb-end"]
+    R -- PASS --> D4["sb end"]
     R -- 丟棄 --> D5["sb-dice"]
     R -- 改文件 --> D6["sb-docs/sop/roadmap"]
     R -- 框架演化 --> D8["改框架"]
 ```
 
-sb-start、sb-do、sb-save 等都是 sb-think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 sb-think。
+sb-save、sb-resume、sb-dice 等功能型技能與 CLI 命令都是 sb-think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 sb-think。
 
 ## 執行中的自主性
 

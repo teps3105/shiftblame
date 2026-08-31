@@ -24,12 +24,12 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新核對�
 3. **基於既有重新核對 G1~G3**（非清空重寫，不向老闆重問）：先讀 `flow-state.json`。若目前 ms 已有 `g1Contract`，MUST 先核對 G1 hash，且 G1 保持封存；codebase 差異只能作為可行性證據，不能反向改義需求。依承載歸屬重新核對其餘文件：
    - 仍成立 → 保留。
    - G2／G3 過時但仍 CONFORMS → 對應面向單調細化。
-   - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `sb amend --boss-ok`，不得直接改 G1。
+   - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `回 intent（sb next intent）`，不得直接改 G1。
 4. **秘書核對 §10 一致性**：三份重新核對後，秘書親自核對兩兩雙向一致（三對六向）；不一致要求對應階段重做，一致後放行進入開發。
 
 ## 邊界
 
-- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 ms（那是 sb-start 由 sb-think 分發）。
+- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 ms（開新 ms＝老闆「開新 ms」印章＋回 intent 重走，由 sb-think 分發）。
 - **二層判斷**：`last_save` 標記（接續落點）→ 無標記（重新核對 G1~G3）。有 `last_save` 時接續不重問確認，消費後清除標記。
 - 重新核對（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；已放行 G1 的任何語意變更都走顯式修約（SKILL §1.4.1），不以 resume 繞過契約鎖定。
 - SLUG §4 節點依當前實際狀態標記。
