@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // 1.5 八段全流程：intent→audit→research→plan→test→build→verify→done→（重修／開新 ms／PASS）
-// 授權三層：--boss-ok 留痕、--adversarial×SLUG 對照、授權印章（本測試直接寫 flow-state.stamps 模擬 sb unlock --stamp 寫入）
+// 授權鑰匙（1.7.0 撤印章）：--boss-ok 留痕＋--adversarial×SLUG 對照＋理解流曝光（hooks 雙流記錄）
 const root = mkdtempSync(join(tmpdir(), 'sb-eight-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -87,12 +87,10 @@ assert.equal(run('next', 'verify').status, 0);
 writeFileSync(join(root, 'seed.txt'), '驗收中偷改\n');
 assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /working tree 未乾淨|乾淨/);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
-// verify→done：完成印章（模擬老闆輸入 done 由 hooks 寫入）
-{ const st = state(); st.stamps = { done: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
+// verify→done：1.7.0 撤印章——--boss-ok＋時點③對抗即鑰匙（授權語義由理解流曝光承擔）
 assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /時點③對抗|SLUG/);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點③對抗：ms 價值複驗對抗完成，反向對抗判定成立\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.equal(state().stamps.done, undefined); // 完成印章一次性消費
 assert.equal(state().node, 'done');
 
 // done→test 重修（零旗標，老闆不滿意）
@@ -103,11 +101,10 @@ writeFileSync(join(root, 'seed.txt'), 'seed after rework fix\n');
 commit('seed.txt', 'fix: touch for loop');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0);
-{ const st = state(); st.stamps = { done: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點③對抗：二輪完成\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 
-// done→intent：無印章＝同 ms；有 newMs 印章＝ms++
+// done→intent：零旗標＝同 ms；--new-ms＝開新里程碑（ms++）
 assert.equal(run('next', 'intent').status, 0);
 assert.equal(state().ms, '001'); // 同 ms
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
@@ -120,17 +117,14 @@ writeFileSync(join(root, 'seed.txt'), 'seed with feature 1 v2\n');
 commit('seed.txt', 'feat: redo after rework');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0);
-{ const st = state(); st.stamps = { done: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：三輪完成\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-{ const st = state(); st.stamps = { newMs: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
-assert.equal(run('next', 'intent').status, 0);
-assert.equal(state().ms, '002'); // newMs 印章→ms++
+assert.equal(run('next', 'intent', '--new-ms').status, 0);
+assert.equal(state().ms, '002'); // --new-ms→ms++
 
-// PASS：sb end 需 done 態＋PASS 印章＋--boss-ok
+// PASS：sb end 需 done 態＋--boss-ok（1.7.0 撤 pass 印章）
 assert.match(run('end', '--boss-ok').stderr, /done 態|sb end 僅限/);
-{ const st = state(); st.stamps = {}; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
-// ms002 建檔後快走到 done（測 sb end 的 PASS 印章鏈）
+// ms002 建檔後快走到 done（測 sb end 的 --boss-ok 鏈）
 mkdirSync(join(root, '.shiftblame/demo/002'), { recursive: true });
 const ms2 = join(root, '.shiftblame/demo/002');
 writeFileSync(join(ms2, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=u | 前置=p | 操作=o | 可觀察結果=r | 失敗邊界=f | 證據=BEHAVIOR');
@@ -148,12 +142,9 @@ writeFileSync(join(root, 'seed.txt'), 'seed for second ms feature\n');
 commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0);
-assert.match(run('end', '--boss-ok').stderr, /缺 pass 印章|僅限 done/);
-{ const st = state(); st.stamps = { done: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
+assert.match(run('end', '--boss-ok').stderr, /僅限 done/);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：ms2 done\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.match(run('end', '--boss-ok').stderr, /缺 pass 印章/);
-{ const st = state(); st.stamps = { pass: new Date().toISOString() }; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
 assert.equal(run('end', '--boss-ok').status, 0);
 assert.equal(state().node, 'ended');
 console.log('sb-user-acceptance: PASS');

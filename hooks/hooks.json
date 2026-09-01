@@ -19,7 +19,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 不變量卡＋對話鎖與當前輸入記錄"
+            "statusMessage": "shiftblame: 不變量卡＋輸入流與曝光"
           }
         ]
       }
@@ -31,7 +31,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 呈現待確認偵測（〔待確認〕→上鎖）"
+            "statusMessage": "shiftblame: 靜默（1.7.0 雙流——無防護動作）"
           }
         ]
       }

@@ -26,5 +26,5 @@ description: 將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清
 
 - sb-todo **只新增 SLUG §3 待辦清單條目**——不開 `<ms>`、不建目錄、不動 §4 節點表、不動 G1／G2／G3、不動 ROADMAP、不動 repo。
 - **層級區分**：產品層、跨 slug 的想做計畫歸 ROADMAP §2（`sb-roadmap`）；實作層、當前 slug 內的待辦歸 SLUG §3（`sb-todo`）。不確定歸屬時由 sb-think 路由判斷。
-- 開新 `<ms>` 是老闆「開新 ms」印章＋sb next intent 的事；sb-todo 只記錄待辦，不代行開工。
+- 開新 `<ms>` 是老闆「開新 ms」授權＋sb next intent --new-ms 留痕的事；sb-todo 只記錄待辦，不代行開工。
 - §3 待辦無編號、無 ID——新增條目以純短名識別（SKILL §6、SLUG §3）。

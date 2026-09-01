@@ -1,4 +1,4 @@
-// sb-hooks：對話鎖＋當前輸入記錄（時序元規則）＋thinkRouted 標記＋sb unlock 通道放行＋曝光＋Stop＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護
+// sb-hooks：雙流模型（1.7.0 撤鎖範式）——輸入流唯增＋理解流落檔＋曝光＋無鎖＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,37 +15,33 @@ const run = (payload) => spawnSync(process.execPath, [hook], { input: JSON.strin
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
 const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
 
-// —— 1. 對話鎖＋理解宣告制（UserPromptSubmit：覆蓋式當前輸入＋thinkRouted 重置；機械不掃詞）——
+// —— 1. 雙流模型（1.7.0 撤鎖範式）：輸入流唯增＋理解流（Skill args）；無鎖無 thinkRouted ——
 const up = (prompt) => run({ hook_event_name: 'UserPromptSubmit', prompt });
 let r = up('隨便說什麼都行');
 assert.equal(r.status, 0);
-assert.equal(state().dialogueLock, true, '每則老闆輸入上鎖');
-assert.equal(state().input.text, '隨便說什麼都行', '當前輸入記錄（原文，無掃描標記）');
-assert.equal(state().input.candidates, undefined, '機械不掃詞（理解由 sb-think＋--as 承擔）');
-assert.equal(state().thinkRouted, false, 'thinkRouted 每則重置');
-assert.ok(r.stdout.includes('未路由 sb-think'), 'inputLine 呈現路由狀態');
-// Skill(sb-think) 調用→標記
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: 'x' } });
+assert.equal(state().inputs.length, 1, '輸入流記錄（唯增）');
+assert.equal(state().inputs[0].text, '隨便說什麼都行', '原文事實');
+assert.equal(state().dialogueLock, undefined, '無對話鎖（撤鎖範式）');
+assert.ok(r.stdout.includes('輸入流'), 'flowLine 狀態回流');
+r = up('第二則輸入');
+assert.equal(state().inputs.length, 2, '連續輸入不覆蓋（唯增——連續串＝同一事實流）');
+// 理解流：Skill(sb-think) 調用 args＝理解宣告
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：這是雙流模型的測試輸入序列' } });
 assert.equal(r.status, 0, 'Skill 調用放行');
-assert.equal(state().thinkRouted, true, 'Skill(sb-think)→thinkRouted 標記');
-r = up('下一則');
-assert.equal(state().thinkRouted, false, '新輸入重置路由標記');
+assert.equal(state().understandings.length, 1, '理解宣告落檔');
+assert.equal(state().understandings[0].uptoInput, 1, '涵蓋至最新輸入');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-save', args: 'x' } });
-assert.equal(state().thinkRouted, false, '非 sb-think 技能不標記');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-sb-think-evil' } });
-assert.equal(state().thinkRouted, false, '偽技能名（含 sb-think 子字串）不標記——錨定 ^|: 前綴＋$ 結尾');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'xx_sb-think_yy' } });
-assert.equal(state().thinkRouted, false, '中綴 sb-think 不標記');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name: 'shiftblame:sb-think' } });
-assert.equal(state().thinkRouted, true, 'name fallback 錨定匹配 sb-think 仍標記');
-r = up('再一則');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think' } });
-assert.equal(state().thinkRouted, true, '裸名 sb-think 錨定匹配標記');
-// 外部證據標記（1.6.0）：外部工具實際調用才計——WebSearch/Agent/webReader 標記；冒名不標記
-r = up('又一則');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-sb-think-evil', args: '理解：偽技能名的假理解宣告內容' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'xx_sb-think_yy', args: '理解：中綴技能名的假理解宣告內容' } });
+assert.equal(state().understandings.length, 1, '非 sb-think／偽名／中綴不落理解流（錨定 ^|:sb-think$）');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name: 'shiftblame:sb-think', args: '理解：name fallback 的理解宣告測試內容' } });
+assert.equal(state().understandings.length, 2, 'name fallback 錨定匹配落檔');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think', args: '短' } });
+assert.equal(state().understandings.length, 2, 'args 過短不落檔（理解必須有實質——該輸入保持未覆蓋曝光）');
+// 外部證據標記（沿用 1.6.0）
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
 assert.equal(state().externalEvidence?.done, true, 'WebSearch 調用標記 externalEvidence');
-r = up('下一則');
+r = up('又一則');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'mcp__web_reader__webReader', tool_input: { url: 'https://x' } });
 assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', 'webReader MCP 調用標記');
 r = up('再一則');
@@ -55,12 +51,11 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
 assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
-// hooks 心跳（1.6.1）：每次成功執行寫時戳——hooks 死亡可被 CLI 診斷對照
+// hooks 心跳（沿用 1.6.1）
 const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), 'utf8'));
 assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
 assert.ok(new Date(hb.at).getTime() > Date.now() - 60000, '心跳時間戳新鮮');
-// inject 格式（1.6.1 真根因修復）：hookEventName MUST 填實際事件名——寫死 'additionalContext' 會被
-// strict schema 丟棄（1.6.0 的 233 次 hook.run.failed 真面目：副作用生效但 additionalContext 注入全瞎）
+// inject 格式（沿用 1.6.1 真根因防回歸）
 const ssOut = run({ hook_event_name: 'SessionStart', source: 'startup' });
 const ssJson = JSON.parse(ssOut.stdout);
 assert.equal(ssJson.hookSpecificOutput.hookEventName, 'SessionStart', 'SessionStart 注入歸因正確事件名');
@@ -69,92 +64,37 @@ const upOut = up('inject 格式驗證輸入');
 const upJson = JSON.parse(upOut.stdout);
 assert.equal(upJson.hookSpecificOutput.hookEventName, 'UserPromptSubmit', 'UserPromptSubmit 注入歸因正確事件名');
 assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[shiftblame 不變量]'), '不變量卡經 additionalContext 真正注入');
-// 心跳守門（1.6.1 對抗必修 2）：無 .shiftblame 的 cwd 不得長出流浪工作區
+// 心跳守門（沿用 1.6.1）：無 .shiftblame 的 cwd 不得長出流浪工作區
 const strayRoot = mkdtempSync(join(tmpdir(), 'sb-stray-'));
 process.on('exit', () => rmSync(strayRoot, { recursive: true, force: true }));
 const strayRun = spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: strayRoot, hook_event_name: 'SessionStart', source: 'startup' }), encoding: 'utf8' });
 assert.equal(strayRun.status, 0, '流浪 cwd 下 hooks 靜默放行');
 assert.equal(existsSync(join(strayRoot, '.shiftblame')), false, '不得創建流浪 .shiftblame（框架元規則——findRoot 錨錯根防護）');
-assert.deepEqual(state().stamps, {}, '新輸入清未用印章');
 
-// —— 2. 鎖定期寫入矩陣：唯「單體」sb unlock 命令放行；借道全擋 ——
-assert.equal(state().dialogueLock, true);
-const lockedBash = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-assert.equal(lockedBash.status, 2, '鎖定期一般 Bash 擋');
-const unlockPass = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "繼續" --as "行動許可"' } });
-assert.equal(unlockPass.status, 0, '單體解鎖命令放行');
-const unlockPass2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs unlock --quoted 繼續' } });
-assert.equal(unlockPass2.status, 0, 'node sb.mjs unlock 單體放行');
-// 借道攻擊（對抗第一輪 A1）：複合、註解、字串內嵌全擋
-const hijack1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "繼續" && node -e "require(\'fs\').writeFileSync(\'pwn.txt\',\'x\')"' } });
-assert.equal(hijack1.status, 2, '&& 借道擋');
-const hijack2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted 繼續; node -e "x"' } });
-assert.equal(hijack2.status, 2, '; 借道擋');
-const hijack3 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted 繼續 | node -e "x"' } });
-assert.equal(hijack3.status, 2, '| 借道擋');
-const hijack4 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: '# sb unlock --quoted x\nnode -e "x"' } });
-assert.equal(hijack4.status, 2, '註解偽裝擋');
-const hijack5 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo "sb unlock --quoted 繼續" && node -e "x"' } });
-assert.equal(hijack5.status, 2, '字串內嵌偽裝擋');
-// 命令代入穿透（1.5.1 複核必修 1）：$()／反引號／<() 於解鎖段內即非單體，擋
-const hijack6 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "$(node -e \'require("fs").writeFileSync("pwn.txt","x")\')"' } });
-assert.equal(hijack6.status, 2, '$() 命令代入擋');
-const hijack7 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted "`node -e x`"' } });
-assert.equal(hijack7.status, 2, '反引號代入擋');
-const hijack8 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb unlock --quoted <(node -e x)' } });
-assert.equal(hijack8.status, 2, '<() 進程代入擋');
-// 冒名檔名（複核必修 2）：.shiftblame 髒區與非 sb.mjs 檔名不取得解鎖豁免
-const hijack9 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node .shiftblame/tmp/pwn_sb unlock --quoted 繼續' } });
-assert.equal(hijack9.status, 2, '.shiftblame 冒名路徑擋');
-const hijack10 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node x_sb.mjs unlock --quoted 繼續' } });
-assert.equal(hijack10.status, 2, '非 sb.mjs 檔名擋');
-const lockedWrite = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'app.js') } });
-assert.equal(lockedWrite.status, 2, '鎖定期寫檔擋');
-const readOnly = run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.js') } });
-assert.equal(readOnly.status, 0, '唯讀工具不攔');
+// —— 2. 無鎖（1.7.0 撤鎖）：一般 Bash／Write 不因對話鎖被擋——段位矩陣與 commit 攔截仍在（節 6-9）——
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
+assert.equal(r.status, 0, '一般 Bash 不攔（無對話鎖）');
 
-// —— 3. 曝光：unlockLog 未審引句於老闆下則輸入展示並標記已審 ——
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({
-  slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: true, input: { at: new Date().toISOString(), text: '繼續', candidates: [{ word: '繼續', type: 'go', negated: false }], consumed: false },
-  unlockLog: [{ at: new Date().toISOString(), quoted: '繼續', stamp: null, node: 'verify', reviewed: false }],
-}));
-r = up('下一則輸入');
-assert.ok(r.stdout.includes('解鎖審視') && r.stdout.includes('繼續'), '未審解鎖引句曝光');
-assert.equal(state().unlockLog[0].reviewed, true, '展示即標記已審');
-r = up('再下一則');
-assert.ok(!r.stdout.includes('解鎖審視'), '已審不再重複曝光');
+// —— 3. 必然曝光：未審理解於老闆下則輸入展示並標記已審 ——
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：節三曝光驗證的專屬理解宣告' } });
+r = up('曝光驗證輸入');
+assert.ok(r.stdout.includes('理解審視') && r.stdout.includes('節三曝光驗證的專屬理解宣告'), '未審理解曝光');
+assert.equal(state().understandings.at(-1).reviewed, true, '展示即標記已審');
+r = up('再一則不應重複曝光');
+assert.ok(!(r.stdout.includes('理解審視') && r.stdout.includes('節三曝光驗證的專屬理解宣告')), '已審不再重複曝光');
 
-// —— 4. SessionStart 動態狀態卡（壓縮後回流：段位＋鎖態＋當前輸入＋未審引句；不搶曝光標記）——
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({
-  slug: 'demo', ms: '001', node: 'plan', history: [], dialogueLock: true,
-  input: { at: new Date().toISOString(), text: '繼續', candidates: [{ word: '繼續', type: 'go', negated: false }], consumed: false },
-  unlockLog: [{ at: new Date().toISOString(), quoted: '繼續', stamp: null, node: 'plan', reviewed: false }],
-}));
-const ss = run({ hook_event_name: 'SessionStart' });
-assert.equal(ss.status, 0);
-assert.ok(ss.stdout.includes('冷啟動載入'), '靜態卡');
-assert.ok(ss.stdout.includes('@ plan'), '段位');
-assert.ok(ss.stdout.includes('當前輸入') && ss.stdout.includes('繼續'), '當前輸入回流');
-assert.ok(ss.stdout.includes('解鎖審視'), '未審引句展示');
-assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).unlockLog[0].reviewed, false, 'SessionStart 不搶曝光標記（保留老闆輸入時曝光）');
+// —— 4. SessionStart 動態狀態卡（壓縮後回流：段位＋輸入流＋未審理解；不搶曝光標記）——
+setNode('plan');
+const ss2 = run({ hook_event_name: 'SessionStart', source: 'compact' });
+assert.equal(ss2.status, 0);
+assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
+assert.ok(ss2.stdout.includes('@ plan'), '段位');
+assert.ok(ss2.stdout.includes('輸入流'), '輸入流狀態回流');
 
-// —— 5. Stop：agent 輸出含〔待確認〕→上鎖（字串形與 blocks 形；多訊息取最後一則）——
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: false }));
-const stop = run({ hook_event_name: 'Stop', last_message: '設計如下……〔待確認〕' });
-assert.equal(stop.status, 0);
-assert.equal(state().dialogueLock, true, '呈現待確認自動上鎖');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: false }));
-const stopBlocks = run({ hook_event_name: 'Stop', messages: [
-  { role: 'assistant', content: [{ type: 'text', text: '前情提要' }] },
-  { role: 'assistant', content: [{ type: 'text', text: '方案B〔待確認〕' }] },
-] });
-assert.equal(state().dialogueLock, true, 'blocks 形最後一則含待確認→上鎖');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: false }));
-const stopNested = run({ hook_event_name: 'Stop', messages: [{ role: 'assistant', content: [{ text: '外層', content: [{ text: '嵌套〔待確認〕' }] }] }] });
-assert.equal(state().dialogueLock, true, '嵌套 content 形攤平後偵測');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: false }));
-const stopClean = run({ hook_event_name: 'Stop', messages: [{ role: 'assistant', content: [{ type: 'text', text: '一切正常' }] }] });
-assert.equal(state().dialogueLock, false, 'blocks 形無待確認→不上鎖');
+// —— 5. Stop：撤鎖後靜默（1.7.0——無防護動作，理解流曝光承擔審視）——
+r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
+assert.equal(r.status, 0, 'Stop 靜默放行');
+assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
 
 // —— 6. 八段寫入矩陣 ——
 const W = (node, tool, target) => {

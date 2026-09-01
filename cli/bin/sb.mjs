@@ -6,7 +6,7 @@
 //      對策：八段單向鏈＋回頭自由（→intent）＋每個推進點的前置閘門；推進
 //      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭邊零旗標，前進要鑰匙。
 //   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial
-//      ×SLUG.md 逐字對照擋下；假驗收由老闆 checkpoint（對話鎖＋完成印章）
+//      ×SLUG.md 逐字對照擋下；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
 //      與時點對抗承擔（閘門不讀 tmp）。
 //
 // 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
@@ -51,15 +51,15 @@ const FLOW = {
   test:    { next: ['build'], desc: '測試段：測試碼定義＋定稿 commit' },
   build:   { next: ['verify'], desc: '實作段：實作＋實機驗證＋存檔 commit' },
   verify:  { next: ['test', 'intent', 'done'], desc: '驗收段：跑驗收＋判決；中間態——老闆未宣稱 done 前停留於此' },
-  done:    { next: ['test', 'intent'], desc: '完成態：老闆已授權完成；重修→test、補充/追加→intent；動作：開新里程碑（--stamp newMs）、PASS（sb end）' },
+  done:    { next: ['test', 'intent'], desc: '完成態：老闆已授權完成；重修→test、補充/追加→intent；動作：開新里程碑（--new-ms）、PASS（sb end）' },
 };
 
 // 回頭自由，前進要鑰匙：任意節點→intent 永遠合法（同 ms 重走）；done→test 重修回邊零旗標。
 const backEdge = (from, to) => to === 'intent' || (from === 'done' && to === 'test');
 
 // 前進鑰匙三層（SKILL 授權章）：
-//   ① 對話鎖（hooks 層）：每則老闆輸入上鎖、sb unlock --quoted 引原句解鎖——擋一切寫入，CLI 不重複驗
-//   ② 授權印章（sb unlock --stamp 寫入 flow-state.stamps）：done／pass／newMs——完成類推進的唯一鑰匙
+//   ① 雙流（hooks 層）：輸入流＋理解流唯增記錄＋必然曝光——無前置攔截，CLI 不重複
+//   ② 老闆決策邊鑰匙＝--boss-ok 留痕＋時點對抗；--new-ms 開新里程碑（done→intent 邊）
 //   ③ --boss-ok 旗標：留痕（記錄 agent 宣稱的老闆授權），非鑰匙；缺失仍擋以保留形式邊界
 const needsBossOk = (from, to) =>
   (from === 'intent' && to === 'audit') || (from === 'plan' && to === 'test') || (from === 'verify' && to === 'done');
@@ -77,7 +77,7 @@ const adversarialEdge = (from, to) => ADVERSARIAL_EDGES.find((e) => e.from === f
 const out = (m) => console.log(m);
 const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) console.error(`  ✗ ${m}`); process.exit(code); };
 
-// hooks 健康診斷（1.6.1）：本閘的鑰匙（thinkRouted／externalEvidence／當前輸入）由 hooks 事實記錄承擔——
+// hooks 健康診斷（1.6.1 起）：本閘的鑰匙（externalEvidence 標記）由 hooks 事實記錄承擔——
 // hooks 故障時記錄缺失≠授權缺失，閘的條件永遠無法滿足＝遞迴死鎖（1.6.0 實事故）。此函式對照 hooks 心跳
 // 揭露故障疑慮；只診斷不降級（fail-closed 不變——逃生門屬合法漏洞，老闆已否決），修復方向是修 hooks 而非繞閘。
 function hooksHealthNote() {
@@ -97,23 +97,20 @@ const usage = (code = 2) => {
   console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
 
 八段：intent → audit → research → plan → test → build → verify → done
-      （回頭自由：任意節點→intent 同 ms 重走；done→test 重修——皆零旗標）
-      （前進要鑰匙：對話鎖 sb unlock 引老闆原句、授權印章 done／pass／newMs、--boss-ok 留痕）
+      （回頭自由：任意節點→intent 同 ms 重走；done→test 重修——皆零旗標；done→intent 開新 ms 帶 --new-ms）
+      （前進要鑰匙：老闆決策邊 --boss-ok 留痕＋時點對抗 --adversarial）
+
+雙流模型（1.7.0 撤鎖範式）：輸入＝獨立理解對象，不是鎖的鑰匙——
+      輸入流唯增（hooks 記錄，永不覆蓋消費）；理解流由 sb-think 調用（args＝理解宣告）
+      自動落檔＋必然曝光（老闆每則輸入審視未審理解與未覆蓋輸入）。無鎖、無解鎖命令、無引句。
 
 用法：
   sb init <slug>                        開 slug：建立 flow-state.json（節點 intent）
   sb state                              顯示目前段、可走下一步與其前置條件
-  sb unlock --quoted "<老闆原句>" --as "<理解宣告>" [--stamp done|pass|newMs]
-                                        解鎖＝理解宣告制：先路由 sb-think（hooks 標記 thinkRouted，
-                                        未路由即擋）→ 逐字引用老闆「當前輸入」中承載授權語義的原句
-                                        （逐字錨定：捏造／跳時序擋；時序元規則：每則覆蓋前一則，
-                                        消費即失效）→ --as 一句話宣告這授權了什麼（語義由宣告承擔，
-                                        機械不掃詞）；--stamp 印章類型亦由宣告支撐；引句＋宣告於
-                                        老闆下則輸入自動展示（必然曝光，理解有誤即越權當場可見）
   sb adversarial <報告檔>                對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
                                         （不通過＝必修未清，不得發章）；commit 時由 hooks 消費（一對一）
-  sb next <段> [--boss-ok] [--adversarial] [--rerun impl|definition]
+  sb next <段> [--boss-ok] [--adversarial] [--rerun impl|definition] [--new-ms]
                                         推進（閘門不過即擋）
                                         外部證據閘（1.6.0）：research→plan 邊與返工後首個推進邊驗
                                         「至少一次外部工具調用」（hooks 標記 externalEvidence——
@@ -122,17 +119,17 @@ const usage = (code = 2) => {
                                         --rerun：返工直通（僅限同 ms 曾達 test 後的重走；時點①分流判定——
                                         實作級 impl／定義級 definition 直通免停靠，根本性不帶旗標走完整確認；
                                         verify→done 完成時點永不直通）
+                                        --new-ms：開新里程碑（僅 done→intent 邊；老闆授權語義由理解流曝光承擔）
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 SLUG.md 含對應時點對抗記錄，不一致即擋
-  sb end --boss-ok                      PASS 動作（僅 done 態；需 pass 印章）：收尾保鮮＋archive
+  sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾保鮮＋archive
   sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
-完成類鑰匙＝授權印章（sb unlock --stamp 引老闆原句寫入 flow-state.stamps，一次性）：
-  理解老闆「完成／done」→ sb unlock --stamp done；「PASS／通過」→ --stamp pass；「下一個／開新的」→ --stamp newMs
-  語義由 agent 依上下文閱讀理解（語例非判準）；引句逐字錨定＋解鎖必然曝光
-  捏造／翻舊帳機械擋；斷章（引真話但非授權）屬越權，老闆每則輸入可見解鎖引句
-  防無意識繞過＋必然曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
+完成類鑰匙（1.7.0）：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
+  老闆「完成／done」→ sb next done --boss-ok --adversarial；「PASS」→ sb end --boss-ok；
+  「下一個／開新 ms」→ sb next intent --new-ms。授權語義由 agent 理解（sb-think args 落理解流），
+  理解有誤即越權——老闆每則輸入審視曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
   process.exit(code);
 };
 
@@ -300,21 +297,20 @@ function gate(st, target, opts) {
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
-  // --boss-ok：留痕層（缺仍擋，保留形式邊界；實質鑰匙在對話鎖與印章）；--rerun 直通豁免非完成邊
+  // --boss-ok：老闆決策邊留痕（授權語義由理解流曝光承擔）；--rerun 直通豁免非完成邊
   if (opts.bossOk && !needsBossOk(st.node, target)) {
     problems.push(`「${st.node} → ${target}」不是老闆決策邊——不得帶 --boss-ok；回頭邊零旗標，工作邊沿用既有授權`);
   } else if (needsBossOk(st.node, target) && !opts.bossOk && !rerunExempt) {
-    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（實質鑰匙：對話鎖 sb unlock 引原句＋授權印章）；返工直通改帶 --rerun（時點①分流判定，SKILL §3）`);
+    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（授權語義由理解流曝光承擔）；返工直通改帶 --rerun（時點①分流判定，SKILL §3）`);
   } else if (opts.bossOk) {
     passes.push('老闆授權留痕（--boss-ok）');
   } else if (rerunExempt && needsBossOk(st.node, target)) {
     passes.push(`返工直通（--rerun ${opts.rerun}）：時點①分流判定留痕，完成時點曝光彙總`);
   }
 
-  // 完成印章：verify→done 的唯一鑰匙（sb unlock --stamp done 引老闆原句寫入，一次性）
-  if (st.node === 'verify' && target === 'done') {
-    if (!st.stamps?.done) problems.push('缺完成印章——理解老闆完成授權後 sb unlock --stamp done --quoted "原句" 才產生（flow-state.stamps，一次性）；老闆未授權前停留在 verify 中間態（防無意識繞過；斷章由必然曝光承擔）');
-    else passes.push(`完成印章存在（${st.stamps.done}）`);
+  // --new-ms 誤用擋：僅 done→intent 邊可帶（開新里程碑——老闆決策，理解流曝光承擔）
+  if (opts.newMs && !(st.node === 'done' && target === 'intent')) {
+    problems.push('--new-ms 僅限 done→intent 邊（老闆授權開新里程碑時攜帶）——其他推進不得使用');
   }
 
   // --adversarial＋SLUG.md 對照：時點對抗宣告與自然語言記錄不一致即擋
@@ -333,7 +329,7 @@ function gate(st, target, opts) {
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
 
   switch (target) {
-    case 'audit': // 意圖確認邊（--boss-ok＋對話鎖）；audit 段才寫 G1，無 G 檔閘
+    case 'audit': // 意圖確認邊（--boss-ok 留痕）；audit 段才寫 G1，無 G 檔閘
       break;
 
     case 'research': // 假需求閘
@@ -393,8 +389,8 @@ function gate(st, target, opts) {
       if (g1) validateG1Acceptance(g1, problems, passes);
       break;
 
-    case 'intent': // 回頭自由：補充／重修／追加子需求／修約——同 ms 重走；done＋newMs 印章時 ms++（cmdNext）
-      passes.push(st.node === 'done' && st.stamps?.newMs ? 'newMs 印章存在——回 intent 且 ms++' : '回 intent（同 ms 重走線性）');
+    case 'intent': // 回頭自由：補充／重修／追加子需求／修約——同 ms 重走；--new-ms 時 ms++（cmdNext）
+      passes.push(st.node === 'done' && opts?.newMs ? '--new-ms——回 intent 且開新里程碑' : '回 intent（同 ms 重走線性）');
       break;
   }
   return { problems, passes };
@@ -424,7 +420,7 @@ function cmdState() {
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
-      out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；有 newMs 印章則 ms++' : ''}）`);
+      out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；--new-ms 則開新里程碑' : ''}）`);
       continue;
     }
     const { problems, passes } = gate({ ...st }, n, {});
@@ -432,7 +428,7 @@ function cmdState() {
     for (const p of passes) out(`      ✓ ${p}`);
     for (const p of problems) out(`      ✗ ${p}`);
   }
-  if (st.node === 'done') out(`  動作：sb end --boss-ok（PASS，需 pass 印章）`);
+  if (st.node === 'done') out(`  動作：sb end --boss-ok（PASS——老闆決策留痕，理解流曝光承擔）`);
 }
 
 function cmdNext(target, opts) {
@@ -465,15 +461,13 @@ function cmdNext(target, opts) {
     passes.push(`G1 契約已封存（flow-state）：${st.g1Contract.sha256.slice(0, 12)}`);
   }
   if (target === 'intent') {
-    // 回頭自由：同 ms 重走；done＋newMs 印章→ms++（一次性消費）
+    // 回頭自由：同 ms 重走；--new-ms（老闆授權開新里程碑）→ms++
     delete st.g1Contract;
-    if (prev === 'done' && st.stamps?.newMs) {
+    if (prev === 'done' && opts.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
-      delete st.stamps.newMs;
-      passes.push(`新里程碑：${st.ms}（newMs 印章已消費）`);
+      passes.push(`新里程碑：${st.ms}（--new-ms）`);
     }
   }
-  if (prev === 'verify' && target === 'done' && st.stamps?.done) delete st.stamps.done; // 完成印章一次性
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
   if (prev === 'verify' && target === 'done') {
@@ -485,80 +479,21 @@ function cmdNext(target, opts) {
   fin([`${prev} → ${target}`, ...passes]);
 }
 
-// PASS 動作（done 態上；非段推進）：老闆「PASS」印章＋--boss-ok 留痕；收尾保鮮為文件層動作清單（SKILL done 慵說明）
-// —— 解鎖＝理解宣告制（1.5.6）：語義認定權歸理解，機械只驗事實 ——
-// ①必經路由：thinkRouted（本則輸入已過 sb-think——理解的制度化入口；hooks 於 Skill 調用時標記）
-// ②逐字錨定：--quoted 必須是當前輸入原文的子串——捏造即擋；無當前輸入＝翻舊帳即擋（覆蓋式：舊則不存在）。
-// ③消費即失效：同一則輸入只可解鎖一次——授權生命週期＝一則輸入。
-// ④unlockLog 唯增雜湊鏈：每條 hash=sha256(前條hash+引句+時間)——「中間條目刪改」與「整體刪除重建」
-//   中，刪改中間條目即斷鏈擋死；整體刪除（空鏈 trivially 通過）與完整重算重寫不防——發動於解鎖窗口，
-//   屬通道層天花板（SKILL 如實揭露），老闆抽查 unlockLog 與對話實蹟對照終審。
-// 必然曝光：unlockLog 引句於老闆下則輸入由 hooks 自動展示；曝光行是老闆終審。
-
-function verifyUnlockChain(log) {
-  let prev = '';
-  for (const e of log) {
-    const expect = createHash('sha256').update(prev + String(e.quoted) + String(e.as ?? '') + String(e.at)).digest('hex').slice(0, 16);
-    if (e.hash !== expect) return false;
-    prev = e.hash;
-  }
-  return true;
-}
-
-// —— 解鎖＝理解宣告制（1.5.6）：語義認定權歸理解，機械只驗事實 ——
-// ①必經路由：thinkRouted（本則輸入已過 sb-think——理解的制度化入口；hooks 於 Skill 調用時標記）
-// ②逐字錨定：--quoted 必須是當前輸入原文的子串——捏造／跳時序即擋（事實，非語義）
-// ③理解宣告：--as 必填——「理解到授權」的制度形式（一句話說明這授權了什麼）；語義由宣告承擔，
-//   機械不掃關鍵詞、不標否定、不做印章類型對照（理解的官僚替代品全撤）
-// ④消費即失效＋雜湊鏈＋曝光：unlockLog 記 {quoted, as, stamp}——曝光行展示引句＋理解宣告，老闆終審
-function cmdUnlock(opts) {
-  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readJson(STATE_FILE);
-  const quoted = opts.quoted;
-  const as = opts.as;
-  const inp = st.input;
-  if (!quoted) die(['缺 --quoted "<老闆原句>"——解鎖 MUST 逐字引用老闆當前輸入中承載授權語義的原句']);
-  if (!as || !as.trim()) die(['缺 --as "<理解宣告>"——理解到授權 MUST 以宣告落地（一句話：這授權了什麼）；語義由宣告承擔，是曝光與老闆終審的對象']);
-  if (/[\r\n\u2028\u2029\u000B\u000C\u0085]/.test(as)) die(['--as 不得含換行——理解宣告 MUST 單行（一句話）；多行內容屬報告，不是宣告']);
-  if ([...as.trim()].length > 200) die(['--as 過長（上限 200 字）——理解宣告是「這授權了什麼」的一句話；膨脹式宣告即擋（曝光通道容量防護）']);
-  if (opts.stamp && !['done', 'pass', 'newMs'].includes(opts.stamp)) die([`--stamp 值無效（${opts.stamp}）——done｜pass｜newMs`]);
-  if (!verifyUnlockChain(st.unlockLog ?? [])) die(['unlockLog 雜湊鏈斷裂——記錄被刪改（曝光洗除）即擋；完整性由老闆抽查對話實蹟終審']);
-  if (!st.thinkRouted) { const n = hooksHealthNote(); die(['本則輸入未路由 sb-think——理解必經制度化入口（Skill 調用 sb-think 後 hooks 標記 thinkRouted），未路由不得解鎖', ...(n ? [n] : [])]); }
-  if (!inp || typeof inp.text !== 'string' || !inp.text.length) {
-    die(['無當前輸入可引（input 空）——翻舊帳即擋；等老闆實際輸入後再解鎖']);
-  }
-  if (inp.consumed) die(['當前輸入已消費——同一則不得再引（授權生命週期＝一則輸入）；等老闆下一則']);
-  if (!inp.text.includes(quoted)) {
-    const n = hooksHealthNote();
-    die([`引句非當前輸入（最後一則）的逐字內容——捏造／跳時序即擋。當前輸入：「${inp.text.slice(0, 80)}」`, ...(n ? [n] : [])]);
-  }
-  if (opts.stamp) st.stamps = { [opts.stamp]: new Date().toISOString() }; // 印章類型由理解宣告承擔（--as），錯用＝曝光可見
-  st.dialogueLock = false;
-  st.input.consumed = true; // 消費即失效——同一則不得再引
-  const at = new Date().toISOString();
-  const prevHash = (st.unlockLog ?? []).at(-1)?.hash ?? '';
-  // 鏈算式與存量一致：hash 用正規化後的 as（trim）——寫入/驗證對稱，空白差異不得燒死通道
-  const hash = createHash('sha256').update(prevHash + String(quoted) + String(as.trim()) + at).digest('hex').slice(0, 16);
-  (st.unlockLog ??= []).push({ at, quoted, as: as.trim(), stamp: opts.stamp ?? null, node: st.node ?? null, reviewed: false, hash });
-  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([
-    `解鎖（引句錨定當前輸入 @${inp.at.slice(0, 19)}）：「${quoted}」`,
-    `理解宣告：「${as.trim()}」`,
-    ...(opts.stamp ? [`授權印章 ${opts.stamp} 已寫入（一次性；消費即焚）`] : []),
-    '引句＋理解宣告於老闆下則輸入自動展示（必然曝光——理解有誤即越權，當場可見）',
-  ]);
+// sb unlock 已於 1.7.0 退役：雙流模型撤鎖範式——輸入＝獨立理解對象，不是鎖的鑰匙材料。
+// 理解經 sb-think 調用（args＝理解宣告）由 hooks 自動落理解流（understandings，雜湊鏈唯增）＋必然曝光；
+// 無引句、無解鎖命令、無消費——1.5.6–1.6.2 的解鎖病灶（引句挑選／連續串／時序覆蓋／解鎖失敗／hooks 故障死鎖）根除。
+function cmdUnlockRetired() {
+  die(['sb unlock 已於 1.7.0 退役——輸入是理解對象不是鑰匙：理解經 sb-think 調用（args＝理解宣告）自動落理解流並曝光，無解鎖命令；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
-  if (st.node !== 'done') die([`sb end 僅限 done 態（目前 ${st.node}）——完成（verify→done，需 done 印章）先於 PASS`]);
-  if (!opts.bossOk) die(['PASS 是老闆決策——MUST 帶 --boss-ok 留痕']);
-  if (!st.stamps?.pass) die(['缺 pass 印章——理解老闆通過授權後 sb unlock --stamp pass --quoted "原句" 才產生（flow-state.stamps，一次性）；斷章由必然曝光承擔']);
+  if (st.node !== 'done') die([`sb end 僅限 done 態（目前 ${st.node}）——完成（verify→done 老闆決策邊 --boss-ok＋時點③對抗）先於 PASS`]);
+  if (!opts.bossOk) die(['PASS 是老闆決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由理解流曝光承擔）']);
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, 'PASS 前');
   if (problems.length) die(problems);
-  delete st.stamps.pass;
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
@@ -646,22 +581,20 @@ function cmdCommitmsg(msg) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, quoted: null, as: null, stamp: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
   else if (rest[i] === '--adversarial') flags.adversarial = true;
   else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
-  else if (rest[i] === '--quoted') flags.quoted = rest[++i] ?? '';
-  else if (rest[i] === '--as') flags.as = rest[++i] ?? '';
-  else if (rest[i] === '--stamp') flags.stamp = rest[++i] ?? '';
+  else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯或已移除者）不得靜默落入 positional——解析器衛生
   else pos.push(rest[i]);
 }
 switch (cmd) {
   case 'init': cmdInit(pos[0]); break;
   case 'state': cmdState(); break;
-  case 'unlock': cmdUnlock(flags); break;
+  case 'unlock': cmdUnlockRetired(); break;
   case 'adversarial': cmdAdversarial(pos.join(' ')); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;

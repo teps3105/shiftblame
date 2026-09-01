@@ -15,6 +15,7 @@
  */
 
 import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 
@@ -56,10 +57,10 @@ const projectRoot = (input) => {
 const CARD = [
   '[shiftblame 不變量]',
   '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）：補充／修正→回 intent 同 ms 重走線性；確認／開工→分發執行。',
-  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修）；前進要鑰匙（--boss-ok 留痕＋對話鎖＋授權印章）。',
+  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修、done→intent 開新 ms 帶 --new-ms）；前進要鑰匙（老闆決策邊 --boss-ok 留痕＋時點對抗）。',
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
-  '④令行靜止：每則老闆輸入上鎖，唯 sb unlock --quoted --as 解鎖（先路由 sb-think——thinkRouted 未標記即擋）；鎖定期間只讀不寫；呈現待決方案以〔待確認〕結尾（Stop 偵測自動上鎖）。',
-  '⑤授權＝理解宣告制：理解授權意圖是制度事件——sb-think 路由（thinkRouted 機械標記，未路由即擋）→ sb unlock --quoted "原句" --as "理解宣告"（一句話：這授權了什麼）→ 直接進入下一步；機械只驗事實（逐字錨定／時序覆蓋／消費即失效／雜湊鏈），語義由宣告承擔（不掃詞、不標否定、不對照類型）；引句＋宣告於老闆下則輸入自動展示（必然曝光——理解有誤即越權）；不防刻意直改 flow-state 偽造（老闆抽查承擔）。',
+  '④雙流模型（1.7.0）：輸入＝獨立理解對象——輸入流唯增（每則輸入永久是事實，不覆蓋、不消費），理解流由 sb-think 調用（args＝理解宣告）落檔（雜湊鏈唯增）。行動正當性來自理解宣告＋必然曝光，無前置攔截。',
+  '⑤曝光＝核心制衡：老闆每則輸入時，未審理解宣告全部展示＋「哪則輸入尚無理解覆蓋」可見——agent 理解錯了（越權）或沒理解就動手，老闆當場看到；語義真假由曝光終審＋抽查 understandings 對照對話實蹟承擔（手改 flow-state 偽造不防——老闆抽查承擔）。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義禁止；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
@@ -70,7 +71,7 @@ const SESSION_CARD = [
   CARD,
   '',
   '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 sb-think 的路由提議才有脈絡依據。',
-  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；對話鎖、授權錨定與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
+  '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；輸入流／理解流記錄與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
   '[版號] 版本號屬老闆決策——不得自行升版或預設版號，揭露表寫「版號待老闆指定」。',
 ].join('\n');
 
@@ -85,42 +86,49 @@ function nodeLine(root) {
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
-    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆授權 sb unlock 後帶 --boss-ok 推進）';
+    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆授權後帶 --boss-ok 推進（理解流曝光承擔））';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決＋時點②對抗；不滿意→test 重修或回 intent';
-    if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms（印章）或 sb end（PASS 印章）';
-    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）${st.dialogueLock ? '；對話鎖中（唯讀，等 sb unlock 引老闆原句）' : ''}。`;
+    if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。`;
   } catch { return ''; }
 }
 
-// —— 對話鎖（令行靜止）＋當前輸入覆蓋記錄（時序元規則）——
-// 時序元規則：每則老闆輸入「覆蓋」前一則（flow-state 只存當前輸入）——跳時序不是被擋，是無物可引。
-// 抗壓縮：對話壓縮把過程變摘要；機械層（檔案事實）永遠持有最後一則原文與狀態——時序判定只依賴機械事實。
-// 理解宣告制（1.5.6）：機械只記事實（原文、是否已路由 sb-think、是否已消費）——語義認定權歸理解（sb-think＋--as 宣告），
-// 機械不掃關鍵詞、不標否定、不做類型對照（理解的官僚替代品全撤；事實防線：逐字錨定/時序/thinkRouted/曝光）。
-function handleBossInput(root, prompt) {
+// —— 輸入流（雙流模型 1.7.0）——
+// 雙流模型（1.7.0）：輸入＝獨立理解對象，不是鎖的鑰匙材料——
+// 輸入流唯增（每則輸入永久是事實，永不覆蓋、永不消費、無時序跳躍與翻舊帳概念——無需引用故無引句問題）；
+// 理解流由 agent 經 sb-think 路由產生（調用 args＝理解宣告），曝光是核心制衡（老闆每則輸入時審視）。
+// 舊制（前置攔截式授權閘）全面退役——1.5.6–1.6.2 的病灶（引句挑選、連續串、
+// 解鎖失敗、hooks 故障死鎖）根源皆是「把輸入當鑰匙」，撤鎖即根除。
+function recordInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { slug: null, ms: null, node: null, history: [] };
-    st.input = { at: new Date().toISOString(), text: String(prompt ?? ''), consumed: false }; // 覆蓋：最新輸入是唯一有效語境
-    st.thinkRouted = false; // 每則輸入重置——sb unlock 前必須重新路由 sb-think（理解必經制度化入口）
-    st.dialogueLock = true; // 新鎖定期：唯 sb unlock --quoted --as（先過 sb-think）可解
-    st.stamps = {};          // 陳舊授權失效（印章只隨對應 unlock 寫入）
+    (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
+    delete st.dialogueLock; // 1.7.0 撤鎖範式——舊欄位冪等清理
+    delete st.input;        // 舊單則輸入欄位退役（冪等清理）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 狀態異常靜默 */ }
 }
 
-// sb-think 路由標記：PreToolUse 偵測 Skill 調用且目標錨定為 sb-think → 本則輸入已完成制度化理解入口
-// （錨定 `^|:` 前綴＋ `$` 結尾——`fake-sb-think-evil`、`xx_sb-think_yy` 等偽技能名不得偽造路由事實）
-function markThinkRouted(root, tool, toolInput) {
+// 理解流記錄（1.7.0）：PreToolUse 偵測 Skill(sb-think) 調用且 args 有實質理解（≥10 字）→ 落一筆理解
+// （錨定 `^|:sb-think$` 防偽技能名；args 即理解宣告——寫入側折疊換行＋截 200 字，同曝光防護判準；
+// 雜湊鏈唯增；uptoInput＝理解涵蓋至第幾則輸入——曝光對照輸入流可見哪些輸入尚無理解覆蓋）
+function recordUnderstanding(root, tool, toolInput) {
   if (!root || !/^skill$/i.test(String(tool ?? ''))) return;
   const target = String(toolInput?.skill ?? toolInput?.name ?? '');
   if (!/(?:^|:)sb-think$/i.test(target)) return;
+  const as = String(toolInput?.args ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if ([...as].length < 10) return; // 理解必須有實質——空泛 args 不落檔（該輸入保持「尚無理解」曝光可見）
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return;
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    st.thinkRouted = true;
+    const idx = Math.max(0, (st.inputs ?? []).length - 1);
+    const at = new Date().toISOString();
+    const prevHash = (st.understandings ?? []).at(-1)?.hash ?? '';
+    const hash = createHash('sha256').update(prevHash + String(idx) + as + at).digest('hex').slice(0, 16);
+    (st.understandings ??= []).push({ at, uptoInput: idx, as, reviewed: false, hash });
     writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 狀態異常靜默 */ }
 }
@@ -142,55 +150,45 @@ function markExternalEvidence(root, tool) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 狀態回流：當前輸入原文＋路由狀態（理解宣告制——機械只呈事實，理解由 sb-think 承擔）
-function inputLine(root) {
+// 狀態回流：輸入流＋理解覆蓋狀態（雙流模型——機械只呈事實，理解由 sb-think 承擔、曝光由老闆終審）
+function flowLine(root) {
   if (!root) return '';
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    const inp = st.input;
-    if (!inp || typeof inp.text !== 'string') return '';
-    const routed = st.thinkRouted ? '已路由 sb-think' : '未路由 sb-think（解鎖前 MUST 先路由）';
-    return `\n[當前輸入]${inp.consumed ? '（已消費——同一則不得再引，等老闆下一則）' : ''}「${inp.text}」｜${routed}——理解成立即 sb unlock --quoted "承載授權語義的原句" --as "理解宣告"（語義由宣告承擔，機械不掃詞）。`;
+    const inputs = st.inputs ?? [];
+    if (!inputs.length) return '';
+    const covered = (st.understandings ?? []).at(-1)?.uptoInput ?? -1;
+    const uncovered = inputs.length - 1 - covered;
+    return `\n[輸入流] 共 ${inputs.length} 則；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 sb-think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
   } catch { return ''; }
 }
 
 // 曝光行單行化：折疊所有空白類字元（含 U+2028/U+2029 等類換行）＋截斷（200 字）——
-// 防存量／手改 unlockLog 條目於注入文本偽造多行框架內容（寫入側已擋換行與超長；此為展示側同判，純事實防護非語義掃描）
+// 防存量／手改 understandings 條目於注入文本偽造多行框架內容（寫入側已擋換行與超長；此為展示側同判，純事實防護非語義掃描）
 function flatOneLine(s, n = 200) {
   const t = String(s ?? '').replace(/\s+/g, ' ').trim();
   const cps = [...t];
   return cps.length > n ? cps.slice(0, n).join('') + '…' : t;
 }
 
-// 必然曝光：老闆每則輸入時展示未審視的解鎖引句（斷章即當場可見）；mark=true 時標記已審
-// （UserPromptSubmit 用 mark=true；SessionStart 壓縮後注入用 mark=false——保留老闆輸入時的曝光）
-function unlockReviewLine(root, mark = true) {
+// 必然曝光（雙流模型核心制衡）：老闆每則輸入時展示未審視的理解宣告（理解有誤即越權，當場可見）；
+// mark=true 時標記已審（UserPromptSubmit 用 mark=true；SessionStart 壓縮後注入用 mark=false——保留老闆輸入時的曝光）
+function understandingReviewLine(root, mark = true) {
   if (!root) return '';
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    const pending = (st.unlockLog ?? []).filter((e) => !e.reviewed);
+    const pending = (st.understandings ?? []).filter((e) => !e.reviewed);
     if (!pending.length) return '';
     if (mark) {
       for (const e of pending) e.reviewed = true;
       writeFileSync(statePath, JSON.stringify(st, null, 2));
     }
-    return `\n[解鎖審視] ${pending.map((e) => `「${flatOneLine(e.quoted)}」→理解宣告「${flatOneLine(e.as)}」${e.stamp ? `（印章 ${flatOneLine(e.stamp)}）` : ''}@${flatOneLine(e.node)} ${flatOneLine(e.at)}`).join('；')}——理解有誤即屬 agent 越權，請立即指出。`;
+    return `\n[理解審視] ${pending.map((e) => `#≤${e.uptoInput}→「${flatOneLine(e.as)}」@${flatOneLine(e.at)}`).join('；')}——理解有誤即屬 agent 越權，請立即指出（雜湊鏈唯增，抽查對照對話實蹟）。`;
   } catch { return ''; }
-}
-
-function checkDialogueLock(root) {
-  if (!root) return null;
-  try {
-    const p = join(root, '.shiftblame', 'flow-state.json');
-    if (!existsSync(p)) return null;
-    const st = JSON.parse(readFileSync(p, 'utf8'));
-    if (st.dialogueLock) return '對話鎖中——理解老闆輸入後以 sb unlock --quoted 引本鎖定期內原句解鎖（閱讀理解＋留痕曝光）；理解／呈現／唯讀自由，一切寫入被擋（令行靜止，SKILL 授權章）。';
-  } catch { return null; }
-  return null;
 }
 
 // 老闆決策邊雙重鎖：三邊（intent→audit／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
@@ -210,7 +208,7 @@ function checkLayerStopover(root, cmd) {
         if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；verify→done 永不直通）
         return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊不得以返工直通繞過`;
       }
-      return `老闆決策邊：${st.node}→${target}——經老闆授權（sb unlock 引原句）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
+      return `老闆決策邊：${st.node}→${target}——經老闆授權（理解流曝光承擔）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
     }
   } catch { /* 非治理工作區 */ }
   return null;
@@ -495,7 +493,7 @@ function checkCommitStamp(root, seg) {
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }
 }
 
-// hooks 健康心跳（1.6.1）：每次成功執行寫時戳＋事件名——CLI 的 unlock／外部證據閘被擋時對照此檔，
+// hooks 健康心跳（1.6.1）：每次成功執行寫時戳＋事件名——CLI 的外部證據閘被擋時對照此檔，
 // 區分「老闆未授權」（心跳新鮮：hooks 活著、標記真實缺失）與「hooks 疑似故障」（心跳停滯：記錄器死了、
 // 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞，老闆已否決）。
 function beatHeartbeat(root, event) {
@@ -517,57 +515,25 @@ try {
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
-    // 機械事實（段位／鎖態／當前輸入原文與標記／未審引句）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root, false), 'SessionStart');
+    // 機械事實（段位／輸入流與理解覆蓋／未審理解）立即回流對話，恢復依據檔案非摘要。
+    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
-    handleBossInput(root, input.prompt ?? ''); // 對話鎖＋覆蓋式當前輸入記錄（時序元規則；每則重置 thinkRouted）
-    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root), 'UserPromptSubmit'); // 狀態回流＋解鎖引句必然曝光
+    recordInput(root, input.prompt ?? ''); // 輸入流唯增（每則輸入＝獨立理解對象——無鎖、無覆蓋、無消費）
+    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root), 'UserPromptSubmit'); // 狀態回流＋未審理解必然曝光
   }
 
   if (event === 'Stop') {
-    // agent 回合結束輸出含〔待確認〕→上鎖（執行中呈現新決策；平台未提供輸出文本時靜默跳過）
-    const texts = (v) => { // 遞迴攤平字串／陣列／{content|text} 嵌套為字串陣列（blocks 形平台）
-      if (typeof v === 'string') return [v];
-      if (Array.isArray(v)) return v.flatMap(texts);
-      if (v && typeof v === 'object') return texts(v.content ?? v.text ?? '');
-      return [];
-    };
-    const msgs = [].concat(input.messages ?? []).map(texts).filter((parts) => parts.join('').trim());
-    const last = texts(input.last_message ?? input.lastMessage ?? msgs.at(-1) ?? []).join('');
-    if (root && typeof last === 'string' && last.includes('〔待確認〕')) {
-      try {
-        const p = join(root, '.shiftblame', 'flow-state.json');
-        if (existsSync(p)) {
-          const st = JSON.parse(readFileSync(p, 'utf8'));
-          st.dialogueLock = true;
-          writeFileSync(p, JSON.stringify(st, null, 2));
-        }
-      } catch { /* 靜默 */ }
-    }
-    process.exit(0);
+    process.exit(0); // 1.7.0：Stop 事件無防護動作（理解流曝光承擔審視）
   }
 
   if (event === 'PreToolUse') {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
-    markThinkRouted(root, tool, input.tool_input); // sb-think 路由標記（理解必經制度化入口——unlock 前置事實）
+    recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(sb-think) 調用＋args＝理解宣告）
     markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
-      // 解鎖通道放行僅限「單體」sb unlock 命令：整條命令按 \n ; & | 切段後必須恰一段，
-      // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋；
-      // 命令代入（$()／反引號／<()／>()——shell 在命令查找前展開）與冒名路徑（.shiftblame 髒區、
-      // 非 sb.mjs 檔名）同為非單體，擋（SKILL 天花板：非 .shiftblame 冒名 sb.mjs 屬殘餘，曝光承擔）
-      const unlockSegs = cmd.split(/[\n;&|]/).map((s) => s.trim()).filter(Boolean);
-      const isUnlockCmd = unlockSegs.length === 1
-        && !/[$]\(|`|<\(|>\(/.test(unlockSegs[0])
-        && /^(?:node\s+(?!\S*\.shiftblame)\S*[\\/]sb\.mjs|sb)\s+unlock\b/.test(unlockSegs[0]);
-      // 對話鎖最高優先：鎖定期間 Bash 全擋（唯讀研究用平台讀檔工具；sb unlock 除外——否則死鎖）
-      if (!isUnlockCmd) {
-        const lock = checkDialogueLock(root);
-        if (lock) deny(lock);
-      }
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);
@@ -599,9 +565,6 @@ try {
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
-      // 對話鎖最高優先：鎖定期間一切寫入擋（含 .shiftblame 內——未授權內容不得落任何檔）
-      const lock = checkDialogueLock(root);
-      if (lock) deny(lock);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
@@ -612,7 +575,7 @@ try {
       if (/SKILL\.md|hooks[\\/]|package\.json|plugin\.json|marketplace\.json/i.test(pathStr)) {
         inject(/[\\/](package|plugin|marketplace)\.json/i.test(pathStr)
           ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
-          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認並說「開工」後才可執行（令行靜止）；已授權則照授權範圍執行。', 'PreToolUse');
+          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認後才可執行；已授權則照授權範圍執行（理解流曝光承擔）。', 'PreToolUse');
       } else if (isVerify) {
         inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。', 'PreToolUse');
       }

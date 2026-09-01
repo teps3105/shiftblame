@@ -19,7 +19,6 @@ const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
-const setStamps = (obj) => { const st = state(); st.stamps = obj; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); };
 
 assert.equal(git('init').status, 0);
 writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -54,13 +53,11 @@ assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
 assert.equal(run('next', 'verify').status, 0);
 
-// 4. verify→done：缺完成印章即擋（老闆沒說 done，agent 旗標無效）
-assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /缺完成印章/);
-// 5. 有印章＋SLUG 時點③→過；印章一次性
-setStamps({ done: new Date().toISOString() });
+// 4. verify→done：缺 SLUG 時點③記錄即擋（1.7.0 撤印章——--boss-ok＋時點③即鑰匙）
+assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /時點③對抗|SLUG/);
+// 5. 補時點③記錄→過
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：完成，判定成立\n');
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.equal(state().stamps.done, undefined);
 // 6. verify→test 循環邊：時點②對照（done→test 重修後再走）
 assert.equal(run('next', 'test').status, 0);
 assert.equal(run('next', 'build').status, 0);

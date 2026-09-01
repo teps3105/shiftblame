@@ -26,9 +26,9 @@ revision: 1.3.0
 
 ## 3. 待辦清單（簡述）
 
-> **每個 ms＝里程碑**（SKILL §0、§1.4）。未開的待辦只在此簡述一句價值，**不建 `<nnn>` 目錄、不進 §4 節點表、不編號**；老闆說「開新 ms」（印章）才開 `<ms>`（sb init／sb next intent 建骨架、賦流水號 `<nnn>`），並從本清單移入 §4 段表。清單內容由老闆授權的產品目標或規劃階段識別（G3 §1.5 定義 ms 範圍時，超出本 ms 的功能記入此清單）。
+> **每個 ms＝里程碑**（SKILL §0、§1.4）。未開的待辦只在此簡述一句價值，**不建 `<nnn>` 目錄、不進 §4 節點表、不編號**；老闆說「開新 ms」（--new-ms）才開 `<ms>`（sb init／sb next intent 建骨架、賦流水號 `<nnn>`），並從本清單移入 §4 段表。清單內容由老闆授權的產品目標或規劃階段識別（G3 §1.5 定義 ms 範圍時，超出本 ms 的功能記入此清單）。
 >
-> **待辦不編號**：未開工的項目只是待辦，不是 ms——`<nnn>` 是已開 ms 的身份標籤，老闆「開新 ms」印章開 ms 時才賦予。待辦順序會變，編號無意義。
+> **待辦不編號**：未開工的項目只是待辦，不是 ms——`<nnn>` 是已開 ms 的身份標籤，老闆「開新 ms」（--new-ms）開 ms 時才賦予。待辦順序會變，編號無意義。
 >
 > **順序＝優先序**：清單由上到下即開工順序——開新 ms 時依序從最上面未開的待辦開始。調整順序由秘書在對話中依老闆指示直接重排（§3 待辦無編號，順序會變）。
 >
@@ -72,7 +72,7 @@ flowchart LR
 
 > **維護規則**：把目前段的 `:::todo` 改為 `:::active`、已走過的改 `:::done`、未到的保持 `:::todo`。
 
-**`<ms>` done ≠ slug PASS**：前者是老闆宣稱「done」（完成印章）；後者是老闆「PASS」（PASS 印章＋`sb end`，收尾保鮮＋移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先 PASS。frontmatter `status`：建立時 `in_progress`，老闆 PASS 後改 `passed`。
+**`<ms>` done ≠ slug PASS**：前者是老闆宣稱「done」（--boss-ok 留痕）；後者是老闆「PASS」（--boss-ok 留痕＋`sb end`，收尾保鮮＋移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先 PASS。frontmatter `status`：建立時 `in_progress`，老闆 PASS 後改 `passed`。
 
 ## 5. 目標與品質
 

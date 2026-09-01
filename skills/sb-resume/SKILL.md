@@ -29,7 +29,7 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新核對�
 
 ## 邊界
 
-- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 ms（開新 ms＝老闆「開新 ms」印章＋回 intent 重走，由 sb-think 分發）。
+- resume 是**恢復既有未完成工作**，不是開新 slug 或開新 ms（開新 ms＝老闆「開新 ms」授權＋sb next intent --new-ms 留痕，由 sb-think 分發）。
 - **二層判斷**：`last_save` 標記（接續落點）→ 無標記（重新核對 G1~G3）。有 `last_save` 時接續不重問確認，消費後清除標記。
 - 重新核對（無 `last_save` 時）基於既有內容，保留仍成立者，不從零重寫；已放行 G1 的任何語意變更都走顯式修約（SKILL §1.4.1），不以 resume 繞過契約鎖定。
 - SLUG §4 節點依當前實際狀態標記。
