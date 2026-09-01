@@ -43,6 +43,19 @@ r = unlock(['--quoted', '你去想吧', '--as', '行動許可']);
 assert.equal(r.status, 1, '已消費不得再引');
 assert.match(r.stderr, /已消費/);
 
+// —— hooks 健康診斷（1.6.1）：心跳停滯時閘擋附「記錄缺失≠授權缺失」警示（只診斷不降級——逃生門屬合法漏洞已否決）——
+bossReal('繼續吧');
+writeFileSync(statePath, JSON.stringify({ ...state(), thinkRouted: false }, null, 2));
+mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+writeFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), JSON.stringify({ at: '2020-01-01T00:00:00Z', event: 'PreToolUse' }));
+r = unlock(['--quoted', '繼續吧', '--as', '行動許可']);
+assert.equal(r.status, 1, '未路由擋（場景樁）');
+assert.match(r.stderr, /hooks 健康警示/, '心跳停滯→擋訊息附 hooks 故障診斷');
+assert.match(r.stderr, /不得繞閘/, '診斷只揭露不降級（fail-closed 不變）');
+routeThink();
+r = unlock(['--quoted', '繼續吧', '--as', '行動許可：推進下一輪']);
+assert.equal(r.status, 0, '恢復路由後正常解鎖——警示不改變閘行為');
+
 // —— --as 必填（理解宣告是制度形式）——
 bossReal('繼續');
 routeThink();

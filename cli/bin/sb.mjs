@@ -76,6 +76,22 @@ const adversarialEdge = (from, to) => ADVERSARIAL_EDGES.find((e) => e.from === f
 
 const out = (m) => console.log(m);
 const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) console.error(`  ✗ ${m}`); process.exit(code); };
+
+// hooks 健康診斷（1.6.1）：本閘的鑰匙（thinkRouted／externalEvidence／當前輸入）由 hooks 事實記錄承擔——
+// hooks 故障時記錄缺失≠授權缺失，閘的條件永遠無法滿足＝遞迴死鎖（1.6.0 實事故）。此函式對照 hooks 心跳
+// 揭露故障疑慮；只診斷不降級（fail-closed 不變——逃生門屬合法漏洞，老闆已否決），修復方向是修 hooks 而非繞閘。
+function hooksHealthNote() {
+  try {
+    const p = join(SB_DIR, 'tmp', 'hooks-heartbeat.json');
+    if (!existsSync(p)) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試，不得繞閘';
+    const hb = readJson(p);
+    const ageMs = Date.now() - new Date(hb.at).getTime();
+    const ageMin = Math.round(ageMs / 60000);
+    if (!Number.isFinite(ageMs)) return '〔hooks 健康警示〕心跳時間戳無法解析——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試，不得繞閘';
+    if (ageMin > 10) return `〔hooks 健康警示〕心跳停在 ${ageMin} 分鐘前（@${hb.event}）——近期工具調用未觸發 hooks（故障或 Codex 端未重新信任），本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試，不得繞閘`;
+  } catch { return '〔hooks 健康警示〕心跳無法讀取——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試，不得繞閘'; }
+  return '';
+}
 const fin = (msgs) => { console.log('PASS'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
@@ -277,9 +293,11 @@ function gate(st, target, opts) {
   // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工不得閉門自我檢驗。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
     problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
+    const note = hooksHealthNote(); if (note) problems.push(note);
   }
   if (st.rerunExtPending && target !== 'intent' && !st.externalEvidence?.done) {
     problems.push('返工期間零外部協助——返工修復 MUST 至少一次外部工具調用（外部查證或外部唯讀子代理；hooks 標記 externalEvidence），不得閉門自我檢驗後推進（CARD⑨）');
+    const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
   // --boss-ok：留痕層（缺仍擋，保留形式邊界；實質鑰匙在對話鎖與印章）；--rerun 直通豁免非完成邊
@@ -505,13 +523,14 @@ function cmdUnlock(opts) {
   if ([...as.trim()].length > 200) die(['--as 過長（上限 200 字）——理解宣告是「這授權了什麼」的一句話；膨脹式宣告即擋（曝光通道容量防護）']);
   if (opts.stamp && !['done', 'pass', 'newMs'].includes(opts.stamp)) die([`--stamp 值無效（${opts.stamp}）——done｜pass｜newMs`]);
   if (!verifyUnlockChain(st.unlockLog ?? [])) die(['unlockLog 雜湊鏈斷裂——記錄被刪改（曝光洗除）即擋；完整性由老闆抽查對話實蹟終審']);
-  if (!st.thinkRouted) die(['本則輸入未路由 sb-think——理解必經制度化入口（Skill 調用 sb-think 後 hooks 標記 thinkRouted），未路由不得解鎖']);
+  if (!st.thinkRouted) { const n = hooksHealthNote(); die(['本則輸入未路由 sb-think——理解必經制度化入口（Skill 調用 sb-think 後 hooks 標記 thinkRouted），未路由不得解鎖', ...(n ? [n] : [])]); }
   if (!inp || typeof inp.text !== 'string' || !inp.text.length) {
     die(['無當前輸入可引（input 空）——翻舊帳即擋；等老闆實際輸入後再解鎖']);
   }
   if (inp.consumed) die(['當前輸入已消費——同一則不得再引（授權生命週期＝一則輸入）；等老闆下一則']);
   if (!inp.text.includes(quoted)) {
-    die([`引句非當前輸入（最後一則）的逐字內容——捏造／跳時序即擋。當前輸入：「${inp.text.slice(0, 80)}」`]);
+    const n = hooksHealthNote();
+    die([`引句非當前輸入（最後一則）的逐字內容——捏造／跳時序即擋。當前輸入：「${inp.text.slice(0, 80)}」`, ...(n ? [n] : [])]);
   }
   if (opts.stamp) st.stamps = { [opts.stamp]: new Date().toISOString() }; // 印章類型由理解宣告承擔（--as），錯用＝曝光可見
   st.dialogueLock = false;

@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.6.0"
+  version: "1.6.1"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→audit→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（對話鎖 sb unlock 引老闆原句＋授權印章 done/pass/newMs）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；時序元規則（每則輸入覆蓋前一則、消費即失效）由機械層承擔，抗上下文壓縮。三時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋SLUG.md 對照。技術證據不足時強制外部唯讀技術意見，主對話複核後自行裁定，不得轉嫁給老闆。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -435,7 +435,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 > session 冷啟動時建立脈絡，讓 sb-think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 sb-think 的前置——sb-think 第一步就是讀脈絡。
 
-**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；ZCode 與 Codex 共用同一佈局與協議）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任）。四事件：`SessionStart` 注入載入程序＋不變量卡＋動態狀態卡（壓縮後自動回流段位／鎖態／當前輸入原文與路由狀態——抗上下文壓縮）；`UserPromptSubmit` 每則老闆輸入——**對話鎖＋理解宣告制**（上鎖；覆蓋式記錄當前輸入原文＋thinkRouted 重置；狀態與未審解鎖引句＋理解宣告注入回流）＋不變量卡與當前段；`Stop` 偵測 agent 輸出含〔待確認〕→上鎖（執行中呈現新決策）；`PreToolUse`——對話鎖期間擋一切寫入（含 Bash 與 .shiftblame；唯 `sb unlock` 命令自身放行——解鎖通道不得被鎖封閉）、`git commit` 驗 `sb commitmsg` 印章、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended）、老闆決策邊雙重鎖（intent→audit／plan→test／verify→done 三邊的 `sb next` 缺 --boss-ok 即擋）。hooks 故障時靜默放行，注入與硬擋失效即回到文件與 CLI 閘門層。**路徑展開元規則（系統性）**：hooks／CLI 的一切路徑判斷 MUST 展開為 repo root 錨定的絕對路徑——相對路徑一律以 repo root 展開，MUST NOT 以進程 cwd 展開（進程 cwd 與 repo 無關，錨錯即判錯對象）；git 操作錨定唯一正道＝`-C <絕對root>`，重定向（GIT_DIR／`--git-dir`／`--work-tree`）使錨定失效，掃到即擋。
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+ hooks 已 stable 預設啟用）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（信任綁定 hook 檔 hash，變更後重新信任；未信任＝hooks 不跑，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫 `.shiftblame/tmp/hooks-heartbeat.json` 心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。四事件：`SessionStart` 注入載入程序＋不變量卡＋動態狀態卡（壓縮後自動回流段位／鎖態／當前輸入原文與路由狀態——抗上下文壓縮）；`UserPromptSubmit` 每則老闆輸入——**對話鎖＋理解宣告制**（上鎖；覆蓋式記錄當前輸入原文＋thinkRouted 重置；狀態與未審解鎖引句＋理解宣告注入回流）＋不變量卡與當前段；`Stop` 偵測 agent 輸出含〔待確認〕→上鎖（執行中呈現新決策）；`PreToolUse`——對話鎖期間擋一切寫入（含 Bash 與 .shiftblame；唯 `sb unlock` 命令自身放行——解鎖通道不得被鎖封閉）、`git commit` 驗 `sb commitmsg` 印章、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended）、老闆決策邊雙重鎖（intent→audit／plan→test／verify→done 三邊的 `sb next` 缺 --boss-ok 即擋）。hooks 故障時靜默放行，注入與硬擋失效即回到文件與 CLI 閘門層。**路徑展開元規則（系統性）**：hooks／CLI 的一切路徑判斷 MUST 展開為 repo root 錨定的絕對路徑——相對路徑一律以 repo root 展開，MUST NOT 以進程 cwd 展開（進程 cwd 與 repo 無關，錨錯即判錯對象）；git 操作錨定唯一正道＝`-C <絕對root>`，重定向（GIT_DIR／`--git-dir`／`--work-tree`）使錨定失效，掃到即擋。
 
 **路徑錨定與破壞性命令防護**：相對路徑展開到錯誤資料夾（遞迴刪除、覆蓋指令、各語言刪除腳本——`shutil.rmtree`、`fs.rm(recursive)`、`Remove-Item -Recurse`、`del /s`、`rm -rf`、重定向截斷 `>`）是破壞的共同入口。hooks 對「破壞性模式＋相對路徑」exit 2 硬擋，要求以絕對路徑改寫；`git clean -f`／`reset --hard` 未以 `-C <絕對路徑>` 錨定即擋；直跑腳本檔含遞迴刪除 API 時——相對字面路徑即擋、僅含 API 注入警告。hook 的專案根只認平台給的絕對 `cwd`，不猜測不 fallback；`sb` CLI 由執行目錄向上錨定 `.git`／`.shiftblame` 為根，狀態與印章一律寫在根，杜絕子目錄執行產生流浪工作區。
 

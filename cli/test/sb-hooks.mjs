@@ -1,6 +1,6 @@
 // sb-hooks：對話鎖＋當前輸入記錄（時序元規則）＋thinkRouted 標記＋sb unlock 通道放行＋曝光＋Stop＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -55,6 +55,26 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
 assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
+// hooks 心跳（1.6.1）：每次成功執行寫時戳——hooks 死亡可被 CLI 診斷對照
+const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), 'utf8'));
+assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
+assert.ok(new Date(hb.at).getTime() > Date.now() - 60000, '心跳時間戳新鮮');
+// inject 格式（1.6.1 真根因修復）：hookEventName MUST 填實際事件名——寫死 'additionalContext' 會被
+// strict schema 丟棄（1.6.0 的 233 次 hook.run.failed 真面目：副作用生效但 additionalContext 注入全瞎）
+const ssOut = run({ hook_event_name: 'SessionStart', source: 'startup' });
+const ssJson = JSON.parse(ssOut.stdout);
+assert.equal(ssJson.hookSpecificOutput.hookEventName, 'SessionStart', 'SessionStart 注入歸因正確事件名');
+assert.ok(ssJson.hookSpecificOutput.additionalContext.length > 50, 'SessionStart 注入實質內容（載入程序＋不變量卡）');
+const upOut = up('inject 格式驗證輸入');
+const upJson = JSON.parse(upOut.stdout);
+assert.equal(upJson.hookSpecificOutput.hookEventName, 'UserPromptSubmit', 'UserPromptSubmit 注入歸因正確事件名');
+assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[shiftblame 不變量]'), '不變量卡經 additionalContext 真正注入');
+// 心跳守門（1.6.1 對抗必修 2）：無 .shiftblame 的 cwd 不得長出流浪工作區
+const strayRoot = mkdtempSync(join(tmpdir(), 'sb-stray-'));
+process.on('exit', () => rmSync(strayRoot, { recursive: true, force: true }));
+const strayRun = spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: strayRoot, hook_event_name: 'SessionStart', source: 'startup' }), encoding: 'utf8' });
+assert.equal(strayRun.status, 0, '流浪 cwd 下 hooks 靜默放行');
+assert.equal(existsSync(join(strayRoot, '.shiftblame')), false, '不得創建流浪 .shiftblame（框架元規則——findRoot 錨錯根防護）');
 assert.deepEqual(state().stamps, {}, '新輸入清未用印章');
 
 // —— 2. 鎖定期寫入矩陣：唯「單體」sb unlock 命令放行；借道全擋 ——

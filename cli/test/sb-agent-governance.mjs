@@ -13,9 +13,35 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.6.0');
+assert.equal(manifest.version, '1.6.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.6\.0"/);
+assert.match(skill, /version: "1\.6\.1"/);
+
+// hooks 註冊型式（1.6.1）：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
+// （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
+// inject 的 hookEventName MUST 填實際事件名（1.6.0 的 233 次 hook.run.failed 真根因：寫死 'additionalContext'
+// 使 additionalContext 注入被 strict schema 丟棄——副作用生效但卡片/曝光全瞎）
+const hooksJson = JSON.parse(read('hooks', 'hooks.json'));
+for (const [evt, entries] of Object.entries(hooksJson.hooks)) {
+  for (const entry of entries) {
+    for (const h of entry.hooks) {
+      assert.equal(h.type, 'command', `hooks.json ${evt} 為單一 command 型（雙平台 schema 交集）`);
+      assert.ok(h.command.includes('${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs'), `hooks.json ${evt} 經 CLAUDE_PLUGIN_ROOT 兩端展開指向 guard`);
+      assert.equal(h.timeout, 10, `hooks.json ${evt} 秒級 timeout（雙平台皆認）`);
+    }
+  }
+}
+const guardSrc = read('hooks', 'shiftblame-guard.mjs');
+assert.ok(!guardSrc.includes("hookEventName: 'additionalContext'"), 'inject 不得寫死事件名（strict schema 歸因驗證）');
+assert.match(guardSrc, /hookEventName: event/, 'inject hookEventName 填實際事件名');
+assert.match(guardSrc, /HOOK_EVENTS\.includes\(event\)/, 'inject 函數層防護：非七事件字面值即拒輸出（同類病灶結構性絕緣）');
+assert.match(guardSrc, /inject\((?:[^)]*)'(?:SessionStart|UserPromptSubmit|PreToolUse|PermissionRequest|PostToolUse|PostToolUseFailure|Stop)'\)/s, '每個 inject 調用帶事件字面值');
+assert.match(guardSrc, /beatHeartbeat[\s\S]{0,200}existsSync\(join\(root, '\.shiftblame'\)\)/, '心跳僅寫既有工作區（禁止流浪 cwd 長出 .shiftblame）');
+
+// hooks 心跳＋CLI 健康診斷（1.6.1）：hooks 死亡/未信任時閘擋附「記錄缺失≠授權缺失」警示（只診斷不降級——逃生門屬合法漏洞已否決）
+assert.match(guardSrc, /beatHeartbeat/, 'hooks 每次成功執行寫心跳');
+assert.match(read('cli', 'bin', 'sb.mjs'), /hooksHealthNote/, 'CLI 閘擋對照心跳輸出 hooks 健康診斷');
+assert.match(read('cli', 'bin', 'sb.mjs'), /不得繞閘/, '診斷只揭露不降級（fail-closed 不變）');
 
 // 八段詞彙落地
 assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
@@ -71,7 +97,7 @@ for (const f of files) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.6\.0/);
+  assert.match(reference, /revision: 1\.6\.1/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

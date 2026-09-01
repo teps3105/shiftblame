@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.6.0-2ea44f.svg" alt="version 1.6.0"/>
+  <img src="https://img.shields.io/badge/version-1.6.1-2ea44f.svg" alt="version 1.6.1"/>
 </p>
 
 ---
@@ -133,7 +133,7 @@ flowchart TB
 
 shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、待確認上鎖、commit 印章硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**對話鎖＋理解宣告制**（每則老闆輸入上鎖並覆蓋記錄當前輸入原文＋thinkRouted 重置；解鎖唯 `sb unlock --quoted --as`——先路由 sb-think，逐字錨定＋理解宣告＋消費即失效＋雜湊鏈，機械只驗事實、語義由宣告承擔；`Stop` 事件偵測回合輸出含〔待確認〕即上鎖；引句＋理解宣告於老闆下則輸入自動展示）＋**授權印章**（`sb unlock --stamp done|pass|newMs` 隨宣告寫入）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／鎖態／當前輸入原文與路由狀態——抗上下文壓縮）；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗印章；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任）。hooks 故障時靜默放行，不阻斷工作。
+**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**對話鎖＋理解宣告制**（每則老闆輸入上鎖並覆蓋記錄當前輸入原文＋thinkRouted 重置；解鎖唯 `sb unlock --quoted --as`——先路由 sb-think，逐字錨定＋理解宣告＋消費即失效＋雜湊鏈，機械只驗事實、語義由宣告承擔；`Stop` 事件偵測回合輸出含〔待確認〕即上鎖；引句＋理解宣告於老闆下則輸入自動展示）＋**授權印章**（`sb unlock --stamp done|pass|newMs` 隨宣告寫入）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／鎖態／當前輸入原文與路由狀態——抗上下文壓縮）；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗印章；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。**hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。**hooks 心跳**：每次 hooks 成功執行寫 `.shiftblame/tmp/hooks-heartbeat.json`——CLI 的對話鎖／外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 

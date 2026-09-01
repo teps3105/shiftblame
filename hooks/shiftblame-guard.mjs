@@ -30,9 +30,18 @@ function readStdin() {
   });
 }
 
-function inject(text) {
+// additionalContext 注入（1.6.1 根因修復）：hookEventName MUST 填實際事件名（ZCode/Codex strict schema
+// 以此歸因驗證——寫死常數會使輸出被丟棄且 run 標記 failed；1.6.0 的 233+ 次 hook.run.failed 全由此來，
+// 副作用（寫檔/deny）生效但卡片/曝光注入被丟棄）。函數層防護：事件名非七事件字面值即拒輸出（stderr 診斷）——
+// 任何調用點漏傳事件名都不會再生產非法輸出（同類病灶結構性絕緣，對抗第二輪必修 1）。
+const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PermissionRequest', 'PostToolUse', 'PostToolUseFailure', 'Stop'];
+function inject(text, event) {
+  if (!HOOK_EVENTS.includes(event)) {
+    process.stderr.write(`[shiftblame] inject 事件名無效（${event}）——拒絕輸出，檢查調用點（strict schema 歸因需實際事件名）\n`);
+    process.exit(0);
+  }
   process.stdout.write(JSON.stringify({
-    hookSpecificOutput: { hookEventName: 'additionalContext', additionalContext: text },
+    hookSpecificOutput: { hookEventName: event, additionalContext: text },
   }));
   process.exit(0);
 }
@@ -486,6 +495,17 @@ function checkCommitStamp(root, seg) {
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }
 }
 
+// hooks 健康心跳（1.6.1）：每次成功執行寫時戳＋事件名——CLI 的 unlock／外部證據閘被擋時對照此檔，
+// 區分「老闆未授權」（心跳新鮮：hooks 活著、標記真實缺失）與「hooks 疑似故障」（心跳停滯：記錄器死了、
+// 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞，老闆已否決）。
+function beatHeartbeat(root, event) {
+  if (!root || !existsSync(join(root, '.shiftblame'))) return; // 守門：僅既有工作區寫心跳——不得在流浪 cwd 長出 .shiftblame（框架元規則）
+  try {
+    mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+    writeFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), JSON.stringify({ at: new Date().toISOString(), event }));
+  } catch { /* 心跳失敗不影響主流程 */ }
+}
+
 const deny = (reason) => { process.stderr.write(`[shiftblame] ${reason}\n`); process.exit(2); };
 
 try {
@@ -493,16 +513,17 @@ try {
   const input = raw.trim() ? JSON.parse(raw) : {};
   const event = input.hook_event_name || input.hookEventName || '';
   const root = projectRoot(input);
+  beatHeartbeat(root, event); // hooks 健康心跳（1.6.1）：每次成功執行落時戳——CLI 閘擋時對照診斷「hooks 疑似故障」（記錄缺失≠授權缺失）
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
     // 機械事實（段位／鎖態／當前輸入原文與標記／未審引句）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root, false));
+    inject(SESSION_CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root, false), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
     handleBossInput(root, input.prompt ?? ''); // 對話鎖＋覆蓋式當前輸入記錄（時序元規則；每則重置 thinkRouted）
-    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root)); // 狀態回流＋解鎖引句必然曝光
+    inject(CARD + nodeLine(root) + inputLine(root) + unlockReviewLine(root), 'UserPromptSubmit'); // 狀態回流＋解鎖引句必然曝光
   }
 
   if (event === 'Stop') {
@@ -561,7 +582,7 @@ try {
       if (destructive) deny(destructive);
       const script = root ? scanScriptFile(cmd, root) : null;
       if (script?.deny) deny(script.deny);
-      if (script?.warn) inject(script.warn);
+      if (script?.warn) inject(script.warn, 'PreToolUse');
       // 分段印章閘：每個含 git+commit 的段逐一驗（無字窗；段外旗標不干擾）
       const segs = commitSegments(cmd);
       for (const seg of segs) {
@@ -591,9 +612,9 @@ try {
       if (/SKILL\.md|hooks[\\/]|package\.json|plugin\.json|marketplace\.json/i.test(pathStr)) {
         inject(/[\\/](package|plugin|marketplace)\.json/i.test(pathStr)
           ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
-          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認並說「開工」後才可執行（令行靜止）；已授權則照授權範圍執行。');
+          : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認並說「開工」後才可執行（令行靜止）；已授權則照授權範圍執行。', 'PreToolUse');
       } else if (isVerify) {
-        inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。');
+        inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。', 'PreToolUse');
       }
       process.exit(0);
     }
