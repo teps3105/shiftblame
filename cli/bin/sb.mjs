@@ -99,6 +99,9 @@ const usage = (code = 2) => {
                                         （不通過＝必修未清，不得發章）；commit 時由 hooks 消費（一對一）
   sb next <段> [--boss-ok] [--adversarial] [--rerun impl|definition]
                                         推進（閘門不過即擋）
+                                        外部證據閘（1.6.0）：research→plan 邊與返工後首個推進邊驗
+                                        「至少一次外部工具調用」（hooks 標記 externalEvidence——
+                                        WebSearch／WebFetch／webReader／Agent）；零外部推不過
                                         --boss-ok：老闆授權留痕（intent→audit、plan→test、verify→done 邊）
                                         --rerun：返工直通（僅限同 ms 曾達 test 後的重走；時點①分流判定——
                                         實作級 impl／定義級 definition 直通免停靠，根本性不帶旗標走完整確認；
@@ -262,10 +265,22 @@ function gate(st, target, opts) {
   // 僅限「同 ms」返工重走（history 中本 ms 曾達 test 及之後）——首次推進或跨 ms 帶 --rerun 即繞過老闆邊，必擋
   // （history entry 帶 ms；無 ms 欄位的舊條目 fail-closed 視為他 ms）
   const rerunReached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
+  if (opts.rerun && target === 'intent') {
+    problems.push('--rerun 不得用於回 intent 邊——返工旗標僅限前進重走邊（回頭邊零旗標；回 intent 重走走完整線性，不得攜帶返工 pending）');
+  }
   if (opts.rerun && !rerunReached) {
     problems.push('--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進或跨 ms 之老闆決策邊不得以返工直通繞過');
   }
   const rerunExempt = opts.rerun && rerunReached && st.node !== 'verify'; // verify→done（完成時點）永不直通——老闆終審不可省
+
+  // 外部證據閘（1.6.0）：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence）；
+  // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工不得閉門自我檢驗。
+  if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
+    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
+  }
+  if (st.rerunExtPending && target !== 'intent' && !st.externalEvidence?.done) {
+    problems.push('返工期間零外部協助——返工修復 MUST 至少一次外部工具調用（外部查證或外部唯讀子代理；hooks 標記 externalEvidence），不得閉門自我檢驗後推進（CARD⑨）');
+  }
 
   // --boss-ok：留痕層（缺仍擋，保留形式邊界；實質鑰匙在對話鎖與印章）；--rerun 直通豁免非完成邊
   if (opts.bossOk && !needsBossOk(st.node, target)) {
@@ -320,7 +335,7 @@ function gate(st, target, opts) {
 
     case 'plan':
       if (!g2) problems.push('G2 不存在');
-      else if (!substantive(g2, 30)) problems.push('G2 內容空泛——研究產出無實質內容，規劃無依據（薄研究也要有真結論，不是空話）');
+      else if (!substantive(g2, 30)) problems.push('G2 內容空泛——研究產出無實質內容，規劃無依據（精簡研究也要有真結論，不是空話）');
       else passes.push('G2 實質存在');
       break;
 
@@ -413,6 +428,18 @@ function cmdNext(target, opts) {
   if (problems.length) die(problems);
   const prev = st.node;
   st.node = target;
+  // 進研究段重置——舊查證不沿用（fail-closed）；例外：返工 pending 未清時不重置
+  // （返工期間的外部協助同時作數研究外部證據——一次調用滿足兩閘，不重複索求）
+  if (prev === 'audit' && target === 'research' && !st.rerunExtPending) st.externalEvidence = null;
+  if (opts.rerun) {
+    st.externalEvidence = null; // 返工重走：外部協助重新計次
+    st.rerunExtPending = true;  // 返工後首個推進邊驗外部協助（gate 擋零外部；回 intent 邊中止並清）
+  } else if (st.rerunExtPending && target === 'intent') {
+    delete st.rerunExtPending; // 返工中止（老闆補充重走）——pending 不帶入新線性
+  } else if (st.rerunExtPending) {
+    delete st.rerunExtPending; // 返工後首個推進邊已過 gate 驗證——消費即清
+    passes.push('返工外部協助已驗（externalEvidence）');
+  }
   if (prev === 'plan' && target === 'test') {
     // G1 封存＝放行（hash 記 flow-state）；回 intent 重定義後重新放行時重封存
     const file = gPath(st, 1);

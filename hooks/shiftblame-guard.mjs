@@ -54,6 +54,7 @@ const CARD = [
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義禁止；驗收段（verify）對 repo 唯讀。',
   '⑦版號屬老闆決策——不得自行升版或預設版號。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
+  '⑨研究/返工外部性閘（1.6.0）：外部工具調用是機械底線——hooks 偵測外部調用（WebSearch／WebFetch／webReader／Agent）標記 externalEvidence；audit→research 進段與 --rerun 返工時重置，research→plan 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過；規模自由（一次精準查證到完整調研皆可），大型研究 MUST 外部唯讀子代理承擔（SKILL §3）。偽造 externalEvidence（手改或自調 hooks）機械不防——老闆抽查承擔。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -72,6 +73,9 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——sb-think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
+    if (st.node === 'research') hint = st.externalEvidence?.done
+      ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
+      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆授權 sb unlock 後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms（印章）或 sb end（PASS 印章）';
@@ -108,6 +112,23 @@ function markThinkRouted(root, tool, toolInput) {
     if (!existsSync(statePath)) return;
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     st.thinkRouted = true;
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+  } catch { /* 狀態異常靜默 */ }
+}
+
+// 外部證據標記（1.6.0）：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader（外部查證）
+// 與 Agent／Task（外部唯讀子代理）。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
+// 記錄 {done, at, tool}。重置由 CLI 承擔（audit→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
+const EXTERNAL_RESEARCH_TOOLS = /^(?:WebSearch|WebFetch|Agent|Task|mcp__web_reader__webReader)$/;
+function markExternalEvidence(root, tool) {
+  if (!root) return;
+  const name = String(tool ?? '');
+  if (!EXTERNAL_RESEARCH_TOOLS.test(name)) return;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    st.externalEvidence = { done: true, at: new Date().toISOString(), tool: name };
     writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 狀態異常靜默 */ }
 }
@@ -511,6 +532,7 @@ try {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     markThinkRouted(root, tool, input.tool_input); // sb-think 路由標記（理解必經制度化入口——unlock 前置事實）
+    markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
       // 解鎖通道放行僅限「單體」sb unlock 命令：整條命令按 \n ; & | 切段後必須恰一段，
       // 且該段以 node …sb.mjs unlock / sb unlock 開頭——註解、字串內嵌、&&/;/| 借道全擋；

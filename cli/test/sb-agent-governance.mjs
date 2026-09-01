@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.5.6');
+assert.equal(manifest.version, '1.6.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.5\.6"/);
+assert.match(skill, /version: "1\.6\.0"/);
 
 // 八段詞彙落地
 assert.match(skill, /intent→audit→research→plan→test→build→verify→done/);
@@ -43,14 +43,21 @@ assert.match(skill, /時序元規則/);
 assert.match(skill, /sb unlock --quoted/);
 assert.match(skill, /消費即失效/);
 assert.match(skill, /抗上下文壓縮|抗壓縮/);
+assert.match(skill, /外部證據打底/, 'SKILL 記載 G2 外部證據打底（1.6.0）');
+assert.match(skill, /externalEvidence/, 'SKILL 記載 externalEvidence 閘');
+assert.match(skill, /大型研究.*MUST 外部唯讀子代理/s, 'SKILL 記載大型研究 MUST 子代理承擔');
 assert.match(readme, /sb unlock --quoted/);
 assert.match(readme, /理解宣告/);
+assert.match(readme, /外部性/, 'README 記載研究／返工外部性閘（1.6.0）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /EXTERNAL_RESEARCH_TOOLS/, 'hooks 外部工具清單存在');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /⑨/, 'CARD⑨ 外部性閘條');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /isUnlockCmd/, 'Bash 攔截放行 sb unlock（解鎖通道）');
 
 // 舊機制詞零殘留（1.5.0 的「唯開工解鎖／獨立成行／老闆詞印章 hooks 偵測」；SKILL／README／references／sb.mjs／hooks）
 const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正',
   '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分', '候選詞', '否定共現', 'CONSENT_WORDS', '非否定候選',
-  '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾'];
+  '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
+  '薄研究', '薄規劃', '薄產出', '薄流程'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/sb-think/SKILL.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/AUDIT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
@@ -64,7 +71,7 @@ for (const f of files) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.5\.6/);
+  assert.match(reference, /revision: 1\.6\.0/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

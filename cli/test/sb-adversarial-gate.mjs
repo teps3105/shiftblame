@@ -17,6 +17,8 @@ mkdirSync(ms, { recursive: true });
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
+const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
+const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
 const setStamps = (obj) => { const st = state(); st.stamps = obj; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); };
 
 assert.equal(git('init').status, 0);
@@ -30,6 +32,7 @@ writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 
 // 1. SLUG 缺時點①記錄即擋
@@ -133,8 +136,6 @@ r = run('commitmsg', 'feat: 對抗閘測試提交');
 assert.equal(r.status, 0, '返工後重新對抗→可提交');
 
 // —— 全鏈串接：adversarial→commitmsg→hooks commit 放行且一併消費 ——
-const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
-const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
 writeFileSync(reportPath, '# 對抗報告\n全鏈時點對抗。\n對抗判定：通過（零必修）');
 r = run('adversarial', reportPath);
 assert.equal(r.status, 0);

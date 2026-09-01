@@ -16,6 +16,9 @@ mkdirSync(ms, { recursive: true });
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
+const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
+const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
+
 
 assert.equal(git('init').status, 0);
 writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -29,6 +32,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點①對抗：完成，反向對抗判定成立\n');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 const locked = state();

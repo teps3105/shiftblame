@@ -17,6 +17,9 @@ mkdirSync(ms, { recursive: true });
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
+const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
+const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
+
 const commit = (file, message) => {
   assert.equal(git('add', file).status, 0);
   assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', message).status, 0);
@@ -40,6 +43,7 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=送�
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 // plan→test：--boss-ok＋--adversarial＋SLUG 時點①對照；G3 缺承接先擋
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點①對抗：攻擊 2 點、複核駁回 1 接受 1、反向對抗判定成立\n');
@@ -66,8 +70,9 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=送�
 // 返工直通：曾達 test 的重走，--rerun 免 --boss-ok（時點①分流判定留痕；老闆決策邊被豁免）
 assert.equal(run('next', 'audit', '--rerun', 'definition').status, 0, '返工直通：定義級免停靠');
 assert.ok(state().history.at(-1).rerun === 'definition', '直通留痕於 history');
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
 assert.equal(run('next', 'research').status, 0);
-assert.equal(run('next', 'plan').status, 0);
+assert.equal(run('next', 'plan').status, 0, '返工外部協助延續作數——一次調用滿足兩閘');
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n## 4. 目前段\n- 時點①對抗：重走後再次對抗完成，反向對抗判定成立\n');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
@@ -107,6 +112,7 @@ assert.equal(run('next', 'intent').status, 0);
 assert.equal(state().ms, '001'); // 同 ms
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點①對抗：重走後重新放行對抗\n');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
@@ -134,6 +140,7 @@ writeFileSync(join(ms2, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=o | �
 assert.match(run('next', 'audit', '--rerun', 'impl').stderr, /--rerun 僅限同 ms/, '跨 ms --rerun 擋');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點①對抗：ms2 完成\n');
 { const dbg = run('next', 'test', '--boss-ok', '--adversarial'); if (dbg.status !== 0) console.error('MS2 GATE:', dbg.stderr); assert.equal(dbg.status, 0); }

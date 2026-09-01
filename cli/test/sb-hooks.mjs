@@ -41,6 +41,20 @@ assert.equal(state().thinkRouted, true, 'name fallback 錨定匹配 sb-think 仍
 r = up('再一則');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think' } });
 assert.equal(state().thinkRouted, true, '裸名 sb-think 錨定匹配標記');
+// 外部證據標記（1.6.0）：外部工具實際調用才計——WebSearch/Agent/webReader 標記；冒名不標記
+r = up('又一則');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
+assert.equal(state().externalEvidence?.done, true, 'WebSearch 調用標記 externalEvidence');
+r = up('下一則');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'mcp__web_reader__webReader', tool_input: { url: 'https://x' } });
+assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', 'webReader MCP 調用標記');
+r = up('再一則');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearchX', tool_input: {} });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'websearch', tool_input: {} });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'WebSearch' } });
+assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
+assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
 assert.deepEqual(state().stamps, {}, '新輸入清未用印章');
 
 // —— 2. 鎖定期寫入矩陣：唯「單體」sb unlock 命令放行；借道全擋 ——
