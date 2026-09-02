@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 1.7.1
+revision: 1.7.2
 ---
 # verify 段 — 照 G3 跑測試與使用者行為驗收＝G3 的落地（執行層）
 

@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.7.1');
+assert.equal(manifest.version, '1.7.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.7\.1"/);
+assert.match(skill, /version: "1\.7\.2"/);
 
 // hooks 註冊型式（1.6.1）：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -86,7 +86,10 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /cmdUnlockRetired/, 'sb unlock 退役
 assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（永續層文件↔實況）');
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文');
 assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
-assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（1.7.1 永續層文件↔實況）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（永續層文件↔實況）');
+assert.match(skill, /兩種觸發樣態/, 'SKILL 兩種觸發樣態條文（1.7.2 主動觸發停等）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');
 assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
 
@@ -118,7 +121,7 @@ for (const f of files.filter((p) => p.endsWith('.md') || p.endsWith('.json'))) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.7\.1/);
+  assert.match(reference, /revision: 1\.7\.2/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

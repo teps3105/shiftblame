@@ -151,4 +151,46 @@ assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'
 const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo hi > out.txt' } });
 assert.equal(bad.status, 2);
 assert.match(bad.stderr, /破壞性操作/);
+
+// —— 10. 兩種觸發樣態（1.7.2）：主動觸發停等——hold 設置／凍結硬擋／唯讀放行／回覆解凍 ——
+setNode('build'); // build 段正常可寫（對照組）
+const editOkBefore = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
+assert.equal(editOkBefore.status, 0, '對照組：無 hold 時 build 段 Edit 放行');
+// 主動觸發：/sb-think 與 $sb-think 開頭皆設 hold；注入卡顯示停等行
+const activeSlash = up('/sb-think 幫我做停等機制的理解呈現');
+assert.ok(state().understandingHold, '主動觸發（/sb-think 開頭）設 understandingHold');
+assert.equal(state().understandingHold.inputIdx, state().inputs.length - 1, 'hold 錨定本則輸入');
+assert.ok(activeSlash.stdout.includes('[停等理解]'), '注入卡顯示停等行');
+const activeLink = up('$sb-think markdown 連結形式的觸發');
+assert.ok(state().understandingHold, '主動觸發（$sb-think 連結）覆設 hold');
+assert.ok(activeLink.stdout.includes('[停等理解]'), '連結形式同樣停等');
+// hold 期間：Skill（理解宣告落流）放行
+const holdSkill = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：停等機制的理解宣告落流驗證' } });
+assert.equal(holdSkill.status, 0, 'Skill 調用（sb-think 理解宣告）放行');
+assert.ok(state().understandings.length > 0, '理解流照常落檔');
+// hold 期間：唯讀與外部查證放行
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'README.md') } }).status, 0, 'Read 放行');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }).status, 0, 'WebSearch 放行');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } }).status, 0, 'git log 唯讀放行');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node -e "console.log(1)"' } }).status, 0, 'node 探針放行');
+// hold 期間：寫入與推進硬擋
+const frozenEdit = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
+assert.equal(frozenEdit.status, 2, 'repo Edit 凍結');
+assert.match(frozenEdit.stderr, /停等凍結/);
+const frozenWrite = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'src/new.js'), content: 'x' } });
+assert.equal(frozenWrite.status, 2, 'repo Write 凍結');
+const tmpWrite = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/evidence.md'), content: 'x' } });
+assert.equal(tmpWrite.status, 0, 'tmp 證據傾倒放行');
+const frozenGit = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git add src/a.js' } });
+assert.equal(frozenGit.status, 2, 'git add 凍結');
+const frozenSb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs next test --boss-ok --adversarial' } });
+assert.equal(frozenSb.status, 2, 'sb next 推進凍結');
+const readonlySb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs state' } });
+assert.equal(readonlySb.status, 0, 'sb state 唯讀放行');
+// 老闆回覆＝解凍：hold 清除＋注入 [停等解除]；寫入回到段矩陣判定
+const release = up('確認理解正確，開工');
+assert.equal(state().understandingHold, undefined, '老闆回覆解除 hold');
+assert.ok(release.stdout.includes('[停等解除]'), '注入卡顯示解除行');
+const editOkAfter = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
+assert.equal(editOkAfter.status, 0, '解凍後回到段矩陣判定（build 段放行）');
 console.log('sb-hooks: PASS');
