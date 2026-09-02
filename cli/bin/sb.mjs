@@ -18,7 +18,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, m
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
-// 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame——子目錄執行不得在錯誤位置長出流浪工作區
+// 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
 function findRoot(start) {
   let dir = resolve(start ?? process.cwd());
@@ -36,7 +36,7 @@ const STATE_FILE = join(SB_DIR, 'flow-state.json');
 
 // ———— 檢查規則常數（五假訊號，日後按需調整） ————
 
-// 假需求：驗收標準不得含不可查核的模糊謂詞
+// 假需求：驗收標準一律可查核（模糊謂詞即假）
 const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好', '友好', '自如', '更好', '優化用戶體驗', 'works properly', 'user-friendly'];
 // 敷衍詞（段落全為此類 = 假）
 const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
@@ -83,13 +83,13 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 function hooksHealthNote() {
   try {
     const p = join(SB_DIR, 'tmp', 'hooks-heartbeat.json');
-    if (!existsSync(p)) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試，不得繞閘';
+    if (!existsSync(p)) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）';
     const hb = readJson(p);
     const ageMs = Date.now() - new Date(hb.at).getTime();
     const ageMin = Math.round(ageMs / 60000);
-    if (!Number.isFinite(ageMs)) return '〔hooks 健康警示〕心跳時間戳無法解析——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試，不得繞閘';
-    if (ageMin > 10) return `〔hooks 健康警示〕心跳停在 ${ageMin} 分鐘前（@${hb.event}）——近期工具調用未觸發 hooks（故障或 Codex 端未重新信任），本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試，不得繞閘`;
-  } catch { return '〔hooks 健康警示〕心跳無法讀取——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試，不得繞閘'; }
+    if (!Number.isFinite(ageMs)) return '〔hooks 健康警示〕心跳時間戳無法解析——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試（閘保持封閉）';
+    if (ageMin > 10) return `〔hooks 健康警示〕心跳停在 ${ageMin} 分鐘前（@${hb.event}）——近期工具調用未觸發 hooks（故障或 Codex 端未重新信任），本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）`;
+  } catch { return '〔hooks 健康警示〕心跳無法讀取——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試（閘保持封閉）'; }
   return '';
 }
 const fin = (msgs) => { console.log('PASS'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
@@ -109,7 +109,7 @@ const usage = (code = 2) => {
   sb state                              顯示目前段、可走下一步與其前置條件
   sb adversarial <報告檔>                對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
-                                        （不通過＝必修未清，不得發章）；commit 時由 hooks 消費（一對一）
+                                        （發章僅於判定「通過」——必修全清）；commit 時由 hooks 消費（一對一）
   sb next <段> [--boss-ok] [--adversarial] [--rerun impl|definition] [--new-ms]
                                         推進（閘門不過即擋）
                                         外部證據閘（1.6.0）：research→plan 邊與返工後首個推進邊驗
@@ -122,8 +122,10 @@ const usage = (code = 2) => {
                                         --new-ms：開新里程碑（僅 done→intent 邊；老闆授權語義由理解流曝光承擔）
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 SLUG.md 含對應時點對抗記錄，不一致即擋
-  sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾保鮮＋archive
-  sb commitmsg "<訊息>"                  提交訊息機械驗證（type 前綴＋長度＋禁追蹤編號）；
+  sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋archive
+  sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
+                                        引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
+                                        機制即擋）＋staged 系統檔檢查；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
 完成類鑰匙（1.7.0）：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
@@ -256,7 +258,7 @@ function validateG3Acceptance(g3, g1Ids, problems, passes) {
 function checkCleanWorktree(problems, passes, timing) {
   try {
     const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
-    if (dirty.trim()) problems.push(`${timing} working tree 必須乾淨——該提交的先精準提交，該捨棄的明確捨棄，不得把未分類變更帶回定義`);
+    if (dirty.trim()) problems.push(`${timing} working tree 必須乾淨——該提交的先精準提交，該捨棄的明確捨棄——變更先分類再回定義`);
     else passes.push(`working tree 乾淨（${timing}已完成提交／捨棄判定）`);
   } catch { passes.push('（非 git 環境，略過乾淨度檢查）'); }
 }
@@ -270,7 +272,7 @@ function gate(st, target, opts) {
   if (st.g1Contract?.ms === st.ms && target !== 'intent') {
     const path = st.g1Contract.file;
     if (!path || !existsSync(path)) problems.push(`G1 契約檔不存在：${path ?? '缺失'}——回 intent（sb next intent）重定義後重新放行`);
-    else if (sha256(path) !== st.g1Contract.sha256) problems.push('G1 已偏離放行時契約——語義變更走回 intent（sb next intent）重走線性，不得靜默吸收');
+    else if (sha256(path) !== st.g1Contract.sha256) problems.push('G1 已偏離放行時契約——語義變更走回 intent（sb next intent）重走線性（顯式分類是唯一路徑）');
     else passes.push(`G1 契約 hash 核對：${st.g1Contract.sha256.slice(0, 12)}（封存於 flow-state）`);
   }
 
@@ -279,27 +281,27 @@ function gate(st, target, opts) {
   // （history entry 帶 ms；無 ms 欄位的舊條目 fail-closed 視為他 ms）
   const rerunReached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
   if (opts.rerun && target === 'intent') {
-    problems.push('--rerun 不得用於回 intent 邊——返工旗標僅限前進重走邊（回頭邊零旗標；回 intent 重走走完整線性，不得攜帶返工 pending）');
+    problems.push('--rerun 僅用於前進重走邊——回 intent 邊零旗標走完整線性（返工旗標留在執行層）');
   }
   if (opts.rerun && !rerunReached) {
-    problems.push('--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進或跨 ms 之老闆決策邊不得以返工直通繞過');
+    problems.push('--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進或跨 ms 之老闆決策邊走完整確認');
   }
   const rerunExempt = opts.rerun && rerunReached && st.node !== 'verify'; // verify→done（完成時點）永不直通——老闆終審不可省
 
   // 外部證據閘（1.6.0）：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence）；
-  // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工不得閉門自我檢驗。
+  // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工外部協助是機械底線。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
     problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
   if (st.rerunExtPending && target !== 'intent' && !st.externalEvidence?.done) {
-    problems.push('返工期間零外部協助——返工修復 MUST 至少一次外部工具調用（外部查證或外部唯讀子代理；hooks 標記 externalEvidence），不得閉門自我檢驗後推進（CARD⑨）');
+    problems.push('返工期間零外部協助——返工修復 MUST 至少一次外部工具調用（外部查證或外部唯讀子代理；hooks 標記 externalEvidence）——閉門自我檢驗即外部性閘擋下（CARD⑨）');
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
   // --boss-ok：老闆決策邊留痕（授權語義由理解流曝光承擔）；--rerun 直通豁免非完成邊
   if (opts.bossOk && !needsBossOk(st.node, target)) {
-    problems.push(`「${st.node} → ${target}」不是老闆決策邊——不得帶 --boss-ok；回頭邊零旗標，工作邊沿用既有授權`);
+    problems.push(`「${st.node} → ${target}」不是老闆決策邊——--boss-ok 留給老闆決策邊；回頭邊零旗標，工作邊沿用既有授權`);
   } else if (needsBossOk(st.node, target) && !opts.bossOk && !rerunExempt) {
     problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（授權語義由理解流曝光承擔）；返工直通改帶 --rerun（時點①分流判定，SKILL §3）`);
   } else if (opts.bossOk) {
@@ -310,7 +312,7 @@ function gate(st, target, opts) {
 
   // --new-ms 誤用擋：僅 done→intent 邊可帶（開新里程碑——老闆決策，理解流曝光承擔）
   if (opts.newMs && !(st.node === 'done' && target === 'intent')) {
-    problems.push('--new-ms 僅限 done→intent 邊（老闆授權開新里程碑時攜帶）——其他推進不得使用');
+    problems.push('--new-ms 僅限 done→intent 邊（老闆授權開新里程碑時攜帶）；其他推進走各自旗標');
   }
 
   // --adversarial＋SLUG.md 對照：時點對抗宣告與自然語言記錄不一致即擋
@@ -323,7 +325,7 @@ function gate(st, target, opts) {
       else passes.push(`時點${adv.point}對抗：宣告與 SLUG.md 記錄對照一致`);
     }
   } else if (opts.adversarial) {
-    problems.push(`「${st.node} → ${target}」不是對抗邊——不得帶 --adversarial`);
+    problems.push(`「${st.node} → ${target}」不是對抗邊——--adversarial 留給對抗邊`);
   }
 
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
@@ -379,7 +381,7 @@ function gate(st, target, opts) {
     case 'verify': // 進驗收＝實作已存檔：working tree 乾淨（git 判定）
       try {
         const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
-        if (dirty.trim()) problems.push('working tree 未乾淨——實作存檔（commit）先於驗收；未提交變更不得進驗收段');
+        if (dirty.trim()) problems.push('working tree 未乾淨——實作存檔（commit）先於驗收（進驗收前完成提交）');
         else passes.push('working tree 乾淨（實作已存檔，git 判定）');
       } catch { /* 非 git 環境略過 */ }
       break;
@@ -498,15 +500,15 @@ function cmdEnd(opts) {
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin(['done → ended（PASS）', '收尾保鮮（文件層動作，SKILL done 慵說明）：重寫 SOP.md／ROADMAP.md、盤點 docs/ 與 README、移 <slug> 至 archive/', ...passes]);
+  fin(['done → ended（PASS）', '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/＋更新歸檔清單（永續層文件已隨各 commit 即時保真——same-commit）', ...passes]);
 }
 
 
 
 // —— 對抗宣告（提交時點的鑰匙）：MUST 外部唯讀子代理對抗，報告原文落檔後引用 ——
 // 機械驗三條：報告檔存在（.shiftblame/tmp 內）→ 含判定行（「對抗判定：通過/不通過」）→ 判定「通過」才可發章
-// （不通過＝必修未清，閘環未達零必修，不得發章）。自代無合法介面（旗標已移除）——
-// 子代理工具不可用＝流程阻塞等待，MUST NOT 以任何形式自代；偽造報告檔屬手改造假（天花板：抽查承擔）。
+// （判定「通過」即零必修；章僅發於零必修）。自代無合法介面（旗標已移除）——
+// 子代理工具不可用＝流程阻塞等待至可用（自代無合法介面）；偽造報告檔屬手改造假（天花板：抽查承擔）。
 function cmdAdversarial(report) {
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔>（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
@@ -548,13 +550,43 @@ function cmdCommitmsg(msg) {
     const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
     if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
+    // 陳述對照閘（1.7.1）：文件與實況對照是一等公民——永續層文件（docs/、README、skills/）中
+    // 可機械對照的陳述（sb 命令引用／sb 命令行內的 --旗標）↔ sb.mjs 實際命令集/旗標集（源碼單一真相）。
+    // 引用不存在的機制即擋——過時假設與虛空捏造的機械防線（1.7.0 三輪語彙殘留必修的直接根除）。
+    // 當下層工作文件（G*/SLUG/archive）不掃——用後即弃、過時無罪（兩層文件模型，SKILL §1.7）。
+    const eternal = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\n').map((l) => l.trim()).filter(Boolean)
+      .filter((p) => /^(?:docs\/|README\.md|skills\/)/.test(p) && /\.md$/i.test(p));
+    if (eternal.length) {
+      // 真相源（顯式陣列——對抗第一輪必修 1/3：源碼 regex 抓 case 會混入 gate() 的段名 switch、
+      // rest.includes 形旗標（--help）會漏——顯式列舉是唯一單一真相）：
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'commitmsg']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--help']);
+      const bad = [];
+      const add = (x) => { if (!bad.includes(x)) bad.push(x); };
+      for (const f of eternal) {
+        const lines = readFileSync(join(ROOT, f), 'utf8').split('\n');
+        lines.forEach((line, ln) => {
+          // 旗標驗證錨定 sb 命令段（行內其他命令（git 等）的旗標免疫）：從每個 sb 命令 token
+          // 起掃，遇邊界即截斷——反引號閉合、中文句讀、其他命令 token（git/node/npm 等）
+          for (const m of line.matchAll(/\bsb ([a-z][a-z-]{1,20})\b/g)) {
+            if (!cmds.has(m[1])) add(`${f}:${ln + 1} 命令「sb ${m[1]}」不存在於 CLI（實際：${[...cmds].join('、')}）——過時假設或虛空捏造`);
+            const seg = line.slice(m.index, m.index + 160).split(/[`。；：、）」』]|\b(?:git|node|npm|npx|python|pip)\b/)[0]; // sb 命令段（截斷後）
+            for (const fm of seg.matchAll(/(--[a-z][a-z-]{1,20})\b/g)) {
+              if (!flags.has(fm[1])) add(`${f}:${ln + 1} 旗標「${fm[1]}」不存在於 CLI（實際：${[...flags].join('、')}）`);
+            }
+          }
+        });
+      }
+      if (bad.length) die(['永續層文件與實況不符（陳述對照閘——文件↔實況對照是一等公民，兩層文件模型 SKILL §1.7）', ...bad.slice(0, 8)]);
+    }
   } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   try {
     const stPath = join(ROOT, '.shiftblame', 'flow-state.json');
     if (existsSync(stPath)) {
       const node = JSON.parse(readFileSync(stPath, 'utf-8')).node;
-      if (node === 'verify') die(['驗收段不得產生 commit 印章——驗收段對 repo 唯讀（寫入矩陣）；重修回 test／build（或任意→intent）後才可存檔']);
+      if (node === 'verify') die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
     }
   } catch (e) { if (e && e.code === 'ERR_STRING_TOO_LONG') throw e; /* 狀態檔異常視為無狀態 */ }
   const problems = [];
@@ -563,7 +595,7 @@ function cmdCommitmsg(msg) {
   else {
     const body = m.at(-1);
     if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
-    if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，MUST NOT 含功能詳細訊息`);
+    if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，內容聚焦變更本身（詳細訊息歸文件）`);
     if (/[a-zA-Z]{3,}-\d+|#\d+/.test(body)) problems.push('含追蹤編號（#123、PROJ-456 等）——commit 訊息純描述變更本身，追蹤靠分支名與 merge 訊息');
     if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
   }
@@ -588,7 +620,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--adversarial') flags.adversarial = true;
   else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
   else if (rest[i] === '--new-ms') flags.newMs = true;
-  else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯或已移除者）不得靜默落入 positional——解析器衛生
+  else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯或已移除者）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
 switch (cmd) {

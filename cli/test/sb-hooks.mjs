@@ -104,7 +104,7 @@ const W = (node, tool, target) => {
 assert.equal(W('verify', 'Edit', 'src/app.js').status, 2, 'verify 段 repo 唯讀');
 assert.equal(W('verify', 'Edit', join(root, '.shiftblame', 'demo', 'SLUG.md')).status, 0, '.shiftblame 永遠可寫');
 assert.equal(W('build', 'Edit', 'src/app.js').status, 0, 'build 段寫實作');
-assert.equal(W('ended', 'Edit', 'docs/guide.md').status, 0, 'ended 收尾保鮮');
+assert.equal(W('ended', 'Edit', 'docs/guide.md').status, 0, 'ended 收尾歸檔');
 assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0, 'test 段寫測試碼');
 assert.equal(W('build', 'Edit', 'test/app.test.js').status, 2, '非 test 段改測試碼即擋');
 

@@ -211,11 +211,11 @@ assert.equal(hm4.status, 0, '-c commit.gpgsign 鍵名→不誤傷');
 // git alias 定義 → 擋（alias 可包裝 commit 繞過四閘）
 const ha1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} config alias.z "commit -a"` } });
 assert.equal(ha1.status, 2, 'git alias 定義→hooks 擋');
-assert.match(ha1.stderr, /git alias 定義禁止/);
+assert.match(ha1.stderr, /git alias 定義攔截/);
 // —— 1.5.5 路徑展開元規則：GIT_DIR／--git-dir 重定向即擋 ——
 const hr1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `GIT_DIR=${root}/.git git commit -m "feat: 重定向繞過嘗試"` } });
 assert.equal(hr1.status, 2, 'GIT_DIR= 重定向→hooks 擋');
-assert.match(hr1.stderr, /路徑重定向禁止/);
+assert.match(hr1.stderr, /路徑重定向攔截/);
 const hr2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} --git-dir ${root}/.git commit -m "feat: 重定向繞過嘗試"` } });
 assert.equal(hr2.status, 2, '--git-dir 重定向→hooks 擋');
 // —— 相對路徑 root 錨定展開回歸：寫入矩陣對相對 file_path 正確展開至 repo 內 ——

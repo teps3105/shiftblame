@@ -24,7 +24,7 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新核對�
 3. **基於既有重新核對 G1~G3**（非清空重寫，不向老闆重問）：先讀 `flow-state.json`。若目前 ms 已有 `g1Contract`，MUST 先核對 G1 hash，且 G1 保持封存；codebase 差異只能作為可行性證據，不能反向改義需求。依承載歸屬重新核對其餘文件：
    - 仍成立 → 保留。
    - G2／G3 過時但仍 CONFORMS → 對應面向單調細化。
-   - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `回 intent（sb next intent）`，不得直接改 G1。
+   - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `回 intent（sb next intent）`——修約是改 G1 的唯一路徑。
 4. **秘書核對 §10 一致性**：三份重新核對後，秘書親自核對兩兩雙向一致（三對六向）；不一致要求對應階段重做，一致後放行進入開發。
 
 ## 邊界

@@ -90,7 +90,7 @@ assert.equal(state().rerunExtPending, true, 'pending 重掛');
 // —— 9. 回 intent 中止：pending 不帶入新線性 ——
 r = run('next', 'intent', '--rerun', 'impl');
 assert.equal(r.status, 1, '回頭邊不得帶 --rerun（不得攜帶返工 pending 回 intent）');
-assert.match(r.stderr, /不得用於回 intent/);
+assert.match(r.stderr, /僅用於前進重走邊/);
 assert.equal(run('next', 'intent').status, 0, '回 intent 免外部驗（返工中止——回頭邊）');
 assert.equal(state().rerunExtPending, undefined, 'pending 不帶入新線性');
 assert.equal(state().externalEvidence, null, '證據隨中止清空（重走 research 邊再驗）');

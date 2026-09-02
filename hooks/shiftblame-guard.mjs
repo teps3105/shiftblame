@@ -10,7 +10,7 @@
  *                     無效即 exit 2 阻擋；Write/Edit 觸及框架文件（skills／hooks）→ 注入三步序提醒；
  *                     其餘靜默放行
  *
- * 原則：防護損壞不得阻斷工作——任何內部錯誤一律靜默 exit 0（deny 是唯一刻意非零出口）。
+ * 原則：防護損壞時保持工作暢通——任何內部錯誤一律靜默 exit 0（deny 是唯一刻意非零出口）。
  * 煙霧測試：printf '%s' '{"hook_event_name":"UserPromptSubmit","cwd":"."}' | node hooks/shiftblame-guard.mjs
  */
 
@@ -61,8 +61,8 @@ const CARD = [
   '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
   '④雙流模型（1.7.0）：輸入＝獨立理解對象——輸入流唯增（每則輸入永久是事實，不覆蓋、不消費），理解流由 sb-think 調用（args＝理解宣告）落檔（雜湊鏈唯增）。行動正當性來自理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：老闆每則輸入時，未審理解宣告全部展示＋「哪則輸入尚無理解覆蓋」可見——agent 理解錯了（越權）或沒理解就動手，老闆當場看到；語義真假由曝光終審＋抽查 understandings 對照對話實蹟承擔（手改 flow-state 偽造不防——老闆抽查承擔）。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義禁止；驗收段（verify）對 repo 唯讀。',
-  '⑦版號屬老闆決策——不得自行升版或預設版號。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義一律攔截；驗收段（verify）對 repo 唯讀。',
+  '⑦版號屬老闆決策——升版由老闆拍板指定。',
   '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
   '⑨研究/返工外部性閘（1.6.0）：外部工具調用是機械底線——hooks 偵測外部調用（WebSearch／WebFetch／webReader／Agent）標記 externalEvidence；audit→research 進段與 --rerun 返工時重置，research→plan 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過；規模自由（一次精準查證到完整調研皆可），大型研究 MUST 外部唯讀子代理承擔（SKILL §3）。偽造 externalEvidence（手改或自調 hooks）機械不防——老闆抽查承擔。',
 ].join('\n');
@@ -72,7 +72,7 @@ const SESSION_CARD = [
   '',
   '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 sb-think 的路由提議才有脈絡依據。',
   '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；輸入流／理解流記錄與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
-  '[版號] 版本號屬老闆決策——不得自行升版或預設版號，揭露表寫「版號待老闆指定」。',
+  '[版號] 版本號屬老闆決策——升版由老闆拍板指定，揭露表寫「版號待老闆指定」。',
 ].join('\n');
 
 function nodeLine(root) {
@@ -206,7 +206,7 @@ function checkLayerStopover(root, cmd) {
       if (rerun && st.node !== 'verify') {
         const reached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
         if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；verify→done 永不直通）
-        return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊不得以返工直通繞過`;
+        return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊走完整確認`;
       }
       return `老闆決策邊：${st.node}→${target}——經老闆授權（理解流曝光承擔）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
     }
@@ -216,7 +216,7 @@ function checkLayerStopover(root, cmd) {
 
 // ———— 狀態寫入攔截：把寫入矩陣機械化 ————
 // 測試碼（測試慣例路徑）僅 test 段可寫；實作碼（.shiftblame/ 外 repo 檔）
-// 白名單＝build（實作段）／ended（PASS 後收尾保鮮）；其餘段對 repo 唯讀（verify 驗收唯讀、done 等待態唯讀）。
+// 白名單＝build（實作段）／ended（PASS 後收尾歸檔）；其餘段對 repo 唯讀（verify 驗收唯讀、done 等待態唯讀）。
 // 測試不可變性由 git 承擔；Bash 內寫檔不在此層（殘餘；shell 漂移由 verify 邊樹檢查兜底）。
 
 const IMPL_WRITE_NODES = new Set(['build', 'ended']);
@@ -233,7 +233,7 @@ const nodeOf = (root) => {
 };
 
 // 路徑展開元規則（系統性）：一切判斷路徑 MUST 展開為 repo root 錨定的絕對路徑——
-// 相對路徑一律以 root 展開，MUST NOT 以進程 cwd 展開（process.cwd 是 hooks 進程所在，與 repo 無關）。
+// 相對路徑一律以 root 展開（進程 cwd 與 repo 無關）。
 // 正規化：剝 `\\?\`／`\\?\UNC\` 裝置前綴（防 relative() 失效全繞）；Win32 尾端點與尾空白；
 // 已存在路徑解析 realpath（防 junction／短名偽裝）。
 function absPath(root, p) {
@@ -266,9 +266,9 @@ function checkStateWriteMatrix(root, toolInput) {
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
     const isTest = TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
     if (isTest) {
-      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿——段 ${node} 不得修改測試；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;
+      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿（全程唯讀）；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾保鮮）；回 intent 重走或 done→test 重修後才可寫（SKILL 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；回 intent 重走或 done→test 重修後才可寫（SKILL 寫入矩陣）`;
     }
   }
   return null;
@@ -435,16 +435,16 @@ function checkCommitTimeStaging(seg) {
   return null;
 }
 
-// git alias 定義禁止：alias 可把 commit 包進無「commit」字樣的子命令，繞過印章／對抗／staged／commit-time 四閘
+// git alias 定義攔截：alias 可把 commit 包進無「commit」字樣的子命令（印章／對抗／staged／commit-time 四閘全繞）
 // （CARD⑥：commit 必過 sb commitmsg）。既有 alias 屬環境事實（SKILL 天花板：老闆抽查 git config --get-regexp ^alias.）。
 function checkGitAliasWrite(cmd) {
   if (/\bgit\b[^\n|;&]*\sconfig\b[^\n]*alias\./.test(cmd)) {
-    return 'git alias 定義禁止——alias 可包裝 commit 繞過全部 commit 閘（印章／對抗宣告／staged／commit-time）；MUST 使用完整 git 指令';
+    return 'git alias 定義攔截——alias 可包裝 commit 繞過全部 commit 閘（印章／對抗宣告／staged／commit-time）；MUST 使用完整 git 指令';
   }
   return null;
 }
 
-// git 路徑重定向禁止（路徑展開元規則的閘面）：重定向改變 git 的路徑語義——staged 檢查與印章 cwd 比對
+// git 路徑重定向攔截（路徑展開元規則的閘面）：重定向改變 git 的路徑語義——staged 檢查與印章 cwd 比對
 // 都以 input.cwd 錨定，看不見重定向，章可攜至未驗 repo（對抗者實證）。一律掃即擋；錨定唯一正道＝-C <絕對root>。
 function checkGitRedirect(cmd) {
   // 大小寫不敏感（Windows 環境變數查找不敏感——git_dir= 同 GIT_DIR=）＋反斜線正規化副本雙掃
@@ -452,7 +452,7 @@ function checkGitRedirect(cmd) {
   const scan = /(?:^|[^A-Za-z0-9_])(?:GIT_DIR|GIT_WORK_TREE|GIT_INDEX_FILE|GIT_OBJECT_DIRECTORY|GIT_CEILING_DIRECTORIES|GIT_COMMON_DIR|GIT_ALTERNATE_OBJECT_DIRECTORIES)\s*=/i;
   if (scan.test(cmd) || scan.test(cmd.replace(/\\/g, ''))
     || /(?:^|\s)--(?:git-dir|work-tree|index-file|object-dir(?:ectory)?|super-prefix)(?=[\s=])/.test(cmd)) {
-    return 'git 路徑重定向禁止（GIT_DIR／--git-dir／--work-tree 等，含大小寫與反斜線跳脫形態）——重定向使 staged 與印章檢查的 root 錨定失效；MUST 以 -C <絕對root> 錨定';
+    return 'git 路徑重定向攔截（GIT_DIR／--git-dir／--work-tree 等，含大小寫與反斜線跳脫形態）——重定向使 staged 與印章檢查的 root 錨定失效；MUST 以 -C <絕對root> 錨定';
   }
   return null;
 }
@@ -460,7 +460,7 @@ function checkGitRedirect(cmd) {
 function checkCommitStamp(root, seg) {
   const extracted = extractCommitMessage(seg);
   if (extracted.error) return extracted.error;
-  // -C 目標（如有）必須絕對且等於印章專案根——印章不得攜帶到其他 repo（限同段）
+  // -C 目標（如有）必須絕對且等於印章專案根（印章綁定本 repo，限同段）
   const c = seg.match(/(?:^|\s)-C\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|]+))/);
   if (c) {
     const target = c[1] ?? c[2] ?? c[3] ?? '';
@@ -484,7 +484,7 @@ function checkCommitStamp(root, seg) {
     let st = null;
     try { st = JSON.parse(readFileSync(statePath, 'utf8')); } catch { /* 無狀態檔 */ }
     if (!st || !st.adversarialAt || st.adversarialConsumed) {
-      return '提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」；印章檔不得繞過對抗閘）';
+      return '提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」；對抗閘全路徑生效）';
     }
     st.adversarialConsumed = true;
     writeFileSync(statePath, JSON.stringify(st, null, 2));
@@ -497,7 +497,7 @@ function checkCommitStamp(root, seg) {
 // 區分「老闆未授權」（心跳新鮮：hooks 活著、標記真實缺失）與「hooks 疑似故障」（心跳停滯：記錄器死了、
 // 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞，老闆已否決）。
 function beatHeartbeat(root, event) {
-  if (!root || !existsSync(join(root, '.shiftblame'))) return; // 守門：僅既有工作區寫心跳——不得在流浪 cwd 長出 .shiftblame（框架元規則）
+  if (!root || !existsSync(join(root, '.shiftblame'))) return; // 守門：僅既有工作區寫心跳（流浪 cwd 保持原樣——框架元規則）
   try {
     mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
     writeFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), JSON.stringify({ at: new Date().toISOString(), event }));
@@ -537,10 +537,10 @@ try {
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);
-      // git alias 定義禁止（alias 可包裝 commit 繞過四閘）
+      // git alias 定義攔截（alias 可包裝 commit 繞過四閘）
       const aliasWrite = checkGitAliasWrite(cmd);
       if (aliasWrite) deny(aliasWrite);
-      // git 路徑重定向禁止：GIT_DIR/--git-dir/--work-tree 改變 git 路徑語義，繞過 root 錨定的 staged／印章檢查
+      // git 路徑重定向攔截：GIT_DIR/--git-dir/--work-tree 改變 git 路徑語義（root 錨定的 staged／印章檢查失效）
       const redirect = checkGitRedirect(cmd);
       if (redirect) deny(redirect);
       // 先擋破壞性＋相對路徑（含行內各語言刪除 API 與直跑腳本檔掃描）
@@ -556,7 +556,7 @@ try {
         // commit-time 暫存繞過（-a/--only/pathspec）先擋——diff --cached 看不見提交期展開
         const cts = checkCommitTimeStaging(seg);
         if (cts) deny(cts);
-        // 暫存不入庫（staged 事實清單）先擋——髒內容不得燒掉印章消費
+        // 暫存不入庫（staged 事實清單）先擋——印章只燒乾淨內容
         const staged = checkStaged(root);
         if (staged) deny(staged);
         const reason = checkCommitStamp(root, seg);
@@ -586,5 +586,5 @@ try {
 
   process.exit(0); // 未知事件：靜默放行
 } catch {
-  process.exit(0); // 防護損壞不得阻斷工作
+  process.exit(0); // 防護損壞時保持工作暢通
 }
