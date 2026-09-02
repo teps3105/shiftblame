@@ -260,6 +260,63 @@ const nodeOf = (root) => {
 // 路徑類鍵（蛇形與駝峰；寫入矩陣／停等凍結／框架提醒共用）
 const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
 
+// 審計痕跡標記（1.7.3）：audit 段的 repo 唯讀查證——Read/Grep/Glob（目標在 repo 內非 .shiftblame）
+// 與 Bash 的 git log/status/diff/show/blame。audit→research 邊機械驗（零查證的審計推不過——
+// 審計先於研究，字面研究死路）；回 intent 開新輪時由 CLI 重置（每輪重新審計）。只記事實不重置。
+const AUDIT_READ_TOOLS = /^(?:Read|Grep|Glob)$/i;
+const AUDIT_BASH_RE = /\bgit\s+(?:-[A-Za-z-]+(?:\s+(?:"[^"]*"|'[^']*'|\S+))?\s+)*(?:log|status|diff|show|blame)\b/i; // 容旗標（-C 錨定／-c 設定形——SKILL §9 元規則）
+function markAuditEvidence(root, tool, cmd, toolInput) {
+  if (!root) return;
+  let node; try { node = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).node; } catch { return; }
+  if (node !== 'audit') return;
+  const t = String(tool ?? '');
+  let hit = false;
+  if (AUDIT_READ_TOOLS.test(t)) {
+    for (const k of PATH_KEYS) {
+      const v = toolInput?.[k];
+      if (typeof v !== 'string' || !v.trim() || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) continue;
+      const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
+      if (rel && !rel.startsWith('..') && !isAbsolute(rel) && rel !== '.shiftblame' && !rel.startsWith('.shiftblame/')) { hit = true; break; } // repo 內現況查證
+    }
+  } else if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(t) && AUDIT_BASH_RE.test(cmd)) {
+    hit = true;
+  }
+  if (!hit) return;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    st.auditEvidence = { done: true, at: new Date().toISOString(), tool: t };
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+  } catch { /* 狀態異常靜默 */ }
+}
+
+// ———— G 檔寫入矩陣（1.7.3 段-檔承載）：定義邊寫、落地邊唯讀 ————
+// G1→audit、G2→research、G3→plan（＋done 補寫 §2.5 收斂記錄例外）；落地段（test/build/verify）對承載檔
+// 唯讀——裁判與落地邊無上游文件寫入權，下游倒推上游（綁架 G1/G2）死路；修正輪唯一路徑＝回 intent 開新輪。
+// rev/ 快照與 archive/ 由 CLI 於推進與收尾時寫入（放行）。
+const G_WRITE_NODES = { 1: new Set(['audit']), 2: new Set(['research']), 3: new Set(['plan', 'done']) };
+const G_FILE_RE = /^\.shiftblame\/[^/]+\/[^/]+\/(rev\/r\d+\/|archive\/)?G([123])\.md$/i; // i＋輸入 toLowerCase——大小寫不敏感（Windows FS）
+function checkGFileMatrix(root, toolInput) {
+  if (!root) return null;
+  let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
+  const node = st?.node;
+  if (!node || node === 'ended') return null; // 非治理工作區 / 收尾歸檔移動放行
+  for (const k of PATH_KEYS) {
+    const v = toolInput?.[k];
+    if (typeof v !== 'string' || !v.trim() || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) continue;
+    const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
+    const m = rel.toLowerCase().match(G_FILE_RE); // 大小寫不敏感——Windows FS 不校正路徑大小寫（realpathSync 保留輸入），小寫形繞過死路
+    if (!m) continue;
+    if (m[1]) continue; // rev/ 快照與 archive/ 由 CLI 寫入——放行
+    const g = Number(m[2]);
+    if (!G_WRITE_NODES[g].has(node)) {
+      const owner = { 1: 'audit（G1 定義邊）', 2: 'research（G2 定義邊）', 3: 'plan（G3 定義邊；done 補寫 §2.5）' }[g];
+      return `[shiftblame] 段 ${node} 對 G${g}.md 唯讀——G${g} 寫入權屬 ${owner}；修正＝回 intent 開新輪（sb next intent，rev 基線凍結）依段位推進重寫（段-檔承載，SKILL §0/§5）`;
+    }
+  }
+  return null;
+}
+
 // ———— 停等凍結（1.7.2 兩種觸發樣態）：hold 期間寫入類工具與流程推進硬擋 ————
 // 老闆主動觸發（sb-think 調用形式）的理解停等輪：理解呈現即停——
 // 攔：repo 寫入（非 .shiftblame/）、git 寫入命令、sb 流程推進命令。
@@ -594,6 +651,7 @@ try {
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(sb-think) 調用＋args＝理解宣告）
     markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
+    markAuditEvidence(root, tool, cmd, input.tool_input ?? {}); // 審計痕跡標記（1.7.3：audit 段 repo 唯讀查證——audit→research 邊驗）
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（1.7.2 主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
@@ -628,6 +686,9 @@ try {
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
+      // G 檔寫入矩陣（1.7.3 段-檔承載）：G1→audit／G2→research／G3→plan（＋done §2.5），落地段對承載檔唯讀
+      const gMatrix = checkGFileMatrix(root, input.tool_input ?? {});
+      if (gMatrix) deny(gMatrix);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);

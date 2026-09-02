@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.7.2');
+assert.equal(manifest.version, '1.7.3');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.7\.2"/);
+assert.match(skill, /version: "1\.7\.3"/);
 
 // hooks 註冊型式（1.6.1）：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -90,6 +90,16 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘�
 assert.match(skill, /兩種觸發樣態/, 'SKILL 兩種觸發樣態條文（1.7.2 主動觸發停等）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
+assert.match(skill, /段-檔承載規格/, 'SKILL 段-檔承載規格（1.7.3 四閉環軸）');
+assert.match(skill, /輪內單向定律/, 'SKILL 輪內單向定律（一次定律退役）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /snapshotRev/, 'CLI 輪次快照（回 intent 凍結 rev 基線）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /auditEvidence/, 'CLI 審計痕跡閘（audit→research 邊驗）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /markAuditEvidence/, 'hooks 審計痕跡標記');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkGFileMatrix/, 'hooks G 檔寫入矩陣（定義邊寫、落地邊唯讀）');
+assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /現況審計/, 'AUDIT 現況審計（審計先於研究）');
+assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /BDD 行為規格/, 'AUDIT BDD 行為規格');
+assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /G3 落地邊/, 'TEST G3 落地邊歸位');
+assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /G1 裁判邊/, 'VERIFY G1 裁判邊歸位');
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');
 assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
 
@@ -98,7 +108,7 @@ const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lo
   '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分', '候選詞', '否定共現', 'CONSENT_WORDS', '非否定候選',
   '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
   '薄研究', '薄規劃', '薄產出', '薄流程',
-  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮'];
+  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/sb-think/SKILL.md', 'skills/sb-resume/SKILL.md', 'skills/sb-todo/SKILL.md', 'skills/sb-save/SKILL.md', 'skills/sb-dice/SKILL.md', 'skills/sb-docs/SKILL.md', 'skills/sb-sop/SKILL.md', 'skills/sb-roadmap/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/AUDIT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
@@ -121,7 +131,7 @@ for (const f of files.filter((p) => p.endsWith('.md') || p.endsWith('.json'))) {
 // references 版號
 for (const file of ['AUDIT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md']) {
   const reference = read('skills', 'shiftblame', 'references', file);
-  assert.match(reference, /revision: 1\.7\.2/);
+  assert.match(reference, /revision: 1\.7\.3/);
 }
 
 // 技能清單：8 個功能型存在；5 個流程型已刪

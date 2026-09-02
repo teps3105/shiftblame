@@ -14,8 +14,8 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync, copyFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
@@ -44,13 +44,13 @@ const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|�
 // ———— 八段節點鏈（intent→audit→research→plan→test→build→verify→done；done 是完成態非段推進終點） ————
 
 const FLOW = {
-  intent:  { next: ['audit'], desc: '意圖段：sb-think 路由後的流程起點' },
-  audit:   { next: ['research'], desc: '需求段：G1 定義與驗收契約' },
-  research:{ next: ['plan'], desc: '研究段：G2 技術分析' },
-  plan:    { next: ['test'], desc: '計畫段：G3 實作計畫＋放行準備' },
-  test:    { next: ['build'], desc: '測試段：測試碼定義＋定稿 commit' },
-  build:   { next: ['verify'], desc: '實作段：實作＋實機驗證＋存檔 commit' },
-  verify:  { next: ['test', 'intent', 'done'], desc: '驗收段：跑驗收＋判決；中間態——老闆未宣稱 done 前停留於此' },
+  intent:  { next: ['audit'], desc: '意圖段：SLUG 沉澱（intent/done 管理層出入口）' },
+  audit:   { next: ['research'], desc: 'G1 定義邊：現況審計（auditEvidence）＋BDD 行為規格' },
+  research:{ next: ['plan'], desc: 'G2 定義邊：技術分析（外部證據打底）' },
+  plan:    { next: ['test'], desc: 'G3 定義邊：驗收排程＋實作計畫＋放行準備' },
+  test:    { next: ['build'], desc: 'G3 落地邊：回指驗收排程寫測試＋定稿 commit' },
+  build:   { next: ['verify'], desc: 'G2 落地邊：回指技術方案實作＋存檔 commit' },
+  verify:  { next: ['test', 'intent', 'done'], desc: 'G1 裁判邊：依 G3 操作、對 G1 逐項 AC 判定＋判決；中間態——老闆未宣稱 done 前停留於此' },
   done:    { next: ['test', 'intent'], desc: '完成態：老闆已授權完成；重修→test、補充/追加→intent；動作：開新里程碑（--new-ms）、PASS（sb end）' },
 };
 
@@ -209,6 +209,22 @@ function substantive(body, minLen = 20) {
 
 const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
+
+// 輪次快照（1.7.3）：回 intent 開新輪時凍結基線——現有 G1/G2/G3 快照至 rev/rN/
+// （輪次編號＝時序唯一權威，防多輪修正疊加混亂；新輪在凍結基線上重寫自洽）
+function snapshotRev(st) {
+  const dir = msDir(st);
+  const files = [1, 2, 3].map((n) => join(dir, `G${n}.md`)).filter((f) => existsSync(f));
+  if (!files.length) return null;
+  const revRoot = join(dir, 'rev');
+  mkdirSync(revRoot, { recursive: true });
+  const n = readdirSync(revRoot).filter((d) => /^r\d+$/.test(d)).length + 1;
+  const revDir = join(revRoot, `r${String(n).padStart(2, '0')}`);
+  mkdirSync(revDir, { recursive: true });
+  for (const f of files) copyFileSync(f, join(revDir, basename(f)));
+  st.revHashes = Object.fromEntries(files.map((f) => [basename(f), sha256(f)])); // 凍結基線 hash——rev/ 竄改由老闆抽查對照
+  return n;
+}
 const sha256 = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
 
 function acRows(text) {
@@ -226,17 +242,37 @@ const unique = (values) => [...new Set(values)];
 
 function validateG1Acceptance(g1, problems, passes) {
   const rows = acRows(g1);
-  if (!rows.length) { problems.push('G1 缺 AC-xx 原始驗收契約——每項使用者需求 MUST 有穩定驗收 ID'); return []; }
-  const ids = rows.map((row) => row.id);
-  if (unique(ids).length !== ids.length) problems.push('G1 驗收契約含重複 AC-ID——每個 AC-ID MUST 唯一');
-  const required = ['需求', '使用者', '前置', '操作', '可觀察結果', '失敗邊界', '證據'];
-  for (const row of rows) {
-    const missing = required.filter((key) => !filled(row.fields[key]));
-    if (missing.length) problems.push(`G1 ${row.id} 缺實質欄位：${missing.join('、')}`);
-    if (row.fields['證據'] !== 'BEHAVIOR') problems.push(`G1 ${row.id} 證據 MUST 為 BEHAVIOR——結構正確不能代替使用者需求`);
+  if (rows.length && /^###\s+AC-/m.test(String(g1))) problems.push('G1 混合格式（單行與 BDD 分段並存）——擇一定義（1.7.3 主推 BDD 分段）');
+  if (rows.length) { // 單行格式（1.7.2 前既有）——相容驗證
+    const ids = rows.map((row) => row.id);
+    if (unique(ids).length !== ids.length) problems.push('G1 驗收契約含重複 AC-ID——每個 AC-ID MUST 唯一');
+    const required = ['需求', '使用者', '前置', '操作', '可觀察結果', '失敗邊界', '證據'];
+    for (const row of rows) {
+      const missing = required.filter((key) => !filled(row.fields[key]));
+      if (missing.length) problems.push(`G1 ${row.id} 缺實質欄位：${missing.join('、')}`);
+      if (row.fields['證據'] !== 'BEHAVIOR') problems.push(`G1 ${row.id} 證據 MUST 為 BEHAVIOR——結構正確不能代替使用者需求`);
+    }
+    if (!problems.length) passes.push(`G1 使用者驗收契約：${unique(ids).join('、')}（BEHAVIOR）`);
+    return unique(ids);
   }
-  if (!problems.length) passes.push(`G1 使用者驗收契約：${unique(ids).join('、')}（BEHAVIOR）`);
-  return unique(ids);
+  // BDD 分段格式（1.7.3 主推）：### AC- 分段，每段含 Given／When／Then＋使用者＋失敗邊界＋證據——值逐鍵驗實質
+  const blocks = String(g1).split(/^###\s+AC-/m).slice(1);
+  if (blocks.length) {
+    const ids = blocks.map((b) => 'AC-' + ((b.match(/^\s*(\d{2,})/) ?? [, '?'])[1])); // 剝中文短名——id 恆為 AC-數字（G3 對照鍵）
+    if (unique(ids).length !== ids.length) problems.push('G1 驗收契約含重複 AC-ID——每個 AC-ID MUST 唯一');
+    for (const [i, b] of blocks.entries()) {
+      for (const [key, re] of [['Given', /Given[:：]/], ['When', /When[:：]/], ['Then', /Then[:：]/], ['使用者', /使用者[:：]/], ['失敗邊界', /失敗邊界[:：]/]]) {
+        if (!re.test(b)) { problems.push(`G1 ${ids[i]} 缺 ${key}（BDD 行為規格——字面搬運產不行為規格）`); continue; }
+        const val = (b.match(new RegExp(`^[-*]?\\s*${key}[^\\S\\n]*[:：]\\s*(.+)$`, 'm')) ?? [, ''])[1].trim();
+        if (!filled(val)) problems.push(`G1 ${ids[i]} ${key} 未填實質（模板照抄不構成行為規格）`);
+      }
+      if (!/證據[:：]\s*BEHAVIOR/.test(b)) problems.push(`G1 ${ids[i]} 證據 MUST 為 BEHAVIOR——結構正確不能代替使用者需求`);
+    }
+    if (!problems.length) passes.push(`G1 使用者驗收契約（BDD 行為規格）：${ids.join('、')}（BEHAVIOR）`);
+    return unique(ids);
+  }
+  problems.push('G1 缺 AC 驗收契約——單行（- AC-01 | 鍵=值 |…）或 BDD 分段（### AC-01＋Given／When／Then／使用者／失敗邊界／證據，1.7.3 主推）擇一定義');
+  return [];
 }
 
 function validateG3Acceptance(g3, g1Ids, problems, passes) {
@@ -288,6 +324,15 @@ function gate(st, target, opts) {
   }
   const rerunExempt = opts.rerun && rerunReached && st.node !== 'verify'; // verify→done（完成時點）永不直通——老闆終審不可省
 
+  // 審計痕跡閘（1.7.3）：audit→research 邊驗「審計先於研究」——
+  // hooks 標記 auditEvidence（audit 段 repo 唯讀查證），零查證的審計推不過（字面研究死路）。
+  // G1 存在與 BDD 格式由 case 'research' 的 validateG1Acceptance 承擔（同邊雙格式驗證）。
+  if (st.node === 'audit' && target === 'research') {
+    if (!st.auditEvidence?.done) {
+      problems.push('audit 段零現況查證——審計先於研究：MUST 至少一次 repo 唯讀查證（Read／Grep／Glob／git log 等，hooks 於 audit 段標記 auditEvidence）才可推進 research；字面研究死路（SKILL §0 段-檔承載、references/AUDIT.md）');
+      const note = hooksHealthNote(); if (note) problems.push(note);
+    } else passes.push('審計痕跡已驗（auditEvidence）——現況審計先於研究');
+  }
   // 外部證據閘（1.6.0）：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence）；
   // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工外部協助是機械底線。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
@@ -337,13 +382,22 @@ function gate(st, target, opts) {
     case 'research': // 假需求閘
       if (!g1) problems.push('G1 不存在（.shiftblame/<slug>/<ms>/G1.md）');
       else {
-        const acc = section(g1, '驗收');
-        if (acc === null) problems.push('G1 缺「驗收」段——需求沒有可查核的「完成」定義（假需求訊號）');
-        else {
-          if (!substantive(acc)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
-          const vague = VAGUE.filter((v) => acc.includes(v));
+        const bdd = String(g1).split(/^###\s+AC-/m).slice(1); // BDD 分段格式（1.7.3 主推）
+        if (bdd.length) {
+          const accAll = bdd.join('\n');
+          if (!substantive(accAll)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
+          const vague = VAGUE.filter((v) => accAll.includes(v));
           if (vague.length) problems.push(`G1 驗收段含模糊謂詞「${vague.join('、')}」——不可查核（假需求訊號），改寫為可觀察的行為/狀態`);
-          if (!problems.length) passes.push('G1 驗收標準可查核（存在＋實質＋無模糊謂詞）');
+          if (!problems.length) passes.push('G1 驗收標準可查核（BDD 行為規格：存在＋實質＋無模糊謂詞）');
+        } else {
+          const acc = section(g1, '驗收');
+          if (acc === null) problems.push('G1 缺「驗收」段——需求沒有可查核的「完成」定義（假需求訊號）');
+          else {
+            if (!substantive(acc)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
+            const vague = VAGUE.filter((v) => acc.includes(v));
+            if (vague.length) problems.push(`G1 驗收段含模糊謂詞「${vague.join('、')}」——不可查核（假需求訊號），改寫為可觀察的行為/狀態`);
+            if (!problems.length) passes.push('G1 驗收標準可查核（存在＋實質＋無模糊謂詞）');
+          }
         }
         validateG1Acceptance(g1, problems, passes);
       }
@@ -419,7 +473,7 @@ function cmdState() {
   const st = readJson(STATE_FILE);
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   if (st.node === 'ended') { out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt ?? '?'}）`); return; }
-  out(`slug: ${st.slug}   ms: ${st.ms}   段: ${st.node}（${FLOW[st.node].desc}）`);
+  out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}（修正輪基線見 rev/）` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
@@ -468,8 +522,14 @@ function cmdNext(target, opts) {
     delete st.g1Contract;
     if (prev === 'done' && opts.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
+      delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入（rev/ 時序 per-ms）
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
+    } else if (prev !== 'intent') { // intent→intent＝no-op 輪，零快照
+      // 開新輪（1.7.3）：凍結基線——G1/G2/G3 快照至 rev/rN/（時序唯一權威，防多輪疊加混亂）
+      const revN = snapshotRev(st);
+      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：基線凍結（G1/G2/G3 → rev/）——新輪重寫自洽，時序以輪次為準`); }
     }
+    delete st.auditEvidence; // 每輪重新審計（審計先於研究——回 intent 重走＝重新現況審計）
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）

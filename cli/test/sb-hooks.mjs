@@ -193,4 +193,37 @@ assert.equal(state().understandingHold, undefined, '老闆回覆解除 hold');
 assert.ok(release.stdout.includes('[停等解除]'), '注入卡顯示解除行');
 const editOkAfter = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
 assert.equal(editOkAfter.status, 0, '解凍後回到段矩陣判定（build 段放行）');
+// —— 11. 審計痕跡＋G 檔寫入矩陣（1.7.3 段-檔承載） ——
+mkdirSync(join(root, '.shiftblame', 'demo', '001'), { recursive: true });
+const setNode2 = (n) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
+// auditEvidence：audit 段 repo 唯讀查證標記；非 audit 段／讀 .shiftblame 不標記
+setNode2('audit');
+const aeOk = run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
+mkdirSync(join(root, 'src'), { recursive: true });
+run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
+assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).auditEvidence?.done, true, 'audit 段 Read repo 檔標記 auditEvidence');
+run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, '.shiftblame/SLUG.md') } });
+run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
+setNode2('research');
+const beforeNonAudit = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
+run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
+run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
+assert.equal(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'), beforeNonAudit, '非 audit 段／.shiftblame 目標／非唯讀工具不寫審計標記（markAuditEvidence 僅 audit 段命中才寫）');
+// G 寫入矩陣：定義邊寫、落地邊唯讀
+setNode2('audit');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'audit 段寫 G1 放行（定義邊）');
+const gKidnap = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), old_string: 'a', new_string: 'b' } });
+assert.equal(gKidnap.status, 2, 'audit 段寫 G2 擋（G2 寫入權屬 research）');
+assert.match(gKidnap.stderr, /G2.*唯讀|寫入權屬 research/, '綁架訊息指向回 intent 開新輪');
+setNode2('research');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), content: 'x' } }).status, 0, 'research 段寫 G2 放行');
+setNode2('test');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), old_string: 'a', new_string: 'b' } }).status, 2, 'test 段（落地邊）寫 G3 擋');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/g3.md'), old_string: 'a', new_string: 'b' } }).status, 2, '小寫 g3.md 繞過死路（Windows 大小寫不敏感 FS）');
+setNode2('plan');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), content: 'x' } }).status, 0, 'plan 段寫 G3 放行');
+setNode2('verify');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 2, 'verify 段（裁判邊）寫 G1 擋——下游倒推上游死路');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/rev/r01/G1.md'), content: 'x' } }).status, 0, 'rev/ 快照路徑放行（CLI 寫）');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'src/b.js'), content: 'x' } }).status, 2, 'verify 段寫 repo 實作檔仍由寫入矩陣攔（G 矩陣不影響既有矩陣）');
 console.log('sb-hooks: PASS');
