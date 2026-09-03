@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.7.3-2ea44f.svg" alt="version 1.7.3"/>
+  <img src="https://img.shields.io/badge/version-1.8.0-2ea44f.svg" alt="version 1.8.0"/>
 </p>
 
 ---
@@ -24,7 +24,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 
 核心原則：
 
-- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（audit 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 audit→research→plan 單向一次定稿；修正＝回 intent 開新輪（CLI 凍結三檔至 rev/rN/，輪次編號＝時序權威，防疊加混亂）。audit＝現況審計先於研究（auditEvidence 痕跡閘——零查證推不過）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界）——字面研究死路。G 檔寫入權綁定義邊（G1→audit/G2→research/G3→plan），落地段對承載檔唯讀——綁架上游死路。
+- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（audit 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 audit→research→plan 單向一次定稿；修正＝回 intent 開新輪（CLI 凍結三檔至 rev/rN/，輪次編號＝時序權威，防疊加混亂）。audit＝現況審計先於研究（auditEvidence 痕跡閘——零查證推不過）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權綁定義邊（G1→audit/G2→research/G3→plan），落地段對承載檔唯讀——綁架上游死路。
+- **消融原則（1.8.0 方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
 - **雙流模型（1.7.0 撤鎖範式）。** 輸入＝獨立理解對象，不是鎖的鑰匙：每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費、無引句無時序跳躍）；agent 經 sb-think 路由理解（調用 args＝理解宣告）落**理解流**（雜湊鏈唯增）。行動正當性來自理解宣告＋**必然曝光**（無引句、無前置攔截）（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解錯即越權、沒理解就動手，當場看到）。完成類鑰匙＝--boss-ok 留痕＋時點對抗＋理解流曝光。

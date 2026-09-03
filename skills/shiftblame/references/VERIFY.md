@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 1.7.3
+revision: 1.8.0
 ---
 # verify 段 — 依 G3 操作、對 G1 判定＝G1 的裁判邊（執行層）
 
@@ -49,7 +49,7 @@ flowchart TB
 
 **假綠燈不默許**：跑測試時若發現測試本身是**假測試**（無真實斷言、測實作細節、mock 過度、與 G1 驗收項無對應，判準見 `TEST.md`）——即使測試通過，驗收階段 MUST 如實回報「綠燈但疑似假測試」給秘書，不默許形式化的綠燈矇混過關；由秘書判返工回測試階段（SKILL §1.4）。
 
-驗收報告寫 `<repo>/.shiftblame/tmp/`（自由傾倒區）：逐項 AC-ID 的結果（`SATISFIED／UNSATISFIED／UNVERIFIED`）、commit、BEHAVIOR、操作、觀察；引用專案輸出以節錄快照為證據（非專案原檔，SKILL §3）。判決閘核對 working tree 與待驗 commit 一致（git 判定）；逐項 AC 判定由秘書依報告判決、時點②對抗承擔查核。
+驗收報告寫 `<repo>/.shiftblame/tmp/`（自由傾倒區）：逐項 AC-ID 的結果（`SATISFIED／UNSATISFIED／UNVERIFIED`）、commit、BEHAVIOR、操作、觀察；關鍵 AC 的 SATISFIED 證據含**因果對照**（停用功能→行為消失／退化——證明觀察結果由該功能造成，排除巧合綠燈；非關鍵項標「消融未驗」如實揭露，SKILL §1.8）；引用專案輸出以節錄快照為證據（非專案原檔，SKILL §3）。判決閘核對 working tree 與待驗 commit 一致（git 判定）；逐項 AC 判定由秘書依報告判決、時點②對抗承擔查核。
 
 執行產出結構化整理到 `<repo>/.shiftblame/tmp/`：test 段、待驗 commit、環境配套、逐項 AC-ID 行為證據、反證嘗試與未驗項；不寫回 G1。秘書依此判決是否通過或返工。
 

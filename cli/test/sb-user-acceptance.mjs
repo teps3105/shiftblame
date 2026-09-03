@@ -39,7 +39,7 @@ assert.match(run('next', 'audit').stderr, /MUST 帶 --boss-ok/);
 assert.match(run('next', 'audit', '--rerun', 'impl').stderr, /--rerun 僅限同 ms 返工重走/, '首走防繞');
 assert.equal(run('next', 'audit', '--boss-ok').status, 0);
 // audit→research：G1 假需求閘
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 證據：BEHAVIOR');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.txt') } }); // 1.7.3 審計痕跡標記（audit→research 邊驗）
@@ -67,7 +67,7 @@ assert.equal(st1.g1Contract.snapshot, undefined);
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n被改動。');
 assert.match(run('next', 'build').stderr, /G1 已偏離/);
 assert.equal(run('next', 'intent').status, 0); // 回 intent 同 ms 重走，零旗標
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 證據：BEHAVIOR');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR');
 // 返工直通：曾達 test 的重走，--rerun 免 --boss-ok（時點①分流判定留痕；老闆決策邊被豁免）
 assert.equal(run('next', 'audit', '--rerun', 'definition').status, 0, '返工直通：定義級免停靠');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.txt') } }); // 1.7.3 審計痕跡標記（audit→research 邊驗）

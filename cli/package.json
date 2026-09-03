@@ -1,10 +1,10 @@
 {
   "name": "shiftblame-cli",
-  "version": "1.7.3",
+  "version": "1.8.0",
   "description": "shiftblame CLI——sb 流程狀態機閘門、契約鎖定與驗收證據檢查。",
   "type": "module",
   "scripts": {
-    "test": "node test/sb-contract-lock.mjs && node test/sb-user-acceptance.mjs && node test/sb-agent-governance.mjs && node test/sb-adversarial-gate.mjs && node test/sb-external-gate.mjs && node test/sb-understanding-flow.mjs && node test/sb-hooks.mjs"
+    "test": "node test/sb-contract-lock.mjs && node test/sb-user-acceptance.mjs && node test/sb-agent-governance.mjs && node test/sb-adversarial-gate.mjs && node test/sb-external-gate.mjs && node test/sb-understanding-flow.mjs && node test/sb-hooks.mjs && node test/sb-ablation.mjs"
   },
   "bin": {
     "sb": "bin/sb.mjs"
