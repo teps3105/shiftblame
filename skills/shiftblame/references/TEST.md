@@ -1,6 +1,6 @@
 ---
 name: 測試
-revision: 1.8.0
+revision: 1.8.1
 ---
 # test 段 — 回指 G3 驗收排程寫測試定義「過」＝G3 的落地邊（執行層）
 
@@ -18,7 +18,7 @@ flowchart TB
     SEC[秘書<br/>主對話 · 唯一持久角色]
     subgraph Consult["定義層"]
         direction LR
-        AUD["audit 段<br/>G1 · 主對話"]
+        AUD["requirement 段<br/>G1 · 主對話"]
         RES["research 段<br/>G2 · 主對話"]
         PLA["plan 段<br/>G3 · 主對話"]
     end
@@ -37,7 +37,7 @@ flowchart TB
 
 測試定稿＝測試碼於 test 段 commit。test→build 邊無機械閘（假測試由文件層判準把關：定稿需有實斷言，git 歷史可稽）。測試碼保持與流程正交（流程代號零出現）——測試碼＝G3 驗收排程的可執行化，AC-ID 與測試的映射由 G3 驗收排程承載、回指 G1 驗收項（SKILL §1 驗收鏈、§3）。
 
-主對話在test 段寫 repo 測試碼；測試清單與 pass 條件可整理到 `<repo>/.shiftblame/tmp/`（自由傾倒區，非閘門依據），不寫入 G3。
+主對話在test 段寫 repo 測試碼；測試清單與 pass 條件的過程紀錄可整理到 `<repo>/.shiftblame/tmp/`（自由傾倒區）；AC→測試檔：定稿 commit 映射收斂寫入 G3 回指區（定義區唯 plan 邊寫）。
 
 **寫測試 vs 跑測試分離**（SKILL §3 的核心制約）：測試階段只**寫**測試、定義「過」，不**跑**測試——跑測試與驗收是驗收階段的職責。這道分離確保測試階段不能「自己寫自己跑放水」：測試階段定義的「過」要被驗收階段實際跑出來，且要對齊驗收階段依 G1 驗收的項。
 

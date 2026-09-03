@@ -19,6 +19,7 @@ const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
+const ptReport = (n) => { const f = join(root, '.shiftblame/tmp', `pt${n}.md`); writeFileSync(f, `# 時點${n}對抗\n外部子代理原文節錄（>=30 字實質內容以通過機械驗）。\n對抗判定：通過`); return f; };
 
 assert.equal(git('init').status, 0);
 writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -26,22 +27,21 @@ writeFileSync(join(root, 'seed.txt'), 'seed\n');
 assert.equal(git('add', '.gitignore', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: initial').status, 0);
 assert.equal(run('init', 'demo').status, 0);
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-assert.equal(run('next', 'audit', '--boss-ok').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.txt') } }); // 1.7.3 審計痕跡標記（audit→research 邊驗）
+assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 
-// 1. SLUG 缺時點①記錄即擋
-writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n（無對抗記錄）\n');
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /SLUG\.md 缺「時點①對抗」/);
+// 1. adversarialLog 缺時點①條目即擋（RAM/ROM：對照源＝point 條目）
+assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /缺時點①條目/);
 // 2. 非對抗邊帶 --adversarial 即擋
 assert.match(run('next', 'research', '--adversarial').stderr, /不是對抗邊|不合法推進/);
-// 3. 補記錄→過
-writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點①對抗：完成，判定成立\n');
+// 3. --point 宣告→過（帶 --point 不發 commit 章）
+assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
+assert.equal(state().adversarialConsumed, undefined, '--point 條目不發 commit 章（邊章與 commit 章分流）');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
 // 循環到 verify
@@ -54,10 +54,10 @@ assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
 assert.equal(run('next', 'verify').status, 0);
 
-// 4. verify→done：缺 SLUG 時點③記錄即擋（1.7.0 撤印章——--boss-ok＋時點③即鑰匙）
-assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /時點③對抗|SLUG/);
-// 5. 補時點③記錄→過
-writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：完成，判定成立\n');
+// 4. verify→done：缺時點③條目即擋
+assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /缺時點③條目/);
+// 5. --point ③→過
+assert.equal(run('adversarial', ptReport('③'), '--point', '③').status, 0);
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 // 6. verify→test 循環邊：時點②對照（done→test 重修後再走）
 assert.equal(run('next', 'test').status, 0);
@@ -66,9 +66,9 @@ writeFileSync(join(root, 'seed.txt'), 'v3\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);
 assert.equal(run('next', 'verify').status, 0);
-writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點③對抗：舊記錄\n');
-assert.match(run('next', 'test', '--adversarial').stderr, /SLUG\.md 缺「時點②對抗」/);
-writeFileSync(join(slugDir, 'SLUG.md'), '# SLUG\n- 時點②對抗：功能循環對抗完成\n');
+// 6. 循環邊：缺新時點②條目即擋（新鮮度）→補宣告→過
+assert.match(run('next', 'test', '--adversarial').stderr, /缺時點②條目/);
+assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
 assert.equal(run('next', 'test', '--adversarial').status, 0);
 // —— 提交對抗閘（1.5.3）：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
 const tmpDir = join(root, '.shiftblame', 'tmp');

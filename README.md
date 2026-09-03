@@ -13,18 +13,20 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.8.0-2ea44f.svg" alt="version 1.8.0"/>
+  <img src="https://img.shields.io/badge/version-1.8.1-2ea44f.svg" alt="version 1.8.1"/>
 </p>
 
 ---
 
 ## 這是什麼
 
-shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時序進程——把需求交給審計、研究、規劃、測試、開發、驗收六個工作階段。完整權威圖與讀圖規則位於 [`skills/shiftblame/SKILL.md`](skills/shiftblame/SKILL.md)；本 README 是查詢入口，機制細節以 SKILL 為準。
+shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時序進程——把需求交給需求定義、研究、規劃、測試、開發、驗收六個工作階段。完整權威圖與讀圖規則位於 [`skills/shiftblame/SKILL.md`](skills/shiftblame/SKILL.md)；本 README 是查詢入口，機制細節以 SKILL 為準。
 
 核心原則：
 
-- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（audit 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 audit→research→plan 單向一次定稿；修正＝回 intent 開新輪（CLI 凍結三檔至 rev/rN/，輪次編號＝時序權威，防疊加混亂）。audit＝現況審計先於研究（auditEvidence 痕跡閘——零查證推不過）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權綁定義邊（G1→audit/G2→research/G3→plan），落地段對承載檔唯讀——綁架上游死路。
+- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（CLI 凍結三檔至 rev/rN/，輪次編號＝時序權威，防疊加混亂）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
+
+> **1.8.1 遷移**：audit 段正名 requirement（clean break）——既有專案 `.shiftblame/*/flow-state.json` 的 `node: "audit"` 手改為 `"requirement"` 後可繼續推進。
 - **消融原則（1.8.0 方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
@@ -32,13 +34,13 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb adversarial <報告檔>`：MUST 外部唯讀子代理對抗、報告落檔後引用，機械驗（檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；`sb commitmsg` 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）。返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在；對抗 MUST 子代理，無自代介面（工具不可用即阻塞等待）。
 - **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正；對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
 - **兩層文件模型（1.7.1）。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件——提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；永續層文件隨程式碼即時變更（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗。當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
-- **研究／返工外部性閘（1.6.0）。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader 查證、Agent 外部唯讀子代理）標記 `externalEvidence`；`audit→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
+- **研究／返工外部性閘（1.6.0）。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader 查證、Agent 外部唯讀子代理）標記 `externalEvidence`；`requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
-- **秘書是唯一持久角色與階段承載者。** 主對話連續切換審計→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
+- **秘書是唯一持久角色與階段承載者。** 主對話連續切換需求定義→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
-- **段-檔承載閉環（Z 字形）。** 八段由四份文件承載：SLUG 承載 intent/done（管理層出入口）；G1 閉環＝audit（定義）＋verify（裁判——逐項 AC 判定）；G2 閉環＝research（定義）＋build（落地——實作回指 G2）；G3 閉環＝plan（定義）＋test（落地——測試碼回指驗收排程）。落地段反向回收承載檔——文件定義後於落地邊復活當裁判。任何 G2/G3 與 G1 不一致＝回 intent 開新輪由 audit 重定義——G1 定義權唯一。
+- **段-檔承載閉環（Z 字形）。** 八段由四份文件承載：SLUG 承載 intent/done（管理層出入口）；G1 閉環＝requirement（定義）＋verify（裁判——逐項 AC 判定）；G2 閉環＝research（定義）＋build（落地——實作回指 G2）；G3 閉環＝plan（定義）＋test（落地——測試碼回指驗收排程）。落地段反向回收承載檔——文件定義後於落地邊復活當裁判。任何 G2/G3 與 G1 不一致＝回 intent 開新輪由 requirement 段重定義——G1 定義權唯一。
 - **純技術裁定不外包給老闆。** repo／第一方文件／實機證據不足或矛盾、無法可靠裁定時，主對話必須立即取得一次外部子代理的自包含唯讀技術意見，複核後自行裁定；不必先反覆失敗。只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定。
-- **三時點對抗＋SLUG 對照。** plan→test（①對抗方向）、verify→test（②對抗成果）、verify→done（③對抗成果）——推進帶 `--adversarial` 宣告，CLI 逐字對照 SLUG.md 時點對抗記錄，不一致即擋；複核結論每項裁定綁可查證出處，反向對抗判定成立才推進。對抗 MUST 外部唯讀子代理——無自代介面：工具不可用即阻塞等待至可用；報告落檔＋`sb adversarial <報告檔>` 宣告（判定「通過」才可發章）。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見。
+- **三時點對抗＋adversarialLog point 條目對照。** plan→test（①對抗方向）、verify→test（②對抗成果）、verify→done（③對抗成果）——推進帶 `--adversarial` 宣告，CLI 逐字對照 SLUG.md 時點對抗記錄，不一致即擋；複核結論每項裁定綁可查證出處，反向對抗判定成立才推進。對抗 MUST 外部唯讀子代理——無自代介面：工具不可用即阻塞等待至可用；報告落檔＋`sb adversarial <報告檔>` 宣告（判定「通過」才可發章）。外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見。
 - **階段內認知控制。** 任務依 fast／full／loop 分級；長程工作以 `Goal／Core／Verified／Open／Next` 短帳本跨 seam 保持狀態，所有「已驗證」都要附方法與涵蓋範圍。
 - **最小充分解。** 依序選擇重用既有能力、標準函式庫、平台原生能力、既有依賴與最少可用實作；修 bug 修共用根因，不簡化安全、資料保護、無障礙或明確需求。
 - **資產分離與流程代號禁入。** `.shiftblame/tmp/` 是 agents 自由傾倒區——流程閘門零依賴（唯一例外：commit 留痕即生即滅）；專案工具鏈或專案運行產生的檔案（日誌、快取、匯出物）屬專案資產歸專案位置，驗收引用以**節錄快照**為證據。tmp 只準寫入、不準清理，清理由老闆手動執行。流程代號（ms 編號、G1/G2/G3 引用、AC-ID、sb 指令名、流程歷史）與程式碼保持正交——註解、識別字、字串與測試名稱皆同；流程資訊由 commit message 與 `.shiftblame/` 承載，AC-ID 與測試的映射由 G3 承載。
@@ -64,7 +66,7 @@ flowchart TD
 
     subgraph Eight["八段 · 一個 ms 走一次"]
         direction LR
-        I[intent 意圖<br/>老闆確認] --> A[audit 需求<br/>G1] --> R[research 研究<br/>G2] --> P[plan 計畫<br/>G3＋§10＋時點①對抗]
+        I[intent 意圖<br/>老闆確認] --> A[requirement 需求<br/>G1] --> R[research 研究<br/>G2] --> P[plan 計畫<br/>G3＋§10＋時點①對抗]
         P -- "放行 --boss-ok --adversarial" --> T[test 測試<br/>定稿 commit]
         T --> B[build 實作<br/>存檔 commit]
         B --> V[verify 驗收<br/>判決＋時點②對抗<br/>＝中間態]
@@ -93,7 +95,7 @@ flowchart TB
     SEC["秘書（主對話）<br/>唯一持久角色 · 調控時序進程"]
     subgraph Consult["定義層 · 定義該做什麼 · 輪內單向定律"]
         direction LR
-        G1["審計狀態 · G1<br/>主對話 · 一次定稿"] -->|向前對齊| G2["研究狀態 · G2<br/>主對話 · 外部證據打底"]
+        G1["需求定義狀態 · G1<br/>主對話 · 一次定稿"] -->|向前對齊| G2["研究狀態 · G2<br/>主對話 · 外部證據打底"]
         G2 -->|向前對齊| G3["規劃狀態 · G3<br/>主對話 · 對齊推進"]
     end
     subgraph Build["執行層 · 落地段反向回指承載檔（Z 字形）"]
@@ -110,7 +112,7 @@ flowchart TB
 
 > - **老闆**：提出命題，決定產品語義、範圍、成本／風險容忍與授權，做最終 PASS；不代答實作方式、API、根因、測試或證據解讀等純技術題。
 > - **秘書（主對話）**：連續承載所有工作狀態，負責意圖揭露、G1-G3、測試、實作、驗收、放行、判決、commit、路由與 PASS。未授權前唯讀。
-> - **定義層**：主對話依序切換審計、研究、規劃狀態，產出 G1、G2、G3。
+> - **定義層**：主對話依序切換需求定義、研究、規劃狀態，產出 G1、G2、G3。
 > - **執行層**：主對話依序切換測試、實作、驗收狀態，落地 G1、G2、G3；測試定稿 commit 與判決的 git 一致性核對讓同一執行者不能跨狀態偷改判準。
 > - **臨時外部子代理檢閱**：三個固定時點強制對抗（放行前方向、判決前成果、收斂複驗成果）＋純技術不可可靠裁定時強制技術意見；其他高風險情境按需取得。無自代介面：子代理不可用即阻塞等待至可用。不移交工作狀態或裁定權。
 
@@ -169,9 +171,9 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 npm install -g <shiftblame repo>/cli
 sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.json
 sb state                           # 目前節點與各下一步前置條件
-sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋SLUG 對照＋G1 hash 封存）
+sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋adversarialLog point 條目對照＋G1 hash 封存）
 sb next verify                     # 進驗收（working tree 乾淨＝實作已存檔，git 判定）
-sb next done --boss-ok --adversarial  # 完成邊（需老闆「done」留痕＋時點③對抗＋SLUG 對照）
+sb next done --boss-ok --adversarial  # 完成邊（需老闆「done」留痕＋時點③對抗＋adversarialLog point 條目對照）
 sb next intent                     # 回頭自由：補充／重修／追加（同 ms 重走，零旗標）
 sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕）→ 收尾歸檔＋archive
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
@@ -227,7 +229,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ├── <slug>/                        # 結構分檔：SLUG 主體 + 每 nnn 一子目錄
 │   ├── SLUG.md                    # SLUG 主體（§1-§7；不含 G1/G2/G3）
 │   └── nnn/                       # 每個 <nnn> 一個子目錄
-│       ├── G1.md                  # 需求／驗收標準（審計階段產出）
+│       ├── G1.md                  # 需求／驗收標準（requirement 段產出）
 │       ├── G2.md                  # 技術分析（研究階段產出）
 │       └── G3.md                  # 實作計畫（規劃階段產出）
 ├── tmp/                           # 流程產物短期落點：執行證據與臨時檢閱產物；專案工具鏈日誌／快取不收編，只準寫入不準清理

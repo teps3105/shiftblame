@@ -62,7 +62,9 @@ writeFileSync(statePath, JSON.stringify({
   slug: 'demo', ms: '001', node: 'verify', history: [], stamps: {}, inputs: state().inputs, understandings: state().understandings,
 }));
 mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
-writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), '# SLUG\n- 時點③對抗：完成，判定成立\n');
+mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+writeFileSync(join(root, '.shiftblame', 'tmp', 'pt3.md'), '# p\n對抗判定：通過');
+spawnSync(sb, [sbBin, 'adversarial', join(root, '.shiftblame/tmp/pt3.md'), '--point', '③'], { cwd: root, encoding: 'utf8' });
 r = spawnSync(sb, [sbBin, 'next', 'done', '--boss-ok', '--adversarial'], { cwd: root, encoding: 'utf8' });
 assert.equal(r.status, 0, 'verify→done：--boss-ok＋時點③對抗即鑰匙（無 done 印章）');
 r = spawnSync(sb, [sbBin, 'next', 'intent', '--new-ms'], { cwd: root, encoding: 'utf8' });

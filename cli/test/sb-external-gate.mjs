@@ -32,12 +32,11 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 實作步驟\n沿用既有入口並驗證輸出。');
 
-// —— 1. audit→research 進段重置：預塞舊證據 → 進段即清（fail-closed，舊查證不沿用）——
-assert.equal(run('next', 'audit', '--boss-ok').status, 0);
+// —— 1. requirement→research 進段重置：預塞舊證據 → 進段即清（fail-closed，舊查證不沿用）——
+assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00Z', tool: 'WebSearch' }; });
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'app.txt') } }); // 1.7.3 審計痕跡標記（audit→research 邊驗）
 assert.equal(run('next', 'research').status, 0);
-assert.equal(state().externalEvidence, null, 'audit→research 進段重置');
+assert.equal(state().externalEvidence, null, 'requirement→research 進段重置');
 
 // —— 2. research→plan 零外部推不過 ——
 let r = run('next', 'plan');

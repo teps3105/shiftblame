@@ -1,6 +1,6 @@
 ---
 name: DOCS
-revision: 1.8.0
+revision: 1.8.1
 ---
 # DOCS — 專案系統文件的寫法判準
 
@@ -25,7 +25,7 @@ flowchart TD
 ## 1. 角色落點
 
 - **本檔性質**：文件寫法品質的通用判準（中央尺），類似 `assets/` 的中央模板。
-- **與 G1 的關係**：驗收仍由 審計階段主導的 G1 承載；本規範 MAY 被 G1 引用為驗收依據——驗收權威保持在 G1。
+- **與 G1 的關係**：驗收仍由 requirement 段主導的 G1 承載；本規範 MAY 被 G1 引用為驗收依據——驗收權威保持在 G1。
 - **與 SKILL §5 的關係**：本檔規範「怎麼寫才正確」（品質）；§5 規範「誰能改、何時能改」（寫入權）。正交，不衝突。本檔不授予寫入權。
 - **本檔修改路由**：框架演化（SKILL §0、§6），不開 slug、先揭露方案取得授權。
 
@@ -80,7 +80,7 @@ flowchart TD
 
 ## 4. 可驗證方法（grep）
 
-> grep 命中即判違規；例外須在文件內註明理由。審計階段複核時 MAY 直接查核。
+> grep 命中即判違規；例外須在文件內註明理由。 requirement 段複核時 MAY 直接查核。
 
 - **R2** — `grep -rnE "為了|讓玩家|避免|調和|用以|旨在|以便|希望|確保|保證|會感覺|爽快|挫敗|玩家感知|為什麼(這樣)?設計|設計(理由|意圖)" docs/` → 0 命中。
 - **R3** — `grep -rnE ":[0-9]+|func |enum |signal |await |\.gd" docs/` → 0 命中。
@@ -97,6 +97,6 @@ flowchart TD
 
 - **SKILL §5**：規範 <repo>/docs/ 寫入權（寫入隨老闆授權開啟，並隨程式碼同批變更）；本檔規範寫法品質。正交。
 - **SKILL §8**：框架檔結構含本檔。
-- **SKILL §3**：開發後審計階段對照 G1 驗收；文件化工作裡審計階段 MAY 引用本檔作為 <repo>/docs/ 驗收尺。
+- **SKILL §3**：開發後 requirement 段對照 G1 驗收；文件化工作裡 requirement 段 MAY 引用本檔作為 <repo>/docs/ 驗收尺。
 - **<repo>/.shiftblame/SOP.md §1.3**：SOP 保留真實路徑／命令／行號，與本檔 R3 分工（見 §0）。
-- **references/AUDIT.md**：本檔不取代 審計階段主導的 G1 驗收。
+- **references/REQUIREMENT.md**：本檔不取代 requirement 段主導的 G1 驗收。

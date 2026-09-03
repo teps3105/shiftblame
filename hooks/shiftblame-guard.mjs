@@ -54,17 +54,17 @@ const projectRoot = (input) => {
   return typeof c === 'string' && isAbsolute(c) && existsSync(c) ? c : null;
 };
 
-const CARD = [
+const CARD = [ // 1.8.1：核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
-  '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）：補充／修正→回 intent 同 ms 重走線性；確認／開工→分發執行。',
-  '②八段：intent→audit→research→plan→test→build→verify→done。回頭自由（任意→intent 零旗標、done→test 重修、done→intent 開新 ms 帶 --new-ms）；前進要鑰匙（老闆決策邊 --boss-ok 留痕＋時點對抗）。',
-  '③三時點對抗（plan→test①／verify→test②／verify→done③）：--adversarial 宣告＋SLUG.md 對照，不一致即擋。',
-  '④雙流模型（1.7.0）：輸入＝獨立理解對象——輸入流唯增（每則輸入永久是事實，不覆蓋、不消費），理解流由 sb-think 調用（args＝理解宣告）落檔（雜湊鏈唯增）。行動正當性來自理解宣告＋必然曝光，無前置攔截。',
-  '⑤曝光＝核心制衡：老闆每則輸入時，未審理解宣告全部展示＋「哪則輸入尚無理解覆蓋」可見——agent 理解錯了（越權）或沒理解就動手，老闆當場看到；語義真假由曝光終審＋抽查 understandings 對照對話實蹟承擔（手改 flow-state 偽造不防——老闆抽查承擔）。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/——讀 git 展開事實清單，絕對路徑 root 錨定後判）；路徑判斷一律 root 錨定絕對展開、git 重定向與 alias 定義一律攔截；驗收段（verify）對 repo 唯讀。',
-  '⑦版號屬老闆決策——升版由老闆拍板指定。',
-  '⑧對抗—修復—再對抗閉環（機械化）：提交＝對抗時點——sb adversarial <報告檔>（MUST 外部唯讀子代理，報告落檔；機械驗：檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；sb commitmsg 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）——返工修復必然終於 commit，閘必然觸發；自寫／重用報告檔屬假對抗（抽查 adversarialLog 承擔）。返工直通走 --rerun（時點①分流判定，SKILL §3）。',
-  '⑨研究/返工外部性閘（1.6.0）：外部工具調用是機械底線——hooks 偵測外部調用（WebSearch／WebFetch／webReader／Agent）標記 externalEvidence；audit→research 進段與 --rerun 返工時重置，research→plan 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過；規模自由（一次精準查證到完整調研皆可），大型研究 MUST 外部唯讀子代理承擔（SKILL §3）。偽造 externalEvidence（手改或自調 hooks）機械不防——老闆抽查承擔。',
+  '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
+  '②八段：intent→requirement→research→plan→test→build→verify→done。回頭自由（→intent 零旗標／done→test／done→intent --new-ms）；前進要鑰匙（--boss-ok＋時點對抗）。',
+  '③時點對抗（plan→test①／verify→test②／verify→done③——產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
+  '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝sb-think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
+  '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（審計收斂後產出：定義＋回指）；tmp/flow-state＝RAM（對抗產物、運行數據）。',
+  '⑦版號屬老闆決策。',
+  '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
+  '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -83,11 +83,12 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——sb-think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
+    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（requirement→research 邊格式閘）';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
-    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋SLUG.md 記錄）＋停靠簡報（老闆授權後帶 --boss-ok 推進（理解流曝光承擔））';
-    if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決＋時點②對抗；不滿意→test 重修或回 intent';
+    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
+    if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
     return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。`;
   } catch { return ''; }
@@ -150,7 +151,7 @@ function recordUnderstanding(root, tool, toolInput) {
 
 // 外部證據標記（1.6.0）：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader（外部查證）
 // 與 Agent／Task（外部唯讀子代理）。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
-// 記錄 {done, at, tool}。重置由 CLI 承擔（audit→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
+// 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
 const EXTERNAL_RESEARCH_TOOLS = /^(?:WebSearch|WebFetch|Agent|Task|mcp__web_reader__webReader)$/;
 function markExternalEvidence(root, tool) {
   if (!root) return;
@@ -216,16 +217,16 @@ function understandingReviewLine(root, mark = true) {
   } catch { return ''; }
 }
 
-// 老闆決策邊雙重鎖：三邊（intent→audit／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
+// 老闆決策邊雙重鎖：三邊（intent→requirement／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
 // --rerun 返工直通與 CLI 同判據放行（同 ms 曾達 test、非 verify 出發）——兩層判定必須一致，否則直通死路＋假留痕
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|test|done)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const edge = { intent: 'audit', plan: 'test', verify: 'done' }[st.node];
-    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(audit|test|done)\b/)?.[1];
+    const edge = { intent: 'requirement', plan: 'test', verify: 'done' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|test|done)\b/)?.[1];
     if (edge && edge === target) {
       const rerun = /(^|\s)--rerun\s+(impl|definition)(?=\s|$)/.exec(clean);
       if (rerun && st.node !== 'verify') {
@@ -260,41 +261,11 @@ const nodeOf = (root) => {
 // 路徑類鍵（蛇形與駝峰；寫入矩陣／停等凍結／框架提醒共用）
 const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
 
-// 審計痕跡標記（1.7.3）：audit 段的 repo 唯讀查證——Read/Grep/Glob（目標在 repo 內非 .shiftblame）
-// 與 Bash 的 git log/status/diff/show/blame。audit→research 邊機械驗（零查證的審計推不過——
-// 審計先於研究，字面研究死路）；回 intent 開新輪時由 CLI 重置（每輪重新審計）。只記事實不重置。
-const AUDIT_READ_TOOLS = /^(?:Read|Grep|Glob)$/i;
-const AUDIT_BASH_RE = /\bgit\s+(?:-[A-Za-z-]+(?:\s+(?:"[^"]*"|'[^']*'|\S+))?\s+)*(?:log|status|diff|show|blame)\b/i; // 容旗標（-C 錨定／-c 設定形——SKILL §9 元規則）
-function markAuditEvidence(root, tool, cmd, toolInput) {
-  if (!root) return;
-  let node; try { node = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).node; } catch { return; }
-  if (node !== 'audit') return;
-  const t = String(tool ?? '');
-  let hit = false;
-  if (AUDIT_READ_TOOLS.test(t)) {
-    for (const k of PATH_KEYS) {
-      const v = toolInput?.[k];
-      if (typeof v !== 'string' || !v.trim() || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) continue;
-      const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
-      if (rel && !rel.startsWith('..') && !isAbsolute(rel) && rel !== '.shiftblame' && !rel.startsWith('.shiftblame/')) { hit = true; break; } // repo 內現況查證
-    }
-  } else if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(t) && AUDIT_BASH_RE.test(cmd)) {
-    hit = true;
-  }
-  if (!hit) return;
-  try {
-    const statePath = join(root, '.shiftblame', 'flow-state.json');
-    const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    st.auditEvidence = { done: true, at: new Date().toISOString(), tool: t };
-    writeFileSync(statePath, JSON.stringify(st, null, 2));
-  } catch { /* 狀態異常靜默 */ }
-}
-
-// ———— G 檔寫入矩陣（1.7.3 段-檔承載）：定義邊寫、落地邊唯讀 ————
-// G1→audit、G2→research、G3→plan（＋done 補寫 §2.5 收斂記錄例外）；落地段（test/build/verify）對承載檔
-// 唯讀——裁判與落地邊無上游文件寫入權，下游倒推上游（綁架 G1/G2）死路；修正輪唯一路徑＝回 intent 開新輪。
+// ———— G 檔寫入矩陣（1.8.1 RAM/ROM：定義區綁定義邊唯寫、回指區綁落地段唯寫）————
+// G1→requirement/verify、G2→research/build、G3→plan/test（＋done §2.5）——落地段獲得承載檔回指區寫入權；
+// 跨區（落地段改定義區）仍是綁架上游死路，由 CLI 分區 hash 於 sb next 兜底（hooks 無檔內分區粒度——殘餘如實標註）。
 // rev/ 快照與 archive/ 由 CLI 於推進與收尾時寫入（放行）。
-const G_WRITE_NODES = { 1: new Set(['audit']), 2: new Set(['research']), 3: new Set(['plan', 'done']) };
+const G_WRITE_NODES = { 1: new Set(['requirement', 'verify']), 2: new Set(['research', 'build']), 3: new Set(['plan', 'test', 'done']) };
 const G_FILE_RE = /^\.shiftblame\/[^/]+\/[^/]+\/(rev\/r\d+\/|archive\/)?G([123])\.md$/i; // i＋輸入 toLowerCase——大小寫不敏感（Windows FS）
 function checkGFileMatrix(root, toolInput) {
   if (!root) return null;
@@ -310,8 +281,8 @@ function checkGFileMatrix(root, toolInput) {
     if (m[1]) continue; // rev/ 快照與 archive/ 由 CLI 寫入——放行
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
-      const owner = { 1: 'audit（G1 定義邊）', 2: 'research（G2 定義邊）', 3: 'plan（G3 定義邊；done 補寫 §2.5）' }[g];
-      return `[shiftblame] 段 ${node} 對 G${g}.md 唯讀——G${g} 寫入權屬 ${owner}；修正＝回 intent 開新輪（sb next intent，rev 基線凍結）依段位推進重寫（段-檔承載，SKILL §0/§5）`;
+      const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區；done §2.5）' }[g];
+      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent，rev 基線凍結）（RAM/ROM，SKILL §0/§5）`;
     }
   }
   return null;
@@ -651,7 +622,6 @@ try {
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(sb-think) 調用＋args＝理解宣告）
     markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
-    markAuditEvidence(root, tool, cmd, input.tool_input ?? {}); // 審計痕跡標記（1.7.3：audit 段 repo 唯讀查證——audit→research 邊驗）
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（1.7.2 主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
@@ -686,7 +656,7 @@ try {
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
-      // G 檔寫入矩陣（1.7.3 段-檔承載）：G1→audit／G2→research／G3→plan（＋done §2.5），落地段對承載檔唯讀
+      // G 檔寫入矩陣（1.8.1 RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test；done §2.5）——跨區由 CLI 分區 hash 兜底
       const gMatrix = checkGFileMatrix(root, input.tool_input ?? {});
       if (gMatrix) deny(gMatrix);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
