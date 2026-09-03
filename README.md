@@ -206,7 +206,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     ├── shiftblame/
     │   ├── SKILL.md               # 權威拓樸、讀圖規則、分流、箭頭條件、收尾
     │   ├── references/            # 工作階段定義（按需讀）
-    │   │   ├── AUDIT.md         # 定義層
+    │   │   ├── REQUIREMENT.md         # 定義層
     │   │   ├── RESEARCH.md
     │   │   ├── PLAN.md
     │   │   ├── VERIFY.md        # 執行層
