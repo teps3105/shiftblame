@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.8.2-2ea44f.svg" alt="version 1.8.2"/>
+  <img src="https://img.shields.io/badge/version-1.8.3-2ea44f.svg" alt="version 1.8.3"/>
 </p>
 
 ---
@@ -24,17 +24,16 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 
 核心原則：
 
-- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔——1.8.2 rev 快照退役）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
+- **段-檔承載與輪內單向。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
 
-> **1.8.1 遷移**：audit 段正名 requirement（clean break）——既有專案 `.shiftblame/*/flow-state.json` 的 `node: "audit"` 手改為 `"requirement"` 後可繼續推進。
-- **消融原則（1.8.0 方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
+- **消融原則（方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
 - **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
 - **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
-- **雙流模型（1.7.0 撤鎖範式）。** 輸入＝獨立理解對象，不是鎖的鑰匙：每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費、無引句無時序跳躍）；agent 經 sb-think 路由理解（調用 args＝理解宣告）落**理解流**（雜湊鏈唯增）。行動正當性來自理解宣告＋**必然曝光**（無引句、無前置攔截）（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解錯即越權、沒理解就動手，當場看到）。完成類鑰匙＝--boss-ok 留痕＋時點對抗＋理解流曝光。
+- **雙流模型。** 輸入＝獨立理解對象，不是鎖的鑰匙：每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費、無引句無時序跳躍）；agent 經 sb-think 路由理解（調用 args＝理解宣告）落**理解流**（雜湊鏈唯增）。行動正當性來自理解宣告＋**必然曝光**（無引句、無前置攔截）（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解錯即越權、沒理解就動手，當場看到）。完成類鑰匙＝--boss-ok 留痕＋時點對抗＋理解流曝光。
 - **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb adversarial <報告檔>`：MUST 外部唯讀子代理對抗、報告落檔後引用，機械驗（檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；`sb commitmsg` 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）。返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在；對抗 MUST 子代理，無自代介面（工具不可用即阻塞等待）。
 - **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正；對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
-- **兩層文件模型（1.7.1）。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件——提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；永續層文件隨程式碼即時變更（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗。當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
-- **研究／返工外部性閘（1.6.0）。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader 查證、Agent 外部唯讀子代理）標記 `externalEvidence`；`requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
+- **兩層文件模型。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件——提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；永續層文件隨程式碼即時變更（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗。當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
+- **研究／返工外部性閘。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader 查證、Agent 外部唯讀子代理）標記 `externalEvidence`；`requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換需求定義→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
@@ -135,9 +134,9 @@ flowchart TB
 
 ## 安裝
 
-shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒（Stop 於 1.7.0 靜默）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒（Stop 靜默）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**雙流模型**（每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；sb-think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋時點對抗）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）；**兩種觸發樣態**（1.7.2）：老闆以 sb-think 調用形式輸入（`/sb-think`、`$sb-think` 或裸名 `sb-think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。**hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。**hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體——不散落 tmp 檔）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。hooks 故障時靜默放行，不阻斷工作。
+**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**雙流模型**（每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；sb-think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋時點對抗）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）；**兩種觸發樣態**：老闆以 sb-think 調用形式輸入（`/sb-think`、`$sb-think` 或裸名 `sb-think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。**hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。**hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 

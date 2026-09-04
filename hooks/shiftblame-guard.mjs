@@ -31,10 +31,10 @@ function readStdin() {
   });
 }
 
-// additionalContext 注入（1.6.1 根因修復）：hookEventName MUST 填實際事件名（ZCode/Codex strict schema
-// 以此歸因驗證——寫死常數會使輸出被丟棄且 run 標記 failed；1.6.0 的 233+ 次 hook.run.failed 全由此來，
+// additionalContext 注入（根因修復）：hookEventName MUST 填實際事件名（ZCode/Codex strict schema
+// 以此歸因驗證——寫死常數會使輸出被丟棄且 run 標記 failed，
 // 副作用（寫檔/deny）生效但卡片/曝光注入被丟棄）。函數層防護：事件名非七事件字面值即拒輸出（stderr 診斷）——
-// 任何調用點漏傳事件名都不會再生產非法輸出（同類病灶結構性絕緣，對抗第二輪必修 1）。
+// 任何調用點漏傳事件名都不會再生產非法輸出——同類缺陷結構性絕緣。
 const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PermissionRequest', 'PostToolUse', 'PostToolUseFailure', 'Stop'];
 function inject(text, event) {
   if (!HOOK_EVENTS.includes(event)) {
@@ -54,7 +54,7 @@ const projectRoot = (input) => {
   return typeof c === 'string' && isAbsolute(c) && existsSync(c) ? c : null;
 };
 
-const CARD = [ // 1.8.1：核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
+const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
   '②八段：intent→requirement→research→plan→test→build→verify→done。回頭自由（→intent 零旗標／done→test／done→intent --new-ms）；前進要鑰匙（--boss-ok＋時點對抗）。',
@@ -94,13 +94,11 @@ function nodeLine(root) {
   } catch { return ''; }
 }
 
-// —— 輸入流（雙流模型 1.7.0）——
-// 雙流模型（1.7.0）：輸入＝獨立理解對象，不是鎖的鑰匙材料——
+// —— 輸入流（雙流模型）——
+// 雙流模型：輸入＝獨立理解對象，不是鎖的鑰匙材料——
 // 輸入流唯增（每則輸入永久是事實，永不覆蓋、永不消費、無時序跳躍與翻舊帳概念——無需引用故無引句問題）；
 // 理解流由 agent 經 sb-think 路由產生（調用 args＝理解宣告），曝光是核心制衡（老闆每則輸入時審視）。
-// 舊制（前置攔截式授權閘）全面退役——1.5.6–1.6.2 的病灶（引句挑選、連續串、
-// 解鎖失敗、hooks 故障死鎖）根源皆是「把輸入當鑰匙」，撤鎖即根除。
-// 主動觸發形態（1.7.2 兩種觸發樣態）：老闆輸入以 sb-think 調用形式開頭（/sb-think、$sb-think 連結或裸名）
+// 主動觸發形態（兩種觸發樣態）：老闆輸入以 sb-think 調用形式開頭（/sb-think、$sb-think 連結或裸名）
 // ＝主動觸發訊號——顯式語法（性質同 --boss-ok 旗標），非 agent 偵測老闆意圖的詞集
 const ACTIVE_TRIGGER_RE = /^\s*(?:[/\$])?sb-think\b/i;
 
@@ -112,7 +110,7 @@ function recordInput(root, prompt) {
     const wasHold = st.understandingHold ?? null;
     let releaseNote = null;
     (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
-    // 兩種觸發樣態（1.7.2）：老闆以 sb-think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
+    // 兩種觸發樣態：老闆以 sb-think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
     // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）
     if (ACTIVE_TRIGGER_RE.test(String(prompt ?? ''))) {
       st.understandingHold = { inputIdx: st.inputs.length - 1, at: new Date().toISOString() };
@@ -120,14 +118,14 @@ function recordInput(root, prompt) {
       delete st.understandingHold;
       releaseNote = `\n[停等解除] 輸入 #${wasHold.inputIdx} 的理解停等已由老闆回覆解除——回覆為確認即分發執行；為修正則理解更新後仍停等老闆再確認（兩種觸發樣態，SKILL §0）。`;
     }
-    delete st.dialogueLock; // 1.7.0 撤鎖範式——舊欄位冪等清理
-    delete st.input;        // 舊單則輸入欄位退役（冪等清理）
+    delete st.dialogueLock; // 冪等清理（不相容欄位）
+    delete st.input;        // 冪等清理（不相容欄位）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
     return releaseNote;
   } catch { return null; } /* 狀態異常靜默 */
 }
 
-// 理解流記錄（1.7.0）：PreToolUse 偵測 Skill(sb-think) 調用且 args 有實質理解（≥10 字）→ 落一筆理解
+// 理解流記錄：PreToolUse 偵測 Skill(sb-think) 調用且 args 有實質理解（≥10 字）→ 落一筆理解
 // （錨定 `^|:sb-think$` 防偽技能名；args 即理解宣告——寫入側折疊換行＋截 200 字，同曝光防護判準；
 // 雜湊鏈唯增；uptoInput＝理解涵蓋至第幾則輸入——曝光對照輸入流可見哪些輸入尚無理解覆蓋）
 function recordUnderstanding(root, tool, toolInput) {
@@ -149,7 +147,7 @@ function recordUnderstanding(root, tool, toolInput) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 外部證據標記（1.6.0）：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader（外部查證）
+// 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader（外部查證）
 // 與 Agent／Task（外部唯讀子代理）。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
 // 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
 const EXTERNAL_RESEARCH_TOOLS = /^(?:WebSearch|WebFetch|Agent|Task|mcp__web_reader__webReader)$/;
@@ -181,7 +179,7 @@ function flowLine(root) {
   } catch { return ''; }
 }
 
-// 停等行（1.7.2）：understandingHold 進行中，每則輸入明示凍結語義——理解呈現即停、寫入凍結、待老闆終審
+// 停等行：understandingHold 進行中，每則輸入明示凍結語義——理解呈現即停、寫入凍結、待老闆終審
 function holdLine(root) {
   if (!root) return '';
   try {
@@ -261,7 +259,7 @@ const nodeOf = (root) => {
 // 路徑類鍵（蛇形與駝峰；寫入矩陣／停等凍結／框架提醒共用）
 const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
 
-// ———— G 檔寫入矩陣（1.8.1 RAM/ROM：定義區綁定義邊唯寫、回指區綁落地段唯寫）————
+// ———— G 檔寫入矩陣（RAM/ROM：定義區綁定義邊唯寫、回指區綁落地段唯寫）————
 // G1→requirement/verify、G2→research/build、G3→plan/test（＋done §2.5）——落地段獲得承載檔回指區寫入權；
 // 跨區（落地段改定義區）仍是綁架上游死路，由 CLI 分區 hash 於 sb next 兜底（hooks 無檔內分區粒度——殘餘如實標註）。
 // archive/ 由 CLI 於收尾時寫入（放行）。
@@ -288,7 +286,7 @@ function checkGFileMatrix(root, toolInput) {
   return null;
 }
 
-// ———— 停等凍結（1.7.2 兩種觸發樣態）：hold 期間寫入類工具與流程推進硬擋 ————
+// ———— 停等凍結（兩種觸發樣態）：hold 期間寫入類工具與流程推進硬擋 ————
 // 老闆主動觸發（sb-think 調用形式）的理解停等輪：理解呈現即停——
 // 攔：repo 寫入（非 .shiftblame/）、git 寫入命令、sb 流程推進命令。
 // 放行：Skill 調用（sb-think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
@@ -365,7 +363,7 @@ function checkStateWriteMatrix(root, toolInput) {
 
 // ———— 破壞性命令防護：相對路徑＋遞迴刪除／覆蓋＝錯誤資料夾摧毀組合 ————
 
-// 絕對＝完整錨定。~ 與 $HOME 不再視為錨定（~/.. 可鑽出 home）；根目錄本身（/、C:\）即令絕對也拒
+// 絕對＝完整錨定。~ 與 $HOME 不視為錨定（~/.. 可鑽出 home）；根目錄本身（/、C:\）即令絕對也拒
 const ABS_PATH = /^(?:\/|[A-Za-z]:[\\/]|\\\\)/;
 const isAbs = (p) => {
   const s = p.replace(/^["']|["']$/g, '').trim();
@@ -582,13 +580,12 @@ function checkCommitStamp(root, seg) {
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }
 }
 
-// hooks 健康心跳（1.6.1；1.8.2 歸位 flow-state）：每次成功執行更新 hooksHeartbeat 欄位——CLI 的外部證據閘被擋時對照，
+// hooks 健康心跳：每次成功執行更新 hooksHeartbeat 欄位——CLI 的外部證據閘被擋時對照，
 // 區分「老闆未授權」（心跳新鮮：hooks 活著、標記真實缺失）與「hooks 疑似故障」（心跳停滯：記錄器死了、
-// 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞，老闆已否決）。
+// 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞）。
 function beatHeartbeat(root, event) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return; // 守門：僅既有工作區寫心跳（流浪 cwd 保持原樣——框架元規則）
   try {
-    // 1.8.2 歸位（老闆裁定）：運行狀態單一載體＝flow-state（RAM）——hooksHeartbeat 欄位，不散落 tmp 檔
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {};
     st.hooksHeartbeat = { at: new Date().toISOString(), event };
@@ -603,7 +600,7 @@ try {
   const input = raw.trim() ? JSON.parse(raw) : {};
   const event = input.hook_event_name || input.hookEventName || '';
   const root = projectRoot(input);
-  beatHeartbeat(root, event); // hooks 健康心跳（1.6.1）：每次成功執行落時戳——CLI 閘擋時對照診斷「hooks 疑似故障」（記錄缺失≠授權缺失）
+  beatHeartbeat(root, event); // hooks 健康心跳：每次成功執行落時戳——CLI 閘擋時對照診斷「hooks 疑似故障」（記錄缺失≠授權缺失）
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
@@ -617,7 +614,7 @@ try {
   }
 
   if (event === 'Stop') {
-    process.exit(0); // 1.7.0：Stop 事件無防護動作（理解流曝光承擔審視）
+    process.exit(0); // Stop 事件無防護動作（理解流曝光承擔審視）
   }
 
   if (event === 'PreToolUse') {
@@ -625,7 +622,7 @@ try {
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
     recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(sb-think) 調用＋args＝理解宣告）
     markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
-    const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（1.7.2 主動觸發輪——寫入與推進硬擋）
+    const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
     if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
@@ -659,7 +656,7 @@ try {
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
-      // G 檔寫入矩陣（1.8.1 RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test；done §2.5）——跨區由 CLI 分區 hash 兜底
+      // G 檔寫入矩陣（RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test；done §2.5）——跨區由 CLI 分區 hash 兜底
       const gMatrix = checkGFileMatrix(root, input.tool_input ?? {});
       if (gMatrix) deny(gMatrix);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）

@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 sb-save skill 寫入；sb-resume skill 消費後清除
-revision: 1.8.2
+revision: 1.8.3
 ---
 # SLUG — `<slug>`
 
@@ -94,7 +94,7 @@ flowchart LR
 
 ## 三面向範本（建立 `<ms>` 時複製為分檔）
 
-> 以下為 G1／G2／G3 三份制衡文件的範本。**RAM/ROM（1.8.1）**：G 檔＝ROM——永遠只寫「審計過後收斂」的執行前草案（定義區）與執行後回指紀錄（回指區）；對抗歷史（攻擊點、修復輪次、反證過程）屬邊的暫存（RAM），落 tmp 與 flow-state，禁入本檔。**定義單檔、結構分檔**：建立新 `<ms>` 時，從此處複製三段到 `<repo>/.shiftblame/<slug>/<nnn>/G1.md`、`<repo>/.shiftblame/<slug>/<nnn>/G2.md`、`<repo>/.shiftblame/<slug>/<nnn>/G3.md` 各自成檔，不寫入本檔。三份各由對應階段改寫，兩兩雙向一致（判準見 SKILL §10）才可開發。
+> 以下為 G1／G2／G3 三份制衡文件的範本。**RAM/ROM**：G 檔＝ROM——永遠只寫「審計過後收斂」的執行前草案（定義區）與執行後回指紀錄（回指區）；對抗歷史（攻擊點、修復輪次、反證過程）屬邊的暫存（RAM），落 tmp 與 flow-state，禁入本檔。**定義單檔、結構分檔**：建立新 `<ms>` 時，從此處複製三段到 `<repo>/.shiftblame/<slug>/<nnn>/G1.md`、`<repo>/.shiftblame/<slug>/<nnn>/G2.md`、`<repo>/.shiftblame/<slug>/<nnn>/G3.md` 各自成檔，不寫入本檔。三份各由對應階段改寫，兩兩雙向一致（判準見 SKILL §10）才可開發。
 >
 > **呈現原則（硬性）**：
 > - **每份文件開頭一張架構索引圖**——用短標籤節點呈現需求／技術鏈／功能清單與跨檔對應關係，附進度狀態。老闆看這張圖就懂整個 ms 在幹嘛。

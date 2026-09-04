@@ -1,5 +1,5 @@
-// sb-understanding-flow：雙流模型（1.7.0 撤鎖範式）——輸入流唯增、理解流（Skill args）落檔＋雜湊鏈、
-// 必然曝光、無鎖無解鎖、sb unlock 退役、--new-ms 開新里程碑。1.5.6–1.6.2 的解鎖病灶（引句/連續串/消費/時序覆蓋）不存在於本模型。
+// sb-understanding-flow：雙流模型——輸入流唯增、理解流（Skill args）落檔＋雜湊鏈、
+// 必然曝光、無鎖、sb unlock 不存在命令處理、--new-ms 開新里程碑。
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -27,17 +27,17 @@ boss('另外注意路徑展開');
 boss('就這樣做');
 assert.equal(state().inputs.length, 3, '三則輸入全部保留（唯增——永不覆蓋）');
 assert.equal(state().inputs[0].text, '你去想吧', '第一則原文永久在流中（無翻舊帳概念——無需引用）');
-assert.equal(state().dialogueLock, undefined, '無對話鎖（撤鎖範式）');
+assert.equal(state().dialogueLock, undefined, '無對話鎖欄位');
 assert.equal(state().thinkRouted, undefined, '無 thinkRouted（理解流本身是路由證據）');
 
 // —— 2. 理解流：Skill(sb-think) 調用 args＝理解宣告——實質才落檔 ——
 let r = think('短');
 assert.equal(state().understandings, undefined, 'args 過短不落檔（理解必須有實質——該輸入保持未覆蓋曝光）');
-r = think('理解：授權以雙流模型落地，撤除鎖範式全部機制');
+r = think('理解：授權以雙流模型落地，撤除全部鎖機制');
 const us = state().understandings;
 assert.equal(us.length, 1, '理解宣告落檔');
 assert.equal(us[0].uptoInput, 2, '涵蓋至最新輸入（#2）');
-assert.ok(/撤除鎖範式/.test(us[0].as), 'args 即理解宣告');
+assert.ok(/撤除全部鎖機制/.test(us[0].as), 'args 即理解宣告');
 assert.equal(us[0].reviewed, false, '未審——待曝光');
 
 // —— 3. 雜湊鏈（唯增）：刪改中間條目斷鏈——寫入側驗證由 hooks 內部算式承擔，此處驗算式對稱 ——
@@ -50,10 +50,10 @@ r = hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '下一則輸入' });
 assert.ok(r.stdout.includes('理解審視') && r.stdout.includes('曝光驗證的第二份理解宣告'), '未審理解於老闆輸入時曝光');
 assert.equal(state().understandings.filter((e) => !e.reviewed).length, 0, '展示即標記已審');
 
-// —— 5. sb unlock 退役：明確 die（不再有任何解鎖動作）——
+// —— 5. sb unlock：明確 die——
 r = spawnSync(sb, [sbBin, 'unlock'], { cwd: root, encoding: 'utf8' });
-assert.equal(r.status, 1, 'sb unlock 退役擋');
-assert.match(r.stderr, /退役/);
+assert.equal(r.status, 1, 'sb unlock 擋');
+assert.match(r.stderr, /sb unlock 不存在/);
 r = spawnSync(sb, [sbBin, 'unlock', '--quoted', '你去想吧', '--as', 'x'], { cwd: root, encoding: 'utf8' });
 assert.equal(r.status, 2, '舊旗標形（--quoted/--as 已撤）→usage 擋');
 

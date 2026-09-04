@@ -5,8 +5,8 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 1.5 八段全流程：intent→requirement→research→plan→test→build→verify→done→（重修／開新 ms／PASS）
-// 授權鑰匙（1.7.0 撤印章）：--boss-ok 留痕＋--adversarial×adversarialLog point 條目對照＋理解流曝光（hooks 雙流記錄）
+// 八段全流程：intent→requirement→research→plan→test→build→verify→done→（重修／開新 ms／PASS）
+// 授權鑰匙（撤印章）：--boss-ok 留痕＋--adversarial×adversarialLog point 條目對照＋理解流曝光（hooks 雙流記錄）
 const root = mkdtempSync(join(tmpdir(), 'sb-eight-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -45,7 +45,7 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 // plan→test：--boss-ok＋--adversarial＋adversarialLog point 條目；G3 缺承接先擋
 assert.match(run('next', 'test').stderr, /MUST 帶 --boss-ok/);
@@ -70,7 +70,7 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 // 返工直通：曾達 test 的重走，--rerun 免 --boss-ok（時點①分流判定留痕；老闆決策邊被豁免）
 assert.equal(run('next', 'requirement', '--rerun', 'definition').status, 0, '返工直通：定義級免停靠');
 assert.ok(state().history.at(-1).rerun === 'definition', '直通留痕於 history');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
 assert.equal(run('next', 'research').status, 0);
 assert.equal(run('next', 'plan').status, 0, '返工外部協助延續作數——一次調用滿足兩閘');
 assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度核心防護）');
@@ -89,7 +89,7 @@ writeFileSync(join(root, 'seed.txt'), '驗收中偷改\n');
 assert.equal(pt('③', 't1').status, 0);
 assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /working tree 未乾淨|乾淨/);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
-// verify→done：1.7.0 撤印章——--boss-ok＋時點③對抗即鑰匙（授權語義由理解流曝光承擔）
+// verify→done：--boss-ok＋時點③對抗即鑰匙（授權語義由理解流曝光承擔）
 assert.equal(pt('③').status, 0);
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 assert.equal(state().node, 'done');
@@ -111,7 +111,7 @@ assert.equal(state().ms, '001'); // 同 ms
 assert.equal(state().rev, 2, '第二次開新輪遞增（時序可對照）');
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(pt('①', 'r3').status, 0);
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
@@ -124,7 +124,7 @@ assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 assert.equal(run('next', 'intent', '--new-ms').status, 0);
 assert.equal(state().ms, '002'); // --new-ms→ms++
 
-// PASS：sb end 需 done 態＋--boss-ok（1.7.0 撤 pass 印章）
+// PASS：sb end 需 done 態＋--boss-ok（撤 pass 印章）
 assert.match(run('end', '--boss-ok').stderr, /done 態|sb end 僅限/);
 // ms002 建檔後快走到 done（測 sb end 的 --boss-ok 鏈）
 mkdirSync(join(root, '.shiftblame/demo/002'), { recursive: true });
@@ -137,10 +137,10 @@ assert.match(run('next', 'requirement', '--rerun', 'impl').stderr, /--rerun 僅�
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 // 混合格式擋：單行 G1 加 BDD 塊 → research 邊擋（擇一定義）；移除後放行
 writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8') + '\n### AC-99（混合）\n- Given：（填）\n');
-assert.match(run('next', 'research').stderr, /混合格式/, '1.7.3 混合格式擋（單行與 BDD 並存擇一）');
+assert.match(run('next', 'research').stderr, /混合格式/, '混合格式擋（單行與 BDD 並存擇一）');
 writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8').replace('\n### AC-99（混合）\n- Given：（填）\n', ''));
 assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(pt('①', 'ms2').status, 0);
 { const dbg = run('next', 'test', '--boss-ok', '--adversarial'); if (dbg.status !== 0) console.error('MS2 GATE:', dbg.stderr); assert.equal(dbg.status, 0); }

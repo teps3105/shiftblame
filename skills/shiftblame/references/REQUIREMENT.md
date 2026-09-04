@@ -1,6 +1,6 @@
 ---
 name: 需求定義
-revision: 1.8.2
+revision: 1.8.3
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
@@ -36,7 +36,7 @@ flowchart TB
 
 > requirement 段（G1 定義邊）高亮。用 G1 制約 G2 與 G3；G1 的裁判是 verify 段（逐項回指 AC 判定）——G1 閉環的落地邊。
 
-requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；執行層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：G1 承接 sb-think 的一次語義確認後直接定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；跨輪修正＝回 intent 開新輪（輪次計數記 flow-state；零快照——1.8.2 rev 退役）由 requirement 段重新定義 G1。
+requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；執行層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：G1 承接 sb-think 的一次語義確認後直接定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；跨輪修正＝回 intent 開新輪（輪次計數記 flow-state）由 requirement 段重新定義 G1。
 
 **經查證的現況事實（查證先於研究）**：在研究解法之前先查證現況——盤點 codebase 實況（既有能力、結構、可複用資產）、對照永續層文件（SOP／ROADMAP／docs）與實況差異、識別過時假設——收斂為 G1 定義區的**經查證的現況事實**節：每項需求標明依據的已查證事實。查證過程（工具調用、反證）落 tmp（RAM）——G 檔只收斂結論；requirement→research 邊由 BDD 格式閘把關。
 

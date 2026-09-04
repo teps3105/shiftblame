@@ -1,4 +1,4 @@
-// sb-ablation：框架本體消融矩陣（1.8.0）——消融原則的治理層落地（SKILL §1.8）
+// sb-ablation：框架本體消融矩陣——消融原則的治理層落地（SKILL §1.8）
 //
 // 每個 MUST 級機制執行消融實驗：
 //   ① intact 對照——原始源碼上跑 probe，期待防護在（擋下／記錄發生）；
@@ -63,14 +63,14 @@ const ABLATIONS = [];
 const ablation = (name, fn) => ABLATIONS.push({ name, fn });
 
 // —— hooks 機制（guard.mjs）——
-ablation('停等凍結 checkHoldFreeze（1.7.2 主動觸發停等）', () => {
+ablation('停等凍結 checkHoldFreeze（主動觸發停等）', () => {
   const neu = neutralize(GUARD, [['function checkHoldFreeze(root, tool, cmd, toolInput) {\n  if (!root) return null;', 'function checkHoldFreeze(root, tool, cmd, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'build', understandingHold: { inputIdx: 0 } } }); mkdirSync(join(r, 'src'), { recursive: true }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, 'src/a.js'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(GUARD), 2, 'intact：hold 期間 repo Edit 被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉凍結後放行（防護消失）');
 });
 
-ablation('G 檔寫入矩陣 checkGFileMatrix（1.8.1 RAM/ROM 分區）', () => {
+ablation('G 檔寫入矩陣 checkGFileMatrix（RAM/ROM 分區）', () => {
   const neu = neutralize(GUARD, [['function checkGFileMatrix(root, toolInput) {\n  if (!root) return null;', 'function checkGFileMatrix(root, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G2.md': 'x' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, '.shiftblame/demo/001/G2.md'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(GUARD), 2, 'intact：requirement 段寫 G2 被擋（G2 寫入權屬 research/build——跨區死路）');
@@ -105,14 +105,14 @@ ablation('破壞性命令防護 scanInlineDestructive（相對路徑遞迴刪除
   assert.equal(payload(neu), 0, 'ablated：拆掉防護後危險命令放行');
 });
 
-ablation('輸入流 recordInput（雙流模型 1.7.0——唯增事實）', () => {
+ablation('輸入流 recordInput（雙流模型——唯增事實）', () => {
   const neu = neutralize(GUARD, [['function recordInput(root, prompt) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;', 'function recordInput(root, prompt) {\n  return null; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;']]);
   const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '消融實驗輸入' }); const n = stateOf(r).inputs?.length ?? 0; rmSync(r, { recursive: true, force: true }); return n; };
   assert.equal(payload(GUARD), 1, 'intact：輸入落流（唯增）');
   assert.equal(payload(neu), 0, 'ablated：拆掉後輸入不落流（曝光鏈斷）');
 });
 
-ablation('停等狀態機（recordInput 內 understandingHold 設置，1.7.2）', () => {
+ablation('停等狀態機（recordInput 內 understandingHold 設置）', () => {
   const neu = neutralize(GUARD, [['if (ACTIVE_TRIGGER_RE.test(String(prompt ?? \'\'))) {', 'if (false && ACTIVE_TRIGGER_RE.test(String(prompt ?? \'\'))) { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '/sb-think 開新需求理解' }); const has = !!stateOf(r).understandingHold; rmSync(r, { recursive: true, force: true }); return has; };
   assert.equal(payload(GUARD), true, 'intact：主動觸發設 hold');
@@ -126,16 +126,16 @@ ablation('理解流 recordUnderstanding（sb-think args＝理解宣告）', () =
   assert.equal(payload(neu), 0, 'ablated：拆掉後理解宣告不落流（行動正當性載體失效）');
 });
 
-// 1.8.1 退役：markAuditEvidence（auditEvidence 機制整個拆除——老闆裁定；本條目為消融實績記錄：拆掉→requirement 段查證不再寫狀態，流程不變）
+// 退役機制消融實績：markAuditEvidence 拆除→requirement 段查證不寫狀態，流程不變（殘留證明）
 
-ablation('外部證據標記 markExternalEvidence（1.6.0 外部性閘鑰匙）', () => {
+ablation('外部證據標記 markExternalEvidence（外部性閘鑰匙）', () => {
   const neu = neutralize(GUARD, [['function markExternalEvidence(root, tool) {\n  if (!root) return;', 'function markExternalEvidence(root, tool) {\n  return; // ABLATED\n  if (!root) return;']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'research' } }); hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); const d = !!stateOf(r).externalEvidence?.done; rmSync(r, { recursive: true, force: true }); return d; };
   assert.equal(payload(GUARD), true, 'intact：外部調用標記 externalEvidence');
   assert.equal(payload(neu), false, 'ablated：拆掉後外部調用不標記（外部性閘鑰匙失效）');
 });
 
-ablation('hooks 心跳 beatHeartbeat（1.6.1 診斷）', () => {
+ablation('hooks 心跳 beatHeartbeat（診斷）', () => {
   const neu = neutralize(GUARD, [['function beatHeartbeat(root, event) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;', 'function beatHeartbeat(root, event) {\n  return; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;']]);
   const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'SessionStart', source: 'startup' }); const ok = !!(JSON.parse(readFileSync(join(r, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat) && !existsSync(join(r, '.shiftblame/tmp/hooks-heartbeat.json')); rmSync(r, { recursive: true, force: true }); return ok; };
   assert.equal(payload(GUARD), true, 'intact：hooks 成功執行更新 flow-state 心跳欄位（零散落 tmp 檔）');
@@ -203,14 +203,14 @@ ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () 
   assert.equal(payload(neu), 0, 'ablated：拆掉後 CLI 層繞過決策邊（hooks 層獨撐）');
 });
 
-ablation('CLI 時點對抗宣告閘 adversarialEdge×adversarialLog point 對照（CARD③ CLI 層，1.8.1 RAM/ROM）', () => {
+ablation('CLI 時點對抗宣告閘 adversarialEdge×adversarialLog point 對照（CARD③ CLI 層，RAM/ROM）', () => {
   const neu = neutralize(SB, [['  const adv = adversarialEdge(st.node, target);\n  if (adv) {', '  const adv = adversarialEdge(st.node, target);\n  if (false && adv) { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'plan' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1, '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'test', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：plan→test 缺 --adversarial 宣告被 CLI 擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉後無對抗宣告即放行');
 });
 
-ablation('時點對抗 point 條目對照（--adversarial 對照源＝adversarialLog，1.8.1）', () => {
+ablation('時點對抗 point 條目對照（--adversarial 對照源＝adversarialLog）', () => {
   const neu = neutralize(SB, [['      const entry = (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1);', '      const entry = null; // ABLATED']]);
   const mk = (script, withPt) => { const r = mkSandbox({ state: { node: 'plan', adversarialLog: withPt ? [{ at: '2026-01-01T00:00:00Z', report: 'x', verdict: '通過', node: 'plan', point: '①' }] : [] }, files: { '.shiftblame/demo/001/G1.md': BDD_G1, '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'test', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(mk(SB, false), 1, 'intact：無 point 條目即擋（RAM 對照源）');
@@ -218,16 +218,16 @@ ablation('時點對抗 point 條目對照（--adversarial 對照源＝adversaria
   assert.equal(mk(neu, true), 1, 'ablated：拆掉條目對照後仍擋於其他閘或放行不一致（條目存在卻被當無）');
 });
 
-ablation('外部證據閘（research→plan 邊驗，1.6.0）', () => {
+ablation('外部證據閘（research→plan 邊驗）', () => {
   const neu = neutralize(SB, [['if (st.node === \'research\' && target === \'plan\' && !st.externalEvidence?.done) {', 'if (false && st.node === \'research\' && target === \'plan\' && !st.externalEvidence?.done) { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'research' }, files: { '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'plan'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：零外部調用推進被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉外部性閘後閉門推進放行');
 });
 
-// 1.8.1 退役：CLI 審計痕跡閘（requirement→research 邊驗 auditEvidence——機制拆除；該邊由 BDD 格式閘把關）
+// 退役機制消融實績：CLI 審計痕跡閘拆除→requirement→research 邊由 BDD 格式閘把關，流程不變
 
-ablation('BDD 行為規格閘 validateG1Acceptance（1.7.3＋1.8.0 消融鍵）', () => {
+ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
   const neu = neutralize(SB, [['function validateG1Acceptance(g1, problems, passes) {\n  const rows = acRows(g1);', 'function validateG1Acceptance(g1, problems, passes) {\n  return []; // ABLATED\n  const rows = acRows(g1);']]);
   const badG1 = BDD_G1.replace('- 消融：拿掉則無法送出且看不到結果\n', ''); // 僅刪消融行——第六鍵的隔離擋下證明（其餘五鍵完好）
   const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G1.md': badG1 } }); const h = cliRun(script, r, 'next', 'research'); rmSync(r, { recursive: true, force: true }); return h.status; };
@@ -235,7 +235,7 @@ ablation('BDD 行為規格閘 validateG1Acceptance（1.7.3＋1.8.0 消融鍵）'
   assert.equal(payload(neu), 0, 'ablated：拆掉規格閘後模板照抄即過');
 });
 
-ablation('G1 契約核對（放行後偏離即擋，1.5.x）', () => {
+ablation('G1 契約核對（放行後偏離即擋）', () => {
   const neu = neutralize(SB, [['if (st.g1Contract?.ms === st.ms && target !== \'intent\') {', 'if (false && st.g1Contract?.ms === st.ms && target !== \'intent\') { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'build', g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：G1 偏離放行契約被擋');
@@ -243,7 +243,7 @@ ablation('G1 契約核對（放行後偏離即擋，1.5.x）', () => {
   function r_placeholder() { return '.shiftblame/demo/001'; }
 });
 
-ablation('陳述對照閘（commitmsg 內永續層機制引用驗，1.7.1）', () => {
+ablation('陳述對照閘（commitmsg 內永續層機制引用驗）', () => {
   const neu = neutralize(SB, [['    if (eternal.length) {', '    if (false && eternal.length) { // ABLATED']]);
   const payload = (script) => {
     const r = mkSandbox({ state: { node: 'build', adversarialAt: new Date().toISOString(), adversarialConsumed: false }, git: true });
@@ -258,9 +258,9 @@ ablation('陳述對照閘（commitmsg 內永續層機制引用驗，1.7.1）', (
   assert.equal(payload(neu), 0, 'ablated：拆掉對照閘後過時假設入庫放行');
 });
 
-// 1.8.2 退役：snapshotRev（rev 快照森林——老闆裁定越權設計；本條目為消融實績記錄：拆除→零快照寫入，時序由 history＋輪次計數承擔）
+// 退役機制消融實績：snapshotRev 拆除→零 rev 目錄寫入，時序由 history＋輪次計數承擔（殘留證明）
 
-ablation('輪次計數 countRev（1.8.2——零檔案寫入）', () => {
+ablation('輪次計數 countRev（零檔案寫入）', () => {
   const neu = neutralize(SB, [['function countRev(st) {', 'function countRev(st) {\n  return null; // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'plan' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); cliRun(script, r, 'next', 'intent'); const st = JSON.parse(readFileSync(join(r, '.shiftblame/flow-state.json'), 'utf8')); const noRev = !existsSync(join(r, '.shiftblame/demo/001/rev')); rmSync(r, { recursive: true, force: true }); return st.rev === 1 && noRev; };
   assert.equal(payload(SB), true, 'intact：回 intent 計輪 +1 且零快照目錄');

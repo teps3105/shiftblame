@@ -1,4 +1,4 @@
-// sb-external-gate：研究／返工外部性閘（1.6.0）——externalEvidence 標記（真實 hooks）、
+// sb-external-gate：研究／返工外部性閘——externalEvidence 標記（真實 hooks）、
 // research→plan 邊驗（零外部推不過）、--rerun 返工重置＋pending 鏈（返工後首個推進邊驗）、回 intent 中止清
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

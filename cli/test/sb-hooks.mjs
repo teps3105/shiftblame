@@ -1,4 +1,4 @@
-// sb-hooks：雙流模型（1.7.0 撤鎖範式）——輸入流唯增＋理解流落檔＋曝光＋無鎖＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
+// sb-hooks：雙流模型——輸入流唯增＋理解流落檔＋曝光＋無鎖＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,13 +15,13 @@ const run = (payload) => spawnSync(process.execPath, [hook], { input: JSON.strin
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
 const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
 
-// —— 1. 雙流模型（1.7.0 撤鎖範式）：輸入流唯增＋理解流（Skill args）；無鎖無 thinkRouted ——
+// —— 1. 雙流模型：輸入流唯增＋理解流（Skill args）；無鎖無 thinkRouted ——
 const up = (prompt) => run({ hook_event_name: 'UserPromptSubmit', prompt });
 let r = up('隨便說什麼都行');
 assert.equal(r.status, 0);
 assert.equal(state().inputs.length, 1, '輸入流記錄（唯增）');
 assert.equal(state().inputs[0].text, '隨便說什麼都行', '原文事實');
-assert.equal(state().dialogueLock, undefined, '無對話鎖（撤鎖範式）');
+assert.equal(state().dialogueLock, undefined, '無對話鎖欄位');
 assert.ok(r.stdout.includes('輸入流'), 'flowLine 狀態回流');
 r = up('第二則輸入');
 assert.equal(state().inputs.length, 2, '連續輸入不覆蓋（唯增——連續串＝同一事實流）');
@@ -38,7 +38,7 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name:
 assert.equal(state().understandings.length, 2, 'name fallback 錨定匹配落檔');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think', args: '短' } });
 assert.equal(state().understandings.length, 2, 'args 過短不落檔（理解必須有實質——該輸入保持未覆蓋曝光）');
-// 外部證據標記（沿用 1.6.0）
+// 外部證據標記
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
 assert.equal(state().externalEvidence?.done, true, 'WebSearch 調用標記 externalEvidence');
 r = up('又一則');
@@ -51,11 +51,11 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
 assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
-// hooks 心跳（1.8.2 歸位 flow-state）
+// hooks 心跳（flow-state hooksHeartbeat 欄位）
 const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat;
 assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
 assert.ok(new Date(hb.at).getTime() > Date.now() - 60000, '心跳時間戳新鮮');
-// inject 格式（沿用 1.6.1 真根因防回歸）
+// inject 格式（hookEventName 歸因防回歸）
 const ssOut = run({ hook_event_name: 'SessionStart', source: 'startup' });
 const ssJson = JSON.parse(ssOut.stdout);
 assert.equal(ssJson.hookSpecificOutput.hookEventName, 'SessionStart', 'SessionStart 注入歸因正確事件名');
@@ -64,14 +64,14 @@ const upOut = up('inject 格式驗證輸入');
 const upJson = JSON.parse(upOut.stdout);
 assert.equal(upJson.hookSpecificOutput.hookEventName, 'UserPromptSubmit', 'UserPromptSubmit 注入歸因正確事件名');
 assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[shiftblame 不變量]'), '不變量卡經 additionalContext 真正注入');
-// 心跳守門（沿用 1.6.1）：無 .shiftblame 的 cwd 不得長出流浪工作區
+// 心跳守門：無 .shiftblame 的 cwd 不得長出流浪工作區
 const strayRoot = mkdtempSync(join(tmpdir(), 'sb-stray-'));
 process.on('exit', () => rmSync(strayRoot, { recursive: true, force: true }));
 const strayRun = spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: strayRoot, hook_event_name: 'SessionStart', source: 'startup' }), encoding: 'utf8' });
 assert.equal(strayRun.status, 0, '流浪 cwd 下 hooks 靜默放行');
 assert.equal(existsSync(join(strayRoot, '.shiftblame')), false, '不得創建流浪 .shiftblame（框架元規則——findRoot 錨錯根防護）');
 
-// —— 2. 無鎖（1.7.0 撤鎖）：一般 Bash／Write 不因對話鎖被擋——段位矩陣與 commit 攔截仍在（節 6-9）——
+// —— 2. 無鎖：一般 Bash／Write 不因對話鎖被擋——段位矩陣與 commit 攔截仍在（節 6-9）——
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
 assert.equal(r.status, 0, '一般 Bash 不攔（無對話鎖）');
 
@@ -91,7 +91,7 @@ assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
 assert.ok(ss2.stdout.includes('@ plan'), '段位');
 assert.ok(ss2.stdout.includes('輸入流'), '輸入流狀態回流');
 
-// —— 5. Stop：撤鎖後靜默（1.7.0——無防護動作，理解流曝光承擔審視）——
+// —— 5. Stop：撤鎖後靜默（無防護動作，理解流曝光承擔審視）——
 r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
 assert.equal(r.status, 0, 'Stop 靜默放行');
 assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
@@ -152,7 +152,7 @@ const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: 
 assert.equal(bad.status, 2);
 assert.match(bad.stderr, /破壞性操作/);
 
-// —— 10. 兩種觸發樣態（1.7.2）：主動觸發停等——hold 設置／凍結硬擋／唯讀放行／回覆解凍 ——
+// —— 10. 兩種觸發樣態：主動觸發停等——hold 設置／凍結硬擋／唯讀放行／回覆解凍 ——
 setNode('build'); // build 段正常可寫（對照組）
 const editOkBefore = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
 assert.equal(editOkBefore.status, 0, '對照組：無 hold 時 build 段 Edit 放行');
@@ -193,20 +193,20 @@ assert.equal(state().understandingHold, undefined, '老闆回覆解除 hold');
 assert.ok(release.stdout.includes('[停等解除]'), '注入卡顯示解除行');
 const editOkAfter = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
 assert.equal(editOkAfter.status, 0, '解凍後回到段矩陣判定（build 段放行）');
-// —— 11. G 檔寫入矩陣（1.8.1 RAM/ROM 分區） ——
+// —— 11. G 檔寫入矩陣（RAM/ROM 分區） ——
 mkdirSync(join(root, '.shiftblame', 'demo', '001'), { recursive: true });
 const setNode2 = (n) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
-// 1.8.1 auditEvidence 已拆除：requirement 段 Read repo 檔不寫任何標記（零殘留行為驗證）
+// requirement 段 Read repo 檔不寫任何標記（零殘留行為驗證）
 mkdirSync(join(root, 'src'), { recursive: true });
 setNode2('requirement');
 const beforeRead = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
 run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
 run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
-// 心跳歸位（1.8.2）：hooksHeartbeat 寫入 flow-state 是唯一獲准的狀態寫入；剝除後必須零殘留
+// hooksHeartbeat 寫入 flow-state 是唯一獲准的狀態寫入；剝除後必須零殘留
 const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; return JSON.stringify(o); };
-assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), 'auditEvidence 機制已拆除——查證動作不寫狀態（RAM/ROM）');
+assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), '查證動作不寫狀態（RAM/ROM）');
 const hbAfter = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).hooksHeartbeat;
-assert.ok(hbAfter && hbAfter.at && hbAfter.event, '心跳歸位：hooksHeartbeat 落 flow-state（at＋event）');
+assert.ok(hbAfter && hbAfter.at && hbAfter.event, 'hooksHeartbeat 落 flow-state（at＋event）');
 // G 寫入矩陣：定義邊寫、落地邊唯讀
 setNode2('requirement');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'requirement 段寫 G1 放行（定義邊）');
@@ -216,7 +216,7 @@ assert.match(gKidnap.stderr, /G2|寫入權屬|無寫入權/, '綁架訊息指向
 setNode2('research');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), content: 'x' } }).status, 0, 'research 段寫 G2 放行');
 setNode2('test');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'test 段寫 G3 回指區放行（1.8.1 RAM/ROM：落地段獲回指區寫入權）');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'test 段寫 G3 回指區放行（RAM/ROM：落地段獲回指區寫入權）');
 setNode2('requirement');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/g2.md'), old_string: 'a', new_string: 'b' } }).status, 2, '小寫 g2.md 繞過死路（Windows 大小寫不敏感 FS：requirement 對 G2 無寫入權）');
 setNode2('plan');

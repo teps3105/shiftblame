@@ -5,8 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 1.5 對抗對照與完成印章：--adversarial 邊（plan→test①、verify→test②、verify→done③）×SLUG 逐字對照；
-// 完成印章（老闆詞）＝verify→done 唯一鑰匙；非對抗邊帶旗標即擋。
+// 時點對抗：--adversarial 邊（plan→test①、verify→test②、verify→done③）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -32,7 +31,7 @@ writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 
 // 1. adversarialLog 缺時點①條目即擋（RAM/ROM：對照源＝point 條目）
@@ -70,13 +69,13 @@ assert.equal(run('next', 'verify').status, 0);
 assert.match(run('next', 'test', '--adversarial').stderr, /缺時點②條目/);
 assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
 assert.equal(run('next', 'test', '--adversarial').status, 0);
-// —— 提交對抗閘（1.5.3）：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
+// —— 提交對抗閘：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
 const tmpDir = join(root, '.shiftblame', 'tmp');
 const reportPath = join(tmpDir, 'review-test.md');
 let r;
 // --self-attack 無合法介面：解析層拒絕（未知旗標 usage——合法命令邊驗證，非僥倖擋）
 r = run('adversarial', '--self-attack', reportPath);
-assert.equal(r.status, 2, '--self-attack 已移除（解析器對未知旗標 usage 擋）');
+assert.equal(r.status, 2, '--self-attack 未知旗標（解析器 usage 擋）');
 r = run('adversarial', '--unknown-flag');
 assert.equal(r.status, 2, '拼錯旗標同樣 usage 擋（解析器衛生）');
 // 前綴繞過回歸：.shiftblame-evil 目錄不得通過（startsWith 無分隔符邊界缺陷已修——relative 判定）
@@ -145,7 +144,7 @@ assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對�
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
 
-// —— staged 系統檔不入庫（1.5.5：禁入僅系統檔 .shiftblame/——其他位置一律放行，回歸鎖定禁入範圍）——
+// —— staged 系統檔不入庫（禁入僅系統檔 .shiftblame/——其他位置一律放行）——
 writeFileSync(reportPath, '# 對抗報告\nstaged 閘測試。\n對抗判定：通過（零必修）');
 r = run('adversarial', reportPath);
 assert.equal(r.status, 0);
@@ -213,7 +212,7 @@ assert.equal(hm4.status, 0, '-c commit.gpgsign 鍵名→不誤傷');
 const ha1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} config alias.z "commit -a"` } });
 assert.equal(ha1.status, 2, 'git alias 定義→hooks 擋');
 assert.match(ha1.stderr, /git alias 定義攔截/);
-// —— 1.5.5 路徑展開元規則：GIT_DIR／--git-dir 重定向即擋 ——
+// —— 路徑展開元規則：GIT_DIR／--git-dir 重定向即擋 ——
 const hr1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `GIT_DIR=${root}/.git git commit -m "feat: 重定向繞過嘗試"` } });
 assert.equal(hr1.status, 2, 'GIT_DIR= 重定向→hooks 擋');
 assert.match(hr1.stderr, /路徑重定向攔截/);
@@ -225,7 +224,7 @@ const relWrite = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Edit', too
 assert.equal(relWrite.status, 2, '相對 file_path（seed.txt）→root 錨定展開→verify 段寬寫入擋');
 assert.match(relWrite.stderr, /寫入矩陣/);
 
-// —— 四必修回歸（1.5.5 閘環）——
+// —— 四必修回歸（閘環）——
 // 大小寫：乾淨沙盒原生 .SHIFTBLAME/（realpathSync 保留輸入大小寫——rel 比對 toLowerCase）
 const root3 = mkdtempSync(join(tmpdir(), 'sb-adv-case3-'));
 try {

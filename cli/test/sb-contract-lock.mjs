@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 1.5 契約測試：G1 於 plan→test 放行邊封存（hash 記 flow-state）；偏離即擋；回 intent 重定義（零旗標）
+// 契約測試：G1 於 plan→test 放行邊封存（hash 記 flow-state）；偏離即擋；回 intent 重定義（零旗標）
 const root = mkdtempSync(join(tmpdir(), 'sb-contract-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -32,7 +32,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點①對抗\n外部子代理原文節錄內容足夠實質。\n對抗判定：通過');
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 1.6.0 外部證據標記（research→plan 邊驗）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '①').status, 0);
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
@@ -47,10 +47,10 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'verify').stderr, /分隔標題出現 0 次|已偏離/);
 const revOut = run('next', 'intent');
 assert.equal(revOut.status, 0);
-assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '1.8.2 回 intent 開新輪——純計數訊息（rev 快照退役）');
+assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '回 intent 開新輪——純計數訊息');
 assert.equal(state().g1Contract, undefined); // 回 intent 解除契約，重定義後重新封存
 assert.equal(state().rev, 1, '輪次編號記入 flow-state');
-assert.ok(!existsSync(join(ms, 'rev')), '1.8.2 rev 快照退役——零快照目錄寫入（歷史歸 git）');
+assert.ok(!existsSync(join(ms, 'rev')), '零 rev 目錄寫入（歷史歸 git）');
 // 再回一輪：r02 遞增（快照疊代不覆蓋）
 run('next', 'requirement', '--boss-ok');
 run('next', 'intent');
