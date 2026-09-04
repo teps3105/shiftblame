@@ -17,7 +17,7 @@ sequenceDiagram
 
     B->>T: 任何輸入（指令名或自然語言）
 
-    Note over T: ═══ 責任轉移線 ═══<br/>① 載入脈絡（SOP/ROADMAP/archive/當前slug）<br/>② 不字面執行 先理解背後意圖<br/>③ 結構化呈現理解
+    Note over T: ═══ 責任轉移線 ═══<br/>① 載入脈絡（SOP/ROADMAP/當前slug＋定案索引/archive）<br/>② 不字面執行 先理解背後意圖<br/>③ 結構化呈現理解
 
     T->>B: 呈現「我理解你要什麼」
     B-->>T: 確認／修正（反覆打磨至滿意）
@@ -76,7 +76,7 @@ sequenceDiagram
     participant T as shiftblame:think
 
     B->>T: 輸入（任何指令名或自然語言）
-    Note over T: ① 載入脈絡<br/>SOP／ROADMAP／archive／當前 slug（§9）
+    Note over T: ① 載入脈絡<br/>SOP／ROADMAP／當前 slug＋定案索引／archive（§9）
     Note over T: ② 意圖結構化<br/>六欄呈現（命題/翻譯/邊界/<br/>候選方案/修改範圍/授權狀態）
     T->>B: 呈現理解（圖表 + 結構化）
     B-->>T: 審視
@@ -110,8 +110,7 @@ flowchart LR
     R -- 恢復 --> D3["shiftblame:resume"]
     R -- PASS --> D4["sb end"]
     R -- 丟棄 --> D5["shiftblame:dice"]
-    R -- 改文件 --> D6["shiftblame:docs/sop/roadmap"]
-    R -- 框架演化 --> D8["改框架"]
+    R -- 改文件／框架演化 --> D7["直接實行（寫入矩陣＋文件先行）"]
 ```
 
 shiftblame:save、shiftblame:resume、shiftblame:dice 等功能型技能與 CLI 命令都是 shiftblame:think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 shiftblame:think。

@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.0-2ea44f.svg" alt="version 1.9.0"/>
+  <img src="https://img.shields.io/badge/version-1.9.1-2ea44f.svg" alt="version 1.9.1"/>
 </p>
 
 ---
@@ -186,10 +186,6 @@ sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕�
 - [`shiftblame:resume`](skills/resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
 - [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 shiftblame:resume 恢復。
 - [`shiftblame:dice`](skills/dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
-- [`shiftblame:docs`](skills/docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
-- [`shiftblame:sop`](skills/sop/SKILL.md)——對 SOP 提出修改需求。
-- [`shiftblame:roadmap`](skills/roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
-- [`shiftblame:todo`](skills/todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
 
 ## 文件結構
 
@@ -216,7 +212,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）
     │       ├── ROADMAP.md         # ROADMAP 准入欄位中央模板（複製來源）
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三面向範本（複製來源）
-    └── */SKILL.md               # 功能型技能：shiftblame:think 全域路由＋save/resume/dice/docs/sop/roadmap/todo
+    └── */SKILL.md               # 功能型技能：shiftblame:think 全域路由＋save/resume/dice（文件操作由流程與寫入矩陣直接承載）
 ```
 
 每個專案的工作區位於 `<repo>/.shiftblame/`（`<repo>` = 使用者專案根目錄的絕對路徑），並且 MUST 經 `.gitignore` 排除（入庫路徑封閉）。工作區為**結構分檔**（定義單檔、使用分檔）：

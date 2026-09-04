@@ -70,7 +70,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
 const SESSION_CARD = [
   CARD,
   '',
-  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 shiftblame:think 的路由提議才有脈絡依據。',
+  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → 當前 slug（SLUG.md＋定案索引——同 slug 過往 ms 一行式定案，回讀由段義務承載）→ archive/（近者先於遠者）。載入後 shiftblame:think 的路由提議才有脈絡依據。',
   '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；輸入流／理解流記錄與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
   '[版號] 版本號屬老闆決策——升版由老闆拍板指定，揭露表寫「版號待老闆指定」。',
 ].join('\n');

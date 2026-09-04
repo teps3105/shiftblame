@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.9.0');
+assert.equal(manifest.version, '1.9.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.9\.0"/);
+assert.match(skill, /version: "1\.9\.1"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -117,7 +117,7 @@ const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lo
   '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
   '薄研究', '薄規劃', '薄產出', '薄流程',
   'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
-const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/think/SKILL.md', 'skills/resume/SKILL.md', 'skills/todo/SKILL.md', 'skills/save/SKILL.md', 'skills/dice/SKILL.md', 'skills/docs/SKILL.md', 'skills/sop/SKILL.md', 'skills/roadmap/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
+const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/think/SKILL.md', 'skills/resume/SKILL.md', 'skills/save/SKILL.md', 'skills/dice/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
 for (const f of files) {
@@ -161,12 +161,12 @@ for (const [dir, file] of [
   assert.match(doc, new RegExp('revision: ' + manifest.version.replace(/\./g, '\\.')), `${dir}/${file} revision 同步`);
 }
 
-// 技能清單：8 個功能型存在；5 個流程型已刪
+// 技能清單：4 個功能型存在；文件類技能已退役（流程與寫入矩陣直接承載）；9 個已退役
 import { existsSync } from 'node:fs';
-for (const k of ['think', 'save', 'resume', 'dice', 'docs', 'sop', 'roadmap', 'todo', 'shiftblame']) {
+for (const k of ['think', 'save', 'resume', 'dice', 'shiftblame']) {
   assert.ok(existsSync(join(repo, 'skills', k, 'SKILL.md')), `技能 ${k} 應存在`);
 }
-for (const k of ['sb-start', 'sb-do', 'sb-end', 'sb-commit', 'sb-report']) {
+for (const k of ['sb-start', 'sb-do', 'sb-end', 'sb-commit', 'sb-report', 'docs', 'sop', 'roadmap', 'todo']) {
   assert.equal(existsSync(join(repo, 'skills', k, 'SKILL.md')), false, `技能 ${k} 應已刪除`);
 }
 
