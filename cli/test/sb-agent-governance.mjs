@@ -87,6 +87,9 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘�
 assert.match(skill, /文件陳述錨/, 'SKILL 記載文件陳述錨（行為測試附文件陳述斷言——刪除漂移攔截）');
 assert.match(skill, /標準攻擊點清單（對抗任務組裝 MUST 轉錄）/, 'SKILL 標準攻擊點清單實體化＋轉錄義務');
 assert.match(readme, /文件陳述錨/, 'README 記載文件陳述錨');
+assert.match(skill, /文件先行/, 'SKILL 記載文件先行（永續層文件先於實作碼——build 順序原則）');
+assert.match(read('skills', 'shiftblame', 'references', 'BUILD.md'), /文件先行（永續層義務）/, 'BUILD 記載文件先行義務');
+assert.match(readme, /文件先行/, 'README 記載文件先行');
 assert.match(skill, /兩種觸發樣態/, 'SKILL 兩種觸發樣態條文（主動觸發停等）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
