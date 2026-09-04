@@ -84,9 +84,9 @@ assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordInput/, 'hooks 輸入
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordUnderstanding/, 'hooks 理解流記錄');
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdUnlockAbsent/, 'sb unlock 不存在命令處理');
 assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（永續層文件↔實況）');
-assert.match(skill, /兩層文件模型/, '兩層文件模型條文');
-assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
-assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（永續層文件↔實況）');
+assert.match(skill, /文件陳述錨/, 'SKILL 記載文件陳述錨（行為測試附文件陳述斷言——刪除漂移攔截）');
+assert.match(skill, /標準攻擊點清單（對抗任務組裝 MUST 轉錄）/, 'SKILL 標準攻擊點清單實體化＋轉錄義務');
+assert.match(readme, /文件陳述錨/, 'README 記載文件陳述錨');
 assert.match(skill, /兩種觸發樣態/, 'SKILL 兩種觸發樣態條文（主動觸發停等）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');

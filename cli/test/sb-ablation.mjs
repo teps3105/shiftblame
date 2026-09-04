@@ -6,7 +6,7 @@
 //   ③ ablated probe——同一操作指向臨時檔，期待防護消失（放行／記錄不發生）。
 // 兩者都成立＝該機制是行為的唯一因果源（消融證明）；
 // 拆掉仍擋／仍記錄＝殘留或貢獻歸屬錯誤——列退役審查（老闆拍板）。
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -270,6 +270,29 @@ ablation('輪次計數 countRev（零檔案寫入）', () => {
 // —— 執行矩陣——
 let pass = 0;
 const fails = [];
+ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔截）', () => {
+  // 真消融：複製 repo 結構到 tmp，SKILL 副本關鍵陳述漂移（兩層文件模型→兩層文檔模型）
+  // → 副本 governance 錨紅（攔截力存在）；neutralize 該錨 → 同漂移下紅燈消失（攔截歸零）
+  const driftedRepo = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sb-anchor-'));
+    NEU_DIRS.push(dir);
+    cpSync(repo, dir, { recursive: true, filter: (p) => !/[\\/](?:\.git|\.shiftblame|node_modules)(?:[\\/]|$)/.test(p) });
+    const sk = join(dir, 'skills', 'shiftblame', 'SKILL.md');
+    writeFileSync(sk, readFileSync(sk, 'utf8').replace(/兩層文件模型/g, '兩層文檔模型'));
+    return dir;
+  };
+  const runGov = (dir) => spawnSync(process.execPath, [join(dir, 'cli', 'test', 'sb-agent-governance.mjs')], { encoding: 'utf8' });
+  const intactDir = driftedRepo();
+  assert.notEqual(runGov(intactDir).status, 0, 'intact：文件漂移被錨攔（governance 紅）');
+  // neutralize：拆掉 governance 對該陳述的錨（L「兩層文件模型條文」斷言行）
+  const gov = readFileSync(join(repo, 'cli', 'test', 'sb-agent-governance.mjs'), 'utf8');
+  const ablated = gov.replace("assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');\n", '');
+  assert.notEqual(ablated, gov, 'neutralize 錨存在於源碼');
+  const dir2 = driftedRepo();
+  writeFileSync(join(dir2, 'cli', 'test', 'sb-agent-governance.mjs'), ablated);
+  assert.equal(runGov(dir2).status, 0, 'ablated：拆掉錨後同漂移無紅燈（攔截消失）');
+});
+
 for (const { name, fn } of ABLATIONS) {
   try { fn(); pass++; console.log(`PASS [消融] ${name}`); }
   catch (e) { fails.push(name); console.error(`FAIL [消融] ${name}：${e.message}`); }
