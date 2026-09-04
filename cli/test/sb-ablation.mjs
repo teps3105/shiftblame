@@ -258,11 +258,13 @@ ablation('陳述對照閘（commitmsg 內永續層機制引用驗，1.7.1）', (
   assert.equal(payload(neu), 0, 'ablated：拆掉對照閘後過時假設入庫放行');
 });
 
-ablation('輪次快照 snapshotRev（1.7.3 修正輪基線凍結）', () => {
-  const neu = neutralize(SB, [['function snapshotRev(st) {\n  const dir = msDir(st);', 'function snapshotRev(st) {\n  return null; // ABLATED\n  const dir = msDir(st);']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'plan' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); cliRun(script, r, 'next', 'intent'); const ok = existsSync(join(r, '.shiftblame/demo/001/rev/r01/G1.md')); rmSync(r, { recursive: true, force: true }); return ok; };
-  assert.equal(payload(SB), true, 'intact：回 intent 凍結 rev/r01 基線');
-  assert.equal(payload(neu), false, 'ablated：拆掉後多輪疊加無時序錨');
+// 1.8.2 退役：snapshotRev（rev 快照森林——老闆裁定越權設計；本條目為消融實績記錄：拆除→零快照寫入，時序由 history＋輪次計數承擔）
+
+ablation('輪次計數 countRev（1.8.2——零檔案寫入）', () => {
+  const neu = neutralize(SB, [['function countRev(st) {', 'function countRev(st) {\n  return null; // ABLATED']]);
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'plan' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); cliRun(script, r, 'next', 'intent'); const st = JSON.parse(readFileSync(join(r, '.shiftblame/flow-state.json'), 'utf8')); const noRev = !existsSync(join(r, '.shiftblame/demo/001/rev')); rmSync(r, { recursive: true, force: true }); return st.rev === 1 && noRev; };
+  assert.equal(payload(SB), true, 'intact：回 intent 計輪 +1 且零快照目錄');
+  assert.equal(payload(neu), false, 'ablated：拆掉後不計輪（history 仍在，僅計數缺失）');
 });
 
 // —— 執行矩陣——

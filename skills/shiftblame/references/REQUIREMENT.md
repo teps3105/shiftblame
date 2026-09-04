@@ -1,10 +1,10 @@
 ---
 name: 需求定義
-revision: 1.8.1
+revision: 1.8.2
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
-> **G1 定義邊（定義層工作段）**。 requirement 段＝需求定義（建立在經查證的現況事實上——查證過程落 tmp，RAM/ROM）。主對話依 sb-think 已確認的完整語義，在經查證的現況事實上產出 G1（需求／驗收契約）並直接定稿，不另問確認。此狀態只寫 `<repo>/.shiftblame/` 的 G1 與必要查證結果，不碰 repo 實作。G1 定稿後由 research、plan 段向前對齊；G2/G3 與 G1 不一致時回 intent 開新輪（rev 凍結基線）由 requirement 段重新定義，語義出入由 G1 唯一裁定。G1 閉環＝requirement（定義）＋verify（裁判：逐項 AC 判定）。§10 於放行前一次核對。
+> **G1 定義邊（定義層工作段）**。 requirement 段＝需求定義（建立在經查證的現況事實上——查證過程落 tmp，RAM/ROM）。主對話依 sb-think 已確認的完整語義，在經查證的現況事實上產出 G1（需求／驗收契約）並直接定稿，不另問確認。此狀態只寫 `<repo>/.shiftblame/` 的 G1 與必要查證結果，不碰 repo 實作。G1 定稿後由 research、plan 段向前對齊；G2/G3 與 G1 不一致時回 intent 開新輪由 requirement 段重新定義，語義出入由 G1 唯一裁定。G1 閉環＝requirement（定義）＋verify（裁判：逐項 AC 判定）。§10 於放行前一次核對。
 
 - **產出**：G1 定義區：經查證的現況事實＋What、Why、邊界、以唯一 AC-ID（BDD 行為規格）表達的原始使用者驗收契約（回指區由 verify 收斂寫入）
 - **制衡**：G2 與 G1 需求一一對應；G3 實作計畫須對應 G1 驗收；本 ms（里程碑）的價值成立
@@ -36,13 +36,13 @@ flowchart TB
 
 > requirement 段（G1 定義邊）高亮。用 G1 制約 G2 與 G3；G1 的裁判是 verify 段（逐項回指 AC 判定）——G1 閉環的落地邊。
 
-requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；執行層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：G1 承接 sb-think 的一次語義確認後直接定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；跨輪修正＝回 intent 開新輪（CLI 凍結三檔至 `rev/rN/`）由 requirement 段重新定義 G1。
+requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；執行層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：G1 承接 sb-think 的一次語義確認後直接定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；跨輪修正＝回 intent 開新輪（輪次計數記 flow-state；零快照——1.8.2 rev 退役）由 requirement 段重新定義 G1。
 
 **經查證的現況事實（查證先於研究）**：在研究解法之前先查證現況——盤點 codebase 實況（既有能力、結構、可複用資產）、對照永續層文件（SOP／ROADMAP／docs）與實況差異、識別過時假設——收斂為 G1 定義區的**經查證的現況事實**節：每項需求標明依據的已查證事實。查證過程（工具調用、反證）落 tmp（RAM）——G 檔只收斂結論；requirement→research 邊由 BDD 格式閘把關。
 
 **使用者驗收契約（BDD 行為規格）**：每項需求 MUST 有唯一 `AC-ID`，以 BDD 行為規格表達——**Given**（前置情境）／**When**（操作）／**Then**（可觀察結果）＋**使用者**＋**失敗邊界**＋**消融**（拿掉此需求，使用者失去什麼可觀察價值——答不出＝偽需求；消融原則 SKILL §1.8），證據類型固定為 `BEHAVIOR`。行為規格逼出的問題（誰、什麼情境、做什麼、觀察到什麼、什麼算失敗）字面搬運答不出——需求理解以行為語義而非字面意思立法。結構證據只能證明實作存在；需求成立＝使用者操作後可觀察到契約結果。
 
-**回指 G1 的工作區前置條件**：從開發期顯式修約（開新輪，rev 凍結）或完成的 ms 回到 requirement 段前，秘書 MUST 先盤點 working tree；可保留成果依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄，直到工作區乾淨才得進入 G1——實作殘留先完成提交／捨棄分類。
+**回指 G1 的工作區前置條件**：從開發期顯式修約（開新輪）或完成的 ms 回到 requirement 段前，秘書 MUST 先盤點 working tree；可保留成果依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄，直到工作區乾淨才得進入 G1——實作殘留先完成提交／捨棄分類。
 
 §10 核對缺漏時由**責任面向一次補正**後重核（輪內單向定律，SKILL §1.1），不環形重跑——修補由 plan 段基於證據設計。放行後 G1 封存；開發出入若為契約不足／衝突，走顯式修約＝回 intent 開新輪（SKILL §1.4.1）——開新輪修約是唯一吸收路徑。
 

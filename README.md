@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.8.1-2ea44f.svg" alt="version 1.8.1"/>
+  <img src="https://img.shields.io/badge/version-1.8.2-2ea44f.svg" alt="version 1.8.2"/>
 </p>
 
 ---
@@ -24,7 +24,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 
 核心原則：
 
-- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（CLI 凍結三檔至 rev/rN/，輪次編號＝時序權威，防疊加混亂）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
+- **段-檔承載與輪內單向（1.7.3）。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔——1.8.2 rev 快照退役）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
 
 > **1.8.1 遷移**：audit 段正名 requirement（clean break）——既有專案 `.shiftblame/*/flow-state.json` 的 `node: "audit"` 手改為 `"requirement"` 後可繼續推進。
 - **消融原則（1.8.0 方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
@@ -51,7 +51,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **測試可自動化，驗收必須是使用者行為。** G3 每項驗收 MUST 可重現執行；CI 綠燈與結構正確不能單獨判定完成，仍須逐項提供 G1 使用者可觀察的 BEHAVIOR 證據。
 - **測試先行（觸發重流程時）。** 執行層執行順序固定：測試階段回指 G3 驗收排程寫測試（紅燈）→ 實作階段回指 G2 寫實作 → 驗收階段依 G3 操作、對 G1 逐項 AC 判定到綠燈。先寫測試再實作，與定義層「驗收先於實作」對齊。
 - **驗收先於實作。** G3 內部先依 G1 寫驗收，依序：先回讀 G1 寫驗收，再依 G2 寫實作步驟。
-- **G1 是封存契約。** plan→test 放行時 CLI 將 G1 的 SHA-256 封存於 flow-state.json，後續每次推進重算核對；G2／G3 的一切改寫（含 CONFORMS 單調細化）經回 intent 開新輪至定義段執行（G1 不變時重新放行同 hash 重封存；rev 快照留時序）。契約不足或衝突＝回 intent 開新輪重定義後重新放行。
+- **G1 是封存契約。** plan→test 放行時 CLI 將 G1 的 SHA-256 封存於 flow-state.json，後續每次推進重算核對；G2／G3 的一切改寫（含 CONFORMS 單調細化）經回 intent 開新輪至定義段執行（G1 不變時重新放行同 hash 重封存；history 留時序）。契約不足或衝突＝回 intent 開新輪重定義後重新放行。
 - **回 intent 前先清帳。** 回 intent 重走前，working tree MUST 乾淨：可保留成果先依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄。
 - **驗收使用者需求，不驗收結構幻象。** G1 每項需求使用唯一 AC-ID 與 BEHAVIOR 契約；G3 驗收表逐項排程並映射測試。CI 綠燈或結構正確不能單獨判定完成；必填 AC 必須有 commit 與實際操作／觀察的 SATISFIED 行為證據（引用專案輸出以節錄快照為證）——判決由秘書判定，時點②對抗承擔查核（verify 邊核對 git 一致性）。
 - **commit 集權。** commit 一律由主對話秘書執行且必過 `sb commitmsg`（hooks 留痕硬擋）；build 段完成即存檔（commit 先於驗收）。

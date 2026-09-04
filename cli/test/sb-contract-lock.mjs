@@ -47,15 +47,12 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'verify').stderr, /分隔標題出現 0 次|已偏離/);
 const revOut = run('next', 'intent');
 assert.equal(revOut.status, 0);
-assert.match(revOut.stdout, /修正輪 r01：基線凍結/, '1.7.3 回 intent 開新輪——rev 快照訊息');
+assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '1.8.2 回 intent 開新輪——純計數訊息（rev 快照退役）');
 assert.equal(state().g1Contract, undefined); // 回 intent 解除契約，重定義後重新封存
 assert.equal(state().rev, 1, '輪次編號記入 flow-state');
-assert.ok(existsSync(join(ms, 'rev/r01/G1.md')), 'rev/r01 凍結 G1 基線');
-assert.ok(existsSync(join(ms, 'rev/r01/G2.md')) && existsSync(join(ms, 'rev/r01/G3.md')), 'rev/r01 凍結 G2/G3');
-assert.match(readFileSync(join(ms, 'rev/r01/G1.md'), 'utf8'), /局部模型改寫了契約/, '凍結的是回頭當下的內容（時序唯一權威）');
+assert.ok(!existsSync(join(ms, 'rev')), '1.8.2 rev 快照退役——零快照目錄寫入（歷史歸 git）');
 // 再回一輪：r02 遞增（快照疊代不覆蓋）
 run('next', 'requirement', '--boss-ok');
 run('next', 'intent');
-assert.equal(state().rev, 2, '第二次開新輪遞增 r02');
-assert.ok(existsSync(join(ms, 'rev/r02/G1.md')), 'rev/r02 存在（時序可對照）');
+assert.equal(state().rev, 2, '第二次開新輪遞增計數（時序由 history 承擔）');
 console.log('sb-contract-lock: PASS');

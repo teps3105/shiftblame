@@ -14,7 +14,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync, copyFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 
@@ -210,19 +210,13 @@ function substantive(body, minLen = 20) {
 const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
 
-// 輪次快照（1.7.3）：回 intent 開新輪時凍結基線——現有 G1/G2/G3 快照至 rev/rN/
-// （輪次編號＝時序唯一權威，防多輪修正疊加混亂；新輪在凍結基線上重寫自洽）
-function snapshotRev(st) {
+// 輪次計數（1.8.2 rev 快照退役——老闆裁定：快照森林屬越權設計；歷史不可變性由 git 承擔）：
+// 回 intent 開新輪只遞增計數（ms 目錄有 G 檔才計——與舊快照條件等價），零檔案寫入
+function countRev(st) {
   const dir = msDir(st);
-  const files = [1, 2, 3].map((n) => join(dir, `G${n}.md`)).filter((f) => existsSync(f));
-  if (!files.length) return null;
-  const revRoot = join(dir, 'rev');
-  mkdirSync(revRoot, { recursive: true });
-  const n = readdirSync(revRoot).filter((d) => /^r\d+$/.test(d)).length + 1;
-  const revDir = join(revRoot, `r${String(n).padStart(2, '0')}`);
-  mkdirSync(revDir, { recursive: true });
-  for (const f of files) copyFileSync(f, join(revDir, basename(f)));
-  return n;
+  const has = [1, 2, 3].some((n) => existsSync(join(dir, `G${n}.md`)));
+  if (!has) return null;
+  return (st.rev ?? 0) + 1;
 }
 const sha256 = (p) => createHash('sha256').update(readFileSync(p)).digest('hex');
 const sha256Text = (t) => createHash('sha256').update(t, 'utf8').digest('hex');
@@ -476,7 +470,7 @@ function cmdState() {
   const st = readJson(STATE_FILE);
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   if (st.node === 'ended') { out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt ?? '?'}）`); return; }
-  out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}（修正輪基線見 rev/）` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
+  out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
@@ -528,12 +522,12 @@ function cmdNext(target, opts) {
     delete st.g1Contract;
     if (prev === 'done' && opts.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
-      delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入（rev/ 時序 per-ms）
+      delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪，零快照
-      // 開新輪（1.7.3）：凍結基線——G1/G2/G3 快照至 rev/rN/（時序唯一權威，防多輪疊加混亂）
-      const revN = snapshotRev(st);
-      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：基線凍結（G1/G2/G3 → rev/）——新輪重寫自洽，時序以輪次為準`); }
+      // 開新輪（1.8.2）：只計輪不快照——新輪重寫自洽，時序由 history＋輪次計數承擔（歷史不可變性歸 git）
+      const revN = countRev(st);
+      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 history 承擔，歷史歸 git）`); }
     }
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };

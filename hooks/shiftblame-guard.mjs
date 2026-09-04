@@ -264,9 +264,9 @@ const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath'
 // ———— G 檔寫入矩陣（1.8.1 RAM/ROM：定義區綁定義邊唯寫、回指區綁落地段唯寫）————
 // G1→requirement/verify、G2→research/build、G3→plan/test（＋done §2.5）——落地段獲得承載檔回指區寫入權；
 // 跨區（落地段改定義區）仍是綁架上游死路，由 CLI 分區 hash 於 sb next 兜底（hooks 無檔內分區粒度——殘餘如實標註）。
-// rev/ 快照與 archive/ 由 CLI 於推進與收尾時寫入（放行）。
+// archive/ 由 CLI 於收尾時寫入（放行）。
 const G_WRITE_NODES = { 1: new Set(['requirement', 'verify']), 2: new Set(['research', 'build']), 3: new Set(['plan', 'test', 'done']) };
-const G_FILE_RE = /^\.shiftblame\/[^/]+\/[^/]+\/(rev\/r\d+\/|archive\/)?G([123])\.md$/i; // i＋輸入 toLowerCase——大小寫不敏感（Windows FS）
+const G_FILE_RE = /^\.shiftblame\/[^/]+\/[^/]+\/(archive\/)?G([123])\.md$/i; // i＋輸入 toLowerCase——大小寫不敏感（Windows FS）
 function checkGFileMatrix(root, toolInput) {
   if (!root) return null;
   let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
@@ -278,11 +278,11 @@ function checkGFileMatrix(root, toolInput) {
     const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
     const m = rel.toLowerCase().match(G_FILE_RE); // 大小寫不敏感——Windows FS 不校正路徑大小寫（realpathSync 保留輸入），小寫形繞過死路
     if (!m) continue;
-    if (m[1]) continue; // rev/ 快照與 archive/ 由 CLI 寫入——放行
+    if (m[1]) continue; // archive/ 由 CLI 寫入——放行
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
       const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區；done §2.5）' }[g];
-      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent，rev 基線凍結）（RAM/ROM，SKILL §0/§5）`;
+      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
     }
   }
   return null;

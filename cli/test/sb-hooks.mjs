@@ -219,6 +219,5 @@ setNode2('plan');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), content: 'x' } }).status, 0, 'plan 段寫 G3 放行');
 setNode2('verify');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'verify 段寫 G1 回指區放行（AC 判定收斂寫入；定義區由 CLI 分區 hash 兜底）');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/rev/r01/G1.md'), content: 'x' } }).status, 0, 'rev/ 快照路徑放行（CLI 寫）');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'src/b.js'), content: 'x' } }).status, 2, 'verify 段寫 repo 實作檔仍由寫入矩陣攔（G 矩陣不影響既有矩陣）');
 console.log('sb-hooks: PASS');

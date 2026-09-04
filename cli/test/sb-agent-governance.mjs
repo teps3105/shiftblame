@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.8.1');
+assert.equal(manifest.version, '1.8.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.8\.1"/);
+assert.match(skill, /version: "1\.8\.2"/);
 
 // hooks 註冊型式（1.6.1）：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -92,7 +92,8 @@ assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks �
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
 assert.match(skill, /段-檔承載規格/, 'SKILL 段-檔承載規格（1.7.3 四閉環軸）');
 assert.match(skill, /輪內單向定律/, 'SKILL 輪內單向定律（一次定律退役）');
-assert.match(read('cli', 'bin', 'sb.mjs'), /snapshotRev/, 'CLI 輪次快照（回 intent 凍結 rev 基線）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /countRev/, 'CLI 輪次計數（1.8.2 rev 快照退役）；');
+assert.ok(!read('cli', 'bin', 'sb.mjs').includes('snapshotRev') && !read('cli', 'bin', 'sb.mjs').includes('rev/rN'), '1.8.2 rev 快照拆除——識別字零殘留');
 assert.ok(!read('cli', 'bin', 'sb.mjs').includes('auditEvidence'), '1.8.1 auditEvidence 拆除——CLI 零殘留');
 assert.ok(!read('hooks', 'shiftblame-guard.mjs').includes('markAuditEvidence') && !read('hooks', 'shiftblame-guard.mjs').includes('AUDIT_READ_TOOLS'), '1.8.1 auditEvidence 拆除——hooks 識別字零殘留');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkGFileMatrix/, 'hooks G 檔寫入矩陣（RAM/ROM 分區）');
@@ -112,7 +113,7 @@ const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lo
   '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分', '候選詞', '否定共現', 'CONSENT_WORDS', '非否定候選',
   '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
   '薄研究', '薄規劃', '薄產出', '薄流程',
-  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
+  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/sb-think/SKILL.md', 'skills/sb-resume/SKILL.md', 'skills/sb-todo/SKILL.md', 'skills/sb-save/SKILL.md', 'skills/sb-dice/SKILL.md', 'skills/sb-docs/SKILL.md', 'skills/sb-sop/SKILL.md', 'skills/sb-roadmap/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
