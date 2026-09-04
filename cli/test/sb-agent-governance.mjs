@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '1.8.3');
+assert.equal(manifest.version, '1.8.4');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "1\.8\.3"/);
+assert.match(skill, /version: "1\.8\.4"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。

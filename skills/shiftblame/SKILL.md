@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.8.3"
+  version: "1.8.4"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架

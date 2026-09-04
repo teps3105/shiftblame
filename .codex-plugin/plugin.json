@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "description": "以時序制衡約束 agent——八段流程 intent→requirement→research→plan→test→build→verify→done；回頭自由（回 intent 同 ms 重走）、前進要鑰匙（雙流曝光 --boss-ok＋時點對抗；雙流模型機械抗上下文壓縮）；時點對抗採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）；閘門只讀 git 事實與 flow-state.json；主對話秘書連續承載所有段，技術證據不足時強制外部唯讀意見，主對話複核後自行承擔裁定；commit、判決、放行、路由、PASS 由主對話獨佔。",
   "author": {
     "name": "teps3105"
