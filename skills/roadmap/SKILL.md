@@ -1,12 +1,12 @@
 ---
-name: sb-roadmap
+name: roadmap
 description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，有後標顯式授權寫入（檢查硬分欄）。
 ---
-# sb-roadmap — 修改 ROADMAP
+# shiftblame:roadmap — 修改 ROADMAP
 
-> **sb-think 分發目標**：sb-think 理解老闆要修改 ROADMAP 後分發至此。位置：對 ROADMAP 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
+> **shiftblame:think 分發目標**：shiftblame:think 理解老闆要修改 ROADMAP 後分發至此。位置：對 ROADMAP 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
 
-當老闆要修改 ROADMAP 時執行（由 sb-think 分發）。ROADMAP 唯一寫入者為 秘書，但新增產品意圖／改變邊界須老闆明確授權（SKILL §1.7）。
+當老闆要修改 ROADMAP 時執行（由 shiftblame:think 分發）。ROADMAP 唯一寫入者為 秘書，但新增產品意圖／改變邊界須老闆明確授權（SKILL §1.7）。
 
 先 `load skill: shiftblame`，再依下列分派：
 
@@ -25,7 +25,7 @@ description: 對 ROADMAP 提出修改需求；無後標依上下文提建議，�
 
 ## 調整 §2 待開發計畫索引順序
 
-老闆要調整 ROADMAP §2 計畫索引順序時，由 sb-think 分發至此。**排列語意＝優先度**：越上面的計畫優先度越高（與 SLUG §3 待辦清單的順序＝優先序一致），但**排序載體僅限排列本身**——計畫編號（`1.`、`2.`）與「優先級：高／中／低」「先做」「順序」等明示排序文字一律排除；優先度只靠排列位置傳達。重排後秘書回報調整結果，排序說明保持零文字。
+老闆要調整 ROADMAP §2 計畫索引順序時，由 shiftblame:think 分發至此。**排列語意＝優先度**：越上面的計畫優先度越高（與 SLUG §3 待辦清單的順序＝優先序一致），但**排序載體僅限排列本身**——計畫編號（`1.`、`2.`）與「優先級：高／中／低」「先做」「順序」等明示排序文字一律排除；優先度只靠排列位置傳達。重排後秘書回報調整結果，排序說明保持零文字。
 
 ## 邊界
 

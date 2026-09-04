@@ -101,7 +101,7 @@ const usage = (code = 2) => {
       （前進要鑰匙：老闆決策邊 --boss-ok 留痕＋時點對抗 --adversarial）
 
 雙流模型：輸入＝獨立理解對象，不是鎖的鑰匙——
-      輸入流唯增（hooks 記錄，永不覆蓋消費）；理解流由 sb-think 調用（args＝理解宣告）
+      輸入流唯增（hooks 記錄，永不覆蓋消費）；理解流由 shiftblame:think 調用（args＝理解宣告）
       自動落檔＋必然曝光（老闆每則輸入審視未審理解與未覆蓋輸入）。無鎖、無解鎖命令、無引句。
 
 用法：
@@ -130,7 +130,7 @@ const usage = (code = 2) => {
 
 完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
   老闆「完成／done」→ sb next done --boss-ok --adversarial；「PASS」→ sb end --boss-ok；
-  「下一個／開新 ms」→ sb next intent --new-ms。授權語義由 agent 理解（sb-think args 落理解流），
+  「下一個／開新 ms」→ sb next intent --new-ms。授權語義由 agent 理解（shiftblame:think args 落理解流），
   理解有誤即越權——老闆每則輸入審視曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
   process.exit(code);
 };
@@ -462,7 +462,7 @@ function cmdInit(slug) {
     if (!/(^|\n)\.shiftblame\/?(\n|$)/.test(gi)) appendFileSync(giPath, (gi && !gi.endsWith('\n') ? '\n' : '') + '.shiftblame/\n');
   } catch { /* 非 git 環境略過 */ }
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'intent', history: [] }, null, 2));
-  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, `目前段：intent（意圖）——sb-think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
+  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 function cmdState() {
@@ -542,10 +542,10 @@ function cmdNext(target, opts) {
 }
 
 // sb unlock 不存在：雙流模型——輸入＝獨立理解對象，不是鎖的鑰匙材料。
-// 理解經 sb-think 調用（args＝理解宣告）由 hooks 自動落理解流（understandings，雜湊鏈唯增）＋必然曝光；
+// 理解經 shiftblame:think 調用（args＝理解宣告）由 hooks 自動落理解流（understandings，雜湊鏈唯增）＋必然曝光；
 // 無引句、無消費——輸入與理解流皆唯增，無鑰匙材料。
 function cmdUnlockAbsent() {
-  die(['sb unlock 不存在——輸入是理解對象不是鑰匙：理解經 sb-think 調用（args＝理解宣告）自動落理解流並曝光；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
+  die(['sb unlock 不存在——輸入是理解對象不是鑰匙：理解經 shiftblame:think 調用（args＝理解宣告）自動落理解流並曝光；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
 function cmdEnd(opts) {

@@ -1,12 +1,12 @@
 ---
-name: sb-todo
+name: todo
 description: 將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單；有後標顯式授權寫入，無後標依上下文提建議。
 ---
-# sb-todo — 新增待辦到當前 slug
+# shiftblame:todo — 新增待辦到當前 slug
 
-> **sb-think 分發目標**：sb-think 理解老闆想在當前 slug 加一個功能（但不立即開 ms）後分發至此。位置：任意節點——只新增條目到 SLUG §3 待辦清單，不開 ms、不動節點。
+> **shiftblame:think 分發目標**：shiftblame:think 理解老闆想在當前 slug 加一個功能（但不立即開 ms）後分發至此。位置：任意節點——只新增條目到 SLUG §3 待辦清單，不開 ms、不動節點。
 
-當老闆要在當前 slug 增加待辦時執行（由 sb-think 分發）。用於把老闆想做但尚未排定開工的功能，忠實記錄到 `<repo>/.shiftblame/<slug>/SLUG.md` §3 待辦清單（一句價值簡述，純短名，無編號）。
+當老闆要在當前 slug 增加待辦時執行（由 shiftblame:think 分發）。用於把老闆想做但尚未排定開工的功能，忠實記錄到 `<repo>/.shiftblame/<slug>/SLUG.md` §3 待辦清單（一句價值簡述，純短名，無編號）。
 
 先 `load skill: shiftblame`，主對話秘書執行（<repo>/.shiftblame/<slug>/SLUG.md 寫入者＝秘書，§7 管理文件唯一寫入矩陣）：
 
@@ -24,7 +24,7 @@ description: 將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清
 
 ## 邊界
 
-- sb-todo **只新增 SLUG §3 待辦清單條目**——不開 `<ms>`、不建目錄、不動 §4 節點表、不動 G1／G2／G3、不動 ROADMAP、不動 repo。
-- **層級區分**：產品層、跨 slug 的想做計畫歸 ROADMAP §2（`sb-roadmap`）；實作層、當前 slug 內的待辦歸 SLUG §3（`sb-todo`）。不確定歸屬時由 sb-think 路由判斷。
-- 開新 `<ms>` 是老闆「開新 ms」授權＋sb next intent --new-ms 留痕的事；sb-todo 只記錄待辦，不代行開工。
+- shiftblame:todo **只新增 SLUG §3 待辦清單條目**——不開 `<ms>`、不建目錄、不動 §4 節點表、不動 G1／G2／G3、不動 ROADMAP、不動 repo。
+- **層級區分**：產品層、跨 slug 的想做計畫歸 ROADMAP §2（`shiftblame:roadmap`）；實作層、當前 slug 內的待辦歸 SLUG §3（`shiftblame:todo`）。不確定歸屬時由 shiftblame:think 路由判斷。
+- 開新 `<ms>` 是老闆「開新 ms」授權＋sb next intent --new-ms 留痕的事；shiftblame:todo 只記錄待辦，不代行開工。
 - §3 待辦無編號、無 ID——新增條目以純短名識別（SKILL §6、SLUG §3）。

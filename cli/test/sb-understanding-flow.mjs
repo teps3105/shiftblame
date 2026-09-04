@@ -17,9 +17,9 @@ mkdirSync(join(root, '.shiftblame'), { recursive: true });
 const statePath = join(root, '.shiftblame', 'flow-state.json');
 const state = () => JSON.parse(readFileSync(statePath, 'utf8'));
 const hookRun = (payload) => spawnSync(sb, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
-// 真實 hooks 串接：UserPromptSubmit 唯增輸入流；Skill(sb-think)+args 落理解流
+// 真實 hooks 串接：UserPromptSubmit 唯增輸入流；Skill(shiftblame:think)+args 落理解流
 const boss = (prompt) => { hookRun({ hook_event_name: 'UserPromptSubmit', prompt }); return state(); };
-const think = (as) => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: as } });
+const think = (as) => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: as } });
 
 // —— 1. 輸入流唯增：連續三則不覆蓋（連續串＝同一事實流，無挑引句問題）——
 boss('你去想吧');
@@ -30,7 +30,7 @@ assert.equal(state().inputs[0].text, '你去想吧', '第一則原文永久在�
 assert.equal(state().dialogueLock, undefined, '無對話鎖欄位');
 assert.equal(state().thinkRouted, undefined, '無 thinkRouted（理解流本身是路由證據）');
 
-// —— 2. 理解流：Skill(sb-think) 調用 args＝理解宣告——實質才落檔 ——
+// —— 2. 理解流：Skill(shiftblame:think) 調用 args＝理解宣告——實質才落檔 ——
 let r = think('短');
 assert.equal(state().understandings, undefined, 'args 過短不落檔（理解必須有實質——該輸入保持未覆蓋曝光）');
 r = think('理解：授權以雙流模型落地，撤除全部鎖機制');

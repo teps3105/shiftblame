@@ -1,12 +1,12 @@
 ---
-name: sb-sop
+name: sop
 description: 對 SOP 提出修改需求；無後標依上下文提建議，有後標顯式授權寫入（檢查硬分欄）。
 ---
-# sb-sop — 修改 SOP
+# shiftblame:sop — 修改 SOP
 
-> **sb-think 分發目標**：sb-think 理解老闆要修改 SOP 後分發至此。位置：對 SOP 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
+> **shiftblame:think 分發目標**：shiftblame:think 理解老闆要修改 SOP 後分發至此。位置：對 SOP 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
 
-當老闆要修改 SOP 時執行（由 sb-think 分發）。SOP 唯一寫入者為 秘書，但新增專案規範須老闆明確授權（SKILL §1.7）。
+當老闆要修改 SOP 時執行（由 shiftblame:think 分發）。SOP 唯一寫入者為 秘書，但新增專案規範須老闆明確授權（SKILL §1.7）。
 
 先 `load skill: shiftblame`，再依下列分派：
 

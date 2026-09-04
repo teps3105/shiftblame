@@ -1,12 +1,12 @@
 ---
-name: sb-docs
+name: docs
 description: 對當前專案 docs/ 文件提出修改需求；無後標依上下文提建議，有後標顯式授權修改（檢查寫法判準）。
 ---
-# sb-docs — 修改專案 <repo>/docs/ 文件
+# shiftblame:docs — 修改專案 <repo>/docs/ 文件
 
-> **sb-think 分發目標**：sb-think 理解老闆要修改 <repo>/docs/ 文件後分發至此。位置：對 <repo>/docs/ 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
+> **shiftblame:think 分發目標**：shiftblame:think 理解老闆要修改 <repo>/docs/ 文件後分發至此。位置：對 <repo>/docs/ 提出修改需求（需老闆授權）；不涉及主流程節點遷移。
 
-當老闆要修改 <repo>/docs/ 文件時執行（由 sb-think 分發）。`<repo>/docs/` 修改經老闆明確授權（SKILL §5，same-commit 原則下隨行為變更授權）；寫法品質判準見 `assets/DOCS.md`。
+當老闆要修改 <repo>/docs/ 文件時執行（由 shiftblame:think 分發）。`<repo>/docs/` 修改經老闆明確授權（SKILL §5，same-commit 原則下隨行為變更授權）；寫法品質判準見 `assets/DOCS.md`。
 
 先 `load skill: shiftblame`，再依下列分派：
 

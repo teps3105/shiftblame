@@ -3,8 +3,8 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
-last_save:          # 由 sb-save skill 寫入；sb-resume skill 消費後清除
-revision: 1.8.4
+last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
+revision: 1.9.0
 ---
 # SLUG — `<slug>`
 
@@ -32,7 +32,7 @@ revision: 1.8.4
 >
 > **順序＝優先序**：清單由上到下即開工順序——開新 ms 時依序從最上面未開的待辦開始。調整順序由秘書在對話中依老闆指示直接重排（§3 待辦無編號，順序會變）。
 >
-> **新增待辦**：老闆想在當前 slug 加功能但不立即開 ms 時，由 `sb-todo` 寫入本清單（一句價值簡述，純短名，無編號）。
+> **新增待辦**：老闆想在當前 slug 加功能但不立即開 ms 時，由 `shiftblame:todo` 寫入本清單（一句價值簡述，純短名，無編號）。
 
 - **（短名）** — 價值：（一句）｜來源：（填）｜狀態：未開
 - **（短名）** — 價值：（一句）｜來源：（填）｜狀態：未開
@@ -105,7 +105,7 @@ flowchart LR
 
 ### G1 範本 — 需求／驗收標準（requirement 段主導）
 
-> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 sb-think 已確認語義直接定稿（輪內單向定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 SKILL §1.8）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，plan→test 放行時 CLI 對定義區 hash 封存；verify 段於時點②對抗複核後把 AC 判定收斂寫入回指區（不觸契約）。契約不足／衝突＝回 intent 開新輪（CLI 凍結 rev 基線）重定義後重新放行。
+> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 shiftblame:think 已確認語義直接定稿（輪內單向定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 SKILL §1.8）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，plan→test 放行時 CLI 對定義區 hash 封存；verify 段於時點②對抗複核後把 AC 判定收斂寫入回指區（不觸契約）。契約不足／衝突＝回 intent 開新輪（CLI 凍結 rev 基線）重定義後重新放行。
 
 **0. 需求架構索引**（老闆入口——一眼看懂這個 ms 要做什麼）
 

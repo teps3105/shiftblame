@@ -1,12 +1,12 @@
 ---
-name: sb-dice
+name: dice
 description: 依證據選擇最小充分範圍丟棄失敗成果；可只丟未提交變更、當前功能或當前 ms，只有整個方向失效才丟棄 slug。
 ---
-# sb-dice — 按失敗範圍丟棄成果
+# shiftblame:dice — 按失敗範圍丟棄成果
 
-> **sb-think 分發目標**：sb-think 理解老闆要放棄失敗成果後分發至此。`dice` 只表達丟棄意圖，不代表已授權刪除整個 slug；實際範圍由證據判定並再次確認。
+> **shiftblame:think 分發目標**：shiftblame:think 理解老闆要放棄失敗成果後分發至此。`dice` 只表達丟棄意圖，不代表已授權刪除整個 slug；實際範圍由證據判定並再次確認。
 
-當老闆要放棄失敗成果、回到可重新推進的乾淨基準時執行（由 sb-think 分發）。
+當老闆要放棄失敗成果、回到可重新推進的乾淨基準時執行（由 shiftblame:think 分發）。
 
 先 `load skill: shiftblame`，主對話秘書執行：
 
@@ -26,7 +26,7 @@ description: 依證據選擇最小充分範圍丟棄失敗成果；可只丟未�
    - 當前 ms 走 SKILL §1.4.1 的清帳、保留／回退與回指流程。
    - 整個 slug 才切回 `main`、刪除已確認的 slug branch 與 slug 文件；**不 archive**——archive 是成功歸檔，dice 是失敗丟棄。
 5. **驗證落點**：核對 branch／HEAD、預定保留項仍存在、預定丟棄項已消失、無額外檔案受影響。凡要回指 G1，working tree 必須先完成「該提交的提交／該捨棄的捨棄」並保持乾淨。
-6. **重新路由**：局部丟棄後回到相應的功能／ms／重大例外節點；整個 slug 丟棄後才路由回 sb-think 重新討論需求方向。
+6. **重新路由**：局部丟棄後回到相應的功能／ms／重大例外節點；整個 slug 丟棄後才路由回 shiftblame:think 重新討論需求方向。
 
 ## 邊界
 

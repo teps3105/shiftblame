@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.8.4-2ea44f.svg" alt="version 1.8.4"/>
+  <img src="https://img.shields.io/badge/version-1.9.0-2ea44f.svg" alt="version 1.9.0"/>
 </p>
 
 ---
@@ -27,9 +27,9 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **段-檔承載與輪內單向。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
 
 - **消融原則（方法論）。** 每個機制、組件與需求的存在價值由消融對照證明——拆掉會壞＝貢獻；拆掉沒差＝殘留走退役審查。六落點：G1 BDD 消融欄（偽需求即擋）、G2 組件消融貢獻（冗餘即淘汰）、G3 關鍵驗收的消融對照測試、verify 因果對照證據（停用功能→行為消失，排除巧合綠燈）、框架本體消融矩陣（`cli/test/sb-ablation.mjs`——每個 MUST 級機制「拆掉→防護消失」成對斷言，隨測試套件常設重跑）、演化提案消融前後對照格式。
-- **所有輸入路由回 sb-think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 sb-think 理解背後意圖，不字面執行。sb-think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
-- **問題陳述不等於修改授權。** sb-think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
-- **雙流模型。** 輸入＝獨立理解對象，不是鎖的鑰匙：每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費、無引句無時序跳躍）；agent 經 sb-think 路由理解（調用 args＝理解宣告）落**理解流**（雜湊鏈唯增）。行動正當性來自理解宣告＋**必然曝光**（無引句、無前置攔截）（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解錯即越權、沒理解就動手，當場看到）。完成類鑰匙＝--boss-ok 留痕＋時點對抗＋理解流曝光。
+- **所有輸入路由回 shiftblame:think。** 無論老闆輸入什麼——指令名、自然語言、計畫書——第一步都是路由回 shiftblame:think 理解背後意圖，不字面執行。shiftblame:think 是責任轉移線：之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。
+- **問題陳述不等於修改授權。** shiftblame:think 先分開揭露原始命題、意圖翻譯與候選方案，老闆授權後才可寫入。
+- **雙流模型。** 輸入＝獨立理解對象，不是鎖的鑰匙：每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費、無引句無時序跳躍）；agent 經 shiftblame:think 路由理解（調用 args＝理解宣告）落**理解流**（雜湊鏈唯增）。行動正當性來自理解宣告＋**必然曝光**（無引句、無前置攔截）（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解錯即越權、沒理解就動手，當場看到）。完成類鑰匙＝--boss-ok 留痕＋時點對抗＋理解流曝光。
 - **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb adversarial <報告檔>`：MUST 外部唯讀子代理對抗、報告落檔後引用，機械驗（檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；`sb commitmsg` 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）。返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在；對抗 MUST 子代理，無自代介面（工具不可用即阻塞等待）。
 - **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正；對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
 - **兩層文件模型。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件——提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；MUST 級機制的行為測試附文件陳述錨（文件刪除漂移即紅燈）；永續層文件隨程式碼即時變更且文件先行——build 段先把永續層文件改到目標狀態再依文件寫實作碼，不一致回頭修文件再繼續（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗——提交對抗的標準攻擊點含 staged 程式碼變更 vs 文件零變更正當性與註釋行為一致性。當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
@@ -59,7 +59,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 
 ```mermaid
 flowchart TD
-    Boss([老闆任何輸入]) --> Think["sb-think · 全域路由（不屬於任何段）<br/>═══ 責任轉移線 ═══"]
+    Boss([老闆任何輸入]) --> Think["shiftblame:think · 全域路由（不屬於任何段）<br/>═══ 責任轉移線 ═══"]
     Think -- 補充／修正 --> I["回 intent 同 ms 重走"]
     Think -- 確認／開工 --> Exec["分發執行"]
 
@@ -79,7 +79,7 @@ flowchart TD
     D -- "PASS 留痕 → sb end" --> E([收尾歸檔＋archive])
 ```
 
-**所有老闆輸入第一步路由回 sb-think，不字面執行指令。** sb-think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 PASS 等非技術決策才路由回 sb-think。
+**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 PASS 等非技術決策才路由回 shiftblame:think。
 
 **done 是 ms 完成態，不等於 slug 結束。** 老闆說「開新 ms」（留痕）開新輪；說「PASS」（留痕）＋`sb end` 才結束 slug（收尾歸檔＋archive）。未宣稱 done 前流程停在 verify 中間態——成果不滿意隨時重修（verify→test 或回 intent，零旗標）。
 
@@ -136,7 +136,7 @@ flowchart TB
 
 shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒（Stop 靜默）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
-**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**雙流模型**（每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；sb-think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋時點對抗）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）；**兩種觸發樣態**：老闆以 sb-think 調用形式輸入（`/sb-think`、`$sb-think` 或裸名 `sb-think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。**hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。**hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。hooks 故障時靜默放行，不阻斷工作。
+**hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋；**雙流模型**（每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；shiftblame:think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋時點對抗）；`SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）；**兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑；寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）；**staged 系統檔不入庫**（`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據）；**路徑展開元規則**（一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋）；`git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。**hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。**hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源**
 
@@ -151,9 +151,9 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 幫我用三面向制衡流程重構登入流程
 ```
 
-**所有老闆輸入第一步一定是路由回 sb-think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 sb-think 理解背後意圖、結構化呈現讓老闆確認，確認後才分發到對應流程。若輸入本身是對上一份理解的確認，sb-think 直接消費並分發（確認一次即完成）。sb-think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。
+**所有老闆輸入第一步一定是路由回 shiftblame:think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、一長串計畫書——agents 不直接執行字面指令，先回 shiftblame:think 理解背後意圖、結構化呈現讓老闆確認，確認後才分發到對應流程。若輸入本身是對上一份理解的確認，shiftblame:think 直接消費並分發（確認一次即完成）。shiftblame:think 之前是老闆責任（意圖沒打磨好是老闆的鍋），之後是 agents 責任（事情沒做好是 agents 的鍋）。
 
-路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定，在 sb-think 中拍板）：
+路由關係（是否建立／沿用 `<slug>`／`<nnn>` 只由老闆決定，在 shiftblame:think 中拍板）：
 
 - **沿用 `<nnn>`**——同一子需求的擴充。
 - **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 `<nnn>` 已完成，不需先 PASS）。
@@ -178,18 +178,18 @@ sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
-### sb-* 工作流指令
+### shiftblame:* 功能型技能
 
-**sb-think 是唯一閘口**——所有輸入先過 sb-think 理解、對齊、分發，下列指令是 sb-think 分發後的執行目標，老闆不直達：
+**shiftblame:think 是唯一閘口**——所有輸入先過 shiftblame:think 理解、對齊、分發，下列指令是 shiftblame:think 分發後的執行目標，老闆不直達：
 
-- [`sb-think`](skills/sb-think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回 intent 同 ms 重走；確認／開工→分發執行。
-- [`sb-resume`](skills/sb-resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
-- [`sb-save`](skills/sb-save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 sb-resume 恢復。
-- [`sb-dice`](skills/sb-dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
-- [`sb-docs`](skills/sb-docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
-- [`sb-sop`](skills/sb-sop/SKILL.md)——對 SOP 提出修改需求。
-- [`sb-roadmap`](skills/sb-roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
-- [`sb-todo`](skills/sb-todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
+- [`shiftblame:think`](skills/think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回 intent 同 ms 重走；確認／開工→分發執行。
+- [`shiftblame:resume`](skills/resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
+- [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 shiftblame:resume 恢復。
+- [`shiftblame:dice`](skills/dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
+- [`shiftblame:docs`](skills/docs/SKILL.md)——對 <repo>/docs/ 文件提出修改需求。
+- [`shiftblame:sop`](skills/sop/SKILL.md)——對 SOP 提出修改需求。
+- [`shiftblame:roadmap`](skills/roadmap/SKILL.md)——對 ROADMAP 提出修改需求。
+- [`shiftblame:todo`](skills/todo/SKILL.md)——將老闆想在當前 slug 增加的功能加入 SLUG §3 待辦清單。
 
 ## 文件結構
 
@@ -216,7 +216,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）
     │       ├── ROADMAP.md         # ROADMAP 准入欄位中央模板（複製來源）
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三面向範本（複製來源）
-    └── sb-*/SKILL.md               # 功能型技能：sb-think 全域路由＋save/resume/dice/docs/sop/roadmap/todo
+    └── */SKILL.md               # 功能型技能：shiftblame:think 全域路由＋save/resume/dice/docs/sop/roadmap/todo
 ```
 
 每個專案的工作區位於 `<repo>/.shiftblame/`（`<repo>` = 使用者專案根目錄的絕對路徑），並且 MUST 經 `.gitignore` 排除（入庫路徑封閉）。工作區為**結構分檔**（定義單檔、使用分檔）：

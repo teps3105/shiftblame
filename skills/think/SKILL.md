@@ -1,0 +1,138 @@
+---
+name: think
+description: 唯一閘口；所有老闆輸入第一步路由回此，不字面執行指令，先理解意圖再分發。
+---
+# shiftblame:think — 唯一閘口
+
+> **本指令在流程中的位置**：老闆任何輸入的第一站——責任轉移線，think 之前是老闆的鍋，think 之後是 agents 的鍋
+
+```mermaid
+sequenceDiagram
+    participant B as 老闆
+    participant T as shiftblame:think
+    participant A as agents
+    participant X as 外部子代理
+
+    Note over B: 老闆責任區<br/>意圖沒打磨好是老闆的鍋
+
+    B->>T: 任何輸入（指令名或自然語言）
+
+    Note over T: ═══ 責任轉移線 ═══<br/>① 載入脈絡（SOP/ROADMAP/archive/當前slug）<br/>② 不字面執行 先理解背後意圖<br/>③ 結構化呈現理解
+
+    T->>B: 呈現「我理解你要什麼」
+    B-->>T: 確認／修正（反覆打磨至滿意）
+
+    Note over T: 老闆滿意後分發
+    T->>A: 分發到對應流程
+
+    Note over A: agents 責任區<br/>事情沒做好是 agents 的鍋
+
+    loop 執行中
+        A->>A: 自主判斷：這需要老闆決策嗎？
+        alt 純技術裁定 · 不改產品語義或授權
+            A->>A: 查 repo／第一方文件／實機證據
+            opt 證據不足或矛盾 · 無法可靠裁定
+                A->>X: 一次自包含唯讀技術檢閱
+                X-->>A: 來源／分析／替代做法／反證
+            end
+            A->>A: 複核後自行裁定 不回 shiftblame:think
+        else 需要產品語義／範圍／授權／PASS 決策
+            A-->>T: 路由回 shiftblame:think
+            T->>B: 呈現決策點
+            B-->>T: 拍板
+            T->>A: 重新分發
+        end
+    end
+```
+
+## 絕對規則
+
+**所有老闆輸入第一步一定是路由回 shiftblame:think，而不是字面指令。** 無論老闆輸入什麼——指令名、自然語言、甚至一長串計畫書——agents 不直接執行字面指令，先回 shiftblame:think 理解背後意圖。shiftblame:think 不屬於八段任何一段——它是站在流程之上的全域路由：**補充／修正／追加→回 intent（`sb next intent`，同 ms 重走線性）；確認／開工→分發執行（流程原地續跑）**。
+
+- **意圖翻譯 MUST 是人話。** 老闆能直接讀懂的白話（做什麼、為什麼、會得到什麼）；通不過人話七判準（SKILL §3）者老闆不應確認——讀不懂即揭露不通過。
+- **指令字面 ≠ 老闆意圖。** 老闆可能打錯指令、意圖不同於指令字面、或需要附帶條件。shiftblame:think 的職責是揭開字面背後的意圖，不假設「打了什麼就是要做什麼」。
+- **調用 shiftblame:think MUST 以 args 帶一句話理解宣告**（這授權了什麼、這要求什麼）——hooks 於調用時把 args 落入理解流（understandings，雜湊鏈唯增）並於老闆下則輸入必然曝光；空泛 args（低於實質門檻）不落檔，該輸入保持「尚無理解覆蓋」曝光可見。理解宣告是行動正當性的載體，理解有誤即越權——老闆終審。
+- **兩種觸發樣態——外部意圖對抗先行；被動非豁免揭露；無歧義即執行。** shiftblame:think 後、進入循環前，意圖類輸入 MUST 先取得一次外部子代理對意圖本身的對抗（攻擊理解宣告：誤讀、漏邊界、走私——報告落 tmp，主對話複核承擔）逼出無歧義意圖；對抗後無歧義即立刻執行，不無限卡在意圖理解。問題類輸入（發散、期待解答）直接回答快速迭代，不觸發對抗——**收斂定案權在老闆**：發散中的方向僅經老闆定案可轉為意圖。輸入分類（意圖／問題）由理解宣告標注，記錄於 understandings（機械可回審）。主動觸發（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）：六欄完整呈現（含對抗結論）後**本輪即停**——行動凍結（hooks 硬擋寫入類與流程推進；唯讀查證、Skill 調用、tmp 傾倒自由），待老闆終審回覆；確認→審計（推進指令外部對抗——銜接律：審計邊終點＝推進起點）→分發，修正則重呈現仍停等。被動觸發：同樣先揭露理解（含對抗結論與分類）再續跑——被動≠豁免揭露。
+- **沒有任何輸入能繞過理解。** 即使老闆附帶一長串計畫書，shiftblame:think 仍要把計畫書結構化映射成可驗證的需求理解讓老闆確認——計畫書可能含矛盾、遺漏邊界、混入解法、或過度設計。
+- **脈絡與字面衝突時，shiftblame:think 浮現張力。** 例如老闆打「開新需求」卻偵測到未完成的儲存點——shiftblame:think 把這個張力呈現給老闆裁決，不自行猜測或字面執行。
+
+## 責任模型
+
+```mermaid
+flowchart LR
+    Z1["shiftblame:think 之前<br/>老闆責任<br/>意圖沒打磨好 = 老闆的鍋"]
+    Z2["═══ shiftblame:think ═══"]
+    Z3["shiftblame:think 之後<br/>agents 責任<br/>事情沒做好 = agents 的鍋"]
+    Z1 --> Z2 --> Z3
+```
+
+shiftblame:think 是老闆與 agents 之間的權責交接面，不是流程裡的一個步驟。過了這條線，球就在 agents 那邊。
+
+## shiftblame:think 內部流程
+
+```mermaid
+sequenceDiagram
+    participant B as 老闆
+    participant T as shiftblame:think
+
+    B->>T: 輸入（任何指令名或自然語言）
+    Note over T: ① 載入脈絡<br/>SOP／ROADMAP／archive／當前 slug（§9）
+    Note over T: ② 意圖結構化<br/>六欄呈現（命題/翻譯/邊界/<br/>候選方案/修改範圍/授權狀態）
+    T->>B: 呈現理解（圖表 + 結構化）
+    B-->>T: 審視
+    alt 理解有誤／遺漏／要追加修改
+        Note over T: ③ 修正理解
+        T->>B: 重新呈現
+        B-->>T: 再次審視
+    else 滿意
+        Note over T: ④ 分發 · 老闆拍板路由
+    end
+```
+
+關鍵原則：
+
+- **無差別理解，不預判深度。** shiftblame:think 對所有意圖做同一件事——忠實結構化呈現「我理解老闆要做什麼」。不因操作類型預判「這次不用認真理解」——任何意圖都可能被錯漏。
+- **深度由老闆滿意度決定。** 新需求自然打磨多輪，放行確認可能一輪就過——但這是老闆的產出，不是 shiftblame:think 的預判。
+- **意圖結構化涵蓋六欄。** shiftblame:think 的結構化呈現涵蓋六欄（原始命題、意圖翻譯、邊界／未知、候選方案、預計修改、授權狀態），轉為圖表結構。
+- **確認訊息只消費一次。** 老闆對緊接上一份六欄理解回覆「確定／同意／照做」時，這個輸入雖仍經 shiftblame:think，但其作用是完成既有 checkpoint；直接分發（確認即 checkpoint 完成）。補充若只解釋既有根因而不改變授權集合，吸收後繼續；只有新增或改變語義、範圍、破壞性目標時才呈現差異取得一次新確認。
+
+## 分發路由
+
+老闆確認理解正確後，shiftblame:think 分發到對應流程。
+
+```mermaid
+flowchart LR
+    T["shiftblame:think 老闆滿意"] --> R{"路由"}
+    R -- "開 slug" --> S["sb init<br/>建骨架 → 八段"]
+    R -- "不開 slug<br/>（框架演化／微修）" --> D7["直接實行"]
+    R -- 開工/放行 --> D1["分發執行<br/>（plan→test 邊）"]
+    R -- 存檔 --> D2["shiftblame:save"]
+    R -- 恢復 --> D3["shiftblame:resume"]
+    R -- PASS --> D4["sb end"]
+    R -- 丟棄 --> D5["shiftblame:dice"]
+    R -- 改文件 --> D6["shiftblame:docs/sop/roadmap"]
+    R -- 框架演化 --> D8["改框架"]
+```
+
+shiftblame:save、shiftblame:resume、shiftblame:dice 等功能型技能與 CLI 命令都是 shiftblame:think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 shiftblame:think。
+
+## 執行中的自主性
+
+shiftblame:think 分發後，agents 在執行中保有自主判斷權：
+
+- **不需要老闆決策**（不改變封存 G1 滿足集合的 CONFORMS 技術細節、實作方式、API 選擇、根因分類、測試設計、證據解讀與繼續推進）→ agents 自主處理，**不路由回 shiftblame:think**。若 repo／第一方文件／實機證據仍不足或矛盾，MUST 立即取得一次外部子代理的自包含唯讀技術意見，主對話複核後自行裁定；不必先反覆失敗——純技術選擇自行承擔。
+- **需要老闆決策**（PASS、開新 ms、改變產品語義或 G1 成功集合、範圍、成本／風險容忍、破壞性目標、路由或新授權）→ 統一路由回 shiftblame:think，以非技術後果呈現；老闆確認後先由秘書清帳。凡回指 G1，working tree 必須完成「該提交的提交／該捨棄的捨棄」並保持乾淨，才重新分派 requirement 段。符合 G1 的架構改選仍是 agents 的技術裁定，不因重大或陌生而自動升級給老闆。
+
+外部子代理不可用時，agents 繼續安全且在授權內的查證並採用證據最充分的方案；若外部阻塞使安全裁定確實不可能，只揭露未驗項並請求缺少的存取／授權（技術題自行承擔）。
+
+階段完成、測試全綠、單一驗收通過、一次唯讀檢閱回傳、壓縮將至或老闆沉默都不是「需要老闆決策」。主對話須吸收結果、更新 `Goal／Core／Verified／Open／Next` 並立即續跑；進度用 commentary 回報；final 保留給整體終點。吸收責任由主對話秘書承擔（全程單一對話承載，無持久子代理）。
+
+agents 不是無腦執行器——判斷「要不要回 shiftblame:think」本身就是 agents 的職責。這個判斷權沒被沒收；被收緊的是入口端，agents 不能再「看到老闆指令就直接啟動」。
+
+## 邊界
+
+- **shiftblame:think 是閘口，不是執行器。** 它只做理解、對齊、分發；實際執行（建骨架、開發、存檔等）由分發目標負責。
+- **所有輸入無一例外過 shiftblame:think。** 包含老闆附帶的計畫書、簡單確認操作、自然語言意圖。
+- **shiftblame:think 承載意圖揭露職責。** 意圖理解與揭露由 shiftblame:think 的圖表結構化呈現承載（§2 定義 checkpoint 與授權原則）。
+- **shiftblame:think 產出不留實體文件。** 圖表是討論載體，對齊完直接進流程；理解過程不留檔。
+- **路由由老闆決定。** shiftblame:think 可附帶路由建議（基於 §9 脈絡），但最終路由由老闆拍板。

@@ -56,10 +56,10 @@ const projectRoot = (input) => {
 
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
-  '①老闆輸入先路由 sb-think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
+  '①老闆輸入先路由 shiftblame:think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
   '②八段：intent→requirement→research→plan→test→build→verify→done。回頭自由（→intent 零旗標／done→test／done→intent --new-ms）；前進要鑰匙（--boss-ok＋時點對抗）。',
   '③時點對抗（plan→test①／verify→test②／verify→done③——產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
-  '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝sb-think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
+  '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（審計收斂後產出：定義＋回指）；tmp/flow-state＝RAM（對抗產物、運行數據）。',
   '⑦版號屬老闆決策。',
@@ -70,7 +70,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
 const SESSION_CARD = [
   CARD,
   '',
-  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 sb-think 的路由提議才有脈絡依據。',
+  '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → archive/ → 當前 slug（SLUG.md 與目前段）。載入後 shiftblame:think 的路由提議才有脈絡依據。',
   '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；輸入流／理解流記錄與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
   '[版號] 版本號屬老闆決策——升版由老闆拍板指定，揭露表寫「版號待老闆指定」。',
 ].join('\n');
@@ -82,7 +82,7 @@ function nodeLine(root) {
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
-    if (st.node === 'intent') hint = '——sb-think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
+    if (st.node === 'intent') hint = '——shiftblame:think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
     if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（requirement→research 邊格式閘）';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
@@ -97,10 +97,10 @@ function nodeLine(root) {
 // —— 輸入流（雙流模型）——
 // 雙流模型：輸入＝獨立理解對象，不是鎖的鑰匙材料——
 // 輸入流唯增（每則輸入永久是事實，永不覆蓋、永不消費、無時序跳躍與翻舊帳概念——無需引用故無引句問題）；
-// 理解流由 agent 經 sb-think 路由產生（調用 args＝理解宣告），曝光是核心制衡（老闆每則輸入時審視）。
-// 主動觸發形態（兩種觸發樣態）：老闆輸入以 sb-think 調用形式開頭（/sb-think、$sb-think 連結或裸名）
+// 理解流由 agent 經 shiftblame:think 路由產生（調用 args＝理解宣告），曝光是核心制衡（老闆每則輸入時審視）。
+// 主動觸發形態（兩種觸發樣態）：老闆輸入以 shiftblame:think 調用形式開頭（/shiftblame:think、$shiftblame:think 連結或裸名）
 // ＝主動觸發訊號——顯式語法（性質同 --boss-ok 旗標），非 agent 偵測老闆意圖的詞集
-const ACTIVE_TRIGGER_RE = /^\s*(?:[/\$])?sb-think\b/i;
+const ACTIVE_TRIGGER_RE = /^\s*(?:[/\$])?shiftblame:think\b/i;
 
 function recordInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return null;
@@ -110,7 +110,7 @@ function recordInput(root, prompt) {
     const wasHold = st.understandingHold ?? null;
     let releaseNote = null;
     (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
-    // 兩種觸發樣態：老闆以 sb-think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
+    // 兩種觸發樣態：老闆以 shiftblame:think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
     // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）
     if (ACTIVE_TRIGGER_RE.test(String(prompt ?? ''))) {
       st.understandingHold = { inputIdx: st.inputs.length - 1, at: new Date().toISOString() };
@@ -125,13 +125,13 @@ function recordInput(root, prompt) {
   } catch { return null; } /* 狀態異常靜默 */
 }
 
-// 理解流記錄：PreToolUse 偵測 Skill(sb-think) 調用且 args 有實質理解（≥10 字）→ 落一筆理解
-// （錨定 `^|:sb-think$` 防偽技能名；args 即理解宣告——寫入側折疊換行＋截 200 字，同曝光防護判準；
+// 理解流記錄：PreToolUse 偵測 Skill(shiftblame:think) 調用且 args 有實質理解（≥10 字）→ 落一筆理解
+// （錨定 `^(?:shiftblame:)?think$` 全等防偽技能名；args 即理解宣告——寫入側折疊換行＋截 200 字，同曝光防護判準；
 // 雜湊鏈唯增；uptoInput＝理解涵蓋至第幾則輸入——曝光對照輸入流可見哪些輸入尚無理解覆蓋）
 function recordUnderstanding(root, tool, toolInput) {
   if (!root || !/^skill$/i.test(String(tool ?? ''))) return;
   const target = String(toolInput?.skill ?? toolInput?.name ?? '');
-  if (!/(?:^|:)sb-think$/i.test(target)) return;
+  if (!/^(?:shiftblame:)?think$/i.test(target)) return;
   const as = String(toolInput?.args ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if ([...as].length < 10) return; // 理解必須有實質——空泛 args 不落檔（該輸入保持「尚無理解」曝光可見）
   try {
@@ -164,7 +164,7 @@ function markExternalEvidence(root, tool) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 狀態回流：輸入流＋理解覆蓋狀態（雙流模型——機械只呈事實，理解由 sb-think 承擔、曝光由老闆終審）
+// 狀態回流：輸入流＋理解覆蓋狀態（雙流模型——機械只呈事實，理解由 shiftblame:think 承擔、曝光由老闆終審）
 function flowLine(root) {
   if (!root) return '';
   try {
@@ -175,7 +175,7 @@ function flowLine(root) {
     if (!inputs.length) return '';
     const covered = (st.understandings ?? []).at(-1)?.uptoInput ?? -1;
     const uncovered = inputs.length - 1 - covered;
-    return `\n[輸入流] 共 ${inputs.length} 則；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 sb-think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
+    return `\n[輸入流] 共 ${inputs.length} 則；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 shiftblame:think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
   } catch { return ''; }
 }
 
@@ -185,7 +185,7 @@ function holdLine(root) {
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
     if (!st.understandingHold) return '';
-    return `\n[停等理解] 輸入 #${st.understandingHold.inputIdx} 主動觸發（sb-think 調用形式）——理解呈現（六欄）即停：本輪行動凍結（寫入類工具與流程推進硬擋；唯讀、外部查證、tmp 證據傾倒自由），待老闆終審回覆（兩種觸發樣態，SKILL §0）。`;
+    return `\n[停等理解] 輸入 #${st.understandingHold.inputIdx} 主動觸發（shiftblame:think 調用形式）——理解呈現（六欄）即停：本輪行動凍結（寫入類工具與流程推進硬擋；唯讀、外部查證、tmp 證據傾倒自由），待老闆終審回覆（兩種觸發樣態，SKILL §0）。`;
   } catch { return ''; }
 }
 
@@ -287,9 +287,9 @@ function checkGFileMatrix(root, toolInput) {
 }
 
 // ———— 停等凍結（兩種觸發樣態）：hold 期間寫入類工具與流程推進硬擋 ————
-// 老闆主動觸發（sb-think 調用形式）的理解停等輪：理解呈現即停——
+// 老闆主動觸發（shiftblame:think 調用形式）的理解停等輪：理解呈現即停——
 // 攔：repo 寫入（非 .shiftblame/）、git 寫入命令、sb 流程推進命令。
-// 放行：Skill 調用（sb-think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
+// 放行：Skill 調用（shiftblame:think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
 // Bash 唯讀查證（git log/status/diff、node/python 探針、npm test）、.shiftblame/ tmp 證據傾倒。
 const HOLD_GIT_WRITE_RE = /\bgit\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
 const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg)\b/;
@@ -299,7 +299,7 @@ function checkHoldFreeze(root, tool, cmd, toolInput) {
   const hold = st.understandingHold;
   if (!hold) return null;
   const t = String(tool ?? '');
-  if (/^skill$/i.test(t)) return null; // 技能載入與 sb-think 調用（理解宣告落流）自由——實際寫入由工具層攔
+  if (/^skill$/i.test(t)) return null; // 技能載入與 shiftblame:think 調用（理解宣告落流）自由——實際寫入由工具層攔
   if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(t)) {
     if (HOLD_GIT_WRITE_RE.test(cmd) || HOLD_SB_PUSH_RE.test(cmd)) {
       return `[shiftblame] 停等凍結（輸入 #${hold.inputIdx} 理解待老闆終審）——流程推進與 git 寫入本輪凍結；唯讀查證自由，理解呈現後待老闆回覆（兩種觸發樣態，SKILL §0）`;
@@ -620,7 +620,7 @@ try {
   if (event === 'PreToolUse') {
     const tool = input.tool_name || input.toolName || '';
     const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
-    recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(sb-think) 調用＋args＝理解宣告）
+    recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(shiftblame:think) 調用＋args＝理解宣告）
     markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);

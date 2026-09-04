@@ -25,18 +25,18 @@ assert.equal(state().dialogueLock, undefined, '無對話鎖欄位');
 assert.ok(r.stdout.includes('輸入流'), 'flowLine 狀態回流');
 r = up('第二則輸入');
 assert.equal(state().inputs.length, 2, '連續輸入不覆蓋（唯增——連續串＝同一事實流）');
-// 理解流：Skill(sb-think) 調用 args＝理解宣告
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：這是雙流模型的測試輸入序列' } });
+// 理解流：Skill(shiftblame:think) 調用 args＝理解宣告
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：這是雙流模型的測試輸入序列' } });
 assert.equal(r.status, 0, 'Skill 調用放行');
 assert.equal(state().understandings.length, 1, '理解宣告落檔');
 assert.equal(state().understandings[0].uptoInput, 1, '涵蓋至最新輸入');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-save', args: 'x' } });
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-sb-think-evil', args: '理解：偽技能名的假理解宣告內容' } });
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'xx_sb-think_yy', args: '理解：中綴技能名的假理解宣告內容' } });
-assert.equal(state().understandings.length, 1, '非 sb-think／偽名／中綴不落理解流（錨定 ^|:sb-think$）');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name: 'shiftblame:sb-think', args: '理解：name fallback 的理解宣告測試內容' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'save', args: 'x' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-think-evil', args: '理解：偽技能名的假理解宣告內容' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'xx_think_yy', args: '理解：中綴技能名的假理解宣告內容' } });
+assert.equal(state().understandings.length, 1, '非完整拼寫／偽名／中綴不落理解流（錨定 ^(?:shiftblame:)?think$）');
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { name: 'shiftblame:think', args: '理解：name fallback 的理解宣告測試內容' } });
 assert.equal(state().understandings.length, 2, 'name fallback 錨定匹配落檔');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'sb-think', args: '短' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'think', args: '短' } });
 assert.equal(state().understandings.length, 2, 'args 過短不落檔（理解必須有實質——該輸入保持未覆蓋曝光）');
 // 外部證據標記
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
@@ -76,7 +76,7 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 assert.equal(r.status, 0, '一般 Bash 不攔（無對話鎖）');
 
 // —— 3. 必然曝光：未審理解於老闆下則輸入展示並標記已審 ——
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：節三曝光驗證的專屬理解宣告' } });
+r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：節三曝光驗證的專屬理解宣告' } });
 r = up('曝光驗證輸入');
 assert.ok(r.stdout.includes('理解審視') && r.stdout.includes('節三曝光驗證的專屬理解宣告'), '未審理解曝光');
 assert.equal(state().understandings.at(-1).reviewed, true, '展示即標記已審');
@@ -156,17 +156,17 @@ assert.match(bad.stderr, /破壞性操作/);
 setNode('build'); // build 段正常可寫（對照組）
 const editOkBefore = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
 assert.equal(editOkBefore.status, 0, '對照組：無 hold 時 build 段 Edit 放行');
-// 主動觸發：/sb-think 與 $sb-think 開頭皆設 hold；注入卡顯示停等行
-const activeSlash = up('/sb-think 幫我做停等機制的理解呈現');
-assert.ok(state().understandingHold, '主動觸發（/sb-think 開頭）設 understandingHold');
+// 主動觸發：/shiftblame:think 與 $shiftblame:think 開頭皆設 hold；注入卡顯示停等行
+const activeSlash = up('/shiftblame:think 幫我做停等機制的理解呈現');
+assert.ok(state().understandingHold, '主動觸發（/shiftblame:think 開頭）設 understandingHold');
 assert.equal(state().understandingHold.inputIdx, state().inputs.length - 1, 'hold 錨定本則輸入');
 assert.ok(activeSlash.stdout.includes('[停等理解]'), '注入卡顯示停等行');
-const activeLink = up('$sb-think markdown 連結形式的觸發');
-assert.ok(state().understandingHold, '主動觸發（$sb-think 連結）覆設 hold');
+const activeLink = up('$shiftblame:think markdown 連結形式的觸發');
+assert.ok(state().understandingHold, '主動觸發（$shiftblame:think 連結）覆設 hold');
 assert.ok(activeLink.stdout.includes('[停等理解]'), '連結形式同樣停等');
 // hold 期間：Skill（理解宣告落流）放行
-const holdSkill = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：停等機制的理解宣告落流驗證' } });
-assert.equal(holdSkill.status, 0, 'Skill 調用（sb-think 理解宣告）放行');
+const holdSkill = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：停等機制的理解宣告落流驗證' } });
+assert.equal(holdSkill.status, 0, 'Skill 調用（shiftblame:think 理解宣告）放行');
 assert.ok(state().understandings.length > 0, '理解流照常落檔');
 // hold 期間：唯讀與外部查證放行
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'README.md') } }).status, 0, 'Read 放行');

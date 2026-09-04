@@ -114,14 +114,14 @@ ablation('輸入流 recordInput（雙流模型——唯增事實）', () => {
 
 ablation('停等狀態機（recordInput 內 understandingHold 設置）', () => {
   const neu = neutralize(GUARD, [['if (ACTIVE_TRIGGER_RE.test(String(prompt ?? \'\'))) {', 'if (false && ACTIVE_TRIGGER_RE.test(String(prompt ?? \'\'))) { // ABLATED']]);
-  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '/sb-think 開新需求理解' }); const has = !!stateOf(r).understandingHold; rmSync(r, { recursive: true, force: true }); return has; };
+  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '/shiftblame:think 開新需求理解' }); const has = !!stateOf(r).understandingHold; rmSync(r, { recursive: true, force: true }); return has; };
   assert.equal(payload(GUARD), true, 'intact：主動觸發設 hold');
   assert.equal(payload(neu), false, 'ablated：拆掉後主動觸發不設 hold（停等失效）');
 });
 
-ablation('理解流 recordUnderstanding（sb-think args＝理解宣告）', () => {
+ablation('理解流 recordUnderstanding（shiftblame:think args＝理解宣告）', () => {
   const neu = neutralize(GUARD, [['function recordUnderstanding(root, tool, toolInput) {\n  if (!root || !/^skill$/i.test(String(tool ?? \'\'))) return;', 'function recordUnderstanding(root, tool, toolInput) {\n  return; // ABLATED\n  if (!root || !/^skill$/i.test(String(tool ?? \'\'))) return;']]);
-  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:sb-think', args: '理解：消融實驗的理解宣告驗證輸入' } }); const n = stateOf(r).understandings?.length ?? 0; rmSync(r, { recursive: true, force: true }); return n; };
+  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：消融實驗的理解宣告驗證輸入' } }); const n = stateOf(r).understandings?.length ?? 0; rmSync(r, { recursive: true, force: true }); return n; };
   assert.equal(payload(GUARD), 1, 'intact：理解宣告落流');
   assert.equal(payload(neu), 0, 'ablated：拆掉後理解宣告不落流（行動正當性載體失效）');
 });
