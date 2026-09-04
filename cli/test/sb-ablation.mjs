@@ -137,8 +137,8 @@ ablation('外部證據標記 markExternalEvidence（1.6.0 外部性閘鑰匙）'
 
 ablation('hooks 心跳 beatHeartbeat（1.6.1 診斷）', () => {
   const neu = neutralize(GUARD, [['function beatHeartbeat(root, event) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;', 'function beatHeartbeat(root, event) {\n  return; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;']]);
-  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'SessionStart', source: 'startup' }); const ok = existsSync(join(r, '.shiftblame/tmp/hooks-heartbeat.json')); rmSync(r, { recursive: true, force: true }); return ok; };
-  assert.equal(payload(GUARD), true, 'intact：hooks 成功執行寫心跳');
+  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'SessionStart', source: 'startup' }); const ok = !!(JSON.parse(readFileSync(join(r, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat) && !existsSync(join(r, '.shiftblame/tmp/hooks-heartbeat.json')); rmSync(r, { recursive: true, force: true }); return ok; };
+  assert.equal(payload(GUARD), true, 'intact：hooks 成功執行更新 flow-state 心跳欄位（零散落 tmp 檔）');
   assert.equal(payload(neu), false, 'ablated：拆掉後無心跳（健康診斷失效）');
 });
 

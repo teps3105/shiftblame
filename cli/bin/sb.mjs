@@ -82,9 +82,9 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 // 揭露故障疑慮；只診斷不降級（fail-closed 不變——逃生門屬合法漏洞，老闆已否決），修復方向是修 hooks 而非繞閘。
 function hooksHealthNote() {
   try {
-    const p = join(SB_DIR, 'tmp', 'hooks-heartbeat.json');
-    if (!existsSync(p)) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）';
-    const hb = readJson(p);
+    if (!existsSync(STATE_FILE)) return '〔hooks 健康警示〕無 flow-state（工作區未初始化）——本擋可能是記錄缺失而非授權缺失；修復工作區後重試（閘保持封閉）';
+    const hb = readJson(STATE_FILE).hooksHeartbeat;
+    if (!hb) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）';
     const ageMs = Date.now() - new Date(hb.at).getTime();
     const ageMin = Math.round(ageMs / 60000);
     if (!Number.isFinite(ageMs)) return '〔hooks 健康警示〕心跳時間戳無法解析——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試（閘保持封閉）';

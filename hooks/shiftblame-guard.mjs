@@ -582,14 +582,17 @@ function checkCommitStamp(root, seg) {
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }
 }
 
-// hooks 健康心跳（1.6.1）：每次成功執行寫時戳＋事件名——CLI 的外部證據閘被擋時對照此檔，
+// hooks 健康心跳（1.6.1；1.8.2 歸位 flow-state）：每次成功執行更新 hooksHeartbeat 欄位——CLI 的外部證據閘被擋時對照，
 // 區分「老闆未授權」（心跳新鮮：hooks 活著、標記真實缺失）與「hooks 疑似故障」（心跳停滯：記錄器死了、
 // 閘的條件永遠無法滿足＝死鎖）——診斷只揭露不降級（fail-closed 不變；逃生門屬合法漏洞，老闆已否決）。
 function beatHeartbeat(root, event) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return; // 守門：僅既有工作區寫心跳（流浪 cwd 保持原樣——框架元規則）
   try {
-    mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
-    writeFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), JSON.stringify({ at: new Date().toISOString(), event }));
+    // 1.8.2 歸位（老闆裁定）：運行狀態單一載體＝flow-state（RAM）——hooksHeartbeat 欄位，不散落 tmp 檔
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    const st = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {};
+    st.hooksHeartbeat = { at: new Date().toISOString(), event };
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
   } catch { /* 心跳失敗不影響主流程 */ }
 }
 

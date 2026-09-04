@@ -51,8 +51,8 @@ r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
 assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
-// hooks 心跳（沿用 1.6.1）
-const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'tmp', 'hooks-heartbeat.json'), 'utf8'));
+// hooks 心跳（1.8.2 歸位 flow-state）
+const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat;
 assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
 assert.ok(new Date(hb.at).getTime() > Date.now() - 60000, '心跳時間戳新鮮');
 // inject 格式（沿用 1.6.1 真根因防回歸）
@@ -202,7 +202,11 @@ setNode2('requirement');
 const beforeRead = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
 run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
 run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
-assert.equal(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'), beforeRead, 'auditEvidence 機制已拆除——查證動作不寫狀態（RAM/ROM）');
+// 心跳歸位（1.8.2）：hooksHeartbeat 寫入 flow-state 是唯一獲准的狀態寫入；剝除後必須零殘留
+const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; return JSON.stringify(o); };
+assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), 'auditEvidence 機制已拆除——查證動作不寫狀態（RAM/ROM）');
+const hbAfter = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).hooksHeartbeat;
+assert.ok(hbAfter && hbAfter.at && hbAfter.event, '心跳歸位：hooksHeartbeat 落 flow-state（at＋event）');
 // G 寫入矩陣：定義邊寫、落地邊唯讀
 setNode2('requirement');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'requirement 段寫 G1 放行（定義邊）');
