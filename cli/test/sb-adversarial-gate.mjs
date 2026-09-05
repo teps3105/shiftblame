@@ -15,6 +15,7 @@ mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
 mkdirSync(ms, { recursive: true });
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
+const run2 = (cwd2, ...args) => spawnSync(process.execPath, [cli, ...args], { cwd: cwd2, encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
@@ -182,7 +183,7 @@ assert.equal(hp.status, 2, 'commit --only <path> →hooks 擋');
 // CJK 檔名（.shiftblame 內）：quotePath 引號逃逸——關閉後原樣輸出命中
 writeFileSync(join(root, '.shiftblame', '狀態.txt'), '中\n');
 assert.equal(git('add', '-f', '.shiftblame/狀態.txt').status, 0);
-r = run('commitmsg', 'feat: CJK 檔名繞過驗證');
+r = run('commitmsg', 'feat: 中文檔名繞過驗證');
 assert.equal(r.status, 1, 'staged 含 .shiftblame/狀態.txt（quotePath=false）→commitmsg 擋');
 // 清理通道：git rm --cached（純刪除 D）放行
 assert.equal(git('rm', '--cached', '.shiftblame/狀態.txt').status, 0);
@@ -263,4 +264,21 @@ assert.equal(hr8.status, 2, 'env GIT\\_DIR=（名稱內反斜線）→hooks 擋'
 const hr9 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `MY_GIT_DIR=${root}/.git git -C ${root} status` } });
 assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
 
+// —— commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）——
+{
+  const adv = mkdtempSync(join(tmpdir(), 'sb-cv-'));
+  mkdirSync(join(adv, '.shiftblame', 'tmp'), { recursive: true });
+  writeFileSync(join(adv, '.shiftblame', 'tmp', 'r.md'), '# 對抗\n\n對抗判定：通過\n');
+  const r0 = run2(adv, 'adversarial', join(adv, '.shiftblame', 'tmp', 'r.md'));
+  assert.equal(r0.status, 0, '對抗宣告（發章前置）');
+  for (const bad of ['fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
+    const rb = run2(adv, 'commitmsg', bad);
+    assert.equal(rb.status, 1, `詞彙閘擋「${bad}」`);
+  }
+  for (const ok of ['fix: 修正中文檔名繞過驗證', 'feat: 跨里程碑定案索引繼承機制', 'fix: 修正 HTTP 404 錯誤頁處理', 'feat: 資料分三組顯示']) {
+    const ro = run2(adv, 'commitmsg', ok);
+    assert.equal(ro.status, 0, `合法訊息過「${ok}」`);
+  }
+  rmSync(adv, { recursive: true, force: true });
+}
 console.log('sb-adversarial-gate: PASS');

@@ -30,6 +30,8 @@ function mkSandbox({ state = {}, files = {}, git = false } = {}) {
     writeFileSync(full, c);
   }
   writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', history: [], ...state }));
+  mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
+  writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
   if (git) {
     spawnSync('git', ['init'], { cwd: root });
     writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -270,6 +272,36 @@ ablation('輪次計數 countRev（零檔案寫入）', () => {
 // —— 執行矩陣——
 let pass = 0;
 const fails = [];
+ablation('commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）', () => {
+  const BAD = ['fix: 修正r24殘留問題描述內容', 'feat: 斷言先行的重寫驗證流程', 'fix: MS001 規格文檔同步修正'];
+  const probe = (script, msg) => { const r = mkSandbox({ git: true }); writeFileSync(join(r, '.shiftblame', 'tmp', 'r.md'), '# 對抗\n\n對抗判定：通過\n'); cliRun(script, r, 'adversarial', join(r, '.shiftblame', 'tmp', 'r.md')); const out = cliRun(script, r, 'commitmsg', msg); rmSync(r, { recursive: true, force: true }); return out.status; };
+  for (const m of BAD) assert.equal(probe(SB, m), 1, `intact：詞彙閘擋「${m}」`);
+  const src = readFileSync(SB, 'utf8');
+  const cut = src
+    .replace("    if (/\\b[a-zA-Z]{1,4}-?\\d+\\b|#\\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），追蹤靠分支名與 merge 訊息');\n", '')
+    .replace("    if (/第\\s*[0-9０-９一二三四五六七八九十]+\\s*[組段輪]|[組段輪]\\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');\n", '')
+    .replace("    if (!/^[\\u4e00-\\u9fff]/.test(body)) problems.push('描述以繁中開頭——<type>: 後為繁中變更描述（檔名/代號可出現在句中，非句首）');\n", '')
+    .replace("    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 G 檔與 tmp');\n", '');
+  assert.notEqual(cut, src, 'neutralize 目標存在');
+  const dir = mkdtempSync(join(tmpdir(), 'sb-neu2-'));
+  NEU_DIRS.push(dir);
+  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  for (const m of BAD) assert.equal(probe(join(dir, 'ablated.mjs'), m), 0, `ablated：拆閘後放行「${m}」`);
+});
+
+ablation('SLUG 存在性閘（骨架不完整擋前進）', () => {
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'intent' } }); rmSync(join(r, '.shiftblame', 'demo', 'SLUG.md')); const out = cliRun(script, r, 'next', 'requirement', '--boss-ok'); const st = out.status; rmSync(r, { recursive: true, force: true }); return st; };
+  assert.equal(probe(SB), 1, 'intact：無 SLUG.md 前進邊擋');
+  const src = readFileSync(SB, 'utf8');
+  const cut = src.replace("  if (st.slug && target !== 'intent' && !existsSync(join(SB_DIR, st.slug, 'SLUG.md'))) {\n    problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由秘書手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);\n  }\n", '');
+  assert.notEqual(cut, src, 'neutralize 目標存在');
+  const dir = mkdtempSync(join(tmpdir(), 'sb-neu3-'));
+  NEU_DIRS.push(dir);
+  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  assert.equal(probe(join(dir, 'ablated.mjs')), 0, 'ablated：拆閘後放行（boss-ok 邊）');
+});
+
+
 ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔截）', () => {
   // 真消融：複製 repo 結構到 tmp，SKILL 副本關鍵陳述漂移（兩層文件模型→兩層文檔模型）
   // → 副本 governance 錨紅（攔截力存在）；neutralize 該錨 → 同漂移下紅燈消失（攔截歸零）

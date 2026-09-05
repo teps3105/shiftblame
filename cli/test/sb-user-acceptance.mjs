@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -33,6 +33,12 @@ writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
 writeFileSync(join(root, 'seed.txt'), 'seed\n');
 commit('.gitignore', 'test: initial');
 assert.equal(run('init', 'demo').status, 0);
+assert.ok(existsSync(join(root, '.shiftblame', 'demo', 'SLUG.md')), 'init 建 SLUG.md（範本複製）');
+assert.ok(existsSync(join(root, '.shiftblame', 'demo', '001')), 'init 建 <slug>/001/ 目錄');
+assert.ok(existsSync(join(root, '.shiftblame', 'archive')), 'init 建 archive/ 目錄');
+assert.equal(spawnSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8' }).stdout.trim(), 'feat/demo', 'init 建 <type>/<slug> 分支並切換');
+assert.equal(run('init', 'demo').status, 1, '既有工作區重跑 init 擋（盲覆守衛）');
+
 assert.equal(state().node, 'intent');
 
 // 回頭自由：intent 自身不可回（無意義），其他段可。先走八段——
@@ -40,6 +46,13 @@ assert.equal(state().node, 'intent');
 assert.match(run('next', 'requirement').stderr, /MUST 帶 --boss-ok/);
 assert.match(run('next', 'requirement', '--rerun', 'impl').stderr, /--rerun 僅限同 ms 返工重走/, '首走防繞');
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
+{
+  rmSync(join(root, '.shiftblame', 'demo', 'SLUG.md'));
+  assert.equal(run('next', 'research').status, 1, '無 SLUG.md 前進邊擋（骨架存在性閘；僅前進邊的單向性由消融 target!==intent 路徑驗證）');
+  mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
+  writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
+}
+
 // requirement→research：G1 假需求閘
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');

@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.1-2ea44f.svg" alt="version 1.9.1"/>
+  <img src="https://img.shields.io/badge/version-1.9.2-2ea44f.svg" alt="version 1.9.2"/>
 </p>
 
 ---
@@ -164,11 +164,11 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 
 ### 流程狀態機（npm CLI：sb）
 
-流程規範以腳本鎖死（閘門只讀 git 事實與 flow-state，推進需顯式鑰匙；見 SKILL §7）——每個 slug 開始跑 `sb init <slug>`，每個階段推進跑 `sb next <node>`，閘門過了（exit 0）才推進。一般階段沿用既有授權，不帶 `--boss-ok`；只有最終 PASS 與顯式修約等真正語義決策留痕：
+流程規範以腳本鎖死（閘門只讀 git 事實與 flow-state，推進需顯式鑰匙；見 SKILL §7）——每個 slug 開始跑 `sb init <slug> [type]`（建全骨架含 <type>/<slug> 分支自動切換），每個階段推進跑 `sb next <node>`，閘門過了（exit 0）才推進。一般階段沿用既有授權，不帶 `--boss-ok`；只有最終 PASS 與顯式修約等真正語義決策留痕：
 
 ```bash
 npm install -g <shiftblame repo>/cli
-sb init <slug>                     # 開 slug：建立 .shiftblame/flow-state.json
+sb init <slug>                     # 開 slug：建全骨架（flow-state＋目錄＋SLUG.md＋archive/＋開發分支自動切換）
 sb state                           # 目前節點與各下一步前置條件
 sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋adversarialLog point 條目對照＋G1 hash 封存）
 sb next verify                     # 進驗收（working tree 乾淨＝實作已存檔，git 判定）

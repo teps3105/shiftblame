@@ -58,6 +58,8 @@ r = spawnSync(sb, [sbBin, 'unlock', '--quoted', '你去想吧', '--as', 'x'], { 
 assert.equal(r.status, 2, '舊旗標形（--quoted/--as 已撤）→usage 擋');
 
 // —— 6. 八段鑰匙：--boss-ok＋時點對抗（無印章）；--new-ms 開新里程碑 ——
+mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
+writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
 writeFileSync(statePath, JSON.stringify({
   slug: 'demo', ms: '001', node: 'verify', history: [], stamps: {}, inputs: state().inputs, understandings: state().understandings,
 }));

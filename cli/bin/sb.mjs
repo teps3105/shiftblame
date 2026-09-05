@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -105,7 +106,7 @@ const usage = (code = 2) => {
       自動落檔＋必然曝光（老闆每則輸入審視未審理解與未覆蓋輸入）。無鎖、無解鎖命令、無引句。
 
 用法：
-  sb init <slug>                        開 slug：建立 flow-state.json（節點 intent）
+  sb init <slug> [type]                 開 slug：建全骨架（flow-state＋<slug>/001/＋SLUG.md＋archive/＋<type>/<slug> 分支；type 預設 feat）
   sb state                              顯示目前段、可走下一步與其前置條件
   sb adversarial <報告檔> [--point ①|②|③]  對抗宣告（提交時點的鑰匙；--point＝時點對抗條目不發 commit 章）：
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
@@ -302,6 +303,11 @@ function gate(st, target, opts) {
   const problems = [];
   const passes = [];
 
+  // 骨架存在性閘（僅前進邊——回頭自由零旗標）：SLUG.md 缺＝骨架不完整
+  if (st.slug && target !== 'intent' && !existsSync(join(SB_DIR, st.slug, 'SLUG.md'))) {
+    problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由秘書手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);
+  }
+
   // G1 契約核對（放行後任何推進重算；回 intent 邊重定義前不擋——回頭自由）
   if (st.g1Contract?.ms === st.ms && target !== 'intent') {
     const path = st.g1Contract.file;
@@ -451,18 +457,41 @@ function gate(st, target, opts) {
 
 // ———— 指令 ————
 
-function cmdInit(slug) {
+const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'build', 'ci'];
+function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
+  if (!TYPES.includes(type)) die([`type 僅接受：${TYPES.join('/')}（預設 feat）——收到：${type}`], 2);
+  if (existsSync(STATE_FILE)) die([`flow-state 已存在（${STATE_FILE}）——既有工作區禁止重跑 init（會覆蓋狀態）；缺少 SLUG.md 時由秘書手建（.shiftblame/ 永遠可寫）`]);
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
+  mkdirSync(join(SB_DIR, slug, '001'), { recursive: true });
+  mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
+  const slugPath = join(SB_DIR, slug, 'SLUG.md');
+  if (!existsSync(slugPath)) {
+    const templatePath = fileURLToPath(new URL('../../skills/shiftblame/assets/SLUG.md', import.meta.url));
+    let content = null;
+    try { if (existsSync(templatePath)) content = readFileSync(templatePath, 'utf8'); } catch { /* 範本不可讀 → 最小種子 */ }
+    if (!content) content = `---\nslug: ${slug}\ncreated: ${new Date().toISOString().slice(0, 10)}\n---\n\n# ${slug}\n\n（最小種子——由秘書依範本補全結構：§3 待辦／§4 段表＋定案索引／三面向範本節）\n`;
+    else content = content.replaceAll('<slug>', slug).replaceAll('<YYYY-MM-DD>', new Date().toISOString().slice(0, 10));
+    writeFileSync(slugPath, content);
+  }
   try {
     const giPath = join(ROOT, '.gitignore');
     const gi = existsSync(giPath) ? readFileSync(giPath, 'utf-8') : '';
     if (!/(^|\n)\.shiftblame\/?(\n|$)/.test(gi)) appendFileSync(giPath, (gi && !gi.endsWith('\n') ? '\n' : '') + '.shiftblame/\n');
   } catch { /* 非 git 環境略過 */ }
+  let branchNote = '';
+  try {
+    const br = `${type}/${slug}`;
+    let r = execSync(`git checkout -b ${br}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] });
+    branchNote = `開發分支：${br}（已切換）`;
+  } catch {
+    try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; }
+    catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
+  }
   writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'intent', history: [] }, null, 2));
-  fin([`slug「${slug}」狀態檔建立 → ${STATE_FILE}`, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
+  fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 function cmdState() {
@@ -556,6 +585,7 @@ function cmdEnd(opts) {
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, 'PASS 前');
   if (problems.length) die(problems);
+  mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
@@ -665,7 +695,10 @@ function cmdCommitmsg(msg) {
     const body = m.at(-1);
     if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
     if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，內容聚焦變更本身（詳細訊息歸文件）`);
-    if (/[a-zA-Z]{3,}-\d+|#\d+/.test(body)) problems.push('含追蹤編號（#123、PROJ-456 等）——commit 訊息純描述變更本身，追蹤靠分支名與 merge 訊息');
+    if (/\b[a-zA-Z]{1,4}-?\d+\b|#\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），追蹤靠分支名與 merge 訊息');
+    if (/第\s*[0-9０-９一二三四五六七八九十]+\s*[組段輪]|[組段輪]\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');
+    if (!/^[\u4e00-\u9fff]/.test(body)) problems.push('描述以繁中開頭——<type>: 後為繁中變更描述（檔名/代號可出現在句中，非句首）');
+    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 G 檔與 tmp');
     if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
   }
   if (problems.length) die(problems);
@@ -694,7 +727,7 @@ for (let i = 0; i < rest.length; i++) {
   else pos.push(rest[i]);
 }
 switch (cmd) {
-  case 'init': cmdInit(pos[0]); break;
+  case 'init': cmdInit(pos[0], pos[1]); break;
   case 'state': cmdState(); break;
   case 'unlock': cmdUnlockAbsent(); break;
   case 'adversarial': cmdAdversarial(pos.join(' '), flags.point); break;
