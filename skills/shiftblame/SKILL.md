@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.9.2"
+  version: "1.9.3"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -157,7 +157,7 @@ flowchart TD
    - **repo 測試碼** — 寫入者：主對話的test 段；離開該狀態即鎖定。鎖定後僅經「附定義錯誤理由顯式回到 test 段」此一路徑修改——綠燈路徑一律經實作修正。G3 每項驗收 MUST 可自動化執行且不依賴對外視窗。
    - **repo commit** — 寫入者：**秘書獨佔**。前置：G1/G2/G3 兩兩雙向一致（§10）且通過開發門檻；§1.4 判定（直接修正，或執行層小循環實作完成即 commit 存檔——存檔先於驗收，驗收後判決通過才開下一個功能）。
 
-   **寫入矩陣機械攔截（hooks＋CLI）**：測試碼（測試慣例路徑）僅 `test` 段可寫，定稿即 commit；實作碼（`.shiftblame/` 以外 repo 檔）寫入白名單＝`build`（實作段）、`ended`（PASS 後收尾歸檔），其餘段（intent/requirement/research/plan/verify/done）對 repo 唯讀。**G 檔寫入權分區（RAM/ROM）**：`G1.md` 定義區＝`requirement` 段、回指區＝`verify` 段；`G2.md` 定義區＝`research` 段、回指區＝`build` 段；`G3.md` 定義區＝`plan` 段（＋秘書補寫 §2.5 例外）、回指區＝`test` 段——**跨區（落地段改定義區）＝下游倒推上游（綁架 G1/G2）死路**：hooks 比對段位（整檔粒度——落地段可寫回指區），定義區被動由 CLI 分區 hash 於 sb next 兜底（殘餘如實標註）；修正輪唯一路徑＝回 intent 開新輪（依段位推進重寫）。`archive/` 由 CLI 於收尾時寫入；`.shiftblame/` 其餘內容永遠可寫（tmp 傾倒）。hooks 對寫檔類工具（Edit/Write/ApplyPatch/MCP 寫檔）比對段即攔；`sb next verify` 核對 working tree 乾淨（`git status --porcelain`）——進驗收前 working tree 保持乾淨。Bash 內的檔案寫入與 MCP 讀取類工具不在矩陣內（殘餘，如實標註；Bash 產生的中間產物同樣一律落 `.shiftblame/tmp/`——工作腳本、暫存、報告寫入 repo 其他位置屬非授權雜檔，由攻擊點與抽查承擔）。
+   **寫入矩陣機械攔截（hooks＋CLI）**：測試碼（測試慣例路徑）僅 `test` 段可寫，定稿即 commit；實作碼（`.shiftblame/` 以外 repo 檔）寫入白名單＝`build`（實作段）、`ended`（PASS 後收尾歸檔），其餘段（intent/requirement/research/plan/verify/done）對 repo 唯讀。**G 檔寫入權分區（RAM/ROM）**：`G1.md` 定義區＝`requirement` 段、回指區＝`verify` 段；`G2.md` 定義區＝`research` 段、回指區＝`build` 段；`G3.md` 定義區＝`plan` 段（＋秘書補寫 §2.5 例外）、回指區＝`test` 段——**跨區（落地段改定義區）＝下游倒推上游（綁架 G1/G2）死路**：hooks 比對段位（整檔粒度——落地段可寫回指區），定義區被動由 CLI 分區 hash 於 sb next 兜底（殘餘如實標註）；修正輪唯一路徑＝回 intent 開新輪（依段位推進重寫）。`archive/` 由 CLI 於收尾時寫入；`.shiftblame/<slug>/<ms>/`（含 `archive/`）是 ROM 區**僅承載 G1~G3.md**——其餘寫入由 hooks 攔（中間產物一律 tmp）；`.shiftblame/` 其餘內容永遠可寫（tmp 傾倒）。**RAM 流以 slug 為單位清理**：`sb end`（PASS）時 flow-state 累積流（輸入流／理解流／adversarialLog／history）直接清空——曝光與對照價值隨 slug 終結，零副本、零殭屍存續（以任何形式轉移存續都屬違規）。hooks 對寫檔類工具（Edit/Write/ApplyPatch/MCP 寫檔）比對段即攔；`sb next verify` 核對 working tree 乾淨（`git status --porcelain`）——進驗收前 working tree 保持乾淨。Bash 內的檔案寫入與 MCP 讀取類工具不在矩陣內（殘餘，如實標註；Bash 產生的中間產物同樣一律落 `.shiftblame/tmp/`——工作腳本、暫存、報告寫入 repo 其他位置屬非授權雜檔，由攻擊點與抽查承擔）。
 
 **兩層文件模型（文件↔實況對照是一等公民）**：**永續層**＝`docs/`、`SOP.md`、`ROADMAP.md`（＋`README.md`、`skills/`）——專案的持久真相。文件視同程式碼：**專案層文件變更走與程式碼相同的流程與對抗**（時點對抗＋commit 對抗閘），並**隨程式碼即時變更**——行為變更的 commit 帶上對應文件變更（same-commit：改了什麼就行為什麼文件，文件滾動保真——順序固定：文件在前、碼隨後）。**文件先行**：永續層文件先行改到目標狀態、實作碼依文件撰寫（與測試先行同族——文件是依據非事後記錄；客體＝永續層文件 vs 實作碼，G 檔由輪內單向與寫入權分區承載、測試碼由 test 段先行定稿承載）。build 段發現不一致按歸屬處置：永續層描述層過時／錯誤→same-commit 修正文件再繼續（限 build 段——verify 對 repo 唯讀）；G2／G3 與實作現實不符→G2 回指區或回 intent 細化（既有路徑）；需求／驗收語義出入→§1.4.1 修約——永續層承載的語義一律經修約。提交時**陳述對照閘**機械驗其可驗陳述（sb 命令／旗標引用 ↔ CLI 實況，單一真相取自 sb.mjs 源碼）——引用不存在的機制即擋，過時假設與虛空捏造在此關閉。**當下層**＝`G1/G2/G3/SLUG`——開發工作文件，ms 壽命、用後即归檔（archive）、記錄當時決策語境；後續開發引用當下層＝引用歷史脈絡，查現況看永續層＋專案實況本身（G1 的 SHA 封存是開發期間防漂移，非永久維護義務）。**當下層決策寫進永續層＝經 normal 變更流程（與程式碼同）**——文件升級是日常變更的一部分，非獨立儀式。**文件陳述錨**：MUST 級機制的行為測試 MUST 附文件陳述錨——斷言永續層文件仍含該機制的關鍵陳述（錨與行為測試同檔：機制拆除時測試與錨同拆，孤兒錨自然消失）；文件措辭變更 same-commit 同批更新對應錨。錨攔截的是刪除漂移（陳述被刪或漂走即紅燈）；語義級對照（描述對不對）機械不驗——時點對抗＋抽查承擔。
 

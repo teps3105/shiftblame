@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 1.9.2
+revision: 1.9.3
 ---
 # verify 段 — 依 G3 操作、對 G1 判定＝G1 的裁判邊（執行層）
 

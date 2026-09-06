@@ -589,8 +589,11 @@ function cmdEnd(opts) {
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
+  // slug 邊界清理（終態留痕後）：累積流（曝光與對照價值隨 slug 終結）直接清空——零副本、零殭屍存續
+  const cleared = { inputs: (st.inputs ?? []).length, understandings: (st.understandings ?? []).length, adversarialLog: (st.adversarialLog ?? []).length, history: (st.history ?? []).length };
+  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin(['done → ended（PASS）', '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/＋更新歸檔清單（永續層文件已隨各 commit 即時保真——same-commit）', ...passes]);
+  fin(['done → ended（PASS）', `flow-state 累積流已清（slug 邊界——輸入 ${cleared.inputs}／理解 ${cleared.understandings}／對抗 ${cleared.adversarialLog}／history ${cleared.history}；零副本）`, '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/＋更新歸檔清單（永續層文件已隨各 commit 即時保真——same-commit）', ...passes]);
 }
 
 

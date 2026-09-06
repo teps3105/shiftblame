@@ -61,6 +61,9 @@ function neutralize(srcPath, pairs) {
   return out;
 }
 
+// 消融結構守衛：neutralize 後的檔案仍須定義關鍵函數——否則 probe 綠燈是 hook 崩潰的 fail-open（偽因果）
+const cutDefinesFunctions = (src) => /function absPath\(/.test(src) && /function checkStateWriteMatrix\(/.test(src) && /function checkGFileMatrix\(/.test(src);
+
 const ABLATIONS = [];
 const ablation = (name, fn) => ABLATIONS.push({ name, fn });
 
@@ -301,6 +304,26 @@ ablation('SLUG 存在性閘（骨架不完整擋前進）', () => {
   assert.equal(probe(join(dir, 'ablated.mjs')), 0, 'ablated：拆閘後放行（boss-ok 邊）');
 });
 
+
+ablation('ROM 區雜檔閘（ms 目錄僅承載 G 檔）', () => {
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'build' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(r, '.shiftblame/demo/001/intent.md'), content: 'x' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
+  assert.equal(probe(GUARD), 2, 'intact：ROM 區雜檔擋');
+  const src = readFileSync(GUARD, 'utf8');
+  const k = src.indexOf('ROM 區雜檔閘');
+  assert(k >= 0, 'neutralize 目標存在');
+  const blockStart = src.indexOf('      if (', k);
+  const blockEnd = src.indexOf('      continue; // 工作區其餘永遠可寫', k);
+  assert(blockEnd > blockStart, 'block 邊界');
+  assert(cutDefinesFunctions(src), 'neutralize 前結構完整（守衛）');
+  assert(blockEnd > blockStart, 'block 邊界');
+  const cut = src.slice(0, blockStart) + src.slice(blockEnd);
+  assert(cut !== src, 'cut 生效');
+  const dir = mkdtempSync(join(tmpdir(), 'sb-neu4-'));
+  NEU_DIRS.push(dir);
+  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  assert(cutDefinesFunctions(cut), 'ablated 檔仍定義 absPath/checkStateWriteMatrix（非崩潰 fail-open）');
+  assert.equal(probe(join(dir, 'ablated.mjs')), 0, 'ablated：拆閘後雜檔寫入放行');
+});
 
 ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔截）', () => {
   // 真消融：複製 repo 結構到 tmp，SKILL 副本關鍵陳述漂移（兩層文件模型→兩層文檔模型）

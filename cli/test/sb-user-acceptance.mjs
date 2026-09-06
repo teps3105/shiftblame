@@ -165,5 +165,14 @@ assert.match(run('end', '--boss-ok').stderr, /僅限 done/);
 assert.equal(pt('③', 'ms2').status, 0);
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 assert.equal(run('end', '--boss-ok').status, 0);
+{
+  const stEnd = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
+  assert.equal(stEnd.node, 'ended', 'PASS 後 ended 態');
+  assert.ok(!Array.isArray(stEnd.inputs) || stEnd.inputs.length === 0, '輸入流已清（slug 邊界）');
+  assert.ok(!Array.isArray(stEnd.understandings) || stEnd.understandings.length === 0, '理解流已清');
+  assert.ok(!Array.isArray(stEnd.adversarialLog) || stEnd.adversarialLog.length === 0, '對抗 log 已清');
+  assert.equal(stEnd.history.length, 0, 'history 已清');
+  assert.ok(!existsSync(join(root, '.shiftblame', 'tmp', 'flow-archive')), '零副本——無殭屍歸檔目錄');
+}
 assert.equal(state().node, 'ended');
 console.log('sb-user-acceptance: PASS');

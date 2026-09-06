@@ -350,7 +350,13 @@ function checkStateWriteMatrix(root, toolInput) {
     const p = absPath(root, target);
     const rel = relative(root, p).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
-    if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // 工作區永遠可寫
+    if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) {
+      // ROM 區雜檔閘：<slug>/<nnn>/（含 archive/）僅承載 G1~G3.md——中間產物一律 tmp
+      if (/^\.shiftblame\/(?:archive\/)?(?!tmp\/)[^/]+\/[^/]+\/.+$/i.test(rel) && !/^\.shiftblame\/(?:archive\/)?[^/]+\/[^/]+\/G[123]\.md$/i.test(rel)) {
+        return `[shiftblame] ROM 區（${rel}）僅承載 G1~G3.md——中間產物／筆記／報告一律落 .shiftblame/tmp/（唯一自由傾倒區；SLUG.md 在 <slug>/ 層由秘書維護）`;
+      }
+      continue; // 工作區其餘永遠可寫（tmp 傾倒、SLUG、flow-state）
+    }
     const isTest = TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
     if (isTest) {
       if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿（全程唯讀）；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;

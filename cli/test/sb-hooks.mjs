@@ -224,4 +224,12 @@ assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input
 setNode2('verify');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'verify 段寫 G1 回指區放行（AC 判定收斂寫入；定義區由 CLI 分區 hash 兜底）');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'src/b.js'), content: 'x' } }).status, 2, 'verify 段寫 repo 實作檔仍由寫入矩陣攔（G 矩陣不影響既有矩陣）');
+// ROM 區雜檔閘：<slug>/<nnn>/ 僅承載 G1~G3.md
+const romJunk = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/intent.md'), content: 'x' } });
+assert.equal(romJunk.status, 2, 'ROM 區雜檔（intent.md）擋——中間產物一律 tmp');
+assert.match(romJunk.stderr, /ROM 區|tmp/);
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/archive/demo/001/notes.md'), content: 'x' } }).status, 2, 'archive 區雜檔同擋');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/evidence.md'), content: 'x' } }).status, 0, 'tmp 傾倒放行');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/x/y.md'), content: 'x' } }).status, 0, 'tmp 巢狀子目錄放行（RAM 區格式不做規範）');
+assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md（<slug>/ 層）放行');
 console.log('sb-hooks: PASS');
