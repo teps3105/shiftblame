@@ -65,6 +65,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '⑦版號屬老闆決策。',
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
+  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 停等、明確暫停／取消或實際阻塞可停。Stop 靜默放行不代做路由；接續由主對話承擔，不靠無條件續跑或 Stop 重試。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -620,7 +621,7 @@ try {
   }
 
   if (event === 'Stop') {
-    process.exit(0); // Stop 事件無防護動作（理解流曝光承擔審視）
+    process.exit(0); // 僅放行回合結束；不判定流程完成、不代做 intent 路由。主對話依 CARD⑩ 在 final 前接續或揭露停點。
   }
 
   if (event === 'PreToolUse') {

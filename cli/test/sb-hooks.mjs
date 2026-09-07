@@ -91,7 +91,34 @@ assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
 assert.ok(ss2.stdout.includes('@ plan'), '段位');
 assert.ok(ss2.stdout.includes('輸入流'), '輸入流狀態回流');
 
-// —— 5. Stop：撤鎖後靜默（無防護動作，理解流曝光承擔審視）——
+// —— 5. 回合接續契約在輸入／重啟時注入；Stop 不代改流程或反覆喚醒 ——
+for (const payload of [
+  { hook_event_name: 'SessionStart' },
+  { hook_event_name: 'UserPromptSubmit', prompt: '先解釋這個疑問' },
+]) {
+  const result = run(payload);
+  assert.equal(result.status, 0);
+  const context = JSON.parse(result.stdout).hookSpecificOutput;
+  assert.equal(context.hookEventName, payload.hook_event_name);
+  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', 'Stop 靜默放行不代做路由']) {
+    assert.ok(context.additionalContext.includes(rule), `${payload.hook_event_name} 注入接續規則：${rule}`);
+  }
+}
+for (const node of ['intent', 'plan', 'build', 'verify', 'done', 'ended']) {
+  setNode(node);
+  for (const active of [false, true]) {
+    const before = state();
+    const result = run({ hook_event_name: 'Stop', stop_hook_active: active, last_assistant_message: '疑問已解答，等待決策' });
+    assert.equal(result.status, 0);
+    assert.equal(result.stdout, '', 'Stop 不建立自動續行提示');
+    assert.equal(result.stderr, '');
+    const after = state();
+    delete after.hooksHeartbeat;
+    assert.deepEqual(after, before, 'Stop 僅更新心跳，保留流程與輸入／理解事實');
+    // 下一次比較同樣排除既有心跳。
+    writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(before));
+  }
+}
 r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
 assert.equal(r.status, 0, 'Stop 靜默放行');
 assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');

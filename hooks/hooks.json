@@ -31,7 +31,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 靜默（雙流——無防護動作）"
+            "statusMessage": "shiftblame: 回合結束（路由與流程接續由主對話承擔）"
           }
         ]
       }
