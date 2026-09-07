@@ -246,5 +246,5 @@ MIT License. 不接受外部貢獻。
 
 ### 外部工具辨識與初始化
 
-- 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。hooks 與初始化驗證採相同精確名單；不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
+- 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。hooks 與初始化驗證採相同精確名單；Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 分別承接網頁查證、建立子代理與接續檢閱，不能只看介面名稱；不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
 - 初始化保留既有紀錄：純 hooks 紀錄可初始化且原值保留，異常或既有流程不覆寫，未初始化狀態提供正確診斷。

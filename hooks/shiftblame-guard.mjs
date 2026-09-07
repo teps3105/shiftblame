@@ -148,9 +148,9 @@ function recordUnderstanding(root, tool, toolInput) {
 }
 
 // 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
-// 與 Agent／Task（外部唯讀子代理）。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
+// 與 Agent／Task（外部唯讀子代理）；Codex 事件實名為 webrun／collaborationspawn_agent／collaborationfollowup_task。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
 // 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
-const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent']);
+const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']);
 function markExternalEvidence(root, tool) {
   if (!root) return;
   const name = String(tool ?? '');

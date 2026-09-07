@@ -52,15 +52,15 @@ hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill
 assert.equal(state().externalEvidence, null, '冒名／相近名／Bash 內嵌／Skill 夾帶皆不標記（精確錨定工具名）');
 
 // Codex 平台事件：實際跑 hook → CLI 推進；近似名稱及包裝器不算。
-for (const tool of ['web.runX', 'mcp__unknown__web__run', 'collaboration.wait_agent', 'functions.exec']) {
+for (const tool of ['web.runX', 'webrunX', 'mcp__x__webrun', 'collaborationspawn_agentX', 'collaborationfollowup_taskX', 'collaborationwait_agent', 'mcp__unknown__web__run', 'collaboration.wait_agent', 'functions.exec']) {
   hookRun({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { code: 'await tools.web__run({search_query:[{q:"x"}]})' } });
   assert.equal(state().externalEvidence, null, `${tool} 不得誤記外部證據`);
   assert.equal(run('next', 'plan').status, 1);
 }
-for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent']) {
+for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']) {
   const before = state();
   assert.equal(extCall(tool).status, 0);
-  assert.equal(state().externalEvidence.tool, tool);
+  assert.equal(state().externalEvidence?.tool, tool, `${tool} 的真實事件名稱必須留痕`);
   assert.equal(run('next', 'plan').status, 0, `${tool} 查證後可推進 plan`);
   writeFileSync(statePath, JSON.stringify(before));
 }

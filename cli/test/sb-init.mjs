@@ -48,7 +48,7 @@ for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, rec
   assert.equal(readFileSync(f.file, 'utf8'), before);
 }
 // hooks 相容工具紀錄皆可由 init 保留。
-for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent']) {
+for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']) {
   const initial = { ...record, externalEvidence: { done: true, at, tool } };
   const f = fixture(JSON.stringify(initial));
   assert.equal(f.run('init', 'demo').status, 0, tool);
