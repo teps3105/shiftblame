@@ -458,11 +458,38 @@ function gate(st, target, opts) {
 // ———— 指令 ————
 
 const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'build', 'ci'];
+const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
+const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
+// 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
+function hooksOnly(st) {
+  const allowed = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence'];
+  if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
+  if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
+  if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
+  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader'].includes(st.externalEvidence.tool))) return false;
+  if (Object.hasOwn(st, 'understandings')) {
+    if (!Array.isArray(st.understandings)) return false;
+    let prev = '';
+    for (const x of st.understandings) {
+      if (!(exactKeys(x, ['at', 'uptoInput', 'as', 'reviewed', 'hash']) && timestamp(x.at) && Number.isInteger(x.uptoInput) && x.uptoInput >= 0 && x.uptoInput <= Math.max(0, (st.inputs ?? []).length - 1) && typeof x.as === 'string' && typeof x.reviewed === 'boolean')) return false;
+      const hash = createHash('sha256').update(prev + String(x.uptoInput) + x.as + x.at).digest('hex').slice(0, 16);
+      if (x.hash !== hash) return false;
+      prev = hash;
+    }
+  }
+  return true;
+}
+function readStartupState() {
+  try { return readJson(STATE_FILE); }
+  catch { die([`flow-state 無法解析：${STATE_FILE}——保留原檔，查明損壞原因後修復`]); }
+}
 function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
   if (!TYPES.includes(type)) die([`type 僅接受：${TYPES.join('/')}（預設 feat）——收到：${type}`], 2);
-  if (existsSync(STATE_FILE)) die([`flow-state 已存在（${STATE_FILE}）——既有工作區禁止重跑 init（會覆蓋狀態）；缺少 SLUG.md 時由秘書手建（.shiftblame/ 永遠可寫）`]);
+  const prior = existsSync(STATE_FILE) ? readStartupState() : null;
+  if (existsSync(STATE_FILE) && !hooksOnly(prior)) die([`flow-state 已存在（${STATE_FILE}）且非合法純 hooks 紀錄——既有流程、部分初始化、異常資料或理解停等禁止重跑 init（會覆蓋狀態）`]);
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
   mkdirSync(join(SB_DIR, slug, '001'), { recursive: true });
@@ -490,13 +517,15 @@ function cmdInit(slug, type = 'feat') {
     try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; }
     catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ slug, ms: '001', node: 'intent', history: [] }, null, 2));
+  writeFileSync(STATE_FILE, JSON.stringify({ ...prior, slug, ms: '001', node: 'intent', history: [] }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 function cmdState() {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readJson(STATE_FILE);
+  const st = readStartupState();
+  if (hooksOnly(st)) { out('尚未初始化：目前僅有 hooks 紀錄；經 shiftblame:think 路由後以 sb init <slug> 建立骨架，既有紀錄會保留。'); return; }
+  if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !Array.isArray(st.history) || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   if (st.node === 'ended') { out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt ?? '?'}）`); return; }
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);

@@ -178,6 +178,8 @@ sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
+初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。既有流程、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化；不以刪除紀錄解鎖。`sb state` 對純紀錄檔提示尚未初始化，對異常狀態報錯，兩者皆不修改檔案。
+
 ### shiftblame:* 功能型技能
 
 **shiftblame:think 是唯一閘口**——所有輸入先過 shiftblame:think 理解、對齊、分發，下列指令是 shiftblame:think 分發後的執行目標，老闆不直達：
