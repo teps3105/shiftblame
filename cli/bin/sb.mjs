@@ -115,7 +115,7 @@ const usage = (code = 2) => {
                                         推進（閘門不過即擋）
                                         外部證據閘：research→plan 邊與返工後首個推進邊驗
                                         「至少一次外部工具調用」（hooks 標記 externalEvidence——
-                                        WebSearch／WebFetch／webReader／Agent）；零外部推不過
+                                        WebSearch／WebFetch／webReader／web.run（web__run）／Agent）；零外部推不過
                                         --boss-ok：老闆授權留痕（intent→requirement、plan→test、verify→done 邊）
                                         --rerun：返工直通（僅限同 ms 曾達 test 後的重走；時點①分流判定——
                                         實作級 impl／定義級 definition 直通免停靠，根本性不帶旗標走完整確認；
@@ -336,7 +336,7 @@ function gate(st, target, opts) {
   // 外部證據閘：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence）；
   // 返工期間（rerunExtPending）任何推進（含再次 --rerun；回 intent 除外——返工中止）同驗——返工外部協助是機械底線。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
-    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
+    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader／web.run（web__run） 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
   if (st.rerunExtPending && target !== 'intent' && !st.externalEvidence?.done) {
@@ -467,7 +467,7 @@ function hooksOnly(st) {
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
   if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
-  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader'].includes(st.externalEvidence.tool))) return false;
+  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent'].includes(st.externalEvidence.tool))) return false;
   if (Object.hasOwn(st, 'understandings')) {
     if (!Array.isArray(st.understandings)) return false;
     let prev = '';

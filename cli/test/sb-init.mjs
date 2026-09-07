@@ -47,7 +47,16 @@ for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, rec
   assert.equal(f.run('init', 'other').status, 1);
   assert.equal(readFileSync(f.file, 'utf8'), before);
 }
-const invalid = [null, [], {}, { slug: null }, { node: 'mystery' }, { history: [] },
+// hooks 相容工具紀錄皆可由 init 保留。
+for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent']) {
+  const initial = { ...record, externalEvidence: { done: true, at, tool } };
+  const f = fixture(JSON.stringify(initial));
+  assert.equal(f.run('init', 'demo').status, 0, tool);
+  assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')).externalEvidence, initial.externalEvidence);
+}
+const invalid = [
+  { ...record, externalEvidence: { done: true, at, tool: 'functions.exec' } },
+  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } },null, [], {}, { slug: null }, { node: 'mystery' }, { history: [] },
   { ...record, unknown: true }, { hooksHeartbeat: {} }, { inputs: 'bad' },
   { inputs: [{ at, text: 1 }] }, { inputs: [{ at: 'bad', text: 'x' }] },
   { hooksHeartbeat: { at: '2026-02-30T05:20:59.219Z', event: 'SessionStart' } },

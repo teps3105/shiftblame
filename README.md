@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.3-2ea44f.svg" alt="version 1.9.3"/>
+  <img src="https://img.shields.io/badge/version-1.9.4-2ea44f.svg" alt="version 1.9.4"/>
 </p>
 
 ---
@@ -33,7 +33,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb adversarial <報告檔>`：MUST 外部唯讀子代理對抗、報告落檔後引用，機械驗（檔在 .shiftblame 內＋判定行＋判定「通過」才可發章）；`sb commitmsg` 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）。返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在；對抗 MUST 子代理，無自代介面（工具不可用即阻塞等待）。
 - **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正；對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
 - **兩層文件模型。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件——提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；MUST 級機制的行為測試附文件陳述錨（文件刪除漂移即紅燈）；永續層文件隨程式碼即時變更且文件先行——build 段先把永續層文件改到目標狀態再依文件寫實作碼，不一致回頭修文件再繼續（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗——提交對抗的標準攻擊點含 staged 程式碼變更 vs 文件零變更正當性與註釋行為一致性。當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
-- **研究／返工外部性閘。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader 查證、Agent 外部唯讀子代理）標記 `externalEvidence`；`requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
+- **研究／返工外部性閘。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader／web.run（web__run） 查證、Agent／spawn_agent 外部唯讀子代理）標記 `externalEvidence`；`requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、PASS）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換需求定義→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
@@ -243,3 +243,8 @@ shiftblame/                         # plugin 套件根（repo 根）
 ## License
 
 MIT License. 不接受外部貢獻。
+
+### 外部工具辨識與初始化
+
+- 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。hooks 與初始化驗證採相同精確名單；不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
+- 初始化保留既有紀錄：純 hooks 紀錄可初始化且原值保留，異常或既有流程不覆寫，未初始化狀態提供正確診斷。

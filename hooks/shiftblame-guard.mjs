@@ -86,7 +86,7 @@ function nodeLine(root) {
     if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（requirement→research 邊格式閘）';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
-      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
+      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
@@ -147,14 +147,14 @@ function recordUnderstanding(root, tool, toolInput) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader（外部查證）
+// 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
 // 與 Agent／Task（外部唯讀子代理）。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
 // 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
-const EXTERNAL_RESEARCH_TOOLS = /^(?:WebSearch|WebFetch|Agent|Task|mcp__web_reader__webReader)$/;
+const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent']);
 function markExternalEvidence(root, tool) {
   if (!root) return;
   const name = String(tool ?? '');
-  if (!EXTERNAL_RESEARCH_TOOLS.test(name)) return;
+  if (!EXTERNAL_RESEARCH_TOOLS.has(name)) return;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return;
@@ -317,7 +317,7 @@ function checkHoldFreeze(root, tool, cmd, toolInput) {
     }
     return null;
   }
-  return null; // Read／Grep／Glob／WebSearch／WebFetch／webReader／Agent 等唯讀與外部查證自由
+  return null; // Read／Grep／Glob／WebSearch／WebFetch／webReader／web.run（web__run）／Agent 等唯讀與外部查證自由
 }
 
 // 路徑展開元規則（系統性）：一切判斷路徑 MUST 展開為 repo root 錨定的絕對路徑——
