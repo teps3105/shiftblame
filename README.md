@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.6-2ea44f.svg" alt="version 1.9.6"/>
+  <img src="https://img.shields.io/badge/version-1.9.7-2ea44f.svg" alt="version 1.9.7"/>
 </p>
 
 ---
@@ -180,7 +180,7 @@ sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
-初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。既有流程、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化；不以刪除紀錄解鎖。`sb state` 對純紀錄檔提示尚未初始化，對異常狀態報錯，兩者皆不修改檔案。
+初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。合法 `ended` 狀態在舊 slug 已移至 `archive/<舊slug>/SLUG.md`、原位置已移出後，也可用 `sb init <新slug>` 開始下一份工作；新 slug 的工作與歸檔路徑均須未占用。新狀態只保留合法 hooks 紀錄，重新建立 slug／001／intent／空 history，舊結束時間、對抗及返工欄位不沿用。進行中流程（含尚未 PASS 的 done）、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化，拒絕前不建檔或切換分支。`sb state` 對 ended 顯示下一次初始化入口或尚缺的歸檔／停等條件，對純紀錄檔提示尚未初始化，對異常狀態報錯；診斷皆不修改檔案。
 
 ### shiftblame:* 功能型技能
 
@@ -249,4 +249,4 @@ MIT License. 不接受外部貢獻。
 ### 外部工具辨識與初始化
 
 - 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。hooks 與初始化驗證採相同精確名單；Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 分別承接網頁查證、建立子代理與接續檢閱，不能只看介面名稱；不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
-- 初始化保留既有紀錄：純 hooks 紀錄可初始化且原值保留，異常或既有流程不覆寫，未初始化狀態提供正確診斷。
+- 初始化保留既有紀錄：純 hooks 紀錄與已歸檔的合法 ended 可初始化，進行中或異常流程保持原樣；狀態診斷提示下一個入口。

@@ -6,7 +6,7 @@
 //   ③ ablated probe——同一操作指向臨時檔，期待防護消失（放行／記錄不發生）。
 // 兩者都成立＝該機制是行為的唯一因果源（消融證明）；
 // 拆掉仍擋／仍記錄＝殘留或貢獻歸屬錯誤——列退役審查（老闆拍板）。
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, cpSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, cpSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -346,6 +346,31 @@ ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔�
   const dir2 = driftedRepo();
   writeFileSync(join(dir2, 'cli', 'test', 'sb-agent-governance.mjs'), ablated);
   assert.equal(runGov(dir2).status, 0, 'ablated：拆掉錨後同漂移無紅燈（攔截消失）');
+});
+
+ablation('ended 初始化入口（移除即重現結束後死路）', () => {
+  const neu = neutralize(SB, [['const ended = endedState(prior);', 'const ended = false;']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'ended', endedAt: '2026-09-08T01:00:00.000Z' } });
+    mkdirSync(join(r, '.shiftblame/archive'));
+    renameSync(join(r, '.shiftblame/demo'), join(r, '.shiftblame/archive/demo'));
+    const result = cliRun(script, r, 'init', 'next');
+    rmSync(r, { recursive: true, force: true });
+    return result;
+  };
+  assert.equal(probe(SB).status, 0);
+  assert.match(probe(neu).stderr, /非合法純 hooks 紀錄或 ended/);
+});
+ablation('ended 初始化歸檔前置條件', () => {
+  const neu = neutralize(SB, [['function endedInitProblems(st) {', 'function endedInitProblems(st) { return []; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'ended', endedAt: '2026-09-08T01:00:00.000Z' } });
+    const result = cliRun(script, r, 'init', 'next');
+    rmSync(r, { recursive: true, force: true });
+    return result;
+  };
+  assert.match(probe(SB).stderr, /先完成收尾歸檔/);
+  assert.equal(probe(neu).status, 0);
 });
 
 for (const { name, fn } of ABLATIONS) {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -175,4 +175,22 @@ assert.equal(run('end', '--boss-ok').status, 0);
   assert.ok(!existsSync(join(root, '.shiftblame', 'tmp', 'flow-archive')), '零副本——無殭屍歸檔目錄');
 }
 assert.equal(state().node, 'ended');
+// 完整八段的真實結束產物可開下一份工作；拒絕不切分支，成功建立新分支。
+const endedBranch = git('branch', '--show-current').stdout.trim();
+assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔前拒絕');
+assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);
+const oldG1 = readFileSync(join(ms2, 'G1.md'), 'utf8');
+renameSync(slugDir, join(root, '.shiftblame/archive/demo'));
+writeFileSync(join(root, '.shiftblame/archive/INDEX.md'), '2026-09-08 demo 已完成\n');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '開始下一份工作' });
+const nextRecords = state();
+const nextWork = run('init', 'next-work', 'fix');
+assert.equal(nextWork.status, 0, nextWork.stderr);
+assert.equal(git('branch', '--show-current').stdout.trim(), 'fix/next-work');
+assert.equal(state().slug, 'next-work');
+assert.equal(state().ms, '001');
+assert.equal(state().node, 'intent');
+assert.deepEqual(state().inputs, nextRecords.inputs);
+assert.equal(state().endedAt, undefined);
+assert.equal(readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'utf8'), oldG1);
 console.log('sb-user-acceptance: PASS');

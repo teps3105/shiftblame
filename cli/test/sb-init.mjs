@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,4 +74,76 @@ for (const raw of [...invalid.map(x => JSON.stringify(x)), '{broken']) {
   assert.doesNotMatch(diagnostic.stderr, /TypeError|SyntaxError|at cmdState/);
   assert.equal(readFileSync(f.file, 'utf8'), raw);
 }
-console.log('sb-init: 純紀錄保留、正常初始化、拒絕邊界與唯讀診斷通過');
+// 真實 end → 歸檔 → init 閉環，保留結束後的新紀錄而非整包繼承舊流程。
+function endedFixture() {
+  const f = fixture();
+  assert.equal(f.run('init', 'old').status, 0);
+  const st = JSON.parse(readFileSync(f.file, 'utf8'));
+  writeFileSync(f.file, JSON.stringify({ ...st, node: 'done', adversarialAt: at, adversarialConsumed: false, rerunExtPending: true }));
+  const end = f.run('end', '--boss-ok');
+  assert.equal(end.status, 0, end.stderr);
+  return f;
+}
+function archiveOld(f) {
+  renameSync(join(f.cwd, '.shiftblame/old'), join(f.cwd, '.shiftblame/archive/old'));
+  writeFileSync(join(f.cwd, '.shiftblame/archive/INDEX.md'), '2026-09-08 old 舊工作\n');
+}
+{
+  const f = endedFixture();
+  const beforeArchive = readFileSync(f.file, 'utf8');
+  assert.match(f.run('state').stdout, /先完成收尾歸檔/);
+  assert.equal(f.run('init', 'next').status, 1);
+  assert.equal(readFileSync(f.file, 'utf8'), beforeArchive);
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/next')), false);
+  archiveOld(f);
+  const oldDoc = readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8');
+  const review = join(f.cwd, '.shiftblame/tmp/review.md');
+  writeFileSync(review, '對抗判定：通過\n');
+  assert.equal(f.run('adversarial', review).status, 0, 'ended 收尾提交可留下新對抗紀錄');
+  // end 已清空舊流，模擬其後由 hooks 寫入的新紀錄。
+  writeFileSync(f.file, JSON.stringify({ ...JSON.parse(readFileSync(f.file, 'utf8')), ...record }));
+  const before = readFileSync(f.file, 'utf8');
+  assert.match(f.run('state').stdout, /下一步：.*sb init/);
+  assert.equal(readFileSync(f.file, 'utf8'), before, 'state 唯讀');
+  assert.equal(f.run('init', 'old').status, 1, '歸檔 slug 重名拒絕');
+  mkdirSync(join(f.cwd, '.shiftblame/taken'));
+  assert.equal(f.run('init', 'taken').status, 1, '工作路徑碰撞拒絕');
+  assert.equal(readFileSync(f.file, 'utf8'), before);
+  const r = f.run('init', 'next', 'fix');
+  assert.equal(r.status, 0, r.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')), { ...record, slug: 'next', ms: '001', node: 'intent', history: [] });
+  assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8'), oldDoc);
+  assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/INDEX.md'), 'utf8'), '2026-09-08 old 舊工作\n');
+  assert.ok(existsSync(join(f.cwd, '.shiftblame/next/001')));
+  assert.equal(f.run('state').status, 0);
+  assert.equal(f.run('commitmsg', 'fix: 新工作不可沿用舊對抗').status, 1);
+}
+for (const mutate of [
+  st => ({ ...st, node: 'done' }),
+  st => ({ ...st, node: 'build' }),
+  st => ({ ...st, endedAt: 'bad' }),
+  st => ({ ...st, slug: '../outside' }),
+  st => ({ ...st, ms: null }),
+  st => ({ ...st, history: [{}] }),
+  st => ({ ...st, unknown: true }),
+  st => ({ ...st, ...record, understandings: [{ ...record.understandings[0], hash: 'bad' }] }),
+  st => ({ ...st, ...record, understandingHold: { at, inputIdx: 0 } }),
+]) {
+  const f = endedFixture();
+  archiveOld(f);
+  const raw = JSON.stringify(mutate(JSON.parse(readFileSync(f.file, 'utf8'))));
+  writeFileSync(f.file, raw);
+  assert.equal(f.run('init', 'next').status, 1, raw);
+  assert.equal(readFileSync(f.file, 'utf8'), raw);
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/next')), false);
+}
+// 僅刪除舊目錄而沒有歸檔，不會被當作已收尾。
+{
+  const f = endedFixture();
+  renameSync(join(f.cwd, '.shiftblame/old'), join(f.cwd, '.shiftblame/misplaced'));
+  const before = readFileSync(f.file, 'utf8');
+  assert.match(f.run('state').stdout, /歸檔缺失/);
+  assert.equal(f.run('init', 'next').status, 1);
+  assert.equal(readFileSync(f.file, 'utf8'), before);
+}
+console.log('sb-init: 純紀錄、end→歸檔→init 閉環、碰撞與異常拒絕、唯讀診斷通過');

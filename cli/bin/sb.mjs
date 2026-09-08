@@ -461,9 +461,11 @@ const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chor
 const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence'];
+const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st) {
-  const allowed = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence'];
+  const allowed = HOOK_RECORD_KEYS;
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
   if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
@@ -484,12 +486,37 @@ function readStartupState() {
   try { return readJson(STATE_FILE); }
   catch { die([`flow-state 無法解析：${STATE_FILE}——保留原檔，查明損壞原因後修復`]); }
 }
+// ended 是新 slug 的入口；只接納正常 end 產物及其後的 hooks 紀錄。
+function endedState(st) {
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold'];
+  if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
+  if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
+  if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
+  if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every(x => objectRecord(x) && exactKeys(x, ['at', 'report', 'verdict', 'node', ...(Object.hasOwn(x, 'point') ? ['point'] : [])]) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === 'ended' && (!Object.hasOwn(x, 'point') || ['①', '②', '③'].includes(x.point))))) return false;
+  for (const k of ['adversarialConsumed', 'rerunExtPending']) if (Object.hasOwn(st, k) && typeof st[k] !== 'boolean') return false;
+  if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputs ?? []).length)) return false;
+  const records = hookRecords(st);
+  return !Object.keys(records).length || hooksOnly(records);
+}
+function endedInitProblems(st) {
+  const problems = [];
+  if (st.understandingHold) problems.push('理解停等尚未解除——待老闆終審回覆後初始化');
+  if (existsSync(join(SB_DIR, st.slug))) problems.push(`舊 slug 尚未移出：${join(SB_DIR, st.slug)}——先完成收尾歸檔`);
+  const archived = join(SB_DIR, 'archive', st.slug, 'SLUG.md');
+  if (!existsSync(archived) || !statSync(archived).isFile()) problems.push(`舊 slug 歸檔缺失：${archived}——先完成收尾歸檔`);
+  return problems;
+}
 function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
   if (!TYPES.includes(type)) die([`type 僅接受：${TYPES.join('/')}（預設 feat）——收到：${type}`], 2);
   const prior = existsSync(STATE_FILE) ? readStartupState() : null;
-  if (existsSync(STATE_FILE) && !hooksOnly(prior)) die([`flow-state 已存在（${STATE_FILE}）且非合法純 hooks 紀錄——既有流程、部分初始化、異常資料或理解停等禁止重跑 init（會覆蓋狀態）`]);
+  const ended = endedState(prior);
+  if (existsSync(STATE_FILE) && !hooksOnly(prior) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法純 hooks 紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
+  if (ended) { const problems = endedInitProblems(prior); if (problems.length) die(problems); }
+  for (const target of ended ? [join(SB_DIR, slug), join(SB_DIR, 'archive', slug)] : []) {
+    if (existsSync(target)) die([`新 slug 路徑已占用：${target}——選擇未使用的 slug，既有文件保持原樣`]);
+  }
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
   mkdirSync(join(SB_DIR, slug, '001'), { recursive: true });
@@ -517,7 +544,7 @@ function cmdInit(slug, type = 'feat') {
     try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; }
     catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ ...prior, slug, ms: '001', node: 'intent', history: [] }, null, 2));
+  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? hookRecords(prior) : {}), slug, ms: '001', node: 'intent', history: [] }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
@@ -525,9 +552,16 @@ function cmdState() {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readStartupState();
   if (hooksOnly(st)) { out('尚未初始化：目前僅有 hooks 紀錄；經 shiftblame:think 路由後以 sb init <slug> 建立骨架，既有紀錄會保留。'); return; }
+  if (st?.node === 'ended') {
+    if (!endedState(st)) die(['ended 狀態不完整或未知——保留原檔，查明原因後修復']);
+    out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt}）`);
+    const problems = endedInitProblems(st);
+    if (problems.length) for (const p of problems) out(`  初始化前：${p}`);
+    else out('  下一步：經 shiftblame:think 對齊新工作後 sb init <新slug>（工作與歸檔路徑須未占用；舊歸檔保持原樣）');
+    return;
+  }
   if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !Array.isArray(st.history) || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
-  if (st.node === 'ended') { out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt ?? '?'}）`); return; }
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
