@@ -146,4 +146,61 @@ for (const mutate of [
   assert.equal(f.run('init', 'next').status, 1);
   assert.equal(readFileSync(f.file, 'utf8'), before);
 }
-console.log('sb-init: 純紀錄、end→歸檔→init 閉環、碰撞與異常拒絕、唯讀診斷通過');
+// 有效 Git 忽略來源與換行：已忽略時逐位元保留，未忽略才追加。
+for (const spec of [
+  { name: 'LF', before: '# rules\n.shiftblame/\n' },
+  { name: 'CRLF', before: '# rules\r\n.shiftblame/\r\n' },
+  { name: 'root prefix', before: '/.shiftblame/\r\n' },
+  { name: 'no final newline', before: '.shiftblame/' },
+  { name: 'info exclude', before: '# unrelated\r\n', info: '.shiftblame/\n' },
+  { name: 'info without gitignore', info: '.shiftblame/\n' },
+  { name: 'global exclude', before: '# unrelated\n', global: '.shiftblame/\n' },
+  { name: 'global without gitignore', global: '.shiftblame/\n' },
+  { name: 'glob', before: '.shift*/\n' },
+  { name: 'missing', after: '.shiftblame/\n' },
+  { name: 'append CRLF', before: '# rules\r\nother', after: '# rules\r\nother\r\n.shiftblame/\r\n' },
+  { name: 'negated', before: '.shiftblame/\n!.shiftblame/\n', after: '.shiftblame/\n!.shiftblame/\n.shiftblame/\n' },
+  { name: 'comment', before: '# .shiftblame/\n', after: '# .shiftblame/\n.shiftblame/\n' },
+]) {
+  const f = fixture();
+  const git = (...args) => spawnSync('git', ['-C', f.cwd, ...args], { encoding: 'utf8' });
+  assert.equal(git('init').status, 0);
+  const excludes = join(f.cwd, 'global-ignore');
+  writeFileSync(excludes, spec.global ?? '');
+  assert.equal(git('config', 'core.excludesFile', excludes).status, 0);
+  if (spec.info) writeFileSync(join(f.cwd, '.git/info/exclude'), spec.info);
+  const gi = join(f.cwd, '.gitignore');
+  if (spec.before !== undefined) writeFileSync(gi, spec.before);
+  const run = f.run('init', 'demo');
+  assert.equal(run.status, 0, spec.name + run.stderr);
+  const expected = spec.after ?? spec.before;
+  if (expected === undefined) assert.equal(existsSync(gi), false, spec.name);
+  else assert.deepEqual(readFileSync(gi), Buffer.from(expected), spec.name);
+  assert.equal(git('check-ignore', '--quiet', '--', '.shiftblame/').status, 0, spec.name);
+}
+// Git 失敗不能冒充未忽略；已追蹤檔案的索引也不由 init 改動。
+for (const broken of [false, true]) {
+  const f = fixture();
+  const git = (...args) => spawnSync('git', ['-C', f.cwd, ...args], { encoding: 'utf8' });
+  assert.equal(git('init').status, 0);
+  const gi = join(f.cwd, '.gitignore');
+  const original = broken ? '# keep\r\n' : '.shiftblame/\r\n';
+  writeFileSync(gi, original);
+  writeFileSync(join(f.cwd, '.shiftblame/tracked.txt'), 'keep index');
+  assert.equal(git('add', '-f', '.shiftblame/tracked.txt').status, 0);
+  const indexBefore = readFileSync(join(f.cwd, '.git/index'));
+  if (broken) writeFileSync(join(f.cwd, '.git/config'), '[broken');
+  const run = f.run('init', 'demo');
+  assert.equal(run.status, 0, run.stderr);
+  if (broken) assert.match(run.stdout, /Git 查詢失敗/);
+  assert.deepEqual(readFileSync(gi), Buffer.from(original));
+  if (broken) assert.deepEqual(readFileSync(join(f.cwd, '.git/index')), indexBefore);
+  else assert.equal(git('ls-files', '.shiftblame/tracked.txt').stdout.trim(), '.shiftblame/tracked.txt');
+}
+for (const original of ['.shiftblame/\r\n', '/.shiftblame/\n', '# rules\r\n.shiftblame/']) {
+  const f = fixture();
+  writeFileSync(join(f.cwd, '.gitignore'), original);
+  assert.equal(f.run('init', 'demo').status, 0);
+  assert.deepEqual(readFileSync(join(f.cwd, '.gitignore')), Buffer.from(original));
+}
+console.log('sb-init: 初始化閉環、拒絕邊界、Git 忽略來源與原檔保留通過');

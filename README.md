@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.7-2ea44f.svg" alt="version 1.9.7"/>
+  <img src="https://img.shields.io/badge/version-1.9.8-2ea44f.svg" alt="version 1.9.8"/>
 </p>
 
 ---
@@ -180,7 +180,7 @@ sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
-初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。合法 `ended` 狀態在舊 slug 已移至 `archive/<舊slug>/SLUG.md`、原位置已移出後，也可用 `sb init <新slug>` 開始下一份工作；新 slug 的工作與歸檔路徑均須未占用。新狀態只保留合法 hooks 紀錄，重新建立 slug／001／intent／空 history，舊結束時間、對抗及返工欄位不沿用。進行中流程（含尚未 PASS 的 done）、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化，拒絕前不建檔或切換分支。`sb state` 對 ended 顯示下一次初始化入口或尚缺的歸檔／停等條件，對純紀錄檔提示尚未初始化，對異常狀態報錯；診斷皆不修改檔案。
+初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。合法 `ended` 狀態在舊 slug 已移至 `archive/<舊slug>/SLUG.md`、原位置已移出，且 Git 工作完成下述合併與分支清理查證後，也可用 `sb init <新slug>` 開始下一份工作；新 slug 的工作與歸檔路徑均須未占用。新狀態只保留合法 hooks 紀錄，重新建立 slug／001／intent／空 history，舊結束時間、對抗及返工欄位不沿用。進行中流程（含尚未 PASS 的 done）、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化，拒絕前不建檔或切換分支。`sb state` 對 ended 顯示下一次初始化入口或尚缺的歸檔／停等條件，對純紀錄檔提示尚未初始化，對異常狀態報錯；診斷皆不修改檔案。
 
 ### shiftblame:* 功能型技能
 
@@ -248,5 +248,8 @@ MIT License. 不接受外部貢獻。
 
 ### 外部工具辨識與初始化
 
+- Git 工作的收尾順序是 PASS → 歸檔 → 合併 → `sb closeout --base <本機基底分支>` → 清除舊本機與遠端分支 → `sb init <新slug>`。closeout 查證舊分支 tip 已為基底祖先，記錄提交、分支及遠端來源；它只查證留痕，不代做合併或刪除。init 再驗工作樹乾淨、記錄提交仍在目前基底、本機舊分支不存在、遠端伺服器已無舊 ref、新分支未占用，才從此次查證的基底提交建立新分支。首次 init 記錄 workBranch；舊狀態可由唯一的 type/slug 分支取得來源，缺失或有歧義時先補足來源，不能拿目前 HEAD 代替。`sb state` 顯示未完成項。squash／rebase 無祖先證據時保持原狀；基底由 --base 明示，不猜主幹名稱。
+- 遠端查證涵蓋當時設定的推送位置、同名舊分支、upstream 與 push refspec 自訂分支名，直接查伺服器，不靠 remote-tracking 快取。已記錄的遠端被移除、推送位置改動或查詢失敗都會擋下。已移除且未留下紀錄的歷史推送來源無法憑空還原，須先恢復來源設定。closeout 後新增提交須重新查證，清除以記錄 tip 為準；手動新增後再刪分支造成證據過期，仍由收尾操作與抽查承擔，CLI 不宣稱能重建已消失的歷史。
+- `sb init` 先以 Git 查證 `.shiftblame/` 的有效忽略規則，已被 `.gitignore`、`.git/info/exclude` 或全域 excludes 忽略時，保留 `.gitignore` 原樣（不存在時也不建立）。只有確定未忽略才補一行，沿用原換行格式；Git 查詢失敗則提示並保留原檔。非 Git 目錄採有限的直接規則辨識，接受 LF／CRLF 與根目錄前綴。忽略規則檢查不改動已追蹤檔案的索引，staged 系統檔仍由提交閘門攔截。
 - 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。hooks 與初始化驗證採相同精確名單；Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 分別承接網頁查證、建立子代理與接續檢閱，不能只看介面名稱；不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
 - 初始化保留既有紀錄：純 hooks 紀錄與已歸檔的合法 ended 可初始化，進行中或異常流程保持原樣；狀態診斷提示下一個入口。

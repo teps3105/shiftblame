@@ -373,6 +373,38 @@ ablation('ended 初始化歸檔前置條件', () => {
   assert.equal(probe(neu).status, 0);
 });
 
+ablation('有效 Git 忽略免重複追加', () => {
+  const neu = neutralize(SB, [['if (check.status === 0) return;', '// ABLATED: 已忽略仍往下追加']]);
+  const probe = (script) => {
+    const r = mkSandbox({ git: true });
+    const initial = '.shiftblame/\r\n';
+    writeFileSync(join(r, '.gitignore'), initial);
+    // 純 hooks 紀錄初始化；驗證 init 對 CRLF 忽略檔的行為。
+    writeFileSync(join(r, '.shiftblame/flow-state.json'), JSON.stringify({ inputs: [] }));
+    const result = cliRun(script, r, 'init', 'next');
+    assert.equal(result.status, 0, result.stderr);
+    const actual = readFileSync(join(r, '.gitignore'), 'utf8');
+    rmSync(r, { recursive: true, force: true });
+    return actual;
+  };
+  assert.equal(probe(SB), '.shiftblame/\r\n');
+  assert.equal(probe(neu), '.shiftblame/\r\n.shiftblame/\r\n');
+});
+
+ablation('PASS 後合併與清理查證（移除即從舊 HEAD 初始化）', () => {
+  const neu = neutralize(SB, [['const gitPlan = ended ? closedGitPlan(prior) : { problems: [], baseCommit: null };', 'const gitPlan = { problems: [], baseCommit: null }; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ git: true, state: { node: 'ended', endedAt: '2026-09-08T01:00:00.000Z' } });
+    mkdirSync(join(r, '.shiftblame/archive'));
+    renameSync(join(r, '.shiftblame/demo'), join(r, '.shiftblame/archive/demo'));
+    const result = cliRun(script, r, 'init', 'next');
+    rmSync(r, { recursive: true, force: true });
+    return result;
+  };
+  assert.match(probe(SB).stderr, /尚未完成合併查證/);
+  assert.equal(probe(neu).status, 0);
+});
+
 for (const { name, fn } of ABLATIONS) {
   try { fn(); pass++; console.log(`PASS [消融] ${name}`); }
   catch (e) { fails.push(name); console.error(`FAIL [消融] ${name}：${e.message}`); }

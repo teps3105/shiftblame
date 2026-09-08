@@ -16,7 +16,7 @@
 import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
@@ -124,6 +124,7 @@ const usage = (code = 2) => {
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 sb adversarial --point 對應條目（adversarialLog，新鮮度＝晚於同邊上次推進）
   sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋archive
+  sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
   sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
                                         引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
                                         機制即擋）＋staged 系統檔檢查；
@@ -488,10 +489,12 @@ function readStartupState() {
 }
 // ended 是新 slug 的入口；只接納正常 end 產物及其後的 hooks 紀錄。
 function endedState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold', 'workBranch', 'closeout'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
   if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
+  if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
+  if (Object.hasOwn(st, 'closeout') && !validCloseout(st)) return false;
   if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every(x => objectRecord(x) && exactKeys(x, ['at', 'report', 'verdict', 'node', ...(Object.hasOwn(x, 'point') ? ['point'] : [])]) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === 'ended' && (!Object.hasOwn(x, 'point') || ['①', '②', '③'].includes(x.point))))) return false;
   for (const k of ['adversarialConsumed', 'rerunExtPending']) if (Object.hasOwn(st, k) && typeof st[k] !== 'boolean') return false;
   if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputs ?? []).length)) return false;
@@ -506,6 +509,160 @@ function endedInitProblems(st) {
   if (!existsSync(archived) || !statSync(archived).isFile()) problems.push(`舊 slug 歸檔缺失：${archived}——先完成收尾歸檔`);
   return problems;
 }
+function hasGitMetadata() {
+  // .git 可為 worktree 的檔案；既有 .shiftblame 根也可能位於 Git 子目錄。
+  let dir = ROOT, inGit = false;
+  for (;;) {
+    if (existsSync(join(dir, '.git'))) { inGit = true; break; }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return inGit;
+}
+const gitRun = (...args) => spawnSync('git', ['-C', ROOT, ...args], { encoding: 'utf8', timeout: 15000 });
+const branchName = (name) => typeof name === 'string' && name.length > 0 && gitRun('check-ref-format', `refs/heads/${name}`).status === 0;
+const commitId = (id) => typeof id === 'string' && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(id);
+function branchTip(name) {
+  const r = gitRun('rev-parse', '--verify', `refs/heads/${name}^{commit}`);
+  return r.status === 0 && commitId(r.stdout.trim()) ? r.stdout.trim() : null;
+}
+function validCloseout(st) {
+  const c = st.closeout;
+  return exactKeys(c, ['slug', 'workBranch', 'workCommit', 'baseBranch', 'at', 'remotes']) && c.slug === st.slug && branchName(c.workBranch) && (!st.workBranch || st.workBranch === c.workBranch) && commitId(c.workCommit) && branchName(c.baseBranch) && c.workBranch !== c.baseBranch && timestamp(c.at) && Array.isArray(c.remotes) && c.remotes.every(r => exactKeys(r, ['name', 'ref', 'configHash']) && typeof r.name === 'string' && r.name.length > 0 && typeof r.ref === 'string' && r.ref.startsWith('refs/heads/') && branchName(r.ref.slice(11)) && /^[0-9a-f]{64}$/.test(r.configHash));
+}
+function remoteConfig(name) {
+  const r = gitRun('remote', 'get-url', '--push', '--all', name);
+  if (r.status !== 0) throw new Error(`遠端 ${name} 無法解析，無法確認清除狀態`);
+  const urls = [...new Set(r.stdout.trim().split(/\r?\n/).filter(Boolean))];
+  if (!urls.length) throw new Error(`遠端 ${name} 缺少推送位置`);
+  return { urls, configHash: createHash('sha256').update(JSON.stringify(urls)).digest('hex') };
+}
+function remoteTips(name, ref, expectedHash) {
+  const config = remoteConfig(name);
+  if (expectedHash && config.configHash !== expectedHash) throw new Error(`遠端 ${name} 設定已變更，請重新查證收尾`);
+  const tips = [];
+  for (const url of config.urls) {
+    const r = gitRun('ls-remote', '--exit-code', '--heads', '--', url, ref);
+    if (r.status === 2) continue; // 伺服器確認無此 ref，非本機 tracking 快取。
+    if (r.status !== 0) throw new Error(`遠端 ${name} 查詢失敗，無法確認 ${ref} 已清除`);
+    const lines = r.stdout.trim().split(/\r?\n/);
+    for (const line of lines) {
+      const [oid, found] = line.split('\t');
+      if (found !== ref || !commitId(oid)) throw new Error(`遠端 ${name} 回傳無效的分支資料`);
+      tips.push(oid);
+    }
+  }
+  return { tips, configHash: config.configHash };
+}
+function knownRemoteTargets(workBranch) {
+  const result = gitRun('remote');
+  if (result.status !== 0) throw new Error('無法列出遠端，先修復 Git');
+  const targets = result.stdout.trim().split(/\r?\n/).filter(Boolean).map(name => ({ name, ref: `refs/heads/${workBranch}` }));
+  const name = gitRun('config', '--get', `branch.${workBranch}.remote`).stdout.trim();
+  const ref = gitRun('config', '--get', `branch.${workBranch}.merge`).stdout.trim();
+  if (name && name !== '.' && ref.startsWith('refs/heads/') && !targets.some(r => r.name === name && r.ref === ref)) targets.push({ name, ref });
+  // push refspec 可以另命名且沒有 upstream；查證所有可對應的目的分支。
+  for (const remote of result.stdout.trim().split(/\r?\n/).filter(Boolean)) {
+    const push = gitRun('config', '--get-all', `remote.${remote}.push`);
+    if (push.status !== 0 && push.status !== 1) throw new Error(`無法讀取遠端 ${remote} 的 push refspec`);
+    for (let spec of push.stdout.trim().split(/\r?\n/).filter(Boolean)) {
+      spec = spec.replace(/^\+/, '');
+      if (spec === ':') continue; // matching branches，同名目標已列。
+      let [src, dst, extra] = spec.split(':');
+      if (extra !== undefined) throw new Error(`遠端 ${remote} push refspec 無法可靠對應，先明確設定目的分支`);
+      if (!src || (src.startsWith('refs/') && !src.startsWith('refs/heads/'))) continue; // 刪除與標籤等來源不屬於舊工作分支。
+      dst ??= src;
+      if (dst.startsWith('refs/') && !dst.startsWith('refs/heads/')) continue; // 本入口只檢查分支清除。
+      if (!dst.startsWith('refs/heads/')) dst = `refs/heads/${dst}`;
+      if (src && src !== 'HEAD' && !src.startsWith('refs/')) src = `refs/heads/${src}`;
+      const source = `refs/heads/${workBranch}`;
+      if (src.includes('*')) {
+        if (src.split('*').length !== 2 || dst.split('*').length !== 2) throw new Error(`遠端 ${remote} push refspec 無法可靠對應`);
+        const [prefix, suffix] = src.split('*');
+        if (!source.startsWith(prefix) || !source.endsWith(suffix)) continue;
+        dst = dst.replace('*', source.slice(prefix.length, suffix ? -suffix.length : undefined));
+      } else {
+        if (src && src !== 'HEAD' && !branchName(src.replace(/^refs\/heads\//, ''))) throw new Error(`遠端 ${remote} push refspec 無法可靠對應`);
+        if (src && src !== 'HEAD' && src !== source) continue;
+      }
+      if (!branchName(dst.slice(11))) throw new Error(`遠端 ${remote} 目的分支無法可靠對應`);
+      if (!targets.some(r => r.name === remote && r.ref === dst)) targets.push({ name: remote, ref: dst });
+    }
+  }
+  return targets;
+}
+function cleanGitProblem() {
+  const r = gitRun('status', '--porcelain');
+  return r.status !== 0 ? 'Git 狀態查詢失敗' : r.stdout.trim() ? '工作樹未乾淨，先完成收尾提交' : null;
+}
+function closedGitPlan(st) {
+  if (!hasGitMetadata()) return { problems: st.workBranch || st.closeout ? ['無法查證原 Git 工作區：Git metadata 缺失，保持 ended 狀態'] : [], baseCommit: null };
+  const problems = [];
+  const dirty = cleanGitProblem();
+  if (dirty) problems.push(dirty);
+  if (!st.closeout) return { problems: [...problems, '尚未完成合併查證：歸檔與合併後、刪分支前執行 sb closeout --base <本機分支>'], baseCommit: null };
+  const c = st.closeout;
+  const baseCommit = branchTip(c.baseBranch);
+  if (!baseCommit || gitRun('merge-base', '--is-ancestor', c.workCommit, baseCommit).status !== 0) problems.push('基底缺失或無合併祖先證據，無法自動確認整合（含 squash／rebase）；先重新查證');
+  const branches = gitRun('for-each-ref', '--format=%(refname)', `refs/heads/${c.workBranch}`);
+  if (branches.status !== 0) problems.push('無法查證舊本機分支');
+  else if (branches.stdout.trim()) problems.push(`舊本機分支尚未清除：${c.workBranch}`);
+  try {
+    const targets = [...c.remotes];
+    for (const r of knownRemoteTargets(c.workBranch)) if (!targets.some(x => x.name === r.name && x.ref === r.ref)) targets.push(r);
+    for (const r of targets) if (remoteTips(r.name, r.ref, r.configHash).tips.length) problems.push(`舊遠端分支尚未清除：${r.name} ${r.ref}`);
+  } catch (e) { problems.push(e.message); }
+  return { problems, baseCommit };
+}
+function cmdCloseout(base) {
+  if (!existsSync(STATE_FILE)) die(['尚無流程，無法查證收尾']);
+  const st = readStartupState();
+  if (!endedState(st)) die(['收尾查證僅接受合法 ended 狀態']);
+  const problems = endedInitProblems(st);
+  if (!hasGitMetadata()) problems.push('非 Git 工作區不需合併查證');
+  if (!branchName(base)) problems.push('請以 --base 明確指定本機基底分支');
+  const dirty = cleanGitProblem();
+  if (dirty) problems.push(dirty);
+  if (problems.length) die(problems);
+  const baseCommit = branchTip(base);
+  if (!baseCommit) die(['基底分支不存在或尚無提交']);
+  const candidates = st.workBranch ? [st.workBranch] : TYPES.map(type => `${type}/${st.slug}`).filter(name => branchTip(name));
+  if (candidates.length !== 1) die(['缺少唯一舊工作分支來源；先恢復舊功能分支再查證，不以目前 HEAD 代替']);
+  const workBranch = candidates[0], workCommit = branchTip(workBranch);
+  if (workBranch === base || !workCommit) die(['舊工作分支須存在且不同於基底；先查證再刪除']);
+  if (gitRun('merge-base', '--is-ancestor', workCommit, baseCommit).status !== 0) die(['舊功能無合併祖先證據，無法自動確認整合（含 squash／rebase）']);
+  const remotes = [];
+  try {
+    for (const r of knownRemoteTargets(workBranch)) {
+      const remote = remoteTips(r.name, r.ref);
+      if (remote.tips.some(tip => gitRun('merge-base', '--is-ancestor', tip, baseCommit).status !== 0)) throw new Error(`遠端 ${r.name} 的舊功能提交尚無基底祖先證據；先取得並查證提交`);
+      remotes.push({ ...r, configHash: remote.configHash });
+    }
+  } catch (e) { die([e.message]); }
+  st.closeout = { slug: st.slug, workBranch, workCommit, baseBranch: base, at: new Date().toISOString(), remotes };
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([`合併查證已留痕：${workBranch} @ ${workCommit} → ${base}`, '依已查證 tip 清除舊本機與遠端分支，再以 sb init 開新工作；清除前如新增提交，重新執行 closeout']);
+}
+function ensureWorkspaceIgnored() {
+  const giPath = join(ROOT, '.gitignore');
+  const gi = existsSync(giPath) ? readFileSync(giPath, 'utf8') : '';
+  if (hasGitMetadata()) {
+    // --no-index 只判規則，已追蹤檔仍交由 staged 閘門；全程不動索引。
+    const check = spawnSync('git', ['-C', ROOT, 'check-ignore', '--quiet', '--no-index', '--', '.shiftblame/'], { encoding: 'utf8' });
+    if (check.status !== 0 && check.status !== 1) {
+      out('〔忽略檢查〕Git 查詢失敗，保留 .gitignore 原樣；請修復 Git 後確認 .shiftblame/ 忽略設定。');
+      return;
+    }
+    if (check.status === 0) return;
+  } else {
+    // 非 Git 目錄只辨識直接規則，含最後一條直接否定；不模擬 Git 通配語義。
+    const direct = [...gi.matchAll(/^(\!?)\/?\.shiftblame\/?[ \t]*(?:\r?$)/gm)].at(-1);
+    if (direct && direct[1] !== '!') return;
+  }
+  const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
+  appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
+}
 function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
@@ -516,6 +673,18 @@ function cmdInit(slug, type = 'feat') {
   if (ended) { const problems = endedInitProblems(prior); if (problems.length) die(problems); }
   for (const target of ended ? [join(SB_DIR, slug), join(SB_DIR, 'archive', slug)] : []) {
     if (existsSync(target)) die([`新 slug 路徑已占用：${target}——選擇未使用的 slug，既有文件保持原樣`]);
+  }
+  const gitPlan = ended ? closedGitPlan(prior) : { problems: [], baseCommit: null };
+  if (gitPlan.problems.length) die(gitPlan.problems);
+  let branchNote = '', workBranch;
+  if (gitPlan.baseCommit) {
+    const br = `${type}/${slug}`;
+    const existing = gitRun('for-each-ref', '--format=%(refname)', `refs/heads/${br}`);
+    if (existing.status !== 0 || existing.stdout.trim()) die([`新分支已存在或無法查證：${br}——保持原狀`]);
+    const checkout = gitRun('checkout', '-b', br, gitPlan.baseCommit);
+    if (checkout.status !== 0) die(['無法從已查證基底建立新分支，未初始化新流程']);
+    workBranch = br;
+    branchNote = `開發分支：${br}（起點 ${prior.closeout.baseBranch} @ ${gitPlan.baseCommit}）`;
   }
   mkdirSync(SB_DIR, { recursive: true });
   mkdirSync(TMP, { recursive: true });
@@ -531,20 +700,20 @@ function cmdInit(slug, type = 'feat') {
     writeFileSync(slugPath, content);
   }
   try {
-    const giPath = join(ROOT, '.gitignore');
-    const gi = existsSync(giPath) ? readFileSync(giPath, 'utf-8') : '';
-    if (!/(^|\n)\.shiftblame\/?(\n|$)/.test(gi)) appendFileSync(giPath, (gi && !gi.endsWith('\n') ? '\n' : '') + '.shiftblame/\n');
-  } catch { /* 非 git 環境略過 */ }
-  let branchNote = '';
+    ensureWorkspaceIgnored();
+  } catch { out('〔忽略檢查〕無法讀寫 .gitignore，請確認 .shiftblame/ 忽略設定。'); }
+  if (!gitPlan.baseCommit) {
   try {
     const br = `${type}/${slug}`;
     let r = execSync(`git checkout -b ${br}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] });
     branchNote = `開發分支：${br}（已切換）`;
+    workBranch = br;
   } catch {
-    try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; }
+    try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; workBranch = `${type}/${slug}`; }
     catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? hookRecords(prior) : {}), slug, ms: '001', node: 'intent', history: [] }, null, 2));
+  }
+  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? hookRecords(prior) : {}), slug, ms: '001', node: 'intent', history: [], ...(workBranch ? { workBranch } : {}) }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
@@ -555,7 +724,7 @@ function cmdState() {
   if (st?.node === 'ended') {
     if (!endedState(st)) die(['ended 狀態不完整或未知——保留原檔，查明原因後修復']);
     out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt}）`);
-    const problems = endedInitProblems(st);
+    const problems = [...endedInitProblems(st), ...closedGitPlan(st).problems];
     if (problems.length) for (const p of problems) out(`  初始化前：${p}`);
     else out('  下一步：經 shiftblame:think 對齊新工作後 sb init <新slug>（工作與歸檔路徑須未占用；舊歸檔保持原樣）');
     return;
@@ -725,8 +894,8 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 真相源（顯式陣列——對抗第一輪必修 1/3：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）會漏——顯式列舉是唯一單一真相）：
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'commitmsg']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--help']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
       for (const f of eternal) {
@@ -781,7 +950,7 @@ function cmdCommitmsg(msg) {
 const [cmd, ...rest] = process.argv.slice(2);
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
@@ -789,6 +958,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--rerun') { flags.rerun = rest[++i] ?? ''; if (flags.rerun !== 'impl' && flags.rerun !== 'definition') usage(); }
   else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['①', '②', '③'].includes(flags.point)) usage(); }
+  else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
@@ -799,6 +969,7 @@ switch (cmd) {
   case 'adversarial': cmdAdversarial(pos.join(' '), flags.point); break;
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
+  case 'closeout': cmdCloseout(flags.base); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();
 }
