@@ -12,7 +12,7 @@ const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
 const ms = join(root, '.shiftblame/demo/001');
 const slugDir = join(root, '.shiftblame/demo');
 mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
-mkdirSync(ms, { recursive: true });
+// 流程目錄由 init 建立；接入前只準備 tmp。
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const run2 = (cwd2, ...args) => spawnSync(process.execPath, [cli, ...args], { cwd: cwd2, encoding: 'utf8' });
@@ -233,7 +233,7 @@ try {
   const hookRun3 = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root3, ...payload }), encoding: 'utf8' });
   assert.equal(git3('init').status, 0);
   mkdirSync(join(root3, '.SHIFTBLAME', 'tmp'), { recursive: true });
-  writeFileSync(join(root3, '.SHIFTBLAME', 'flow-state.json'), JSON.stringify({ slug: null, ms: null, node: null, history: [] }));
+  writeFileSync(join(root3, '.SHIFTBLAME', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'build', history: [] }));
   assert.equal(git3('add', '-f', '.SHIFTBLAME/flow-state.json').status, 0);
   writeFileSync(join(root3, '.SHIFTBLAME', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 大小寫驗證', cwd: root3, issuedAt: new Date().toISOString() }));
   const hs3 = hookRun3({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root3} commit -m "feat: 大小寫驗證"` } });

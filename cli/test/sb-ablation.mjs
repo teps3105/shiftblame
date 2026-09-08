@@ -21,7 +21,7 @@ const BDD_G1 = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法
 const G2 = '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴。';
 const G3 = '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。';
 
-function mkSandbox({ state = {}, files = {}, git = false } = {}) {
+function mkSandbox({ state = {}, files = {}, git = false, flow = true } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'sb-abl-'));
   mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
   for (const [p, c] of Object.entries(files)) {
@@ -29,9 +29,11 @@ function mkSandbox({ state = {}, files = {}, git = false } = {}) {
     mkdirSync(dirname(full), { recursive: true });
     writeFileSync(full, c);
   }
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', history: [], ...state }));
-  mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
-  writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(flow ? { slug: 'demo', ms: '001', node: 'build', history: [], ...state } : { inputs: [], ...state }));
+  if (flow) {
+    mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
+    writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
+  }
   if (git) {
     spawnSync('git', ['init'], { cwd: root });
     writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -48,6 +50,10 @@ const stateOf = (root) => JSON.parse(readFileSync(join(root, '.shiftblame', 'flo
 const NEU_DIRS = [];
 process.on('exit', () => { for (const d of NEU_DIRS) rmSync(d, { recursive: true, force: true }); });
 
+function relocateShared(text) {
+  return text.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${new URL('../../cli/bin/flow-state.mjs', import.meta.url).href}'`);
+}
+
 function neutralize(srcPath, pairs) {
   let t = readFileSync(srcPath, 'utf8');
   for (const [o, n] of pairs) {
@@ -57,6 +63,9 @@ function neutralize(srcPath, pairs) {
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu-'));
   NEU_DIRS.push(dir);
   const out = join(dir, 'ablated.mjs');
+  // 消融檔在隔離目錄執行，仍指向同一份狀態分類實作。
+  const shared = new URL('../../cli/bin/flow-state.mjs', import.meta.url).href;
+  t = t.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${shared}'`);
   writeFileSync(out, t);
   return out;
 }
@@ -68,9 +77,31 @@ const ABLATIONS = [];
 const ablation = (name, fn) => ABLATIONS.push({ name, fn });
 
 // —— hooks 機制（guard.mjs）——
+ablation('接入健康閘（異常不降級為無流程）', () => {
+  const broken = { slug: null, ms: null, node: null, history: [] };
+  const hookProbe = (script) => {
+    const r = mkSandbox({ state: broken });
+    const result = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(r, 'README.md'), content: 'x' } });
+    rmSync(r, { recursive: true, force: true });
+    return result.status;
+  };
+  const noHookHealth = neutralize(GUARD, [['function checkStateHealth(root, tool, command, input) {', 'function checkStateHealth(root, tool, command, input) {\n  return null; // ABLATED']]);
+  assert.equal(hookProbe(GUARD), 2, 'intact：異常狀態擋正式寫入');
+  assert.equal(hookProbe(noHookHealth), 0, 'ablated：移除健康閘後 null 段位再次放行');
+  const cliProbe = (script) => {
+    const r = mkSandbox({ state: broken, files: { '.shiftblame/tmp/review-health.md': '對抗判定：通過\n' } });
+    const result = cliRun(script, r, 'adversarial', '.shiftblame/tmp/review-health.md');
+    rmSync(r, { recursive: true, force: true });
+    return result.status;
+  };
+  const noCliHealth = neutralize(SB, [['function requireHealthyState() {', 'function requireHealthyState() {\n  return readFlowState(ROOT); // ABLATED']]);
+  assert.equal(cliProbe(SB), 1, 'intact：異常狀態擋提交對抗宣告');
+  assert.equal(cliProbe(noCliHealth), 0, 'ablated：移除健康閘後可在異常狀態宣告對抗');
+});
+
 ablation('停等凍結 checkHoldFreeze（主動觸發停等）', () => {
   const neu = neutralize(GUARD, [['function checkHoldFreeze(root, tool, cmd, toolInput) {\n  if (!root) return null;', 'function checkHoldFreeze(root, tool, cmd, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', understandingHold: { inputIdx: 0 } } }); mkdirSync(join(r, 'src'), { recursive: true }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, 'src/a.js'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', inputs: [{ at: '2026-09-09T00:00:00.000Z', text: '/shiftblame:think' }], understandingHold: { inputIdx: 0, at: '2026-09-09T00:00:00.000Z' } } }); mkdirSync(join(r, 'src'), { recursive: true }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, 'src/a.js'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(GUARD), 2, 'intact：hold 期間 repo Edit 被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉凍結後放行（防護消失）');
 });
@@ -97,7 +128,7 @@ ablation('層間停靠鎖 checkLayerStopover（老闆決策邊 --boss-ok）', ()
 });
 
 ablation('commit 印章閘 checkCommitStamp（提交流痕）', () => {
-  const neu = neutralize(GUARD, [['function checkCommitStamp(root, seg) {\n  const extracted = extractCommitMessage(seg);', 'function checkCommitStamp(root, seg) {\n  return null; // ABLATED\n  const extracted = extractCommitMessage(seg);']]);
+  const neu = neutralize(GUARD, [['function checkCommitStamp(root, seg) {', 'function checkCommitStamp(root, seg) {\n  return null; // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'build' }, git: true }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(GUARD), 2, 'intact：無章 git commit 被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉印章閘後無章提交放行');
@@ -288,7 +319,7 @@ ablation('commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭
   assert.notEqual(cut, src, 'neutralize 目標存在');
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu2-'));
   NEU_DIRS.push(dir);
-  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  writeFileSync(join(dir, 'ablated.mjs'), relocateShared(cut));
   for (const m of BAD) assert.equal(probe(join(dir, 'ablated.mjs'), m), 0, `ablated：拆閘後放行「${m}」`);
 });
 
@@ -300,7 +331,7 @@ ablation('SLUG 存在性閘（骨架不完整擋前進）', () => {
   assert.notEqual(cut, src, 'neutralize 目標存在');
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu3-'));
   NEU_DIRS.push(dir);
-  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  writeFileSync(join(dir, 'ablated.mjs'), relocateShared(cut));
   assert.equal(probe(join(dir, 'ablated.mjs')), 0, 'ablated：拆閘後放行（boss-ok 邊）');
 });
 
@@ -320,7 +351,7 @@ ablation('ROM 區雜檔閘（ms 目錄僅承載 G 檔）', () => {
   assert(cut !== src, 'cut 生效');
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu4-'));
   NEU_DIRS.push(dir);
-  writeFileSync(join(dir, 'ablated.mjs'), cut);
+  writeFileSync(join(dir, 'ablated.mjs'), relocateShared(cut));
   assert(cutDefinesFunctions(cut), 'ablated 檔仍定義 absPath/checkStateWriteMatrix（非崩潰 fail-open）');
   assert.equal(probe(join(dir, 'ablated.mjs')), 0, 'ablated：拆閘後雜檔寫入放行');
 });
@@ -359,7 +390,7 @@ ablation('ended 初始化入口（移除即重現結束後死路）', () => {
     return result;
   };
   assert.equal(probe(SB).status, 0);
-  assert.match(probe(neu).stderr, /非合法純 hooks 紀錄或 ended/);
+  assert.match(probe(neu).stderr, /非合法未初始化／直接實行紀錄或 ended/);
 });
 ablation('ended 初始化歸檔前置條件', () => {
   const neu = neutralize(SB, [['function endedInitProblems(st) {', 'function endedInitProblems(st) { return []; // ABLATED']]);
@@ -376,7 +407,7 @@ ablation('ended 初始化歸檔前置條件', () => {
 ablation('有效 Git 忽略免重複追加', () => {
   const neu = neutralize(SB, [['if (check.status === 0) return;', '// ABLATED: 已忽略仍往下追加']]);
   const probe = (script) => {
-    const r = mkSandbox({ git: true });
+    const r = mkSandbox({ git: true, flow: false });
     const initial = '.shiftblame/\r\n';
     writeFileSync(join(r, '.gitignore'), initial);
     // 純 hooks 紀錄初始化；驗證 init 對 CRLF 忽略檔的行為。

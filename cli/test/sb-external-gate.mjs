@@ -13,7 +13,7 @@ const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const ms = join(root, '.shiftblame/demo/001');
 mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
-mkdirSync(ms, { recursive: true });
+// 流程目錄由 init 建立；接入前只準備 tmp。
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
@@ -34,7 +34,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 
 // —— 1. requirement→research 進段重置：預塞舊證據 → 進段即清（fail-closed，舊查證不沿用）——
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00Z', tool: 'WebSearch' }; });
+setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'WebSearch' }; });
 assert.equal(run('next', 'research').status, 0);
 assert.equal(state().externalEvidence, null, 'requirement→research 進段重置');
 

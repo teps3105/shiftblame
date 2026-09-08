@@ -101,7 +101,7 @@ ok(git('branch', '-d', 'feat/next'));
 // closeout 與 slug 綁定，偽接其他工作的證據不放行。
 const valid = state();
 save({ ...valid, closeout: { ...valid.closeout, slug: 'different' } });
-rejectInit(/非合法/);
+rejectInit(/接入異常/); // 不屬於同一 slug 的 closeout 在統一狀態檢查即拒絕。
 save(valid);
 renameSync(join(cwd, '.git'), join(cwd, '.git.hidden'));
 const lostGit = run('init', 'next', 'feat');

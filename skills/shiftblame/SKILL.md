@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "1.9.8"
+  version: "1.9.9"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -10,6 +10,8 @@ description: 以時序制衡約束 agent——主對話秘書是唯一持久角�
 > 三份文件兩兩制衡，文字只解釋各自的面向。
 
 ## 0. 權威拓樸
+
+**接入健康先於正式寫入與提交**：`sb state`、hooks 寫入檢查、對抗宣告與提交檢查共用狀態分類，區分未初始化紀錄、合法直接實行紀錄、八段流程、ended 與異常。異常時維持錯誤判定；正式文件與程式碼寫入、對抗發章及提交保持封閉，唯讀診斷、tmp 保存與限定狀態恢復保留。恢復完成須重新查證 `sb state` 並依既有授權路由；狀態可辨識不等於老闆批准，也不要求開 slug。完整行為規範見 `skills/think/SKILL.md`「流程接入失敗先修復」。工具層能辨識的寫入與 shell 呼叫才由 hooks 攔截；未知包裝器及直接改檔仍由主對話紀律與抽查承擔，不宣稱能辨識任意程式的副作用。
 
 **回合與流程分離**：Codex 的 final／Stop 只結束回合，流程完成仍由既有閘門認定。插入疑問解答後，主對話接續原有已授權未完工作；實際改變理解的補充／修正先完成 intent 回退與查證。final 前的路由結果與合法停點檢查，統一依 `skills/think/SKILL.md`「回合結束與流程接續」。SessionStart／UserPromptSubmit 注入此責任；Stop 靜默放行、不代做路由，提示注入不等於機械強制續跑。
 

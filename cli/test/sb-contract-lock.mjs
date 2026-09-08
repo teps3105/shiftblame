@@ -12,7 +12,7 @@ const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
 const ms = join(root, '.shiftblame/demo/001');
 const slugDir = join(root, '.shiftblame/demo');
 mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
-mkdirSync(ms, { recursive: true });
+// 流程目錄由 init 建立；接入前只準備 tmp。
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));

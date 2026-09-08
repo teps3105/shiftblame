@@ -10,14 +10,15 @@
  *                     無效即 exit 2 阻擋；Write/Edit 觸及框架文件（skills／hooks）→ 注入三步序提醒；
  *                     其餘靜默放行
  *
- * 原則：防護損壞時保持工作暢通——任何內部錯誤一律靜默 exit 0（deny 是唯一刻意非零出口）。
+ * 原則：已辨識的流程接入異常拒絕正式寫入及提交；其餘未預期內部錯誤維持既有靜默出口。
  * 煙霧測試：printf '%s' '{"hook_event_name":"UserPromptSubmit","cwd":"."}' | node hooks/shiftblame-guard.mjs
  */
 
-import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { readFlowState } from '../cli/bin/flow-state.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
 
@@ -78,6 +79,9 @@ const SESSION_CARD = [
 
 function nodeLine(root) {
   if (!root) return '';
+  const health = readFlowState(root);
+  if (health.kind === 'invalid') return '\n[接入異常] flow-state 無法辨識——停止正式寫入、對抗宣告及提交；只做唯讀診斷、tmp 保存及限定狀態恢復，修復後重跑 sb state。不得把報錯當成無流程。';
+  if (['missing', 'uninitialized', 'direct'].includes(health.kind)) return `\n[接入] ${health.kind === 'direct' ? '合法直接實行紀錄' : '尚未初始化 slug'}——依老闆授權路由；不開 slug 可直接實行，狀態可辨識不等於批准。`;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return '';
@@ -252,10 +256,8 @@ const TEST_FILE_RE = /\.(test|spec)\.[A-Za-z0-9]+$|(^|\/)[A-Za-z0-9._-]+_test\.[
 const WRITE_TOOL_RE = /write|edit|patch|save|create|apply|delete|remove|move|rename|truncate|put|manage|store|upload|set_|update/i;
 const READ_EXEMPT_RE = /read|list|search|stat|exists|get|query|fetch|browse|tree|info|show|find|screenshot|cursor|mouse|key\b|scroll|click/i;
 
-const nodeOf = (root) => {
-  try { return JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).node ?? null; }
-  catch { return null; }
-};
+const nodeOf = (root) => readFlowState(root).state?.node ?? null;
+const SHELL_TOOL_RE = /^(?:(?:functions|tools)[._])?(?:bash|shell|execute_bash|execute_bash_command|exec_command)$/i;
 
 // 路徑類鍵（蛇形與駝峰；寫入矩陣／停等凍結／框架提醒共用）
 const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'abs_path', 'destination', 'dest'];
@@ -301,7 +303,7 @@ function checkHoldFreeze(root, tool, cmd, toolInput) {
   if (!hold) return null;
   const t = String(tool ?? '');
   if (/^skill$/i.test(t)) return null; // 技能載入與 shiftblame:think 調用（理解宣告落流）自由——實際寫入由工具層攔
-  if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(t)) {
+  if (SHELL_TOOL_RE.test(t)) {
     if (HOLD_GIT_WRITE_RE.test(cmd) || HOLD_SB_PUSH_RE.test(cmd)) {
       return `[shiftblame] 停等凍結（輸入 #${hold.inputIdx} 理解待老闆終審）——流程推進與 git 寫入本輪凍結；唯讀查證自由，理解呈現後待老闆回覆（兩種觸發樣態，SKILL §0）`;
     }
@@ -333,6 +335,39 @@ function absPath(root, p) {
     if (existsSync(s)) return realpathSync(s);
   } catch { /* 不存在＝新建檔，用字面正規化結果 */ }
   return s;
+}
+
+function healthWriteTargets(input) {
+  const targets = PATH_KEYS.map(k => input?.[k]).filter(v => typeof v === 'string' && v.trim());
+  if (typeof input?.uri === 'string' && /^file:/i.test(input.uri)) targets.push(input.uri.replace(/^file:\/\//i, ''));
+  const patch = typeof input === 'string' ? input : input?.patch ?? input?.input;
+  if (typeof patch === 'string') for (const m of patch.matchAll(/^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gm)) targets.push(m[1].trim());
+  return targets;
+}
+function recoveryTarget(root, target) {
+  const rel = relative(absPath(root, root), absPath(root, target)).replace(/\\/g, '/');
+  return rel === '.shiftblame/flow-state.json' || rel.startsWith('.shiftblame/tmp/');
+}
+function checkStateHealth(root, tool, command, input) {
+  if (!root || readFlowState(root).kind !== 'invalid') return null;
+  const blocked = '流程接入異常——正式文件與程式碼寫入、對抗宣告及提交均停止；保留原檔，只做唯讀診斷、tmp 保存與限定狀態恢復，修復後重跑 sb state；不得降級成無流程';
+  if (SHELL_TOOL_RE.test(tool)) {
+    // 異常時只放行可辨識的單一唯讀命令；不推測任意直譯器／腳本的副作用。
+    const cmd = command.trim();
+    if (/[;&|`><\r\n$()]/.test(cmd)) return blocked;
+    if (/^(?:sb|(?:node|node\.exe)\s+(?:"[^"]*[/\\]sb\.mjs"|'[^']*[/\\]sb\.mjs'|\S*[/\\]sb\.mjs))\s+(?:state|--help)\s*$/i.test(cmd)) return null;
+    if (/^(?:Get-Content|Get-Item|Get-ChildItem|Test-Path|Resolve-Path|pwd|ls|cat)\b/i.test(cmd)) return null;
+    if (/^rg\b/i.test(cmd) && !/--pre(?:[=\s]|$)|--hostname-bin/.test(cmd)) return null;
+    if (/^git\s+(?:status(?:\s+--(?:short|porcelain(?:=v[12])?))?|diff\s+--no-ext-diff(?:\s+--(?:stat|name-only|check))?)\s*$/i.test(cmd)) return null;
+    return blocked;
+  }
+  const action = tool.split(/__|\./).at(-1);
+  const readAction = /^(?:read|list|search|stat|exists|get|query|fetch|browse|tree|info|show|find|screenshot)(?:_|$)/i.test(action);
+  if (WRITE_TOOL_RE.test(tool) && !readAction) {
+    const targets = healthWriteTargets(input);
+    return targets.length && targets.every(p => recoveryTarget(root, p)) ? null : blocked;
+  }
+  return null;
 }
 
 function checkStateWriteMatrix(root, toolInput) {
@@ -552,6 +587,7 @@ function checkGitRedirect(cmd) {
 }
 
 function checkCommitStamp(root, seg) {
+  if (readFlowState(root).kind === 'invalid') return '流程接入異常——修復並以 sb state 查證後才可提交；既有印章不代表狀態有效';
   const extracted = extractCommitMessage(seg);
   if (extracted.error) return extracted.error;
   // -C 目標（如有）必須絕對且等於印章專案根（印章綁定本 repo，限同段）
@@ -577,6 +613,8 @@ function checkCommitStamp(root, seg) {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     let st = null;
     try { st = JSON.parse(readFileSync(statePath, 'utf8')); } catch { /* 無狀態檔 */ }
+    if (st?.understandingHold) return '理解停等尚未解除——不得提交';
+    if (st?.node === 'verify') return '驗收段對 repo 唯讀——不得提交';
     if (!st || !st.adversarialAt || st.adversarialConsumed) {
       return '提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」；對抗閘全路徑生效）';
     }
@@ -600,6 +638,15 @@ function beatHeartbeat(root, event) {
   } catch { /* 心跳失敗不影響主流程 */ }
 }
 
+function preservePendingInput(root, prompt) {
+  try {
+    const dir = join(root, '.shiftblame', 'tmp');
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, 'recovery-inputs.jsonl'), JSON.stringify({ at: new Date().toISOString(), text: String(prompt ?? '') }) + '\n');
+    return '\n[待恢復輸入] 本則原始輸入已保存於 .shiftblame/tmp/recovery-inputs.jsonl，尚未進入輸入流；恢復時依實際對話與保存事件核對補回，保留原檔，不重播理解或授權。';
+  } catch { return '\n[待恢復輸入] 暫存也無法寫入；本則輸入僅留在實際對話，修復紀錄器時先核對補回。'; }
+}
+
 const deny = (reason) => { process.stderr.write(`[shiftblame] ${reason}\n`); process.exit(2); };
 
 try {
@@ -607,7 +654,9 @@ try {
   const input = raw.trim() ? JSON.parse(raw) : {};
   const event = input.hook_event_name || input.hookEventName || '';
   const root = projectRoot(input);
-  beatHeartbeat(root, event); // hooks 健康心跳：每次成功執行落時戳——CLI 閘擋時對照診斷「hooks 疑似故障」（記錄缺失≠授權缺失）
+  const healthy = !root || readFlowState(root).kind !== 'invalid';
+  // 異常原檔保持原樣，不能由新增心跳把空物件／部分資料洗成有效紀錄。
+  if (healthy) beatHeartbeat(root, event);
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
@@ -616,8 +665,8 @@ try {
   }
 
   if (event === 'UserPromptSubmit') {
-    const releaseNote = recordInput(root, input.prompt ?? ''); // 輸入流唯增＋停等狀態機（主動觸發設 hold／老闆回覆解凍）
-    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 狀態回流＋未審理解必然曝光＋停等語義
+    const releaseNote = healthy ? recordInput(root, input.prompt ?? '') : preservePendingInput(root, input.prompt ?? '');
+    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
   }
 
   if (event === 'Stop') {
@@ -626,12 +675,14 @@ try {
 
   if (event === 'PreToolUse') {
     const tool = input.tool_name || input.toolName || '';
-    const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : '';
-    recordUnderstanding(root, tool, input.tool_input); // 理解流記錄（Skill(shiftblame:think) 調用＋args＝理解宣告）
-    markExternalEvidence(root, tool); // 外部證據標記（研究/返工外部性閘的事實源——外部工具實際調用才計）
+    const cmd = typeof input.tool_input?.command === 'string' ? input.tool_input.command : typeof input.tool_input?.cmd === 'string' ? input.tool_input.cmd : '';
+    const healthError = checkStateHealth(root, tool, cmd, input.tool_input ?? {});
+    if (healthError) deny(healthError);
+    if (healthy) recordUnderstanding(root, tool, input.tool_input);
+    if (healthy) markExternalEvidence(root, tool);
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
-    if (/^(bash|shell|execute_bash|execute_bash_command)$/i.test(tool)) {
+    if (SHELL_TOOL_RE.test(tool)) {
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
       if (stopover) deny(stopover);

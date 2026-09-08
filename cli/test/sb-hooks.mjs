@@ -13,7 +13,7 @@ process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
 const run = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
 const state = () => JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
+const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [], ...(n === 'ended' ? { endedAt: new Date().toISOString() } : {}) }));
 
 // —— 1. 雙流模型：輸入流唯增＋理解流（Skill args）；無鎖無 thinkRouted ——
 const up = (prompt) => run({ hook_event_name: 'UserPromptSubmit', prompt });
@@ -222,7 +222,7 @@ const editOkAfter = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool
 assert.equal(editOkAfter.status, 0, '解凍後回到段矩陣判定（build 段放行）');
 // —— 11. G 檔寫入矩陣（RAM/ROM 分區） ——
 mkdirSync(join(root, '.shiftblame', 'demo', '001'), { recursive: true });
-const setNode2 = (n) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [] }));
+const setNode2 = (n) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [], ...(n === 'ended' ? { endedAt: new Date().toISOString() } : {}) }));
 // requirement 段 Read repo 檔不寫任何標記（零殘留行為驗證）
 mkdirSync(join(root, 'src'), { recursive: true });
 setNode2('requirement');

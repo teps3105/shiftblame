@@ -18,6 +18,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, sta
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState } from './flow-state.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -459,48 +460,16 @@ function gate(st, target, opts) {
 // ———— 指令 ————
 
 const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'build', 'ci'];
-const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
-const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence'];
-const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
-// 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
-function hooksOnly(st) {
-  const allowed = HOOK_RECORD_KEYS;
-  if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
-  if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
-  if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
-  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
-  if (Object.hasOwn(st, 'understandings')) {
-    if (!Array.isArray(st.understandings)) return false;
-    let prev = '';
-    for (const x of st.understandings) {
-      if (!(exactKeys(x, ['at', 'uptoInput', 'as', 'reviewed', 'hash']) && timestamp(x.at) && Number.isInteger(x.uptoInput) && x.uptoInput >= 0 && x.uptoInput <= Math.max(0, (st.inputs ?? []).length - 1) && typeof x.as === 'string' && typeof x.reviewed === 'boolean')) return false;
-      const hash = createHash('sha256').update(prev + String(x.uptoInput) + x.as + x.at).digest('hex').slice(0, 16);
-      if (x.hash !== hash) return false;
-      prev = hash;
-    }
-  }
-  return true;
-}
 function readStartupState() {
   try { return readJson(STATE_FILE); }
   catch { die([`flow-state 無法解析：${STATE_FILE}——保留原檔，查明損壞原因後修復`]); }
 }
-// ended 是新 slug 的入口；只接納正常 end 產物及其後的 hooks 紀錄。
-function endedState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold', 'workBranch', 'closeout'];
-  if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
-  if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
-  if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
-  if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
-  if (Object.hasOwn(st, 'closeout') && !validCloseout(st)) return false;
-  if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every(x => objectRecord(x) && exactKeys(x, ['at', 'report', 'verdict', 'node', ...(Object.hasOwn(x, 'point') ? ['point'] : [])]) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === 'ended' && (!Object.hasOwn(x, 'point') || ['①', '②', '③'].includes(x.point))))) return false;
-  for (const k of ['adversarialConsumed', 'rerunExtPending']) if (Object.hasOwn(st, k) && typeof st[k] !== 'boolean') return false;
-  if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputs ?? []).length)) return false;
-  const records = hookRecords(st);
-  return !Object.keys(records).length || hooksOnly(records);
+function requireHealthyState() {
+  const result = readFlowState(ROOT);
+  if (result.kind === 'invalid') die(['流程接入異常：flow-state 狀態不完整或未知——先保留原檔並修復，再以 sb state 查證；正式寫入、對抗宣告與提交不得繼續']);
+  return result;
 }
+// ended 是新 slug 的入口；只接納正常 end 產物及其後的 hooks 紀錄。
 function endedInitProblems(st) {
   const problems = [];
   if (st.understandingHold) problems.push('理解停等尚未解除——待老闆終審回覆後初始化');
@@ -526,10 +495,6 @@ const commitId = (id) => typeof id === 'string' && /^(?:[0-9a-f]{40}|[0-9a-f]{64
 function branchTip(name) {
   const r = gitRun('rev-parse', '--verify', `refs/heads/${name}^{commit}`);
   return r.status === 0 && commitId(r.stdout.trim()) ? r.stdout.trim() : null;
-}
-function validCloseout(st) {
-  const c = st.closeout;
-  return exactKeys(c, ['slug', 'workBranch', 'workCommit', 'baseBranch', 'at', 'remotes']) && c.slug === st.slug && branchName(c.workBranch) && (!st.workBranch || st.workBranch === c.workBranch) && commitId(c.workCommit) && branchName(c.baseBranch) && c.workBranch !== c.baseBranch && timestamp(c.at) && Array.isArray(c.remotes) && c.remotes.every(r => exactKeys(r, ['name', 'ref', 'configHash']) && typeof r.name === 'string' && r.name.length > 0 && typeof r.ref === 'string' && r.ref.startsWith('refs/heads/') && branchName(r.ref.slice(11)) && /^[0-9a-f]{64}$/.test(r.configHash));
 }
 function remoteConfig(name) {
   const r = gitRun('remote', 'get-url', '--push', '--all', name);
@@ -667,9 +632,12 @@ function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) die([`slug 僅接受英數與連字號（首字英數、≤64 字）：${slug}`], 2);
   if (!TYPES.includes(type)) die([`type 僅接受：${TYPES.join('/')}（預設 feat）——收到：${type}`], 2);
+  requireHealthyState();
   const prior = existsSync(STATE_FILE) ? readStartupState() : null;
   const ended = endedState(prior);
-  if (existsSync(STATE_FILE) && !hooksOnly(prior) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法純 hooks 紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
+  if (existsSync(STATE_FILE) && !uninitializedState(prior) && !directState(prior) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法未初始化／直接實行紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
+  if (!ended && prior?.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後初始化']);
+  if (!ended && prior?.adversarialConsumed === false) die(['直接實行提交對抗尚未消費——先完成已授權提交，不得攜帶未消費對抗初始化']);
   if (ended) { const problems = endedInitProblems(prior); if (problems.length) die(problems); }
   for (const target of ended ? [join(SB_DIR, slug), join(SB_DIR, 'archive', slug)] : []) {
     if (existsSync(target)) die([`新 slug 路徑已占用：${target}——選擇未使用的 slug，既有文件保持原樣`]);
@@ -713,14 +681,18 @@ function cmdInit(slug, type = 'feat') {
     catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
   }
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? hookRecords(prior) : {}), slug, ms: '001', node: 'intent', history: [], ...(workBranch ? { workBranch } : {}) }, null, 2));
+  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? ended ? hookRecords(prior) : prior : {}), slug, ms: '001', node: 'intent', history: [], ...(workBranch ? { workBranch } : {}) }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 function cmdState() {
-  if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readStartupState();
-  if (hooksOnly(st)) { out('尚未初始化：目前僅有 hooks 紀錄；經 shiftblame:think 路由後以 sb init <slug> 建立骨架，既有紀錄會保留。'); return; }
+  const { kind, state: st } = requireHealthyState();
+  if (['missing', 'uninitialized', 'direct'].includes(kind)) {
+    out(kind === 'direct' ? '直接實行：合法無段位紀錄；沒有 slug。' : '尚未初始化：沒有已接入的 slug；既有 hooks 紀錄保持原值。');
+    out('經 shiftblame:think 依老闆授權路由：不開 slug 可直接實行；明確開 slug 才執行 sb init <slug>。狀態可辨識不等於批准。');
+    if (st?.understandingHold) out('  理解停等尚未解除——正式寫入與推進保持凍結');
+    return;
+  }
   if (st?.node === 'ended') {
     if (!endedState(st)) die(['ended 狀態不完整或未知——保留原檔，查明原因後修復']);
     out(`slug: ${st.slug}   狀態：ended（已 PASS，${st.endedAt}）`);
@@ -836,8 +808,11 @@ function cmdEnd(opts) {
 // 子代理工具不可用＝流程阻塞等待至可用（自代無合法介面）；偽造報告檔屬手改造假（天花板：抽查承擔）。
 function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條目（RAM；不發 commit 章）；無 point＝提交對抗章
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> [--point ①|②|③]（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
+  const current = requireHealthyState();
+  if (current.state?.understandingHold) die(['理解停等尚未解除——不得宣告對抗或發章']);
+  if (point && current.kind !== 'active') die(['時點對抗需要有效八段流程；不開 slug 的直接實行只宣告提交對抗，不得偽造段位']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
-  const st = existsSync(STATE_FILE) ? readJson(STATE_FILE) : { slug: null, ms: null, node: null, history: [] };
+  const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());
   // 邊界正規判定（startsWith 無分隔符會放過 .shiftblame-evil 前綴）：必須在 SB_DIR 之內或就是 SB_DIR
   const rel = relative(SB_DIR, file);
@@ -869,6 +844,8 @@ function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條�
 
 function cmdCommitmsg(msg) {
   if (!msg) usage();
+  const current = requireHealthyState();
+  if (current.state?.understandingHold) die(['理解停等尚未解除——不得發出提交印章']);
   // 提交對抗閘：提交＝對抗時點（機制時點，非階段；所有 repo 統一）——
   // 每個 commit 需未消費的對抗宣告；返工修復必然終於 commit，閘在此必然觸發（CARD⑧ 機械化）
   // 發章只驗不消費——消費由 hooks 於實際 git commit 時執行（一對一；訊息不合格重試不燒宣告）
@@ -916,13 +893,7 @@ function cmdCommitmsg(msg) {
     }
   } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
-  try {
-    const stPath = join(ROOT, '.shiftblame', 'flow-state.json');
-    if (existsSync(stPath)) {
-      const node = JSON.parse(readFileSync(stPath, 'utf-8')).node;
-      if (node === 'verify') die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
-    }
-  } catch (e) { if (e && e.code === 'ERR_STRING_TOO_LONG') throw e; /* 狀態檔異常視為無狀態 */ }
+  if (current.state?.node === 'verify') die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
   const problems = [];
   const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
   if (!m) problems.push('缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）');
@@ -962,6 +933,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
+if (['next', 'end', 'closeout'].includes(cmd)) requireHealthyState();
 switch (cmd) {
   case 'init': cmdInit(pos[0], pos[1]); break;
   case 'state': cmdState(); break;

@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-1.9.8-2ea44f.svg" alt="version 1.9.8"/>
+  <img src="https://img.shields.io/badge/version-1.9.9-2ea44f.svg" alt="version 1.9.9"/>
 </p>
 
 ---
@@ -23,6 +23,8 @@
 shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時序進程——把需求交給需求定義、研究、規劃、測試、開發、驗收六個工作階段。完整權威圖與讀圖規則位於 [`skills/shiftblame/SKILL.md`](skills/shiftblame/SKILL.md)；本 README 是查詢入口，機制細節以 SKILL 為準。
 
 核心原則：
+
+- **接入報錯先恢復。** `sb state` 與寫入、對抗宣告及提交檢查共用狀態分類；異常資料不等於無流程。缺少有效流程紀錄卻仍有 slug 骨架或非空歸檔，也先恢復狀態。先保留原始紀錄、修復並重跑狀態查證，再依既有授權工作。未恢復前只做唯讀診斷、tmp 保存與限定狀態恢復；正式文件同樣等待恢復。合法的不開 slug 直接實行仍保留，狀態成功不等於批准。
 
 - **段-檔承載與輪內單向。** 八段由四份文件承載成四條閉環軸——SLUG（intent/done 管理層出入口）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔）。requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。對抗產物屬 RAM（tmp＋flow-state），禁入 G/SLUG（ROM）。
 
