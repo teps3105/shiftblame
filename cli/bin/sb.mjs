@@ -6,7 +6,7 @@
 //      對策：八段單向鏈＋回頭自由（→intent）＋每個推進點的前置閘門；推進
 //      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭邊零旗標，前進要鑰匙。
 //   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋adversarialLog point 條目對照
-//      ×SLUG.md 逐字對照擋下；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
+//      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
 //      與時點對抗承擔（閘門不讀 tmp）。
 //
 // 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
@@ -14,7 +14,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -814,10 +814,11 @@ function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條�
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());
-  // 邊界正規判定（startsWith 無分隔符會放過 .shiftblame-evil 前綴）：必須在 SB_DIR 之內或就是 SB_DIR
-  const rel = relative(SB_DIR, file);
-  const inside = rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
-  if (!inside || !existsSync(file) || !statSync(file).isFile()) die([`報告檔不存在、非檔案或不在 .shiftblame 內：${report}——子代理對抗報告原文落檔後引用（SKILL §3：對抗 MUST 外部唯讀子代理，無自代介面）`]);
+  // 工作報告的可見路徑與實體位置都須在 tmp 內；連結不改變落點規範。
+  const rel = relative(TMP, file);
+  const realRel = existsSync(file) ? relative(realpathSync(TMP), realpathSync(file)) : '..';
+  const inside = [rel, realRel].every((p) => p !== '' && !p.startsWith('..') && !isAbsolute(p));
+  if (!inside || !existsSync(file) || !statSync(file).isFile()) die([`報告檔不存在、非檔案或不在 .shiftblame/tmp 內：${report}——子代理對抗報告原文移入 tmp 並讀回後引用（SKILL §3：對抗 MUST 外部唯讀子代理，無自代介面）`]);
   const text = readFileSync(file, 'utf8');
   const verdicts = [...text.matchAll(/對抗判定[：:]\s*(通過|不通過)/g)].map((m) => m[1]);
   const verdict = verdicts.at(-1); // 取最後一個判定行（多輪引用舊判定時以最終判定為準；判定行應唯一）
@@ -869,8 +870,8 @@ function cmdCommitmsg(msg) {
       .split('\n').map((l) => l.trim()).filter(Boolean)
       .filter((p) => /^(?:docs\/|README\.md|skills\/)/.test(p) && /\.md$/i.test(p));
     if (eternal.length) {
-      // 真相源（顯式陣列——對抗第一輪必修 1/3：源碼 regex 抓 case 會混入 gate() 的段名 switch、
-      // rest.includes 形旗標（--help）會漏——顯式列舉是唯一單一真相）：
+      // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
+      // rest.includes 形旗標（--help）也可能漏判。
       const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg']);
       const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--help']);
       const bad = [];
@@ -901,10 +902,10 @@ function cmdCommitmsg(msg) {
     const body = m.at(-1);
     if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
     if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，內容聚焦變更本身（詳細訊息歸文件）`);
-    if (/\b[a-zA-Z]{1,4}-?\d+\b|#\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），追蹤靠分支名與 merge 訊息');
+    if (/\b[a-zA-Z]{1,4}-?\d+\b|#\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），正式名稱表達功能語義，工作紀錄歸 tmp');
     if (/第\s*[0-9０-９一二三四五六七八九十]+\s*[組段輪]|[組段輪]\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');
     if (!/^[\u4e00-\u9fff]/.test(body)) problems.push('描述以繁中開頭——<type>: 後為繁中變更描述（檔名/代號可出現在句中，非句首）');
-    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 G 檔與 tmp');
+    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 tmp');
     if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
   }
   if (problems.length) die(problems);

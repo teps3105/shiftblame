@@ -51,7 +51,7 @@ assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '回 intent �
 assert.equal(state().g1Contract, undefined); // 回 intent 解除契約，重定義後重新封存
 assert.equal(state().rev, 1, '輪次編號記入 flow-state');
 assert.ok(!existsSync(join(ms, 'rev')), '零 rev 目錄寫入（歷史歸 git）');
-// 再回一輪：r02 遞增（快照疊代不覆蓋）
+// 連續回 intent 遞增計數，保持不建立快照目錄。
 run('next', 'requirement', '--boss-ok');
 run('next', 'intent');
 assert.equal(state().rev, 2, '第二次開新輪遞增計數（時序由 history 承擔）');

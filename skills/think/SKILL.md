@@ -115,6 +115,8 @@ flowchart LR
 
 shiftblame:save、shiftblame:resume、shiftblame:dice 等功能型技能與 CLI 命令都是 shiftblame:think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 shiftblame:think。
 
+**分發前的命名與文件歸屬**：依主 SKILL §3 檢查路徑、檔名、slug 與內容是否能從正式定義獨立辨識。slug 用功能語義；對話、工作過程與交接紀錄一律 `<repo>/.shiftblame/tmp/`，G／SLUG 只保留自足定義、必要狀態與回指。理解宣告與對抗須揭露落點，將臨時代號展開成實際對象與行為。
+
 ## 執行中的自主性
 
 ### 回合結束與流程接續

@@ -76,6 +76,21 @@ const cutDefinesFunctions = (src) => /function absPath\(/.test(src) && /function
 const ABLATIONS = [];
 const ablation = (name, fn) => ABLATIONS.push({ name, fn });
 
+ablation('對抗報告落點（僅 tmp，含實體路徑）', () => {
+  const broadWorkspace = neutralize(SB, [
+    ['const rel = relative(TMP, file);', 'const rel = relative(SB_DIR, file);'],
+    ['relative(realpathSync(TMP), realpathSync(file))', 'relative(realpathSync(SB_DIR), realpathSync(file))'],
+  ]);
+  const probe = (script) => {
+    const root = mkSandbox({ flow: false, files: { '.shiftblame/review.md': '對抗判定：通過\n' } });
+    const result = cliRun(script, root, 'adversarial', '.shiftblame/review.md');
+    rmSync(root, { recursive: true, force: true });
+    return result.status;
+  };
+  assert.equal(probe(SB), 1, 'intact：tmp 外工作報告拒絕');
+  assert.equal(probe(broadWorkspace), 0, 'ablated：放寬回工作區即接受錯誤落點');
+});
+
 // —— hooks 機制（guard.mjs）——
 ablation('接入健康閘（異常不降級為無流程）', () => {
   const broken = { slug: null, ms: null, node: null, history: [] };
@@ -162,7 +177,6 @@ ablation('理解流 recordUnderstanding（shiftblame:think args＝理解宣告�
   assert.equal(payload(neu), 0, 'ablated：拆掉後理解宣告不落流（行動正當性載體失效）');
 });
 
-// 退役機制消融實績：markAuditEvidence 拆除→requirement 段查證不寫狀態，流程不變（殘留證明）
 
 ablation('外部證據標記 markExternalEvidence（外部性閘鑰匙）', () => {
   const neu = neutralize(GUARD, [['function markExternalEvidence(root, tool) {\n  if (!root) return;', 'function markExternalEvidence(root, tool) {\n  return; // ABLATED\n  if (!root) return;']]);
@@ -261,7 +275,6 @@ ablation('外部證據閘（research→plan 邊驗）', () => {
   assert.equal(payload(neu), 0, 'ablated：拆掉外部性閘後閉門推進放行');
 });
 
-// 退役機制消融實績：CLI 審計痕跡閘拆除→requirement→research 邊由 BDD 格式閘把關，流程不變
 
 ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
   const neu = neutralize(SB, [['function validateG1Acceptance(g1, problems, passes) {\n  const rows = acRows(g1);', 'function validateG1Acceptance(g1, problems, passes) {\n  return []; // ABLATED\n  const rows = acRows(g1);']]);
@@ -294,7 +307,6 @@ ablation('陳述對照閘（commitmsg 內永續層機制引用驗）', () => {
   assert.equal(payload(neu), 0, 'ablated：拆掉對照閘後過時假設入庫放行');
 });
 
-// 退役機制消融實績：snapshotRev 拆除→零 rev 目錄寫入，時序由 history＋輪次計數承擔（殘留證明）
 
 ablation('輪次計數 countRev（零檔案寫入）', () => {
   const neu = neutralize(SB, [['function countRev(st) {', 'function countRev(st) {\n  return null; // ABLATED']]);
@@ -312,10 +324,10 @@ ablation('commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭
   for (const m of BAD) assert.equal(probe(SB, m), 1, `intact：詞彙閘擋「${m}」`);
   const src = readFileSync(SB, 'utf8');
   const cut = src
-    .replace("    if (/\\b[a-zA-Z]{1,4}-?\\d+\\b|#\\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），追蹤靠分支名與 merge 訊息');\n", '')
+    .replace("    if (/\\b[a-zA-Z]{1,4}-?\\d+\\b|#\\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），正式名稱表達功能語義，工作紀錄歸 tmp');\n", '')
     .replace("    if (/第\\s*[0-9０-９一二三四五六七八九十]+\\s*[組段輪]|[組段輪]\\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');\n", '')
     .replace("    if (!/^[\\u4e00-\\u9fff]/.test(body)) problems.push('描述以繁中開頭——<type>: 後為繁中變更描述（檔名/代號可出現在句中，非句首）');\n", '')
-    .replace("    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 G 檔與 tmp');\n", '');
+    .replace("    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 tmp');\n", '');
   assert.notEqual(cut, src, 'neutralize 目標存在');
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu2-'));
   NEU_DIRS.push(dir);

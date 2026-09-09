@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -84,6 +84,26 @@ mkdirSync(join(root, '.shiftblame-evil'), { recursive: true });
 writeFileSync(join(root, '.shiftblame-evil', 'review.md'), '# 對抗報告\n對抗判定：通過（零必修）');
 r = run('adversarial', join('.shiftblame-evil', 'review.md'));
 assert.equal(r.status, 1, '.shiftblame-evil 前綴繞過擋');
+// 工作報告只由 tmp 承載；錯誤落點不改寫任何宣告。
+for (const path of ['.shiftblame/review.md', '.shiftblame/demo/001/review.md', '.shiftblame/tmp-sibling/review.md']) {
+  const file = join(root, path);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, '對抗判定：通過\n');
+  for (const flags of [[], ['--point', '①']]) {
+    const before = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
+    const result = run('adversarial', file, ...flags);
+    assert.equal(result.status, 1, `${path} 不在 tmp，提交與時點宣告皆拒絕`);
+    assert.match(result.stderr, /不在 .shiftblame\/tmp 內/);
+    assert.equal(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'), before, '拒絕後狀態原樣保留');
+  }
+}
+const linkedReports = join(tmpDir, 'linked-reports');
+symlinkSync(join(root, '.shiftblame/tmp-sibling'), linkedReports, process.platform === 'win32' ? 'junction' : 'dir');
+assert.equal(run('adversarial', join(linkedReports, 'review.md')).status, 1, '實體位置越出 tmp 的連結拒絕');
+const nestedReport = join(tmpDir, 'reviews', 'report.md');
+mkdirSync(dirname(nestedReport), { recursive: true });
+writeFileSync(nestedReport, '對抗判定：通過\n');
+assert.equal(run('adversarial', nestedReport, '--point', '①').status, 0, 'tmp 內巢狀報告仍可宣告');
 // 報告指向目錄擋（非檔案）
 r = run('adversarial', '.shiftblame/tmp');
 assert.equal(r.status, 1, '目錄非報告檔擋');
