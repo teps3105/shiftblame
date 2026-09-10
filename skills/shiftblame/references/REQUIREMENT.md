@@ -1,6 +1,6 @@
 ---
 name: 需求定義
-revision: 2.0.0
+revision: 2.0.1
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
