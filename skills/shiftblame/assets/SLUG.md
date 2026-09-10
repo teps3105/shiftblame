@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.0.1
+revision: 2.0.2
 ---
 # SLUG — `<slug>`
 
@@ -242,7 +242,7 @@ flowchart LR
 
 **1. 技術方案 + 測試方式**
 
-每條技術鏈寫成 markdown 條列（不是圖節點）。測試按單點／整合／E2E 說明被測邊界及必要依賴，選擇足夠層級，不強制每條技術鏈各寫三套；G3 承接接合點與執行時機：
+每條技術鏈寫成 markdown 條列（不是圖節點）。測試按單點／整合／E2E 說明被測邊界及必要依賴，選擇足夠層級，不強制每條技術鏈各寫三套，規模由防護目標推導（SKILL §1.4——只為要防的具體風險配置手段）；G3 承接接合點與執行時機：
 
 - **T1（短名）** — 承接 G1 需求：R1。技術做法：（填）。採用理由：（填——選型前先查 SLUG 定案索引與過往 ms G2 既有方案：重用優先；不重用既有定案方案時此欄顯式辯護為何）。來源：（填）。
   - 測試：Given（填）／When（填）／Then（填）。實作前預期失敗：（填）。
