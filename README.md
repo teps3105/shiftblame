@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.0.2-2ea44f.svg" alt="version 2.0.2"/>
+  <img src="https://img.shields.io/badge/version-2.0.3-2ea44f.svg" alt="version 2.0.3"/>
 </p>
 
 ---
@@ -74,6 +74,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **最小充分解。** 依序選擇重用既有能力、標準函式庫、平台原生能力、既有依賴與最少可用實作；修 bug 修共用根因，不簡化安全、資料保護、無障礙或明確需求。
   - 測試與防護工具（檢查腳本、靜態分析等）的規模同判——由要防的具體風險推導，防護目標不需要的精確度即規模溢出（過度工程）。
   - 規模判定不依專案類型或專案大小，不存在「專案大就配企業級防護」的規則表。
+- **基質優先×元行為錨定×修剪迴路（方法論）。** 任何新機制、記錄檔、驗證工具 MUST 先對照基質（git 的身分錨定／不可變性／時序／diff、平台事件流）——基質可答的另造即拆，記錄檔預設不存在（重複造輪子防線）；規則 MUST 錨定實測的代理元行為證據，無證據即想像威脅；SOP／ROADMAP 每 ms 必審三問（基質可答？元行為證據？仍被觸發？）——`sb sopreview` 留痕，開新 ms 與 PASS 前機械驗（無 SOP／ROADMAP 的專案不擋），刪修加減皆可、變更走正常 commit。
+- **觀測紀律與回合級預算閘。** sb 每次調用落 `.shiftblame/tmp/sb-usage.jsonl`（老闆可清、缺檔自動重建）；`sb init` 錨定 git baseline、`sb end` 留產出遙測於 flow-state（diff 統計＋對抗判定＋審查模型＋toolCalls＋耗時＋超限次數——資料恆在 git，遙測可重導）；flow-state 四條觀測流超門檻自動輪替至 tmp（檔案恆有界、事實保留）。plan 段 `sb budget` 宣告回合預算——執行段超限由 hooks 自動回 intent 並凍結本回合（遞迴／停機測試長跑防護），老闆下一則輸入開新回合重置。
 - **命名自足與工作紀錄分離。** `.shiftblame/tmp/` 是 agents 自由傾倒區——流程閘門零依賴（唯一例外：commit 留痕即生即滅）；專案工具鏈或專案運行產生的檔案（日誌、快取、匯出物）屬專案資產歸專案位置，驗收引用以**節錄快照**為證據。
   - tmp 只準寫入、不準清理，清理由老闆手動執行。
   - 路徑、檔名、slug、識別字、註釋、字串、測試及文件內容以對象、功能或行為命名，從專案正式內容即可辨識；技術術語與機械識別碼須有明確定義或解析方式。開發任務代號與產品內容保持正交；回指對話或 tmp 不能替代本地定義。
@@ -241,7 +243,9 @@ sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋adv
 sb next verify                     # 進驗收（working tree 乾淨＝實作已存檔，git 判定）
 sb next done --boss-ok --adversarial  # 完成邊（需老闆「done」留痕＋時點③對抗＋adversarialLog point 條目對照）
 sb next intent                     # 回頭自由：補充／重修／追加（同 ms 重走，零旗標）
-sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕）→ 收尾歸檔＋archive
+sb budget --requests 40 --minutes 30  # 回合預算宣告（plan 段）：執行段超限＝hooks 自動回 intent 並凍結本回合
+sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（三問；開新 ms 與 PASS 前機械驗，無文件不擋）
+sb end --boss-ok                   # PASS（done 態；需老闆「PASS」留痕）→ 收尾歸檔＋產出遙測（diff／對抗／計數／耗時）
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 

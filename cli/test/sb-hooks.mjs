@@ -229,8 +229,8 @@ setNode2('requirement');
 const beforeRead = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
 run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
 run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
-// hooksHeartbeat 寫入 flow-state 是唯一獲准的狀態寫入；剝除後必須零殘留
-const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; return JSON.stringify(o); };
+// hooksHeartbeat／回合計數（turnUsage／usageTotals）寫入 flow-state 是獲准的觀測狀態寫入；剝除後必須零殘留
+const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; delete o.turnUsage; delete o.usageTotals; delete o.budgetBreaches; return JSON.stringify(o); };
 assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), '查證動作不寫狀態（RAM/ROM）');
 const hbAfter = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).hooksHeartbeat;
 assert.ok(hbAfter && hbAfter.at && hbAfter.event, 'hooksHeartbeat 落 flow-state（at＋event）');

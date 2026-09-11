@@ -16,8 +16,9 @@
 
 import { existsSync, readFileSync, realpathSync, unlinkSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readFlowState } from '../cli/bin/flow-state.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -67,6 +68,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
   '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 停等、明確暫停／取消或實際阻塞可停。Stop 靜默放行不代做路由；接續由主對話承擔，不靠無條件續跑或 Stop 重試。',
+  '⑪回合預算（plan 段 sb budget 宣告）執行段超限＝hooks 自動回 intent 並凍結本回合（遞迴／停機測試長跑防護）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -95,7 +97,9 @@ function nodeLine(root) {
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
-    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。`;
+    let budget = '';
+    if (st.budget) budget = `\n[回合預算] ≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘（執行段生效）${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.exceededAt ? '——已超限：凍結推進＋自動回 intent，待老闆下一則輸入' : ''}` : ''}`;
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${budget}`;
   } catch { return ''; }
 }
 
@@ -107,6 +111,86 @@ function nodeLine(root) {
 // ＝主動觸發訊號——顯式語法（性質同 --boss-ok 旗標），非 agent 偵測老闆意圖的詞集
 const ACTIVE_TRIGGER_RE = /^\s*(?:[/\$])?shiftblame:think\b/i;
 
+// —— 觀測流輪替（flow-state 恆有界）——
+// 閘門對照所需的近期事實留檔內；較舊且對照價值已耗盡者（已審理解、舊對抗條目、舊 history）輪替至
+// tmp/flow-rotated.jsonl——事實保留（老闆清理 tmp 時隨之消失），flow-state 非無限累加。
+// 偏移欄位（*Rotated／understandingSeedHash）記已輪替前綴；驗證器接納且舊檔無偏移＝0（向後相容）。
+// 未審理解永留檔內（曝光義務優先於輪替）。
+const ROTATE_LIMITS = { inputs: [40, 20], understandings: [40, 20], adversarialLog: [12, 6], history: [120, 60] };
+function rotateStreams(root, st) {
+  const events = [];
+  const now = new Date().toISOString();
+  for (const [stream, [limit, keep]] of Object.entries(ROTATE_LIMITS)) {
+    const arr = st[stream] ?? [];
+    if (!Array.isArray(arr) || arr.length <= limit) continue;
+    let cut = arr.length - keep;
+    if (stream === 'understandings') { // 未審理解不輪替——曝光義務
+      let reviewedPrefix = 0;
+      while (reviewedPrefix < arr.length && arr[reviewedPrefix]?.reviewed) reviewedPrefix++;
+      cut = Math.min(cut, reviewedPrefix);
+    }
+    if (cut <= 0) continue;
+    for (const e of arr.slice(0, cut)) events.push({ at: now, stream, entry: e });
+    if (stream === 'inputs') st.inputsRotated = (st.inputsRotated ?? 0) + cut;
+    if (stream === 'understandings') { st.understandingsRotated = (st.understandingsRotated ?? 0) + cut; st.understandingSeedHash = arr[cut - 1]?.hash ?? st.understandingSeedHash; }
+    if (stream === 'adversarialLog') st.adversarialRotated = (st.adversarialRotated ?? 0) + cut;
+    if (stream === 'history') st.historyRotated = (st.historyRotated ?? 0) + cut;
+    st[stream] = arr.slice(cut);
+  }
+  if (!events.length) return;
+  try {
+    const dir = join(root, '.shiftblame', 'tmp');
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(join(dir, 'flow-rotated.jsonl'), events.map((e) => JSON.stringify(e)).join('\n') + '\n');
+  } catch { /* 輪替落檔失敗：檔內截斷照常（殘餘由抽查承擔） */ }
+}
+
+// —— 回合計數（元行為觀測層）＋回合級預算閘 ——
+// PreToolUse 每次計數：turnUsage（本回合——老闆輸入重置）＋usageTotals（slug 累計，sb end 遙測素材）。
+// 工具調用數＝model 請求數的上界代理（每請求至少產出一個工具調用；批次並行時高估）——誠實標名，真值在平台 DB。
+// 預算超限（執行段 test/build/verify/done）：hooks 以真實 CLI 自動回 intent（狀態轉移走正規閘門與 history，
+// budgetExhausted 由 CLI 對照 turnUsage 留痕）並凍結本回合工具——防護目標＝遞迴／停機測試的不自知長跑
+// （重跑一次當修法＝無限循環）。凍結豁免：Skill 調用（理解宣告落流）與 sb state／sb next intent（呈報與拆分逃生）。
+const BUDGET_NODES = new Set(['test', 'build', 'verify', 'done']);
+const BUDGET_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
+const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+function countUsage(root, tool, cmd) {
+  if (!root || !existsSync(join(root, '.shiftblame'))) return null;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return null;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    const now = new Date().toISOString();
+    if (!isRecord(st.turnUsage) || !st.turnUsage.startedAt) st.turnUsage = { startedAt: now, requests: 0 };
+    st.turnUsage.requests = (st.turnUsage.requests ?? 0) + 1;
+    if (!isRecord(st.usageTotals)) st.usageTotals = { firstAt: now, requests: 0 };
+    st.usageTotals.requests = (st.usageTotals.requests ?? 0) + 1;
+    if (isRecord(st.budget) && Number.isInteger(st.budget.requests) && Number.isInteger(st.budget.minutes)) {
+      const minutes = (Date.now() - Date.parse(st.turnUsage.startedAt)) / 60000;
+      if ((st.turnUsage.requests > st.budget.requests || minutes > st.budget.minutes) && !st.turnUsage.exceededAt) {
+        st.turnUsage.exceededAt = now;
+        st.budgetBreaches = (st.budgetBreaches ?? 0) + 1;
+      }
+    }
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+    if (!(isRecord(st.budget) && st.turnUsage.exceededAt)) return { frozen: false, st };
+    let retreated = st.node === 'intent';
+    if (BUDGET_NODES.has(st.node)) {
+      const sbPath = fileURLToPath(new URL('../cli/bin/sb.mjs', import.meta.url));
+      const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });
+      retreated = r.status === 0;
+      if (r.status !== 0) process.stderr.write(`[shiftblame] 回合預算自動回 intent 失敗（手動執行 sb next intent）：${String(r.stderr || r.stdout || '').trim().slice(0, 200)}\n`);
+    }
+    return { frozen: true, retreated, st };
+  } catch { return null; }
+}
+function budgetFreezeReason(usage, tool, cmd) {
+  if (/^skill$/i.test(String(tool ?? ''))) return null; // 理解宣告落流自由
+  if (SHELL_TOOL_RE.test(String(tool ?? '')) && BUDGET_ESCAPE_RE.test(String(cmd ?? ''))) return null; // sb state／sb next intent（拆分逃生）
+  const st = usage.st;
+  return `回合預算超限（第 ${st.turnUsage.requests} 調用 > 上限 ${st.budget.requests}，或回合逾 ${st.budget.minutes} 分鐘）——${usage.retreated || st.node === 'intent' ? '已自動回 intent（拆分重規劃；history 留 budgetExhausted）' : '本回合 MUST 回 intent'}；工具凍結至老闆下一則輸入（新回合重置計數）；遞迴／停機測試的長跑在此被擋（收傘：呈報本回合已完成的收斂）`;
+}
+
 function recordInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return null;
   try {
@@ -115,16 +199,18 @@ function recordInput(root, prompt) {
     const wasHold = st.understandingHold ?? null;
     let releaseNote = null;
     (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
+    delete st.turnUsage; // 新回合：回合計數重置（回合級預算的邊界＝老闆輸入；usageTotals 跨回合累計）
     // 兩種觸發樣態：老闆以 shiftblame:think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
-    // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）
+    // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）——inputIdx 採全域編號（含已輪替前綴）
     if (ACTIVE_TRIGGER_RE.test(String(prompt ?? ''))) {
-      st.understandingHold = { inputIdx: st.inputs.length - 1, at: new Date().toISOString() };
+      st.understandingHold = { inputIdx: (st.inputsRotated ?? 0) + st.inputs.length - 1, at: new Date().toISOString() };
     } else if (wasHold) {
       delete st.understandingHold;
       releaseNote = `\n[停等解除] 輸入 #${wasHold.inputIdx} 的理解停等已由老闆回覆解除——回覆為確認即分發執行；為修正則理解更新後仍停等老闆再確認（兩種觸發樣態，SKILL §0）。`;
     }
     delete st.dialogueLock; // 冪等清理（不相容欄位）
     delete st.input;        // 冪等清理（不相容欄位）
+    rotateStreams(root, st); // 觀測流輪替（flow-state 恆有界；事實落 tmp）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
     return releaseNote;
   } catch { return null; } /* 狀態異常靜默 */
@@ -143,7 +229,7 @@ function recordUnderstanding(root, tool, toolInput) {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return;
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    const idx = Math.max(0, (st.inputs ?? []).length - 1);
+    const idx = Math.max(0, (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1); // 全域輸入編號（含已輪替前綴——與停等編號同基準）
     const at = new Date().toISOString();
     const prevHash = (st.understandings ?? []).at(-1)?.hash ?? '';
     const hash = createHash('sha256').update(prevHash + String(idx) + as + at).digest('hex').slice(0, 16);
@@ -179,8 +265,8 @@ function flowLine(root) {
     const inputs = st.inputs ?? [];
     if (!inputs.length) return '';
     const covered = (st.understandings ?? []).at(-1)?.uptoInput ?? -1;
-    const uncovered = inputs.length - 1 - covered;
-    return `\n[輸入流] 共 ${inputs.length} 則；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 shiftblame:think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
+    const uncovered = (st.inputsRotated ?? 0) + inputs.length - 1 - covered;
+    return `\n[輸入流] 共 ${(st.inputsRotated ?? 0) + inputs.length} 則${st.inputsRotated ? `（檔內 ${inputs.length}＋已輪替 ${st.inputsRotated}）` : ''}；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 shiftblame:think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
   } catch { return ''; }
 }
 
@@ -680,6 +766,9 @@ try {
     if (healthError) deny(healthError);
     if (healthy) recordUnderstanding(root, tool, input.tool_input);
     if (healthy) markExternalEvidence(root, tool);
+    // 回合計數（元行為觀測）＋回合級預算閘：超限自動回 intent 並凍結本回合（僅 Skill 與 sb state／next intent 豁免）
+    const usage = healthy ? countUsage(root, tool, cmd) : null;
+    if (usage?.frozen) { const budgetReason = budgetFreezeReason(usage, tool, cmd); if (budgetReason) deny(budgetReason); }
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
     if (SHELL_TOOL_RE.test(tool)) {

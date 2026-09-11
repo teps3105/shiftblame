@@ -448,6 +448,38 @@ ablation('PASS 後合併與清理查證（移除即從舊 HEAD 初始化）', ()
   assert.equal(probe(neu).status, 0);
 });
 
+// —— 2.0.3 機制群：回合級預算閘與 SOP／ROADMAP 每 ms 審查閘 ——
+ablation('回合級預算閘（超限自動回 intent＋凍結本回合）', () => {
+  const neu = neutralize(GUARD, [["if (!(isRecord(st.budget) && st.turnUsage.exceededAt)) return { frozen: false, st };", "return { frozen: false, st }; // ABLATED"]]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'test', budget: { requests: 1, minutes: 30, at: '2026-09-11T00:00:00.000Z', ms: '001' } } });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    const over = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    const st = stateOf(r);
+    rmSync(r, { recursive: true, force: true });
+    return { denied: over.status === 2, retreated: st.node === 'intent' };
+  };
+  const intact = probe(GUARD);
+  assert.equal(intact.denied, true, 'intact：超限調用凍結擋下');
+  assert.equal(intact.retreated, true, 'intact：自動回 intent（真實 CLI 狀態轉移）');
+  const gone = probe(neu);
+  assert.equal(gone.denied, false, 'ablated：拆掉預算閘即放行');
+  assert.equal(gone.retreated, false, 'ablated：不再自動回 intent');
+});
+
+ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', () => {
+  const neu = neutralize(SB, [['if (sopProblem) die([sopProblem]);', '// ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'done' }, files: { '.shiftblame/SOP.md': '# SOP\n本專案規範。\n' } });
+    const result = cliRun(script, r, 'end', '--boss-ok');
+    rmSync(r, { recursive: true, force: true });
+    return result;
+  };
+  assert.match(probe(SB).stderr, /每 ms 必審/, 'intact：本 ms 未審即 PASS 擋下');
+  assert.equal(probe(neu).status, 0, 'ablated：拆掉審查閘即放行');
+});
+
 for (const { name, fn } of ABLATIONS) {
   try { fn(); pass++; console.log(`PASS [消融] ${name}`); }
   catch (e) { fails.push(name); console.error(`FAIL [消融] ${name}：${e.message}`); }

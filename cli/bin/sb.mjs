@@ -124,7 +124,13 @@ const usage = (code = 2) => {
                                         --new-ms：開新里程碑（僅 done→intent 邊；老闆授權語義由理解流曝光承擔）
                                         --adversarial：時點對抗宣告（plan→test①、verify→test②、verify→done③）；
                                         需 sb adversarial --point 對應條目（adversarialLog，新鮮度＝晚於同邊上次推進）
-  sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋archive
+  sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋產出遙測
+                                        （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
+  sb budget --requests N --minutes M    回合預算宣告（僅 plan 段；寫 flow-state）：執行段（test/build/verify/done）
+                                        每回合工具調用數（model 請求上界代理）與分鐘上限；hooks 超限自動回 intent
+                                        並凍結本回合（遞迴／停機測試長跑防護）；老闆下一則輸入開新回合重置
+  sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
+                                        開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）
   sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
   sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
                                         引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
@@ -681,7 +687,11 @@ function cmdInit(slug, type = 'feat') {
     catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
   }
   }
-  writeFileSync(STATE_FILE, JSON.stringify({ ...(prior ? ended ? hookRecords(prior) : prior : {}), slug, ms: '001', node: 'intent', history: [], ...(workBranch ? { workBranch } : {}) }, null, 2));
+  // git baseline 錨定（產出遙測的時序基準）：init 時記 HEAD 與起始時間——sb end 以 baseline..HEAD 做 diff 時序分析
+  // （資料在 git；非 git 工作區記 null，遙測 diff 缺省）。回合計數屬 slug 生命週期——新 slug 歸零重計。
+  const carried = prior ? (ended ? hookRecords(prior) : prior) : {};
+  delete carried.turnUsage; delete carried.usageTotals; delete carried.budgetBreaches;
+  writeFileSync(STATE_FILE, JSON.stringify({ ...carried, slug, ms: '001', node: 'intent', history: [], startedAt: new Date().toISOString(), baseCommit: gitHeadCommit(), ...(workBranch ? { workBranch } : {}) }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
@@ -705,6 +715,9 @@ function cmdState() {
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
+  if (st.budget) out(`回合預算（ms ${st.budget.ms}）：≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.exceededAt ? '——已超限：凍結推進＋自動回 intent，待老闆下一則輸入開新回合' : ''}` : ''}`);
+  else if (st.node === 'plan') out('  可宣告：sb budget --requests N --minutes M（回合預算——執行段超限自動回 intent 並凍結本回合）');
+  if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview 留痕（開新 ms／PASS 前機械驗）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
       out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；--new-ms 則開新里程碑' : ''}）`);
@@ -725,6 +738,13 @@ function cmdNext(target, opts) {
   if (!(target in FLOW)) die([`未知段「${target}」。八段：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
+  // 回合預算反制（與 hooks 同判據的 CLI 兜底——兩層一致）：超限回合凍結前進，僅 →intent（拆分逃生）合法；
+  // 老闆下一則輸入由 hooks 重置回合計數後恢復推進。
+  if (st.budget && st.turnUsage?.exceededAt && target !== 'intent') {
+    die([`回合預算已超限（本回合 ${st.turnUsage.requests} 調用，超限於 ${st.turnUsage.exceededAt}）——本回合凍結推進：收傘呈報老闆（下一則輸入開新回合、計數重置）或 sb next intent 拆分重規劃`]);
+  }
+  // SOP／ROADMAP 每 ms 審查閘：開新 ms 前驗本 ms 已審（AI 開發下單一 ms 足以改變方向）
+  if (st.node === 'done' && opts.newMs) { const p = sopReviewProblem(st); if (p) die([p]); }
   const { problems, passes } = gate(st, target, opts);
   if (problems.length) die(problems);
   const prev = st.node;
@@ -756,6 +776,8 @@ function cmdNext(target, opts) {
     if (prev === 'done' && opts.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
+      delete st.budget; // 預算屬 ms 內規劃產物——新 ms 由 plan 段重新宣告
+      delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪
       // 開新輪：新輪重寫自洽，時序由 history＋輪次計數承擔（歷史不可變性歸 git）
@@ -765,6 +787,7 @@ function cmdNext(target, opts) {
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
+  if (st.budget && st.turnUsage?.exceededAt) entry.budgetExhausted = true; // 預算超限的自動回 intent 留痕（hooks 觸發；CLI 對照 turnUsage）
   if (prev === 'verify' && target === 'done') {
     const reruns = (st.history ?? []).filter((h) => h.rerun && h.ms === st.ms);
     if (reruns.length) passes.push(`返工直通曝光彙總：本 ms ${reruns.length} 次（${reruns.map((h) => `${h.from}→${h.to}(${h.rerun})`).join('、')}）——判定正確性由老闆終審`);
@@ -781,23 +804,110 @@ function cmdUnlockAbsent() {
   die(['sb unlock 不存在——輸入是理解對象不是鑰匙：理解經 shiftblame:think 調用（args＝理解宣告）自動落理解流並曝光；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
+// SOP／ROADMAP 每 ms 審查閘（修剪迴路的機械承載）：AI 開發下單一 ms 即足以改變整體方向——
+// 開新 ms（--new-ms）與 PASS（sb end）前驗本 ms 已審；無 SOP／ROADMAP 的專案不擋。
+function sopReviewProblem(st) {
+  if (!(existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md')))) return null;
+  if (st.sopReview?.ms === st.ms) return null;
+  return 'SOP／ROADMAP 每 ms 必審——本 ms 尚未審查：對照實況跑三問（基質可答？元行為證據？仍被觸發？）後 sb sopreview 留痕（刪修加減皆可，變更走正常 commit）';
+}
+// 產出遙測的 diff 統計：git baseline..HEAD 的 numstat 時序分析（基質優先——git 已承擔身分錨定與不可變性，sb 只做彙總）。
+function gitDiffStats(base, head) {
+  const r = gitRun('diff', '--numstat', base, head);
+  if (r.status !== 0) return null;
+  let additions = 0, deletions = 0, files = 0;
+  for (const line of r.stdout.split('\n')) {
+    if (!line.trim()) continue;
+    files += 1;
+    const [a, d] = line.split('\t');
+    if (/^\d+$/.test(a)) additions += Number(a);
+    if (/^\d+$/.test(d)) deletions += Number(d);
+  }
+  return { additions, deletions, files };
+}
+function gitHeadCommit() {
+  if (!hasGitMetadata()) return null;
+  const r = gitRun('rev-parse', 'HEAD');
+  return r.status === 0 && commitId(r.stdout.trim()) ? r.stdout.trim() : null;
+}
+
+function cmdBudget(opts) {
+  const current = requireHealthyState();
+  if (current.kind !== 'active' || current.state?.node !== 'plan') die([`回合預算宣告僅限 plan 段（目前 ${current.state?.node ?? '無流程'}）——預算由 G3 規劃承載：重規劃回 intent 重走後於 plan 段宣告`]);
+  if (current.state?.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後宣告']);
+  if (!opts.budgetRequests || !opts.budgetMinutes) usage();
+  const st = current.state;
+  st.budget = { requests: opts.budgetRequests, minutes: opts.budgetMinutes, at: new Date().toISOString(), ms: st.ms };
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([
+    `回合預算宣告（ms ${st.ms}）：每回合 ≤ ${st.budget.requests} 工具調用（model 請求上界代理，hooks 於 PreToolUse 計數）／ ≤ ${st.budget.minutes} 分鐘`,
+    '執行段（test／build／verify／done）超限由 hooks 自動回 intent 並凍結本回合——收傘或拆分後待老闆下一則輸入開新回合（計數重置）',
+    `sb 呼叫頻譜觀測：${join(TMP, 'sb-usage.jsonl')}（每次調用追加一行；缺檔自動重建）`,
+  ]);
+}
+
+function cmdSopreview() {
+  const current = requireHealthyState();
+  if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效八段流程（直接實行紀錄無 ms 邊界）']);
+  const st = current.state;
+  if (st.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後留痕']);
+  const hasDocs = existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'));
+  st.sopReview = { ms: st.ms, at: new Date().toISOString() };
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([
+    `SOP／ROADMAP 審查留痕（ms ${st.ms}）：三問——基質可答？（重複 git／平台既有能力即拆，改引基質）元行為證據？（規則對應行為已不發生即退役）仍被觸發？（死規則即刪）`,
+    hasDocs ? '審查發現的刪修走正常 commit（same-commit 文件先行）' : '（本工作區無 SOP／ROADMAP——留痕記錄審查週期）',
+  ]);
+}
+
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
   if (st.node !== 'done') die([`sb end 僅限 done 態（目前 ${st.node}）——完成（verify→done 老闆決策邊 --boss-ok＋時點③對抗）先於 PASS`]);
   if (!opts.bossOk) die(['PASS 是老闆決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由理解流曝光承擔）']);
+  const sopProblem = sopReviewProblem(st);
+  if (sopProblem) die([sopProblem]);
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, 'PASS 前');
   if (problems.length) die(problems);
+  // 產出遙測（基質優先）：diff 事實由 git 承擔——sb init 錨定 baseline commit，end 做時序分析；
+  // 對抗判定取最後條目（verdict＋審查模型）；計數與耗時來自 hooks 觀測流；缺省一律 null（舊流程／無 git 可比）。
+  const head = gitHeadCommit();
+  const diff = (st.baseCommit && head && st.baseCommit !== head) ? gitDiffStats(st.baseCommit, head) : null;
+  const lastAdv = (st.adversarialLog ?? []).at(-1) ?? null;
+  st.telemetry = {
+    diff,
+    baseCommit: st.baseCommit ?? null,
+    headCommit: head,
+    adversarial: lastAdv ? { verdict: lastAdv.verdict, model: lastAdv.model ?? null } : null,
+    counts: {
+      inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length,
+      understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length,
+      adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length,
+      toolCalls: Object.hasOwn(st, 'usageTotals') ? st.usageTotals.requests : null,
+    },
+    durationMinutes: st.startedAt ? Math.round(((Date.now() - Date.parse(st.startedAt)) / 60000) * 10) / 10 : null,
+    budgetBreaches: Object.hasOwn(st, 'budget') ? (st.budgetBreaches ?? 0) : null,
+  };
   mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
   // slug 邊界清理（終態留痕後）：累積流（曝光與對照價值隨 slug 終結）直接清空——零副本、零殭屍存續
-  const cleared = { inputs: (st.inputs ?? []).length, understandings: (st.understandings ?? []).length, adversarialLog: (st.adversarialLog ?? []).length, history: (st.history ?? []).length };
+  const cleared = { inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length, understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length, adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length, history: (st.historyRotated ?? 0) + st.history.length };
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
+  delete st.budget; delete st.sopReview; delete st.baseCommit; delete st.startedAt;
+  delete st.turnUsage; delete st.usageTotals; delete st.budgetBreaches;
+  delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin(['done → ended（PASS）', `flow-state 累積流已清（slug 邊界——輸入 ${cleared.inputs}／理解 ${cleared.understandings}／對抗 ${cleared.adversarialLog}／history ${cleared.history}；零副本）`, '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/＋更新歸檔清單（永續層文件已隨各 commit 即時保真——same-commit）', ...passes]);
+  const t = st.telemetry;
+  fin([
+    'done → ended（PASS）',
+    `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分｜超限 ${t.budgetBreaches ?? '—'} 次`,
+    `flow-state 累積流已清（slug 邊界——輸入 ${cleared.inputs}／理解 ${cleared.understandings}／對抗 ${cleared.adversarial}／history ${cleared.history}；零副本）`,
+    '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/（永續層文件已隨各 commit 即時保真——same-commit）',
+    ...passes,
+  ]);
 }
 
 
@@ -824,8 +934,10 @@ function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條�
   const verdict = verdicts.at(-1); // 取最後一個判定行（多輪引用舊判定時以最終判定為準；判定行應唯一）
   if (!verdict) die(['報告缺判定行（「對抗判定：通過／不通過」）——子代理報告 MUST 含判定行；缺行屬假對抗']);
   if (verdict !== '通過') die([`對抗判定「${verdict}」＝必修未清——修復後 MUST 再對抗至「通過」才可提交（閘環零必修機械化）`]);
+  // 審查模型（遙測素材）：報告內含「審查模型：」行則記錄（外部子代理自報身份），缺省為無鍵——不新增宣告介面
+  const model = text.match(/^[ \t]*審查模型[：:][ \t]*([^\n\r]{1,80})/m)?.[1]?.trim() || null;
   const at = new Date().toISOString();
-  const entry = { at, report: report.trim(), verdict, node: st.node ?? null, ...(point ? { point } : {}) };
+  const entry = { at, report: report.trim(), verdict, node: st.node ?? null, ...(point ? { point } : {}), ...(model ? { model } : {}) };
   (st.adversarialLog ??= []).push(entry);
   if (point) {
     // 時點對抗條目（RAM）——不設 adversarialAt（不發 commit 章）：邊章與 commit 章分流，防「邊章兼作 commit 章」繞道
@@ -872,8 +984,8 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--help']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'budget', 'sopreview']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--requests', '--minutes', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
       for (const f of eternal) {
@@ -920,9 +1032,15 @@ function cmdCommitmsg(msg) {
 // ———— main ————
 
 const [cmd, ...rest] = process.argv.slice(2);
+// sb usage 事件：每次調用（子命令＋參數摘要）落 tmp JSONL——sb 呼叫頻譜的機械觀測層
+// （老闆可隨時清理該檔；缺檔自動重建；觀測失敗靜默——遙測失效不影響本命令執行）。
+try {
+  mkdirSync(TMP, { recursive: true });
+  appendFileSync(join(TMP, 'sb-usage.jsonl'), JSON.stringify({ at: new Date().toISOString(), cmd: cmd ?? '(none)', args: rest.join(' ').slice(0, 120) }) + '\n');
+} catch { /* 觀測落檔失敗不攔主流程 */ }
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null, budgetRequests: null, budgetMinutes: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
@@ -931,10 +1049,12 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['①', '②', '③'].includes(flags.point)) usage(); }
   else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
+  else if (rest[i] === '--requests') { flags.budgetRequests = Number(rest[++i] ?? ''); if (cmd !== 'budget' || !Number.isInteger(flags.budgetRequests) || flags.budgetRequests < 1 || flags.budgetRequests > 10000) usage(); }
+  else if (rest[i] === '--minutes') { flags.budgetMinutes = Number(rest[++i] ?? ''); if (cmd !== 'budget' || !Number.isInteger(flags.budgetMinutes) || flags.budgetMinutes < 1 || flags.budgetMinutes > 1440) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
-if (['next', 'end', 'closeout'].includes(cmd)) requireHealthyState();
+if (['next', 'end', 'closeout', 'budget', 'sopreview'].includes(cmd)) requireHealthyState();
 switch (cmd) {
   case 'init': cmdInit(pos[0], pos[1]); break;
   case 'state': cmdState(); break;
@@ -943,6 +1063,8 @@ switch (cmd) {
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
   case 'closeout': cmdCloseout(flags.base); break;
+  case 'budget': cmdBudget(flags); break;
+  case 'sopreview': cmdSopreview(); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();
 }

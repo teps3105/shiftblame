@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.0.2');
+assert.equal(manifest.version, '2.0.3');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.0\.2"/);
+assert.match(skill, /version: "2\.0\.3"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -110,6 +110,27 @@ assert.match(read('cli', 'test', 'sb-ablation.mjs'), /消融矩陣/, '框架本�
 assert.ok(existsSync(join(repo, 'cli', 'test', 'sb-ablation.mjs')), '消融矩陣測試檔存在');
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');
 assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
+
+// 觀測紀律與回合預算閘（2.0.3 機制群——文件陳述錨）
+assert.match(skill, /基質優先/, 'SKILL 記載基質優先（重複造輪子準入判準）');
+assert.match(skill, /元行為錨定/, 'SKILL 記載元行為錨定（規則由實測推導）');
+assert.match(skill, /修剪迴路/, 'SKILL 記載修剪迴路（每 ms 審查三問）');
+assert.match(skill, /sb budget/, 'SKILL 記載 sb budget 宣告');
+assert.match(skill, /sb sopreview/, 'SKILL 記載 sb sopreview 審查留痕');
+assert.match(skill, /sb-usage\.jsonl/, 'SKILL 記載 usage 觀測事件');
+assert.match(skill, /觀測流輪替/, 'SKILL 記載觀測流輪替（flow-state 恆有界）');
+assert.match(readme, /回合級預算閘/, 'README 記載回合級預算閘');
+assert.match(readme, /基質優先/, 'README 記載方法論（基質優先）');
+assert.match(read('skills', 'shiftblame', 'references', 'PLAN.md'), /回合預算宣告/, 'PLAN 記載 plan 段預算宣告義務');
+assert.ok(!skill.includes('INDEX.md'), 'SKILL 歸檔清單機制零殘留（archive 僅承載 slug 目錄）');
+assert.ok(!readme.includes('INDEX.md'), 'README 歸檔清單機制零殘留');
+assert.match(read('cli', 'bin', 'sb.mjs'), /cmdBudget/, 'CLI 回合預算宣告命令');
+assert.match(read('cli', 'bin', 'sb.mjs'), /cmdSopreview/, 'CLI SOP／ROADMAP 審查留痕命令');
+assert.match(read('cli', 'bin', 'sb.mjs'), /sb-usage\.jsonl/, 'CLI usage 事件落檔');
+assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb end）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /rotateStreams/, 'hooks 觀測流輪替');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /budgetExhausted/, 'hooks 預算超限自動回 intent 留痕對照');
 
 // 舊機制詞零殘留（「唯開工解鎖／獨立成行／老闆詞印章 hooks 偵測」；SKILL／README／references／sb.mjs／hooks）
 const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正',

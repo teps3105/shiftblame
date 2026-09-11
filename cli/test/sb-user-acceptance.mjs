@@ -182,7 +182,6 @@ assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔前拒絕');
 assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);
 const oldG1 = readFileSync(join(ms2, 'G1.md'), 'utf8');
 renameSync(slugDir, join(root, '.shiftblame/archive/demo'));
-writeFileSync(join(root, '.shiftblame/archive/INDEX.md'), '2026-09-08 demo 已完成\n');
 assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔不等於合併與清理完成');
 assert.equal(git('checkout', originalBase).status, 0);
 assert.equal(git('merge', '--ff-only', endedBranch).status, 0);

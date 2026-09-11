@@ -38,7 +38,11 @@ for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, rec
   }
   const r = f.run('init', 'demo');
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')), { ...initial, slug: 'demo', ms: '001', node: 'intent', history: [] });
+  const initialized = JSON.parse(readFileSync(f.file, 'utf8'));
+  const { startedAt, baseCommit, ...rest } = initialized;
+  assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent', history: [] });
+  assert.match(startedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, 'init 錨定流程起始時間（遙測耗時基準）');
+  assert.equal(baseCommit, null, '非 git 工作區 baseline 記 null（遙測 diff 缺省）');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/demo/SLUG.md')));
   assert.ok(existsSync(join(f.cwd, '.shiftblame/demo/001')));
   assert.ok(existsSync(join(f.cwd, '.shiftblame/archive')));
@@ -86,7 +90,6 @@ function endedFixture() {
 }
 function archiveOld(f) {
   renameSync(join(f.cwd, '.shiftblame/old'), join(f.cwd, '.shiftblame/archive/old'));
-  writeFileSync(join(f.cwd, '.shiftblame/archive/INDEX.md'), '2026-09-08 old 舊工作\n');
 }
 {
   const f = endedFixture();
@@ -111,9 +114,12 @@ function archiveOld(f) {
   assert.equal(readFileSync(f.file, 'utf8'), before);
   const r = f.run('init', 'next', 'fix');
   assert.equal(r.status, 0, r.stderr);
-  assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')), { ...record, slug: 'next', ms: '001', node: 'intent', history: [] });
+  const reinitialized = JSON.parse(readFileSync(f.file, 'utf8'));
+  const { startedAt: reStartedAt, ...reRest } = reinitialized;
+  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', history: [], baseCommit: null });
+  assert.match(reStartedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8'), oldDoc);
-  assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/INDEX.md'), 'utf8'), '2026-09-08 old 舊工作\n');
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/archive/INDEX.md')), false, '歸檔清單機制已除——archive 僅承載 slug 目錄');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/next/001')));
   assert.equal(f.run('state').status, 0);
   assert.equal(f.run('commitmsg', 'fix: 新工作不可沿用舊對抗').status, 1);
