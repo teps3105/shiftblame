@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.0.5-2ea44f.svg" alt="version 2.0.5"/>
+  <img src="https://img.shields.io/badge/version-2.0.6-2ea44f.svg" alt="version 2.0.6"/>
 </p>
 
 ---
@@ -322,7 +322,7 @@ MIT License. 不接受外部貢獻。
 ### 外部工具辨識與初始化
 
 - Git 工作的收尾順序是 PASS → 歸檔 → 合併 → `sb closeout --base <本機基底分支>` → 清除舊本機與遠端分支 → `sb init <新slug>`。
-  - closeout 查證舊分支 tip 已為基底祖先，記錄提交、分支及遠端來源；它只查證留痕，不代做合併或刪除。
+  - closeout 查證舊工作提交已經 `--no-ff` 合併提交進入基底（快轉／squash 皆不過——slug 邊界以合併提交保留於主分支歷史），記錄提交、分支及遠端來源；它只查證留痕，不代做合併或刪除。
   - init 再驗工作樹乾淨、記錄提交仍在目前基底、本機舊分支不存在、遠端伺服器已無舊 ref、新分支未占用，才從此次查證的基底提交建立新分支。
   - 首次 init 記錄 workBranch；舊狀態可由唯一的 type/slug 分支取得來源，缺失或有歧義時先補足來源，不能拿目前 HEAD 代替。
   - `sb state` 顯示未完成項。squash／rebase 無祖先證據時保持原狀；基底由 --base 明示，不猜主幹名稱。

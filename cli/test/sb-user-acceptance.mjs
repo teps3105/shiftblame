@@ -183,7 +183,7 @@ assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);
 const oldG1 = readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'utf8'); // sb end 已機械化歸檔——自 archive 讀回
 assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔不等於合併與清理完成');
 assert.equal(git('checkout', originalBase).status, 0);
-assert.equal(git('merge', '--ff-only', endedBranch).status, 0);
+assert.equal(git('merge', '--no-ff', endedBranch).status, 0, '非協作倉庫 slug 合併一律 --no-ff');
 assert.equal(run('closeout', '--base', originalBase).status, 0);
 assert.equal(run('init', 'next-work', 'fix').status, 1, '舊本機分支存在仍拒絕');
 assert.equal(git('branch', '-d', endedBranch).status, 0);

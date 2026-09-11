@@ -55,7 +55,13 @@ assert.equal(run('closeout', '--base', 'trunk').status, 1, '未合併拒絕');
 assert.equal(run('closeout', '--base', 'fix/old').status, 1, '基底不可等於舊分支');
 assert.equal(run('closeout', '--base', 'missing').status, 1);
 ok(git('checkout', 'trunk'));
+// 快轉（fast-forward）合併：無合併提交證據——closeout 擋下並指引 --no-ff 重併。
 ok(git('merge', '--ff-only', 'fix/old'));
+assert.equal(run('closeout', '--base', 'trunk').status, 1, '快轉合併拒絕');
+assert.match(run('closeout', '--base', 'trunk').stderr, /--no-ff/, '指引 --no-ff 重併');
+// 回復合併前基底後以 --no-ff 重併——證據成立。
+ok(git('reset', '--hard', initial));
+ok(git('merge', '--no-ff', 'fix/old')); // 非協作倉庫一律 --no-ff（slug 邊界合併提交）
 commit('base.txt', 'base-only commit\n');
 const baseTip = tip();
 ok(git('checkout', 'fix/old'));
@@ -110,7 +116,7 @@ assert.equal(existsSync(join(cwd, '.shiftblame/next')), false);
 renameSync(join(cwd, '.git.hidden'), join(cwd, '.git'));
 // base 改寫失去工作提交，即使分支均已清除仍拒絕。
 ok(git('update-ref', 'refs/heads/trunk', initial));
-rejectInit(/無合併祖先證據/);
+rejectInit(/--no-ff 合併提交證據/);
 ok(git('update-ref', 'refs/heads/trunk', latestBase));
 // 当前停在其他功能分支也只能從查證的基底出發。
 ok(git('checkout', '-b', 'unrelated', initial));

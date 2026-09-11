@@ -560,6 +560,18 @@ function knownRemoteTargets(workBranch) {
   }
   return targets;
 }
+// --no-ff 合併提交證據（2.0.6）：工作提交經「合併提交」進入基底 lineage——存在 ancestor-of-base 的
+// 合併提交且其父提交含 workCommit。直接快轉（基底 tip＝工作 tip，無合併提交）與 squash 皆不含；
+// 合併後基底續有新提交仍可辨識（合併提交在 ancestry-path 上）。
+function noFfMergeEvidence(workCommit, baseCommit) {
+  const r = gitRun('rev-list', '--merges', '--ancestry-path', `${workCommit}..${baseCommit}`);
+  if (r.status !== 0) return false;
+  for (const m of r.stdout.trim().split(/\s+/).filter(Boolean)) {
+    const p = gitRun('rev-list', '--parents', '-n', '1', m);
+    if (p.status === 0 && p.stdout.trim().split(/\s+/).slice(1).includes(workCommit)) return true;
+  }
+  return false;
+}
 function cleanGitProblem() {
   const r = gitRun('status', '--porcelain');
   return r.status !== 0 ? 'Git 狀態查詢失敗' : r.stdout.trim() ? '工作樹未乾淨，先完成收尾提交' : null;
@@ -572,7 +584,7 @@ function closedGitPlan(st) {
   if (!st.closeout) return { problems: [...problems, '尚未完成合併查證：歸檔與合併後、刪分支前執行 sb closeout --base <本機分支>'], baseCommit: null };
   const c = st.closeout;
   const baseCommit = branchTip(c.baseBranch);
-  if (!baseCommit || gitRun('merge-base', '--is-ancestor', c.workCommit, baseCommit).status !== 0) problems.push('基底缺失或無合併祖先證據，無法自動確認整合（含 squash／rebase）；先重新查證');
+  if (!baseCommit || !noFfMergeEvidence(c.workCommit, baseCommit)) problems.push('基底缺失或無 --no-ff 合併提交證據（快轉／多層轉併／squash 皆不含）——快轉者回到合併前基底後 git merge --no-ff 重併（分支已刪先以工作提交重建），未進基底者直接 --no-ff 合併；完成後重跑 closeout');
   const branches = gitRun('for-each-ref', '--format=%(refname)', `refs/heads/${c.workBranch}`);
   if (branches.status !== 0) problems.push('無法查證舊本機分支');
   else if (branches.stdout.trim()) problems.push(`舊本機分支尚未清除：${c.workBranch}`);
@@ -599,7 +611,13 @@ function cmdCloseout(base) {
   if (candidates.length !== 1) die(['缺少唯一舊工作分支來源；先恢復舊功能分支再查證，不以目前 HEAD 代替']);
   const workBranch = candidates[0], workCommit = branchTip(workBranch);
   if (workBranch === base || !workCommit) die(['舊工作分支須存在且不同於基底；先查證再刪除']);
-  if (gitRun('merge-base', '--is-ancestor', workCommit, baseCommit).status !== 0) die(['舊功能無合併祖先證據，無法自動確認整合（含 squash／rebase）']);
+  if (!noFfMergeEvidence(workCommit, baseCommit)) {
+    const isAncestor = gitRun('merge-base', '--is-ancestor', workCommit, baseCommit).status === 0;
+    const branchGone = branchTip(workBranch) ? '' : `（分支已刪時先 git branch ${workBranch} ${workCommit} 重建）`;
+    die([isAncestor
+      ? `主分支缺 --no-ff 合併提交證據（工作提交已快轉進基底——直接 FF 或舊收尾皆常見）；回復：git reset --hard <合併前基底>（git reflog 或工作提交的第一父可查）後 git merge --no-ff ${workBranch} 重併${branchGone}——基底已推送時重寫需 force-push，先確認影響；完成後重新 sb closeout`
+      : `主分支缺 --no-ff 合併提交證據（工作提交未進基底——多層轉併或 squash）；直接合併 git merge --no-ff ${workBranch} 後重新 sb closeout`]);
+  }
   const remotes = [];
   try {
     for (const r of knownRemoteTargets(workBranch)) {

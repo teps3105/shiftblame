@@ -481,6 +481,29 @@ ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', (
   assert.equal(probe(neu).status, 0, 'ablated：拆掉審查閘即放行');
 });
 
+ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout）', () => {
+  const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit) {', 'function noFfMergeEvidence(workCommit, baseCommit) {\n  return true; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ git: true, state: { node: 'done' } });
+    const base = spawnSync('git', ['branch', '--show-current'], { cwd: r, encoding: 'utf8' }).stdout.trim();
+    spawnSync('git', ['checkout', '-b', 'feat/demo'], { cwd: r });
+    writeFileSync(join(r, 'work.txt'), 'w\n');
+    spawnSync('git', ['add', 'work.txt'], { cwd: r });
+    spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: work'], { cwd: r });
+    const st = stateOf(r);
+    st.workBranch = 'feat/demo';
+    writeFileSync(join(r, '.shiftblame/flow-state.json'), JSON.stringify(st));
+    cliRun(SB, r, 'end', '--boss-ok'); // PASS＋機械歸檔（與被消融函數無關——end 固定用原版）
+    spawnSync('git', ['checkout', base], { cwd: r });
+    spawnSync('git', ['merge', '--ff-only', 'feat/demo'], { cwd: r });
+    const result = cliRun(script, r, 'closeout', '--base', base);
+    rmSync(r, { recursive: true, force: true });
+    return result.status;
+  };
+  assert.equal(probe(SB), 1, 'intact：快轉合併無證據——closeout 擋下（slug 邊界死守）');
+  assert.equal(probe(neu), 0, 'ablated：證據檢查拆除即放行（快轉收尾復活）');
+});
+
 for (const { name, fn } of ABLATIONS) {
   try { fn(); pass++; console.log(`PASS [消融] ${name}`); }
   catch (e) { fails.push(name); console.error(`FAIL [消融] ${name}：${e.message}`); }
