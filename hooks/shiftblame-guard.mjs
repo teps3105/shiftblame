@@ -82,7 +82,7 @@ const SESSION_CARD = [
 function nodeLine(root) {
   if (!root) return '';
   const health = readFlowState(root);
-  if (health.kind === 'invalid') return '\n[接入異常] flow-state 無法辨識——停止正式寫入、對抗宣告及提交；只做唯讀診斷、tmp 保存及限定狀態恢復，修復後重跑 sb state。不得把報錯當成無流程。';
+  if (health.kind === 'invalid') return '\n[接入異常] flow-state 無法辨識——對抗宣告、提交與 git 寫入封閉；診斷與狀態修復自由（修復是異常模式的目的），修復後重跑 sb state。不得把報錯當成無流程。';
   if (['missing', 'uninitialized', 'direct'].includes(health.kind)) return `\n[接入] ${health.kind === 'direct' ? '合法直接實行紀錄' : '尚未初始化 slug'}——依老闆授權路由；不開 slug 可直接實行，狀態可辨識不等於批准。`;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
@@ -380,8 +380,8 @@ function checkGFileMatrix(root, toolInput) {
 // 攔：repo 寫入（非 .shiftblame/）、git 寫入命令、sb 流程推進命令。
 // 放行：Skill 調用（shiftblame:think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
 // Bash 唯讀查證（git log/status/diff、node/python 探針、npm test）、.shiftblame/ tmp 證據傾倒。
-const HOLD_GIT_WRITE_RE = /\bgit\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
-const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg)\b/;
+const HOLD_GIT_WRITE_RE = /\bgit(?:\.exe)?\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
+const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|budget|sopreview|closeout)\b/;
 function checkHoldFreeze(root, tool, cmd, toolInput) {
   if (!root) return null;
   let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
@@ -436,16 +436,16 @@ function recoveryTarget(root, target) {
 }
 function checkStateHealth(root, tool, command, input) {
   if (!root || readFlowState(root).kind !== 'invalid') return null;
-  const blocked = '流程接入異常——正式文件與程式碼寫入、對抗宣告及提交均停止；保留原檔，只做唯讀診斷、tmp 保存與限定狀態恢復，修復後重跑 sb state；不得降級成無流程';
+  const blocked = '流程接入異常——正式文件與程式碼寫入、對抗宣告及提交均停止；保留原檔；狀態修復（flow-state／tmp）與唯讀診斷可寫，修復後重跑 sb state 查證；維持錯誤判定至可辨識';
   if (SHELL_TOOL_RE.test(tool)) {
-    // 異常時只放行可辨識的單一唯讀命令；不推測任意直譯器／腳本的副作用。
+    // 異常模式的目的是修復——診斷與修復（唯讀查證、修復腳本、flow-state／tmp 寫入）自由；
+    // 封閉的是會消費或惡化異常狀態的動作：git 寫入與 sb 流程命令（複用停等凍結的攔截面）。
+    // 破壞性命令防護與 commit 四閘在本檢查放行後照常生效（放行＝進入後續攔截，非跳過）。
     const cmd = command.trim();
-    if (/[;&|`><\r\n$()]/.test(cmd)) return blocked;
-    if (/^(?:sb|(?:node|node\.exe)\s+(?:"[^"]*[/\\]sb\.mjs"|'[^']*[/\\]sb\.mjs'|\S*[/\\]sb\.mjs))\s+(?:state|--help)\s*$/i.test(cmd)) return null;
-    if (/^(?:Get-Content|Get-Item|Get-ChildItem|Test-Path|Resolve-Path|pwd|ls|cat)\b/i.test(cmd)) return null;
-    if (/^rg\b/i.test(cmd) && !/--pre(?:[=\s]|$)|--hostname-bin/.test(cmd)) return null;
-    if (/^git\s+(?:status(?:\s+--(?:short|porcelain(?:=v[12])?))?|diff\s+--no-ext-diff(?:\s+--(?:stat|name-only|check))?)\s*$/i.test(cmd)) return null;
-    return blocked;
+    if (HOLD_GIT_WRITE_RE.test(cmd) || HOLD_SB_PUSH_RE.test(cmd)) {
+      return '流程接入異常——git 寫入與 sb 流程命令保持封閉（會消費或惡化異常狀態）；診斷與狀態修復自由（唯讀查證、修復腳本、flow-state／tmp 寫入——修復是異常模式的目的）；修復後重跑 sb state 查證，維持錯誤判定至可辨識';
+    }
+    return null;
   }
   const action = tool.split(/__|\./).at(-1);
   const readAction = /^(?:read|list|search|stat|exists|get|query|fetch|browse|tree|info|show|find|screenshot)(?:_|$)/i.test(action);

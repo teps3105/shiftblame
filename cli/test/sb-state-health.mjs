@@ -46,8 +46,13 @@ for (const raw of invalid) {
     assert.match(r.stderr, /接入異常/);
   }
   for (const tool of ['Bash', 'exec_command', 'functions.exec_command']) {
-    for (const command of ['git commit -m "fix: 接入驗證"', 'node -e "require(\'fs\').writeFileSync(\'README.md\',\'bad\')"', 'sb adversarial review.md']) {
+    // 封閉面：會消費或惡化異常狀態的動作（git 寫入＋sb 流程命令——與停等凍結同攔截面）
+    for (const command of ['git commit -m "fix: 接入驗證"', 'git add .', 'sb adversarial review.md', 'sb budget --requests 5 --minutes 5', 'sb sopreview']) {
       assert.equal(f.gate(tool, tool === 'Bash' ? { command } : { cmd: command }).status, 2, command);
+    }
+    // 修復自由（異常模式的目的）：修復腳本與唯讀查證放行——shell 對正式檔的寫入屬既有殘餘（同常規模式），由抽查承擔
+    for (const command of ['node repair-state.mjs', 'node -e "require(\'fs\').writeFileSync(\'flow-state.json\',\'{}\')"', 'rg -n "a|b|c" .']) {
+      assert.equal(f.gate(tool, tool === 'Bash' ? { command } : { cmd: command }).status, 0, command);
     }
     assert.equal(f.gate(tool, { cmd: 'sb state', command: 'sb state' }).status, 0);
   }

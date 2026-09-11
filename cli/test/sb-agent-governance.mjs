@@ -131,6 +131,8 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb e
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /rotateStreams/, 'hooks 觀測流輪替');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /budgetExhausted/, 'hooks 預算超限自動回 intent 留痕對照');
+assert.match(skill, /診斷與狀態修復自由/, 'SKILL 記載異常模式修復自由（唯讀白名單已除）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /修復是異常模式的目的/, 'hooks 異常模式政策：修復自由＋封閉 git 寫入／sb 流程命令');
 
 // 舊機制詞零殘留（「唯開工解鎖／獨立成行／老闆詞印章 hooks 偵測」；SKILL／README／references／sb.mjs／hooks）
 const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正',

@@ -259,4 +259,26 @@ assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/evidence.md'), content: 'x' } }).status, 0, 'tmp 傾倒放行');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/x/y.md'), content: 'x' } }).status, 0, 'tmp 巢狀子目錄放行（RAM 區格式不做規範）');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md（<slug>/ 層）放行');
+// —— 12. 接入異常模式：修復自由＋封閉面（git 寫入／sb 流程命令；唯讀白名單已除——修復是異常模式的目的）——
+{
+  const brokenRoot = mkdtempSync(join(tmpdir(), 'sb-health-'));
+  process.on('exit', () => rmSync(brokenRoot, { recursive: true, force: true }));
+  mkdirSync(join(brokenRoot, '.shiftblame', 'tmp'), { recursive: true });
+  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: null, ms: null, node: null, history: [] }));
+  const hr = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: brokenRoot, ...payload }), encoding: 'utf8' });
+  const bash = (command) => hr({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } });
+  assert.equal(bash('node repair-state.mjs').status, 0, '修復腳本放行');
+  assert.equal(bash('rg -n "a|b|c" .').status, 0, '唯讀查證放行（正則 alternation 的管線字元在引號內——舊白名單誤擋實例）');
+  assert.equal(bash('git status --porcelain').status, 0, 'git 唯讀診斷放行');
+  assert.equal(bash('git add x.txt').status, 2, 'git 寫入封閉');
+  assert.match(bash('git add x.txt').stderr, /接入異常/);
+  assert.equal(bash('git -c user.name=t commit -m "x"').status, 2, '提交封閉');
+  assert.equal(bash('node sb.mjs adversarial r.md').status, 2, 'sb 對抗宣告封閉（會消費異常狀態）');
+  assert.equal(bash('node sb.mjs state').status, 0, 'sb state 診斷放行');
+  assert.equal(bash('sb budget --requests 5 --minutes 5').status, 2, 'sb 新流程命令（budget／sopreview）同封閉');
+  assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, '.shiftblame', 'flow-state.json'), content: '{"hooksHeartbeat":{"at":"2026-09-11T00:00:00.000Z","event":"SessionStart"}}' } }).status, 0, '寫入工具對 flow-state 修復放行');
+  assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, 'README.md'), content: 'x' } }).status, 2, '寫入工具對正式文件封閉');
+  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));
+  assert.equal(bash('git add x.txt').status, 0, '修復完成（狀態可辨識）後 git 寫入恢復');
+}
 console.log('sb-hooks: PASS');
