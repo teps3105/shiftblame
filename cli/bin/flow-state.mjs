@@ -19,7 +19,17 @@ function hooksOnly(st) {
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
   if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
   if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
-  if (Object.hasOwn(st, 'turnUsage') && !(exactKeys(st.turnUsage, ['startedAt', 'requests', ...(Object.hasOwn(st.turnUsage, 'exceededAt') ? ['exceededAt'] : [])]) && timestamp(st.turnUsage.startedAt) && nonNegativeInt(st.turnUsage.requests) && (!Object.hasOwn(st.turnUsage, 'exceededAt') || timestamp(st.turnUsage.exceededAt)))) return false;
+  if (Object.hasOwn(st, 'turnUsage')) {
+    const tu = st.turnUsage;
+    const tuKeys = ['startedAt', 'requests',
+      ...(Object.hasOwn(tu, 'exceededAt') ? ['exceededAt'] : []),
+      ...(Object.hasOwn(tu, 'escalatedAt') ? ['escalatedAt'] : []),
+      ...(Object.hasOwn(tu, 'fingerprints') ? ['fingerprints'] : [])];
+    if (!(exactKeys(tu, tuKeys) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests)
+      && (!Object.hasOwn(tu, 'exceededAt') || timestamp(tu.exceededAt))
+      && (!Object.hasOwn(tu, 'escalatedAt') || timestamp(tu.escalatedAt))
+      && (!Object.hasOwn(tu, 'fingerprints') || (objectRecord(tu.fingerprints) && Object.keys(tu.fingerprints).length <= 128 && Object.values(tu.fingerprints).every(nonNegativeInt))))) return false;
+  }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
   for (const k of ['budgetBreaches', 'inputsRotated', 'understandingsRotated', 'adversarialRotated', 'historyRotated']) if (Object.hasOwn(st, k) && !nonNegativeInt(st[k])) return false;
   if (Object.hasOwn(st, 'understandingSeedHash') && !/^[0-9a-f]{16}$/.test(st.understandingSeedHash)) return false;

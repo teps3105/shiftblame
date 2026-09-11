@@ -448,24 +448,25 @@ ablation('PASS 後合併與清理查證（移除即從舊 HEAD 初始化）', ()
   assert.equal(probe(neu).status, 0);
 });
 
-// —— 2.0.3 機制群：回合級預算閘與 SOP／ROADMAP 每 ms 審查閘 ——
-ablation('回合級預算閘（超限自動回 intent＋凍結本回合）', () => {
-  const neu = neutralize(GUARD, [["if (!(isRecord(st.budget) && st.turnUsage.exceededAt)) return { frozen: false, st };", "return { frozen: false, st }; // ABLATED"]]);
+// —— 2.0.3/2.0.4 機制群：迴圈斷路器與 SOP／ROADMAP 每 ms 審查閘 ——
+ablation('迴圈斷路器（同操作重複即擋＋死圈升級）', () => {
+  const neu = neutralize(GUARD, [['prints[fp] = (prints[fp] ?? 0) + 1;', 'prints[fp] = 1; // ABLATED']]);
   const probe = (script) => {
-    const r = mkSandbox({ state: { node: 'test', budget: { requests: 1, minutes: 30, at: '2026-09-11T00:00:00.000Z', ms: '001' } } });
+    const r = mkSandbox({ state: { node: 'test' } });
     hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
-    hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-    const over = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    const run = () => hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node rerun-failing-test.mjs' } });
+    run(); run(); run();
+    const fourth = run();
     const st = stateOf(r);
     rmSync(r, { recursive: true, force: true });
-    return { denied: over.status === 2, retreated: st.node === 'intent' };
+    return { denied: fourth.status === 2, node: st.node };
   };
   const intact = probe(GUARD);
-  assert.equal(intact.denied, true, 'intact：超限調用凍結擋下');
-  assert.equal(intact.retreated, true, 'intact：自動回 intent（真實 CLI 狀態轉移）');
+  assert.equal(intact.denied, true, 'intact：同操作第 4 次重複被擋（要求改變策略——3 次內為合法迭代空間）');
+  assert.equal(intact.node, 'test', 'intact：擋截不中斷工作（換操作即續行）');
   const gone = probe(neu);
-  assert.equal(gone.denied, false, 'ablated：拆掉預算閘即放行');
-  assert.equal(gone.retreated, false, 'ablated：不再自動回 intent');
+  assert.equal(gone.denied, false, 'ablated：拆掉指紋計數即放行（無限重跑復活）');
+  assert.equal(gone.node, 'test', 'ablated：不升級');
 });
 
 ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', () => {

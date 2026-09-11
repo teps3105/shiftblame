@@ -1,4 +1,4 @@
-// sb-observability：觀測紀律與回合治理——usage 事件、回合級預算閘（超限自動回 intent＋凍結＋CLI 兜底）、
+// sb-observability：觀測紀律與回合治理——usage 事件、回合成本軟性會計（超限零中斷）、迴圈斷路器（4/7 門檻＋升級凍結＋CLI 兜底）、
 // 產出遙測（git baseline 錨定）、SOP／ROADMAP 每 ms 審查閘、觀測流輪替（flow-state 恆有界）。
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -64,42 +64,62 @@ assert.equal(state().budget.requests, 2, '預算寫入 flow-state');
 assert.equal(pt('①').status, 0);
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段（預算生效範圍）');
 
-// —— 3. 回合級預算閘：超限自動回 intent＋凍結本回合（真實 hooks 模擬怪獸回合） ——
+// —— 3. 回合成本控制＋迴圈斷路器：超限零中斷（軟性會計）；重複才擋（4/7 門檻）；死圈升級 ——
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '回合開始（回合計數歸零）' });
 assert.equal(state().turnUsage, undefined, '老闆輸入＝回合邊界（計數重置）');
-const u1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
+const u1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls -la' } });
 assert.equal(u1.status, 0, '預算內調用放行');
 assert.equal(state().turnUsage.requests, 1, '回合計數（工具調用＝model 請求上界代理）');
 assert.equal(state().usageTotals.requests >= 1, true, 'slug 累計計數');
-const u2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-assert.equal(u2.status, 0, '第 2 調用達上限仍未超（> 才超限）');
-const u3 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-assert.equal(u3.status, 2, '第 3 調用超限即擋（遞迴／停機長跑防護）');
-assert.match(u3.stderr, /回合預算超限|自動回 intent/, '擋截訊息指向收傘或拆分');
+assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'pwd' } }).status, 0, '第 2 調用達上限仍未超');
+const u3 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-three' } });
+assert.equal(u3.status, 0, '超限（第 3 調用 > 上限 2）放行——軟性成本會計零中斷');
 {
   const st = state();
-  assert.equal(st.node, 'intent', '超限自動回 intent（真實 CLI 狀態轉移）');
-  assert.equal(st.turnUsage.exceededAt !== undefined, true, '超限時刻留痕');
+  assert.equal(st.node, 'test', '超限不撤退不凍結——工作照常推進');
+  assert.equal(st.turnUsage.exceededAt !== undefined, true, '超限時刻記錄（軟性）');
   assert.equal(st.budgetBreaches, 1, '超限次數計入（sb end 遙測素材）');
+}
+const u4 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-four' } });
+assert.equal(u4.status, 0, '超限後的後續（不同操作）持續放行——持續推進永不因量中斷');
+// 迴圈斷路器：同操作重複才是死圈特徵——第 4 次擋（要求改變策略）、第 7 次升級（凍結＋自動回 intent）
+const loop = () => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `node stuck-loop.mjs` } });
+assert.equal(loop().status, 0, '同操作第 1 次放行');
+assert.equal(loop().status, 0, '同操作第 2 次放行（迭代重試的合法空間）');
+assert.equal(loop().status, 0, '同操作第 3 次仍放行（門檻 4——三次同命令屬正常迭代）');
+const l4 = loop();
+assert.equal(l4.status, 2, '同操作第 4 次即擋（迴圈斷路器——重跑同樣的失敗＝無限循環）');
+assert.match(l4.stderr, /迴圈斷路器|改變策略/, '擋截訊息要求改變策略（修根因／換方法）');
+assert.equal(state().node, 'test', '迴圈擋截不升級——換個操作即可續行');
+assert.equal(loop().status, 2, '被擋後仍重複（第 5 次）續擋');
+assert.equal(loop().status, 2, '第 6 次續擋');
+const l7 = loop();
+assert.equal(l7.status, 2, '第 7 次升級擋下');
+{
+  const st = state();
+  assert.equal(st.node, 'intent', '升級＝自動回 intent（真死圈——被擋兩次後仍重複同一操作）');
+  assert.equal(st.turnUsage.escalatedAt !== undefined, true, '升級時刻留痕');
   const last = st.history.at(-1);
   assert.equal(last.from, 'test', 'history 記錄撤退起點');
   assert.equal(last.to, 'intent', 'history 記錄撤退');
   assert.equal(last.budgetExhausted, true, 'budgetExhausted 留痕');
 }
-const u4 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
-assert.equal(u4.status, 2, '本回合凍結持續（後續工具全擋）');
-assert.match(u4.stderr, /回合預算超限/);
-const skillOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：超限凍結下理解宣告仍可落流驗證' } });
+const u6 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
+assert.equal(u6.status, 2, '升級後本回合凍結（後續工具全擋）');
+assert.match(u6.stderr, /迴圈升級/);
+const skillOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：迴圈升級凍結下理解宣告仍可落流驗證' } });
 assert.equal(skillOk.status, 0, 'Skill 調用豁免（理解宣告落流）');
-const escapeOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb state' } });
-assert.equal(escapeOk.status, 0, 'sb state 豁免（呈報查證）');
-// CLI 兜底（hooks 失效層）：凍結期間前進邊由 sb next 擋；→intent 保持自由
-assert.match(run('next', 'requirement', '--boss-ok').stderr, /回合預算已超限/, 'CLI 同判據兜底擋前進');
+for (let i = 0; i < 6; i++) {
+  const escapeRun = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb state' } });
+  assert.equal(escapeRun.status, 0, `sb state 豁免於凍結與迴圈斷路器（第 ${i + 1} 次——逃生操作可重複使用）`);
+}
+// CLI 兜底（hooks 失效層）：升級凍結期間前進邊由 sb next 擋；→intent 保持自由
+assert.match(run('next', 'requirement', '--boss-ok').stderr, /迴圈升級/, 'CLI 同判據兜底擋前進');
 // 老闆下一則輸入＝新回合（計數重置、恢復推進）
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '新回合：拆分重規劃' });
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '新回合：改變策略後續行' });
 assert.equal(state().turnUsage, undefined, '新回合計數重置');
-const u5 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-assert.equal(u5.status, 0, '新回合工具恢復');
+const u7 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls -la' } });
+assert.equal(u7.status, 0, '新回合工具恢復（同操作指紋隨回合重置）');
 assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
 // —— 4. 重走至 done（--rerun 直通＋返工外部協助），途中寫真實 commit 供遙測 diff ——
@@ -172,6 +192,15 @@ for (let i = 0; i < 60; i++) {
   const stateRun = spawnSync(process.execPath, [cli, 'state'], { cwd: rotRoot, encoding: 'utf8' });
   assert.equal(stateRun.status, 0, '輪替後狀態仍合法（理解鏈自種子接續可驗）');
   assert.match(stateRun.stdout, /build/, '段位可讀');
+}
+// 指紋 128 鍵上限（對抗審查 M1 回歸）：多樣操作永不觸發死鎖——超過 128 種指紋時淘汰非當前的最小計數鍵，狀態恆合法
+for (let i = 0; i < 130; i++) rotHook({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `echo distinct-operation-${i}` } });
+{
+  const st = rotState();
+  const keyCount = Object.keys(st.turnUsage.fingerprints ?? {}).length;
+  assert.ok(keyCount <= 128, `指紋鍵數 ≤128（實得 ${keyCount}）`);
+  const stateRun2 = spawnSync(process.execPath, [cli, 'state'], { cwd: rotRoot, encoding: 'utf8' });
+  assert.equal(stateRun2.status, 0, '多樣操作（130 種不同指紋）不觸發接入異常（M1：第 129 鍵寫入死鎖已除）');
 }
 // 輪替後新理解＝全域輸入編號（含已輪替前綴）——曝光對照不失真（對抗審查 M1 回歸）
 rotHook({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：輪替後全域編號的最新理解宣告驗證內容' } });

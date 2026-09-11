@@ -126,9 +126,9 @@ const usage = (code = 2) => {
                                         需 sb adversarial --point 對應條目（adversarialLog，新鮮度＝晚於同邊上次推進）
   sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋產出遙測
                                         （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
-  sb budget --requests N --minutes M    回合預算宣告（僅 plan 段；寫 flow-state）：執行段（test/build/verify/done）
-                                        每回合工具調用數（model 請求上界代理）與分鐘上限；hooks 超限自動回 intent
-                                        並凍結本回合（遞迴／停機測試長跑防護）；老闆下一則輸入開新回合重置
+  sb budget --requests N --minutes M    回合成本宣告（僅 plan 段；寫 flow-state）：軟性會計——超限記錄＋曝光＋
+                                        sb end 遙測結算，工作中斷零發生；迴圈斷路器常開：同操作回合內第 4 次
+                                        重複即擋並要求改變策略、第 7 次升級凍結＋自動回 intent（防遞迴無限擴大）
   sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
                                         開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）
   sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
@@ -715,8 +715,8 @@ function cmdState() {
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
-  if (st.budget) out(`回合預算（ms ${st.budget.ms}）：≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.exceededAt ? '——已超限：凍結推進＋自動回 intent，待老闆下一則輸入開新回合' : ''}` : ''}`);
-  else if (st.node === 'plan') out('  可宣告：sb budget --requests N --minutes M（回合預算——執行段超限自動回 intent 並凍結本回合）');
+  if (st.budget) out(`回合預算（ms ${st.budget.ms}）：≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.escalatedAt ? '——迴圈升級：凍結推進，待老闆下一則輸入開新回合' : st.turnUsage.exceededAt ? '——已超限（成本警示中，工作照常；sb end 遙測結算）' : ''}` : ''}`);
+  else if (st.node === 'plan') out('  可宣告：sb budget --requests N --minutes M（回合成本會計——超限軟性警示零中斷；迴圈斷路器常開）');
   if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview 留痕（開新 ms／PASS 前機械驗）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
@@ -738,10 +738,11 @@ function cmdNext(target, opts) {
   if (!(target in FLOW)) die([`未知段「${target}」。八段：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
-  // 回合預算反制（與 hooks 同判據的 CLI 兜底——兩層一致）：超限回合凍結前進，僅 →intent（拆分逃生）合法；
-  // 老闆下一則輸入由 hooks 重置回合計數後恢復推進。
-  if (st.budget && st.turnUsage?.exceededAt && target !== 'intent') {
-    die([`回合預算已超限（本回合 ${st.turnUsage.requests} 調用，超限於 ${st.turnUsage.exceededAt}）——本回合凍結推進：收傘呈報老闆（下一則輸入開新回合、計數重置）或 sb next intent 拆分重規劃`]);
+  // 迴圈升級反制（與 hooks 同判據的 CLI 兜底——兩層一致）：同操作重複被擋後仍重複（escalatedAt）＝凍結前進，
+  // 僅 →intent（拆分逃生）合法；老闆下一則輸入由 hooks 重置回合計數後恢復推進。預算超限（exceededAt）屬軟性
+  // 成本會計——零中斷，推進不受影響。
+  if (st.turnUsage?.escalatedAt && target !== 'intent') {
+    die([`迴圈升級（同操作本回合重複被擋後仍重複，@${st.turnUsage.escalatedAt}）——本回合凍結推進：收傘呈報老闆（下一則輸入開新回合、計數重置）或 sb next intent 拆分重規劃；改變策略（修根因／換方法）後新操作不受影響`]);
   }
   // SOP／ROADMAP 每 ms 審查閘：開新 ms 前驗本 ms 已審（AI 開發下單一 ms 足以改變方向）
   if (st.node === 'done' && opts.newMs) { const p = sopReviewProblem(st); if (p) die([p]); }
@@ -787,7 +788,7 @@ function cmdNext(target, opts) {
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
-  if (st.budget && st.turnUsage?.exceededAt) entry.budgetExhausted = true; // 預算超限的自動回 intent 留痕（hooks 觸發；CLI 對照 turnUsage）
+  if (st.turnUsage?.escalatedAt) entry.budgetExhausted = true; // 迴圈升級的自動回 intent 留痕（hooks 觸發；CLI 對照 turnUsage.escalatedAt）
   if (prev === 'verify' && target === 'done') {
     const reruns = (st.history ?? []).filter((h) => h.rerun && h.ms === st.ms);
     if (reruns.length) passes.push(`返工直通曝光彙總：本 ms ${reruns.length} 次（${reruns.map((h) => `${h.from}→${h.to}(${h.rerun})`).join('、')}）——判定正確性由老闆終審`);
@@ -841,7 +842,7 @@ function cmdBudget(opts) {
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
     `回合預算宣告（ms ${st.ms}）：每回合 ≤ ${st.budget.requests} 工具調用（model 請求上界代理，hooks 於 PreToolUse 計數）／ ≤ ${st.budget.minutes} 分鐘`,
-    '執行段（test／build／verify／done）超限由 hooks 自動回 intent 並凍結本回合——收傘或拆分後待老闆下一則輸入開新回合（計數重置）',
+    '超限＝軟性成本會計（記錄＋sb state／輸入卡曝光＋sb end 遙測結算）——工作中斷零發生；迴圈斷路器常開（同操作重複即擋並要求改變策略，與預算無關）',
     `sb 呼叫頻譜觀測：${join(TMP, 'sb-usage.jsonl')}（每次調用追加一行；缺檔自動重建）`,
   ]);
 }

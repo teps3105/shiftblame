@@ -1,6 +1,6 @@
 ---
 name: 規劃
-revision: 2.0.3
+revision: 2.0.4
 ---
 # plan 段 — 定義實作計畫與驗收排程（G3 定義邊 · 定義層）
 
@@ -49,4 +49,4 @@ G3 實作計畫第一產出為以相同 AC-ID 逐項承接 G1，寫業務驗收�
 
 實作計畫前提：G1、G2 已一次定稿；§10 於放行邊（plan→test）核對，另 MUST 完成時點①對抗方向檢閱（記錄落 tmp＋`sb adversarial <報告> --point ①` 條目（adversarialLog，RAM），plan 段負責提供自包含檢閱材料；放行簡報揭露後停等老闆「開工」，以 `sb next test --boss-ok --adversarial` 推進）。放行後 G1 封存；開發情境與計畫有出入時，只有 CONFORMS 的步驟順序、技術做法等細節可單調細化 G3——G1 滿足集合的變更一律走修約。ms 範圍、驗收語意或其他契約不足／衝突＝回 intent 重定義（老闆補充路徑）。純技術排程或架構無法可靠裁定時依 SKILL §3 取得一次外部子代理唯讀意見，主對話複核後自行承擔技術方案裁定。plan 段對 repo 永遠唯讀，工作區限 `<repo>/.shiftblame/`。
 
-**回合預算宣告**（SKILL §1.10）：plan 段以 `sb budget --requests N --minutes M` 宣告本 ms 回合預算（工具調用數＝model 請求上界代理／分鐘上限，寫 flow-state）——執行段超限由 hooks 自動回 intent 並凍結本回合（遞迴／停機測試長跑防護）；重規劃回 intent 重走後於 plan 段重新宣告。
+**回合預算宣告**（SKILL §1.10）：plan 段以 `sb budget --requests N --minutes M` 宣告本 ms 回合成本預算（工具調用數＝model 請求上界代理／分鐘上限，寫 flow-state）——超限屬軟性會計（記錄＋曝光＋sb end 遙測結算，工作中斷零發生）；迴圈斷路器常開（同操作回合內第 4 次重複即擋、第 7 次升級凍結＋自動回 intent——防遞迴無限擴大）；重規劃回 intent 重走後於 plan 段重新宣告。

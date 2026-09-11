@@ -1,8 +1,8 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.0.3"
-description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。回合級預算超限自動回 intent 並凍結本回合；產出遙測由 git baseline 時序分析錨定；SOP／ROADMAP 每 ms 審查（基質優先×元行為錨定×修剪迴路）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
+  version: "2.0.4"
+description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。回合成本＝軟性會計（sb budget 宣告，超限記錄曝光結算、工作中斷零發生）＋迴圈斷路器（同操作重複即擋、防遞迴無限擴大）；產出遙測由 git baseline 時序分析錨定；SOP／ROADMAP 每 ms 審查（基質優先×元行為錨定×修剪迴路）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
 
@@ -230,14 +230,13 @@ flowchart TD
 
 框架自身同適用：MUST 級機制的存在證明＝消融矩陣（§1.8 第 5 落點）＋本節準入（基質對照＋元行為證據）；演化提案（§1.8 第 6 落點）同附基質對照與行為證據。
 
-### 1.10 回合級預算閘（怪獸回合防護）
+### 1.10 回合成本控制與迴圈斷路器
 
-單一回合（老闆輸入→回合結束）可以無人值守地燒掉大量請求——遞迴測試、停機／死機測試的長跑以「重跑一次」當修法即無限循環，agent 不自知。機械防護：
+回合成本治理三目標：**控制成本**（看得到、結算得了）、**防止遞迴無限擴大**（重跑同樣失敗的無限循環）、**工作中斷零發生**（持續推進的工作永遠持續——量不是中斷理由，重複才是死圈特徵）。機械承載：
 
-1. **宣告**：plan 段以 `sb budget --requests N --minutes M` 宣告回合預算（寫 flow-state；屬 G3 規劃承載）。`--new-ms` 時預算清除，新 ms 由 plan 段重新宣告。
-2. **計數**：hooks 於 PreToolUse 計數——`turnUsage`（本回合工具調用數＋起始時間；老闆下一則輸入重置）與 `usageTotals`（slug 累計）。工具調用數＝model 請求數的**上界代理**（每請求至少產出一個工具調用，批次並行時高估）——欄位誠實標名，真值在平台用量紀錄。
-3. **超限**（執行段 test／build／verify／done 生效）：hooks 以真實 CLI 自動回 intent（狀態轉移走正規閘門；history 條目留 `budgetExhausted`）並**凍結本回合工具**——僅 Skill 調用（理解宣告落流）與 `sb state`／`sb next intent`（拆分逃生）豁免；CLI `sb next` 以同判據兜底（超限回合凍結前進，→intent 保持自由）。凍結以**回合**為界：超限發生後不論當前段位，本回合工具一律凍結（自動回 intent 僅執行段觸發——其餘段位已無推進可凍結，逃生與重置路徑相同）。老闆下一則輸入開新回合、計數重置。
-4. **觀測**：超限次數計入 `budgetBreaches`，`sb end` 遙測結算（§1.11）——預算宣告的規模合理性由實測數據回饋（元行為錨定）。
+1. **回合預算（成本會計，軟性）**：plan 段以 `sb budget --requests N --minutes M` 宣告回合預算（寫 flow-state；屬 G3 規劃承載）。hooks 於 PreToolUse 計數——`turnUsage`（本回合工具調用數＋起始時間；老闆下一則輸入重置）與 `usageTotals`（slug 累計）。工具調用數＝model 請求數的**上界代理**（每請求至少產出一個工具調用，批次並行時高估）——欄位誠實標名，真值在平台用量紀錄。**超限＝軟性會計**：記錄（`budgetBreaches`，每回合一次）＋曝光（`sb state`／老闆輸入卡顯示超限量）＋`sb end` 遙測結算——工作照常推進，**零中斷**；常態超支由老闆依遙測調整預算宣告或拆分工作。`--new-ms` 時預算清除，新 ms 由 plan 段重新宣告。
+2. **迴圈斷路器（遞迴防護，常開——無預算亦生效）**：hooks 對每次工具調用計**指紋**（工具＋操作摘要的 hash，記 `turnUsage.fingerprints`，上限 128 鍵）。同指紋回合內**第 4 次**出現即擋該次調用——訊息要求改變策略（修根因／換方法／不同操作；重跑同樣的失敗＝無限循環）；被擋後仍重複至**第 7 次**＝升級：凍結本回合工具（僅 Skill 調用與 `sb state`／`sb next intent` 豁免——斷路器與凍結共用此逃生面）＋自動回 intent（執行段 test／build／verify／done；history 條目留 `budgetExhausted`），待老闆下一則輸入開新回合。CLI `sb next` 以同判據兜底（升級後凍結前進；→intent 保持自由）。門檻值為暫行值——由 §1.11 觀測數據回饋校正（元行為錨定）。
+3. **觀測**：超限次數隨 `sb end` 遙測結算（§1.11）——預算宣告的規模合理性由實測數據回饋（元行為錨定）。殘餘（如實標註）：指紋以操作字面前 200 字為準——參數微調的變體循環（如每次改一個字重跑）或前 200 字同形的長命令不觸發字面重複判定；被其他閘攔截的調用同樣計入指紋（修復後重試與死圈在計數上不可區分——跨回合重置承擔）；由曝光與抽查承擔；128 鍵淘汰使被淘汰指紋的計數歸零重計——超長多樣回合中高重複操作可能被稀釋（漏擋方向）。
 
 ### 1.11 觀測紀律（測得到）
 
@@ -490,7 +489,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 > session 冷啟動時建立脈絡，讓 shiftblame:think 的路由提議有依據；先於 §0 主圖的「老闆任何輸入」。載入程序是 shiftblame:think 的前置——shiftblame:think 第一步就是讀脈絡。
 
-**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝輸入流／理解流／外部證據標記缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。四事件：`SessionStart` 注入載入程序＋不變量卡＋輸入流／理解流狀態（壓縮後自動回流——機械抗上下文壓縮）；`UserPromptSubmit` 輸入流唯增記錄＋停等狀態機（shiftblame:think 調用形式輸入設 hold、老闆回覆解凍）＋未審理解必然曝光＋狀態卡注入；`PreToolUse` 理解流記錄（Skill(shiftblame:think) 調用 args＝理解宣告）、停等凍結（hold 期間寫入類與流程推進硬擋——唯讀、外部查證、tmp 傾倒自由）、外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與回合級預算閘（§1.10——超限自動回 intent＋凍結本回合）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫）、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件靜默（無上鎖動作）。hooks 對話遺漏時回到文件層：不變量卡（本卡）與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝輸入流／理解流／外部證據標記缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。四事件：`SessionStart` 注入載入程序＋不變量卡＋輸入流／理解流狀態（壓縮後自動回流——機械抗上下文壓縮）；`UserPromptSubmit` 輸入流唯增記錄＋停等狀態機（shiftblame:think 調用形式輸入設 hold、老闆回覆解凍）＋未審理解必然曝光＋狀態卡注入；`PreToolUse` 理解流記錄（Skill(shiftblame:think) 調用 args＝理解宣告）、停等凍結（hold 期間寫入類與流程推進硬擋——唯讀、外部查證、tmp 傾倒自由）、外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與成本控制＋迴圈斷路器（§1.10——超限軟性會計零中斷；同操作重複即擋、死圈升級凍結回 intent）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫）、寫入矩陣（測試碼僅 test 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件靜默（無上鎖動作）。hooks 對話遺漏時回到文件層：不變量卡（本卡）與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
 
 載入本 skill 後，秘書 MUST 依序唯讀：
 
