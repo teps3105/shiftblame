@@ -230,7 +230,7 @@ const beforeRead = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8
 run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
 run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
 // hooksHeartbeat／回合計數（turnUsage／usageTotals）寫入 flow-state 是獲准的觀測狀態寫入；剝除後必須零殘留
-const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; delete o.turnUsage; delete o.usageTotals; delete o.budgetBreaches; return JSON.stringify(o); };
+const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; delete o.turnUsage; delete o.usageTotals; return JSON.stringify(o); };
 assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), '查證動作不寫狀態（RAM/ROM）');
 const hbAfter = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).hooksHeartbeat;
 assert.ok(hbAfter && hbAfter.at && hbAfter.event, 'hooksHeartbeat 落 flow-state（at＋event）');
@@ -275,7 +275,7 @@ assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input
   assert.equal(bash('git -c user.name=t commit -m "x"').status, 2, '提交封閉');
   assert.equal(bash('node sb.mjs adversarial r.md').status, 2, 'sb 對抗宣告封閉（會消費異常狀態）');
   assert.equal(bash('node sb.mjs state').status, 0, 'sb state 診斷放行');
-  assert.equal(bash('sb budget --requests 5 --minutes 5').status, 2, 'sb 新流程命令（budget／sopreview）同封閉');
+  assert.equal(bash('sb init demo').status, 2, 'sb 流程命令（init）同封閉');
   assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, '.shiftblame', 'flow-state.json'), content: '{"hooksHeartbeat":{"at":"2026-09-11T00:00:00.000Z","event":"SessionStart"}}' } }).status, 0, '寫入工具對 flow-state 修復放行');
   assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, 'README.md'), content: 'x' } }).status, 2, '寫入工具對正式文件封閉');
   writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));

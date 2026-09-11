@@ -178,10 +178,9 @@ assert.equal(run('end', '--boss-ok').status, 0);
 assert.equal(state().node, 'ended');
 // 完整八段的真實結束產物可開下一份工作；拒絕不切分支，成功建立新分支。
 const endedBranch = git('branch', '--show-current').stdout.trim();
-assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔前拒絕');
+assert.equal(run('init', 'next-work', 'fix').status, 1, 'closeout 前拒絕（歸檔已由 sb end 機械完成）');
 assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);
-const oldG1 = readFileSync(join(ms2, 'G1.md'), 'utf8');
-renameSync(slugDir, join(root, '.shiftblame/archive/demo'));
+const oldG1 = readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'utf8'); // sb end 已機械化歸檔——自 archive 讀回
 assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔不等於合併與清理完成');
 assert.equal(git('checkout', originalBase).status, 0);
 assert.equal(git('merge', '--ff-only', endedBranch).status, 0);

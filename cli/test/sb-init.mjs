@@ -88,17 +88,11 @@ function endedFixture() {
   assert.equal(end.status, 0, end.stderr);
   return f;
 }
-function archiveOld(f) {
-  renameSync(join(f.cwd, '.shiftblame/old'), join(f.cwd, '.shiftblame/archive/old'));
-}
 {
   const f = endedFixture();
-  const beforeArchive = readFileSync(f.file, 'utf8');
-  assert.match(f.run('state').stdout, /先完成收尾歸檔/);
-  assert.equal(f.run('init', 'next').status, 1);
-  assert.equal(readFileSync(f.file, 'utf8'), beforeArchive);
-  assert.equal(existsSync(join(f.cwd, '.shiftblame/next')), false);
-  archiveOld(f);
+  // sb end 已機械化歸檔移動（聲稱與實做一致）：slug 目錄實際移至 archive/
+  assert.ok(existsSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md')), 'end 實際執行歸檔移動');
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/old')), false, '原位已移出');
   const oldDoc = readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8');
   const review = join(f.cwd, '.shiftblame/tmp/review.md');
   writeFileSync(review, '對抗判定：通過\n');
@@ -136,17 +130,29 @@ for (const mutate of [
   st => ({ ...st, ...record, understandingHold: { at, inputIdx: 0 } }),
 ]) {
   const f = endedFixture();
-  archiveOld(f);
   const raw = JSON.stringify(mutate(JSON.parse(readFileSync(f.file, 'utf8'))));
   writeFileSync(f.file, raw);
   assert.equal(f.run('init', 'next').status, 1, raw);
   assert.equal(readFileSync(f.file, 'utf8'), raw);
   assert.equal(existsSync(join(f.cwd, '.shiftblame/next')), false);
 }
+// 歸檔目標占用：die 於寫檔前——狀態仍 done、雙方目錄原樣（可重試）。
+{
+  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'done', history: [] }));
+  mkdirSync(join(f.cwd, '.shiftblame/old'), { recursive: true });
+  writeFileSync(join(f.cwd, '.shiftblame/old/SLUG.md'), 'doc\n');
+  mkdirSync(join(f.cwd, '.shiftblame/archive/old'), { recursive: true });
+  const before = readFileSync(f.file, 'utf8');
+  const endRun = f.run('end', '--boss-ok');
+  assert.equal(endRun.status, 1, '歸檔目標占用即擋');
+  assert.match(endRun.stderr, /歸檔目標已占用/);
+  assert.equal(readFileSync(f.file, 'utf8'), before, 'die 於寫檔前——狀態仍 done 可重試');
+  assert.ok(existsSync(join(f.cwd, '.shiftblame/old/SLUG.md')), '原目錄原樣');
+}
 // 僅刪除舊目錄而沒有歸檔，不會被當作已收尾。
 {
   const f = endedFixture();
-  renameSync(join(f.cwd, '.shiftblame/old'), join(f.cwd, '.shiftblame/misplaced'));
+  renameSync(join(f.cwd, '.shiftblame/archive/old'), join(f.cwd, '.shiftblame/misplaced'));
   const before = readFileSync(f.file, 'utf8');
   assert.match(f.run('state').stdout, /歸檔缺失/);
   assert.equal(f.run('init', 'next').status, 1);

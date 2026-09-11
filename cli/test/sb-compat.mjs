@@ -1,4 +1,4 @@
-// sb-compat：flow-state 向後相容——2.0.2 前舊格式讀取全過、新欄位（預算／遙測／計數／輪替偏移）一律可缺省、
+// sb-compat：flow-state 向後相容——2.0.2 前舊格式讀取全過、新欄位（遙測／計數／輪替偏移）一律可缺省、
 // 現存十個專案的 flow-state 實機回歸（分類與升級前一致）、缺失檔自動創建（老闆隨時可清理 json）。
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -47,9 +47,8 @@ classify({ slug: 'demo', ms: '001', node: 'intent', history: [] }, 'active', '�
 // —— 2. 新欄位存在時的形狀驗證（缺省自由＋損壞即 invalid） ———
 classify({
   slug: 'demo', ms: '001', node: 'test', history: [],
-  budget: { requests: 40, minutes: 30, at, ms: '001' },
   sopReview: { ms: '001', at }, baseCommit: 'b'.repeat(40), startedAt: at,
-  turnUsage: { startedAt: at, requests: 3 }, usageTotals: { firstAt: at, requests: 12 }, budgetBreaches: 1,
+  turnUsage: { startedAt: at, requests: 3 }, usageTotals: { firstAt: at, requests: 12 },
   inputsRotated: 4, understandingsRotated: 2, understandingSeedHash: chain('', 0), adversarialRotated: 1, historyRotated: 0,
   inputs: [{ at, text: '新輸入' }],
   understandings: [{ at, uptoInput: 4, as, reviewed: false, hash: chain(chain('', 0), 4) }],
@@ -59,24 +58,22 @@ classify({
   telemetry: {
     diff: { additions: 10, deletions: 2, files: 3 }, baseCommit: 'b'.repeat(40), headCommit: 'c'.repeat(40),
     adversarial: { verdict: '通過', model: 'GLM-5.3' },
-    counts: { inputs: 8, understandings: 6, adversarial: 4, toolCalls: 90 }, durationMinutes: 41.5, budgetBreaches: 0,
+    counts: { inputs: 8, understandings: 6, adversarial: 4, toolCalls: 90 }, durationMinutes: 41.5,
   },
 }, 'ended', 'ended＋telemetry（model 缺省 null 亦合法——另驗）');
 classify({
   slug: 'demo', ms: '001', node: 'ended', endedAt: at, history: [],
-  telemetry: { diff: null, baseCommit: null, headCommit: null, adversarial: null, counts: { inputs: 1, understandings: 0, adversarial: 0, toolCalls: null }, durationMinutes: null, budgetBreaches: null },
+  telemetry: { diff: null, baseCommit: null, headCommit: null, adversarial: null, counts: { inputs: 1, understandings: 0, adversarial: 0, toolCalls: null }, durationMinutes: null },
 }, 'ended', 'telemetry 全缺省（無 git／舊流程）');
-classify({ slug: 'demo', ms: '001', node: 'test', history: [], budget: { requests: 'x', minutes: 30, at, ms: '001' } }, 'invalid', '預算形狀損壞即 invalid');
 classify({ slug: 'demo', ms: '001', node: 'test', history: [], turnUsage: { startedAt: 'bad', requests: 1 } }, 'invalid', '回合計數形狀損壞即 invalid');
-classify({ slug: 'demo', ms: '002', node: 'test', history: [], budget: { requests: 5, minutes: 5, at, ms: '001' } }, 'invalid', '跨 ms 預算（--new-ms 未清）即 invalid');
 
 // —— 3. 十專案實機回歸：分類與升級前基準一致（舊檔讀取不改變判定） ——
-// 基準＝升級當下以 2.0.2 驗證器量測的分類快照；已 invalid 者屬既有事實（恢復程序另行承擔），相容性要求＝分類不變。
+// 基準＝升級當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；已 invalid 者屬既有事實（恢復程序另行承擔），相容性要求＝分類不變。向後相容面：2.0.4 期 turnUsage.exceededAt 檔在新鍵集下 invalid（fail-closed，手動清鍵即癒）；active 對歷史 budget 鍵靜默容忍（零消費者；sb end 冪等清理）。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'invalid',
   FantasticLight: 'active',
   SpriteWeave: 'direct',
-  'Trickster-Web': 'active',
+  'Trickster-Web': 'ended',
   Varellune: 'active',
   Varellune_Document: 'invalid',
   'dnd-prototype': 'active',

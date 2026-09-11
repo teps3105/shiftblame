@@ -68,7 +68,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
   '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 停等、明確暫停／取消或實際阻塞可停。Stop 靜默放行不代做路由；接續由主對話承擔，不靠無條件續跑或 Stop 重試。',
-  '⑪回合成本＝軟性會計（plan 段 sb budget 宣告；超限記錄＋曝光＋sb end 遙測結算，工作中斷零發生）＋迴圈斷路器（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級凍結回 intent——防遞迴無限擴大；持續推進的多樣操作永遠放行）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
+  '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級凍結回 intent——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -97,9 +97,9 @@ function nodeLine(root) {
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
-    let budget = '';
-    if (st.budget) budget = `\n[回合預算] ≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.escalatedAt ? '——迴圈升級：凍結中，待老闆下一則輸入' : st.turnUsage.exceededAt ? '——已超限（成本警示中，工作照常）' : ''}` : ''}`;
-    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${budget}`;
+    let loopNote = '';
+    if (st.turnUsage?.escalatedAt) loopNote = `\n[迴圈升級] 本回合凍結（同操作重複被擋後仍重複），待老闆下一則輸入開新回合；本回合迄今 ${st.turnUsage.requests} 調用`;
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${loopNote}`;
   } catch { return ''; }
 }
 
@@ -145,16 +145,15 @@ function rotateStreams(root, st) {
   } catch { /* 輪替落檔失敗：檔內截斷照常（殘餘由抽查承擔） */ }
 }
 
-// —— 回合計數（元行為觀測層）＋回合成本控制與迴圈斷路器 ——
+// —— 回合計數（元行為觀測層）＋迴圈斷路器 ——
 // PreToolUse 每次計數：turnUsage（本回合——老闆輸入重置）＋usageTotals（slug 累計，sb end 遙測素材）。
 // 工具調用數＝model 請求數的上界代理（每請求至少產出一個工具調用；批次並行時高估）——誠實標名，真值在平台 DB。
-// 預算（plan 段 sb budget 宣告）＝軟性成本會計：超限只記錄（budgetBreaches）＋曝光（sb state／輸入卡／end 遙測），
-// 工作照常推進零中斷——量不是中斷理由；常態超支由老闆依遙測調整預算或拆分。
-// 迴圈斷路器（常開，無預算亦生效）＝遞迴防護：重複才是死圈特徵——同指紋（工具＋操作摘要 hash）回合內
+// 計數屬純觀測：無預算、無上限、零干預——工作做到完成為止；量的會計由 sb end 遙測結算（事後可見性）。
+// 迴圈斷路器（常開）＝遞迴防護：重複才是死圈特徵——同指紋（工具＋操作摘要 hash）回合內
 // 第 4 次出現即擋該次調用（要求改變策略：重跑同樣的失敗＝無限循環）；被擋後仍重複至第 7 次＝升級：
-// 凍結本回合工具（Skill 與 sb state／sb next intent 豁免）＋自動回 intent（執行段；CLI 對照 escalatedAt 留 budgetExhausted）。
-const BUDGET_NODES = new Set(['test', 'build', 'verify', 'done']);
-const BUDGET_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
+// 凍結本回合工具（Skill 與 sb state／sb next intent 豁免）＋自動回 intent（執行段；CLI 對照 escalatedAt 留 budgetExhausted——歷史鍵名，語義＝迴圈升級）。
+const LOOP_NODES = new Set(['test', 'build', 'verify', 'done']);
+const LOOP_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
 const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const LOOP_DENY_AT = 4;
 const LOOP_ESCALATE_AT = 7;
@@ -182,21 +181,13 @@ function countUsage(root, tool, cmd, toolInput) {
       for (const [k, v] of Object.entries(prints)) if (k !== fp && v < minVal) { minKey = k; minVal = v; }
       if (minKey) delete prints[minKey];
     }
-    // 預算超限＝軟性會計（記錄＋曝光；零中斷）
-    if (isRecord(st.budget) && Number.isInteger(st.budget.requests) && Number.isInteger(st.budget.minutes)) {
-      const minutes = (Date.now() - Date.parse(st.turnUsage.startedAt)) / 60000;
-      if ((st.turnUsage.requests > st.budget.requests || minutes > st.budget.minutes) && !st.turnUsage.exceededAt) {
-        st.turnUsage.exceededAt = now;
-        st.budgetBreaches = (st.budgetBreaches ?? 0) + 1;
-      }
-    }
     writeFileSync(statePath, JSON.stringify(st, null, 2));
     // 迴圈斷路器：同操作重複即擋（要求改變策略）；被擋仍重複至升級線＝凍結＋自動回 intent（真死圈）。
     // 豁免面與升級凍結一致（Skill 與 sb state／sb next intent——擋截訊息引導的逃生操作本身可重複使用）。
-    const escapeOp = /^skill$/i.test(String(tool ?? '')) || (SHELL_TOOL_RE.test(String(tool ?? '')) && BUDGET_ESCAPE_RE.test(String(cmd ?? '')));
+    const escapeOp = /^skill$/i.test(String(tool ?? '')) || (SHELL_TOOL_RE.test(String(tool ?? '')) && LOOP_ESCAPE_RE.test(String(cmd ?? '')));
     if (!escapeOp && prints[fp] >= LOOP_DENY_AT && prints[fp] < LOOP_ESCALATE_AT) {
       const preview = String(cmd || toolInput?.file_path || toolInput?.path || toolInput?.skill || tool || '').replace(/\s+/g, ' ').slice(0, 60);
-      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續，或待老闆下一則輸入開新回合；成本現況由 sb state 查閱`, frozen: false };
+      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續，或待老闆下一則輸入開新回合；本回合調用計數由 sb state 查閱`, frozen: false };
     }
     if (!escapeOp && (prints[fp] >= LOOP_ESCALATE_AT || st.turnUsage.escalatedAt)) {
       if (!st.turnUsage.escalatedAt) {
@@ -204,7 +195,7 @@ function countUsage(root, tool, cmd, toolInput) {
         writeFileSync(statePath, JSON.stringify(st, null, 2));
       }
       let retreated = st.node === 'intent';
-      if (BUDGET_NODES.has(st.node)) {
+      if (LOOP_NODES.has(st.node)) {
         const sbPath = fileURLToPath(new URL('../cli/bin/sb.mjs', import.meta.url));
         const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });
         retreated = r.status === 0;
@@ -217,7 +208,7 @@ function countUsage(root, tool, cmd, toolInput) {
 }
 function loopFreezeReason(usage, tool, cmd) {
   if (/^skill$/i.test(String(tool ?? ''))) return null; // 理解宣告落流自由
-  if (SHELL_TOOL_RE.test(String(tool ?? '')) && BUDGET_ESCAPE_RE.test(String(cmd ?? ''))) return null; // sb state／sb next intent（拆分逃生）
+  if (SHELL_TOOL_RE.test(String(tool ?? '')) && LOOP_ESCAPE_RE.test(String(cmd ?? ''))) return null; // sb state／sb next intent（拆分逃生）
   const st = usage.st;
   return `迴圈升級（同操作本回合重複 ≥ ${LOOP_ESCALATE_AT} 次且被擋後仍重複）——${usage.retreated || st.node === 'intent' ? '已自動回 intent（拆分重規劃；history 留 budgetExhausted）' : '本回合 MUST 回 intent'}；工具凍結至老闆下一則輸入（新回合重置）；改變策略即可避免：重複重跑同一失敗才是被擋的行為，持續推進的多樣操作永遠放行`;
 }
@@ -230,7 +221,7 @@ function recordInput(root, prompt) {
     const wasHold = st.understandingHold ?? null;
     let releaseNote = null;
     (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
-    delete st.turnUsage; // 新回合：回合計數重置（回合級預算的邊界＝老闆輸入；usageTotals 跨回合累計）
+    delete st.turnUsage; // 新回合：回合計數與指紋重置（回合邊界＝老闆輸入；usageTotals 跨回合累計）
     // 兩種觸發樣態：老闆以 shiftblame:think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
     // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）——inputIdx 採全域編號（含已輪替前綴）
     if (ACTIVE_TRIGGER_RE.test(String(prompt ?? ''))) {
@@ -412,7 +403,7 @@ function checkGFileMatrix(root, toolInput) {
 // 放行：Skill 調用（shiftblame:think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
 // Bash 唯讀查證（git log/status/diff、node/python 探針、npm test）、.shiftblame/ tmp 證據傾倒。
 const HOLD_GIT_WRITE_RE = /\bgit(?:\.exe)?\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
-const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|budget|sopreview|closeout)\b/;
+const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout)\b/;
 function checkHoldFreeze(root, tool, cmd, toolInput) {
   if (!root) return null;
   let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
@@ -797,7 +788,7 @@ try {
     if (healthError) deny(healthError);
     if (healthy) recordUnderstanding(root, tool, input.tool_input);
     if (healthy) markExternalEvidence(root, tool);
-    // 回合計數（元行為觀測）＋成本軟性會計＋迴圈斷路器（同操作重複才擋；持續推進的多樣操作永遠放行）
+    // 回合計數（元行為觀測，零干預）＋迴圈斷路器（同操作重複才擋；持續推進的多樣操作永遠放行）
     const usage = healthy ? countUsage(root, tool, cmd, input.tool_input ?? {}) : null;
     if (usage?.loopDeny) deny(usage.loopDeny);
     if (usage?.frozen) { const freezeReason = loopFreezeReason(usage, tool, cmd); if (freezeReason) deny(freezeReason); }

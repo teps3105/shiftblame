@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.0.4');
+assert.equal(manifest.version, '2.0.5');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.0\.4"/);
+assert.match(skill, /version: "2\.0\.5"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -111,23 +111,19 @@ assert.ok(existsSync(join(repo, 'cli', 'test', 'sb-ablation.mjs')), '消融矩�
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');
 assert.match(readme, /兩層文件模型/, 'README 兩層文件模型記載');
 
-// 觀測紀律與回合成本控制（2.0.3/2.0.4 機制群——文件陳述錨）
+// 觀測紀律與迴圈防護（2.0.3-2.0.5 機制群——文件陳述錨）
 assert.match(skill, /基質優先/, 'SKILL 記載基質優先（重複造輪子準入判準）');
 assert.match(skill, /元行為錨定/, 'SKILL 記載元行為錨定（規則由實測推導）');
 assert.match(skill, /修剪迴路/, 'SKILL 記載修剪迴路（每 ms 審查三問）');
-assert.match(skill, /sb budget/, 'SKILL 記載 sb budget 宣告');
 assert.match(skill, /sb sopreview/, 'SKILL 記載 sb sopreview 審查留痕');
 assert.match(skill, /sb-usage\.jsonl/, 'SKILL 記載 usage 觀測事件');
 assert.match(skill, /觀測流輪替/, 'SKILL 記載觀測流輪替（flow-state 恆有界）');
 assert.match(skill, /迴圈斷路器/, 'SKILL 記載迴圈斷路器（同操作重複即擋——防遞迴無限擴大）');
-assert.match(skill, /工作中斷零發生/, 'SKILL 記載軟性成本會計（超限零中斷）');
-assert.match(readme, /回合成本控制/, 'README 記載回合成本控制');
+assert.match(skill, /工作做到完成為止/, 'SKILL 記載計數純觀測（工作做到完成為止）');
 assert.match(readme, /迴圈斷路器/, 'README 記載迴圈斷路器');
 assert.match(readme, /基質優先/, 'README 記載方法論（基質優先）');
-assert.match(read('skills', 'shiftblame', 'references', 'PLAN.md'), /回合預算宣告/, 'PLAN 記載 plan 段預算宣告義務');
 assert.ok(!skill.includes('INDEX.md'), 'SKILL 歸檔清單機制零殘留（archive 僅承載 slug 目錄）');
 assert.ok(!readme.includes('INDEX.md'), 'README 歸檔清單機制零殘留');
-assert.match(read('cli', 'bin', 'sb.mjs'), /cmdBudget/, 'CLI 回合預算宣告命令');
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdSopreview/, 'CLI SOP／ROADMAP 審查留痕命令');
 assert.match(read('cli', 'bin', 'sb.mjs'), /sb-usage\.jsonl/, 'CLI usage 事件落檔');
 assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb end）');

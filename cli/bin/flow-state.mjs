@@ -8,9 +8,9 @@ const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArra
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
-// 觀測紀錄（hooks 寫）：心跳／輸入流／理解流／外部證據＋回合計數（turnUsage／usageTotals）＋超限次數（budgetBreaches）
+// 觀測紀錄（hooks 寫）：心跳／輸入流／理解流／外部證據＋回合計數（turnUsage／usageTotals）
 // ＋觀測流輪替偏移（inputsRotated 等＋understandingSeedHash——已輪替前綴的鏈種子；舊檔無偏移＝0，向後相容）。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence', 'turnUsage', 'usageTotals', 'budgetBreaches', 'inputsRotated', 'understandingsRotated', 'understandingSeedHash', 'adversarialRotated', 'historyRotated'];
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence', 'turnUsage', 'usageTotals', 'inputsRotated', 'understandingsRotated', 'understandingSeedHash', 'adversarialRotated', 'historyRotated'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st) {
@@ -22,16 +22,14 @@ function hooksOnly(st) {
   if (Object.hasOwn(st, 'turnUsage')) {
     const tu = st.turnUsage;
     const tuKeys = ['startedAt', 'requests',
-      ...(Object.hasOwn(tu, 'exceededAt') ? ['exceededAt'] : []),
       ...(Object.hasOwn(tu, 'escalatedAt') ? ['escalatedAt'] : []),
       ...(Object.hasOwn(tu, 'fingerprints') ? ['fingerprints'] : [])];
     if (!(exactKeys(tu, tuKeys) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests)
-      && (!Object.hasOwn(tu, 'exceededAt') || timestamp(tu.exceededAt))
       && (!Object.hasOwn(tu, 'escalatedAt') || timestamp(tu.escalatedAt))
       && (!Object.hasOwn(tu, 'fingerprints') || (objectRecord(tu.fingerprints) && Object.keys(tu.fingerprints).length <= 128 && Object.values(tu.fingerprints).every(nonNegativeInt))))) return false;
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
-  for (const k of ['budgetBreaches', 'inputsRotated', 'understandingsRotated', 'adversarialRotated', 'historyRotated']) if (Object.hasOwn(st, k) && !nonNegativeInt(st[k])) return false;
+  for (const k of ['inputsRotated', 'understandingsRotated', 'adversarialRotated', 'historyRotated']) if (Object.hasOwn(st, k) && !nonNegativeInt(st[k])) return false;
   if (Object.hasOwn(st, 'understandingSeedHash') && !/^[0-9a-f]{16}$/.test(st.understandingSeedHash)) return false;
   if (Object.hasOwn(st, 'understandings')) {
     if (!Array.isArray(st.understandings)) return false;
@@ -57,13 +55,12 @@ function validCloseout(st) {
 // 產出遙測（sb end 留痕於 ended 態）：diff 由 git baseline..HEAD 時序分析得出（基質優先——不另建記錄）；
 // 各鍵允許缺省值 null（無 git、舊流程無 baseline、計數缺檔），結構完整即有效。
 function validTelemetry(t) {
-  if (!exactKeys(t, ['diff', 'baseCommit', 'headCommit', 'adversarial', 'counts', 'durationMinutes', 'budgetBreaches'])) return false;
+  if (!exactKeys(t, ['diff', 'baseCommit', 'headCommit', 'adversarial', 'counts', 'durationMinutes'])) return false;
   if (t.diff !== null && !(exactKeys(t.diff, ['additions', 'deletions', 'files']) && [t.diff.additions, t.diff.deletions, t.diff.files].every(nonNegativeInt))) return false;
   if (!(t.baseCommit === null || commitId(t.baseCommit)) || !(t.headCommit === null || commitId(t.headCommit))) return false;
   if (t.adversarial !== null && !(exactKeys(t.adversarial, ['verdict', 'model']) && t.adversarial.verdict === '通過' && (t.adversarial.model === null || (typeof t.adversarial.model === 'string' && t.adversarial.model.trim().length > 0)))) return false;
   if (!(exactKeys(t.counts, ['inputs', 'understandings', 'adversarial', 'toolCalls']) && Object.values(t.counts).every(v => v === null || nonNegativeInt(v)))) return false;
   if (!(t.durationMinutes === null || (typeof t.durationMinutes === 'number' && t.durationMinutes >= 0))) return false;
-  if (!(t.budgetBreaches === null || nonNegativeInt(t.budgetBreaches))) return false;
   return true;
 }
 // 對抗條目鍵集：point（時點條目）與 model（審查模型——報告內含「審查模型：」行則記，缺省無鍵）皆可選。
@@ -110,9 +107,8 @@ function directState(st) {
     timestamp(st.adversarialAt) && st.adversarialAt === st.adversarialLog.at(-1).at && typeof st.adversarialConsumed === 'boolean';
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
-// 回合預算（plan 段 sb budget 宣告）與 SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
+// SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
 function activeExtras(st) {
-  if (Object.hasOwn(st, 'budget') && !(objectRecord(st.budget) && exactKeys(st.budget, ['requests', 'minutes', 'at', 'ms']) && Number.isInteger(st.budget.requests) && st.budget.requests >= 1 && st.budget.requests <= 10000 && Number.isInteger(st.budget.minutes) && st.budget.minutes >= 1 && st.budget.minutes <= 1440 && timestamp(st.budget.at) && st.budget.ms === st.ms)) return false;
   if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at']) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;

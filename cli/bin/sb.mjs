@@ -14,7 +14,7 @@
 // exit：0 = PASS，1 = 閘門擋下，2 = 用法錯誤。
 
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -126,9 +126,6 @@ const usage = (code = 2) => {
                                         需 sb adversarial --point 對應條目（adversarialLog，新鮮度＝晚於同邊上次推進）
   sb end --boss-ok                      PASS 動作（僅 done 態；老闆決策留痕）：收尾歸檔＋產出遙測
                                         （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
-  sb budget --requests N --minutes M    回合成本宣告（僅 plan 段；寫 flow-state）：軟性會計——超限記錄＋曝光＋
-                                        sb end 遙測結算，工作中斷零發生；迴圈斷路器常開：同操作回合內第 4 次
-                                        重複即擋並要求改變策略、第 7 次升級凍結＋自動回 intent（防遞迴無限擴大）
   sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
                                         開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）
   sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
@@ -690,7 +687,7 @@ function cmdInit(slug, type = 'feat') {
   // git baseline 錨定（產出遙測的時序基準）：init 時記 HEAD 與起始時間——sb end 以 baseline..HEAD 做 diff 時序分析
   // （資料在 git；非 git 工作區記 null，遙測 diff 缺省）。回合計數屬 slug 生命週期——新 slug 歸零重計。
   const carried = prior ? (ended ? hookRecords(prior) : prior) : {};
-  delete carried.turnUsage; delete carried.usageTotals; delete carried.budgetBreaches;
+  delete carried.turnUsage; delete carried.usageTotals;
   writeFileSync(STATE_FILE, JSON.stringify({ ...carried, slug, ms: '001', node: 'intent', history: [], startedAt: new Date().toISOString(), baseCommit: gitHeadCommit(), ...(workBranch ? { workBranch } : {}) }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
@@ -715,8 +712,8 @@ function cmdState() {
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
-  if (st.budget) out(`回合預算（ms ${st.budget.ms}）：≤ ${st.budget.requests} 工具調用／≤ ${st.budget.minutes} 分鐘${st.turnUsage ? `｜本回合 ${st.turnUsage.requests} 調用${st.turnUsage.escalatedAt ? '——迴圈升級：凍結推進，待老闆下一則輸入開新回合' : st.turnUsage.exceededAt ? '——已超限（成本警示中，工作照常；sb end 遙測結算）' : ''}` : ''}`);
-  else if (st.node === 'plan') out('  可宣告：sb budget --requests N --minutes M（回合成本會計——超限軟性警示零中斷；迴圈斷路器常開）');
+  if (st.turnUsage?.escalatedAt) out(`迴圈升級：本回合凍結推進（同操作重複被擋後仍重複）——待老闆下一則輸入開新回合；本回合迄今 ${st.turnUsage.requests} 調用`);
+  else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
   if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview 留痕（開新 ms／PASS 前機械驗）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
@@ -739,8 +736,7 @@ function cmdNext(target, opts) {
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
   // 迴圈升級反制（與 hooks 同判據的 CLI 兜底——兩層一致）：同操作重複被擋後仍重複（escalatedAt）＝凍結前進，
-  // 僅 →intent（拆分逃生）合法；老闆下一則輸入由 hooks 重置回合計數後恢復推進。預算超限（exceededAt）屬軟性
-  // 成本會計——零中斷，推進不受影響。
+  // 僅 →intent（拆分逃生）合法；老闆下一則輸入由 hooks 重置回合計數後恢復推進。計數屬純觀測——量永不構成中斷理由。
   if (st.turnUsage?.escalatedAt && target !== 'intent') {
     die([`迴圈升級（同操作本回合重複被擋後仍重複，@${st.turnUsage.escalatedAt}）——本回合凍結推進：收傘呈報老闆（下一則輸入開新回合、計數重置）或 sb next intent 拆分重規劃；改變策略（修根因／換方法）後新操作不受影響`]);
   }
@@ -777,7 +773,6 @@ function cmdNext(target, opts) {
     if (prev === 'done' && opts.newMs) {
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
-      delete st.budget; // 預算屬 ms 內規劃產物——新 ms 由 plan 段重新宣告
       delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪
@@ -788,7 +783,7 @@ function cmdNext(target, opts) {
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
   if (opts.rerun) entry.rerun = opts.rerun; // 返工直通判定留痕（impl|definition；時點①分流）
-  if (st.turnUsage?.escalatedAt) entry.budgetExhausted = true; // 迴圈升級的自動回 intent 留痕（hooks 觸發；CLI 對照 turnUsage.escalatedAt）
+  if (st.turnUsage?.escalatedAt) entry.budgetExhausted = true; // 迴圈升級自動回 intent 留痕（歷史鍵名，語義＝迴圈升級；hooks 觸發，CLI 對照 escalatedAt）
   if (prev === 'verify' && target === 'done') {
     const reruns = (st.history ?? []).filter((h) => h.rerun && h.ms === st.ms);
     if (reruns.length) passes.push(`返工直通曝光彙總：本 ms ${reruns.length} 次（${reruns.map((h) => `${h.from}→${h.to}(${h.rerun})`).join('、')}）——判定正確性由老闆終審`);
@@ -832,20 +827,6 @@ function gitHeadCommit() {
   return r.status === 0 && commitId(r.stdout.trim()) ? r.stdout.trim() : null;
 }
 
-function cmdBudget(opts) {
-  const current = requireHealthyState();
-  if (current.kind !== 'active' || current.state?.node !== 'plan') die([`回合預算宣告僅限 plan 段（目前 ${current.state?.node ?? '無流程'}）——預算由 G3 規劃承載：重規劃回 intent 重走後於 plan 段宣告`]);
-  if (current.state?.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後宣告']);
-  if (!opts.budgetRequests || !opts.budgetMinutes) usage();
-  const st = current.state;
-  st.budget = { requests: opts.budgetRequests, minutes: opts.budgetMinutes, at: new Date().toISOString(), ms: st.ms };
-  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([
-    `回合預算宣告（ms ${st.ms}）：每回合 ≤ ${st.budget.requests} 工具調用（model 請求上界代理，hooks 於 PreToolUse 計數）／ ≤ ${st.budget.minutes} 分鐘`,
-    '超限＝軟性成本會計（記錄＋sb state／輸入卡曝光＋sb end 遙測結算）——工作中斷零發生；迴圈斷路器常開（同操作重複即擋並要求改變策略，與預算無關）',
-    `sb 呼叫頻譜觀測：${join(TMP, 'sb-usage.jsonl')}（每次調用追加一行；缺檔自動重建）`,
-  ]);
-}
 
 function cmdSopreview() {
   const current = requireHealthyState();
@@ -888,25 +869,37 @@ function cmdEnd(opts) {
       toolCalls: Object.hasOwn(st, 'usageTotals') ? st.usageTotals.requests : null,
     },
     durationMinutes: st.startedAt ? Math.round(((Date.now() - Date.parse(st.startedAt)) / 60000) * 10) / 10 : null,
-    budgetBreaches: Object.hasOwn(st, 'budget') ? (st.budgetBreaches ?? 0) : null,
   };
   mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
+  // 收尾歸檔機械化（聲稱與實做一致）：實際執行 slug 目錄的歸檔移動——此前僅輸出聲稱、移動靠手動。
+  // 移動失敗即 die（ended 狀態未寫入，保持 done 可重試）；歸檔目標已占用保持原狀由人工查明。
+  const slugDir = join(SB_DIR, st.slug);
+  if (existsSync(slugDir)) {
+    const archivedSlug = join(SB_DIR, 'archive', st.slug);
+    if (existsSync(archivedSlug)) die([`歸檔目標已占用：${archivedSlug}——保持原狀（狀態仍為 done），查明後重試 sb end`]);
+    try {
+      renameSync(slugDir, archivedSlug);
+    } catch (error) {
+      die([`歸檔移動失敗（${error.message}）——狀態仍為 done，排除阻礙後重試 sb end`]);
+    }
+  }
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   st.history.push({ from: 'done', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
   // slug 邊界清理（終態留痕後）：累積流（曝光與對照價值隨 slug 終結）直接清空——零副本、零殭屍存續
   const cleared = { inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length, understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length, adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length, history: (st.historyRotated ?? 0) + st.history.length };
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
-  delete st.budget; delete st.sopReview; delete st.baseCommit; delete st.startedAt;
-  delete st.turnUsage; delete st.usageTotals; delete st.budgetBreaches;
+  delete st.sopReview; delete st.baseCommit; delete st.startedAt;
+  delete st.turnUsage; delete st.usageTotals;
+  delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（2.0.4 期預算欄位——不相容則 ended 檔自我 invalid）
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   const t = st.telemetry;
   fin([
     'done → ended（PASS）',
-    `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分｜超限 ${t.budgetBreaches ?? '—'} 次`,
+    `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分`,
     `flow-state 累積流已清（slug 邊界——輸入 ${cleared.inputs}／理解 ${cleared.understandings}／對抗 ${cleared.adversarial}／history ${cleared.history}；零副本）`,
-    '收尾歸檔（機械化，SKILL §1.7.2）：移 <slug> 至 archive/（永續層文件已隨各 commit 即時保真——same-commit）',
+    '收尾歸檔已完成（機械化——聲稱與實做一致）：<slug>/ 已移至 archive/<slug>/（永續層文件已隨各 commit 即時保真——same-commit）',
     ...passes,
   ]);
 }
@@ -985,8 +978,8 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'budget', 'sopreview']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--requests', '--minutes', '--help']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
       for (const f of eternal) {
@@ -1041,7 +1034,7 @@ try {
 } catch { /* 觀測落檔失敗不攔主流程 */ }
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null, budgetRequests: null, budgetMinutes: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
@@ -1050,12 +1043,10 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['①', '②', '③'].includes(flags.point)) usage(); }
   else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
-  else if (rest[i] === '--requests') { flags.budgetRequests = Number(rest[++i] ?? ''); if (cmd !== 'budget' || !Number.isInteger(flags.budgetRequests) || flags.budgetRequests < 1 || flags.budgetRequests > 10000) usage(); }
-  else if (rest[i] === '--minutes') { flags.budgetMinutes = Number(rest[++i] ?? ''); if (cmd !== 'budget' || !Number.isInteger(flags.budgetMinutes) || flags.budgetMinutes < 1 || flags.budgetMinutes > 1440) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
-if (['next', 'end', 'closeout', 'budget', 'sopreview'].includes(cmd)) requireHealthyState();
+if (['next', 'end', 'closeout', 'sopreview'].includes(cmd)) requireHealthyState();
 switch (cmd) {
   case 'init': cmdInit(pos[0], pos[1]); break;
   case 'state': cmdState(); break;
@@ -1064,7 +1055,6 @@ switch (cmd) {
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
   case 'closeout': cmdCloseout(flags.base); break;
-  case 'budget': cmdBudget(flags); break;
   case 'sopreview': cmdSopreview(); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();

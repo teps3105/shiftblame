@@ -47,7 +47,7 @@ for (const raw of invalid) {
   }
   for (const tool of ['Bash', 'exec_command', 'functions.exec_command']) {
     // 封閉面：會消費或惡化異常狀態的動作（git 寫入＋sb 流程命令——與停等凍結同攔截面）
-    for (const command of ['git commit -m "fix: 接入驗證"', 'git add .', 'sb adversarial review.md', 'sb budget --requests 5 --minutes 5', 'sb sopreview']) {
+    for (const command of ['git commit -m "fix: 接入驗證"', 'git add .', 'sb adversarial review.md', 'sb end --boss-ok', 'sb sopreview']) {
       assert.equal(f.gate(tool, tool === 'Bash' ? { command } : { cmd: command }).status, 2, command);
     }
     // 修復自由（異常模式的目的）：修復腳本與唯讀查證放行——shell 對正式檔的寫入屬既有殘餘（同常規模式），由抽查承擔

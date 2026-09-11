@@ -37,8 +37,7 @@ ok(git('push', 'published', `${initial}:refs/heads/obsolete`));
 ok(git('config', '--add', 'remote.published.push', 'refs/tags/*:refs/tags/*'));
 ok(git('config', '--add', 'remote.published.push', ':obsolete'));
 save({ ...state(), node: 'done' });
-ok(run('end', '--boss-ok'));
-renameSync(join(cwd, '.shiftblame/old'), join(cwd, '.shiftblame/archive/old'));
+ok(run('end', '--boss-ok')); // sb end 已機械化歸檔移動（slug 目錄 → archive/）
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();

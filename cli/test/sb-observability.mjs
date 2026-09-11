@@ -1,4 +1,4 @@
-// sb-observability：觀測紀律與回合治理——usage 事件、回合成本軟性會計（超限零中斷）、迴圈斷路器（4/7 門檻＋升級凍結＋CLI 兜底）、
+// sb-observability：觀測紀律與回合治理——usage 事件、計數純觀測（無預算無上限零干預）、迴圈斷路器（4/7 門檻＋升級凍結＋CLI 兜底）、
 // 產出遙測（git baseline 錨定）、SOP／ROADMAP 每 ms 審查閘、觀測流輪替（flow-state 恆有界）。
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -36,13 +36,13 @@ assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 't
 const usageCount0 = usageLines().length; // init 前任意歷史＝0（新暫存區）
 assert.equal(run('state').status, 0);
 assert.ok(usageLines().length >= usageCount0 + 1, 'sb state 調用落 sb-usage.jsonl');
-assert.equal(run('budget', '--requests', 'abc', '--minutes', '5').status, 2, '旗標值非法照常 usage()（exit 2）');
+assert.equal(run('budget', '--requests', '5').status, 2, '已除命令照常 usage()（exit 2——解析器衛生）');
 {
   const lines = usageLines();
   assert.ok(lines.length >= 2, '失敗調用（用法錯誤）也追加一行');
   const last = JSON.parse(lines.at(-1));
-  assert.equal(last.cmd, 'budget', '子命令記錄正確');
-  assert.match(last.args, /--requests abc/, '參數摘要記錄');
+  assert.equal(last.cmd, 'budget', '子命令記錄正確（含失敗調用）');
+  assert.match(last.args, /--requests 5/, '參數摘要記錄');
   assert.match(last.at, /^\d{4}-\d\d-\d\dT/, '時間戳記錄');
 }
 const baseline = git('rev-parse', 'HEAD').stdout.trim();
@@ -50,38 +50,27 @@ assert.equal(run('init', 'demo').status, 0);
 assert.equal(state().baseCommit, baseline, 'init 錨定 git baseline（進入需求層前的時序錨點）');
 assert.match(state().startedAt, /^\d{4}-\d\d-\d\dT/, 'init 記起始時間（耗時基準）');
 
-// —— 2. 八段快走到 plan，途中驗 budget 僅限 plan 段宣告 ——
+// —— 2. 八段快走到執行段（test）——
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-assert.match(run('budget', '--requests', '2', '--minutes', '30').stderr, /僅限 plan 段/, '非 plan 段宣告即擋');
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('budget', '--requests', '2', '--minutes', '30').status, 0, 'plan 段宣告回合預算');
-assert.equal(state().budget.requests, 2, '預算寫入 flow-state');
 assert.equal(pt('①').status, 0);
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段（預算生效範圍）');
+assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段');
 
-// —— 3. 回合成本控制＋迴圈斷路器：超限零中斷（軟性會計）；重複才擋（4/7 門檻）；死圈升級 ——
+// —— 3. 迴圈斷路器：計數純觀測（無預算無上限零干預）；重複才擋（4/7 門檻）；死圈升級 ——
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '回合開始（回合計數歸零）' });
 assert.equal(state().turnUsage, undefined, '老闆輸入＝回合邊界（計數重置）');
 const u1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls -la' } });
-assert.equal(u1.status, 0, '預算內調用放行');
+assert.equal(u1.status, 0, '工具調用放行（計數僅觀測）');
 assert.equal(state().turnUsage.requests, 1, '回合計數（工具調用＝model 請求上界代理）');
 assert.equal(state().usageTotals.requests >= 1, true, 'slug 累計計數');
-assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'pwd' } }).status, 0, '第 2 調用達上限仍未超');
-const u3 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-three' } });
-assert.equal(u3.status, 0, '超限（第 3 調用 > 上限 2）放行——軟性成本會計零中斷');
-{
-  const st = state();
-  assert.equal(st.node, 'test', '超限不撤退不凍結——工作照常推進');
-  assert.equal(st.turnUsage.exceededAt !== undefined, true, '超限時刻記錄（軟性）');
-  assert.equal(st.budgetBreaches, 1, '超限次數計入（sb end 遙測素材）');
-}
-const u4 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-four' } });
-assert.equal(u4.status, 0, '超限後的後續（不同操作）持續放行——持續推進永不因量中斷');
+assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'pwd' } }).status, 0, '第 2 調用照常');
+assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-three' } }).status, 0, '計數持續累積零干預——工作做到完成為止');
+assert.equal(state().node, 'test', '純觀測不影響任何推進');
 // 迴圈斷路器：同操作重複才是死圈特徵——第 4 次擋（要求改變策略）、第 7 次升級（凍結＋自動回 intent）
 const loop = () => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `node stuck-loop.mjs` } });
 assert.equal(loop().status, 0, '同操作第 1 次放行');
@@ -124,10 +113,9 @@ assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
 // —— 4. 重走至 done（--rerun 直通＋返工外部協助），途中寫真實 commit 供遙測 diff ——
 assert.equal(run('next', 'requirement', '--rerun', 'impl').status, 0, '返工直通（同 ms 曾達 test）');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 返工外部協助＋新回合計數（未超限）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 返工外部協助
 assert.equal(run('next', 'research').status, 0);
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('budget', '--requests', '40', '--minutes', '30').status, 0, '重規劃後於 plan 重新宣告（放寬）');
 assert.equal(pt('①', 'r2').status, 0);
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
@@ -147,7 +135,7 @@ assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
 const endOut = run('end', '--boss-ok');
 assert.equal(endOut.status, 0, endOut.stderr);
 
-// —— 6. 產出遙測：git baseline 錨定＋對抗判定（含審查模型）＋計數＋耗時＋超限 ——
+// —— 6. 產出遙測：git baseline 錨定＋對抗判定（含審查模型）＋計數＋耗時 ——
 {
   const st = state();
   assert.equal(st.node, 'ended');
@@ -161,9 +149,7 @@ assert.equal(endOut.status, 0, endOut.stderr);
   assert.equal(t.adversarial.model, 'GLM-5.3', '審查模型（報告「審查模型：」行）入遙測');
   assert.ok(t.counts.toolCalls >= 5, `toolCalls 計數（實得 ${t.counts.toolCalls}）`);
   assert.ok(t.counts.inputs >= 2, `inputs 計數（實得 ${t.counts.inputs}）`);
-  assert.equal(t.budgetBreaches, 1, '超限次數結算');
   assert.ok(t.durationMinutes === null || t.durationMinutes >= 0, '耗時（分）或缺省');
-  assert.equal(st.budget, undefined, 'slug 邊界清理：預算');
   assert.equal(st.usageTotals, undefined, 'slug 邊界清理：累計計數');
   assert.equal(run('state').status, 0, 'ended 含 telemetry 仍合法（sb state 可讀）');
 }
