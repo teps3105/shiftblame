@@ -74,7 +74,7 @@ const TEN_PROJECT_BASELINE = {
   'Trickster-Web': 'active',
   Varellune: 'active',
   Varellune_Document: 'invalid',
-  'dnd-prototype': 'active',
+  'dnd-prototype': 'ended',
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
   shiftblame: 'direct',

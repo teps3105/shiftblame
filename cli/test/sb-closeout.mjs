@@ -60,8 +60,15 @@ ok(git('merge', '--ff-only', 'fix/old'));
 assert.equal(run('closeout', '--base', 'trunk').status, 1, '快轉合併拒絕');
 assert.match(run('closeout', '--base', 'trunk').stderr, /--no-ff/, '指引 --no-ff 重併');
 // 回復合併前基底後以 --no-ff 重併——證據成立。
+// 訊息不符的合併：證據成立但訊息錯——closeout 擋並指引重併。
 ok(git('reset', '--hard', initial));
-ok(git('merge', '--no-ff', 'fix/old')); // 非協作倉庫一律 --no-ff（slug 邊界合併提交）
+ok(git('merge', '--no-ff', 'fix/old', '-m', 'wrong message'));
+assert.equal(run('closeout', '--base', 'trunk').status, 1, '合併訊息不符擋下');
+assert.match(run('closeout', '--base', 'trunk').stderr, /merge /, '指引固定訊息重併');
+// 回復後以正確訊息重併——證據與訊息皆成立。
+ok(git('reset', '--hard', initial));
+ok(git('merge', '--no-ff', 'fix/old', '-m', 'merge old')); // 分支合併一律 --no-ff＋固定訊息 merge <slug>
+assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge old', '合併提交訊息＝merge <slug>');
 commit('base.txt', 'base-only commit\n');
 const baseTip = tip();
 ok(git('checkout', 'fix/old'));

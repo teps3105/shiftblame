@@ -482,7 +482,7 @@ ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', (
 });
 
 ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout）', () => {
-  const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit) {', 'function noFfMergeEvidence(workCommit, baseCommit) {\n  return true; // ABLATED']]);
+  const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit, slug) {', 'function noFfMergeEvidence(workCommit, baseCommit, slug) {\n  return baseCommit; // ABLATED']]);
   const probe = (script) => {
     const r = mkSandbox({ git: true, state: { node: 'done' } });
     const base = spawnSync('git', ['branch', '--show-current'], { cwd: r, encoding: 'utf8' }).stdout.trim();

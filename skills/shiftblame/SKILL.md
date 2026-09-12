@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.1.0"
+  version: "2.1.1"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。迴圈斷路器（同操作重複即擋、防遞迴無限擴大；計數純觀測——無預算無上限，工作做到完成為止）；產出遙測由 git baseline 時序分析錨定；SOP／ROADMAP 每 ms 審查（基質優先×元行為錨定×修剪迴路）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -203,7 +203,7 @@ flowchart TD
 1. 秘書確認證據、未驗項與老闆 PASS（老闆明確拍板整個 `<slug>` 結束）；`sb end` 已於 PASS 時留產出遙測於 flow-state（§1.11——diff 統計＋對抗判定＋計數＋耗時）。
 2. 依 SOP 盤點測試資產；探索性內容留在 `<repo>/.shiftblame/tmp/`。
 3. 歸檔移動由 `sb end` 機械執行（聲稱與實做一致）：`<slug>/` 已移至 `<repo>/.shiftblame/archive/`（移動失敗即 die、狀態保持 done 可重試）；秘書核對 `archive/<slug>/SLUG.md` 歸檔完整（archive 僅承載各 slug 目錄與其文件）。
-4. 歸檔是 merge 的 gate——歸檔完成即可依分支政策合併、推送與清理（文件已在各 commit 保真，收尾無補救工作；多人協作的 repo 內文件權限依 §5，與歸檔正交）。**非協作倉庫的 slug 合併一律 `--no-ff`**——slug 邊界以合併提交保留於主分支歷史（直接快轉使邊界消失）；`sb closeout` 以「工作提交經合併提交進入基底」為機械證據，快轉不過——此證據要求適用所有倉庫，協作倉庫的分支政策以產出等效合併提交為前提。
+4. 歸檔是 merge 的 gate——歸檔完成即可合併、推送與清理（文件已在各 commit 保真，收尾無補救工作）。**合併政策三規則**：①在 main 直接作業的工作屬於 main，無合併步驟；②開了分支的工作合併一律 `--no-ff`（快轉使 slug 邊界消失）且合併訊息固定為 `merge <slug>`——`sb closeout` 以「工作提交經合併提交進入基底」為機械證據，快轉不過；③外部協作倉庫依該倉庫自身的 issue／PR 策略執行（本框架合併政策讓位，提交與對抗閘仍照常）——此類倉庫以直接實行作業（不開 slug，即無 closeout 需求）；已開 slug 而必須讓位時，依該倉庫策略完成整合後以等效合併事實收尾。多人協作的 repo 內文件權限依 §5，與歸檔正交。
 5. 老闆決定下一個 slug 後，以 `sb init <新slug>` 從合法 ended 建立新流程；`sb state` 提示入口及歸檔／停等缺項。CLI 查證舊工作路徑已移出、`archive/<舊slug>/SLUG.md` 存在，新 slug 的工作與歸檔路徑均未占用。新流程只承接合法 hooks 紀錄，重建 slug／001／intent／空 history，舊對抗、返工與結束欄位不沿用；舊歸檔文件保持原樣。done 尚未 PASS 仍屬既有工作，走原流程。
 6. Git 工作在歸檔、合併後，先執行 `sb closeout --base <本機基底分支>` 查證舊工作提交已經 `--no-ff` 合併提交進入基底並留痕，再依已查證 tip 清除本機及曾推送的遠端分支。closeout 是 ended 內的查證動作，不新增階段；不代做合併或刪除。init 再驗工作樹乾淨、記錄提交仍在目前基底、舊本機與遠端分支已不存在、新分支未占用，從此次查證的基底提交建立新分支。首次 init 記錄 workBranch，舊狀態以唯一 type/slug 分支補來源；基底由 --base 明示，缺來源保持原狀。squash／rebase 缺祖先證據時先補整合證據。遠端查伺服器實況；已記錄來源缺失、變更或查詢失敗均擋。未記錄且已移除的歷史推送來源須恢復；查證後新增提交須重做 closeout，手動新增後刪除造成的證據過期由操作紀律與抽查承擔。
 

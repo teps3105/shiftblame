@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.1.0');
+assert.equal(manifest.version, '2.1.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.1\.0"/);
+assert.match(skill, /version: "2\.1\.1"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -126,6 +126,9 @@ assert.match(skill, /基質優先/, 'SKILL 記載基質優先（重複造輪子�
 assert.match(skill, /元行為錨定/, 'SKILL 記載元行為錨定（規則由實測推導）');
 assert.match(skill, /修剪迴路/, 'SKILL 記載修剪迴路（每 ms 審查三問）');
 assert.match(skill, /sb sopreview/, 'SKILL 記載 sb sopreview 審查留痕');
+assert.match(skill, /merge <slug>/, 'SKILL 記載固定合併訊息 merge <slug>');
+assert.match(skill, /外部協作倉庫依該倉庫自身的 issue／PR 策略/, 'SKILL 記載協作倉庫政策讓位');
+assert.match(skill, /在 main 直接作業的工作屬於 main，無合併步驟/, 'SKILL 記載 main 直接作業免合併');
 assert.match(skill, /sb-usage\.jsonl/, 'SKILL 記載 usage 觀測事件');
 assert.match(skill, /觀測流輪替/, 'SKILL 記載觀測流輪替（flow-state 恆有界）');
 assert.match(skill, /迴圈斷路器/, 'SKILL 記載迴圈斷路器（同操作重複即擋——防遞迴無限擴大）');

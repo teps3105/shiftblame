@@ -560,17 +560,24 @@ function knownRemoteTargets(workBranch) {
   }
   return targets;
 }
-// --no-ff 合併提交證據（2.0.6）：工作提交經「合併提交」進入基底 lineage——存在 ancestor-of-base 的
+// --no-ff 合併提交證據：工作提交經「合併提交」進入基底 lineage——存在 ancestor-of-base 的
 // 合併提交且其父提交含 workCommit。直接快轉（基底 tip＝工作 tip，無合併提交）與 squash 皆不含；
 // 合併後基底續有新提交仍可辨識（合併提交在 ancestry-path 上）。
-function noFfMergeEvidence(workCommit, baseCommit) {
+function noFfMergeEvidence(workCommit, baseCommit, slug) {
+  // 合併提交證據＋固定訊息一體核對（政策②）：找到父含工作提交的合併提交，且 subject＝merge <slug>——訊息錯＝無有效證據
   const r = gitRun('rev-list', '--merges', '--ancestry-path', `${workCommit}..${baseCommit}`);
-  if (r.status !== 0) return false;
+  if (r.status !== 0) return null;
   for (const m of r.stdout.trim().split(/\s+/).filter(Boolean)) {
     const p = gitRun('rev-list', '--parents', '-n', '1', m);
-    if (p.status === 0 && p.stdout.trim().split(/\s+/).slice(1).includes(workCommit)) return true;
+    if (p.status === 0 && p.stdout.trim().split(/\s+/).slice(1).includes(workCommit)) {
+      const subject = gitRun('log', '-1', '--format=%s', m).stdout.trim();
+      if (slug && subject !== `merge ${slug}`) {
+        return { invalidMessage: true, subject, merge: m };
+      }
+      return m;
+    }
   }
-  return false;
+  return null;
 }
 function cleanGitProblem() {
   const r = gitRun('status', '--porcelain');
@@ -584,7 +591,7 @@ function closedGitPlan(st) {
   if (!st.closeout) return { problems: [...problems, '尚未完成合併查證：歸檔與合併後、刪分支前執行 sb closeout --base <本機分支>'], baseCommit: null };
   const c = st.closeout;
   const baseCommit = branchTip(c.baseBranch);
-  if (!baseCommit || !noFfMergeEvidence(c.workCommit, baseCommit)) problems.push('基底缺失或無 --no-ff 合併提交證據（快轉／多層轉併／squash 皆不含）——快轉者回到合併前基底後 git merge --no-ff 重併（分支已刪先以工作提交重建），未進基底者直接 --no-ff 合併；完成後重跑 closeout');
+  if (!baseCommit || !noFfMergeEvidence(c.workCommit, baseCommit, c.slug)) problems.push('基底缺失或無 --no-ff 合併提交證據（快轉／多層轉併／squash 皆不含）——快轉者回到合併前基底後 git merge --no-ff 重併（分支已刪先以工作提交重建），未進基底者直接 --no-ff 合併；完成後重跑 closeout');
   const branches = gitRun('for-each-ref', '--format=%(refname)', `refs/heads/${c.workBranch}`);
   if (branches.status !== 0) problems.push('無法查證舊本機分支');
   else if (branches.stdout.trim()) problems.push(`舊本機分支尚未清除：${c.workBranch}`);
@@ -611,7 +618,11 @@ function cmdCloseout(base) {
   if (candidates.length !== 1) die(['缺少唯一舊工作分支來源；先恢復舊功能分支再查證，不以目前 HEAD 代替']);
   const workBranch = candidates[0], workCommit = branchTip(workBranch);
   if (workBranch === base || !workCommit) die(['舊工作分支須存在且不同於基底；先查證再刪除']);
-  if (!noFfMergeEvidence(workCommit, baseCommit)) {
+  const mergeCommit = noFfMergeEvidence(workCommit, baseCommit, st.slug);
+  if (mergeCommit?.invalidMessage) {
+    die([`合併提交訊息不符固定格式——實得「${mergeCommit.subject}」，期望「merge ${st.slug}」；回復：回到合併前基底（git reflog 可查）後 git merge --no-ff ${workBranch} -m "merge ${st.slug}" 重併，再重新 sb closeout`]);
+  }
+  if (!mergeCommit || mergeCommit?.invalidMessage) {
     const isAncestor = gitRun('merge-base', '--is-ancestor', workCommit, baseCommit).status === 0;
     const branchGone = branchTip(workBranch) ? '' : `（分支已刪時先 git branch ${workBranch} ${workCommit} 重建）`;
     die([isAncestor
@@ -628,7 +639,7 @@ function cmdCloseout(base) {
   } catch (e) { die([e.message]); }
   st.closeout = { slug: st.slug, workBranch, workCommit, baseBranch: base, at: new Date().toISOString(), remotes };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([`合併查證已留痕：${workBranch} @ ${workCommit} → ${base}`, '依已查證 tip 清除舊本機與遠端分支，再以 sb init 開新工作；清除前如新增提交，重新執行 closeout']);
+  fin([`合併查證已留痕：${workBranch} @ ${workCommit} → ${base}（合併訊息固定 merge <slug>）`, '依已查證 tip 清除舊本機與遠端分支，再以 sb init 開新工作；清除前如新增提交，重新執行 closeout']);
 }
 function ensureWorkspaceIgnored() {
   const giPath = join(ROOT, '.gitignore');
@@ -909,7 +920,7 @@ function cmdEnd(opts) {
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals;
-  delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（2.0.4 期預算欄位——不相容則 ended 檔自我 invalid）
+  delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（舊版預算欄位——不相容則 ended 檔自我 invalid）
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   const t = st.telemetry;
