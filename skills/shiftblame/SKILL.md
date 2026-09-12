@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.0.6"
+  version: "2.1.0"
 description: 以時序制衡約束 agent——主對話秘書是唯一持久角色，連續承載意圖、需求、研究、計畫、測試、實作與驗收；八段流程 intent→requirement→research→plan→test→build→verify→done，回頭自由（回 intent 同 ms 重走）、前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）。閘門只讀 git 事實與 flow-state.json，不可變性由 git 承擔；雙流模型（輸入流唯增＋理解流必然曝光）由機械層承擔，抗上下文壓縮。時點對抗（plan→test①、verify→test②、verify→done③）採 --adversarial 宣告＋adversarialLog point 條目對照；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）。迴圈斷路器（同操作重複即擋、防遞迴無限擴大；計數純觀測——無預算無上限，工作做到完成為止）；產出遙測由 git baseline 時序分析錨定；SOP／ROADMAP 每 ms 審查（基質優先×元行為錨定×修剪迴路）。技術證據不足時強制外部唯讀技術意見，主對話複核後自行承擔裁定。commit、判決、放行、路由、PASS 一律由主對話獨佔。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -464,7 +464,9 @@ shiftblame/                         # plugin 套件根（repo 根）
     │   ├── SKILL.md
     │   ├── references/             # 工作階段定義（按需讀）
     │   │   ├── {REQUIREMENT,RESEARCH,PLAN}.md   # 定義層
-    │   │   └── {VERIFY,BUILD,TEST}.md    # 執行層
+    │   │   ├── STRUCTURE.md         # 通用結構與驗證紀律（R1-R7／歸屬裁定／DAG／檢查矩陣／四態結果）
+    │   │   ├── {VERIFY,BUILD,TEST}.md    # 執行層
+    │   │   └── AUDIT.md             # 對抗審計職能（唯讀子代理：邊界／攻擊點／證據義務／複審閉環／閘門對接）
     │   └── assets/
     │       ├── DOCS.md
     │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）

@@ -71,9 +71,7 @@ classify({ slug: 'demo', ms: '001', node: 'test', history: [], turnUsage: { star
 // 基準＝升級當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；已 invalid 者屬既有事實（恢復程序另行承擔），相容性要求＝分類不變。向後相容面：2.0.4 期 turnUsage.exceededAt 檔在新鍵集下 invalid（fail-closed，手動清鍵即癒）；active 對歷史 budget 鍵靜默容忍（零消費者；sb end 冪等清理）。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'invalid',
-  FantasticLight: 'active',
-  SpriteWeave: 'direct',
-  'Trickster-Web': 'ended',
+  'Trickster-Web': 'active',
   Varellune: 'active',
   Varellune_Document: 'invalid',
   'dnd-prototype': 'active',
@@ -107,4 +105,4 @@ assert.ok(scanned >= 1, '至少完成一個實機專案的回歸');
   spawnSync(process.execPath, [cli, 'state'], { cwd: root, encoding: 'utf8' });
   assert.ok(existsSync(usage), '清理後再調用自動重建');
 }
-console.log(`sb-compat: PASS（實機回歸 ${scanned}/10 專案）`);
+console.log(`sb-compat: PASS（實機回歸 ${scanned}/${Object.keys(TEN_PROJECT_BASELINE).length} 專案——其餘目錄不存在略過）`);

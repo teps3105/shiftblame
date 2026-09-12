@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.0.6');
+assert.equal(manifest.version, '2.1.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.0\.6"/);
+assert.match(skill, /version: "2\.1\.0"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -103,6 +103,16 @@ assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkGFileMatrix/, 'hooks G
 assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /經查證的現況事實/, 'REQUIREMENT 經查證的現況事實（查證先於研究）');
 assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /BDD 行為規格/, 'REQUIREMENT BDD 行為規格');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /G3 落地邊/, 'TEST G3 落地邊');
+assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /R1/, 'STRUCTURE 固定規則');
+assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /accepted_exception/, 'STRUCTURE 四態結果');
+assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /與八段的銜接/, 'STRUCTURE 八段銜接');
+assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /測試規模與穩定度成正比/, 'TEST 規模∝穩定度');
+assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /同生命週期/, 'TEST 生命週期紀律');
+assert.match(skill, /STRUCTURE\.md/, 'SKILL 樹含 STRUCTURE');
+assert.match(skill, /AUDIT\.md/, 'SKILL 樹含 AUDIT');
+assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /對抗判定：通過/, 'AUDIT 判定行格式');
+assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /無自代介面/, 'AUDIT 無自代介面');
+assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /修復複審閉環/, 'AUDIT 複審閉環');
 assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /G1 裁判邊/, 'VERIFY G1 裁判邊');
 assert.match(skill, /消融原則/, 'SKILL 消融原則（方法論六落點）');
 assert.match(read('cli', 'bin', 'sb.mjs'), /六鍵（消融/, 'BDD 第六鍵消融（validateG1Acceptance）');
@@ -140,7 +150,7 @@ const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lo
   '薄研究', '薄規劃', '薄產出', '薄流程',
   'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/think/SKILL.md', 'skills/resume/SKILL.md', 'skills/save/SKILL.md', 'skills/dice/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
-  'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md',
+  'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md', 'skills/shiftblame/references/STRUCTURE.md', 'skills/shiftblame/references/AUDIT.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
 for (const f of files) {
   const text = read(...f.split('/'));
@@ -176,7 +186,7 @@ for (const f of files.filter((p) => p.endsWith('.md') || p.endsWith('.json'))) {
 
 // references 與 assets 版號（revision: 行＝當前版本同步聲明，與 manifest 一致）
 for (const [dir, file] of [
-  ...['REQUIREMENT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md'].map((f) => ['references', f]),
+  ...['REQUIREMENT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md', 'STRUCTURE.md', 'AUDIT.md'].map((f) => ['references', f]),
   ...['SLUG.md', 'SOP.md', 'ROADMAP.md', 'DOCS.md'].map((f) => ['assets', f]),
 ]) {
   const doc = read('skills', 'shiftblame', dir, file);

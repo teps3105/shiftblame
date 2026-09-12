@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.0.6-2ea44f.svg" alt="version 2.0.6"/>
+  <img src="https://img.shields.io/badge/version-2.1.0-2ea44f.svg" alt="version 2.1.0"/>
 </p>
 
 ---
@@ -75,6 +75,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
   - 測試與防護工具（檢查腳本、靜態分析等）的規模同判——由要防的具體風險推導，防護目標不需要的精確度即規模溢出（過度工程）。
   - 規模判定不依專案類型或專案大小，不存在「專案大就配企業級防護」的規則表。
 - **基質優先×元行為錨定×修剪迴路（方法論）。** 任何新機制、記錄檔、驗證工具 MUST 先對照基質（git 的身分錨定／不可變性／時序／diff、平台事件流）——基質可答的另造即拆，記錄檔預設不存在（重複造輪子防線）；規則 MUST 錨定實測的代理元行為證據，無證據即想像威脅；SOP／ROADMAP 每 ms 必審三問（基質可答？元行為證據？仍被觸發？）——`sb sopreview` 留痕，開新 ms 與 PASS 前機械驗（無 SOP／ROADMAP 的專案不擋），刪修加減皆可、變更走正常 commit。
+- **結構與驗證紀律。** 唯一歸屬、公開入口、合併依賴 DAG、四態檢查結果、基線＝債務清單、四種長期演進、驗證依變更實際影響選擇——全文見 [references/STRUCTURE.md](skills/shiftblame/references/STRUCTURE.md)；測試規模與穩定度成正比、與行為同生命週期——見 [references/TEST.md](skills/shiftblame/references/TEST.md)。
+- **對抗審計職能。** 外部唯讀子代理的邊界（唯讀／一次性自包含／無裁定權）、標準攻擊點、實證優先的證據義務、必修與建議分列、修復複審閉環——全文見 [references/AUDIT.md](skills/shiftblame/references/AUDIT.md)。
 - **觀測紀律。** sb 每次調用落 `.shiftblame/tmp/sb-usage.jsonl`（老闆可清、缺檔自動重建）；`sb init` 錨定 git baseline、`sb end` 留產出遙測於 flow-state（diff 統計＋對抗判定＋審查模型＋toolCalls＋耗時——資料恆在 git，遙測可重導）；flow-state 四條觀測流超門檻自動輪替至 tmp（檔案恆有界、事實保留）。工作做到完成為止——計數純觀測（無預算、無上限、零干預，遙測結算）；**迴圈斷路器**常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級凍結回 intent——防遞迴無限擴大；持續推進的多樣操作永遠放行）。
 - **命名自足與工作紀錄分離。** `.shiftblame/tmp/` 是 agents 自由傾倒區——流程閘門零依賴（唯一例外：commit 留痕即生即滅）；專案工具鏈或專案運行產生的檔案（日誌、快取、匯出物）屬專案資產歸專案位置，驗收引用以**節錄快照**為證據。
   - tmp 只準寫入、不準清理，清理由老闆手動執行。
