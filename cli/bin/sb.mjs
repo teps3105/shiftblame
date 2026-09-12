@@ -1031,9 +1031,11 @@ function cmdCommitmsg(msg) {
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   if (current.state?.node === 'verify') die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
   const problems = [];
+  // 已歸檔 slug 的合併訊息由 closeout 固定；仍經對抗檢查及精確訊息印章。
+  const isSlugMerge = endedState(current.state) && msg === `merge ${current.state.slug}`;
   const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
-  if (!m) problems.push('缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）');
-  else {
+  if (!m && !isSlugMerge) problems.push('缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）；已歸檔合併限目前 slug 的 `merge <slug>`');
+  else if (m) {
     const body = m.at(-1);
     if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
     if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，內容聚焦變更本身（詳細訊息歸文件）`);

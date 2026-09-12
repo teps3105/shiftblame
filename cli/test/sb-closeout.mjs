@@ -6,6 +6,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
+const hook = fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs', import.meta.url));
+const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
+assert.match(readme, /僅在合法 ended 狀態接受目前 slug 的精確 `merge <slug>`/);
 const root = mkdtempSync(join(tmpdir(), 'sb-closeout-'));
 process.on('exit', () => { assert.ok(resolve(root).startsWith(resolve(tmpdir()) + sep)); rmSync(root, { recursive: true, force: true }); });
 const cwd = join(root, 'repo');
@@ -13,6 +16,7 @@ const remote = join(root, 'published.git');
 mkdirSync(cwd);
 const git = (...args) => spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd, encoding: 'utf8' });
+const commitHook = (message) => spawnSync(process.execPath, [hook], { encoding: 'utf8', input: JSON.stringify({ cwd, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git commit -m '${message}'` } }) });
 const ok = (r) => assert.equal(r.status, 0, r.stderr || r.stdout);
 const stateFile = join(cwd, '.shiftblame/flow-state.json');
 const state = () => JSON.parse(readFileSync(stateFile, 'utf8'));
@@ -36,8 +40,19 @@ ok(git('push', 'published'));
 ok(git('push', 'published', `${initial}:refs/heads/obsolete`));
 ok(git('config', '--add', 'remote.published.push', 'refs/tags/*:refs/tags/*'));
 ok(git('config', '--add', 'remote.published.push', ':obsolete'));
+// 以下報告與狀態只屬隔離 fixture；驗證格式例外不延伸至未歸檔工作。
+const report = join(cwd, '.shiftblame/tmp/merge-review.md');
+writeFileSync(report, '# 隔離測試報告\n此為合併提交閘的合成測試資料，不代表真實外部檢閱或產品驗收。\n對抗判定：通過\n');
+ok(run('adversarial', report));
+assert.equal(run('commitmsg', 'merge old').status, 1, 'intent 不接受合併格式');
 save({ ...state(), node: 'done' });
+assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接受合併格式');
+const withoutDeclaration = state();
+delete withoutDeclaration.adversarialAt;
+delete withoutDeclaration.adversarialConsumed;
+save(withoutDeclaration); // 合成缺宣告 fixture；end 本身保留既有提交對抗，並不自動消費。
 ok(run('end', '--boss-ok')); // sb end 已機械化歸檔移動（slug 目錄 → archive/）
+assert.equal(run('commitmsg', 'merge old').status, 1, 'ended 缺提交對抗仍拒絕');
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();
@@ -67,7 +82,21 @@ assert.equal(run('closeout', '--base', 'trunk').status, 1, '合併訊息不符�
 assert.match(run('closeout', '--base', 'trunk').stderr, /merge /, '指引固定訊息重併');
 // 回復後以正確訊息重併——證據與訊息皆成立。
 ok(git('reset', '--hard', initial));
-ok(git('merge', '--no-ff', 'fix/old', '-m', 'merge old')); // 分支合併一律 --no-ff＋固定訊息 merge <slug>
+ok(git('merge', '--no-ff', '--no-commit', 'fix/old'));
+ok(run('adversarial', report));
+for (const message of ['merge other', 'merge: old', 'merge old extra', 'merge old\n', 'merge old\r']) {
+  assert.equal(run('commitmsg', message).status, 1, `拒絕非精確合併訊息 ${JSON.stringify(message)}`);
+}
+ok(run('commitmsg', 'merge old'));
+const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
+assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'merge old');
+assert.equal(state().adversarialConsumed, false, '發章不消費提交對抗');
+assert.equal(commitHook('merge other').status, 2, '實際提交仍須匹配訊息印章');
+ok(commitHook('merge old'));
+assert.equal(state().adversarialConsumed, true, '提交 hook 消費對抗');
+assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
+ok(git('commit', '-m', 'merge old'));
+assert.equal(run('commitmsg', 'merge old').status, 1, '已消費對抗不可重發章');
 assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge old', '合併提交訊息＝merge <slug>');
 commit('base.txt', 'base-only commit\n');
 const baseTip = tip();

@@ -242,7 +242,7 @@ flowchart TD
 
 框架與 agent 的花費／產出／規則觸發 MUST 機械可觀測——「框架 CP 值」以真產出回答，平台遺跡不可重建的由框架自己記：
 
-1. **sb usage 事件**：sb 每次調用（子命令＋參數摘要）追加一行 JSONL 至 `<repo>/.shiftblame/tmp/sb-usage.jsonl`——sb 呼叫頻譜的機械觀測；老闆可隨時清理該檔，缺檔自動重建，觀測落檔失敗靜默（遙測失效不影響命令執行）。
+1. **sb 呼叫事件**：sb 每次調用（子命令＋參數摘要）追加一行 JSONL 至 `<repo>/.shiftblame/tmp/sb-usage.jsonl`——sb 呼叫頻譜的機械觀測；老闆可隨時清理該檔，缺檔自動重建，觀測落檔失敗靜默（遙測失效不影響命令執行）。
 2. **產出遙測**：`sb init` 錨定 git baseline（HEAD commit＋起始時間）——進入需求層前的機械化時序錨點；`sb end` 以 baseline..HEAD 做 diff 時序分析（additions／deletions／files）＋最後對抗判定（verdict＋審查模型——報告內含「審查模型：」行則記，缺省 null）＋計數（inputs／understandings／adversarial／toolCalls）＋耗時（分鐘），寫入 flow-state ended 態 `telemetry` 欄。資料恆在 git——遙測可隨時重導，不另建記錄檔（基質優先）。
 3. **觀測流輪替**：flow-state 四條觀測流（inputs／understandings／adversarialLog／history）於老闆輸入邊界超門檻時（40／40／12／120 條）由 hooks 將較舊、對照價值已耗盡者（已審理解、舊對抗條目、舊 history）輪替至 `.shiftblame/tmp/flow-rotated.jsonl`——事實保留（老闆清理 tmp 時隨之消失）、flow-state 恆有界；輪替偏移（`inputsRotated` 等＋理解鏈種子）記於 flow-state，舊檔無偏移欄位＝零偏移（向後相容）；未審理解永留檔內（曝光義務優先）。輸入與理解的編號採全域基準（含已輪替前綴）。殘餘（如實標註）：adversarialLog 與 history 的保留視野各異（6 條 vs 60 條），重度輪替後時點新鮮度檢查的對照源可能早於同邊推進而放寬——剝削仍需 `--boss-ok` 共犯且輪替事實留 tmp 可稽，由抽查承擔。`archive/` 與 `tmp/` 內容不做框架清理。
 
@@ -449,6 +449,8 @@ SLUG 只記目前位於主圖哪個節點，合法節點名稱：`intent／requi
 秘書 MAY 基於 §9 載入程序的脈絡在 shiftblame:think 中主動提出路由提議（沿用／開新 `<ms>`、開新 `<slug>`、直接實行、框架演化），提議須附脈絡依據。**提議不等於授權**：建立 `<slug>/<nnn>` 與預建檔案均須老闆明確拍板後建立與執行。老闆尚未決定時，秘書 陳述提議與脈絡後等待裁決。
 
 ## 7. 提交規範
+
+歸檔合併的固定訊息依 §1.7.2：`sb commitmsg` 僅在合法 ended 狀態接受目前 slug 的精確 `merge <slug>` 訊息，仍須提交對抗、發章與 hooks 消費。新合併先以 `git merge --no-ff --no-commit` 準備，完成上述檢查後再用相同訊息 `git commit -m`。以下 type 與繁中描述規則適用一般提交。
 
 **任何 commit MUST 過 `sb commitmsg` 機械驗證**（hooks 留痕硬擋），核心不變量：訊息 `<type>: <繁中描述>` 單行 10-30 字、純描述變更本身（分支名表達功能語義，工作紀錄歸 tmp）；slug 開發 MUST 在 `<type>/<slug>` 分支（sb init 自動建立切換；直接 main 為框架演化／緊急修復／輕量調整的例外）；repo 先例（歷史訊息、既有慣例）僅作脈絡參考——規範來源以 SKILL 條文與 CLI 閘為準；功能＝commit 單位、精準 add 不夾帶；每個功能實作完成 MUST 即時 commit 存檔建立待驗對象（commit＝存檔非完成印記，先於驗收；收斂閘門核對 working tree 乾淨）。
 

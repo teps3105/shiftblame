@@ -291,7 +291,7 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
   writeFileSync(join(adv, '.shiftblame', 'tmp', 'r.md'), '# 對抗\n\n對抗判定：通過\n');
   const r0 = run2(adv, 'adversarial', join(adv, '.shiftblame', 'tmp', 'r.md'));
   assert.equal(r0.status, 0, '對抗宣告（發章前置）');
-  for (const bad of ['fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
+  for (const bad of ['merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
     const rb = run2(adv, 'commitmsg', bad);
     assert.equal(rb.status, 1, `詞彙閘擋「${bad}」`);
   }
