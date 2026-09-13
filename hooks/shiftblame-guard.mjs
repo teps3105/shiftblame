@@ -59,16 +59,16 @@ const projectRoot = (input) => {
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 shiftblame:think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
-  '②八段：intent→requirement→research→plan→test→build→verify→done。回頭自由（→intent 零旗標／done→test／done→intent --new-ms）；前進要鑰匙（--boss-ok＋時點對抗）。',
-  '③時點對抗（plan→test①／verify→test②／verify→done③——產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
+  '②段鏈：intent→requirement→research→plan→test→build→verify；verify 判決出邊——fail→intent 回指重整（零旗標；三觸發：卡住／老闆方向錯誤／驗收不過）、pass→next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。回頭自由（任意節點→intent 零旗標，同 ms 重走）；前進要鑰匙（--boss-ok＋時點對抗）。',
+  '③時點對抗（plan→test①放行前／build→verify②判決前／③＝pass 出口前——每 ms 驗收 pass 後、next／end 前，CLI 對兩出口驗新鮮度；產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
   '⑦版號屬老闆決策。',
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
-  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／done／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
-  '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
+  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
+  '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms（pass）前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -95,15 +95,15 @@ function nodeLine(root) {
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
-    if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
-    if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
+    if (st.node === 'verify') hint = '——判決段：fail（驗收不過／卡住／老闆方向錯誤）→intent 回指重整（零旗標）；pass→時點③後 next（--new-ms）或 end——判決紀錄寫 G1 回指區';
+
     let sopNote = '';
     try {
       const parts = [];
       for (const [nm, p] of [['SOP', join(root, '.shiftblame', 'SOP.md')], ['ROADMAP', join(root, '.shiftblame', 'ROADMAP.md')]]) {
         if (existsSync(p)) parts.push(nm + ' ' + readFileSync(p, 'utf8').split(/\r?\n/).length + ' 行');
       }
-      if (parts.length) sopNote = `\n[SOP／ROADMAP] ${parts.join('＋')}｜本 ms 審查：${st.sopReview?.ms === st.ms ? `已審 @${st.sopReview.at}` : '未審（開新 ms／PASS 前擋——sb sopreview <三問結論>）'}｜審查＝全文＋機械基本功（updated 同步、零日期日誌行、零重複）`;
+      if (parts.length) sopNote = `\n[SOP／ROADMAP] ${parts.join('＋')}｜本 ms 審查：${st.sopReview?.ms === st.ms ? `已審 @${st.sopReview.at}` : '未審（開新 ms（pass）前擋——sb sopreview <三問結論>）'}｜審查＝全文＋機械基本功（updated 同步、零日期日誌行、零重複）`;
     } catch { }
     let loopNote = '';
     if (st.turnUsage?.escalations) loopNote = `\n[迴圈升級] 本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent 開新輪，依修正分類補正 G1~G3 後接續（不凍結不停擺；同指紋二次升級＝死操作本回合封禁；計數純觀測）`;
@@ -162,7 +162,7 @@ function rotateStreams(root, st) {
 // 自動回 intent（任何活動段；不凍結不停擺）——依修正分類補正 G1~G3 後接續；同指紋第二次升級＝死操作，
 // 本回合封禁該操作（防宏觀升級循環），其餘工作照常推進。escalatedAt／escalations 屬純觀測，非凍結旗標；
 // history 條目留 budgetExhausted（CLI 對照 escalatedAt——歷史鍵名，語義＝迴圈升級）。
-const FLOW_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
+const FLOW_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify']);
 const LOOP_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
 const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const LOOP_DENY_AT = 4;
@@ -365,21 +365,21 @@ function understandingReviewLine(root, mark = true) {
   } catch { return ''; }
 }
 
-// 老闆決策邊雙重鎖：三邊（intent→requirement／plan→test／verify→done）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算
+// 老闆決策邊雙重鎖：雙邊（intent→requirement／plan→test）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
 // --rerun 返工直通與 CLI 同判據放行（同 ms 曾達 test、非 verify 出發）——兩層判定必須一致，否則直通死路＋假留痕
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|test|done)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|test)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const edge = { intent: 'requirement', plan: 'test', verify: 'done' }[st.node];
-    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|test|done)\b/)?.[1];
+    const edge = { intent: 'requirement', plan: 'test' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|test)\b/)?.[1];
     if (edge && edge === target) {
       const rerun = /(^|\s)--rerun\s+(impl|definition)(?=\s|$)/.exec(clean);
       if (rerun && st.node !== 'verify') {
-        const reached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify', 'done'].includes(h.to));
-        if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；verify→done 永不直通）
+        const reached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify'].includes(h.to));
+        if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；pass 出口永不直通）
         return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊走完整確認`;
       }
       return `老闆決策邊：${st.node}→${target}——經老闆授權（理解流曝光承擔）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
@@ -390,7 +390,7 @@ function checkLayerStopover(root, cmd) {
 
 // ———— 狀態寫入攔截：把寫入矩陣機械化 ————
 // 測試碼（測試慣例路徑）僅 test 段可寫；實作碼（.shiftblame/ 外 repo 檔）
-// 白名單＝build（實作段）／ended（PASS 後收尾歸檔）；其餘段對 repo 唯讀（verify 驗收唯讀、done 等待態唯讀）。
+// 白名單＝build（實作段）／ended（pass 後收尾歸檔）；其餘段對 repo 唯讀（verify 驗收唯讀）。
 // 測試不可變性由 git 承擔；Bash 內寫檔不在此層（殘餘；shell 漂移由 verify 邊樹檢查兜底）。
 
 const IMPL_WRITE_NODES = new Set(['build', 'ended']);
@@ -411,7 +411,7 @@ const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath'
 // G1→requirement/verify、G2→research/build、G3→plan/test（＋done §2.5）——落地段獲得承載檔回指區寫入權；
 // 跨區（落地段改定義區）仍是綁架上游死路，由 CLI 分區 hash 於 sb next 兜底（hooks 無檔內分區粒度——殘餘如實標註）。
 // archive/ 由 CLI 於收尾時寫入（放行）。
-const G_WRITE_NODES = { 1: new Set(['requirement', 'verify']), 2: new Set(['research', 'build']), 3: new Set(['plan', 'test', 'done']) };
+const G_WRITE_NODES = { 1: new Set(['requirement', 'verify']), 2: new Set(['research', 'build']), 3: new Set(['plan', 'test']) };
 const G_FILE_RE = /^\.shiftblame\/[^/]+\/[^/]+\/(archive\/)?G([123])\.md$/i; // i＋輸入 toLowerCase——大小寫不敏感（Windows FS）
 function checkGFileMatrix(root, toolInput) {
   if (!root) return null;
@@ -427,7 +427,7 @@ function checkGFileMatrix(root, toolInput) {
     if (m[1]) continue; // archive/ 由 CLI 寫入——放行
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
-      const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區；done §2.5）' }[g];
+      const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區）' }[g];
       return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
     }
   }
@@ -542,7 +542,7 @@ function checkStateWriteMatrix(root, toolInput) {
     if (isTest) {
       if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿（全程唯讀）；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；回 intent 重走或 done→test 重修後才可寫（SKILL 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；回 intent 重走（fail 回指重整）後才可寫（SKILL 寫入矩陣）`;
     }
   }
   return null;
@@ -731,24 +731,54 @@ function checkGitRedirect(cmd) {
   return null;
 }
 
+// -C 目標錨定（跨 repo 提交）：git 段含絕對 -C 目標時，該目標即本段提交的查證錨點——staged／印章／
+// 對抗狀態／文件鐵律全改對目標 repo 生效（章落目標專案、消費目標的對抗宣告），外部 session 以
+// git -C <絕對路徑> 提交內部 repo 因此成為合法且全額驗證的路徑；相對 -C 一律擋（路徑展開元規則）。
+function gitCRoot(seg, root) {
+  const c = seg.match(/(?:^|\s)-C\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|]+))/);
+  if (!c) return { root, error: null };
+  const target = c[1] ?? c[2] ?? c[3] ?? '';
+  if (!isAbs(target)) return { root, error: 'git -C 須用絕對路徑（路徑展開元規則）——相對 -C 會展開到非預期資料夾' };
+  return { root: target, error: null };
+}
+
 function checkCommitStamp(root, seg) {
   if (readFlowState(root).kind === 'invalid') return '流程接入異常——修復並以 sb state 查證後才可提交；既有印章不代表狀態有效';
   const extracted = extractCommitMessage(seg);
   if (extracted.error) return extracted.error;
-  // -C 目標（如有）必須絕對且等於印章專案根（印章綁定本 repo，限同段）
-  const c = seg.match(/(?:^|\s)-C\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|]+))/);
-  if (c) {
-    const target = c[1] ?? c[2] ?? c[3] ?? '';
-    if (!isAbs(target) || normPath(root, target) !== normPath(root, root)) {
-      return 'git -C 目標與印章專案不符——印章不可攜帶到其他 repo；在目標專案重跑 sb commitmsg，且 -C 使用絕對路徑';
-    }
+  // 文件鐵律（框架 repo 專屬——雙錨定 skills/shiftblame/SKILL.md＋hooks/shiftblame-guard.mjs）：框架文件隨演化
+  // 必須理順邏輯後實質重寫（重看條目、重評估、重設計），追加補釘堆疊即擋。機械判準：修改的框架 .md 於 staged diff
+  // 「新增＞0 且刪除＝0」（相對 HEAD）＝純追加；新增檔以 --diff-filter=A 名單豁免（numstat 同形不可判）；純刪除（修剪）放行；
+  // merge／rebase 進行中豁免（衝突收尾與歷史重放非演化編輯）。繞過面如實標註：改一字＋整段追加可過本閘（量測分工——
+  // 品質由提交對抗與老闆終審承擔）。
+  if (existsSync(join(root, 'skills', 'shiftblame', 'SKILL.md')) && existsSync(join(root, 'hooks', 'shiftblame-guard.mjs'))) {
+    try {
+      if (!existsSync(join(root, '.git', 'MERGE_HEAD')) && !existsSync(join(root, '.git', 'REBASE_HEAD'))) {
+        const numstat = spawnSync('git', ['-C', root, 'diff', '--cached', '--numstat'], { encoding: 'utf8', timeout: 5000 });
+        const addedList = spawnSync('git', ['-C', root, 'diff', '--cached', '--name-only', '--diff-filter=A'], { encoding: 'utf8', timeout: 5000 });
+        if (numstat?.status === 0 && addedList?.status === 0) {
+          const newFiles = new Set(String(addedList.stdout ?? '').split('\n').map((l) => l.replace(/^"|"$/g, '')));
+          const offenders = [];
+          for (const line of String(numstat.stdout ?? '').split('\n')) {
+            const m = line.match(/^(\d+|-)\t(\d+|-)\t(.+)$/);
+            const path = m ? m[3].replace(/^"|"$/g, '') : '';
+            const inScope = /^README\.md$/i.test(path) || /^docs\//i.test(path) || /^skills\//i.test(path);
+            if (!m || !/\.md$/i.test(path) || !inScope || m[1] === '-') continue;
+            if (m[1] === '-' || newFiles.has(path)) continue; // 二進制／新增檔豁免（numstat 同形不可判——以 filter 名單為準）
+            if (Number(m[1]) > 0 && Number(m[2]) === 0) offenders.push(path); // HEAD 已有且純追加
+          }
+          if (offenders.length) return '文件鐵律：框架文件隨演化必須理順邏輯後實質重寫（重看條目、重評估、重設計），非追加補釘堆疊——以下檔案本批僅追加零刪改，重寫既有本文後再提交：' + offenders.slice(0, 5).join('、');
+        }
+      }
+    } catch { /* 檢查不可行時回退既有閘（提交對抗與老闆終審承擔） */ }
   }
   const stampPath = join(root, '.shiftblame', 'tmp', 'commit-stamp.json');
-  if (!existsSync(stampPath)) return '缺少 commit 印章——先跑 sb commitmsg "<訊息>"（SKILL 提交規範）再以相同訊息 commit';
+  if (!existsSync(stampPath)) return '缺少 commit 印章——在本次提交的錨定專案（git -C 有目標時＝該目標 repo）跑 sb commitmsg "<訊息>"，再以相同訊息 commit';
   try {
     const stamp = JSON.parse(readFileSync(stampPath, 'utf8'));
     if (!stamp.cwd || !stamp.message || !stamp.issuedAt) return 'commit 印章欄位不全（偽造跡象）——重跑 sb commitmsg';
-    if (!isAbs(stamp.cwd) || normPath(root, stamp.cwd) !== normPath(root, root)) return 'commit 印章 cwd 非絕對或屬於其他專案——在本專案重跑 sb commitmsg（合法章 cwd 恆為絕對 ROOT）';
+    if (!isAbs(stamp.cwd)) return 'commit 印章 cwd 非絕對——重跑 sb commitmsg（合法章 cwd 恆為絕對 ROOT）';
+    if (normPath(root, stamp.cwd) !== normPath(root, root)) return 'commit 印章屬於其他專案——印章綁定提交錨點 repo；在本次 commit 的錨定專案（-C 目標或 hook cwd）重跑 sb adversarial＋sb commitmsg';
     const age = Date.now() - new Date(stamp.issuedAt).getTime();
     if (age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）——重跑 sb commitmsg "<訊息>"';
     if (age < -60000) return 'commit 印章時間戳在未來——僅接受剛產生的印章，重跑 sb commitmsg';
@@ -806,12 +836,12 @@ try {
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
     // 機械事實（段位／輸入流與理解覆蓋／未審理解／停等狀態）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + stopReportLine(root, false) + holdLine(root), 'SessionStart');
+    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
     const releaseNote = healthy ? recordInput(root, input.prompt ?? '') : preservePendingInput(root, input.prompt ?? '');
-    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + stopReportLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
+    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
   }
 
   if (event === 'Stop') {
@@ -831,7 +861,7 @@ try {
       writeFileSync(statePath, JSON.stringify(st, null, 2));
       process.stderr.write('[shiftblame] 停點偵測：流程進行中（' + (st.slug ?? '?') + '/' + (st.ms ?? '?') + ' @ ' + st.node + '）而無停點申報——若確實需要老闆決策／缺必要輸入，先執行 sb stop-report --question「具體待決問題（≥10 字）」再停（申報會曝光供老闆終審）；否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\n');
       process.exit(2);
-    } catch { process.exit(0); } // 狀態異常：放行（異常模式修復自由）
+    } catch { process.exit(0); }
   }
 
   if (event === 'PreToolUse') {
@@ -869,16 +899,19 @@ try {
         // commit-time 暫存繞過（-a/--only/pathspec）先擋——diff --cached 看不見提交期展開
         const cts = checkCommitTimeStaging(seg);
         if (cts) deny(cts);
+        // -C 錨定（跨 repo 提交）：絕對 -C 目標＝本段的查證錨點——後續閘全對目標 repo 生效
+        const anchor = gitCRoot(seg, root);
+        if (anchor.error) deny(anchor.error);
         // 暫存不入庫（staged 事實清單）先擋——印章只燒乾淨內容
-        const staged = checkStaged(root);
+        const staged = checkStaged(anchor.root);
         if (staged) deny(staged);
-        const reason = checkCommitStamp(root, seg);
+        const reason = checkCommitStamp(anchor.root, seg);
         if (reason) deny(reason);
       }
       process.exit(0); // 各段通過：靜默放行
     }
     if (WRITE_TOOL_RE.test(tool) && !READ_EXEMPT_RE.test(tool)) {
-      // G 檔寫入矩陣（RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test；done §2.5）——跨區由 CLI 分區 hash 兜底
+      // G 檔寫入矩陣（RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test）——跨區由 CLI 分區 hash 兜底
       const gMatrix = checkGFileMatrix(root, input.tool_input ?? {});
       if (gMatrix) deny(gMatrix);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）

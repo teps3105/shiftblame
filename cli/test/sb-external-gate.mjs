@@ -72,31 +72,31 @@ assert.equal(state().externalEvidence.tool, 'WebSearch');
 r = run('next', 'plan');
 assert.equal(r.status, 0, '外部調用後 research→plan 過（規模自由：一次即底線）');
 
-// —— 5. --rerun 返工（done→test 重修邊直通）：重置證據＋掛 pending ——
+// —— 5. --rerun 返工（fail 回指 intent 後前進重走直通）：重置證據＋掛 pending ——
 setState((st) => {
-  st.node = 'done';
-  st.history.push({ from: 'verify', to: 'done', at: new Date().toISOString(), ms: '001', bossOk: true }); // 同 ms 曾達 done（rerun 資格）
+  st.node = 'intent';
+  st.history.push({ from: 'plan', to: 'test', at: new Date().toISOString(), ms: '001' }); // 同 ms 曾達 test（rerun 資格）；fail 回指後落點 intent
 });
-r = run('next', 'test', '--rerun', 'impl');
+r = run('next', 'requirement', '--rerun', 'impl');
 assert.equal(r.status, 0, 'rerun 直通（同 ms 曾達 test 及之後、非 verify 出發）');
 assert.equal(state().externalEvidence, null, 'rerun 重置外部證據');
 assert.equal(state().rerunExtPending, true, '掛返工 pending');
 
 // —— 6. 返工後推進零外部擋（不得閉門自我檢驗）——
-r = run('next', 'build');
+r = run('next', 'research');
 assert.equal(r.status, 1, '返工期間零外部協助→擋');
 assert.match(r.stderr, /零外部協助/);
-assert.equal(state().node, 'test', '未推進（擋於 test→build 邊）');
+assert.equal(state().node, 'requirement', '未推進（擋於 requirement→research 邊）');
 
 // —— 7. 外部協助後過＋pending 消費即清 ——
 assert.equal(extCall('Agent').status, 0);
-r = run('next', 'build');
+r = run('next', 'research');
 assert.equal(r.status, 0, '外部協助後返工推進過');
 assert.equal(state().rerunExtPending, undefined, 'pending 消費即清');
 
 // —— 8. 第二次 rerun：證據再次重置、pending 重掛（每次返工重新計次）——
-setState((st) => { st.node = 'done'; });
-r = run('next', 'test', '--rerun', 'impl');
+setState((st) => { st.node = 'research'; });
+r = run('next', 'plan', '--rerun', 'impl');
 assert.equal(r.status, 0, '第二次 rerun 直通');
 assert.equal(state().externalEvidence, null, '每次 rerun 重置外部證據（重新計次）');
 assert.equal(state().rerunExtPending, true, 'pending 重掛');
@@ -109,4 +109,4 @@ assert.equal(run('next', 'intent').status, 0, '回 intent 免外部驗（返工�
 assert.equal(state().rerunExtPending, undefined, 'pending 不帶入新線性');
 assert.equal(state().externalEvidence, null, '證據隨中止清空（重走 research 邊再驗）');
 
-console.log('sb-external-gate: PASS');
+console.log('sb-external-gate: pass');

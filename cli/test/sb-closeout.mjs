@@ -50,8 +50,9 @@ assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接�
 const withoutDeclaration = state();
 delete withoutDeclaration.adversarialAt;
 delete withoutDeclaration.adversarialConsumed;
-save(withoutDeclaration); // 合成缺宣告 fixture；end 本身保留既有提交對抗，並不自動消費。
-ok(run('end', '--boss-ok')); // sb end 已機械化歸檔移動（slug 目錄 → archive/）
+withoutDeclaration.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '③' }];
+save(withoutDeclaration); // 合成缺提交宣告 fixture；end 驗 ③ 條目（時點對抗）不自動消費提交對抗。
+ok(run('end', '--boss-ok', '--adversarial')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
 assert.equal(run('commitmsg', 'merge old').status, 1, 'ended 缺提交對抗仍拒絕');
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
@@ -130,6 +131,36 @@ const remoteConfig = git('config', '--get', 'remote.published.url').stdout.trim(
 ok(git('config', '--unset', 'remote.published.url'));
 rejectInit(/無法解析|設定已變更/);
 ok(git('config', 'remote.published.url', remoteConfig));
+// —— sb init --main：完結 ended 生命週期——留在 closeout 基底分支直接作業（不開 slug 不建分支）——
+assert.equal(run('init', '--main', 'oops').status, 2, '--main 不接受 slug 參數');
+assert.equal(state().concludedAt, undefined, 'usage 失敗不留完結戳');
+{
+  const fresh = mkdtempSync(join(tmpdir(), 'sb-main-fresh-'));
+  try {
+    mkdirSync(join(fresh, '.shiftblame'), { recursive: true });
+    const rf = spawnSync(process.execPath, [cli, 'init', '--main'], { cwd: fresh, encoding: 'utf8' });
+    assert.equal(rf.status, 1, '無流程不可完結');
+    assert.match(rf.stderr, /完結僅接受合法 ended 狀態/);
+  } finally { rmSync(fresh, { recursive: true, force: true }); }
+}
+ok(git('checkout', '-b', 'sidebase'));
+assert.equal(run('init', '--main').status, 1, '未停於 closeout 基底分支不可完結');
+assert.match(run('init', '--main').stderr, /完結須停於 closeout 基底分支 trunk/);
+ok(git('checkout', 'trunk'));
+ok(run('init', '--main'));
+assert.ok(state().concludedAt, '完結戳寫入');
+assert.equal(state().node, 'ended', '完結維持 ended 分類（歸檔與 closeout 證據保留）');
+assert.match(run('state').stdout, /ended＋已完結/, 'state 讀出完結態');
+assert.equal(run('init', '--main').status, 1, '重複完結即拒');
+assert.match(run('init', '--main').stderr, /已完結/);
+// 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 closeout 查證）；正常 type 訊息照對抗＋發章。
+ok(run('adversarial', report));
+assert.equal(run('commitmsg', 'merge old').status, 1, '完結後固定合併訊息失效');
+assert.match(run('commitmsg', 'merge old').stderr, /已完結/);
+assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
+assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
+assert.equal(state().adversarialConsumed, true, '完結態 commit 消費對抗');
+assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
 commit('base2.txt', 'later base\n');
 const latestBase = tip();
 assert.notEqual(latestBase, baseTip);

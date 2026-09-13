@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 八段全流程：intent→requirement→research→plan→test→build→verify→done→（重修／開新 ms／PASS）
+// 全流程：intent→requirement→research→plan→test→build→verify→（fail 回指 intent 重整／pass→next 開新 ms 或 end 結束）
 // 授權鑰匙（撤印章）：--boss-ok 留痕＋--adversarial×adversarialLog point 條目對照＋理解流曝光（hooks 雙流記錄）
 const root = mkdtempSync(join(tmpdir(), 'sb-eight-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
@@ -91,56 +91,56 @@ assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|�
 assert.equal(pt('①', 'r2').status, 0, '重走後新鮮①條目（晚於上次同邊推進）');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
-// 功能循環：test（定稿 commit）→build（存檔 commit）→verify（tree 乾淨）
+// 功能循環：test（定稿 commit）→build（存檔 commit）→verify（tree 乾淨＋時點②判決前對抗）
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal("完整結果", "完整結果");\n');
 commit('test-1.mjs', 'test: cover first acceptance');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
 commit('seed.txt', 'feat: deliver first');
-assert.equal(run('next', 'verify').status, 0);
-// verify 唯讀：未存檔變更不得前進
+assert.match(run('next', 'verify').stderr, /需時點②對抗/, 'build→verify 判決前 MUST 時點②');
+assert.equal(pt('②').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+
+// verify 判決段唯讀：pass 出口前未存檔變更即擋
 writeFileSync(join(root, 'seed.txt'), '驗收中偷改\n');
 assert.equal(pt('③', 't1').status, 0);
-assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /working tree 未乾淨|乾淨/);
+assert.match(run('end', '--boss-ok', '--adversarial').stderr, /working tree 未乾淨|乾淨/);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
-// verify→done：--boss-ok＋時點③對抗即鑰匙（授權語義由理解流曝光承擔）
-assert.equal(pt('③').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.equal(state().node, 'done');
 
-// done→test 重修（零旗標，老闆不滿意）
-assert.equal(run('next', 'test').status, 0);
-assert.equal(state().node, 'test');
-// 回 verify 再 done（循環後）
+// fail 邊（三觸發：驗收不過／卡住／老闆方向錯誤）→回 intent 重整：零旗標、同 ms
+assert.equal(run('next', 'intent').status, 0, 'fail 回指＝回頭邊零旗標');
+assert.equal(state().node, 'intent');
+assert.equal(state().ms, '001', 'fail 回指同 ms 重整');
+assert.equal(state().rev, 2, '第二次回 intent 輪次遞增（時序可對照）');
+// 重整後重走（本 ms 曾達 test——返工直通）
+assert.equal(run('next', 'requirement', '--rerun', 'definition').status, 0, '重整重走：返工直通');
+assert.ok(state().history.at(-1).rerun === 'definition', '直通留痕於 history');
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
+assert.equal(run('next', 'research').status, 0);
+assert.equal(run('next', 'plan').status, 0, '返工外部協助延續作數——一次調用滿足兩閘');
+assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度核心防護）');
+assert.equal(pt('①', 'r2').status, 0, '重走後新鮮①條目（晚於上次同邊推進）');
+assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed after rework fix\n');
 commit('seed.txt', 'fix: touch for loop');
 assert.equal(run('next', 'build').status, 0);
-assert.equal(run('next', 'verify').status, 0);
+assert.match(run('next', 'verify', '--adversarial').stderr, /過期|早於同邊/, '舊②條目過期即擋');
+assert.equal(pt('②', 'r2').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+
+// pass 出口一：next（--new-ms 開新 ms——老闆選擇）；缺件與舊③即擋
+assert.match(run('next', 'intent', '--new-ms').stderr, /--boss-ok/, '開新 ms 缺 --boss-ok 即擋');
+assert.match(run('next', 'intent', '--new-ms', '--boss-ok').stderr, /時點③對抗/, '開新 ms 缺 --adversarial 即擋');
+assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點③/, '舊③條目過期即擋（每 ms 新鮮度）');
 assert.equal(pt('③', 'r2').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').status, 0);
+assert.equal(state().ms, '002', '--new-ms→ms++');
+assert.ok(state().msTelemetry && state().msTelemetry['001'] && state().msTelemetry['001'].diff, 'per-ms 遙測：ms001 已結算（鍵＝被結算 ms）');
+assert.ok(state().msBaseline, '新 ms 記自身基準');
 
-// done→intent：零旗標＝同 ms；--new-ms＝開新里程碑（ms++）
-assert.equal(run('next', 'intent').status, 0);
-assert.equal(state().ms, '001'); // 同 ms
-assert.equal(state().rev, 2, '第二次開新輪遞增（時序可對照）');
-assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-assert.equal(run('next', 'research').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
-assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('①', 'r3').status, 0);
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
-writeFileSync(join(root, 'seed.txt'), 'seed with feature 1 v2\n');
-commit('seed.txt', 'feat: redo after rework');
-assert.equal(run('next', 'build').status, 0);
-assert.equal(run('next', 'verify').status, 0);
-assert.equal(pt('③', 'r3').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.equal(run('next', 'intent', '--new-ms').status, 0);
-assert.equal(state().ms, '002'); // --new-ms→ms++
-
-// PASS：sb end 需 done 態＋--boss-ok（撤 pass 印章）
-assert.match(run('end', '--boss-ok').stderr, /done 態|sb end 僅限/);
-// ms002 建檔後快走到 done（測 sb end 的 --boss-ok 鏈）
+// pass 出口二前置：sb end 僅限 verify 態
+assert.match(run('end', '--boss-ok').stderr, /sb end 僅限 verify/, '非 verify 態不可 end');
+// ms002 建檔後快走到 verify（測 sb end 的鑰匙鏈）
 mkdirSync(join(root, '.shiftblame/demo/002'), { recursive: true });
 const ms2 = join(root, '.shiftblame/demo/002');
 writeFileSync(join(ms2, 'G1.md'), '# 驗收\n- AC-01 | 需求=R1 | 使用者=u | 前置=p | 操作=o | 可觀察結果=r | 失敗邊界=f | 證據=BEHAVIOR\n## 回指記錄\n');
@@ -161,14 +161,14 @@ assert.equal(pt('①', 'ms2').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed for second ms feature\n');
 commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);
-assert.equal(run('next', 'verify').status, 0);
-assert.match(run('end', '--boss-ok').stderr, /僅限 done/);
+assert.equal(pt('②', 'ms2').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+assert.match(run('end', '--boss-ok').stderr, /時點③對抗/, 'end 缺 --adversarial 即擋');
 assert.equal(pt('③', 'ms2').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-assert.equal(run('end', '--boss-ok').status, 0);
+assert.equal(run('end', '--boss-ok', '--adversarial').status, 0);
 {
   const stEnd = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-  assert.equal(stEnd.node, 'ended', 'PASS 後 ended 態');
+  assert.equal(stEnd.node, 'ended', 'pass 後 ended 態');
   assert.ok(!Array.isArray(stEnd.inputs) || stEnd.inputs.length === 0, '輸入流已清（slug 邊界）');
   assert.ok(!Array.isArray(stEnd.understandings) || stEnd.understandings.length === 0, '理解流已清');
   assert.ok(!Array.isArray(stEnd.adversarialLog) || stEnd.adversarialLog.length === 0, '對抗 log 已清');
@@ -184,7 +184,7 @@ const oldG1 = readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'ut
 assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔不等於合併與清理完成');
 assert.equal(git('checkout', originalBase).status, 0);
 assert.equal(git('merge', '--no-ff', endedBranch, '-m', 'merge demo').status, 0, '分支合併一律 --no-ff＋固定訊息 merge <slug>');
-assert.equal(run('closeout', '--base', originalBase).status, 0);
+{ const co = run('closeout', '--base', originalBase); if (co.status !== 0) console.error('CLOSEOUT:', co.stderr); assert.equal(co.status, 0); }
 assert.equal(run('init', 'next-work', 'fix').status, 1, '舊本機分支存在仍拒絕');
 assert.equal(git('branch', '-d', endedBranch).status, 0);
 const nextBaseTip = git('rev-parse', 'HEAD').stdout.trim();
@@ -201,4 +201,4 @@ assert.deepEqual(state().inputs, nextRecords.inputs);
 assert.equal(state().endedAt, undefined);
 assert.equal(state().closeout, undefined);
 assert.equal(readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'utf8'), oldG1);
-console.log('sb-user-acceptance: PASS');
+console.log('sb-user-acceptance: pass');

@@ -206,6 +206,52 @@ const ok = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: {
 assert.equal(ok.status, 0);
 assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).adversarialConsumed, true, 'hooks 消費印章時一併消費對抗宣告');
 
+// —— 8.5 文件鐵律：框架 repo 的 .md 純追加（零刪改）不得 commit；實質重寫（有刪有改）與新增檔放行 ——
+{
+  mkdirSync(join(root, 'skills', 'shiftblame'), { recursive: true });
+  mkdirSync(join(root, 'hooks'), { recursive: true });
+  writeFileSync(join(root, 'skills', 'shiftblame', 'SKILL.md'), '# framework\n');
+  writeFileSync(join(root, 'hooks', 'shiftblame-guard.mjs'), '// anchor\n'); // 文件鐵律雙錨定
+  writeFileSync(join(root, 'README.md'), '# 專案\n說明。\n');
+  spawnSync('git', ['init'], { cwd: root });
+  writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
+  spawnSync('git', ['add', '.'], { cwd: root });
+  spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'init'], { cwd: root });
+  const issue = (msg) => writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: root, issuedAt: new Date().toISOString() }));
+  const freshAdversarial = () => {
+    const stv = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
+    stv.adversarialAt = new Date().toISOString(); stv.adversarialConsumed = false;
+    writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stv));
+  };
+  // 純追加：擋（README.md 已在 HEAD——修改檔新增＞0 刪除＝0；且不消費印章——擋截在印章驗證前）
+  writeFileSync(join(root, 'README.md'), '# 專案\n說明。\n追加段（未理順舊文）。\n');
+  spawnSync('git', ['add', 'README.md'], { cwd: root });
+  issue('feat: 測試文件鐵律');
+  const blocked = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律"' } });
+  assert.equal(blocked.status, 2, '框架 repo 的 .md 純追加 commit 擋下');
+  assert.match(blocked.stderr, /文件鐵律/, '擋截訊息要求理順邏輯實質重寫');
+  assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), true, '擋停在印章驗證前——印章不消費');
+  // 實質重寫（有刪有改）：放行（印章與對抗一併消費）
+  writeFileSync(join(root, 'README.md'), '# 專案（理順後）\n說明改寫。\n');
+  spawnSync('git', ['add', 'README.md'], { cwd: root });
+  issue('feat: 測試文件鐵律');
+  freshAdversarial();
+  const rewritten = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律"' } });
+  assert.equal(rewritten.status, 0, '實質重寫（有刪有改）放行');
+  assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '印章已消費');
+  // 新增檔豁免：放行（skills 下新 .md——HEAD 無此檔）
+  writeFileSync(join(root, 'skills', 'shiftblame', 'new-doc.md'), '# 新文件\n全新內容。\n');
+  spawnSync('git', ['add', 'new-doc.md'], { cwd: root });
+  issue('feat: 測試文件鐵律新增檔');
+  freshAdversarial();
+  const added = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律新增檔"' } });
+  assert.equal(added.status, 0, '新增檔（HEAD 無此檔）豁免——放行');
+  // 清理：移除框架錨定與 git，還原共享沙箱
+  rmSync(join(root, 'skills'), { recursive: true, force: true });
+  rmSync(join(root, '.git'), { recursive: true, force: true });
+  rmSync(join(root, 'README.md'), { force: true });
+}
+
 // —— 9. 破壞性命令：相對路徑＋重定向截斷 ——
 const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo hi > out.txt' } });
 assert.equal(bad.status, 2);
@@ -313,4 +359,4 @@ assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input
   writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));
   assert.equal(bash('git add x.txt').status, 0, '修復完成（狀態可辨識）後 git 寫入恢復');
 }
-console.log('sb-hooks: PASS');
+console.log('sb-hooks: pass');

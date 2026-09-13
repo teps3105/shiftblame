@@ -84,7 +84,7 @@ const TEN_PROJECT_BASELINE = {
   'Trickster-Web': 'active',
   Varellune: 'active',
   Varellune_Document: 'invalid',
-  'dnd-prototype': 'active', // 2.1.2 升級時重新量測：實機已重開流程（ended→requirement——隨實機流程演進的漂移，非分類器變更）
+  'dnd-prototype': 'active', // 2.2.0 升級時重新量測：實機已開新 slug（windows-mouse-offset）——ended→active 漂移屬正常，非分類器變更
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
   shiftblame: 'direct',
@@ -115,4 +115,4 @@ assert.ok(scanned >= 1, '至少完成一個實機專案的回歸');
   spawnSync(process.execPath, [cli, 'state'], { cwd: root, encoding: 'utf8' });
   assert.ok(existsSync(usage), '清理後再調用自動重建');
 }
-console.log(`sb-compat: PASS（實機回歸 ${scanned}/${Object.keys(TEN_PROJECT_BASELINE).length} 專案——其餘目錄不存在略過）`);
+console.log(`sb-compat: pass（實機回歸 ${scanned}/${Object.keys(TEN_PROJECT_BASELINE).length} 專案——其餘目錄不存在略過）`);

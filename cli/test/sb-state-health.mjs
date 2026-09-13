@@ -163,4 +163,4 @@ for (const [node, expected] of [['build', 0], ['verify', 2], ['intent', 2]]) {
 const skill = readFileSync(new URL('../../skills/think/SKILL.md', import.meta.url), 'utf8');
 assert.match(skill, /流程接入失敗先修復/);
 assert.match(skill, /接入不等於開 slug/);
-console.log('sb-state-health: PASS');
+console.log('sb-state-health: pass');

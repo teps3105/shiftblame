@@ -74,13 +74,16 @@ const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_K
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
 
 function endedState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold', 'workBranch', 'closeout', 'telemetry'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
+  if (Object.hasOwn(st, 'concludedAt') && !timestamp(st.concludedAt)) return false; // sb init --main 完結戳（維持 ended 分類——main 直接作業）
   if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
   if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
   if (Object.hasOwn(st, 'closeout') && !validCloseout(st)) return false;
   if (Object.hasOwn(st, 'telemetry') && !validTelemetry(st.telemetry)) return false;
+  if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準（ended 帶全帳本）
+  if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
   if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, 'ended')))) return false;
   for (const k of ['adversarialConsumed', 'rerunExtPending']) if (Object.hasOwn(st, k) && typeof st[k] !== 'boolean') return false;
   if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length)) return false;
@@ -117,7 +120,8 @@ function activeExtras(st) {
     && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
-  // 停點偵測（SKILL §1.10）：申報屬活動態——inputIdx 全域基準、問題實質門檻 ≥10 字；僅活動態可寫（CLI 已限，此為分類器底線）。
+  if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準
+  if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
   if (Object.hasOwn(st, 'stopReport') && !(objectRecord(st.stopReport) && exactKeys(st.stopReport, ['at', 'inputIdx', 'node', 'question', 'reviewed'])
     && timestamp(st.stopReport.at) && Number.isInteger(st.stopReport.inputIdx) && st.stopReport.inputIdx >= 0
     && st.stopReport.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length

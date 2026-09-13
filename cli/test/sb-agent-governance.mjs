@@ -215,4 +215,4 @@ assert.match(think, /回 intent|回think/);
 assert.match(readme, /八段|intent → requirement/);
 assert.match(readme, /--boss-ok/);
 assert.match(manifest.description, /八段/);
-console.log('sb-agent-governance: PASS');
+console.log('sb-agent-governance: pass');

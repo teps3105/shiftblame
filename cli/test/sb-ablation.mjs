@@ -250,7 +250,7 @@ ablation('git 路徑重定向攔截 checkGitRedirect（GIT_DIR/--git-dir）', ()
 
 // —— CLI 機制（sb.mjs）——
 ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () => {
-  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test') || (from === 'verify' && to === 'done');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test') || (from === 'verify' && to === 'done')); // ABLATED"]]);
+  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test')); // ABLATED"]]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'requirement'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：intent→requirement 缺 --boss-ok 被 CLI 擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉後 CLI 層繞過決策邊（hooks 層獨撐）');
@@ -289,7 +289,7 @@ ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
 
 ablation('G1 契約核對（放行後偏離即擋）', () => {
   const neu = neutralize(SB, [['if (st.g1Contract?.ms === st.ms && target !== \'intent\') {', 'if (false && st.g1Contract?.ms === st.ms && target !== \'intent\') { // ABLATED']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p2.md', verdict: '通過', node: 'build', point: '②' }], g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：G1 偏離放行契約被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉核對後契約漂移放行');
   function r_placeholder() { return '.shiftblame/demo/001'; }
@@ -437,7 +437,7 @@ ablation('有效 Git 忽略免重複追加', () => {
   assert.equal(probe(neu), '.shiftblame/\r\n.shiftblame/\r\n');
 });
 
-ablation('PASS 後合併與清理查證（移除即從舊 HEAD 初始化）', () => {
+ablation('pass 後合併與清理查證（移除即從舊 HEAD 初始化）', () => {
   const neu = neutralize(SB, [['const gitPlan = ended ? closedGitPlan(prior) : { problems: [], baseCommit: null };', 'const gitPlan = { problems: [], baseCommit: null }; // ABLATED']]);
   const probe = (script) => {
     const r = mkSandbox({ git: true, state: { node: 'ended', endedAt: '2026-09-08T01:00:00.000Z' } });
@@ -493,7 +493,7 @@ ablation('迴圈升級自動回 intent（不凍結續行）', () => {
 });
 
 ablation('停點偵測（無申報之停擋停一次）', () => {
-  const neu = neutralize(GUARD, [['      process.exit(2);\n    } catch { process.exit(0); } // 狀態異常：放行（異常模式修復自由）', '      process.exit(0);\n    } catch { process.exit(0); } // ABLATED']]);
+  const neu = neutralize(GUARD, [["否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(2);", "否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(0); // ABLATED"]]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'test' } });
     hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
@@ -507,6 +507,34 @@ ablation('停點偵測（無申報之停擋停一次）', () => {
   assert.equal(intact.blocked, true, 'intact：自限標記落檔（單次擋停）');
   const gone = probe(neu);
   assert.equal(gone.status, 0, 'ablated：拆掉擋停判準即無申報之停放行（防護消失——偷懶停復活）');
+});
+
+ablation('文件鐵律（框架 .md 純追加不得 commit）', () => {
+  const neu = neutralize(GUARD, [["if (offenders.length) return '文件鐵律：", "// ABLATED: if (offenders.length) return '文件鐵律："]]);
+  const probe = (script) => {
+    const r = mkSandbox({ git: true, state: { node: 'build' } });
+    mkdirSync(join(r, 'skills', 'shiftblame'), { recursive: true });
+    mkdirSync(join(r, 'hooks'), { recursive: true });
+    writeFileSync(join(r, 'skills', 'shiftblame', 'SKILL.md'), '# framework\n');
+    writeFileSync(join(r, 'hooks', 'shiftblame-guard.mjs'), '// anchor\n');
+    writeFileSync(join(r, 'README.md'), '# 專案\n說明。\n');
+    spawnSync('git', ['add', '.'], { cwd: r });
+    spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'init'], { cwd: r });
+    writeFileSync(join(r, 'README.md'), '# 專案\n說明。\n追加。\n');
+    spawnSync('git', ['add', 'README.md'], { cwd: r });
+    const st = stateOf(r);
+    st.adversarialAt = new Date().toISOString(); st.adversarialConsumed = false;
+    writeFileSync(join(r, '.shiftblame', 'flow-state.json'), JSON.stringify(st));
+    writeFileSync(join(r, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: r, issuedAt: new Date().toISOString() }));
+    const result = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
+    rmSync(r, { recursive: true, force: true });
+    return { status: result.status, msg: result.stderr || '' };
+  };
+  const intact = probe(GUARD);
+  assert.equal(intact.status, 2, 'intact：框架 .md 純追加 commit 擋下');
+  assert.match(intact.msg, /文件鐵律/, 'intact：訊息要求理順邏輯實質重寫');
+  const gone = probe(neu);
+  assert.equal(gone.status, 0, 'ablated：拆掉鐵律即純追加照樣 commit（防護消失——補釘堆疊復活）');
 });
 
 ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒文件不發審查戳記）', () => {
@@ -526,22 +554,22 @@ ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒�
   assert.equal(gone.stamped, true, 'ablated：戳記已發');
 });
 
-ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', () => {
+ablation('SOP／ROADMAP 每 ms 審查閘（pass 前機械驗本 ms 已審）', () => {
   const neu = neutralize(SB, [['if (sopProblem) die([sopProblem]);', '// ABLATED']]);
   const probe = (script) => {
-    const r = mkSandbox({ state: { node: 'done' }, files: { '.shiftblame/SOP.md': '# SOP\n本專案規範。\n' } });
-    const result = cliRun(script, r, 'end', '--boss-ok');
+    const r = mkSandbox({ state: { node: 'verify', adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '③' }] }, files: { '.shiftblame/SOP.md': '# SOP\n本專案規範。\n' } });
+    const result = cliRun(script, r, 'end', '--boss-ok', '--adversarial');
     rmSync(r, { recursive: true, force: true });
     return result;
   };
-  assert.match(probe(SB).stderr, /每 ms 必審/, 'intact：本 ms 未審即 PASS 擋下');
+  assert.match(probe(SB).stderr, /每 ms 必審/, 'intact：本 ms 未審即 pass 擋下');
   assert.equal(probe(neu).status, 0, 'ablated：拆掉審查閘即放行');
 });
 
 ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout）', () => {
   const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit, slug) {', 'function noFfMergeEvidence(workCommit, baseCommit, slug) {\n  return baseCommit; // ABLATED']]);
   const probe = (script) => {
-    const r = mkSandbox({ git: true, state: { node: 'done' } });
+    const r = mkSandbox({ git: true, state: { node: 'verify', adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '③' }] } });
     const base = spawnSync('git', ['branch', '--show-current'], { cwd: r, encoding: 'utf8' }).stdout.trim();
     spawnSync('git', ['checkout', '-b', 'feat/demo'], { cwd: r });
     writeFileSync(join(r, 'work.txt'), 'w\n');
@@ -550,7 +578,7 @@ ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout�
     const st = stateOf(r);
     st.workBranch = 'feat/demo';
     writeFileSync(join(r, '.shiftblame/flow-state.json'), JSON.stringify(st));
-    cliRun(SB, r, 'end', '--boss-ok'); // PASS＋機械歸檔（與被消融函數無關——end 固定用原版）
+    cliRun(SB, r, 'end', '--boss-ok', '--adversarial'); // pass 出口＋機械歸檔（與被消融函數無關——end 固定用原版）
     spawnSync('git', ['checkout', base], { cwd: r });
     spawnSync('git', ['merge', '--ff-only', 'feat/demo'], { cwd: r });
     const result = cliRun(script, r, 'closeout', '--base', base);
@@ -562,8 +590,8 @@ ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout�
 });
 
 for (const { name, fn } of ABLATIONS) {
-  try { fn(); pass++; console.log(`PASS [消融] ${name}`); }
+  try { fn(); pass++; console.log(`pass [消融] ${name}`); }
   catch (e) { fails.push(name); console.error(`FAIL [消融] ${name}：${e.message}`); }
 }
 assert.equal(fails.length, 0, `消融矩陣 ${fails.length} 項失敗：${fails.join('；')}`);
-console.log(`sb-ablation: PASS（${pass}/${ABLATIONS.length} 機制——intact 對照＋拆掉→防護消失成對成立）`);
+console.log(`sb-ablation: pass（${pass}/${ABLATIONS.length} 機制——intact 對照＋拆掉→防護消失成對成立）`);

@@ -55,4 +55,4 @@ assert.ok(!existsSync(join(ms, 'rev')), '零 rev 目錄寫入（歷史歸 git）
 run('next', 'requirement', '--boss-ok');
 run('next', 'intent');
 assert.equal(state().rev, 2, '第二次開新輪遞增計數（時序由 history 承擔）');
-console.log('sb-contract-lock: PASS');
+console.log('sb-contract-lock: pass');

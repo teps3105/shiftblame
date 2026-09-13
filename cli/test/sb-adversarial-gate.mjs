@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗：--adversarial 邊（plan→test①、verify→test②、verify→done③）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進）；非對抗邊帶旗標即擋。
+// 時點對抗：--adversarial 邊（plan→test①放行前、build→verify②判決前）＋③＝pass 出口前（next／end 兩門）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -44,32 +44,14 @@ assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目不發 commit 章（邊章與 commit 章分流）');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
-// 循環到 verify
+// 循環到 verify（build→verify＝時點②判決前）
 writeFileSync(join(root, 't.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 assert.equal(git('add', 't.mjs').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: cover').status, 0);
 assert.equal(run('next', 'build').status, 0);
-writeFileSync(join(root, 'seed.txt'), 'v2\n');
-assert.equal(git('add', 'seed.txt').status, 0);
-assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
-assert.equal(run('next', 'verify').status, 0);
-
-// 4. verify→done：缺時點③條目即擋
-assert.match(run('next', 'done', '--boss-ok', '--adversarial').stderr, /缺時點③條目/);
-// 5. --point ③→過
-assert.equal(run('adversarial', ptReport('③'), '--point', '③').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
-// 6. verify→test 循環邊：時點②對照（done→test 重修後再走）
-assert.equal(run('next', 'test').status, 0);
-assert.equal(run('next', 'build').status, 0);
-writeFileSync(join(root, 'seed.txt'), 'v3\n');
-assert.equal(git('add', 'seed.txt').status, 0);
-assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);
-assert.equal(run('next', 'verify').status, 0);
-// 6. 循環邊：缺新時點②條目即擋（新鮮度）→補宣告→過
-assert.match(run('next', 'test', '--adversarial').stderr, /缺時點②條目/);
-assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
-assert.equal(run('next', 'test', '--adversarial').status, 0);
+// 提交對抗閘段於 build 態執行（2.2.0：驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
+// 段內合成狀態寫入以快照／還原隔離，不污染主流程狀態與後續新鮮度判定。
+const stateSnapshot = readFileSync(join(root, ".shiftblame/flow-state.json"), "utf8");
 // —— 提交對抗閘：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
 const tmpDir = join(root, '.shiftblame', 'tmp');
 const reportPath = join(tmpDir, 'review-test.md');
@@ -271,6 +253,52 @@ const hf = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inpu
 assert.equal(hf.status, 2, 'stamp.cwd 相對（"."）→hooks 擋');
 assert.match(hf.stderr, /非絕對/);
 
+// —— 跨 repo 提交錨定：外部 session 以 git -C <絕對路徑> 提交內部 repo——全套 commit 閘改對目標 repo 生效 ——
+{
+  const ext = mkdtempSync(join(tmpdir(), 'sb-adv-ext-'));
+  const inner = mkdtempSync(join(tmpdir(), 'sb-adv-inner-'));
+  try {
+    const gi = (...a) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', ...a], { cwd: inner, encoding: 'utf8' });
+    assert.equal(gi('init').status, 0);
+    writeFileSync(join(inner, '.gitignore'), '.shiftblame/\n');
+    writeFileSync(join(inner, 'work.txt'), 'w\n');
+    assert.equal(gi('add', 'work.txt').status, 0);
+    assert.equal(gi('commit', '-m', 'test: seed').status, 0);
+    writeFileSync(join(inner, 'more.txt'), 'm\n');
+    assert.equal(gi('add', 'more.txt').status, 0); // staged 內容待 commit（staged 閘對 inner 生效）
+    const at = new Date().toISOString();
+    mkdirSync(join(inner, '.shiftblame', 'tmp'), { recursive: true });
+    writeFileSync(join(inner, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: null, ms: null, node: null, history: [], adversarialLog: [{ at, report: '.shiftblame/tmp/r.md', verdict: '通過', node: null }], adversarialAt: at, adversarialConsumed: false }));
+    const hookExt = (command) => spawnSync(process.execPath, [hookBin], { encoding: 'utf8', input: JSON.stringify({ cwd: ext, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } }) });
+    // 內部 repo 無章即擋（章不落在 session cwd 的外部專案）
+    const hx = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
+    assert.equal(hx.status, 2, '內部 repo 缺章→擋');
+    assert.match(hx.stderr, /缺少 commit 印章/);
+    // 內部 repo 有效章＋未消費對抗→跨 repo commit 放行，並消費內部 repo 的對抗與印章
+    writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: inner, issuedAt: new Date().toISOString() }));
+    const hp = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
+    assert.equal(hp.status, 0, '內部 repo 有效章→跨 repo commit 放行');
+    const ist = JSON.parse(readFileSync(join(inner, '.shiftblame', 'flow-state.json'), 'utf8'));
+    assert.equal(ist.adversarialConsumed, true, '消費目標 repo 的對抗宣告');
+    assert.equal(existsSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '焚目標 repo 印章');
+    // 章綁定其他專案：ext 簽發的章被搬進 inner（偽造面）→擋（章綁定錨點 repo）
+    writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: ext, issuedAt: new Date().toISOString() }));
+    const hm = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
+    assert.equal(hm.status, 2, '其他專案的章不可提交內部 repo');
+    assert.match(hm.stderr, /屬於其他專案/);
+    // 相對 -C 一律擋（路徑展開元規則）
+    const hrC = hookExt(`git -C whatever commit -m "feat: 跨repo提交"`);
+    assert.equal(hrC.status, 2, '相對 -C 擋');
+    assert.match(hrC.stderr, /絕對路徑/);
+    // staged 系統檔對錨點 repo 生效：inner staged .shiftblame/ 檔→擋（系統檔不入庫在跨 repo 提交下不降級）
+    writeFileSync(join(inner, '.shiftblame', 'leak.txt'), 'x\n');
+    assert.equal(gi('add', '-f', '.shiftblame/leak.txt').status, 0);
+    const hl = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
+    assert.equal(hl.status, 2, '跨 repo 提交 staged 系統檔→擋');
+    assert.match(hl.stderr, /系統檔不入庫/);
+  } finally { rmSync(ext, { recursive: true, force: true }); rmSync(inner, { recursive: true, force: true }); }
+}
+
 // 大小寫與反斜線跳脫形態（N1 回歸：Windows env 查找不敏感＋bash 引號吞反斜線）
 const hr5 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git_dir=${root}/.git git commit -m "feat: 重定向繞過嘗試"` } });
 assert.equal(hr5.status, 2, '小寫 git_dir= →hooks 擋');
@@ -301,4 +329,37 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
   }
   rmSync(adv, { recursive: true, force: true });
 }
-console.log('sb-adversarial-gate: PASS');
+writeFileSync(join(root, ".shiftblame/flow-state.json"), stateSnapshot); // 還原主流程狀態
+assert.equal(git('checkout', '--', 'seed.txt').status, 0, '段內 -a 測試髒汙還原');
+rmSync(join(root, 'tmp'), { recursive: true, force: true }); // 段內 untracked 清除
+rmSync(join(root, '.shiftblame-evil'), { recursive: true, force: true }); // 段內前綴繞過沙盒清除
+assert.equal(git('status', '--porcelain').stdout.trim(), '', '段後工作樹全淨');
+writeFileSync(join(root, 'seed.txt'), 'v2\n');
+assert.equal(git('add', 'seed.txt').status, 0);
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
+assert.match(run('next', 'verify', '--adversarial').stderr, /缺時點②條目/, '判決前缺②即擋');
+assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+
+// 4. pass 出口（next／end 兩門）：缺時點③條目即擋
+assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點③/, 'next 出口缺③即擋');
+assert.match(run('end', '--boss-ok', '--adversarial').stderr, /時點③/, 'end 出口缺③即擋');
+// 5. fail 邊（三觸發）→回 intent 重整：零旗標、同 ms；重走（曾達 test——返工直通）
+assert.equal(run('next', 'intent').status, 0, 'fail 回指＝零旗標');
+assert.equal(state().ms, '001');
+assert.equal(run('next', 'requirement', '--rerun', 'definition').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
+assert.equal(run('next', 'research').status, 0, '返工外部協助作數——一次調用滿足兩閘');
+assert.equal(run('next', 'plan').status, 0);
+assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
+assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'build').status, 0);
+writeFileSync(join(root, 'seed.txt'), 'v3\n');
+assert.equal(git('add', 'seed.txt').status, 0);
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);
+// 6. 循環邊：舊②條目過期即擋（新鮮度）→補宣告→過
+assert.match(run('next', 'verify', '--adversarial').stderr, /過期|早於同邊/, '舊②條目過期即擋');
+assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+console.log('sb-adversarial-gate: pass');

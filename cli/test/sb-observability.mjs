@@ -119,7 +119,7 @@ const u7 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inpu
 assert.equal(u7.status, 0, '新回合工具恢復（同操作指紋隨回合重置）');
 assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
-// —— 4. 重走至 done（--rerun 直通＋返工外部協助），途中寫真實 commit 供遙測 diff ——
+// —— 4. 重走至 verify（--rerun 直通＋返工外部協助），途中寫真實 commit 供遙測 diff ——
 assert.equal(run('next', 'requirement', '--rerun', 'impl').status, 0, '返工直通（同 ms 曾達 test）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 返工外部協助
 assert.equal(run('next', 'research').status, 0);
@@ -131,14 +131,15 @@ commit('test-1.mjs', 'test: cover acceptance');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
-assert.equal(run('next', 'verify').status, 0);
-assert.equal(pt('③').status, 0);
-assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
+assert.match(run('next', 'verify').stderr, /需時點②對抗/, '判決前缺②即擋');
+assert.equal(pt('②').status, 0);
+assert.equal(run('next', 'verify', '--adversarial').status, 0);
+assert.equal(pt('③').status, 0, 'pass 出口前置——③ 條目（end 前驗新鮮度）');
 
-// —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 PASS 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
+// —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n');
-assert.match(run('end', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 PASS 擋下');
+assert.match(run('end', '--boss-ok', '--adversarial').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
 assert.match(run('sopreview').status !== undefined && run('sopreview').stderr, /三問結論/, '缺三問結論即擋');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n本專案規範。\n2026-01-01 起改用新流程\n');
 const dirty = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
@@ -149,7 +150,7 @@ writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n--
 assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
 assert.match(state().sopReview.answers, /三問全過/, '三問結論落檔');
-const endOut = run('end', '--boss-ok');
+const endOut = run('end', '--boss-ok', '--adversarial');
 assert.equal(endOut.status, 0, endOut.stderr);
 
 // —— 6. 產出遙測：git baseline 錨定＋對抗判定（含審查模型）＋計數＋耗時 ——
@@ -215,4 +216,4 @@ rotHook({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill
   const covered = Number((seen.stdout.match(/理解覆蓋至 #(\d+)/) ?? [])[1]);
   assert.equal(total - 1 - covered, 1, '曝光行 uncovered＝僅本則新輸入（輪替不產生假警報）');
 }
-console.log('sb-observability: PASS');
+console.log('sb-observability: pass');
