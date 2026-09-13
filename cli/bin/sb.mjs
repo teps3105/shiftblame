@@ -3,7 +3,7 @@
 //
 // 對抗兩類系統性問題：
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
-//      對策：八段單向鏈＋回頭自由（→intent）＋每個推進點的前置閘門；推進
+//      對策：七段單向鏈＋回頭自由（→intent）＋每個推進點的前置閘門；推進
 //      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭邊零旗標，前進要鑰匙。
 //   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋adversarialLog point 條目對照
 //      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
@@ -821,7 +821,7 @@ function cmdNext(target, opts) {
   const st = readJson(STATE_FILE);
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——出口同 pass（--new-ms／end），重修走 intent；推進寫檔即自然遷移
   if (st.node === 'ended' || !(st.node in FLOW)) die([`目前狀態 ${st.node ?? '（無）'} 不可推進——slug 已結束或狀態檔不屬於任何段`]);
-  if (!(target in FLOW)) die([`未知段「${target}」。八段：${Object.keys(FLOW).join(' → ')}`], 2);
+  if (!(target in FLOW)) die([`未知段「${target}」。七段：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
   // 迴圈升級（escalatedAt／escalations）屬純觀測——不凍結推進：升級的自動回 intent 由 hooks 承擔（不凍結不停擺，
@@ -974,7 +974,7 @@ function cmdSopreview(answers) {
   const q = String(answers ?? '').replace(/\s+/g, ' ').trim();
   if ([...q].length < 10) die(['審查留痕須附三問結論一行（≥10 字）——「審了」不是結論：每問的判斷（基質可答？元行為證據？仍被觸發？）寫進留痕']);
   const current = requireHealthyState();
-  if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效八段流程（直接實行紀錄無 ms 邊界）']);
+  if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效七段流程（直接實行紀錄無 ms 邊界）']);
   const st = current.state;
   if (st.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後留痕']);
   const hasDocs = existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'));
@@ -1075,7 +1075,7 @@ function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條�
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> [--point ①|②|③]（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
   const current = requireHealthyState();
   if (current.state?.understandingHold) die(['理解停等尚未解除——不得宣告對抗或發章']);
-  if (point && current.kind !== 'active') die(['時點對抗需要有效八段流程；不開 slug 的直接實行只宣告提交對抗，不得偽造段位']);
+  if (point && current.kind !== 'active') die(['時點對抗需要有效七段流程；不開 slug 的直接實行只宣告提交對抗，不得偽造段位']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());

@@ -42,7 +42,7 @@ assert.equal(run('init', 'demo').status, 1, '既有工作區重跑 init 擋（�
 
 assert.equal(state().node, 'intent');
 
-// 回頭自由：intent 自身不可回（無意義），其他段可。先走八段——
+// 回頭自由：intent 自身不可回（無意義），其他段可。先走七段——
 // intent→requirement：--boss-ok 邊；首走不得以 --rerun 直通繞過（返工直通僅限曾達 test 後的重走）
 assert.match(run('next', 'requirement').stderr, /MUST 帶 --boss-ok/);
 assert.match(run('next', 'requirement', '--rerun', 'impl').stderr, /--rerun 僅限同 ms 返工重走/, '首走防繞');
@@ -176,7 +176,7 @@ assert.equal(run('end', '--boss-ok', '--adversarial').status, 0);
   assert.ok(!existsSync(join(root, '.shiftblame', 'tmp', 'flow-archive')), '零副本——無殭屍歸檔目錄');
 }
 assert.equal(state().node, 'ended');
-// 完整八段的真實結束產物可開下一份工作；拒絕不切分支，成功建立新分支。
+// 完整流程的真實結束產物可開下一份工作；拒絕不切分支，成功建立新分支。
 const endedBranch = git('branch', '--show-current').stdout.trim();
 assert.equal(run('init', 'next-work', 'fix').status, 1, 'closeout 前拒絕（歸檔已由 sb end 機械完成）');
 assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);

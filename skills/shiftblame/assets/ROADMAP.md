@@ -4,7 +4,7 @@ type: TWO_FILE
 role: roadmap
 status: active
 updated: <YYYY-MM-DD>
-revision: 2.1.2
+revision: 2.2.0
 authorized_by: owner
 ---
 
@@ -35,7 +35,7 @@ authorized_by: owner
 
 **規則要點**：
 
-- **機械基本功（每 ms 審查必過）**：frontmatter `updated` 與檔案最後變更同步；正文零日期開頭的日誌行、零完全重複行與重複標題——完成項移除與方向改寫在原位進行，追加副本＝重複。檢查未過即不發審查戳記（`sb sopreview`），開新 ms 與 PASS 前擋。
+- **機械基本功（每 ms 審查必過）**：frontmatter `updated` 與檔案最後變更同步；正文零日期開頭的日誌行、零完全重複行與重複標題——完成項移除與方向改寫在原位進行，追加副本＝重複。檢查未過即不發審查戳記（`sb sopreview`），開新 ms 與 pass 出口前擋。
 
 - 新增或修改產品意圖 MUST 有老闆明確授權；秘書 的記錄僅限忠實轉寫老闆意圖，自身建議只在對話回報。隨碼更新的完成項移除與剩餘方向修正屬事實對照，歸類為維護既有文件。
 - 產品目標、固定邊界與待開發計畫可以在目前可實作或被阻塞時列入；ROADMAP 不要求填阻塞證據、解阻塞計畫或進度狀態。

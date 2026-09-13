@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.1.2');
+assert.equal(manifest.version, '2.2.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.1\.2"/);
+assert.match(skill, /version: "2\.2\.0"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -43,8 +43,8 @@ assert.match(guardSrc, /beatHeartbeat/, 'hooks 每次成功執行寫心跳');
 assert.match(read('cli', 'bin', 'sb.mjs'), /hooksHealthNote/, 'CLI 閘擋對照心跳輸出 hooks 健康診斷');
 assert.match(read('cli', 'bin', 'sb.mjs'), /閘保持封閉/, '診斷只揭露不降級（閘保持封閉）');
 
-// 八段詞彙落地
-assert.match(skill, /intent→requirement→research→plan→test→build→verify→done/);
+// 七段詞彙落地（verify 判決出 fail／pass 兩種邊——done 節點已除名）
+assert.match(skill, /intent→requirement→research→plan→test→build→verify/);
 assert.match(skill, /回 intent/);
 assert.match(skill, /時點①對抗/);
 assert.match(skill, /回頭自由/);
@@ -105,7 +105,7 @@ assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /BDD 
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /G3 落地邊/, 'TEST G3 落地邊');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /R1/, 'STRUCTURE 固定規則');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /accepted_exception/, 'STRUCTURE 四態結果');
-assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /與八段的銜接/, 'STRUCTURE 八段銜接');
+assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /與七段的銜接/, 'STRUCTURE 七段銜接');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /測試規模與穩定度成正比/, 'TEST 規模∝穩定度');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /同生命週期/, 'TEST 生命週期紀律');
 assert.match(skill, /STRUCTURE\.md/, 'SKILL 樹含 STRUCTURE');
@@ -212,7 +212,7 @@ for (const k of ['sb-start', 'sb-do', 'sb-end', 'sb-commit', 'sb-report', 'docs'
 // shiftblame:think 核心語義
 assert.match(think, /全域路由|唯一閘口/);
 assert.match(think, /回 intent|回think/);
-assert.match(readme, /八段|intent → requirement/);
+assert.match(readme, /七段|intent → requirement/);
 assert.match(readme, /--boss-ok/);
-assert.match(manifest.description, /八段/);
+assert.match(manifest.description, /七段/);
 console.log('sb-agent-governance: pass');

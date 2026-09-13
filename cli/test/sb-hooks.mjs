@@ -155,7 +155,7 @@ r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
 assert.equal(r.status, 0, 'Stop 放行（ended——非活動流程不偵測）');
 assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
 
-// —— 6. 八段寫入矩陣 ——
+// —— 6. 七段寫入矩陣 ——
 const W = (node, tool, target) => {
   setNode(node);
   return run({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { file_path: target } });
