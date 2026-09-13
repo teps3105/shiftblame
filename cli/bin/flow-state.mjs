@@ -113,7 +113,8 @@ function directState(st) {
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
 function activeExtras(st) {
-  if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at']) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at))) return false;
+  if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
+    && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
   // 停點偵測（SKILL §1.10）：申報屬活動態——inputIdx 全域基準、問題實質門檻 ≥10 字；僅活動態可寫（CLI 已限，此為分類器底線）。

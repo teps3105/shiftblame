@@ -509,6 +509,23 @@ ablation('停點偵測（無申報之停擋停一次）', () => {
   assert.equal(gone.status, 0, 'ablated：拆掉擋停判準即無申報之停放行（防護消失——偷懶停復活）');
 });
 
+ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒文件不發審查戳記）', () => {
+  const neu = neutralize(SB, [['const docProblems = hasDocs ? sopDocProblems() : [];', 'const docProblems = []; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'done' }, files: { '.shiftblame/SOP.md': '---\nupdated: 2020-01-01\n---\n# SOP\n規範甲。\n規範甲。\n' } });
+    const result = cliRun(script, r, 'sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+    const st = stateOf(r);
+    rmSync(r, { recursive: true, force: true });
+    return { status: result.status, stamped: st.sopReview?.ms === '001' };
+  };
+  const intact = probe(SB);
+  assert.equal(intact.status, 1, 'intact：重複行等基本功未過——審查戳記不發');
+  assert.equal(intact.stamped, false, 'intact：髒文件無戳記');
+  const gone = probe(neu);
+  assert.equal(gone.status, 0, 'ablated：拆掉機械檢查即髒文件照樣發戳記（防護消失）');
+  assert.equal(gone.stamped, true, 'ablated：戳記已發');
+});
+
 ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', () => {
   const neu = neutralize(SB, [['if (sopProblem) die([sopProblem]);', '// ABLATED']]);
   const probe = (script) => {

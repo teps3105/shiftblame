@@ -97,9 +97,17 @@ function nodeLine(root) {
     if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
+    let sopNote = '';
+    try {
+      const parts = [];
+      for (const [nm, p] of [['SOP', join(root, '.shiftblame', 'SOP.md')], ['ROADMAP', join(root, '.shiftblame', 'ROADMAP.md')]]) {
+        if (existsSync(p)) parts.push(nm + ' ' + readFileSync(p, 'utf8').split(/\r?\n/).length + ' 行');
+      }
+      if (parts.length) sopNote = `\n[SOP／ROADMAP] ${parts.join('＋')}｜本 ms 審查：${st.sopReview?.ms === st.ms ? `已審 @${st.sopReview.at}` : '未審（開新 ms／PASS 前擋——sb sopreview <三問結論>）'}｜審查＝全文＋機械基本功（updated 同步、零日期日誌行、零重複）`;
+    } catch { }
     let loopNote = '';
     if (st.turnUsage?.escalations) loopNote = `\n[迴圈升級] 本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent 開新輪，依修正分類補正 G1~G3 後接續（不凍結不停擺；同指紋二次升級＝死操作本回合封禁；計數純觀測）`;
-    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${loopNote}`;
+    return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${loopNote}${sopNote}`;
   } catch { return ''; }
 }
 

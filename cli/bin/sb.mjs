@@ -766,7 +766,7 @@ function cmdState() {
   if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
   else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
   if (st.stopReport) out(`停點申報：#${st.stopReport.inputIdx} @${st.stopReport.node}「${st.stopReport.question}」——老闆終審真待決 or 偷懶（曝光於老闆下則輸入；推進即清）`);
-  if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview 留痕（開新 ms／PASS 前機械驗）`);
+  if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview <三問結論> 留痕（開新 ms／PASS 前機械驗，含機械基本功）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
       out(`  → intent（回頭重走：補充／重修／追加，零旗標，同 ms${st.node === 'done' ? '；--new-ms 則開新里程碑' : ''}）`);
@@ -850,12 +850,63 @@ function cmdUnlockAbsent() {
   die(['sb unlock 不存在——輸入是理解對象不是鑰匙：理解經 shiftblame:think 調用（args＝理解宣告）自動落理解流並曝光；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
+// SOP／ROADMAP 機械基本功檢查（日期類＋重複類——全機械可判，審查必過）：違規未清即不發審查戳記。
+function sopDocProblems() {
+  const problems = [];
+  for (const name of ['SOP.md', 'ROADMAP.md']) {
+    const file = join(SB_DIR, name);
+    if (!existsSync(file)) continue;
+    const lines = readFileSync(file, 'utf8').split(/\r?\n/);
+    const close = lines.indexOf('---', 1);
+    const fm = lines[0] === '---' && close > 0 ? lines.slice(1, close) : null;
+    const body = fm ? lines.slice(close + 1) : lines;
+    const updatedRaw = fm ? (fm.map((l) => l.match(/^updated:\s*(\S+)/)?.[1]).find(Boolean) ?? null) : null;
+    if (!updatedRaw) problems.push(`${name}: frontmatter 缺 updated 欄——更新日期是審查對照基準（範本必備）`);
+    else if (!/^\d{4}-\d{2}-\d{2}$/.test(updatedRaw) || Number.isNaN(Date.parse(updatedRaw))) problems.push(`${name}: updated「${updatedRaw}」非 YYYY-MM-DD`);
+    else {
+      const now = new Date();
+      const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); // 當地時區日——UTC 日期會在凌晨誤判假同步
+      if (updatedRaw > today) problems.push(`${name}: updated「${updatedRaw}」晚於今日——假同步`);
+      if (existsSync(join(ROOT, '.git'))) {
+        const g = spawnSync('git', ['log', '-1', '--format=%cs', '--', `.shiftblame/${name}`], { cwd: ROOT, encoding: 'utf8', timeout: 5000 });
+        const last = g?.status === 0 ? String(g.stdout ?? '').trim() : ''; // git 失敗（含 .shiftblame/ 未入庫＝框架慣例）→ 跳過落後比對
+        if (last && updatedRaw < last) problems.push(`${name}: updated「${updatedRaw}」落後於檔案最後變更（git ${last}）——改了文件沒同步更新日期`);
+      }
+    }
+    const dateLines = body.filter((l) => /^[\s>*-]*(?:\d+\.\s*)?\d{4}-\d{2}-\d{2}/.test(l));
+    if (dateLines.length) problems.push(`${name}: ${dateLines.length} 行以日期開頭（歷史日誌特徵——改寫成規則句，流水歸 git 與 tmp）：${dateLines.slice(0, 3).map((l) => l.trim().slice(0, 40)).join('、')}`);
+    const norm = (l) => {
+      let t = l.replace(/^[\s>*-]+|^\d+\.\s*/, '').replace(/^[\s>*-]+|^\d+\.\s*/, ''); // 雙重剝離——巢狀列表（- 1. x 與 1. x 同判）
+      return t.replace(/\s+/g, ' ').trim();
+    };
+    const seen = new Map();
+    for (const l of body) {
+      const t = norm(l);
+      if (!t || /^\|[\s|:-]+\|?$/.test(t)) continue;
+      seen.set(t, (seen.get(t) ?? 0) + 1);
+    }
+    const dups = [...seen.entries()].filter(([, n]) => n > 1);
+    if (dups.length) problems.push(`${name}: ${dups.length} 組完全重複行（追加不更新即重複——合併或刪除）：${dups.slice(0, 3).map(([t, n]) => `「${t.slice(0, 30)}」×${n}`).join('、')}`);
+    const heads = new Map();
+    for (const l of body) {
+      const m = l.match(/^(#{1,6})\s+(.+?)\s*$/);
+      if (!m) continue;
+      const key = m[1].length + '|' + m[2].replace(/\s+/g, ' ');
+      heads.set(key, (heads.get(key) ?? 0) + 1);
+    }
+    const headDups = [...heads.entries()].filter(([, n]) => n > 1);
+    if (headDups.length) problems.push(`${name}: 重複標題 ${headDups.length} 組（同名段合一）：${headDups.slice(0, 3).map(([k]) => k.split('|')[1].slice(0, 30)).join('、')}`);
+  }
+  return problems;
+}
 // SOP／ROADMAP 每 ms 審查閘（修剪迴路的機械承載）：AI 開發下單一 ms 即足以改變整體方向——
 // 開新 ms（--new-ms）與 PASS（sb end）前驗本 ms 已審；無 SOP／ROADMAP 的專案不擋。
 function sopReviewProblem(st) {
   if (!(existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md')))) return null;
-  if (st.sopReview?.ms === st.ms) return null;
-  return 'SOP／ROADMAP 每 ms 必審——本 ms 尚未審查：對照實況跑三問（基質可答？元行為證據？仍被觸發？）後 sb sopreview 留痕（刪修加減皆可，變更走正常 commit）';
+  if (st.sopReview?.ms !== st.ms) return 'SOP／ROADMAP 每 ms 必審——本 ms 尚未審查：對照實況跑三問（基質可答？元行為證據？仍被觸發？）後 sb sopreview <三問結論> 留痕（刪修加減皆可，變更走正常 commit）';
+  const docProblems = sopDocProblems(); // 堵先審後改窗口——審查後文件又被改髒，開新 ms 與 PASS 仍擋
+  if (docProblems.length) return 'SOP／ROADMAP 機械基本功未過（審查後文件又被改髒——修復後重跑 sb sopreview）：' + docProblems.join('；');
+  return null;
 }
 // 產出遙測的 diff 統計：git baseline..HEAD 的 numstat 時序分析（基質優先——git 已承擔身分錨定與不可變性，sb 只做彙總）。
 function gitDiffStats(base, head) {
@@ -878,16 +929,20 @@ function gitHeadCommit() {
 }
 
 
-function cmdSopreview() {
+function cmdSopreview(answers) {
+  const q = String(answers ?? '').replace(/\s+/g, ' ').trim();
+  if ([...q].length < 10) die(['審查留痕須附三問結論一行（≥10 字）——「審了」不是結論：每問的判斷（基質可答？元行為證據？仍被觸發？）寫進留痕']);
   const current = requireHealthyState();
   if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效八段流程（直接實行紀錄無 ms 邊界）']);
   const st = current.state;
   if (st.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後留痕']);
   const hasDocs = existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'));
-  st.sopReview = { ms: st.ms, at: new Date().toISOString() };
+  const docProblems = hasDocs ? sopDocProblems() : [];
+  if (docProblems.length) die(['SOP／ROADMAP 機械基本功未過——審查戳記不發（修復後重跑 sb sopreview）：', ...docProblems]);
+  st.sopReview = { ms: st.ms, at: new Date().toISOString(), answers: q.slice(0, 200) };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
-    `SOP／ROADMAP 審查留痕（ms ${st.ms}）：三問——基質可答？（重複 git／平台既有能力即拆，改引基質）元行為證據？（規則對應行為已不發生即退役）仍被觸發？（死規則即刪）`,
+    `SOP／ROADMAP 審查留痕（ms ${st.ms}）：三問結論「${q.slice(0, 80)}」已落檔；機械基本功（updated 同步／零日期日誌行／零重複）已過`,
     hasDocs ? '審查發現的刪修走正常 commit（same-commit 文件先行）' : '（本工作區無 SOP／ROADMAP——留痕記錄審查週期）',
   ]);
 }
@@ -1108,7 +1163,7 @@ switch (cmd) {
   case 'next': cmdNext(pos[0], flags); break;
   case 'end': cmdEnd(flags); break;
   case 'closeout': cmdCloseout(flags.base); break;
-  case 'sopreview': cmdSopreview(); break;
+  case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'stop-report': cmdStopReport(flags.question); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();

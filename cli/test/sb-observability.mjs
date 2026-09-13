@@ -135,11 +135,20 @@ assert.equal(run('next', 'verify').status, 0);
 assert.equal(pt('③').status, 0);
 assert.equal(run('next', 'done', '--boss-ok', '--adversarial').status, 0);
 
-// —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 PASS 擋；sopreview 留痕後放行 ——
-writeFileSync(join(root, '.shiftblame/SOP.md'), '# SOP\n本專案規範。\n');
+// —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 PASS 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
+const today = new Date().toISOString().slice(0, 10);
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n');
 assert.match(run('end', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 PASS 擋下');
-assert.equal(run('sopreview').status, 0, '審查留痕（三問）');
+assert.match(run('sopreview').status !== undefined && run('sopreview').stderr, /三問結論/, '缺三問結論即擋');
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n本專案規範。\n2026-01-01 起改用新流程\n');
+const dirty = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+assert.equal(dirty.status, 1, '機械基本功未過——審查戳記不發');
+assert.match(dirty.stderr, /重複行|日期開頭/, '違規清單指出重複與日期日誌行');
+assert.equal(state().sopReview, undefined, '髒文件不發戳記');
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範（重複句已合併）。\n');
+assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
+assert.match(state().sopReview.answers, /三問全過/, '三問結論落檔');
 const endOut = run('end', '--boss-ok');
 assert.equal(endOut.status, 0, endOut.stderr);
 
