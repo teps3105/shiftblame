@@ -133,7 +133,7 @@ shiftblame:save、shiftblame:resume、shiftblame:dice 等功能型技能與 CLI 
 - 整體交付完成，或純問答且沒有未完工作：以 final 交付結果；流程上的 done／PASS 仍依既有閘門認定。
 - 需要具體決策或必要輸入、主動 think 終審停等、老闆明確暫停／取消，或確有阻塞：以 final 說明停點、已完成路由與尚缺條件。待決／必要輸入或局部阻塞時，仍在有效授權內且不依賴該條件的工作先完成；明確暫停／取消及主動 think 停等遵守各自凍結範圍。
 
-**Stop 僅是平台事件。** 本機 Stop hook 靜默放行，不代做意圖分類、intent 回退或下一段推進，也不證明流程完成。接續責任由主對話在 final 前完成；SessionStart／UserPromptSubmit 注入提醒支援此契約。這是行為規範與提示注入，機械層仍無法判定語義上的未完工作；Stop 重試與無條件續跑不承載路由判定。
+**Stop＝停點偵測＋不代做路由。** 本機 Stop hook 對活動流程（intent~verify、非停等）而無本回合停點申報者擋停一次，強制「續行已授權未完工作」或「`sb stop-report` 申報具體待決」二選一；有申報、主動 think 停等、done／ended、無流程一律放行。擋停屬條件式、單次（`stop_hook_active` 或本回合已擋過即放行）、不代做路由——不改 node、不跑 sb next、不判定語義上的未完工作，非無條件續跑（主 SKILL §1.12）；申報與懶停由曝光＋老闆終審承擔。接續責任由主對話在 final 前完成；SessionStart／UserPromptSubmit 注入提醒支援此契約；Stop 重試與無條件續跑不承載路由判定。
 
 shiftblame:think 分發後，agents 在執行中保有自主判斷權：
 

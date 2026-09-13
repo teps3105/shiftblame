@@ -100,27 +100,59 @@ for (const payload of [
   assert.equal(result.status, 0);
   const context = JSON.parse(result.stdout).hookSpecificOutput;
   assert.equal(context.hookEventName, payload.hook_event_name);
-  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', 'Stop 靜默放行不代做路由']) {
+  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', '停點偵測（防偷懶停）', 'sb stop-report']) {
     assert.ok(context.additionalContext.includes(rule), `${payload.hook_event_name} 注入接續規則：${rule}`);
   }
 }
-for (const node of ['intent', 'plan', 'build', 'verify', 'done', 'ended']) {
+// Stop＝停點偵測：活動流程（intent~verify）無本回合申報即停＝擋停一次（條件式、單次、不代做路由）；
+// 有申報／stop_hook_active／停等／done／ended／無流程放行。
+for (const node of ['intent', 'plan', 'build', 'verify']) {
   setNode(node);
-  for (const active of [false, true]) {
-    const before = state();
-    const result = run({ hook_event_name: 'Stop', stop_hook_active: active, last_assistant_message: '疑問已解答，等待決策' });
-    assert.equal(result.status, 0);
-    assert.equal(result.stdout, '', 'Stop 不建立自動續行提示');
-    assert.equal(result.stderr, '');
-    const after = state();
-    delete after.hooksHeartbeat;
-    assert.deepEqual(after, before, 'Stop 僅更新心跳，保留流程與輸入／理解事實');
-    // 下一次比較同樣排除既有心跳。
-    writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(before));
-  }
+  up('停點偵測回合輸入（申報新鮮度基準）'); // inputs≥1——inputIdx 全域基準
+  const before = state();
+  delete before.hooksHeartbeat; // 心跳隨每次 hook 執行更新——比對事實面時排除
+  const blocked = run({ hook_event_name: 'Stop', last_assistant_message: '先停在這' });
+  assert.equal(blocked.status, 2, node + '：無申報之停擋停一次（停點偵測）');
+  assert.match(blocked.stderr, /停點偵測/, '擋停訊息要求「續行或申報」');
+  assert.equal(state().stopBlockedAt !== undefined, true, '擋停寫自限標記（本回合至多擋一次）');
+  const pass2 = run({ hook_event_name: 'Stop', last_assistant_message: '再停一次' });
+  assert.equal(pass2.status, 0, node + '：第二次停走自限放行（單次——不無限循環擋停）');
+  const st2 = state();
+  delete st2.hooksHeartbeat; delete st2.stopBlockedAt;
+  assert.deepEqual(st2, before, 'Stop 不改流程節點與輸入／理解事實（不代做路由）');
+  // 本回合申報：放行
+  const stNow = state();
+  stNow.stopReport = { at: new Date().toISOString(), inputIdx: (stNow.inputsRotated ?? 0) + (stNow.inputs ?? []).length - 1, node, question: '需要老闆決定是否引入新依賴以完成此功能', reviewed: false };
+  delete stNow.stopBlockedAt;
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stNow));
+  const declared = run({ hook_event_name: 'Stop', last_assistant_message: '已申報待決，停' });
+  assert.equal(declared.status, 0, node + '：有本回合申報放行');
+  // stop_hook_active：放行（平台自限雙保險）
+  const stH = state();
+  delete stH.stopReport; delete stH.stopBlockedAt;
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stH));
+  const hookActive = run({ hook_event_name: 'Stop', stop_hook_active: true, last_assistant_message: '平台已擋過一次' });
+  assert.equal(hookActive.status, 0, node + '：stop_hook_active 放行');
 }
+for (const node of ['done', 'ended']) {
+  setNode(node);
+  const result = run({ hook_event_name: 'Stop', last_assistant_message: '完成態停' });
+  assert.equal(result.status, 0, node + '：done／ended 停點本就合法放行');
+}
+{
+  setNode('build');
+  up('停等測試輸入');
+  const st = state();
+  st.understandingHold = { inputIdx: (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1, at: new Date().toISOString() };
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st));
+  const result = run({ hook_event_name: 'Stop', last_assistant_message: '主動 think 停等' });
+  assert.equal(result.status, 0, '理解停等中之停放行（hold 本就合法）');
+  delete st.understandingHold;
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st));
+}
+setNode('ended');
 r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
-assert.equal(r.status, 0, 'Stop 靜默放行');
+assert.equal(r.status, 0, 'Stop 放行（ended——非活動流程不偵測）');
 assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
 
 // —— 6. 八段寫入矩陣 ——

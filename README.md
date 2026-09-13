@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.1.1-2ea44f.svg" alt="version 2.1.1"/>
+  <img src="https://img.shields.io/badge/version-2.1.2-2ea44f.svg" alt="version 2.1.2"/>
 </p>
 
 ---
@@ -77,7 +77,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **基質優先×元行為錨定×修剪迴路（方法論）。** 任何新機制、記錄檔、驗證工具 MUST 先對照基質（git 的身分錨定／不可變性／時序／diff、平台事件流）——基質可答的另造即拆，記錄檔預設不存在（重複造輪子防線）；規則 MUST 錨定實測的代理元行為證據，無證據即想像威脅；SOP／ROADMAP 每 ms 必審三問（基質可答？元行為證據？仍被觸發？）——`sb sopreview` 留痕，開新 ms 與 PASS 前機械驗（無 SOP／ROADMAP 的專案不擋），刪修加減皆可、變更走正常 commit。
 - **結構與驗證紀律。** 唯一歸屬、公開入口、合併依賴 DAG、四態檢查結果、基線＝債務清單、四種長期演進、驗證依變更實際影響選擇——全文見 [references/STRUCTURE.md](skills/shiftblame/references/STRUCTURE.md)；測試規模與穩定度成正比、與行為同生命週期——見 [references/TEST.md](skills/shiftblame/references/TEST.md)。
 - **對抗審計職能。** 外部唯讀子代理的邊界（唯讀／一次性自包含／無裁定權）、標準攻擊點、實證優先的證據義務、必修與建議分列、修復複審閉環——全文見 [references/AUDIT.md](skills/shiftblame/references/AUDIT.md)。
-- **觀測紀律。** sb 每次調用落 `.shiftblame/tmp/sb-usage.jsonl`（老闆可清、缺檔自動重建）；`sb init` 錨定 git baseline、`sb end` 留產出遙測於 flow-state（diff 統計＋對抗判定＋審查模型＋toolCalls＋耗時——資料恆在 git，遙測可重導）；flow-state 四條觀測流超門檻自動輪替至 tmp（檔案恆有界、事實保留）。工作做到完成為止——計數純觀測（無預算、無上限、零干預，遙測結算）；**迴圈斷路器**常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級凍結回 intent——防遞迴無限擴大；持續推進的多樣操作永遠放行）。
+- **觀測紀律。** sb 每次調用落 `.shiftblame/tmp/sb-usage.jsonl`（老闆可清、缺檔自動重建）；`sb init` 錨定 git baseline、`sb end` 留產出遙測於 flow-state（diff 統計＋對抗判定＋審查模型＋toolCalls＋耗時——資料恆在 git，遙測可重導）；flow-state 四條觀測流超門檻自動輪替至 tmp（檔案恆有界、事實保留）。工作做到完成為止——計數純觀測（無預算、無上限、零干預，遙測結算）；**迴圈斷路器**常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行）＋**停點偵測**（活動流程無申報即停＝擋停一次——續行已授權工作或 sb stop-report 申報具體待決；偷懶停由曝光＋老闆終審承擔）。
 - **命名自足與工作紀錄分離。** `.shiftblame/tmp/` 是 agents 自由傾倒區——流程閘門零依賴（唯一例外：commit 留痕即生即滅）；專案工具鏈或專案運行產生的檔案（日誌、快取、匯出物）屬專案資產歸專案位置，驗收引用以**節錄快照**為證據。
   - tmp 只準寫入、不準清理，清理由老闆手動執行。
   - 路徑、檔名、slug、識別字、註釋、字串、測試及文件內容以對象、功能或行為命名，從專案正式內容即可辨識；技術術語與機械識別碼須有明確定義或解析方式。開發任務代號與產品內容保持正交；回指對話或 tmp 不能替代本地定義。
@@ -184,13 +184,13 @@ flowchart TB
 
 ## 安裝
 
-shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒（Stop 靜默）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、停點偵測（Stop）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
 **Codex 回合結束與流程完成分離**：進行中任務的插入疑問以 commentary 解答後，主對話接續原有已授權未完工作；補充／修正先完成實際 intent 路由與查證，final 前確認應回退者已回退、應分發者已分發。
 
 - 整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 終審、明確暫停／取消及實際阻塞才是停點。
 - 完整契約見 [`think`](skills/think/SKILL.md#回合結束與流程接續)。
-- 規則由 SessionStart／UserPromptSubmit 注入；Stop 保持靜默放行，不代做意圖判斷或流程推進，此處是提示與行為規範，並無機械強制續跑保證。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示，無條件重試不取代上述路由責任。
+- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify、非停等）無本回合申報即擋停一次（條件式、單次、不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報／done／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
 
 **hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋。
 

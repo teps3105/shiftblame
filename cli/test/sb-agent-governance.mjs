@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.1.1');
+assert.equal(manifest.version, '2.1.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2\.1\.1"/);
+assert.match(skill, /version: "2\.1\.2"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -143,6 +143,10 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb e
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /rotateStreams/, 'hooks 觀測流輪替');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /budgetExhausted/, 'hooks 迴圈升級自動回 intent 留痕對照');
+assert.match(skill, /停點偵測/, 'SKILL 記載停點偵測（防偷懶停——活動流程無申報擋停一次）');
+assert.match(skill, /sb stop-report/, 'SKILL 記載停點申報命令（合法停點載體）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /stopReportLine/, 'hooks 停點申報曝光行（老闆終審真待決 or 偷懶）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /cmdStopReport/, 'CLI 停點申報命令（活動態＋實質門檻）');
 assert.match(skill, /診斷與狀態修復自由/, 'SKILL 記載異常模式修復自由（唯讀白名單已除）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /修復是異常模式的目的/, 'hooks 異常模式政策：修復自由＋封閉 git 寫入／sb 流程命令');
 

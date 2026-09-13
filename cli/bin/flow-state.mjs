@@ -23,9 +23,13 @@ function hooksOnly(st) {
     const tu = st.turnUsage;
     const tuKeys = ['startedAt', 'requests',
       ...(Object.hasOwn(tu, 'escalatedAt') ? ['escalatedAt'] : []),
+      ...(Object.hasOwn(tu, 'escalations') ? ['escalations'] : []),
+      ...(Object.hasOwn(tu, 'fpEscalations') ? ['fpEscalations'] : []),
       ...(Object.hasOwn(tu, 'fingerprints') ? ['fingerprints'] : [])];
     if (!(exactKeys(tu, tuKeys) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests)
       && (!Object.hasOwn(tu, 'escalatedAt') || timestamp(tu.escalatedAt))
+      && (!Object.hasOwn(tu, 'escalations') || nonNegativeInt(tu.escalations))
+      && (!Object.hasOwn(tu, 'fpEscalations') || (objectRecord(tu.fpEscalations) && Object.keys(tu.fpEscalations).length <= 128 && Object.values(tu.fpEscalations).every(nonNegativeInt)))
       && (!Object.hasOwn(tu, 'fingerprints') || (objectRecord(tu.fingerprints) && Object.keys(tu.fingerprints).length <= 128 && Object.values(tu.fingerprints).every(nonNegativeInt))))) return false;
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
@@ -112,6 +116,14 @@ function activeExtras(st) {
   if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at']) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
+  // 停點偵測（SKILL §1.10）：申報屬活動態——inputIdx 全域基準、問題實質門檻 ≥10 字；僅活動態可寫（CLI 已限，此為分類器底線）。
+  if (Object.hasOwn(st, 'stopReport') && !(objectRecord(st.stopReport) && exactKeys(st.stopReport, ['at', 'inputIdx', 'node', 'question', 'reviewed'])
+    && timestamp(st.stopReport.at) && Number.isInteger(st.stopReport.inputIdx) && st.stopReport.inputIdx >= 0
+    && st.stopReport.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length
+    && typeof st.stopReport.node === 'string' && ACTIVE_NODES.has(st.stopReport.node)
+    && typeof st.stopReport.question === 'string' && [...st.stopReport.question.trim()].length >= 10
+    && typeof st.stopReport.reviewed === 'boolean')) return false;
+  if (Object.hasOwn(st, 'stopBlockedAt') && !timestamp(st.stopBlockedAt)) return false;
   return true;
 }
 function activeRecords(st) {

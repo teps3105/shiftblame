@@ -1,4 +1,4 @@
-// sb-observability：觀測紀律與回合治理——usage 事件、計數純觀測（無預算無上限零干預）、迴圈斷路器（4/7 門檻＋升級凍結＋CLI 兜底）、
+// sb-observability：觀測紀律與回合治理——usage 事件、計數純觀測（無預算無上限零干預）、迴圈斷路器（4/7 門檻＋升級自動回 intent 不凍結＋死操作封禁）、
 // 產出遙測（git baseline 錨定）、SOP／ROADMAP 每 ms 審查閘、觀測流輪替（flow-state 恆有界）。
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -71,7 +71,7 @@ assert.equal(state().usageTotals.requests >= 1, true, 'slug 累計計數');
 assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'pwd' } }).status, 0, '第 2 調用照常');
 assert.equal(hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo step-three' } }).status, 0, '計數持續累積零干預——工作做到完成為止');
 assert.equal(state().node, 'test', '純觀測不影響任何推進');
-// 迴圈斷路器：同操作重複才是死圈特徵——第 4 次擋（要求改變策略）、第 7 次升級（凍結＋自動回 intent）
+// 迴圈斷路器：同操作重複才是死圈特徵——第 4 次擋（要求改變策略）、第 7 次升級（自動回 intent 續行，不凍結；同指紋二次升級＝死操作封禁）
 const loop = () => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `node stuck-loop.mjs` } });
 assert.equal(loop().status, 0, '同操作第 1 次放行');
 assert.equal(loop().status, 0, '同操作第 2 次放行（迭代重試的合法空間）');
@@ -86,24 +86,32 @@ const l7 = loop();
 assert.equal(l7.status, 2, '第 7 次升級擋下');
 {
   const st = state();
-  assert.equal(st.node, 'intent', '升級＝自動回 intent（真死圈——被擋兩次後仍重複同一操作）');
-  assert.equal(st.turnUsage.escalatedAt !== undefined, true, '升級時刻留痕');
+  assert.equal(st.node, 'intent', '升級＝自動回 intent（任何活動段——不凍結，工作續行）');
+  assert.equal(st.turnUsage.escalatedAt !== undefined, true, '升級時刻留痕（純觀測）');
+  assert.equal(st.turnUsage.escalations, 1, '升級次數留痕（純觀測）');
   const last = st.history.at(-1);
   assert.equal(last.from, 'test', 'history 記錄撤退起點');
   assert.equal(last.to, 'intent', 'history 記錄撤退');
   assert.equal(last.budgetExhausted, true, 'budgetExhausted 留痕');
+  assert.deepEqual(st.turnUsage.fingerprints, {}, '升級重置指紋表（補正後新輪重新計數）');
 }
-const u6 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
-assert.equal(u6.status, 2, '升級後本回合凍結（後續工具全擋）');
-assert.match(u6.stderr, /迴圈升級/);
-const skillOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：迴圈升級凍結下理解宣告仍可落流驗證' } });
+const u6 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git status --short' } });
+assert.equal(u6.status, 0, '升級不凍結——不同操作照常放行（工作不停止）');
+// 同指紋二次升級＝死操作：指紋表重置後原樣重跑——本回合封禁該操作（防宏觀升級循環），其他操作不受影響
+for (let i = 0; i < 6; i++) loop(); // 1~3 放行、4~6 續擋（重置後重新計數）
+const l14 = loop(); // 第 7 次＝同指紋第二次升級
+assert.equal(l14.status, 2, '同指紋二次升級＝死操作擋下');
+assert.match(l14.stderr, /死操作/, '封禁訊息：換操作或改變策略續行');
+{
+  const st = state();
+  assert.equal(st.node, 'intent', '死操作封禁不再回退（已在 intent——防宏觀升級循環）');
+  assert.equal(st.turnUsage.escalations, 2, '升級次數累計');
+}
+const skillOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：迴圈升級下理解宣告仍可落流驗證' } });
 assert.equal(skillOk.status, 0, 'Skill 調用豁免（理解宣告落流）');
-for (let i = 0; i < 6; i++) {
-  const escapeRun = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb state' } });
-  assert.equal(escapeRun.status, 0, `sb state 豁免於凍結與迴圈斷路器（第 ${i + 1} 次——逃生操作可重複使用）`);
-}
-// CLI 兜底（hooks 失效層）：升級凍結期間前進邊由 sb next 擋；→intent 保持自由
-assert.match(run('next', 'requirement', '--boss-ok').stderr, /迴圈升級/, 'CLI 同判據兜底擋前進');
+const escapeOk = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb state' } });
+assert.equal(escapeOk.status, 0, 'sb state 豁免於迴圈斷路器（逃生操作可重複使用）');
+// CLI 不凍結前進：escalatedAt／escalations 屬純觀測——升級的自動回 intent 由 hooks 承擔
 // 老闆下一則輸入＝新回合（計數重置、恢復推進）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '新回合：改變策略後續行' });
 assert.equal(state().turnUsage, undefined, '新回合計數重置');

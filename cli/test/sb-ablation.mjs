@@ -56,9 +56,12 @@ function relocateShared(text) {
 
 function neutralize(srcPath, pairs) {
   let t = readFileSync(srcPath, 'utf8');
+  const crlf = t.includes('\r\n'); // 行尾自適應——消融配對字串以 \n 撰寫，源碼 CRLF／LF 皆命中（環境敏感缺陷修正）
+  const fix = (x) => (crlf ? x.replace(/(?<!\r)\n/g, '\r\n') : x);
   for (const [o, n] of pairs) {
-    if (!t.includes(o)) throw new Error(`neutralize 未命中：${o.slice(0, 60)}`);
-    t = t.split(o).join(n);
+    const os = fix(o), ns = fix(n);
+    if (!t.includes(os)) throw new Error(`neutralize 未命中：${o.slice(0, 60)}`);
+    t = t.split(os).join(ns);
   }
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu-'));
   NEU_DIRS.push(dir);
@@ -322,7 +325,7 @@ ablation('commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭
   const BAD = ['fix: 修正r24殘留問題描述內容', 'feat: 斷言先行的重寫驗證流程', 'fix: MS001 規格文檔同步修正'];
   const probe = (script, msg) => { const r = mkSandbox({ git: true }); writeFileSync(join(r, '.shiftblame', 'tmp', 'r.md'), '# 對抗\n\n對抗判定：通過\n'); cliRun(script, r, 'adversarial', join(r, '.shiftblame', 'tmp', 'r.md')); const out = cliRun(script, r, 'commitmsg', msg); rmSync(r, { recursive: true, force: true }); return out.status; };
   for (const m of BAD) assert.equal(probe(SB, m), 1, `intact：詞彙閘擋「${m}」`);
-  const src = readFileSync(SB, 'utf8');
+  const src = readFileSync(SB, 'utf8').replace(/\r\n/g, '\n');
   const cut = src
     .replace("    if (/\\b[a-zA-Z]{1,4}-?\\d+\\b|#\\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），正式名稱表達功能語義，工作紀錄歸 tmp');\n", '')
     .replace("    if (/第\\s*[0-9０-９一二三四五六七八九十]+\\s*[組段輪]|[組段輪]\\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');\n", '')
@@ -338,7 +341,7 @@ ablation('commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭
 ablation('SLUG 存在性閘（骨架不完整擋前進）', () => {
   const probe = (script) => { const r = mkSandbox({ state: { node: 'intent' } }); rmSync(join(r, '.shiftblame', 'demo', 'SLUG.md')); const out = cliRun(script, r, 'next', 'requirement', '--boss-ok'); const st = out.status; rmSync(r, { recursive: true, force: true }); return st; };
   assert.equal(probe(SB), 1, 'intact：無 SLUG.md 前進邊擋');
-  const src = readFileSync(SB, 'utf8');
+  const src = readFileSync(SB, 'utf8').replace(/\r\n/g, '\n');
   const cut = src.replace("  if (st.slug && target !== 'intent' && !existsSync(join(SB_DIR, st.slug, 'SLUG.md'))) {\n    problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由秘書手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);\n  }\n", '');
   assert.notEqual(cut, src, 'neutralize 目標存在');
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu3-'));
@@ -351,7 +354,7 @@ ablation('SLUG 存在性閘（骨架不完整擋前進）', () => {
 ablation('ROM 區雜檔閘（ms 目錄僅承載 G 檔）', () => {
   const probe = (script) => { const r = mkSandbox({ state: { node: 'build' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(r, '.shiftblame/demo/001/intent.md'), content: 'x' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(probe(GUARD), 2, 'intact：ROM 區雜檔擋');
-  const src = readFileSync(GUARD, 'utf8');
+  const src = readFileSync(GUARD, 'utf8').replace(/\r\n/g, '\n');
   const k = src.indexOf('ROM 區雜檔閘');
   assert(k >= 0, 'neutralize 目標存在');
   const blockStart = src.indexOf('      if (', k);
@@ -467,6 +470,43 @@ ablation('迴圈斷路器（同操作重複即擋＋死圈升級）', () => {
   const gone = probe(neu);
   assert.equal(gone.denied, false, 'ablated：拆掉指紋計數即放行（無限重跑復活）');
   assert.equal(gone.node, 'test', 'ablated：不升級');
+});
+
+ablation('迴圈升級自動回 intent（不凍結續行）', () => {
+  const neu = neutralize(GUARD, [["const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });", 'const r = { status: 1, stderr: "ABLATED" }; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'test' } });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    const run = () => hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node dead-op.mjs' } });
+    let last;
+    for (let i = 0; i < 7; i++) last = run();
+    const st = stateOf(r);
+    rmSync(r, { recursive: true, force: true });
+    return { denied: last.status === 2, node: st.node };
+  };
+  const intact = probe(GUARD);
+  assert.equal(intact.denied, true, 'intact：第 7 次升級擋下');
+  assert.equal(intact.node, 'intent', 'intact：升級自動回 intent（撤退發生——工作不停止）');
+  const gone = probe(neu);
+  assert.equal(gone.denied, true, 'ablated：第 7 次仍擋（擋截不屬撤退機制）');
+  assert.equal(gone.node, 'test', 'ablated：拆掉撤退 spawn 即不自動回 intent（防護消失——停擺風險復活）');
+});
+
+ablation('停點偵測（無申報之停擋停一次）', () => {
+  const neu = neutralize(GUARD, [['      process.exit(2);\n    } catch { process.exit(0); } // 狀態異常：放行（異常模式修復自由）', '      process.exit(0);\n    } catch { process.exit(0); } // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'test' } });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    const result = hookRun(script, { cwd: r, hook_event_name: 'Stop', last_assistant_message: '停在這裡' });
+    const st = stateOf(r);
+    rmSync(r, { recursive: true, force: true });
+    return { status: result.status, blocked: st.stopBlockedAt !== undefined };
+  };
+  const intact = probe(GUARD);
+  assert.equal(intact.status, 2, 'intact：活動流程無申報之停擋停一次（防偷懶停）');
+  assert.equal(intact.blocked, true, 'intact：自限標記落檔（單次擋停）');
+  const gone = probe(neu);
+  assert.equal(gone.status, 0, 'ablated：拆掉擋停判準即無申報之停放行（防護消失——偷懶停復活）');
 });
 
 ablation('SOP／ROADMAP 每 ms 審查閘（PASS 前機械驗本 ms 已審）', () => {

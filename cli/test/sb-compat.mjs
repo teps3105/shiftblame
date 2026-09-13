@@ -66,6 +66,16 @@ classify({
   telemetry: { diff: null, baseCommit: null, headCommit: null, adversarial: null, counts: { inputs: 1, understandings: 0, adversarial: 0, toolCalls: null }, durationMinutes: null },
 }, 'ended', 'telemetry 全缺省（無 git／舊流程）');
 classify({ slug: 'demo', ms: '001', node: 'test', history: [], turnUsage: { startedAt: 'bad', requests: 1 } }, 'invalid', '回合計數形狀損壞即 invalid');
+classify({
+  slug: 'demo', ms: '001', node: 'test', history: [],
+  turnUsage: { startedAt: at, requests: 40, escalatedAt: at, escalations: 2, fpEscalations: { abc: 2 }, fingerprints: {} },
+}, 'active', '2.1.2 迴圈升級觀測鍵（escalations／fpEscalations——缺省自由、形狀驗證）');
+classify({
+  slug: 'demo', ms: '001', node: 'test', history: [],
+  inputs: [{ at, text: 'x' }],
+  stopReport: { at, inputIdx: 0, node: 'test', question: '需要老闆決定是否引入新依賴以完成功能', reviewed: false },
+  stopBlockedAt: at,
+}, 'active', '2.1.2 停點偵測欄位（stopReport／stopBlockedAt——僅活動態）');
 
 // —— 3. 十專案實機回歸：分類與升級前基準一致（舊檔讀取不改變判定） ——
 // 基準＝升級當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；已 invalid 者屬既有事實（恢復程序另行承擔），相容性要求＝分類不變。向後相容面：2.0.4 期 turnUsage.exceededAt 檔在新鍵集下 invalid（fail-closed，手動清鍵即癒）；active 對歷史 budget 鍵靜默容忍（零消費者；sb end 冪等清理）。
@@ -74,7 +84,7 @@ const TEN_PROJECT_BASELINE = {
   'Trickster-Web': 'active',
   Varellune: 'active',
   Varellune_Document: 'invalid',
-  'dnd-prototype': 'ended',
+  'dnd-prototype': 'active', // 2.1.2 升級時重新量測：實機已重開流程（ended→requirement——隨實機流程演進的漂移，非分類器變更）
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
   shiftblame: 'direct',

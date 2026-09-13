@@ -721,6 +721,28 @@ function cmdInit(slug, type = 'feat') {
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent（意圖）——shiftblame:think 路由後由此重走線性`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
+// sb stop-report：停點申報（停點偵測的合法停點載體，SKILL §1.10）——活動流程中停下前申報具體待決。
+// 機械只驗「活動態＋實質問題（≥10 字）」，真待決 or 偷懶由曝光＋老闆終審承擔；下次推進（sb next）即清。
+function cmdStopReport(question) {
+  const q = String(question ?? '').replace(/\s+/g, ' ').trim();
+  if ([...q].length < 10) die([`停點申報須附具體待決問題（--question ≥10 字）——「需要老闆決策」不是問題內容；空泛申報＝偷懶，曝光承擔`]);
+  const { kind, state: st } = requireHealthyState();
+  if (kind !== 'active') die([`停點申報僅限活動流程（目前 ${kind}）——done／ended／無流程的停點本就合法，無須申報`]);
+  if (st.understandingHold) die(['理解停等中——主動 think 停等本就合法，無須停點申報']);
+  const lastInputIdx = (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1;
+  if (lastInputIdx < 0) die(['輸入流為空（hooks 未信任或未記錄）——無法標定申報新鮮度：修復 hooks 記錄後重試（sb state 對照心跳）']); // 對抗必修：inputIdx=-1 會使狀態立即 invalid
+  st.stopReport = {
+    at: new Date().toISOString(),
+    inputIdx: lastInputIdx, // 全域輸入編號（新鮮度基準——跨回合即陳舊）
+    node: st.node,
+    question: q,
+    reviewed: false,
+  };
+  delete st.stopBlockedAt; // 申報完成——本次停點改走申報面放行
+  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
+  fin([`停點申報留痕：#${st.stopReport.inputIdx} @${st.node}「${q}」——可停；老闆下則輸入時曝光終審（真待決 or 偷懶）；下次推進即清`]);
+}
+
 function cmdState() {
   const { kind, state: st } = requireHealthyState();
   if (['missing', 'uninitialized', 'direct'].includes(kind)) {
@@ -741,8 +763,9 @@ function cmdState() {
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
-  if (st.turnUsage?.escalatedAt) out(`迴圈升級：本回合凍結推進（同操作重複被擋後仍重複）——待老闆下一則輸入開新回合；本回合迄今 ${st.turnUsage.requests} 調用`);
+  if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
   else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
+  if (st.stopReport) out(`停點申報：#${st.stopReport.inputIdx} @${st.stopReport.node}「${st.stopReport.question}」——老闆終審真待決 or 偷懶（曝光於老闆下則輸入；推進即清）`);
   if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview 留痕（開新 ms／PASS 前機械驗）`);
   for (const n of [...FLOW[st.node].next, ...(st.node === 'intent' ? [] : ['intent']), ...(st.node === 'done' ? ['test'] : [])]) {
     if (n === 'intent' && st.node !== 'done' && !FLOW[st.node].next.includes('intent')) {
@@ -764,17 +787,15 @@ function cmdNext(target, opts) {
   if (!(target in FLOW)) die([`未知段「${target}」。八段：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
-  // 迴圈升級反制（與 hooks 同判據的 CLI 兜底——兩層一致）：同操作重複被擋後仍重複（escalatedAt）＝凍結前進，
-  // 僅 →intent（拆分逃生）合法；老闆下一則輸入由 hooks 重置回合計數後恢復推進。計數屬純觀測——量永不構成中斷理由。
-  if (st.turnUsage?.escalatedAt && target !== 'intent') {
-    die([`迴圈升級（同操作本回合重複被擋後仍重複，@${st.turnUsage.escalatedAt}）——本回合凍結推進：收傘呈報老闆（下一則輸入開新回合、計數重置）或 sb next intent 拆分重規劃；改變策略（修根因／換方法）後新操作不受影響`]);
-  }
+  // 迴圈升級（escalatedAt／escalations）屬純觀測——不凍結推進：升級的自動回 intent 由 hooks 承擔（不凍結不停擺，
+  // 工作做到完成為止）；量永不構成中斷理由，同指紋二次升級的死操作封禁由 hooks 於工具層承擔。
   // SOP／ROADMAP 每 ms 審查閘：開新 ms 前驗本 ms 已審（AI 開發下單一 ms 足以改變方向）
   if (st.node === 'done' && opts.newMs) { const p = sopReviewProblem(st); if (p) die([p]); }
   const { problems, passes } = gate(st, target, opts);
   if (problems.length) die(problems);
   const prev = st.node;
   st.node = target;
+  delete st.stopReport; delete st.stopBlockedAt; // 工作已續行——停點申報與擋停自限失效（停點偵測，SKILL §1.10）
   // 進研究段重置——舊查證不沿用（fail-closed）；例外：返工 pending 未清時不重置
   // （返工期間的外部協助同時作數研究外部證據——一次調用滿足兩閘，不重複索求）
   if (prev === 'requirement' && target === 'research' && !st.rerunExtPending) st.externalEvidence = null;
@@ -919,7 +940,7 @@ function cmdEnd(opts) {
   const cleared = { inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length, understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length, adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length, history: (st.historyRotated ?? 0) + st.history.length };
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
-  delete st.turnUsage; delete st.usageTotals;
+  delete st.turnUsage; delete st.usageTotals; delete st.stopReport; delete st.stopBlockedAt;
   delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（舊版預算欄位——不相容則 ended 檔自我 invalid）
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
@@ -1007,8 +1028,8 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--help']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'stop-report']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--question', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
       for (const f of eternal) {
@@ -1065,7 +1086,7 @@ try {
 } catch { /* 觀測落檔失敗不攔主流程 */ }
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null, question: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
@@ -1074,6 +1095,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['①', '②', '③'].includes(flags.point)) usage(); }
   else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
+  else if (rest[i] === '--question') { flags.question = rest[++i] ?? ''; if (cmd !== 'stop-report' || !flags.question || flags.question.startsWith('-')) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
@@ -1087,6 +1109,7 @@ switch (cmd) {
   case 'end': cmdEnd(flags); break;
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(); break;
+  case 'stop-report': cmdStopReport(flags.question); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();
 }

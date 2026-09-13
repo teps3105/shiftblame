@@ -67,8 +67,8 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '⑦版號屬老闆決策。',
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
-  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 停等、明確暫停／取消或實際阻塞可停。Stop 靜默放行不代做路由；接續由主對話承擔，不靠無條件續跑或 Stop 重試。',
-  '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級凍結回 intent——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
+  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug，done 依既有規則）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／done／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
+  '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms／PASS 前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
 ].join('\n');
 
 const SESSION_CARD = [
@@ -98,7 +98,7 @@ function nodeLine(root) {
     if (st.node === 'verify') hint = '——中間態：老闆未宣稱 done 前停留於此；判決（AC 判定寫 G1 回指區）＋時點②對抗；不滿意→test 重修或回 intent';
     if (st.node === 'done') hint = '——完成態：重修→test（零旗標）；補充→intent（同 ms）；開新 ms 帶 --new-ms 或 sb end --boss-ok（PASS 留痕）';
     let loopNote = '';
-    if (st.turnUsage?.escalatedAt) loopNote = `\n[迴圈升級] 本回合凍結（同操作重複被擋後仍重複），待老闆下一則輸入開新回合；本回合迄今 ${st.turnUsage.requests} 調用`;
+    if (st.turnUsage?.escalations) loopNote = `\n[迴圈升級] 本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent 開新輪，依修正分類補正 G1~G3 後接續（不凍結不停擺；同指紋二次升級＝死操作本回合封禁；計數純觀測）`;
     return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${loopNote}`;
   } catch { return ''; }
 }
@@ -149,16 +149,20 @@ function rotateStreams(root, st) {
 // PreToolUse 每次計數：turnUsage（本回合——老闆輸入重置）＋usageTotals（slug 累計，sb end 遙測素材）。
 // 工具調用數＝model 請求數的上界代理（每請求至少產出一個工具調用；批次並行時高估）——誠實標名，真值在平台 DB。
 // 計數屬純觀測：無預算、無上限、零干預——工作做到完成為止；量的會計由 sb end 遙測結算（事後可見性）。
-// 迴圈斷路器（常開）＝遞迴防護：重複才是死圈特徵——同指紋（工具＋操作摘要 hash）回合內
+// 迴圈斷路器（常開）＝遞迴防護：重複才是死圈特徵——同指紋（工具＋操作全量信號 hash）回合內
 // 第 4 次出現即擋該次調用（要求改變策略：重跑同樣的失敗＝無限循環）；被擋後仍重複至第 7 次＝升級：
-// 凍結本回合工具（Skill 與 sb state／sb next intent 豁免）＋自動回 intent（執行段；CLI 對照 escalatedAt 留 budgetExhausted——歷史鍵名，語義＝迴圈升級）。
-const LOOP_NODES = new Set(['test', 'build', 'verify', 'done']);
+// 自動回 intent（任何活動段；不凍結不停擺）——依修正分類補正 G1~G3 後接續；同指紋第二次升級＝死操作，
+// 本回合封禁該操作（防宏觀升級循環），其餘工作照常推進。escalatedAt／escalations 屬純觀測，非凍結旗標；
+// history 條目留 budgetExhausted（CLI 對照 escalatedAt——歷史鍵名，語義＝迴圈升級）。
+const FLOW_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 const LOOP_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
 const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const LOOP_DENY_AT = 4;
 const LOOP_ESCALATE_AT = 7;
 function toolFingerprint(tool, cmd, toolInput) {
-  const sig = String(cmd || toolInput?.file_path || toolInput?.path || toolInput?.skill || toolInput?.name || JSON.stringify(toolInput ?? {})).slice(0, 200);
+  // 指紋＝「同一操作」的全量信號：shell 取完整命令字串；其他工具取完整參數 JSON——
+  // 同檔不同區段的讀取、同檔不同內容的編輯屬多樣操作（各自計數、永遠放行）；逐字重跑的同一失敗操作才同指紋。
+  const sig = String(cmd || JSON.stringify(toolInput ?? {})).slice(0, 200);
   return createHash('sha256').update(String(tool ?? '') + '\n' + sig).digest('hex').slice(0, 16);
 }
 function countUsage(root, tool, cmd, toolInput) {
@@ -182,35 +186,41 @@ function countUsage(root, tool, cmd, toolInput) {
       if (minKey) delete prints[minKey];
     }
     writeFileSync(statePath, JSON.stringify(st, null, 2));
-    // 迴圈斷路器：同操作重複即擋（要求改變策略）；被擋仍重複至升級線＝凍結＋自動回 intent（真死圈）。
-    // 豁免面與升級凍結一致（Skill 與 sb state／sb next intent——擋截訊息引導的逃生操作本身可重複使用）。
+    // 迴圈斷路器：同操作重複即擋（要求改變策略）；被擋仍重複至升級線＝自動回 intent 續行（不凍結不停擺）。
+    // 豁免面（Skill 與 sb state／sb next intent——逃生操作可重複使用）；停等期間只計數（寫入／推進由 checkHoldFreeze 治理）。
     const escapeOp = /^skill$/i.test(String(tool ?? '')) || (SHELL_TOOL_RE.test(String(tool ?? '')) && LOOP_ESCAPE_RE.test(String(cmd ?? '')));
-    if (!escapeOp && prints[fp] >= LOOP_DENY_AT && prints[fp] < LOOP_ESCALATE_AT) {
-      const preview = String(cmd || toolInput?.file_path || toolInput?.path || toolInput?.skill || tool || '').replace(/\s+/g, ' ').slice(0, 60);
-      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續，或待老闆下一則輸入開新回合；本回合調用計數由 sb state 查閱`, frozen: false };
+    if (escapeOp || st.understandingHold) return { st };
+    const preview = String(cmd || toolInput?.file_path || toolInput?.path || toolInput?.skill || tool || '').replace(/\s+/g, ' ').slice(0, 60);
+    if (prints[fp] >= LOOP_DENY_AT && prints[fp] < LOOP_ESCALATE_AT) {
+      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續；第 7 次升級＝自動回 intent 補正 G1~G3 後續行；本回合調用計數由 sb state 查閱` };
     }
-    if (!escapeOp && (prints[fp] >= LOOP_ESCALATE_AT || st.turnUsage.escalatedAt)) {
-      if (!st.turnUsage.escalatedAt) {
-        st.turnUsage.escalatedAt = now;
+    if (prints[fp] >= LOOP_ESCALATE_AT) {
+      const fpEsc = isRecord(st.turnUsage.fpEscalations) ? st.turnUsage.fpEscalations : (st.turnUsage.fpEscalations = {});
+      fpEsc[fp] = (fpEsc[fp] ?? 0) + 1;
+      st.turnUsage.escalations = (st.turnUsage.escalations ?? 0) + 1;
+      st.turnUsage.escalatedAt = now; // 純觀測（最後升級時刻；history 留痕對照用）——非凍結旗標
+      if (fpEsc[fp] >= 2) {
+        // 同指紋二次升級＝死操作：回 intent 補正後仍原樣重跑——本回合封禁此操作（防宏觀升級循環）；其他操作與工作不受影響。
         writeFileSync(statePath, JSON.stringify(st, null, 2));
+        return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第二次升級——已證明為死操作（回 intent 補正 G1~G3 後仍原樣重跑）；本回合封禁此操作，換操作或改變策略續行（其他工作照常推進）` };
       }
-      let retreated = st.node === 'intent';
-      if (LOOP_NODES.has(st.node)) {
+      // 升級：重置指紋表（補正後的新輪重新計數）＋自動回 intent（任何活動段；intent 時免跑）——工作不停止。
+      st.turnUsage.fingerprints = {};
+      const retreatable = typeof st.node === 'string' && st.node !== 'intent' && FLOW_NODES.has(st.node);
+      let retreatNote;
+      if (!retreatable) {
+        retreatNote = st.node === 'intent' ? '已在 intent' : `節點 ${st.node ?? '（無）'} 無可回退段——直接依新輪理解續行`;
+        writeFileSync(statePath, JSON.stringify(st, null, 2));
+      } else {
+        writeFileSync(statePath, JSON.stringify(st, null, 2)); // 先落檔——spawn 出的 sb next intent 須讀到 escalatedAt（history 留痕對照）
         const sbPath = fileURLToPath(new URL('../cli/bin/sb.mjs', import.meta.url));
         const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });
-        retreated = r.status === 0;
-        if (r.status !== 0) process.stderr.write(`[shiftblame] 迴圈升級自動回 intent 失敗（手動執行 sb next intent）：${String(r.stderr || r.stdout || '').trim().slice(0, 200)}\n`);
+        retreatNote = r.status === 0 ? '已自動回 intent 開新輪' : `自動回 intent 失敗——手動執行 sb next intent：${String(r.stderr || r.stdout || '').trim().slice(0, 160)}`;
       }
-      return { st, frozen: true, retreated };
+      return { st, loopDeny: `迴圈斷路器升級：此操作（${preview}）本回合第 ${prints[fp]} 次相同重複（被擋後仍重複）——${retreatNote}；依修正分類補正 G1~G3 後接續（CONFORMS＝細化 G2/G3、G1 不變；真屬 G1 衝突才走 §1.4.1 修約經老闆確認）——工作不停止、不凍結（定義段首走升級重走時仍停在老闆決策邊，屬既有設計）` };
     }
-    return { st, frozen: false };
+    return { st };
   } catch { return null; }
-}
-function loopFreezeReason(usage, tool, cmd) {
-  if (/^skill$/i.test(String(tool ?? ''))) return null; // 理解宣告落流自由
-  if (SHELL_TOOL_RE.test(String(tool ?? '')) && LOOP_ESCAPE_RE.test(String(cmd ?? ''))) return null; // sb state／sb next intent（拆分逃生）
-  const st = usage.st;
-  return `迴圈升級（同操作本回合重複 ≥ ${LOOP_ESCALATE_AT} 次且被擋後仍重複）——${usage.retreated || st.node === 'intent' ? '已自動回 intent（拆分重規劃；history 留 budgetExhausted）' : '本回合 MUST 回 intent'}；工具凍結至老闆下一則輸入（新回合重置）；改變策略即可避免：重複重跑同一失敗才是被擋的行為，持續推進的多樣操作永遠放行`;
 }
 
 function recordInput(root, prompt) {
@@ -222,6 +232,7 @@ function recordInput(root, prompt) {
     let releaseNote = null;
     (st.inputs ??= []).push({ at: new Date().toISOString(), text: String(prompt ?? '') }); // 唯增事實流
     delete st.turnUsage; // 新回合：回合計數與指紋重置（回合邊界＝老闆輸入；usageTotals 跨回合累計）
+    delete st.stopBlockedAt; // 新回合：停點偵測自限重置（每回合至多擋停一次）
     // 兩種觸發樣態：老闆以 shiftblame:think 調用形式輸入＝主動觸發→停等（理解呈現即停）；
     // 老闆回覆＝終審解凍（確認→分發；修正輪的再停等由 SKILL 條文承擔）——inputIdx 採全域編號（含已輪替前綴）
     if (ACTIVE_TRIGGER_RE.test(String(prompt ?? ''))) {
@@ -289,6 +300,24 @@ function flowLine(root) {
     const covered = (st.understandings ?? []).at(-1)?.uptoInput ?? -1;
     const uncovered = (st.inputsRotated ?? 0) + inputs.length - 1 - covered;
     return `\n[輸入流] 共 ${(st.inputsRotated ?? 0) + inputs.length} 則${st.inputsRotated ? `（檔內 ${inputs.length}＋已輪替 ${st.inputsRotated}）` : ''}；最新「${flatOneLine(inputs.at(-1).text, 80)}」｜理解覆蓋至 #${covered}${uncovered > 0 ? `——⚠ ${uncovered} 則尚無理解覆蓋（agent 未理解就動手＝此處可見，曝光承擔）` : '（全覆蓋）'}——每則輸入經 shiftblame:think 調用（args＝理解宣告）落理解流；無鎖、無解鎖、無引句。`;
+  } catch { return ''; }
+}
+
+// 停點申報曝光行：上回以 sb stop-report 申報的待決問題——老闆每則輸入時終審（真待決 or 偷懶）；首曝即標記已審
+function stopReportLine(root, mark = true) {
+  if (!root) return '';
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return '';
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    if (!st.stopReport) return '';
+    const r = st.stopReport;
+    if (mark && !r.reviewed) {
+      r.reviewed = true;
+      writeFileSync(statePath, JSON.stringify(st, null, 2));
+    }
+    const fresh = r.inputIdx === (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1;
+    return `\n[停點申報] 上回停於 #${r.inputIdx} @${r.node} 申報待決：「${flatOneLine(r.question)}」${fresh ? '（本回合申報）' : '（陳舊——屬先前回合，不授權本次停點）'}——老闆終審：真待決 or 偷懶（停點偵測，CARD⑩）。`;
   } catch { return ''; }
 }
 
@@ -769,16 +798,32 @@ try {
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
     // 機械事實（段位／輸入流與理解覆蓋／未審理解／停等狀態）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
+    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + stopReportLine(root, false) + holdLine(root), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
     const releaseNote = healthy ? recordInput(root, input.prompt ?? '') : preservePendingInput(root, input.prompt ?? '');
-    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
+    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + stopReportLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
   }
 
   if (event === 'Stop') {
-    process.exit(0); // 僅放行回合結束；不判定流程完成、不代做 intent 路由。主對話依 CARD⑩ 在 final 前接續或揭露停點。
+    // 停點偵測（防偷懶停，CARD⑩）：條件式（活動流程 intent~verify 且非停等才查）、單次（stop_hook_active 或
+    // 本回合已擋過即放行）、不代做路由（不改 node、不跑 sb next、不判語義——只強制「續行 or 申報」二選一）。
+    // 機械只判「有無本回合申報」，真待決 or 偷懶由申報曝光＋老闆終審承擔；invalid／missing／uninitialized／direct／done／ended 一律放行。
+    if (!root || !healthy) process.exit(0);
+    try {
+      const statePath = join(root, '.shiftblame', 'flow-state.json');
+      if (!existsSync(statePath)) process.exit(0);
+      const st = JSON.parse(readFileSync(statePath, 'utf8'));
+      if (st.understandingHold || st.node === 'done' || st.node === 'ended' || !FLOW_NODES.has(st.node)) process.exit(0);
+      const lastInputIdx = (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1;
+      if (isRecord(st.stopReport) && st.stopReport.inputIdx === lastInputIdx) process.exit(0); // 本回合已申報——放行
+      if (input.stop_hook_active === true || st.stopBlockedAt) process.exit(0); // 單次自限——不無限循環擋停
+      st.stopBlockedAt = new Date().toISOString();
+      writeFileSync(statePath, JSON.stringify(st, null, 2));
+      process.stderr.write('[shiftblame] 停點偵測：流程進行中（' + (st.slug ?? '?') + '/' + (st.ms ?? '?') + ' @ ' + st.node + '）而無停點申報——若確實需要老闆決策／缺必要輸入，先執行 sb stop-report --question「具體待決問題（≥10 字）」再停（申報會曝光供老闆終審）；否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\n');
+      process.exit(2);
+    } catch { process.exit(0); } // 狀態異常：放行（異常模式修復自由）
   }
 
   if (event === 'PreToolUse') {
@@ -791,7 +836,6 @@ try {
     // 回合計數（元行為觀測，零干預）＋迴圈斷路器（同操作重複才擋；持續推進的多樣操作永遠放行）
     const usage = healthy ? countUsage(root, tool, cmd, input.tool_input ?? {}) : null;
     if (usage?.loopDeny) deny(usage.loopDeny);
-    if (usage?.frozen) { const freezeReason = loopFreezeReason(usage, tool, cmd); if (freezeReason) deny(freezeReason); }
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
     if (SHELL_TOOL_RE.test(tool)) {
