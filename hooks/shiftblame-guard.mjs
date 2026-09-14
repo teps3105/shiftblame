@@ -59,7 +59,7 @@ const projectRoot = (input) => {
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 shiftblame:think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
-  '②段鏈：intent→requirement→research→plan→test→build→verify；verify 判決出邊——fail→intent 回指重整（零旗標；三觸發：卡住／老闆方向錯誤／驗收不過）、pass→next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。回頭自由（任意節點→intent 零旗標，同 ms 重走）；前進要鑰匙（--boss-ok＋時點對抗）。',
+  '②段鏈：intent→requirement→research→plan→test→build→verify；verify 判決出邊——fail→intent 回指重整（零旗標；三觸發：卡住／老闆方向錯誤／驗收不過）、pass→next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。回頭自由（任意節點→intent 零旗標，同 ms 重走）；前進要鑰匙（--boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗章與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
   '③時點對抗（plan→test①放行前／build→verify②判決前／③＝pass 出口前——每 ms 驗收 pass 後、next／end 前，CLI 對兩出口驗新鮮度；產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
@@ -383,7 +383,7 @@ function checkLayerStopover(root, cmd) {
         if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；pass 出口永不直通）
         return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊走完整確認`;
       }
-      return `老闆決策邊：${st.node}→${target}——經老闆授權（理解流曝光承擔）後帶 --boss-ok 推進，或返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
+      return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗章不替代老闆章；經老闆授權後帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等，返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
     }
   } catch { /* 非治理工作區 */ }
   return null;

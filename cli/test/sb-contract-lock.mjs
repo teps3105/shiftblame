@@ -30,11 +30,13 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點①對抗\n外部子代理原文節錄內容足夠實質。\n對抗判定：通過');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '①').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 const locked = state();
 assert.match(locked.g1Contract.sha256, /^[a-f0-9]{64}$/);

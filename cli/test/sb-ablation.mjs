@@ -29,7 +29,12 @@ function mkSandbox({ state = {}, files = {}, git = false, flow = true } = {}) {
     mkdirSync(dirname(full), { recursive: true });
     writeFileSync(full, c);
   }
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(flow ? { slug: 'demo', ms: '001', node: 'build', history: [], ...state } : { inputs: [], ...state }));
+  const s0 = { slug: 'demo', ms: '001', node: 'build', history: [], ...state };
+  if (!['ended', 'done'].includes(s0.node)) { // 老闆輸入新鮮度對照組播種；ended/done 態輸入流已清（slug 邊界）不播
+    s0.startedAt = s0.startedAt ?? new Date(Date.now() - 60000).toISOString();
+    s0.inputs = s0.inputs ?? [{ at: new Date().toISOString(), text: '老闆：確認推進' }];
+  }
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(flow ? s0 : { inputs: [], ...state }));
   if (flow) {
     mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
     writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
@@ -161,7 +166,7 @@ ablation('破壞性命令防護 scanInlineDestructive（相對路徑遞迴刪除
 
 ablation('輸入流 recordInput（雙流模型——唯增事實）', () => {
   const neu = neutralize(GUARD, [['function recordInput(root, prompt) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;', 'function recordInput(root, prompt) {\n  return null; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;']]);
-  const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '消融實驗輸入' }); const n = stateOf(r).inputs?.length ?? 0; rmSync(r, { recursive: true, force: true }); return n; };
+  const payload = (script) => { const r = mkSandbox({ state: { inputs: [] } }); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '消融實驗輸入' }); const n = stateOf(r).inputs?.length ?? 0; rmSync(r, { recursive: true, force: true }); return n; };
   assert.equal(payload(GUARD), 1, 'intact：輸入落流（唯增）');
   assert.equal(payload(neu), 0, 'ablated：拆掉後輸入不落流（曝光鏈斷）');
 });
@@ -276,6 +281,20 @@ ablation('外部證據閘（research→plan 邊驗）', () => {
   const payload = (script) => { const r = mkSandbox({ state: { node: 'research' }, files: { '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'plan'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：零外部調用推進被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉外部性閘後閉門推進放行');
+});
+
+ablation('老闆輸入新鮮度閘 bossFresh 主邊（--boss-ok 由老闆輸入承載——對抗章不替代老闆章）', () => {
+  const neu = neutralize(SB, [['    if (!bossFresh(st, target)) {', '    if (false) { // ABLATED']]);
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'intent', inputs: [] } }); const h = cliRun(script, r, 'next', 'requirement', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
+  assert.match(probe(SB), /缺新鮮老闆輸入/, 'intact：無新鮮老闆輸入即擋（stop-report 申報停等路徑）');
+  assert.doesNotMatch(probe(neu), /缺新鮮老闆輸入/, 'ablated：拆掉新鮮度閘——自蓋老闆章（僅旗標留痕）復活');
+});
+
+ablation('老闆輸入新鮮度閘 bossFresh pass 出口（next/end 鑰匙鏈同源）', () => {
+  const neu = neutralize(SB, [['if (!bossFresh(st, \'ended\', { passExit: true })) die(', 'if (false) die( // ABLATED']]);
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'verify', inputs: [], adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'verify', point: '③' }] } }); const h = cliRun(script, r, 'end', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
+  assert.match(probe(SB), /pass 結束缺新鮮老闆輸入/, 'intact：過期輸入不承載 pass 出口老闆決策');
+  assert.doesNotMatch(probe(neu), /pass 結束缺新鮮老闆輸入/, 'ablated：拆掉出口新鮮度檢');
 });
 
 

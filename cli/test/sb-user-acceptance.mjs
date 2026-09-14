@@ -46,6 +46,7 @@ assert.equal(state().node, 'intent');
 // intent→requirement：--boss-ok 邊；首走不得以 --rerun 直通繞過（返工直通僅限曾達 test 後的重走）
 assert.match(run('next', 'requirement').stderr, /MUST 帶 --boss-ok/);
 assert.match(run('next', 'requirement', '--rerun', 'impl').stderr, /--rerun 僅限同 ms 返工重走/, '首走防繞');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 {
   rmSync(join(root, '.shiftblame', 'demo', 'SLUG.md'));
@@ -89,6 +90,7 @@ assert.equal(run('next', 'research').status, 0);
 assert.equal(run('next', 'plan').status, 0, '返工外部協助延續作數——一次調用滿足兩閘');
 assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度核心防護）');
 assert.equal(pt('①', 'r2').status, 0, '重走後新鮮①條目（晚於上次同邊推進）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（返工重走的 plan→test 邊——晚於上次同邊推進）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
 // 功能循環：test（定稿 commit）→build（存檔 commit）→verify（tree 乾淨＋時點②判決前對抗）
@@ -104,6 +106,7 @@ assert.equal(run('next', 'verify', '--adversarial').status, 0);
 // verify 判決段唯讀：pass 出口前未存檔變更即擋
 writeFileSync(join(root, 'seed.txt'), '驗收中偷改\n');
 assert.equal(pt('③', 't1').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
 assert.match(run('end', '--boss-ok', '--adversarial').stderr, /working tree 未乾淨|乾淨/);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
 
@@ -129,6 +132,7 @@ assert.equal(pt('②', 'r2').status, 0);
 assert.equal(run('next', 'verify', '--adversarial').status, 0);
 
 // pass 出口一：next（--new-ms 開新 ms——老闆選擇）；缺件與舊③即擋
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，開下一里程碑' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 末次進 verify）
 assert.match(run('next', 'intent', '--new-ms').stderr, /--boss-ok/, '開新 ms 缺 --boss-ok 即擋');
 assert.match(run('next', 'intent', '--new-ms', '--boss-ok').stderr, /時點③對抗/, '開新 ms 缺 --adversarial 即擋');
 assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點③/, '舊③條目過期即擋（每 ms 新鮮度）');
@@ -163,6 +167,7 @@ commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(pt('②', 'ms2').status, 0);
 assert.equal(run('next', 'verify', '--adversarial').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：整體完成，結束 slug' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
 assert.match(run('end', '--boss-ok').stderr, /時點③對抗/, 'end 缺 --adversarial 即擋');
 assert.equal(pt('③', 'ms2').status, 0);
 assert.equal(run('end', '--boss-ok', '--adversarial').status, 0);

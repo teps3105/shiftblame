@@ -54,11 +54,13 @@ assert.match(state().startedAt, /^\d{4}-\d\d-\d\dT/, 'init 記起始時間（耗
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 assert.equal(pt('①').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段');
 
 // —— 3. 迴圈斷路器：計數純觀測（無預算無上限零干預）；重複才擋（4/7 門檻）；死圈升級 ——
@@ -135,6 +137,7 @@ assert.match(run('next', 'verify').stderr, /需時點②對抗/, '判決前缺�
 assert.equal(pt('②').status, 0);
 assert.equal(run('next', 'verify', '--adversarial').status, 0);
 assert.equal(pt('③').status, 0, 'pass 出口前置——③ 條目（end 前驗新鮮度）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
 
 // —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);

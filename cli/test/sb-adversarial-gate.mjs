@@ -30,6 +30,7 @@ assert.equal(run('init', 'demo').status, 0);
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
@@ -342,6 +343,7 @@ assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
 assert.equal(run('next', 'verify', '--adversarial').status, 0);
 
 // 4. pass 出口（next／end 兩門）：缺時點③條目即擋
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
 assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點③/, 'next 出口缺③即擋');
 assert.match(run('end', '--boss-ok', '--adversarial').stderr, /時點③/, 'end 出口缺③即擋');
 // 5. fail 邊（三觸發）→回 intent 重整：零旗標、同 ms；重走（曾達 test——返工直通）
@@ -353,6 +355,7 @@ assert.equal(run('next', 'research').status, 0, '返工外部協助作數——�
 assert.equal(run('next', 'plan').status, 0);
 assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度）');
 assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（返工重走邊——晚於上次同邊推進）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'v3\n');

@@ -61,7 +61,7 @@ const backEdge = (from, to) => to === 'intent';
 // 前進鑰匙三層（SKILL 授權章）：
 //   ① 雙流（hooks 層）：輸入流＋理解流唯增記錄＋必然曝光——無前置攔截，CLI 不重複
 //   ② 老闆決策邊鑰匙＝--boss-ok 留痕＋時點對抗；--new-ms 開新里程碑（verify→intent 邊，pass 後）
-//   ③ --boss-ok 旗標：留痕（記錄 agent 宣稱的老闆授權），非鑰匙；缺失仍擋以保留形式邊界
+//   ③ --boss-ok 旗標：老闆輸入承載（輸入流時戳新鮮度 bossFresh 驗）＋留痕；缺失仍擋以保留形式邊界
 const needsBossOk = (from, to) =>
   (from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test');
 
@@ -349,13 +349,16 @@ function gate(st, target, opts) {
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
-  // --boss-ok：老闆決策邊留痕（授權語義由理解流曝光承擔）；--rerun 直通豁免非完成邊
+  // --boss-ok：老闆決策邊留痕＋老闆輸入新鮮度（對抗章不替代老闆章——缺老闆輸入停等不自蓋）；--rerun 直通豁免非完成邊
   if (opts.bossOk && !needsBossOk(st.node, target) && !opts.newMs) {
     problems.push(`「${st.node} → ${target}」不是老闆決策邊——--boss-ok 留給老闆決策邊；回頭邊零旗標，工作邊沿用既有授權`);
   } else if (needsBossOk(st.node, target) && !opts.bossOk && !rerunExempt) {
     problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（授權語義由理解流曝光承擔）；返工直通改帶 --rerun（時點①分流判定，SKILL §3）`);
   } else if (opts.bossOk) {
-    passes.push('老闆授權留痕（--boss-ok）');
+    if (!bossFresh(st, target)) {
+      problems.push('老闆決策邊缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於同邊上次推進／本次 slug 起始的條目），對抗章與理解宣告不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等老闆');
+      const note = hooksHealthNote(); if (note) problems.push(note);
+    } else passes.push('老闆授權留痕（--boss-ok＋老闆輸入新鮮度已驗）');
   } else if (rerunExempt && needsBossOk(st.node, target)) {
     passes.push(`返工直通（--rerun ${opts.rerun}）：時點①分流判定留痕，完成時點曝光彙總`);
   }
@@ -364,6 +367,7 @@ function gate(st, target, opts) {
   if (opts.newMs) {
     if (!(st.node === 'verify' && target === 'intent')) die(['--new-ms 僅限 verify→intent 邊（pass 後開下一 ms）——其他推進走各自旗標']);
     if (!opts.bossOk) die(['開新里程碑是老闆選擇（pass 邊後 next）——MUST 帶 --boss-ok 留痕']);
+    if (!bossFresh(st, 'intent', { passExit: true })) die(['開新 ms 缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
     if (!opts.adversarial) die(['開新 ms 前 MUST 時點③對抗（每 ms 收斂成果審查）——sb adversarial <報告> --point ③ 後再推進']);
     const p3n = checkP3Fresh(st);
     if (p3n) die([p3n]);
@@ -989,6 +993,18 @@ function cmdSopreview(answers) {
 }
 
 // 時點③新鮮度（每 ms——驗收 pass 後、next/end 前）：③條目須存在、為最新、晚於本 ms 末次進 verify
+// 老闆輸入新鮮度（老闆決策邊鑰匙的事實承載）：--boss-ok 由老闆輸入承載——輸入流（hooks UserPromptSubmit
+// 唯增記錄）須存在晚於基準的條目，對抗章與理解宣告不替代老闆章；缺老闆決策即 stop-report 申報停等。
+// 基準鏈＝max(同邊上次推進 at（不過濾旗標，鏡像時點①②新鮮度）, 本 ms 末次進 verify at（僅 pass 出口——
+// 鏡像時點③）, slug 起始 at)。純時戳判定零語義（機械不掃詞）——本閘是「老闆在場且開過口」的下限，
+// 語義授權由理解流曝光＋老闆終審承擔；偽造輸入紀錄由抽查承擔。
+function bossFresh(st, target, { passExit = false } = {}) {
+  const ts = (s) => { const t = Date.parse(s); return Number.isFinite(t) ? t : 0; };
+  const sameEdgeAt = (st.history ?? []).filter((h) => h.from === st.node && h.to === target).at(-1)?.at;
+  const verifyAt = passExit ? (st.history ?? []).filter((h) => h.to === 'verify' && h.ms === st.ms).at(-1)?.at : undefined;
+  const base = Math.max(ts(sameEdgeAt), ts(verifyAt), ts(st.startedAt));
+  return (st.inputs ?? []).some((e) => ts(e.at) > base);
+}
 function checkP3Fresh(st) {
   const lastP3 = (st.adversarialLog ?? []).at(-1);
   if (!lastP3 || lastP3.point !== '③') return '時點③對抗未宣告或非最新條目——sb adversarial <報告> --point ③（每 ms：驗收 pass 後、next/end 前）';
@@ -1002,6 +1018,7 @@ function cmdEnd(opts) {
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——本指令完成即遷移為 ended
   if (st.node !== 'verify') die([`sb end 僅限 verify 態選 end（目前 ${st.node}）——驗收 pass 邊＋時點③對抗（收斂成果審查）先於結束`]);
   if (!opts.bossOk) die(['pass 結束是老闆決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由理解流曝光承擔）']);
+  if (!bossFresh(st, 'ended', { passExit: true })) die(['pass 結束缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
   if (!opts.adversarial) die(['結束 slug 前 MUST 時點③對抗（收斂成果審查）——sb end --boss-ok --adversarial']);
   const p3 = checkP3Fresh(st);
   if (p3) die([p3]);
