@@ -110,10 +110,11 @@ flowchart LR
     R -- 恢復 --> D3["shiftblame:resume"]
     R -- "pass 出口" --> D4["sb end／--new-ms<br/>（--boss-ok＋--adversarial）"]
     R -- 丟棄 --> D5["shiftblame:dice"]
+    R -- 返工文件收斂 --> D6["shiftblame:rewrite"]
     R -- 改文件／框架演化 --> D7["直接實行（寫入矩陣＋文件先行）"]
 ```
 
-shiftblame:save、shiftblame:resume、shiftblame:dice 等功能型技能與 CLI 命令都是 shiftblame:think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 shiftblame:think。
+shiftblame:save、shiftblame:resume、shiftblame:dice、shiftblame:rewrite 等功能型技能與 CLI 命令都是 shiftblame:think 分發後的執行目標，老闆不直達——任何輸入第一步都路由回 shiftblame:think。
 
 **分發前的命名與文件歸屬**：依主 SKILL §3 檢查路徑、檔名、slug 與內容是否能從正式定義獨立辨識。slug 用功能語義；對話、工作過程與交接紀錄一律 `<repo>/.shiftblame/tmp/`，G／SLUG 只保留自足定義、必要狀態與回指。理解宣告與對抗須揭露落點，將臨時代號展開成實際對象與行為。
 

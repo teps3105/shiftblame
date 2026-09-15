@@ -264,8 +264,9 @@ sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕�
 
 - [`shiftblame:think`](skills/think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回 intent 同 ms 重走；確認／開工→分發執行。
 - [`shiftblame:resume`](skills/resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
-- [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/<slug>/SLUG.md，供 shiftblame:resume 恢復。
+- [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/tmp/<slug>/handoff.md（SLUG 只留狀態與回指），供 shiftblame:resume 恢復。
 - [`shiftblame:dice`](skills/dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
+- [`shiftblame:rewrite`](skills/rewrite/SKILL.md)——返工重寫為當下事實：G1~G3／SLUG 不是歷史紀錄集合——定義區整檔重寫自洽、回指區同鍵（AC-ID／T-ID）覆寫、SLUG 既有列更新，條目逐輪堆疊＝病；時序歸 flow-state，不開新寫入權。
 
 ## 文件結構
 
@@ -292,7 +293,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │       ├── SOP.md             # SOP 准入欄位中央模板（複製來源）
     │       ├── ROADMAP.md         # ROADMAP 准入欄位中央模板（複製來源）
     │       └── SLUG.md             # 定義單檔：SLUG 主體 + G1/G2/G3 三面向範本（複製來源）
-    └── */SKILL.md               # 功能型技能：shiftblame:think 全域路由＋save/resume/dice（文件操作由流程與寫入矩陣直接承載）
+    └── */SKILL.md               # 功能型技能：shiftblame:think 全域路由＋save/resume/dice＋rewrite 返工重寫紀律（寫入權與段位由流程與寫入矩陣承載）
 ```
 
 每個專案的工作區位於 `<repo>/.shiftblame/`（`<repo>` = 使用者專案根目錄的絕對路徑），並且 MUST 經 `.gitignore` 排除（入庫路徑封閉）。工作區為**結構分檔**（定義單檔、使用分檔）：
