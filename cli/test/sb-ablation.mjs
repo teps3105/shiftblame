@@ -150,6 +150,13 @@ ablation('rewrite 載入記錄 recordRewriteSeen（閘鑰匙）', () => {
   assert.equal(payload(neu), undefined, 'ablated：拆掉後調用不落檔（載入事實無法被閘看見）');
 });
 
+ablation('worktree 錨定解析 resolveWorktreeAnchor（worker 沙箱事件回主 repo 治理）', () => {
+  const neu = neutralize(GUARD, [['function resolveWorktreeAnchor(cwd) {\n  if (!cwd) return { root: null, wt: null };', 'function resolveWorktreeAnchor(cwd) {\n  if (!cwd) return { root: null, wt: null };\n  return { root: cwd, wt: null }; // ABLATED']]);
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' } }); mkdirSync(join(r, '.shiftblame/worktree/fa/src'), { recursive: true }); const h = hookRun(script, { cwd: join(r, '.shiftblame/worktree/fa'), hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(r, '.shiftblame/worktree/fa/src/a.js'), content: 'x' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
+  assert.equal(payload(GUARD), 2, 'intact：worker 事件錨定回主 repo——intent 段對工作樹唯讀擋');
+  assert.equal(payload(neu), 0, 'ablated：拆掉錨定後 worktree 變無治理區放行（閘門視野失效）');
+});
+
 ablation('狀態寫入矩陣 checkStateWriteMatrix（測試/實作碼段位）', () => {
   const neu = neutralize(GUARD, [['function checkStateWriteMatrix(root, toolInput) {\n  if (!root) return null;', 'function checkStateWriteMatrix(root, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, 'src/a.js'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };

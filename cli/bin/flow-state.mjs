@@ -116,7 +116,25 @@ function directState(st) {
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
+// 多代理工作樹帳本（CLI 寫）：鍵＝worktree 名；條目＝任務卡＋生命週期狀態。
+// 狀態機 open→verifying→ready→merged（done 時刪條目）；research 樹以 drop 收尾（實驗碼拋棄不整合）。
+const WT_STATUSES = new Set(['open', 'verifying', 'ready', 'merged']);
+function validWorktrees(w) {
+  if (!objectRecord(w)) return false;
+  return Object.entries(w).every(([name, e]) => /^[a-z0-9][a-z0-9-]{0,48}$/.test(name)
+    && objectRecord(e)
+    && exactKeys(e, ['phase', 'branch', 'task', 'status', 'openedAt', ...(Object.hasOwn(e, 'verdict') ? ['verdict'] : []), ...(Object.hasOwn(e, 'lastReportAt') ? ['lastReportAt'] : []), ...(Object.hasOwn(e, 'report') ? ['report'] : [])])
+    && (e.phase === 'research' || e.phase === 'build')
+    && typeof e.branch === 'string' && e.branch.trim().length > 0
+    && typeof e.task === 'string' && [...e.task.trim()].length >= 4
+    && WT_STATUSES.has(e.status)
+    && timestamp(e.openedAt)
+    && (!Object.hasOwn(e, 'verdict') || e.verdict === 'pass' || e.verdict === 'fail')
+    && (!Object.hasOwn(e, 'lastReportAt') || timestamp(e.lastReportAt))
+    && (!Object.hasOwn(e, 'report') || (typeof e.report === 'string' && e.report.trim().length > 0)));
+}
 function activeExtras(st) {
+  if (Object.hasOwn(st, 'worktrees') && !validWorktrees(st.worktrees)) return false; // 多代理工作樹狀態（CLI 寫——協調者層帳本）
   if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
     && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;

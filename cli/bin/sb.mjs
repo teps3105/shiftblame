@@ -32,6 +32,19 @@ function findRoot(start) {
   }
 }
 const ROOT = findRoot();
+// 工作樹自衛：sb 在 .shiftblame/worktree/<name> 內執行時錨到的 ROOT 是 worktree（其 .git 是檔案）——
+// 會在此長出無七段、無老闆邊的「直接實行」自簽 flow-state 並拿到自簽提交車道。治理命令限主 repo。
+{
+  const norm = String(process.cwd()).replace(/\\/g, '/');
+  const i = norm.toLowerCase().indexOf('/.shiftblame/worktree/'); // 大小寫不敏感——與 hooks 錨定口徑一致
+  if (i > 0) {
+    const mainRoot = norm.slice(0, i);
+    if (existsSync(join(mainRoot, '.shiftblame', 'flow-state.json'))) {
+      process.stderr.write(`sb: 工作樹 ${norm.slice(i + '/.shiftblame/worktree/'.length).split('/')[0]} 內禁跑治理命令——治理命令限主 repo（${mainRoot}）；worker 的 git 操作限自己分支，主線整合在主 repo 跑 sb wt merge\n`);
+      process.exit(1);
+    }
+  }
+}
 const SB_DIR = join(ROOT, '.shiftblame');
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');
@@ -127,6 +140,14 @@ const usage = (code = 2) => {
   sb end --boss-ok --adversarial        pass 後結束 slug（僅 verify 態；--boss-ok＋時點③）：收尾歸檔＋產出遙測
                                         （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
   sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
+  sb wt <sub> [args]                    多代理工作樹（research/build 段並行；worker 零主線權）：
+       open <name> --task "<卡>" [--phase research|build]   建樹派工（.shiftblame/worktree/<name>，分支 wt/<name>）
+       report <name>                    worker 完成回報（進驗證窗口）
+       verify <name> --verdict pass|fail [--report <path>]  驗證器判定（fail 退回；pass 進 ready）
+       merge <name>                     ready 樹 diff 套用回主 repo（拒測試碼 diff；主線提交閘接管；非同步流式不等全體）
+       done <name>                      merged 樹收工移除（分支刪；主線 commit 唯一存續）
+       drop <name>                      丟棄（任何狀態；工作樹＋分支＋帳目）
+       list                             狀態表（帳本＋停滯警示）
                                         開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）
   sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
   sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
@@ -862,6 +883,7 @@ function cmdNext(target, opts) {
     // 回頭自由：同 ms 重走；--new-ms（老闆授權開新里程碑）→ms++
     delete st.g1Contract;
     if (prev === 'verify' && opts.newMs) {
+      if (st.worktrees && Object.keys(st.worktrees).length) die([`工作樹未清（${Object.keys(st.worktrees).join('、')}）——開新 ms 前先收工（done）或丟棄（drop）全部工作樹`]);
       const prevMs = st.ms; // per-ms 遙測結算對象＝前一 ms（鍵＝被結算 ms）
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
@@ -1025,6 +1047,7 @@ function cmdEnd(opts) {
   if (p3) die([p3]);
   const sopProblem = sopReviewProblem(st);
   if (sopProblem) die([sopProblem]);
+  if (st.worktrees && Object.keys(st.worktrees).length) die([`工作樹未清（${Object.keys(st.worktrees).join('、')}）——結束 slug 前先收工（done）或丟棄（drop）全部工作樹（收工前清場）`]);
   const problems = [], passes = [];
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
@@ -1068,6 +1091,7 @@ function cmdEnd(opts) {
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; st.history = [];
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals; delete st.stopReport; delete st.stopBlockedAt;
+  delete st.worktrees; // 冪等清理（worktree 帳本屬 slug RAM——end 前已有未清擋，此為縱深）
   delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（舊版預算欄位——不相容則 ended 檔自我 invalid）
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
@@ -1128,6 +1152,127 @@ function cmdAdversarial(report, point) { // --point ①②③＝時點對抗條�
   ]);
 }
 
+// —— 多代理工作樹（協調者層生命週期）：worker 在 .shiftblame/worktree/<name> 並行（research 實證／build 實作），
+// 零主線權（不 commit 主線、不跑 sb）——主線整合經 sb wt merge 的 diff 套用回主 repo 工作區，
+// 由主 repo 既有提交閘（adversarial＋commitmsg＋hooks）承載；驗完即整合（非同步流式，不等全體）。
+const WT_NAME_RE = /^[a-z0-9][a-z0-9-]{0,48}$/;
+const WT_TEST_PATH_RE = /(^|\/)(tests?|__tests__|spec)\//i;
+const WT_TEST_FILE_RE = /\.(test|spec)\.[A-Za-z0-9]+$|(^|\/)[A-Za-z0-9._-]+_test\.[A-Za-z0-9]+$/i;
+function wtDir(name) { return join(SB_DIR, 'worktree', name); }
+function cmdWt(sub, pos, flags) {
+  const subUsage = () => usage();
+  const st = requireHealthyState();
+  if (st.kind !== 'active') die([`工作樹作業限活動流程（slug 進行中）——現：${st.kind}`]);
+  const active = st.state;
+  if (active.understandingHold) die([`停等凍結（輸入 #${active.understandingHold.inputIdx} 理解待老闆終審）——流程推進與主 repo 寫入（含 wt 整合）本輪凍結；唯讀查證自由，待老闆回覆`]);
+  const node = active.node;
+  const load = () => JSON.parse(readFileSync(STATE_FILE, 'utf8'));
+  const save = (s) => writeFileSync(STATE_FILE, JSON.stringify(s, null, 2));
+  if (sub === 'list') {
+    const cur = load();
+    const wts = Object.entries(cur.worktrees ?? {});
+    if (!wts.length) { out('工作樹：無（並行未開或已收工）'); return fin([]); }
+    out(`工作樹：${wts.length} 組`);
+    for (const [name, e] of wts) {
+      const stall = e.status !== 'merged' && ((Date.now() - Date.parse(e.lastReportAt ?? e.openedAt)) > 30 * 60 * 1000 ? '（⚠停滯）' : ''); // 從未回報以開樹時間起算——與注入行口徑一致
+      out(`  ${name} [${e.phase}/${e.status}${e.verdict ? '，判定=' + e.verdict : ''}]${stall}——${e.task}`);
+    }
+    return fin(['收工即清：sb wt done <name>（merge 後）／sb wt drop <name>（丟棄）']);
+  }
+  const name = pos[0];
+  if (!name || !WT_NAME_RE.test(name)) die([`工作樹名不合規（^[a-z0-9][a-z0-9-]{0,48}$）：${name ?? '（缺）'}`]);
+  if (sub === 'open') {
+    if (node !== 'research' && node !== 'build') die([`工作樹限 research／build 段開（現：${node}）——並行窗口由這兩段承載（多代理架構，SKILL 寫入矩陣）`]);
+    const task = String(flags.task ?? '');
+    if ([...task.trim()].length < 4) die(['--task "<任務卡摘要（≥4 字）>" 必填——AC 對應、檔案邊界、單一寫入者']);
+    const phase = flags.phase === 'research' ? 'research' : 'build';
+    const cur = load();
+    if (cur.worktrees?.[name]) die([`工作樹 ${name} 已存在（狀態 ${cur.worktrees[name].status}）——同名續用先 done／drop`]);
+    if (existsSync(wtDir(name))) die([`目錄已占用：${wtDir(name)}——同名續用先 done／drop`]);
+    const branch = `wt/${name}`;
+    if (gitRun('rev-parse', '--verify', `refs/heads/${branch}^{commit}`).status === 0) die([`分支已占用：${branch}——同名續用先 done／drop`]);
+    const add = gitRun('worktree', 'add', '-b', branch, wtDir(name));
+    if (add.status !== 0) die(['git worktree add 失敗：', (add.stderr || add.stdout).trim()]);
+    cur.worktrees = { ...(cur.worktrees ?? {}), [name]: { phase, branch, task: task.trim(), status: 'open', openedAt: new Date().toISOString() } };
+    save(cur);
+    return fin([
+      `工作樹已開：${name}（${phase} 段，分支 ${branch}）`,
+      `派工：worker 在 ${wtDir(name)} 內自由實作（可 commit 到自己分支；禁跑 sb、禁改主線）——${task.trim()}`,
+      '收線：worker 完成回報 → sb wt verify（驗證器判定）→ pass 後 sb wt merge（主線整合，主 repo 提交閘承載）→ 提交後 sb wt done',
+    ]);
+  }
+  const cur = load();
+  const e = cur.worktrees?.[name];
+  if (!e) die([`工作樹 ${name} 不在帳上——sb wt list 查現況`]);
+  if (sub === 'report') {
+    e.lastReportAt = new Date().toISOString();
+    e.status = e.status === 'open' ? 'verifying' : e.status; // 回報即進驗證窗口（verifier 接手判定）
+    save(cur);
+    return fin([`工作樹 ${name} 回報已記（${e.lastReportAt}）——驗證器以 sb wt verify ${name} --verdict pass|fail 判定`]);
+  }
+  if (sub === 'verify') {
+    if (e.status === 'merged') die(['已整合（merged）的工作樹不再判定——next merge 後由 sb wt done 收線；證據疑義回主對話重走（fail 回指）']);
+    const verdict = flags.verdict === 'pass' ? 'pass' : flags.verdict === 'fail' ? 'fail' : null;
+    if (!verdict) die(['--verdict pass|fail 必填（驗證器判定）']);
+    e.verdict = verdict;
+    e.lastReportAt = new Date().toISOString();
+    if (verdict === 'fail') { e.status = 'open'; delete e.report; save(cur); return fin([`工作樹 ${name} 驗證未過——退回 worker（status=open）；證據不足或方案失效可 sb wt drop`]); }
+    if (e.status !== 'verifying') die([`工作樹 ${name} 狀態 ${e.status}——verify 判定 pass 需先 report（verifying 窗口）`]);
+    e.status = 'ready';
+    if (typeof flags.report === 'string' && flags.report.trim()) e.report = flags.report.trim();
+    save(cur);
+    return fin([`工作樹 ${name} 驗證通過（ready）——非同步流式：可立即 sb wt merge ${name} 整合（不等其他工作樹）`]);
+  }
+  if (sub === 'merge') {
+    if (node !== 'research' && node !== 'build') die([`merge 限 research／build 段（現：${node}）——verify 段對 repo 唯讀，整合弄髒工作區與矩陣矛盾（收線後再進驗收）`]);
+    if (e.status !== 'ready') die([`工作樹 ${name} 狀態 ${e.status}——merge 僅吃 ready（verify pass）`]);
+    const branch = e.branch;
+    const wtStatus = spawnSync('git', ['-C', wtDir(name), 'status', '--porcelain'], { encoding: 'utf8', timeout: 15000 });
+    if (wtStatus.status !== 0) die(['worktree status 查驗失敗：', (wtStatus.stderr || wtStatus.stdout).trim()]);
+    if (String(wtStatus.stdout).trim()) die([`工作樹 ${name} 有未 commit 變更（worker 變更 MUST commit 至 ${branch} 才進整合範圍；untracked 不入 diff）——先請 worker commit 或納入任務重做`]);
+    const files = gitRun('diff', '--name-only', `HEAD...${branch}`);
+    if (files.status !== 0) die(['git diff 失敗：', (files.stderr || files.stdout).trim()]);
+    const changed = files.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+    const testHits = changed.filter((f) => WT_TEST_PATH_RE.test(f) || WT_TEST_FILE_RE.test(f));
+    if (testHits.length) die([`工作樹 ${name} 的 diff 含測試碼（單一寫入者＝主對話 test 段）：${testHits.join('、')}——測試碼變更不經 worker 整合；移除後重 merge 或改由主對話 test 段親自變更`]);
+    if (!changed.length) die([`工作樹 ${name} 分支無變更——空整合無意義（直接 drop）`]);
+    const binCheck = gitRun('diff', '--numstat', `HEAD...${branch}`);
+    const binHits = String(binCheck.stdout || '').split('\n').map((l) => l.trim()).filter((l) => l.startsWith('-\t-\t'));
+    if (binHits.length) die([`工作樹 ${name} 的 diff 含 binary 檔（文本 diff 套用管線不承載）：${binHits.map((l) => l.split('\t')[2]).join('、')}——binary 資產由主對話親自處理`]);
+    const diff = gitRun('diff', `HEAD...${branch}`); // 純文字 diff——binary 已上方明拒，--binary 的 raw bytes 不經 utf8 管線
+    const apply = spawnSync('git', ['-C', ROOT, 'apply', '--3way'], { input: diff.stdout, encoding: 'utf8', timeout: 30000 });
+    if (apply.status !== 0) die(['diff 套用失敗（基準漂移或衝突）：', (apply.stderr || apply.stdout).trim(), '——退回 worker rebase 其分支後重 verify，或主對話手解後重試']);
+    e.status = 'merged';
+    save(cur);
+    return fin([
+      `工作樹 ${name} 的 diff 已套用至主 repo 工作區（${changed.length} 檔）`,
+      '主線提交閘接管：跑測試 → sb adversarial → sb commitmsg → git commit（既有閘全過）',
+      `提交完成後收工：sb wt done ${name}`,
+    ]);
+  }
+  if (sub === 'done') {
+    if (e.status !== 'merged') die([`工作樹 ${name} 狀態 ${e.status}——done 僅收 merged（已整合）；未整合用 drop`]);
+    const rm = gitRun('worktree', 'remove', '--force', wtDir(name));
+    if (rm.status !== 0) die(['worktree remove 失敗（Windows 檔案鎖常見——關閉占用程序後重試；帳目保留未清）：', (rm.stderr || rm.stdout).trim()]);
+    const br = gitRun('branch', '-D', e.branch);
+    delete cur.worktrees[name];
+    if (!Object.keys(cur.worktrees).length) delete cur.worktrees;
+    save(cur);
+    const brNote = br.status === 0 ? `；分支 ${e.branch} 已刪` : `；⚠分支 ${e.branch} 刪除失敗——殘留以 git branch -D ${e.branch} 手清（孤兒分支不損失主線）`;
+    return fin([`工作樹 ${name} 已收工移除（主線 commit 為唯一存續${brNote}`]);
+  }
+  if (sub === 'drop') {
+    const rm = gitRun('worktree', 'remove', '--force', wtDir(name));
+    if (rm.status !== 0 && existsSync(wtDir(name))) die(['worktree remove 失敗（Windows 檔案鎖常見——關閉占用程序後重試；帳目保留未清，避免孤兒沙箱）：', (rm.stderr || rm.stdout).trim()]);
+    gitRun('branch', '-D', e.branch);
+    delete cur.worktrees[name];
+    if (!Object.keys(cur.worktrees).length) delete cur.worktrees;
+    save(cur);
+    return fin([`工作樹 ${name} 已丟棄（工作樹＋分支＋帳目；最小充分丟棄——dice 精神）`]);
+  }
+  subUsage();
+}
+
 function cmdCommitmsg(msg) {
   if (!msg) usage();
   const current = requireHealthyState();
@@ -1157,8 +1302,8 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'stop-report']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--question', '--main', '--help']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'stop-report', 'wt']);
+      const flags = new Set(['--boss-ok', '--adversarial', '--rerun', '--new-ms', '--point', '--base', '--question', '--main', '--help', '--task', '--phase', '--verdict', '--report']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
       for (const f of eternal) {
@@ -1218,7 +1363,7 @@ try {
 } catch { /* 觀測落檔失敗不攔主流程 */ }
 if (!cmd) usage();
 if (cmd === '--help' || rest.includes('--help')) usage(0);
-const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null, question: null, main: false };
+const flags = { bossOk: false, adversarial: false, rerun: null, newMs: false, point: null, base: null, question: null, main: false, task: null, phase: null, verdict: null, report: null };
 const pos = [];
 for (let i = 0; i < rest.length; i++) {
   if (rest[i] === '--boss-ok') flags.bossOk = true;
@@ -1229,6 +1374,10 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['①', '②', '③'].includes(flags.point)) usage(); }
   else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
   else if (rest[i] === '--question') { flags.question = rest[++i] ?? ''; if (cmd !== 'stop-report' || !flags.question || flags.question.startsWith('-')) usage(); }
+  else if (rest[i] === '--task') { flags.task = rest[++i] ?? ''; if (cmd !== 'wt' || !flags.task || flags.task.startsWith('-')) usage(); }
+  else if (rest[i] === '--phase') { flags.phase = rest[++i] ?? ''; if (cmd !== 'wt' || !['research', 'build'].includes(flags.phase)) usage(); }
+  else if (rest[i] === '--verdict') { flags.verdict = rest[++i] ?? ''; if (cmd !== 'wt' || !['pass', 'fail'].includes(flags.verdict)) usage(); }
+  else if (rest[i] === '--report') { flags.report = rest[++i] ?? ''; if (cmd !== 'wt' || !flags.report || flags.report.startsWith('-')) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }
@@ -1242,6 +1391,7 @@ switch (cmd) {
   case 'end': cmdEnd(flags); break;
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
+  case 'wt': cmdWt(pos[0], pos.slice(1), flags); break;
   case 'stop-report': cmdStopReport(flags.question); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   default: usage();

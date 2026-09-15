@@ -56,6 +56,23 @@ const projectRoot = (input) => {
   return typeof c === 'string' && isAbsolute(c) && existsSync(c) ? c : null;
 };
 
+// 多代理工作樹錨定：cwd 位於 <主root>/.shiftblame/worktree/<name>/** 時，治理 root 解析回主 repo——
+// worker 在自己工作樹內的工具調用仍受主 flow-state 的閘門管轄（段位矩陣／rewrite 閘／commit 印章對主 root 生效）；
+// 工作樹內路徑的寫入由 checkStateWriteMatrix 的 worktree 放行條款承載（限 research/build 段）。
+// 回傳 { root, wt }——wt＝工作樹名（null＝非工作樹事件）。
+function resolveWorktreeAnchor(cwd) {
+  if (!cwd) return { root: null, wt: null };
+  const norm = String(cwd).replace(/\\/g, '/');
+  const i = norm.toLowerCase().indexOf('/.shiftblame/worktree/'); // 大小寫不敏感——Windows FS 變體路徑不得逃離治理錨定
+  if (i <= 0) return { root: cwd, wt: null };
+  const root = norm.slice(0, i);
+  const rest = norm.slice(i + '/.shiftblame/worktree/'.length);
+  const name = rest.split('/')[0];
+  if (!name) return { root: cwd, wt: null };
+  try { if (!existsSync(join(root, '.shiftblame', 'flow-state.json'))) return { root: cwd, wt: null }; } catch { return { root: cwd, wt: null }; }
+  return { root, wt: name };
+}
+
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 shiftblame:think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
@@ -63,7 +80,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '③時點對抗（plan→test①放行前／build→verify②判決前／③＝pass 出口前——每 ms 驗收 pass 後、next／end 前，CLI 對兩出口驗新鮮度；產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；worktree＝並行沙箱（research/build 段 worker 零主線權——主線整合經 sb wt merge＋主 repo 提交閘，沙箱內禁 sb）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
   '⑦版號屬老闆決策。',
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
@@ -347,6 +364,24 @@ function stopReportLine(root, mark = true) {
 }
 
 // 停等行：understandingHold 進行中，每則輸入明示凍結語義——理解呈現即停、寫入凍結、待老闆終審
+// 多代理工作樹狀態行：worktrees 帳本非空時注入——各組狀態隨時可見（老闆每則輸入曝光）。
+// 停滯警示：lastReportAt 距今逾 30 分鐘且未收工（status≠merged）標 ⚠——慢 worker 停機偵測的曝光面。
+function worktreeLine(root) {
+  if (!root) return '';
+  try {
+    const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
+    const wts = st.worktrees;
+    if (!wts || !Object.keys(wts).length) return '';
+    const rows = Object.entries(wts).map(([name, e]) => {
+      const lastSig = e.lastReportAt ?? e.openedAt; // 從未回報的 worker 以開樹時間起算（停機偵測最該抓的形態）
+      const stall = e.status !== 'merged' && lastSig && (Date.now() - Date.parse(lastSig)) > 30 * 60 * 1000 ? '⚠停滯' : '';
+      const v = e.verdict ? `判定=${e.verdict}` : '';
+      return `${name}[${e.phase}/${e.status}${v ? '，' + v : ''}]${stall}`;
+    });
+    return `\n[工作樹] ${rows.length} 組並行：${rows.join('；')}——驗過即整合（sb wt merge，主 repo）；收工即清（sb wt done／drop）`;
+  } catch { return ''; }
+}
+
 function holdLine(root) {
   if (!root) return '';
   try {
@@ -441,6 +476,7 @@ function checkGFileMatrix(root, toolInput) {
     const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
     const m = rel.toLowerCase().match(G_FILE_RE); // 大小寫不敏感——Windows FS 不校正路徑大小寫（realpathSync 保留輸入），小寫形繞過死路
     if (!m) continue;
+    if (rel.toLowerCase().includes('.shiftblame/worktree/')) continue; // 沙箱內 G*.md＝worker 實驗文件非 ROM——沙箱路徑不經 G 矩陣（放行條款統一承載）
     if (m[1]) continue; // archive/ 由 CLI 寫入——放行
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
@@ -468,6 +504,7 @@ function checkRewriteGate(root, toolInput) {
     const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
     const m = rel.toLowerCase().match(G_FILE_RE);
     if (!m || m[1]) continue; // 只閘作用中 G 檔——archive/ 歸檔歷史不在此閘
+    if (rel.toLowerCase().includes('.shiftblame/worktree/')) continue; // 沙箱 G*.md 非治理 ROM——不觸 rewrite 載入閘
     return `[shiftblame] 修正輪 r${String(st.rev).padStart(2, '0')} 寫 G${m[2]}.md 前須先調用 shiftblame:rewrite（返工重寫為當下事實——定義區整檔重寫、回指區同鍵覆寫；載入後本輪放行）（SKILL §1.1／skills/rewrite）`;
   }
   return null;
@@ -479,7 +516,7 @@ function checkRewriteGate(root, toolInput) {
 // 放行：Skill 調用（shiftblame:think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
 // Bash 唯讀查證（git log/status/diff、node/python 探針、npm test）、.shiftblame/ tmp 證據傾倒。
 const HOLD_GIT_WRITE_RE = /\bgit(?:\.exe)?\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
-const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout)\b/;
+const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout|wt)\b/;
 function checkHoldFreeze(root, tool, cmd, toolInput) {
   if (!root) return null;
   let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
@@ -571,8 +608,17 @@ function checkStateWriteMatrix(root, toolInput) {
     const rel = relative(root, p).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) {
+      // 多代理工作樹放行條款：.shiftblame/worktree/**＝worker 沙箱——research/build 段可寫（worker 並行實作／研究實證），
+      // 整合關卡（sb wt merge 的無測試 diff 檢查＋主 repo 完整提交閘）承載主線防護；沙箱內實驗碼（含測試）不出沙箱。
+      // 大小寫不敏感比對（toLowerCase——Windows FS 不校正路徑大小寫，大小寫變體繞過死路）。
+      if (rel.toLowerCase().startsWith('.shiftblame/worktree/')) {
+        if (node !== 'research' && node !== 'build') {
+          return `[shiftblame] 工作樹寫入（${rel}）限 research／build 段——worker 並行窗口由這兩段承載；段 ${node} 對工作樹唯讀（多代理架構，SKILL 寫入矩陣）`;
+        }
+        continue;
+      }
       // ROM 區雜檔閘：<slug>/<nnn>/（含 archive/）僅承載 G1~G3.md——中間產物一律 tmp
-      if (/^\.shiftblame\/(?:archive\/)?(?!tmp\/)[^/]+\/[^/]+\/.+$/i.test(rel) && !/^\.shiftblame\/(?:archive\/)?[^/]+\/[^/]+\/G[123]\.md$/i.test(rel)) {
+      if (/^\.shiftblame\/(?:archive\/)?(?!tmp\/)(?!worktree\/)[^/]+\/[^/]+\/.+$/i.test(rel) && !/^\.shiftblame\/(?:archive\/)?[^/]+\/[^/]+\/G[123]\.md$/i.test(rel)) {
         return `[shiftblame] ROM 區（${rel}）僅承載 G1~G3.md——中間產物／筆記／報告一律落 .shiftblame/tmp/（唯一自由傾倒區；SLUG.md 在 <slug>/ 層由秘書維護）`;
       }
       continue; // 工作區其餘永遠可寫（tmp 傾倒、SLUG、flow-state）
@@ -867,20 +913,28 @@ try {
   const raw = await readStdin();
   const input = raw.trim() ? JSON.parse(raw) : {};
   const event = input.hook_event_name || input.hookEventName || '';
-  const root = projectRoot(input);
+  const wtAnchor = resolveWorktreeAnchor(projectRoot(input));
+  const root = wtAnchor.root;
+  const inWorktree = wtAnchor.wt;
   const healthy = !root || readFlowState(root).kind !== 'invalid';
+  // 工作樹內禁 sb 治理命令：worker 在自己樹內跑 sb 會錨到 worktree 自建 flow-state——
+  // 長出無七段、無老闆邊的「直接實行」自簽車道（worktree 的 .git 是檔案，findRoot 會錨錯）。治理命令限主 repo。
+  if (inWorktree && SHELL_TOOL_RE.test(String(input.tool_name || input.toolName || '')) && /\bsb(?:\.mjs)?\s/i.test(String(input.tool_input?.command ?? input.tool_input?.cmd ?? ''))) {
+    process.stderr.write(`[shiftblame] 工作樹 ${inWorktree} 內禁跑 sb 治理命令——治理命令限主 repo（工作樹內自建 flow-state＝自簽車道）；worker 的 git 操作限自己分支，主線整合經 sb wt merge（主 repo）\n`);
+    process.exit(2);
+  }
   // 異常原檔保持原樣，不能由新增心跳把空物件／部分資料洗成有效紀錄。
   if (healthy) beatHeartbeat(root, event);
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
     // 機械事實（段位／輸入流與理解覆蓋／未審理解／停等狀態）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
+    inject(SESSION_CARD + nodeLine(root) + worktreeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
     const releaseNote = healthy ? recordInput(root, input.prompt ?? '') : preservePendingInput(root, input.prompt ?? '');
-    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
+    inject(CARD + nodeLine(root) + worktreeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
   }
 
   if (event === 'Stop') {

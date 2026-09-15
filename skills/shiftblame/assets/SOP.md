@@ -88,3 +88,5 @@ SOP 隨 codebase 變更同批更新（same-commit，兩層文件模型 SKILL §1
 同批的事實對照更新（舊值刪除、相關段落同步）保持維護既有文件的位階，零額外授權；新增產品目標、改變產品邊界或把單一需求升格為長期規範，仍須老闆明確授權。每個具體值都要能指出來源或查核方法，對話與工作過程一律留在 `<repo>/.shiftblame/tmp/`；archive 只保存可獨立理解的定義與回指，既有 Git 歷史保持原樣，現行 SOP 僅承載當前真相。
 
 每 ms 審查（`sb sopreview`）＝全文對照＋機械基本功必過：frontmatter `updated` 須與檔案最後變更同步；正文零日期開頭的日誌行（歷史流水歸 git 與 tmp）；零完全重複行與重複標題（在原位修改，追加副本即重複）。檢查未過即不發審查戳記，開新 ms 與 pass 出口前擋。
+
+維運警示（多代理工作樹）：`.shiftblame/worktree/` 內是活 git worktree（註冊在 `.git/worktrees/`）——清理 `.shiftblame/` 或跑 `git clean -fdX` 前先以 `sb wt done`／`sb wt drop`（或 `git worktree remove`）移除活工作樹，否則連同 git 管理資料一起刪除會殘留髒註冊（以 `git worktree prune` 修復）。

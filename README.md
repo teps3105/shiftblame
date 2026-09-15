@@ -246,6 +246,8 @@ sb next intent                     # 回頭自由：fail 回指／補充／重�
 sb next test --rerun impl         # 返工直通重走（值＝impl｜definition，時點①分流——老闆邊免停靠，對抗條目照走）
 sb next intent --new-ms --boss-ok --adversarial  # pass 出口①：開下一里程碑（時點③＋前一 ms 遙測結算）
 sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（三問；開新 ms 與 pass 出口前機械驗，無文件不擋）
+sb wt open <name> --task "<任務卡>" # 多代理：建 worktree 派 worker（research/build 段）——report→verify→merge→done 收線
+sb wt merge <name>                 # ready 樹 diff 套用回主 repo（拒測試碼 diff；主線提交閘接管；非同步流式不等全體）
 sb end --boss-ok --adversarial     # pass 出口②：結束 slug → 收尾歸檔＋末段 ms 產出遙測（diff／對抗／計數／耗時）
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
@@ -309,6 +311,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 │       ├── G2.md                  # 技術分析（研究階段產出）
 │       └── G3.md                  # 實作計畫（規劃階段產出）
 ├── tmp/                           # 對話、工作過程、交接紀錄及執行證據落點；專案工具鏈日誌／快取不收編，只準寫入不準清理
+├── worktree/                      # 多代理並行沙箱（git worktree：research 實證／build 並行 worker）——worker 零主線權，主線整合經 sb wt merge（主 repo 提交閘承載）；收工即清（老闆清理 .shiftblame/ 前先移除活工作樹，殘留髒註冊以 git worktree prune 修）
 └── archive/
 ```
 
