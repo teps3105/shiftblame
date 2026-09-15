@@ -10,7 +10,7 @@ const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
 // 觀測紀錄（hooks 寫）：心跳／輸入流／理解流／外部證據＋回合計數（turnUsage／usageTotals）
 // ＋觀測流輪替偏移（inputsRotated 等＋understandingSeedHash——已輪替前綴的鏈種子；舊檔無偏移＝0，向後相容）。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence', 'turnUsage', 'usageTotals', 'inputsRotated', 'understandingsRotated', 'understandingSeedHash', 'adversarialRotated', 'historyRotated'];
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence', 'turnUsage', 'usageTotals', 'inputsRotated', 'understandingsRotated', 'understandingSeedHash', 'adversarialRotated', 'historyRotated', 'rewriteSeen'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st) {
@@ -19,6 +19,7 @@ function hooksOnly(st) {
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
   if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
   if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
+  if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
   if (Object.hasOwn(st, 'turnUsage')) {
     const tu = st.turnUsage;
     const tuKeys = ['startedAt', 'requests',

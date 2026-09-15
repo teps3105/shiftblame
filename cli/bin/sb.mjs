@@ -865,6 +865,7 @@ function cmdNext(target, opts) {
       const prevMs = st.ms; // per-ms 遙測結算對象＝前一 ms（鍵＝被結算 ms）
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
+      delete st.rewriteSeen; // 舊 ms 的 rewrite 載入鑰匙不帶入（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）
       delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
       if (existsSync(join(ROOT, '.git')) && (st.msBaseline || st.baseCommit)) {
@@ -877,7 +878,7 @@ function cmdNext(target, opts) {
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪
       // 開新輪：新輪重寫自洽，時序由 history＋輪次計數承擔（歷史不可變性歸 git）
       const revN = countRev(st);
-      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 history 承擔，歷史歸 git）`); }
+      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 history 承擔，歷史歸 git）——本輪寫 G 檔前 hooks 驗已調用 shiftblame:rewrite（未載入即擋）`); }
     }
   }
   const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
@@ -1064,7 +1065,7 @@ function cmdEnd(opts) {
   st.history.push({ from: 'verify', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
   // slug 邊界清理（終態留痕後）：累積流（曝光與對照價值隨 slug 終結）直接清空——零副本、零殭屍存續
   const cleared = { inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length, understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length, adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length, history: (st.historyRotated ?? 0) + st.history.length };
-  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.g1Contract; st.history = [];
+  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; st.history = [];
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals; delete st.stopReport; delete st.stopBlockedAt;
   delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（舊版預算欄位——不相容則 ended 檔自我 invalid）

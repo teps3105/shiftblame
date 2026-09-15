@@ -136,6 +136,20 @@ ablation('G 檔寫入矩陣 checkGFileMatrix（RAM/ROM 分區）', () => {
   assert.equal(payload(neu), 0, 'ablated：拆掉矩陣後綁架上游放行');
 });
 
+ablation('返工輪 rewrite 載入閘 checkRewriteGate（修正輪寫 G 前必須本輪已調用 shiftblame:rewrite）', () => {
+  const neu = neutralize(GUARD, [['function checkRewriteGate(root, toolInput) {\n  if (!root) return null;', 'function checkRewriteGate(root, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement', rev: 1 }, files: { '.shiftblame/demo/001/G1.md': 'x' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };
+  assert.equal(payload(GUARD), 2, 'intact：修正輪 r1 未載入 rewrite 寫 G1 被擋');
+  assert.equal(payload(neu), 0, 'ablated：拆掉閘後未載入即可寫（機械強制失效）');
+});
+
+ablation('rewrite 載入記錄 recordRewriteSeen（閘鑰匙）', () => {
+  const neu = neutralize(GUARD, [['function recordRewriteSeen(root, tool, toolInput) {\n  if (!root || !/^skill$/i.test(String(tool ?? \'\'))) return;', 'function recordRewriteSeen(root, tool, toolInput) {\n  return; // ABLATED\n  if (!root || !/^skill$/i.test(String(tool ?? \'\'))) return;']]);
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement', rev: 1 } }); hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:rewrite' } }); const v = stateOf(r).rewriteSeen?.rev; rmSync(r, { recursive: true, force: true }); return v; };
+  assert.equal(payload(GUARD), 1, 'intact：全名調用落 rewriteSeen（rev 對齊當前輪）');
+  assert.equal(payload(neu), undefined, 'ablated：拆掉後調用不落檔（載入事實無法被閘看見）');
+});
+
 ablation('狀態寫入矩陣 checkStateWriteMatrix（測試/實作碼段位）', () => {
   const neu = neutralize(GUARD, [['function checkStateWriteMatrix(root, toolInput) {\n  if (!root) return null;', 'function checkStateWriteMatrix(root, toolInput) {\n  return null; // ABLATED\n  if (!root) return null;']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' } }); const h = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(r, 'src/a.js'), old_string: 'a', new_string: 'b' } }); rmSync(r, { recursive: true, force: true }); return h.status; };

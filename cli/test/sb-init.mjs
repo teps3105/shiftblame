@@ -160,13 +160,14 @@ for (const mutate of [
   assert.ok(existsSync(join(f.cwd, '.shiftblame/archive/legacy/SLUG.md')) === false, '無 slug 目錄時跳過歸檔移動');
 }
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: new Date().toISOString(), text: '老闆：開下一里程碑' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '③' }] }));
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: new Date().toISOString(), text: '老闆：開下一里程碑' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '③' }], rewriteSeen: { rev: 1, at: new Date().toISOString() } }));
   const r = f.run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial');
   assert.equal(r.status, 0, r.stderr);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.node, 'intent');
   assert.equal(st.ms, '002', '舊 done 態經 --new-ms 開新 ms');
   assert.equal(st.history.at(-1).from, 'verify', '遷移後邊紀錄採 2.2.0 語意（from verify）');
+  assert.equal(st.rewriteSeen, undefined, '新 ms 不帶入舊 ms 的 rewrite 載入鑰匙（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）');
 }
 // 僅刪除舊目錄而沒有歸檔，不會被當作已收尾。
 {

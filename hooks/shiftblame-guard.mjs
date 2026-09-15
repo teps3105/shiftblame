@@ -63,7 +63,7 @@ const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state
   '③時點對抗（plan→test①放行前／build→verify②判決前／③＝pass 出口前——每 ms 驗收 pass 後、next／end 前，CLI 對兩出口驗新鮮度；產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
   '⑦版號屬老闆決策。',
   '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
@@ -280,6 +280,22 @@ function recordUnderstanding(root, tool, toolInput) {
   } catch { /* 狀態異常靜默 */ }
 }
 
+// rewrite 載入記錄：PreToolUse 偵測 Skill(shiftblame:rewrite) 調用 → 記 { rev, at }（本輪已載入事實）。
+// 錨定全名 `^shiftblame:rewrite$`（大小寫敏感）——這是閘鑰匙不是記錄流：任何插件的同名裸技能不得解鎖（比 think 記錄流從嚴）。
+// rev＝調用當下的修正輪號（首輪無 rev 記 0）；checkRewriteGate 比對 seen.rev === 當前 rev 即本輪已載入。
+function recordRewriteSeen(root, tool, toolInput) {
+  if (!root || !/^skill$/i.test(String(tool ?? ''))) return;
+  const target = String(toolInput?.skill ?? toolInput?.name ?? '');
+  if (target !== 'shiftblame:rewrite') return;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    st.rewriteSeen = { rev: st.rev ?? 0, at: new Date().toISOString() };
+    writeFileSync(statePath, JSON.stringify(st, null, 2));
+  } catch { /* 狀態異常靜默 */ }
+}
+
 // 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
 // 與 Agent／Task（外部唯讀子代理）；Codex 事件實名為 webrun／collaborationspawn_agent／collaborationfollowup_task。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
 // 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
@@ -431,6 +447,28 @@ function checkGFileMatrix(root, toolInput) {
       const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區）' }[g];
       return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
     }
+  }
+  return null;
+}
+
+// ———— 返工輪 rewrite 載入閘：修正輪（rev 有值）寫 G 檔前必須本輪已載入 shiftblame:rewrite ————
+// 語義：G1~G3 是當下事實的單一權威——返工輪重寫紀律（定義區整檔重寫、回指區同鍵覆寫，skills/rewrite）不靠自發，
+// 機械驗 rewriteSeen.rev === 當前 rev（每輪重新載入一次，載入後本輪全放行）。閘面＝整檔（hooks 無檔內分區粒度），
+// 非 archive；SLUG.md 不在此閘（秘書層恆可寫——SLUG 收斂紀律由技能承載）。殘餘與天花板（如實）：
+// Bash 內直寫 G 檔不在此層（同寫入矩陣殘餘面）；自調 hooks 偽造 PreToolUse 可自鑰匙（同 externalEvidence 天花板——抽查承擔）；
+// 調用≠消化——機械只驗調用事實，重寫品質由 verify 驗收與老闆抽查承擔。
+function checkRewriteGate(root, toolInput) {
+  if (!root) return null;
+  let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
+  if (st?.rewriteSeen?.rev === (st?.rev ?? null)) return null; // 本輪已載入（含首輪無 rev 且未載入——rev 無值不設防）
+  if (st?.rev == null) return null; // 首輪（從未返工）不設防——全新定義無堆疊風險
+  for (const k of PATH_KEYS) {
+    const v = toolInput?.[k];
+    if (typeof v !== 'string' || !v.trim() || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) continue;
+    const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
+    const m = rel.toLowerCase().match(G_FILE_RE);
+    if (!m || m[1]) continue; // 只閘作用中 G 檔——archive/ 歸檔歷史不在此閘
+    return `[shiftblame] 修正輪 r${String(st.rev).padStart(2, '0')} 寫 G${m[2]}.md 前須先調用 shiftblame:rewrite（返工重寫為當下事實——定義區整檔重寫、回指區同鍵覆寫；載入後本輪放行）（SKILL §1.1／skills/rewrite）`;
   }
   return null;
 }
@@ -871,6 +909,7 @@ try {
     const healthError = checkStateHealth(root, tool, cmd, input.tool_input ?? {});
     if (healthError) deny(healthError);
     if (healthy) recordUnderstanding(root, tool, input.tool_input);
+    if (healthy) recordRewriteSeen(root, tool, input.tool_input);
     if (healthy) markExternalEvidence(root, tool);
     // 回合計數（元行為觀測，零干預）＋迴圈斷路器（同操作重複才擋；持續推進的多樣操作永遠放行）
     const usage = healthy ? countUsage(root, tool, cmd, input.tool_input ?? {}) : null;
@@ -915,6 +954,9 @@ try {
       // G 檔寫入矩陣（RAM/ROM 分區）：定義區綁定義邊（G1→requirement／G2→research／G3→plan）／回指區綁落地段（G1←verify／G2←build／G3←test）——跨區由 CLI 分區 hash 兜底
       const gMatrix = checkGFileMatrix(root, input.tool_input ?? {});
       if (gMatrix) deny(gMatrix);
+      // 返工輪 rewrite 載入閘：修正輪（rev 有值）寫 G 檔前必須本輪已調用 shiftblame:rewrite（段位違規優先報）
+      const rewriteGate = checkRewriteGate(root, input.tool_input ?? {});
+      if (rewriteGate) deny(rewriteGate);
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);

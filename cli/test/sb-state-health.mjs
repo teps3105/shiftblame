@@ -78,7 +78,8 @@ for (const raw of invalid) {
   assert.equal(saved.text, '恢復前的新輸入\n原文保留');
 }
 // 合法未初始化與直接實行：不建 slug，對抗後、提交消費後仍可查詢。
-for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' }] }]) {
+// 第三變體：純紀錄檔含 rewriteSeen（hooks 記錄鍵——HOOK_RECORD_KEYS 白名單容忍，不炸分類）。
+for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' }] }, { inputs: [{ at, text: '紀錄' }], rewriteSeen: { rev: 0, at } }]) {
   const f = fixture(initial);
   assert.equal(f.run('state').status, 0);
   assert.equal(f.run('adversarial', f.report).status, 0);
@@ -98,6 +99,13 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
   assert.equal(f.run('state').status, 0);
   assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).adversarialConsumed, true);
   assert.equal(existsSync(join(f.cwd, '.shiftblame/demo')), false);
+}
+// ended 態容忍 rewriteSeen 殘留（hooks 記錄鍵屬 HOOK_RECORD_KEYS——sb end 冪等清理外的防禦深度，不炸白名單）。
+{
+  const f = fixture({ slug: 'demo', ms: '001', node: 'ended', history: [], endedAt: at, rewriteSeen: { rev: 1, at } });
+  const r = f.run('state');
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(r.stderr, /接入異常/);
 }
 // 已發章後狀態損壞：提交仍擋，不能以舊印章通行或消費它。
 {

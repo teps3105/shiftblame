@@ -337,6 +337,35 @@ assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/evidence.md'), content: 'x' } }).status, 0, 'tmp 傾倒放行');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/x/y.md'), content: 'x' } }).status, 0, 'tmp 巢狀子目錄放行（RAM 區格式不做規範）');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md（<slug>/ 層）放行');
+// —— 11b. 返工輪 rewrite 載入閘：修正輪（rev 有值）寫 G 前必須本輪已調用 shiftblame:rewrite ——
+// 文件陳述錨（SKILL §1：MUST 級機制的行為測試 MUST 附文件陳述錨——機制拆除時測試與錨同拆）
+assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills', 'shiftblame', 'SKILL.md'), 'utf8').includes('返工輪 rewrite 載入閘'), '陳述錨：主 SKILL §1.7 仍述 rewrite 載入閘');
+assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'README.md'), 'utf8').includes('返工輪（rev 有值）hooks 驗本輪已調用本技能'), '陳述錨：README 技能條目仍述機械承載');
+{
+  const setRev = (n, extra = {}) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'requirement', history: [], ...(n != null ? { rev: n } : {}), ...extra }));
+  setRev(null);
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '首輪（無 rev）寫 G1 放行——全新定義無堆疊風險');
+  setRev(1);
+  const blocked = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } });
+  assert.equal(blocked.status, 2, '修正輪 r1 未載入 rewrite 寫 G1 擋');
+  assert.match(blocked.stderr, /shiftblame:rewrite/, '擋訊息指向調用 shiftblame:rewrite');
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md 不在 rewrite 載入閘（秘書層恆可寫——SLUG 紀律由技能承載）');
+  for (const bad of ['rewrite', 'Rewrite', 'Shiftblame:Rewrite', 'shiftblame:rewrite-evil', 'xx_rewrite_yy', 'shiftblame:rerite']) {
+    run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: bad } });
+    assert.equal(state().rewriteSeen, undefined, `偽名／裸名／大小寫變體 ${bad} 不落 rewriteSeen（閘鑰匙全名大小寫敏感錨定）`);
+  }
+  run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:rewrite' } });
+  assert.equal(state().rewriteSeen.rev, 1, '全名調用落 rewriteSeen（rev 對齊當前輪）');
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '載入後本輪寫 G1 放行（--rerun 前進邊不經 intent 不動 rev——同輪已載入即放行，免雙重設防）');
+  setRev(2);
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 2, '再返工（r2）須重新載入——每輪重驗');
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/archive/demo/001/G1.md'), content: 'x' } }).status, 0, '真歸檔形（.shiftblame/archive/<slug>/<ms>/G1.md——4 段）不匹配 G_FILE_RE／不在 rewrite 閘（路徑形不匹配即放行）');
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `echo x > "${join(root, '.shiftblame/demo/001/G1.md')}"` } }).status, 0, 'Bash 直寫不在此層（既有殘餘面，如實標註）');
+  writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'research', rev: 2, history: [] }));
+  const kidnapRw = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } });
+  assert.equal(kidnapRw.status, 2);
+  assert.match(kidnapRw.stderr, /寫入權/, '段位違規優先報（G 矩陣在前、rewrite 閘在後）');
+}
 // —— 12. 接入異常模式：修復自由＋封閉面（git 寫入／sb 流程命令；唯讀白名單已除——修復是異常模式的目的）——
 {
   const brokenRoot = mkdtempSync(join(tmpdir(), 'sb-health-'));

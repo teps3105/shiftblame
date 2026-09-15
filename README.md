@@ -266,7 +266,7 @@ sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕�
 - [`shiftblame:resume`](skills/resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
 - [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/tmp/<slug>/handoff.md（SLUG 只留狀態與回指），供 shiftblame:resume 恢復。
 - [`shiftblame:dice`](skills/dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
-- [`shiftblame:rewrite`](skills/rewrite/SKILL.md)——返工重寫為當下事實：G1~G3／SLUG 不是歷史紀錄集合——定義區整檔重寫自洽、回指區同鍵（AC-ID／T-ID）覆寫、SLUG 既有列更新，條目逐輪堆疊＝病；時序歸 flow-state，不開新寫入權。
+- [`shiftblame:rewrite`](skills/rewrite/SKILL.md)——返工重寫為當下事實：G1~G3／SLUG 不是歷史紀錄集合——定義區整檔重寫自洽、回指區同鍵（AC-ID／T-ID）覆寫、SLUG 既有列更新，條目逐輪堆疊＝病；時序歸 flow-state。機械承載：返工輪（rev 有值）hooks 驗本輪已調用本技能才放行 G 檔寫入（不靠自發）；寫入權與段位不變。
 
 ## 文件結構
 
