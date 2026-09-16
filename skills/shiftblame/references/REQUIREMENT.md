@@ -1,6 +1,6 @@
 ---
 name: 需求定義
-revision: 2.3.0
+revision: 2.3.1
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
@@ -21,7 +21,7 @@ flowchart TB
         RES["research 段<br/>G2 · 主對話"]
         PLA["plan 段<br/>G3 · 主對話"]
     end
-    subgraph Build["執行層 · 時序收攏"]
+    subgraph Build["實作層 · 時序收攏"]
         direction LR
         TST["test 段<br/>主對話"]
         DEV["實作階段<br/>主對話"]
@@ -36,7 +36,7 @@ flowchart TB
 
 > requirement 段（G1 定義邊）高亮。用 G1 制約 G2 與 G3；G1 的裁判是 verify 段（逐項回指 AC 判定，判決出邊）——G1 閉環的裁判邊。
 
-requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；執行層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：G1 承接 shiftblame:think 的一次語義確認後直接定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；跨輪修正＝回 intent 開新輪（輪次計數記 flow-state）由 requirement 段重新定義 G1。
+requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §3 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；實作層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：定義層一逐功能推進（requirement→research→plan 接下一功能），G1 承接 shiftblame:think 的一次語義確認後逐功能定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；老闆新輸入驅動的定義級修正＝停經 think 裁決後回 intent 開新輪（輪次計數記 flow-state＋rewrite 載入閘）由 requirement 段重新定義 G1。
 
 **經查證的現況事實（查證先於研究）**：在研究解法之前先查證現況——盤點 codebase 實況（既有能力、結構、可複用資產）、對照永續層文件（SOP／ROADMAP／docs）與實況差異、識別過時假設、**對照同 slug 過往 ms G1 定案**（經 SLUG 定案索引回讀 G 檔定義區——每項新需求顯式判定與既有定案的關係：延伸／獨立／衝突；首 ms 明寫「無過往定案」）——收斂為 G1 定義區的**經查證的現況事實**節：每項需求標明依據的已查證事實。查證過程（工具調用、反證）落 tmp（RAM）——G 檔只收斂結論；requirement→research 邊由 BDD 格式閘把關。
 
@@ -46,8 +46,8 @@ requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame
 
 §10 核對缺漏時由**責任面向一次補正**後重核（輪內單向定律，SKILL §1.1），不環形重跑——修補由 plan 段基於證據設計。放行後 G1 封存；開發出入若為契約不足／衝突，走顯式修約＝回 intent 開新輪（SKILL §1.4.1）——開新輪修約是唯一吸收路徑。
 
-外部子代理檢閱於 SKILL §3 **三個固定時點強制**（時點①＝plan→test 放行前對抗方向、時點②＝build→verify 判決前對抗成果、時點③＝每 ms 驗收 pass 後出口前對抗收斂），其中時點③是需求面向在收斂複驗時的固定步驟；其餘依 §3 強制／選擇性條件觸發。純技術證據不足或矛盾、無法可靠裁定時必須立即取得一次自包含意見，不必先反覆失敗；結果存 `<repo>/.shiftblame/tmp/`，由主對話複核並自行承擔裁定。對抗類檢閱 MUST 外部唯讀子代理——不可用即阻塞等待至可用（SKILL §3）；純技術意見取不到則標「未驗」並繼續授權內查證。使用者可觀察的行為驗收是判決基準（檔案、字串、grep、行數等結構證據僅輔助）；pass 出口（`sb next intent --new-ms` 開下一 ms，或 `sb end` 結束 slug——兩出口皆帶 --boss-ok＋--adversarial）由老闆決策邊把關：ms 驗收的 pass 判定與出口分——判定是 verify 段對 G1 的逐項裁定（SKILL §0 判決出邊），出口是老闆決策邊。
+外部子代理檢閱於 SKILL §3 **兩個固定時點強制**（時點 1＝定義層放行（plan→test）前對抗方向、時點 2＝ms 出口前對抗收斂成果）與**段內提交閘**（每功能 commit 前提交對抗，不佔時點編號），其中時點 2 是需求面向在收斂複驗時的固定步驟；其餘依 §3 強制／選擇性條件觸發。純技術證據不足或矛盾、無法可靠裁定時必須立即取得一次自包含意見，不必先反覆失敗；結果存 `<repo>/.shiftblame/tmp/`，由主對話複核並自行承擔裁定。對抗類檢閱 MUST 外部唯讀子代理——不可用即阻塞等待至可用（SKILL §3）；純技術意見取不到則標「未驗」並繼續授權內查證。使用者可觀察的行為驗收是判定基準（檔案、字串、grep、行數等結構證據僅輔助）；pass 出口（`sb next intent --new-ms` 開下一 ms，或 `sb end` 結束 slug——兩出口皆帶 --boss-ok＋--adversarial）由老闆決策邊把關：時點 2 對抗在前、老闆判定在後——判定是老闆的 pass/fail 權，出口是老闆決策邊。
 
 **ms 價值制衡**（SKILL §0、§1.4、§10）：plan 段在 G3 §1.5 定義 ms 範圍時，requirement 段 MUST 對本 ms 是否構成 G1 的使用者可觀察完整價值進行制衡——價值不成立時要求plan 段一次重定範圍後繼續（不環形重跑，輪內單向定律 SKILL §1.1；屬需求方向改變者走重大例外 §1.4.1 開新輪）。ms＝里程碑＝驗收節點；未開的待辦只記於 SLUG §3 待辦清單簡述，不開 ms；驗收節點＝ms（里程碑，一組功能構成的完整價值）——requirement 段以 ms 價值制衡界定範圍。
 
-**收斂時 ms 價值複驗**（SKILL §0、§1.4、§1.4.2）：驗收節點是 **ms（里程碑）**，不是單一功能。秘書逐個功能推進執行層小循環（功能循環＝verify 判決後下一個功能經回頭邊 `sb next intent` 零旗標承接，重走以 `--rerun` 直通——SKILL §0）；本 ms 所有功能完成後，requirement 段對照**封存 G1**逐項確認驗收項，結果寫 `<repo>/.shiftblame/tmp/`，結果歸 tmp；G1 由修約路徑唯一變更。新技術細節若不改變 G1 滿足集合，要求研究／plan 段單調細化 G2／G3；若 G1 不足或衝突，停止並走顯式修約（fail 三觸發之一回 intent，SKILL §0 判決出邊）。複驗不合格者返工；複驗結果 MUST 經時點③對抗成果檢閱（記錄寫 tmp 自由區）後才可走 pass 出口——兩個出口（`sb next intent --new-ms --boss-ok --adversarial`／`sb end --boss-ok --adversarial`）由 CLI 驗時點③條目新鮮，出口永不 --rerun 直通（老闆終審）；外部子代理意見也受同一分類約束——G1 修改經修約路徑，裁定權在主對話。
+**收斂時 ms 價值複驗**（SKILL §0、§1.4、§1.4.2）：驗收節點是 **ms（里程碑）**，不是單一功能。秘書逐個功能推進實作層一小循環（test 撰寫→build 實作→verify AC 判定→提交閘 commit；紅燈段內旗標切段續迭代——SKILL §0）；功能迭代完成後進實作層二收斂期（test 寫 E2E→build 調環境→verify 跑完整流程），requirement 段對照**封存 G1**逐項確認驗收項，結果寫 `<repo>/.shiftblame/tmp/`，結果歸 tmp；G1 由修約路徑唯一變更。新技術細節若不改變 G1 滿足集合，要求研究／plan 段單調細化 G2／G3；若 G1 不足或衝突，停經 think 老闆裁決後走顯式修約（回 intent 開新輪，SKILL §1.4.1）。複驗不合格者段內返工；複驗結果 MUST 經時點 2 對抗成果檢閱（記錄寫 tmp 自由區）後才交老闆判定——pass 才走出口（`sb next intent --new-ms --boss-ok --adversarial`／`sb end --boss-ok --adversarial`），CLI 驗時點 2 條目新鮮與老闆輸入新鮮度（對抗在前、老闆判定在後）；外部子代理意見也受同一分類約束——G1 修改經修約路徑，裁定權在主對話。

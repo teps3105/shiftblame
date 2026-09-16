@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.3.0');
+assert.equal(manifest.version, '2.3.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.3.0"/);
+assert.match(skill, /version: "2.3.1"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -46,22 +46,22 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /閘保持封閉/, '診斷只揭露�
 // 七段詞彙落地（verify 判決出 fail／pass 兩種邊——done 節點已除名）
 assert.match(skill, /intent→requirement→research→plan→test→build→verify/);
 assert.match(skill, /回 intent/);
-assert.match(skill, /時點①對抗/);
-assert.match(skill, /回頭自由/);
+assert.match(skill, /時點 1 對抗/);
+assert.match(skill, /老闆新輸入回意圖揭露/);
 assert.match(skill, /流程代號不進程式碼/);
 assert.match(skill, /令行靜止|--adversarial 宣告/);
 assert.match(skill, /節錄快照/);
 assert.match(skill, /自由傾倒區/);
 assert.match(skill, /SB\.md|SLUG\.md/);
 
-// 提交對抗閘與返工直通落地
+// 提交對抗閘與兩時點對抗落地
 assert.match(skill, /提交對抗閘/);
 assert.match(skill, /sb adversarial/);
-assert.match(skill, /返工直通/);
-assert.match(skill, /--rerun/);
+assert.match(skill, /時點 2 對抗/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdAdversarial/);
+assert.match(read('cli', 'bin', 'sb.mjs'), /checkPoint2Fresh/);
 assert.match(readme, /提交對抗閘/);
-assert.match(readme, /返工直通/);
+assert.match(readme, /時點 2 對抗/);
 
 // 雙流模型落地（時序由輸入流順序天然承擔）
 assert.match(skill, /輸入流/);
@@ -90,7 +90,7 @@ assert.match(readme, /文件陳述錨/, 'README 記載文件陳述錨');
 assert.match(skill, /文件先行/, 'SKILL 記載文件先行（永續層文件先於實作碼——build 順序原則）');
 assert.match(read('skills', 'shiftblame', 'references', 'BUILD.md'), /文件先行（永續層義務）/, 'BUILD 記載文件先行義務');
 assert.match(readme, /文件先行/, 'README 記載文件先行');
-assert.match(skill, /兩種觸發樣態/, 'SKILL 兩種觸發樣態條文（主動觸發停等）');
+assert.match(skill, /觸發樣態——揭露第一動；未定案必問；無歧義即執行/, 'SKILL 觸發樣態條文（揭露第一動＋未定案必問＋主動觸發停等）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
 assert.match(skill, /段-檔承載規格/, 'SKILL 段-檔承載規格（四閉環軸）');
@@ -155,7 +155,8 @@ const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lo
   '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分', '候選詞', '否定共現', 'CONSENT_WORDS', '非否定候選',
   '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
   '薄研究', '薄規劃', '薄產出', '薄流程',
-  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律'];
+  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律',
+  '--rerun', '時點①', '時點②', '時點③', '時點對抗①', '執行層', '回頭自由', '回指重整'];
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/think/SKILL.md', 'skills/resume/SKILL.md', 'skills/save/SKILL.md', 'skills/dice/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md', 'skills/shiftblame/references/STRUCTURE.md', 'skills/shiftblame/references/AUDIT.md',
   'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];

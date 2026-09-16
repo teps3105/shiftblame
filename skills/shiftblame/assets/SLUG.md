@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.3.0
+revision: 2.3.1
 ---
 # SLUG — `<slug>`
 
@@ -39,7 +39,7 @@ revision: 2.3.0
 
 ## 4. 目前段與進度
 
-只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列（同 ms 回 intent 重走）。合法段與七段一一對應：`intent／requirement／research／plan／test／build／verify`。回頭自由（任意段→intent 同 ms 重走、零旗標——fail 三觸發與功能循環的下一個功能都走此邊，返工以 `--rerun` 直通重走）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。verify 判決出 fail／pass 兩種邊：fail 回 intent 重整，pass 走出口（`sb next intent --new-ms`／`sb end`，皆帶 --boss-ok＋--adversarial，出口前時點③對抗）。
+只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。合法段與七段一一對應：`intent／requirement／research／plan／test／build／verify`。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（定義層放行）pass 才 `--boss-ok` 放行；時點 2（ms 出口前）pass 才走出口（`sb next intent --new-ms`／`sb end`，皆帶 --boss-ok＋--adversarial）。
 
 > SLUG 是 ROM（收斂產出）——對抗產物（時點對抗記錄、攻擊點、修復輪次）屬邊的暫存（RAM），落 `.shiftblame/tmp/` 與 flow-state（adversarialLog），不寫入本檔。
 
@@ -51,15 +51,15 @@ revision: 2.3.0
 
 ### 定案索引（同 slug 各 ms 一行式定案——跨 ms 參照載體）
 
-> 本 ms 驗收 pass 後、走出口前由秘書寫入（SKILL §1.7.1）；同 ms 重修後再次 pass 出口＝以 `<nnn>` 為鍵覆寫原行。摘要限指路級（不含參數、數值、承諾）；索引與 G 檔衝突時以 G 檔為準。§9 載入與 requirement／research 段參照義務的標的。
+> 時點 2 老闆 pass 後、走出口前由秘書寫入（SKILL §1.7.1）；同 ms 重修後再次 pass 出口＝以 `<nnn>` 為鍵覆寫原行。摘要限指路級（不含參數、數值、承諾）；索引與 G 檔衝突時以 G 檔為準。§9 載入與 requirement／research 段參照義務的標的。
 
 | `<nnn>` | 語義邊界（≤30 字） | 選型／架構決策（≤30 字） | G 檔路徑 |
 |---------|---------------------|--------------------------|----------|
 | （首 ms 尚無定案——本 ms 驗收 pass 後寫入首行） | | | |
 
-### 收斂執行記錄（同 slug 各 ms 一行式執行結果——秘書於驗收判決後、pass 出口前補寫）
+### 收斂執行記錄（同 slug 各 ms 一行式執行結果——秘書於時點 2 老闆 pass 後、出口前補寫）
 
-> 本 ms 所有功能完成、驗收判決後出口前由秘書寫入（SKILL §1.7.1）；讀 `.shiftblame/tmp/` 執行層各階段記錄彙整成一行。SLUG 由秘書維護恆可寫——執行結果記錄屬回指級內容，G3 寫入權無例外（SKILL 寫入矩陣）。同 ms 重修後再次出口＝以 `<nnn>` 為鍵覆寫原行。
+> 功能迭代完成、收斂期綠燈收斂、時點 2 對抗畢老闆 pass 後出口前由秘書寫入（SKILL §1.7.1）；讀 `.shiftblame/tmp/` 實作層各階段記錄彙整成一行。SLUG 由秘書維護恆可寫——執行結果記錄屬回指級內容，G3 寫入權無例外（SKILL 寫入矩陣）。同 ms 重修後再次出口＝以 `<nnn>` 為鍵覆寫原行。
 
 | `<nnn>` | 做了什麼／實現價值／發生什麼事 | 各功能 commit | 複驗判定（含三面向重審） | 狀態 |
 |---------|--------------------------------|---------------|--------------------------|------|
@@ -71,8 +71,8 @@ revision: 2.3.0
 flowchart LR
     A[intent]:::todo --> B[requirement]:::todo --> C[research]:::todo --> D[plan]:::todo
     D --> E[test]:::todo --> F[build]:::todo --> G[verify]:::todo
-    G -.->|fail 回 intent（零旗標）／下一功能（--rerun 直通）| A
-    G -->|pass 出口：--new-ms 開新 ms| A
+    G -.->|老闆新輸入回意圖揭露·經intent路由| A
+    G -->|時點2 老闆pass 出口：--new-ms 開新 ms| A
     G --> H{sb end}:::todo --> I[收尾+archive]:::todo
     classDef done fill:#c8e6c9,stroke:#388e3c
     classDef active fill:#ffe082,stroke:#f57f17,stroke-width:3px
@@ -81,13 +81,13 @@ flowchart LR
 
 > **維護規則**：把目前段的 `:::todo` 改為 `:::active`、已走過的改 `:::done`、未到的保持 `:::todo`。
 
-**ms 驗收 pass ≠ slug 結束**：前者是本 ms 全部必填 AC 判定 pass 後走出口（`--new-ms` 開下一里程碑或 `sb end`——皆 --boss-ok 留痕＋時點③對抗）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
+**ms 驗收 pass ≠ slug 結束**：前者是時點 2 對抗畢、老闆判定 pass 後走出口（`--new-ms` 開下一里程碑或 `sb end`——皆 --boss-ok 留痕＋時點 2 對抗）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
 
 ## 5. 目標與品質
 
 - **目標**：（填）
 - **業務品質**：（填）
-- **範圍**：（正向完備描述——由目標與業務品質界定；範圍外＝尚未授權，零旗標回 intent 可擴）
+- **範圍**：（正向完備描述——由目標與業務品質界定；範圍外＝尚未授權，回意圖揭露經 intent 路由可擴）
 
 ## 6. 技術債
 
@@ -121,7 +121,7 @@ flowchart LR
 
 ### G1 範本 — 需求／驗收標準（requirement 段主導）
 
-> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 shiftblame:think 已確認語義直接定稿（輪內單向定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 SKILL §1.8）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，plan→test 放行時 CLI 對定義區 hash 封存；verify 段於時點②對抗複核後把 AC 判定收斂寫入回指區（不觸契約）。契約不足／衝突＝回 intent 開新輪重定義後重新放行。
+> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 shiftblame:think 已確認語義直接定稿（輪內單向定律，SKILL §1.1）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 SKILL §1.8）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，plan→test 放行時 CLI 對定義區 hash 封存；verify 段把 AC 判定收斂寫入回指區（提交對抗把關，不觸契約）。契約不足／衝突＝停經 think 老闆裁決後回 intent 開新輪重定義後重新放行。
 
 **0. 需求架構索引**（老闆入口——一眼看懂這個 ms 要做什麼）
 
@@ -188,7 +188,7 @@ flowchart LR
 
 **4. 範圍**
 
-> 範圍由需求結論與驗收契約正向完備界定（補集自然排除）——範圍外的不是「不做」，而是尚未授權，發現需要時零旗標回 intent 擴大授權（SKILL §0 回頭自由）。填寫時考慮跨模組耦合影響，視野不因本 ms 焦點侷限於局部。
+> 範圍由需求結論與驗收契約正向完備界定（補集自然排除）——範圍外的不是「不做」，而是尚未授權，發現需要時回意圖揭露經 intent 路由擴大授權（老闆任何新輸入回揭露）。填寫時考慮跨模組耦合影響，視野不因本 ms 焦點侷限於局部。
 
 - **必須包含**：（填）
 - **使用情境**：（填）
@@ -217,7 +217,7 @@ flowchart LR
 
 ## 回指記錄
 
-> 執行後回頭記錄（ROM 回指區——隨執行更新，不觸放行封存）。G1 本區由 verify 段於時點②對抗複核後收斂寫入；行格式用全形「｜」（禁 `### AC-` 標題與半形 `|`——防機械誤擋）。
+> 執行後回頭記錄（ROM 回指區——隨執行更新，不觸放行封存）。G1 本區由 verify 段收斂寫入（提交對抗把關）；行格式用全形「｜」（禁 `### AC-` 標題與半形 `|`——防機械誤擋）。
 
 - AC-01｜判定=（SATISFIED／UNSATISFIED／UNVERIFIED）｜證據節錄=（填）｜commit=（填）
 - AC-02｜判定=（填）｜證據節錄=（填）｜commit=（填）
@@ -297,7 +297,7 @@ flowchart LR
 - **（功能短名）** — 狀態：待開發
 - **（另一功能短名）** — 狀態：待開發
 
-> ms＝里程碑＝整體驗收節點。每功能依序定稿測試→實作與相關單點／整合驗證→提交對抗與 commit→核對功能證據及時點②對抗。本 ms 所有功能完成後才執行 E2E、整體驗收與時點③對抗（§1.4.2）。不屬於本 ms 的功能開新 ms。
+> ms＝里程碑＝整體驗收節點。實作層一每功能依序 test 撰寫測試→build 實作與相關單點／整合驗證→提交閘 commit（測試碼＋實作碼同 commit）→verify 核對功能證據作 AC 判定（段內判決）。功能迭代完成後進實作層二收斂期：test 寫 E2E→build 調環境→verify 跑完整使用者流程，綠燈收斂後時點 2 對抗畢交老闆判定 pass/fail（§1.4.2）。不屬於本 ms 的功能開新 ms。
 
 **1. 驗收條件（先填）**
 
@@ -333,7 +333,7 @@ flowchart LR
 - **失敗點 1**：假設本計畫上線後失敗，最可能的原因（填）
 - **失敗點 2**：（填）
 
-> 起始效應對策（premortem，SKILL §3 時點①對抗·premortem 挑戰＋CLI plan→test 放行邊機械驗）：規劃完美盲信的制衡——列不出真實失敗點＝沒想過會怎麼失敗。plan→test 放行邊查核本段非敷衍；敷衍（無／無風險）即擋。
+> 起始效應對策（premortem，SKILL §3 時點 1 對抗·premortem 挑戰＋CLI plan→test 放行邊機械驗）：規劃完美盲信的制衡——列不出真實失敗點＝沒想過會怎麼失敗。plan→test 放行邊查核本段非敷衍；敷衍（無／無風險）即擋。
 
 **3. 開發策略**
 
@@ -353,7 +353,7 @@ flowchart LR
 
 ## 回指記錄
 
-> G3 本區由 test 段於測試定稿 commit 時收斂寫入（AC→測試檔映射）；行格式用全形「｜」。
+> G3 本區由 test 段撰寫測試時收斂寫入（AC→測試檔映射；測試碼隨功能實作同 commit 定稿）；行格式用全形「｜」。
 
-- AC-01｜測試檔=（填）｜定稿 commit=（填）
-- AC-02｜測試檔=（填）｜定稿 commit=（填）
+- AC-01｜測試檔=（填）｜功能 commit=（填）
+- AC-02｜測試檔=（填）｜功能 commit=（填）

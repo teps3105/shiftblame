@@ -50,9 +50,9 @@ assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接�
 const withoutDeclaration = state();
 delete withoutDeclaration.adversarialAt;
 delete withoutDeclaration.adversarialConsumed;
-withoutDeclaration.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '③' }];
+withoutDeclaration.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '2' }];
 withoutDeclaration.inputs = [{ at: new Date().toISOString(), text: '老闆：確認收尾' }];
-save(withoutDeclaration); // 合成缺提交宣告 fixture；end 驗 ③ 條目（時點對抗）不自動消費提交對抗。
+save(withoutDeclaration); // 合成缺提交宣告 fixture；end 驗時點 2 條目（時點對抗）不自動消費提交對抗。
 ok(run('end', '--boss-ok', '--adversarial')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
 assert.equal(run('commitmsg', 'merge old').status, 1, 'ended 缺提交對抗仍拒絕');
 const rejectInit = (pattern) => {

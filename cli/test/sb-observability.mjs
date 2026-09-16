@@ -59,7 +59,7 @@ assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('①').status, 0);
+assert.equal(pt('1').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段');
 
@@ -121,23 +121,23 @@ const u7 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inpu
 assert.equal(u7.status, 0, '新回合工具恢復（同操作指紋隨回合重置）');
 assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
-// —— 4. 重走至 verify（--rerun 直通＋返工外部協助），途中寫真實 commit 供遙測 diff ——
-assert.equal(run('next', 'requirement', '--rerun', 'impl').status, 0, '返工直通（同 ms 曾達 test）');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 返工外部協助
+// —— 4. 重走（老闆新輸入回意圖揭露→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
+assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
 assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（research→plan 邊驗——重走進段重置後重新驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('①', 'r2').status, 0);
+assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（plan→test 決策邊——晚於上次同邊推進）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 commit('test-1.mjs', 'test: cover acceptance');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
-assert.match(run('next', 'verify').stderr, /需時點②對抗/, '判決前缺②即擋');
-assert.equal(pt('②').status, 0);
-assert.equal(run('next', 'verify', '--adversarial').status, 0);
-assert.equal(pt('③').status, 0, 'pass 出口前置——③ 條目（end 前驗新鮮度）');
+assert.equal(run('next', 'verify').status, 0, '功能 AC 判定＝段內判決（非時點編號，無需 --adversarial）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
+assert.equal(pt('2').status, 0, '時點 2 對抗——ms 出口前置（end 前驗新鮮度：晚於末次進 verify）');
 
 // —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);

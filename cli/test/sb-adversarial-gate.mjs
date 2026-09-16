@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗：--adversarial 邊（plan→test①放行前、build→verify②判決前）＋③＝pass 出口前（next／end 兩門）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進）；非對抗邊帶旗標即擋。
+// 時點對抗：時點 1＝plan→test 放行前（--point 1）；時點 2＝pass 出口前（next --new-ms／end 兩門，checkPoint2Fresh）；段內提交閘＝提交對抗章（無 point）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進／晚於末次進 verify）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -31,26 +31,27 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解宣告：老闆確認意圖與推進授權——定義層規劃循環起走' } }); // 理解宣告落流（未覆蓋即凍結解凍——中段提交閘 hooks 測試承載）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
 
-// 1. adversarialLog 缺時點①條目即擋（RAM/ROM：對照源＝point 條目）
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /缺時點①條目/);
+// 1. adversarialLog 缺時點 1 條目即擋（RAM/ROM：對照源＝point 條目）
+assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
 // 2. 非對抗邊帶 --adversarial 即擋
 assert.match(run('next', 'research', '--adversarial').stderr, /不是對抗邊|不合法推進/);
-// 3. --point 宣告→過（帶 --point 不發 commit 章）
-assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
+// 3. --point 1 宣告→過（帶 --point 不發 commit 章）
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目不發 commit 章（邊章與 commit 章分流）');
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 
-// 循環到 verify（build→verify＝時點②判決前）
+// 循環到 verify（build→verify＝段內判決，非時點編號）
 writeFileSync(join(root, 't.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 assert.equal(git('add', 't.mjs').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: cover').status, 0);
 assert.equal(run('next', 'build').status, 0);
-// 提交對抗閘段於 build 態執行（2.2.0：驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
+// 提交對抗閘段於 build 態執行（驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
 // 段內合成狀態寫入以快照／還原隔離，不污染主流程狀態與後續新鮮度判定。
 const stateSnapshot = readFileSync(join(root, ".shiftblame/flow-state.json"), "utf8");
 // —— 提交對抗閘：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
@@ -72,7 +73,7 @@ for (const path of ['.shiftblame/review.md', '.shiftblame/demo/001/review.md', '
   const file = join(root, path);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, '對抗判定：通過\n');
-  for (const flags of [[], ['--point', '①']]) {
+  for (const flags of [[], ['--point', '1']]) {
     const before = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
     const result = run('adversarial', file, ...flags);
     assert.equal(result.status, 1, `${path} 不在 tmp，提交與時點宣告皆拒絕`);
@@ -86,7 +87,7 @@ assert.equal(run('adversarial', join(linkedReports, 'review.md')).status, 1, '�
 const nestedReport = join(tmpDir, 'reviews', 'report.md');
 mkdirSync(dirname(nestedReport), { recursive: true });
 writeFileSync(nestedReport, '對抗判定：通過\n');
-assert.equal(run('adversarial', nestedReport, '--point', '①').status, 0, 'tmp 內巢狀報告仍可宣告');
+assert.equal(run('adversarial', nestedReport, '--point', '1').status, 0, 'tmp 內巢狀報告仍可宣告');
 // 報告指向目錄擋（非檔案）
 r = run('adversarial', '.shiftblame/tmp');
 assert.equal(r.status, 1, '目錄非報告檔擋');
@@ -338,31 +339,33 @@ assert.equal(git('status', '--porcelain').stdout.trim(), '', '段後工作樹全
 writeFileSync(join(root, 'seed.txt'), 'v2\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
-assert.match(run('next', 'verify', '--adversarial').stderr, /缺時點②條目/, '判決前缺②即擋');
-assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
-assert.equal(run('next', 'verify', '--adversarial').status, 0);
+assert.equal(run('next', 'verify').status, 0, '功能 AC 判定＝段內判決（非時點編號，無需 --adversarial）');
 
-// 4. pass 出口（next／end 兩門）：缺時點③條目即擋
+// 4. pass 出口（next --new-ms／end 兩門）：缺時點 2 條目即擋（checkPoint2Fresh）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
-assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點③/, 'next 出口缺③即擋');
-assert.match(run('end', '--boss-ok', '--adversarial').stderr, /時點③/, 'end 出口缺③即擋');
-// 5. fail 邊（三觸發）→回 intent 重整：零旗標、同 ms；重走（曾達 test——返工直通）
-assert.equal(run('next', 'intent').status, 0, 'fail 回指＝零旗標');
+assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點 2/, 'next 出口缺時點 2 條目即擋');
+assert.match(run('end', '--boss-ok', '--adversarial').stderr, /時點 2/, 'end 出口缺時點 2 條目即擋');
+// 5. fail 邊→老闆新輸入回意圖揭露經 intent 路由器路由：零旗標、定義級同 ms 開新輪（計返工輪）
+assert.equal(run('next', 'intent').status, 0, 'fail 回意圖揭露＝零旗標');
 assert.equal(state().ms, '001');
-assert.equal(run('next', 'requirement', '--rerun', 'definition').status, 0);
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 返工外部協助（rerunExtPending 邊驗；同時作數 research→plan）
-assert.equal(run('next', 'research').status, 0, '返工外部協助作數——一次調用滿足兩閘');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
+assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
+assert.equal(run('next', 'research').status, 0, '重走進 research——外部證據閘進段重置');
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊①條目過期即擋（新鮮度）');
-assert.equal(run('adversarial', ptReport('①'), '--point', '①').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（返工重走邊——晚於上次同邊推進）
+assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（plan→test 決策邊——晚於上次同邊推進）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'v3\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);
-// 6. 循環邊：舊②條目過期即擋（新鮮度）→補宣告→過
-assert.match(run('next', 'verify', '--adversarial').stderr, /過期|早於同邊/, '舊②條目過期即擋');
-assert.equal(run('adversarial', ptReport('②'), '--point', '②').status, 0);
-assert.equal(run('next', 'verify', '--adversarial').status, 0);
+// 6. 時點 2 新鮮度：條目早於末次進 verify 即擋→重審補宣告→pass 出口
+assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告（進 verify 前——隨即過期）');
+assert.equal(run('next', 'verify').status, 0, 'build→verify 段內判決');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
+assert.match(run('end', '--boss-ok', '--adversarial').stderr, /早於末次進 verify/, '時點 2 條目早於末次進 verify 即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '重審後補時點 2 條目');
+assert.equal(run('end', '--boss-ok', '--adversarial').status, 0, '時點 2 對抗新鮮→pass 出口（對抗在前老闆判定在後）');
 console.log('sb-adversarial-gate: pass');

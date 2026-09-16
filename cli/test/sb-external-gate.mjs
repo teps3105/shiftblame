@@ -1,5 +1,5 @@
-// sb-external-gate：研究／返工外部性閘——externalEvidence 標記（真實 hooks）、
-// research→plan 邊驗（零外部推不過）、--rerun 返工重置＋pending 鏈（返工後首個推進邊驗）、回 intent 中止清
+// sb-external-gate：研究外部性閘——externalEvidence 標記（真實 hooks）、
+// research→plan 邊驗（零外部推不過）、回 intent 開新輪重走（老闆決策邊）＋進 research 段重置（每次重走重新驗）
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -73,41 +73,27 @@ assert.equal(state().externalEvidence.tool, 'WebSearch');
 r = run('next', 'plan');
 assert.equal(r.status, 0, '外部調用後 research→plan 過（規模自由：一次即底線）');
 
-// —— 5. --rerun 返工（fail 回指 intent 後前進重走直通）：重置證據＋掛 pending ——
-setState((st) => {
-  st.node = 'intent';
-  st.history.push({ from: 'plan', to: 'test', at: new Date().toISOString(), ms: '001' }); // 同 ms 曾達 test（rerun 資格）；fail 回指後落點 intent
-});
-r = run('next', 'requirement', '--rerun', 'impl');
-assert.equal(r.status, 0, 'rerun 直通（同 ms 曾達 test 及之後、非 verify 出發）');
-assert.equal(state().externalEvidence, null, 'rerun 重置外部證據');
-assert.equal(state().rerunExtPending, true, '掛返工 pending');
+// —— 5. 重走（老闆新輸入回意圖揭露經 intent 路由器路由→定義級同 ms 開新輪）：重走＝老闆決策邊 --boss-ok ——
+setState((st) => { st.node = 'intent'; });
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
+r = run('next', 'requirement', '--boss-ok');
+assert.equal(r.status, 0, '重走：老闆決策邊 --boss-ok（重走必經 intent 路由器路由）');
+assert.equal(run('next', 'research', '--rerun', 'impl').status, 2, '已退役旗標被解析器 usage 擋（退役驗證——旗標本身須存在才能證明已死）');
 
-// —— 6. 返工後推進零外部擋（不得閉門自我檢驗）——
-r = run('next', 'research');
-assert.equal(r.status, 1, '返工期間零外部協助→擋');
-assert.match(r.stderr, /零外部協助/);
-assert.equal(state().node, 'requirement', '未推進（擋於 requirement→research 邊）');
+// —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次）——
+assert.equal(run('next', 'research').status, 0, '進 research——外部證據閘進段重置');
+r = run('next', 'plan');
+assert.equal(r.status, 1, '重走後零外部調用→擋（不得閉門自我檢驗）');
+assert.match(r.stderr, /零外部調用/);
+assert.equal(state().node, 'research', '未推進（擋於 research→plan 邊）');
 
-// —— 7. 外部協助後過＋pending 消費即清 ——
+// —— 7. 外部協助後過 ——
 assert.equal(extCall('Agent').status, 0);
-r = run('next', 'research');
-assert.equal(r.status, 0, '外部協助後返工推進過');
-assert.equal(state().rerunExtPending, undefined, 'pending 消費即清');
+r = run('next', 'plan');
+assert.equal(r.status, 0, '外部協助後重走推進過');
 
-// —— 8. 第二次 rerun：證據再次重置、pending 重掛（每次返工重新計次）——
-setState((st) => { st.node = 'research'; });
-r = run('next', 'plan', '--rerun', 'impl');
-assert.equal(r.status, 0, '第二次 rerun 直通');
-assert.equal(state().externalEvidence, null, '每次 rerun 重置外部證據（重新計次）');
-assert.equal(state().rerunExtPending, true, 'pending 重掛');
-
-// —— 9. 回 intent 中止：pending 不帶入新線性 ——
-r = run('next', 'intent', '--rerun', 'impl');
-assert.equal(r.status, 1, '回頭邊不得帶 --rerun（不得攜帶返工 pending 回 intent）');
-assert.match(r.stderr, /僅用於前進重走邊/);
-assert.equal(run('next', 'intent').status, 0, '回 intent 免外部驗（返工中止——回頭邊）');
-assert.equal(state().rerunExtPending, undefined, 'pending 不帶入新線性');
-assert.equal(state().externalEvidence, null, '證據隨中止清空（重走 research 邊再驗）');
-
+// —— 8. 回 intent 中止：回頭邊免外部驗——重置責任在再進 research 的進段邊 ——
+r = run('next', 'intent');
+assert.equal(r.status, 0, '回意圖揭露免外部驗（回頭邊）');
+assert.equal(run('next', 'requirement').status, 1, 'intent→requirement 決策邊缺 --boss-ok 擋');
 console.log('sb-external-gate: pass');

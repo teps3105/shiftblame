@@ -85,7 +85,17 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
   assert.equal(f.run('adversarial', f.report).status, 0);
   assert.equal(f.run('state').status, 0);
   assert.match(f.run('state').stdout, /直接實行/);
-  assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md') }).status, 0);
+  // 未覆蓋即凍結（hooks 機械強制）：輸入流有條目而理解流未覆蓋時，repo 寫入擋至第一步 think 落流；
+  // 理解宣告落流即解凍。無輸入（冷啟動）不設防。
+  const stDirect = existsSync(f.state) ? JSON.parse(readFileSync(f.state, 'utf8')) : null;
+  const hasInputs = (stDirect?.inputs?.length ?? 0) > 0;
+  assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md') }).status, hasInputs ? 2 : 0, hasInputs ? '未覆蓋即凍結：輸入未經理解宣告覆蓋前 repo 寫入擋' : '無輸入不設防');
+  if (hasInputs) {
+    const st0 = JSON.parse(readFileSync(f.state, 'utf8'));
+    st0.understandings = [{ at, uptoInput: st0.inputs.length - 1, as: '意圖：直接實行修復', reviewed: true, hash: createHash('sha256').update('0意圖：直接實行修復' + at).digest('hex').slice(0, 16) }];
+    writeFileSync(f.state, JSON.stringify(st0));
+    assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md') }).status, 0, '理解宣告落流即解凍');
+  }
   assert.equal(f.git('init').status, 0);
   writeFileSync(join(f.cwd, '.gitignore'), '.shiftblame/\n');
   writeFileSync(join(f.cwd, 'README.md'), 'direct execution\n');

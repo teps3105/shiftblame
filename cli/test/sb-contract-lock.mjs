@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 契約測試：G1 於 plan→test 放行邊封存（hash 記 flow-state）；偏離即擋；回 intent 重定義（零旗標）
+// 契約測試：G1 於 plan→test 時點 1 放行邊封存（hash 記 flow-state）；偏離即擋；回 intent（老闆新輸入回意圖揭露）重定義
 const root = mkdtempSync(join(tmpdir(), 'sb-contract-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -29,13 +29,13 @@ assert.equal(run('init', 'demo').status, 0);
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點①對抗\n外部子代理原文節錄內容足夠實質。\n對抗判定：通過');
+writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點 1 對抗\n外部子代理原文節錄內容足夠實質。\n對抗判定：通過');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('next', 'research').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '①').status, 0);
+assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '1').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
 assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
 const locked = state();
@@ -44,7 +44,7 @@ assert.equal(locked.g1Contract.snapshot, undefined);
 // 回指區更新→定義區 hash 不觸（RAM/ROM 分區封存正向）
 { const g1 = readFileSync(join(ms, 'G1.md'), 'utf8'); writeFileSync(join(ms, 'G1.md'), g1 + '- AC-01｜判定=SATISFIED｜證據節錄=節錄｜commit=abc\n'); }
 assert.equal(run('next', 'build').status, 0, '回指區追加不觸契約（定義區未變）');
-// 定義區偏離／分隔標題破壞→前進擋；回 intent 不擋（回頭自由）
+// 定義區偏離／分隔標題破壞→前進擋；回 intent（老闆新輸入回意圖揭露）不擋
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'verify').stderr, /分隔標題出現 0 次|已偏離/);
 const revOut = run('next', 'intent');

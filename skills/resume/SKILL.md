@@ -23,7 +23,7 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新核對�
 2. **偵測 shiftblame:save 落點**：檢查 SLUG frontmatter 是否有 `last_save`。
    - **有 `last_save`** → **接續工作**（不重問確認）：從 SLUG §8 的回指讀取 `<repo>/.shiftblame/tmp/<slug>/handoff.md`，核對 slug／ms、階段、commit 與 flow-state、該段已產生的 G 檔及實況。成功核對後才**清除 `last_save` 標記**，在原節點接續已授權的「下一步」，跳過 step 3-4。缺檔、不可讀、回指的可見或實體位置越出 tmp、內容與實況矛盾時，保留標記，走 step 3-4 重建可驗落點；依 save 的保存與讀回順序更新 tmp 交接及 SLUG 回指後才消費標記。交接文件不能變更正式定義或擴大授權。
    - **無 `last_save`** → 落點不明，走重新核對（step 3-4）。
-3. **依原節點重建落點**（非清空重寫，不向老闆重問）：以 flow-state 為節點依據，核對已存在、該段應承接的文件與實況。intent／requirement 承接 SLUG 與已有需求草案；research 承接 G1 與已有技術草案；plan 承接 G1／G2 與已有計畫草案；執行層承接已定稿的 G1~G3。後續階段尚未產生的文件不當作遺失，也不為 resume 提前產出。codebase 差異只能作為可行性證據，不能反向改義需求。依承載歸屬核對現有文件：
+3. **依原節點重建落點**（非清空重寫，不向老闆重問）：以 flow-state 為節點依據，核對已存在、該段應承接的文件與實況。intent／requirement 承接 SLUG 與已有需求草案；research 承接 G1 與已有技術草案；plan 承接 G1／G2 與已有計畫草案；實作層承接已定稿的 G1~G3。後續階段尚未產生的文件不當作遺失，也不為 resume 提前產出。codebase 差異只能作為可行性證據，不能反向改義需求。依承載歸屬核對現有文件：
    - 仍成立 → 保留。
    - G2／G3 過時但仍 CONFORMS → 對應面向單調細化。
    - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `回 intent（sb next intent）`——修約是改 G1 的唯一路徑。

@@ -165,27 +165,16 @@ assert.equal(W('verify', 'Edit', join(root, '.shiftblame', 'demo', 'SLUG.md')).s
 assert.equal(W('build', 'Edit', 'src/app.js').status, 0, 'build 段寫實作');
 assert.equal(W('ended', 'Edit', 'docs/guide.md').status, 0, 'ended 收尾歸檔');
 assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0, 'test 段寫測試碼');
-assert.equal(W('build', 'Edit', 'test/app.test.js').status, 2, '非 test 段改測試碼即擋');
+assert.equal(W('build', 'Edit', 'test/app.test.js').status, 0, 'build 段寫測試碼放行（測試碼寫入權 test＋build——隨功能實作同 commit 定稿）');
+assert.equal(W('plan', 'Edit', 'test/app.test.js').status, 2, '測試碼寫入權屬 test＋build 段（實作層）——定義層擋');
 
-// —— 7. 層間停靠雙重鎖：plan 段 sb next test 缺 --boss-ok 即擋；--rerun 直通與 CLI 同判據 ——
+// —— 7. 層間停靠雙重鎖：plan 段 sb next test 缺 --boss-ok 即擋（hooks 同判據——對抗在前老闆判定在後）——
 setNode('plan');
 const st1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --adversarial' } });
 assert.equal(st1.status, 2);
 assert.match(st1.stderr, /plan→test|老闆決策邊/);
 const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --boss-ok --adversarial' } });
 assert.equal(st2.status, 0, '帶 --boss-ok 放行');
-// --rerun：本 ms 未達 test（history 無本 ms 記錄）→擋
-const st3 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
-assert.equal(st3.status, 2, '首走 --rerun 擋（hooks 同判據）');
-assert.match(st3.stderr, /--rerun 僅限同 ms/);
-// --rerun：本 ms 曾達 test →直通放行（兩層判據一致）
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'plan', history: [{ from: 'plan', to: 'test', at: '2026-01-01T00:00:00Z', ms: '001', bossOk: true }] }));
-const st4 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
-assert.equal(st4.status, 0, '同 ms 返工直通放行（hooks 同判據）');
-// --rerun：history 達 test 但屬他 ms →擋（跨 ms 繞過防線）
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '002', node: 'plan', history: [{ from: 'plan', to: 'test', at: '2026-01-01T00:00:00Z', ms: '001', bossOk: true }] }));
-const st5 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --rerun impl --adversarial' } });
-assert.equal(st5.status, 2, '跨 ms --rerun 擋');
 
 // —— 8. commit 印章＋提交對抗閘（hooks 端：手寫印章不得繞過對抗閘）——
 setNode('build');
@@ -292,10 +281,11 @@ const frozenSb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_in
 assert.equal(frozenSb.status, 2, 'sb next 推進凍結');
 const readonlySb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs state' } });
 assert.equal(readonlySb.status, 0, 'sb state 唯讀放行');
-// 老闆回覆＝解凍：hold 清除＋注入 [停等解除]；寫入回到段矩陣判定
+// 老闆回覆＝解凍：hold 清除＋注入 [停等解除]；理解宣告覆蓋本則輸入後（未覆蓋即凍結）寫入回到段矩陣判定
 const release = up('確認理解正確，開工');
 assert.equal(state().understandingHold, undefined, '老闆回覆解除 hold');
 assert.ok(release.stdout.includes('[停等解除]'), '注入卡顯示解除行');
+run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：老闆確認停等理解正確並授權開工——續行 build 段實作' } }); // 理解宣告落流覆蓋本則輸入
 const editOkAfter = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
 assert.equal(editOkAfter.status, 0, '解凍後回到段矩陣判定（build 段放行）');
 // —— 11. G 檔寫入矩陣（RAM/ROM 分區） ——
@@ -356,7 +346,7 @@ assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
   }
   run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:rewrite' } });
   assert.equal(state().rewriteSeen.rev, 1, '全名調用落 rewriteSeen（rev 對齊當前輪）');
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '載入後本輪寫 G1 放行（--rerun 前進邊不經 intent 不動 rev——同輪已載入即放行，免雙重設防）');
+  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '載入後本輪寫 G1 放行（同輪已載入即放行，免雙重設防）');
   setRev(2);
   assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 2, '再返工（r2）須重新載入——每輪重驗');
   assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/archive/demo/001/G1.md'), content: 'x' } }).status, 0, '真歸檔形（.shiftblame/archive/<slug>/<ms>/G1.md——4 段）不匹配 G_FILE_RE／不在 rewrite 閘（路徑形不匹配即放行）');

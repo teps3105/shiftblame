@@ -71,11 +71,11 @@ function validTelemetry(t) {
 // 對抗條目鍵集：point（時點條目）與 model（審查模型——報告內含「審查模型：」行則記，缺省無鍵）皆可選。
 const ADV_ENTRY_KEYS = (x) => ['at', 'report', 'verdict', 'node', ...(Object.hasOwn(x, 'point') ? ['point'] : []), ...(Object.hasOwn(x, 'model') ? ['model'] : [])];
 const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_KEYS(x)) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === node
-  && (!Object.hasOwn(x, 'point') || ['①', '②', '③'].includes(x.point))
+  && (!Object.hasOwn(x, 'point') || ['1', '2'].includes(x.point))
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
 
 function endedState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'rerunExtPending', 'understandingHold', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'understandingHold', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
   if (Object.hasOwn(st, 'concludedAt') && !timestamp(st.concludedAt)) return false; // sb init --main 完結戳（維持 ended 分類——main 直接作業）
@@ -86,7 +86,7 @@ function endedState(st) {
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準（ended 帶全帳本）
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
   if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, 'ended')))) return false;
-  for (const k of ['adversarialConsumed', 'rerunExtPending']) if (Object.hasOwn(st, k) && typeof st[k] !== 'boolean') return false;
+  if (Object.hasOwn(st, 'adversarialConsumed') && typeof st.adversarialConsumed !== 'boolean') return false;
   if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length)) return false;
   const records = hookRecords(st);
   return !Object.keys(records).length || hooksOnly(records);
@@ -116,25 +116,8 @@ function directState(st) {
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
-// 多代理工作樹帳本（CLI 寫）：鍵＝worktree 名；條目＝任務卡＋生命週期狀態。
-// 狀態機 open→verifying→ready→merged（done 時刪條目）；research 樹以 drop 收尾（實驗碼拋棄不整合）。
-const WT_STATUSES = new Set(['open', 'verifying', 'ready', 'merged']);
-function validWorktrees(w) {
-  if (!objectRecord(w)) return false;
-  return Object.entries(w).every(([name, e]) => /^[a-z0-9][a-z0-9-]{0,48}$/.test(name)
-    && objectRecord(e)
-    && exactKeys(e, ['phase', 'branch', 'task', 'status', 'openedAt', ...(Object.hasOwn(e, 'verdict') ? ['verdict'] : []), ...(Object.hasOwn(e, 'lastReportAt') ? ['lastReportAt'] : []), ...(Object.hasOwn(e, 'report') ? ['report'] : [])])
-    && (e.phase === 'research' || e.phase === 'build')
-    && typeof e.branch === 'string' && e.branch.trim().length > 0
-    && typeof e.task === 'string' && [...e.task.trim()].length >= 4
-    && WT_STATUSES.has(e.status)
-    && timestamp(e.openedAt)
-    && (!Object.hasOwn(e, 'verdict') || e.verdict === 'pass' || e.verdict === 'fail')
-    && (!Object.hasOwn(e, 'lastReportAt') || timestamp(e.lastReportAt))
-    && (!Object.hasOwn(e, 'report') || (typeof e.report === 'string' && e.report.trim().length > 0)));
-}
 function activeExtras(st) {
-  if (Object.hasOwn(st, 'worktrees') && !validWorktrees(st.worktrees)) return false; // 多代理工作樹狀態（CLI 寫——協調者層帳本）
+  // worktrees（已移除的多代理工作樹帳本）殘留鍵由 sb end 冪等清理，此處不驗不拒（舊檔兼容）。
   if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
     && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;

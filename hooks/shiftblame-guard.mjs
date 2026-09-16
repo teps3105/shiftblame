@@ -6,9 +6,9 @@
  * 依事件分支：
  *   SessionStart    → 注入 §9 載入程序＋完整不變量卡（additionalContext）
  *   UserPromptSubmit→ 注入精簡不變量卡；偵測 <cwd>/.shiftblame 時加注當前節點
- *   PreToolUse      → Bash 含 `git commit`：驗 sb commitmsg 印章（10 分鐘內、訊息相符），
- *                     無效即 exit 2 阻擋；Write/Edit 觸及框架文件（skills／hooks）→ 注入三步序提醒；
- *                     其餘靜默放行
+ *   PreToolUse      → 未覆蓋即凍結（新輸入未經理解宣告覆蓋前擋寫入與推進）；停等凍結；Bash 含
+ *                     `git commit`：驗 sb commitmsg 印章（10 分鐘內、訊息相符），無效即 exit 2 阻擋；
+ *                     Write/Edit 觸及框架文件（skills／hooks）→ 注入演化提醒；其餘靜默放行
  *
  * 原則：已辨識的流程接入異常拒絕正式寫入及提交；其餘未預期內部錯誤維持既有靜默出口。
  * 煙霧測試：printf '%s' '{"hook_event_name":"UserPromptSubmit","cwd":"."}' | node hooks/shiftblame-guard.mjs
@@ -56,35 +56,21 @@ const projectRoot = (input) => {
   return typeof c === 'string' && isAbsolute(c) && existsSync(c) ? c : null;
 };
 
-// 多代理工作樹錨定：cwd 位於 <主root>/.shiftblame/worktree/<name>/** 時，治理 root 解析回主 repo——
-// worker 在自己工作樹內的工具調用仍受主 flow-state 的閘門管轄（段位矩陣／rewrite 閘／commit 印章對主 root 生效）；
-// 工作樹內路徑的寫入由 checkStateWriteMatrix 的 worktree 放行條款承載（限 research/build 段）。
-// 回傳 { root, wt }——wt＝工作樹名（null＝非工作樹事件）。
-function resolveWorktreeAnchor(cwd) {
-  if (!cwd) return { root: null, wt: null };
-  const norm = String(cwd).replace(/\\/g, '/');
-  const i = norm.toLowerCase().indexOf('/.shiftblame/worktree/'); // 大小寫不敏感——Windows FS 變體路徑不得逃離治理錨定
-  if (i <= 0) return { root: cwd, wt: null };
-  const root = norm.slice(0, i);
-  const rest = norm.slice(i + '/.shiftblame/worktree/'.length);
-  const name = rest.split('/')[0];
-  if (!name) return { root: cwd, wt: null };
-  try { if (!existsSync(join(root, '.shiftblame', 'flow-state.json'))) return { root: cwd, wt: null }; } catch { return { root: cwd, wt: null }; }
-  return { root, wt: name };
-}
+// 子代理工作區（.shiftblame/tmp/**）由 tmp 自由寫入規則承載——子代理零 repo 寫入權，
+// 整合由主對話以自身寫入權（段位矩陣＋提交閘）修改回當前分支；無獨立錨定機制。
 
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
-  '①老闆輸入先路由 shiftblame:think（全域路由，不屬於任何段）；意圖對抗先行（逼出無歧義即執行，不無限卡）：補充／修正→回 intent 同 ms 重走；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。問題類輸入直接解答不對抗；收斂定案權在老闆。',
-  '②段鏈：intent→requirement→research→plan→test→build→verify；verify 判決出邊——fail→intent 回指重整（零旗標；三觸發：卡住／老闆方向錯誤／驗收不過）、pass→next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。回頭自由（任意節點→intent 零旗標，同 ms 重走）；前進要鑰匙（--boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗章與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
-  '③時點對抗（plan→test①放行前／build→verify②判決前／③＝pass 出口前——每 ms 驗收 pass 後、next／end 前，CLI 對兩出口驗新鮮度；產出對抗，與審計分屬）：--adversarial＋adversarialLog point 條目對照（新鮮度＝晚於同邊上次推進），不一致即擋。',
+  '①老闆輸入先路由 shiftblame:think（全域入口，不屬於任何段）；揭露第一動——六欄理解立即呈現（先跑內部機制再揭露＝溝通摩擦）；未定案必問（老闆決策域的開放問題明確列出提問停等，沉默≠批准，靜默自裁＝越權）；無歧義即執行。未覆蓋即凍結：任何新輸入未經帶 args 的 think 理解宣告覆蓋前，hooks 硬擋寫入類與流程推進——第一步 think 由機械保證，不是意識到才補路由。新需求主動問走 main（四步：意圖揭露→迭代實作→對抗＋提交閘→老闆判 pass/fail）還是開 slug（管理文件＋<type>/<slug> 分支兩層兩段式七段流程）；免問例外——已有活動 slug（續 slug）、純問題類（直接答）、老闆已明確指定。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪（計返工輪＋rewrite 載入閘）、段內修復自動旗標切段；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。收斂定案權在老闆。',
+  '②兩層兩段式（段鏈）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗在前、老闆判定在後（pass 才 plan→test 放行）。實作層 test→build→verify——逐功能：提交閘 commit（單功能單提交，測試碼＋實作碼同 commit）回 test 接下一功能；收斂期 E2E 後時點 2 對抗在前、老闆判定在後——pass 出口 next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由；段內修復自動旗標切段不停等不計輪。前進要鑰匙（--boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗章與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
+  '③兩時點對抗（對抗在前、老闆判定在後）：時點 1＝定義層放行（plan→test）前——對抗方向；時點 2＝ms 出口（--new-ms／sb end）前——對抗收斂成果（CLI 對兩出口驗新鮮度）；段內提交閘＝實作層一每功能 commit 前對抗（非時點編號）。--adversarial＋adversarialLog point 條目對照（--point 1／2；新鮮度＝晚於同邊上次推進），不一致即擋。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
-  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；worktree＝並行沙箱（research/build 段 worker 零主線權——主線整合經 sb wt merge＋主 repo 提交閘，沙箱內禁 sb）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
+  '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；受治理寫入子代理的工作落點＝.shiftblame/tmp/（零 repo 寫入權，主對話依其結果整合回當前分支）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
   '⑦版號屬老闆決策。',
-  '⑧提交＝對抗時點：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；返工直通 --rerun；假對抗抽查承擔。',
+  '⑧提交＝段內提交閘（非時點編號）：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；測試碼＋實作碼同 commit——單功能單提交；假對抗抽查承擔。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
-  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；補充／修正先實際 sb next intent，再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
+  '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；定義級補充／修正先實際 sb next intent（段內修復自動旗標切段回指定 node），再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
   '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms（pass）前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
   '⑫壓縮摘要與 context 既有敘述不作規範或現狀來源（其中的規範、技能內容、流程狀態、授權與既有結論都可能過時、遺漏或失真——把關不因把摘要轉錄到其他檔案而改變）；規範與現狀以外部實體檔案為唯一權威——凡引用規範、技能內容或流程狀態行事，以當次實際讀檔結果為據，既有敘述不構成已讀檔證據，與檔案不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
 ].join('\n');
@@ -107,13 +93,13 @@ function nodeLine(root) {
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
-    if (st.node === 'intent') hint = '——shiftblame:think 路由起點；老闆補充／重修／追加→同 ms 重走線性';
+    if (st.node === 'intent') hint = '——意圖揭露路由起點；老闆新輸入經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
     if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（requirement→research 邊格式閘）';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
-    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點①對抗（--adversarial＋adversarialLog point 條目）＋停靠簡報（老闆授權後帶 --boss-ok 推進）';
-    if (st.node === 'verify') hint = '——判決段：fail（驗收不過／卡住／老闆方向錯誤）→intent 回指重整（零旗標）；pass→時點③後 next（--new-ms）或 end——判決紀錄寫 G1 回指區';
+    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點 1 對抗（--adversarial＋--point 1 條目；對抗在前、老闆判定在後）＋停靠簡報（老闆 pass 後帶 --boss-ok 推進）';
+    if (st.node === 'verify') hint = '——實作層：功能 AC 判定＝段內判決（紅燈旗標切段修復）；時點 2 對抗在前、老闆判定在後——pass 出口 next（--new-ms）或 end；fail＝老闆新輸入回意圖揭露——判決紀錄寫 G1 回指區';
 
     let sopNote = '';
     try {
@@ -315,7 +301,7 @@ function recordRewriteSeen(root, tool, toolInput) {
 
 // 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
 // 與 Agent／Task（外部唯讀子代理）；Codex 事件實名為 webrun／collaborationspawn_agent／collaborationfollowup_task。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
-// 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與 --rerun 返工時清）——hooks 只記事實不重置。
+// 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與返工時清）——hooks 只記事實不重置。
 const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']);
 function markExternalEvidence(root, tool) {
   if (!root) return;
@@ -364,24 +350,6 @@ function stopReportLine(root, mark = true) {
 }
 
 // 停等行：understandingHold 進行中，每則輸入明示凍結語義——理解呈現即停、寫入凍結、待老闆終審
-// 多代理工作樹狀態行：worktrees 帳本非空時注入——各組狀態隨時可見（老闆每則輸入曝光）。
-// 停滯警示：lastReportAt 距今逾 30 分鐘且未收工（status≠merged）標 ⚠——慢 worker 停機偵測的曝光面。
-function worktreeLine(root) {
-  if (!root) return '';
-  try {
-    const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const wts = st.worktrees;
-    if (!wts || !Object.keys(wts).length) return '';
-    const rows = Object.entries(wts).map(([name, e]) => {
-      const lastSig = e.lastReportAt ?? e.openedAt; // 從未回報的 worker 以開樹時間起算（停機偵測最該抓的形態）
-      const stall = e.status !== 'merged' && lastSig && (Date.now() - Date.parse(lastSig)) > 30 * 60 * 1000 ? '⚠停滯' : '';
-      const v = e.verdict ? `判定=${e.verdict}` : '';
-      return `${name}[${e.phase}/${e.status}${v ? '，' + v : ''}]${stall}`;
-    });
-    return `\n[工作樹] ${rows.length} 組並行：${rows.join('；')}——驗過即整合（sb wt merge，主 repo）；收工即清（sb wt done／drop）`;
-  } catch { return ''; }
-}
-
 function holdLine(root) {
   if (!root) return '';
   try {
@@ -418,7 +386,7 @@ function understandingReviewLine(root, mark = true) {
 }
 
 // 老闆決策邊雙重鎖：雙邊（intent→requirement／plan→test）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
-// --rerun 返工直通與 CLI 同判據放行（同 ms 曾達 test、非 verify 出發）——兩層判定必須一致，否則直通死路＋假留痕
+// 時點 1＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復走旗標切段（test→build→verify 迴圈內），不經此雙邊
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
@@ -428,21 +396,15 @@ function checkLayerStopover(root, cmd) {
     const edge = { intent: 'requirement', plan: 'test' }[st.node];
     const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|test)\b/)?.[1];
     if (edge && edge === target) {
-      const rerun = /(^|\s)--rerun\s+(impl|definition)(?=\s|$)/.exec(clean);
-      if (rerun && st.node !== 'verify') {
-        const reached = (st.history ?? []).some((h) => h.ms === st.ms && ['test', 'build', 'verify'].includes(h.to));
-        if (reached) return null; // 返工直通（時點①分流判定留痕於 CLI history；pass 出口永不直通）
-        return `--rerun 僅限同 ms 返工重走（本 ms 尚未到達 test）——首次推進之老闆決策邊走完整確認`;
-      }
-      return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗章不替代老闆章；經老闆授權後帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等，返工直通帶 --rerun（同 ms 曾達 test；SKILL §3）`;
+      return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗章不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
     }
   } catch { /* 非治理工作區 */ }
   return null;
 }
 
 // ———— 狀態寫入攔截：把寫入矩陣機械化 ————
-// 測試碼（測試慣例路徑）僅 test 段可寫；實作碼（.shiftblame/ 外 repo 檔）
-// 白名單＝build（實作段）／ended（pass 後收尾歸檔）；其餘段對 repo 唯讀（verify 驗收唯讀）。
+// 測試碼（測試慣例路徑）test＋build 段可寫（實作層——test 撰寫、build 到接合點補寫整合；隨功能實作同 commit 定稿）；
+// 實作碼（.shiftblame/ 外 repo 檔）白名單＝build（實作段）／ended（pass 後收尾歸檔）；其餘段對 repo 唯讀（verify 驗收唯讀）。
 // 測試不可變性由 git 承擔；Bash 內寫檔不在此層（殘餘；shell 漂移由 verify 邊樹檢查兜底）。
 
 const IMPL_WRITE_NODES = new Set(['build', 'ended']);
@@ -476,7 +438,6 @@ function checkGFileMatrix(root, toolInput) {
     const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
     const m = rel.toLowerCase().match(G_FILE_RE); // 大小寫不敏感——Windows FS 不校正路徑大小寫（realpathSync 保留輸入），小寫形繞過死路
     if (!m) continue;
-    if (rel.toLowerCase().includes('.shiftblame/worktree/')) continue; // 沙箱內 G*.md＝worker 實驗文件非 ROM——沙箱路徑不經 G 矩陣（放行條款統一承載）
     if (m[1]) continue; // archive/ 由 CLI 寫入——放行
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
@@ -504,7 +465,6 @@ function checkRewriteGate(root, toolInput) {
     const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
     const m = rel.toLowerCase().match(G_FILE_RE);
     if (!m || m[1]) continue; // 只閘作用中 G 檔——archive/ 歸檔歷史不在此閘
-    if (rel.toLowerCase().includes('.shiftblame/worktree/')) continue; // 沙箱 G*.md 非治理 ROM——不觸 rewrite 載入閘
     return `[shiftblame] 修正輪 r${String(st.rev).padStart(2, '0')} 寫 G${m[2]}.md 前須先調用 shiftblame:rewrite（返工重寫為當下事實——定義區整檔重寫、回指區同鍵覆寫；載入後本輪放行）（SKILL §1.1／skills/rewrite）`;
   }
   return null;
@@ -516,7 +476,7 @@ function checkRewriteGate(root, toolInput) {
 // 放行：Skill 調用（shiftblame:think 理解宣告落流）、唯讀與外部查證（Read/Grep/WebSearch/WebFetch/Agent…）、
 // Bash 唯讀查證（git log/status/diff、node/python 探針、npm test）、.shiftblame/ tmp 證據傾倒。
 const HOLD_GIT_WRITE_RE = /\bgit(?:\.exe)?\s+(?:-c\s+\S+\s+)*(?:add|commit|restore|reset|checkout|switch|clean|push|pull|fetch|merge|rebase|tag|rm|mv|stash|cherry-pick|revert|apply|am|init|branch|worktree|clone|submodule|update-ref|symbolic-ref|filter-branch|notes|reflog|gc|prune|update-index|read-tree|write-tree|hash-object|mktag|fast-import)\b/i;
-const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout|wt)\b/;
+const HOLD_SB_PUSH_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout)\b/;
 function checkHoldFreeze(root, tool, cmd, toolInput) {
   if (!root) return null;
   let st; try { st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')); } catch { return null; }
@@ -542,6 +502,43 @@ function checkHoldFreeze(root, tool, cmd, toolInput) {
     return null;
   }
   return null; // Read／Grep／Glob／WebSearch／WebFetch／webReader／web.run（web__run）／Agent 等唯讀與外部查證自由
+}
+
+// ———— 未覆蓋即凍結（每則老闆輸入第一步必調用 think——機械強制，不是意識到才補路由）————
+// 最新輸入尚無理解宣告覆蓋（covered < lastInputIdx）時，寫入類工具與流程推進硬擋——
+// 帶 args 的 shiftblame:think 調用先經 recordUnderstanding 落流（uptoInput 涵蓋該輸入）即解凍，think 調用本身不受凍。
+// 豁免面與停等凍結同構：Skill 調用、唯讀與外部查證、.shiftblame/ 傾倒自由；sb state／sb stop-report 不在攔截面（診斷與申報自由）。
+function checkUncoveredFreeze(root, tool, cmd, toolInput) {
+  if (!root) return null;
+  try {
+    const statePath = join(root, '.shiftblame', 'flow-state.json');
+    if (!existsSync(statePath)) return null;
+    const st = JSON.parse(readFileSync(statePath, 'utf8'));
+    const lastInputIdx = (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1;
+    if (lastInputIdx < 0) return null; // 尚無輸入（冷啟動）不設防
+    const covered = (st.understandings ?? []).at(-1)?.uptoInput ?? -1;
+    if (covered >= lastInputIdx) return null; // 已覆蓋——解凍
+    const t = String(tool ?? '');
+    if (/^skill$/i.test(t)) return null; // shiftblame:think（理解宣告落流即解凍）與其他技能載入自由
+    if (SHELL_TOOL_RE.test(t)) {
+      if (HOLD_GIT_WRITE_RE.test(cmd) || HOLD_SB_PUSH_RE.test(cmd)) {
+        return `[shiftblame] 未覆蓋即凍結（輸入 #${lastInputIdx} 尚無理解宣告覆蓋）——流程推進與 git 寫入擋至第一步 shiftblame:think 調用（args＝理解宣告）落流；唯讀查證與 sb state 診斷自由（SKILL §0／shiftblame:think）`;
+      }
+      return null; // 唯讀查證命令（git log/status、node/python 探針、npm test）放行
+    }
+    if (WRITE_TOOL_RE.test(t) && !READ_EXEMPT_RE.test(t)) {
+      for (const k of PATH_KEYS) {
+        const v = toolInput?.[k];
+        if (typeof v !== 'string' || !v.trim() || /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) continue;
+        const rel = relative(root, absPath(root, v)).replace(/\\/g, '/');
+        if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外不歸此管
+        if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) continue; // tmp 證據傾倒與狀態修復自由
+        return `[shiftblame] 未覆蓋即凍結（輸入 #${lastInputIdx} 尚無理解宣告覆蓋）——repo 寫入擋至第一步 shiftblame:think 調用（args＝理解宣告）落流；唯讀查證與 tmp 傾倒自由（SKILL §0／shiftblame:think）`;
+      }
+      return null;
+    }
+    return null; // 唯讀與外部查證自由
+  } catch { return null; }
 }
 
 // 路徑展開元規則（系統性）：一切判斷路徑 MUST 展開為 repo root 錨定的絕對路徑——
@@ -608,26 +605,17 @@ function checkStateWriteMatrix(root, toolInput) {
     const rel = relative(root, p).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此矩陣管
     if (rel === '.shiftblame' || rel.startsWith('.shiftblame/')) {
-      // 多代理工作樹放行條款：.shiftblame/worktree/**＝worker 沙箱——research/build 段可寫（worker 並行實作／研究實證），
-      // 整合關卡（sb wt merge 的無測試 diff 檢查＋主 repo 完整提交閘）承載主線防護；沙箱內實驗碼（含測試）不出沙箱。
-      // 大小寫不敏感比對（toLowerCase——Windows FS 不校正路徑大小寫，大小寫變體繞過死路）。
-      if (rel.toLowerCase().startsWith('.shiftblame/worktree/')) {
-        if (node !== 'research' && node !== 'build') {
-          return `[shiftblame] 工作樹寫入（${rel}）限 research／build 段——worker 並行窗口由這兩段承載；段 ${node} 對工作樹唯讀（多代理架構，SKILL 寫入矩陣）`;
-        }
-        continue;
-      }
       // ROM 區雜檔閘：<slug>/<nnn>/（含 archive/）僅承載 G1~G3.md——中間產物一律 tmp
-      if (/^\.shiftblame\/(?:archive\/)?(?!tmp\/)(?!worktree\/)[^/]+\/[^/]+\/.+$/i.test(rel) && !/^\.shiftblame\/(?:archive\/)?[^/]+\/[^/]+\/G[123]\.md$/i.test(rel)) {
+      if (/^\.shiftblame\/(?:archive\/)?(?!tmp\/)[^/]+\/[^/]+\/.+$/i.test(rel) && !/^\.shiftblame\/(?:archive\/)?[^/]+\/[^/]+\/G[123]\.md$/i.test(rel)) {
         return `[shiftblame] ROM 區（${rel}）僅承載 G1~G3.md——中間產物／筆記／報告一律落 .shiftblame/tmp/（唯一自由傾倒區；SLUG.md 在 <slug>/ 層由秘書維護）`;
       }
       continue; // 工作區其餘永遠可寫（tmp 傾倒、SLUG、flow-state）
     }
     const isTest = TEST_PATH_RE.test(rel) || TEST_FILE_RE.test(rel);
     if (isTest) {
-      if (node !== 'test') return `[shiftblame] 測試碼（${rel}）已定稿（全程唯讀）；重修回 test 段（或任意→intent 重走）後建立新 commit（SKILL 寫入矩陣）`;
+      if (node !== 'test' && node !== 'build') return `[shiftblame] 測試碼（${rel}）寫入權屬 test＋build 段（實作層——test 撰寫功能測試、build 到接合點補寫整合；隨功能實作同 commit 定稿）；重修回 test 段後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；回 intent 重走（fail 回指重整）後才可寫（SKILL 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；老闆新輸入回意圖揭露經 intent 路由器路由後才可寫（SKILL 寫入矩陣）`;
     }
   }
   return null;
@@ -913,28 +901,20 @@ try {
   const raw = await readStdin();
   const input = raw.trim() ? JSON.parse(raw) : {};
   const event = input.hook_event_name || input.hookEventName || '';
-  const wtAnchor = resolveWorktreeAnchor(projectRoot(input));
-  const root = wtAnchor.root;
-  const inWorktree = wtAnchor.wt;
+  const root = projectRoot(input);
   const healthy = !root || readFlowState(root).kind !== 'invalid';
-  // 工作樹內禁 sb 治理命令：worker 在自己樹內跑 sb 會錨到 worktree 自建 flow-state——
-  // 長出無七段、無老闆邊的「直接實行」自簽車道（worktree 的 .git 是檔案，findRoot 會錨錯）。治理命令限主 repo。
-  if (inWorktree && SHELL_TOOL_RE.test(String(input.tool_name || input.toolName || '')) && /\bsb(?:\.mjs)?\s/i.test(String(input.tool_input?.command ?? input.tool_input?.cmd ?? ''))) {
-    process.stderr.write(`[shiftblame] 工作樹 ${inWorktree} 內禁跑 sb 治理命令——治理命令限主 repo（工作樹內自建 flow-state＝自簽車道）；worker 的 git 操作限自己分支，主線整合經 sb wt merge（主 repo）\n`);
-    process.exit(2);
-  }
   // 異常原檔保持原樣，不能由新增心跳把空物件／部分資料洗成有效紀錄。
   if (healthy) beatHeartbeat(root, event);
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
     // 機械事實（段位／輸入流與理解覆蓋／未審理解／停等狀態）立即回流對話，恢復依據檔案非摘要。
-    inject(SESSION_CARD + nodeLine(root) + worktreeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
+    inject(SESSION_CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, false) + holdLine(root), 'SessionStart');
   }
 
   if (event === 'UserPromptSubmit') {
     const releaseNote = healthy ? recordInput(root, input.prompt ?? '') : preservePendingInput(root, input.prompt ?? '');
-    inject(CARD + nodeLine(root) + worktreeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
+    inject(CARD + nodeLine(root) + flowLine(root) + understandingReviewLine(root, healthy) + (releaseNote ?? '') + holdLine(root), 'UserPromptSubmit'); // 異常曝光保持唯讀，原始輸入另存待恢復
   }
 
   if (event === 'Stop') {
@@ -970,6 +950,8 @@ try {
     if (usage?.loopDeny) deny(usage.loopDeny);
     const freeze = checkHoldFreeze(root, tool, cmd, input.tool_input ?? {}); // 停等凍結（主動觸發輪——寫入與推進硬擋）
     if (freeze) deny(freeze);
+    const uncovered = checkUncoveredFreeze(root, tool, cmd, input.tool_input ?? {}); // 未覆蓋即凍結（每則輸入第一步 think 由機械保證——理解宣告落流即解凍）
+    if (uncovered) deny(uncovered);
     if (SHELL_TOOL_RE.test(tool)) {
       // 層間停靠雙重鎖（繞過 checkpoint 進實作層）
       const stopover = checkLayerStopover(root, cmd);
@@ -1022,7 +1004,7 @@ try {
           ? '[shiftblame] 版號屬老闆決策——版本欄位僅在老闆明確指示版號後才可改動（SKILL §2）；其他修正照授權範圍執行。'
           : '[shiftblame] 你正在修改框架文件（skills／hooks）——框架演化屬語義變更：MUST 先意圖揭露經老闆確認後才可執行；已授權則照授權範圍執行（理解流曝光承擔）。', 'PreToolUse');
       } else if (isVerify) {
-        inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話三時點③）。', 'PreToolUse');
+        inject('[shiftblame] verify 報告 MUST 含 ## 人話 段——做了什麼／修了什麼／改了什麼（問題來源→處置→結果的因果鏈）；七判準任一不合格即判決不通過（SKILL §3 人話翻譯三關卡）。', 'PreToolUse');
       }
       process.exit(0);
     }

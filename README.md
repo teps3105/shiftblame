@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.3.0-2ea44f.svg" alt="version 2.3.0"/>
+  <img src="https://img.shields.io/badge/version-2.3.1-2ea44f.svg" alt="version 2.3.1"/>
 </p>
 
 ---
@@ -50,14 +50,13 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **提交對抗閘（對抗—修復—再對抗閉環機械化）。** 提交＝對抗時點（機制時點，非階段；所有 repo 統一）——`sb adversarial <報告檔>`：MUST 外部唯讀子代理對抗、報告落檔後引用，機械驗（可見路徑與實體位置皆在 .shiftblame/tmp 內＋判定行＋判定「通過」才可發章）。
   - `sb commitmsg` 發章只驗不消費，hooks 於實際 commit 時消費並焚章（一對一）。
   - 返工修復必然終於 commit，「修復→全綠→提交」不對抗的路徑機械上不存在；對抗 MUST 子代理，無自代介面（工具不可用即阻塞等待）。
-- **返工直通（時點①分流）。** 老闆驗收後指示即意圖檢測輸入——時點①意圖揭露必含返工性質判定（實作級／定義級→`--rerun` 直通免停靠；根本性→完整確認停靠），顯示提醒老闆當場糾正。
-  - 對抗邊與完成時點永不減免，直通留痕於完成時點曝光彙總。
+- **老闆輸入路由（intent 路由器）。** 老闆任何新輸入（含補充／修正／追加、兩時點 fail）一律回意圖揭露（shiftblame:think）——揭露後由 intent 路由器路由：定義級變更 `sb next intent` 同 ms 開新輪（計返工輪＋rewrite 載入閘）；段內修復類由 agents 自動旗標切段回指定 node，不停等不計輪；確認／開工→分發執行。
 - **兩層文件模型。** 文件↔實況對照是一等公民：永續層（docs/、SOP、ROADMAP、README、skills/）是唯一需與實況對照的文件。
   - 提交時陳述對照閘機械驗其 sb 命令／旗標引用 ↔ CLI 實況（單一真相取自 sb.mjs 源碼），引用不存在的機制即擋；MUST 級機制的行為測試附文件陳述錨（文件刪除漂移即紅燈）。
   - 永續層文件隨程式碼即時變更且文件先行——build 段先把永續層文件改到目標狀態再依文件寫實作碼，不一致回頭修文件再繼續（same-commit：改了什麼就行為什麼文件）並走與程式碼相同的流程與對抗——提交對抗的標準攻擊點含 staged 程式碼變更 vs 文件零變更正當性與註釋行為一致性。
   - 當下層（G1/G2/G3/SLUG）是開發工作文件——用後即归檔、過時無罪；查現況看永續層與實況，查脈絡才看當下層。
 - **研究／返工外部性閘。** 外部工具調用是機械底線：hooks 於 PreToolUse 偵測外部調用（WebSearch／WebFetch／webReader／web.run（web__run） 查證、Agent／spawn_agent 外部唯讀子代理）標記 `externalEvidence`。
-  - `requirement→research` 進段與 `--rerun` 返工時重置，`research→plan` 邊與返工後首個推進邊機械驗「至少一次外部調用」，零外部推不過。
+  - `requirement→research` 進段重置（回 intent 開新輪重走時重新驗），`research→plan` 邊機械驗「至少一次外部調用」，零外部推不過。
   - 規模自由（一次精準查證到完整調研皆可），大型研究（陌生領域、多方案抉擇、高風險選型）MUST 由外部唯讀子代理承擔主要調研——研究與返工以外部工具調用打底（內部自我檢驗即外部性閘擋下）。
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、pass 出口）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換需求定義→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
@@ -66,8 +65,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
   - 落地段反向回收承載檔——文件定義後於落地邊復活當裁判。任何 G2/G3 與 G1 不一致＝回 intent 開新輪由 requirement 段重定義——G1 定義權唯一。
 - **純技術裁定不外包給老闆。** repo／第一方文件／實機證據不足或矛盾、無法可靠裁定時，主對話必須立即取得一次外部子代理的自包含唯讀技術意見，複核後自行裁定；不必先反覆失敗。
   - 只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定。
-- **三時點對抗＋adversarialLog point 條目對照。** 時點①＝plan→test 放行前（對抗方向）、時點②＝build→verify 每功能判決前（對抗成果）、時點③＝每 ms 驗收 pass 後出口前（對抗收斂）——推進帶 `--adversarial` 宣告，CLI 對照 flow-state 的 adversarialLog point 條目及其新鮮度，不一致即擋；報告全文寫入 tmp。
-  - 時點③由兩個 pass 出口（`--new-ms`／`sb end`）的 CLI 檢查把關（條目晚於末次進 verify——功能循環多次判決時仍須新鮮），出口永不 `--rerun` 直通——老闆終審。
+- **兩時點對抗＋adversarialLog point 條目對照（對抗在前、老闆判定在後）。** 時點 1＝定義層放行（plan→test）前（對抗方向）、時點 2＝ms 出口前（對抗收斂成果）——推進帶 `--adversarial` 宣告，CLI 對照 flow-state 的 adversarialLog point 條目及其新鮮度，不一致即擋；報告全文寫入 tmp。
+  - 時點 2 由兩個 pass 出口（`--new-ms`／`sb end`）的 CLI 檢查把關（條目晚於末次進 verify——功能循環多次判決時仍須新鮮）；段內提交閘（實作層一每功能 commit 前）走提交對抗章（無 point），非時點編號。
   - 複核結論每項裁定綁可查證出處，反向對抗判定成立才推進。
   - 對抗 MUST 外部唯讀子代理——無自代介面：工具不可用即阻塞等待至可用；報告落檔＋`sb adversarial <報告檔>` 宣告（判定「通過」才可發章）。
   - 外援只提供輸入，不接管工作狀態或裁定；技術證據不足時另強制一次唯讀技術意見。
@@ -85,11 +84,11 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
   - 對話、工作過程與交接紀錄一律 `.shiftblame/tmp/`；G／SLUG 保留可獨立理解的定義、必要狀態與回指。save 先準備並讀回 tmp 暫存交接，再原子替換及讀回 `tmp/<slug>/handoff.md`，最後在 SLUG 留時間與路徑；resume 核對交接與實況後接續，缺檔時依正式定義重建落點。提交訊息只描述變更本身。
   - 規範溯及既往：接入與恢復時盤點舊內容及歸檔，依既有授權清理並驗證引用；受保護內容循既有路由處理，未解決項留 tmp，Git 歷史保持原樣。語義判斷納入既有對抗檢閱，hooks 提醒與 CLI 格式檢查不等於自動辨識全部違例。
 - **不開 slug 的事直接做。** 框架演化、微修或老闆指定不開 slug 的輕量變更，直接實行不建骨架；一旦開 slug，一律完整三面向制衡，無中途降級。
-- **回頭自由重修。** 成果不滿意隨時返工——fail 回 intent（零旗標、同 ms：實作級／定義級經 `--rerun` 直通重走 test→build→verify），返工疊加新 commit；開新 ms 僅經老闆 pass 出口（`--new-ms`）。
-- **假測試判返工。** 走執行層時序的測試 MUST 有真實斷言、對應 G1 驗收項或可觀察行為。
+- **老闆新輸入回意圖揭露。** 成果不滿意隨時返工——老闆任何新輸入（含兩時點 fail）回意圖揭露（shiftblame:think）經 intent 路由器路由：定義級 `sb next intent` 同 ms 開新輪（計返工輪＋rewrite 載入閘），返工疊加新 commit；段內修復類由 agents 自動旗標切段回指定 node（不停等不計輪）；開新 ms 僅經老闆 pass 出口（`--new-ms`）。
+- **假測試判返工。** 走實作層時序的測試 MUST 有真實斷言、對應 G1 驗收項或可觀察行為。
   - 無斷言／測實作細節／mock 過度／形式化湊數／規模溢出（防護手段的精確度超出其宣稱防護目標所需，SKILL §1.4）的假測試，秘書判決時判返工回測試階段。
-- **三層測試與開發循環。** test 先定義並定稿判準；build 隨相關變更執行單點測試（函式／元件／規則），到達接合點或介面／依賴變更時執行整合測試（模組協作），再經提交對抗與 commit 存檔。
-  - verify 核對當次功能證據、取得時點②對抗後判決；同 ms 還有功能時經回頭邊 `sb next intent`（零旗標）以 `--rerun` 直通開下一個功能。本 ms 功能全部完成後才執行 E2E（使用者入口到最終結果的完整流程）、整體驗收與時點③對抗，再走 pass 出口（`--new-ms`／`sb end`）。
+- **三層測試與功能迭代循環。** test 先定義並定稿判準；build 隨相關變更執行單點測試（函式／元件／規則），到達接合點或介面／依賴變更時執行整合測試（模組協作），再經段內提交閘（提交對抗＋`sb commitmsg`）以單功能單提交存檔（測試碼＋實作碼同 commit）。
+  - verify 核對當次功能證據判決（功能 AC 判定＝段內判決，非時點編號）；紅燈段內旗標切段修復（verify→build→test、build→test——不停等不計輪）；通過經提交閘回 test 接下一個功能。本 ms 功能全部完成後才進實作層二收斂期：E2E（使用者入口到最終結果的完整流程）、整體驗收與時點 2 對抗（對抗在前、老闆判定在後），pass 才走出口（`--new-ms`／`sb end`）。
   - 測試按實際範圍分類，每功能只配置必要案例；單點／整合通過不能替代 ms E2E。
 - **有效證據沿用，有因才重驗。** verify 核對證據仍適用於待驗提交，不因進段或同內容存檔而重跑。修復、變更影響或證據失效才重驗，先說明原因與最小充分範圍；同一失敗無新處置時先查原因。
   - E2E 失敗先局部修復及驗證，再重跑受影響流程。測試定稿後內容保持唯讀；實作錯誤回 build，測試定義錯誤附理由回 test。
@@ -99,33 +98,46 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **G1 是封存契約。** plan→test 放行時 CLI 將 G1 的 SHA-256 封存於 flow-state.json，後續每次推進重算核對；G2／G3 的一切改寫（含 CONFORMS 單調細化）經回 intent 開新輪至定義段執行（G1 不變時重新放行同 hash 重封存；history 留時序）。契約不足或衝突＝回 intent 開新輪重定義後重新放行。
 - **回 intent 前先清帳。** 回 intent 重走前，working tree MUST 乾淨：可保留成果先依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄。
 - **驗收使用者需求，不驗收結構幻象。** G1 每項需求使用唯一 AC-ID 與 BEHAVIOR 契約；G3 驗收表逐項排程並映射測試。CI 綠燈或結構正確不能單獨判定完成；功能判決核對當次範圍。
-  - ms 整體驗收時，全部必填 AC 須有 commit 與實際操作／觀察的 SATISFIED 行為證據（引用專案輸出以節錄快照為證）。功能與 ms 分別由時點②③對抗查核，verify 邊核對 git 一致性。
+  - ms 整體驗收時，全部必填 AC 須有 commit 與實際操作／觀察的 SATISFIED 行為證據（引用專案輸出以節錄快照為證）。功能由段內提交閘對抗查核、ms 由時點 2 對抗查核（對抗在前、老闆判定在後），verify 邊核對 git 一致性。
 - **commit 集權。** commit 一律由主對話秘書執行且必過 `sb commitmsg`（hooks 留痕硬擋）；build 段完成即存檔（commit 先於驗收）。跨 repo 提交以 `git -C <絕對路徑>` 的目標為查證錨點——印章、staged 檢查與對抗消費都對錨定 repo 生效（相對 `-C` 擋）。
 
 ## 流程概覽
 
 ```mermaid
-flowchart TD
-    Boss([老闆任何輸入]) --> Think["shiftblame:think · 全域路由（不屬於任何段）<br/>═══ 責任轉移線 ═══"]
-    Think -- 補充／修正 --> I["回 intent 同 ms 重走"]
-    Think -- 確認／開工 --> Exec["分發執行"]
-
-    subgraph Seven["七段 · 一個 ms 走一次"]
-        direction LR
-        I[intent 意圖<br/>老闆確認] --> A[requirement 需求<br/>G1] --> R[research 研究<br/>G2] --> P[plan 計畫<br/>G3＋§10＋時點①對抗]
-        P -- "放行 --boss-ok --adversarial" --> T[test 測試<br/>定稿 commit]
-        T --> B[build 實作<br/>存檔 commit]
-        B -- "時點②對抗 --adversarial" --> V[verify 驗收<br/>逐項 AC 判定＝裁判邊]
+flowchart TB
+    BOSS[老闆輸入] --> THINK[think 意圖揭露]
+    THINK --> INTENT[intent 路由器]
+    INTENT --> R
+    subgraph DEF1[定義層一 逐功能寫規劃循環·理論·旗標切段]
+        R[requirement] --> RS[research] --> P[plan]
+        P --> RS --> R
+        P -->|下一功能| R
     end
-    Exec --> Seven
-    V -- "fail 三觸發（零旗標）<br/>／下一功能（--rerun 直通）" --> I
-    V -- "pass 出口① --new-ms --boss-ok --adversarial<br/>（時點③＋前一 ms 遙測結算）" --> I
-    V -- "pass 出口② sb end --boss-ok --adversarial<br/>（時點③＋末段 ms 結算）" --> E([收尾歸檔＋archive])
+    P -->|規劃收斂| R2
+    subgraph DEF2[定義層二 整體規劃收斂循環·理論·旗標切段]
+        R2[requirement] --> RS2[research] --> P2[plan]
+        P2 --> RS2 --> R2
+    end
+    P2 -->|時點1 對抗畢·老闆pass| T
+    subgraph IMPL1[實作層一 逐功能迭代循環·實際·單功能單提交]
+        T[test] --> B[build] --> V[verify]
+        V --> B --> T
+        V -->|提交→下一功能| T
+    end
+    V -->|功能迭代完成| T2
+    subgraph CONV[實作層二 收斂期 E2E循環·實際·旗標切段]
+        T2[test] --> B2[build] --> V2[verify]
+        V2 --> B2 --> T2
+    end
+    V2 -->|時點2 對抗畢·老闆pass| DONE[done]
+    DONE -->|開新ms| INTENT
+    DONE -->|sb end| FIN[slug結束]
+    B2 -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| BOSS
 ```
 
-**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
+**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後由 intent 路由器路由：定義級變更 `sb next intent` 同 ms 開新輪，段內修復類由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
 
-**verify 判決出邊——pass 與 fail 是邊，不是節點。** 段內完成逐項 AC 判定即選邊：fail（三觸發：agent 卡住／老闆方向錯誤／驗收不過）回 intent，零旗標、同 ms 重整；pass 走兩個出口——`sb next intent --new-ms`（開下一里程碑，每 ms 遙測結算）或 `sb end`（結束 slug 收尾歸檔）。出口前每 ms 驗收 pass 後時點③對抗，兩個出口 CLI 都驗③條目新鮮；出口永不 `--rerun` 直通（老闆終審）。
+**pass 與 fail 是邊，不是節點。** 實作層二收斂期完成逐項 AC 判定與時點 2 對抗（對抗在前）即選邊：fail 視為老闆新輸入回意圖揭露經 intent 路由器路由；pass 走兩個出口——`sb next intent --new-ms`（開下一里程碑，每 ms 遙測結算）或 `sb end`（結束 slug 收尾歸檔）。兩個出口 CLI 都驗時點 2 條目新鮮——對抗在前、老闆判定在後，pass 才 `--boss-ok` 推進。
 
 讀圖規則：①沿箭頭逐段前進；②下游發現缺口，沿退回箭頭處理；③每個節點只產出自己的內容；④圖文衝突時，以權威圖為準。
 
@@ -141,7 +153,7 @@ flowchart TB
         G1["需求定義狀態 · G1<br/>主對話 · 一次定稿"] -->|向前對齊| G2["研究狀態 · G2<br/>主對話 · 外部證據打底"]
         G2 -->|向前對齊| G3["規劃狀態 · G3<br/>主對話 · 對齊推進"]
     end
-    subgraph Build["執行層 · 落地段反向回指承載檔（Z 字形）"]
+    subgraph Build["實作層 · 落地段反向回指承載檔（Z 字形）"]
         direction LR
         TST["測試狀態 · G3 落地邊<br/>主對話"] --> DEV["實作狀態 · G2 落地邊<br/>主對話"]
         DEV --> ACC["驗收狀態 · G1 裁判邊<br/>主對話"]
@@ -156,8 +168,8 @@ flowchart TB
 > - **老闆**：提出命題，決定產品語義、範圍、成本／風險容忍與授權，做最終 pass 出口（`--new-ms`／`sb end`）；不代答實作方式、API、根因、測試或證據解讀等純技術題。
 > - **秘書（主對話）**：連續承載所有工作狀態，負責意圖揭露、G1-G3、測試、實作、驗收、放行、判決、commit、路由與 pass 出口。未授權前唯讀。
 > - **定義層**：主對話依序切換需求定義、研究、規劃狀態，產出 G1、G2、G3。
-> - **執行層**：主對話依序切換測試、實作、驗收狀態，落地 G1、G2、G3；測試定稿 commit 與判決的 git 一致性核對讓同一執行者不能跨狀態偷改判準。
-> - **臨時外部子代理檢閱**：三個固定時點強制對抗（時點①放行前方向、時點②每功能判決前成果、時點③每 ms 驗收 pass 後出口前收斂）＋純技術不可可靠裁定時強制技術意見；其他高風險情境按需取得。無自代介面：子代理不可用即阻塞等待至可用。不移交工作狀態或裁定權。
+> - **實作層**：主對話依序切換測試、實作、驗收狀態，落地 G1、G2、G3；提交閘單功能單提交（測試碼＋實作碼同 commit）與判決的 git 一致性核對讓同一執行者不能跨狀態偷改判準。
+> - **臨時外部子代理檢閱**：兩時點強制對抗（時點 1 定義層放行前方向、時點 2 ms 出口前收斂——對抗在前老闆判定在後）＋段內提交閘對抗（實作層一每功能 commit 前）＋純技術不可可靠裁定時強制技術意見；其他高風險情境按需取得。無自代介面：子代理不可用即阻塞等待至可用。不移交工作狀態或裁定權。
 
 ## 三份文件
 
@@ -195,7 +207,7 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 - **雙流模型**：每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；shiftblame:think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋老闆輸入時戳新鮮度（CLI 驗）＋時點對抗。
 - `SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）。
 - **兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑。
-- 寫檔工具比對段（測試碼僅 test 段、實作碼限 build／ended）。
+- 寫檔工具比對段（測試碼 test＋build 段、實作碼限 build／ended）。
 - **staged 系統檔不入庫**：`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據；跨 repo 提交以 `git -C <絕對路徑>` 的絕對目標為錨定 repo，同一判據對錨定 repo 生效。
 - **路徑展開元規則**：一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋。
 - `git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。
@@ -240,15 +252,14 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 npm install -g <shiftblame repo>/cli
 sb init <slug>                     # 開 slug：建全骨架（flow-state＋目錄＋SLUG.md＋archive/＋開發分支自動切換）
 sb state                           # 目前節點與各下一步前置條件
-sb next test --boss-ok --adversarial  # 放行邊（§10＋時點①對抗＋adversarialLog point 條目對照＋G1 hash 封存）
-sb next verify --adversarial       # 進驗收（時點②對抗；working tree 乾淨＝實作已存檔，git 判定）
-sb next intent                     # 回頭自由：fail 回指／補充／重修／下一功能（同 ms 重走，零旗標）
-sb next test --rerun impl         # 返工直通重走（值＝impl｜definition，時點①分流——老闆邊免停靠，對抗條目照走）
-sb next intent --new-ms --boss-ok --adversarial  # pass 出口①：開下一里程碑（時點③＋前一 ms 遙測結算）
+sb next test --boss-ok --adversarial  # 時點 1 放行邊（§10＋時點 1 對抗＋adversarialLog point 條目對照＋G1 hash 封存——對抗在前老闆判定在後，pass 才推進）
+sb next verify                     # 進驗收（功能 AC 判定＝段內判決；working tree 乾淨＝實作已存檔，git 判定）
+sb next build                      # 紅燈段內修復旗標切段（不停等不計輪）
+sb next test                       # 提交閘判決通過回 test 接下一個功能（旗標切段）
+sb next intent                     # 老闆新輸入回意圖揭露經 intent 路由器路由：定義級同 ms 開新輪
+sb next intent --new-ms --boss-ok --adversarial  # pass 出口：開下一里程碑（時點 2＋前一 ms 遙測結算）
 sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（三問；開新 ms 與 pass 出口前機械驗，無文件不擋）
-sb wt open <name> --task "<任務卡>" # 多代理：建 worktree 派 worker（research/build 段）——report→verify→merge→done 收線
-sb wt merge <name>                 # ready 樹 diff 套用回主 repo（拒測試碼 diff；主線提交閘接管；非同步流式不等全體）
-sb end --boss-ok --adversarial     # pass 出口②：結束 slug → 收尾歸檔＋末段 ms 產出遙測（diff／對抗／計數／耗時）
+sb end --boss-ok --adversarial     # pass 出口：結束 slug → 收尾歸檔＋末段 ms 產出遙測（diff／對抗／計數／耗時）
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
@@ -264,7 +275,7 @@ sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕�
 
 **shiftblame:think 是唯一閘口**——所有輸入先過 shiftblame:think 理解、對齊、分發，下列指令是 shiftblame:think 分發後的執行目標，老闆不直達：
 
-- [`shiftblame:think`](skills/think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回 intent 同 ms 重走；確認／開工→分發執行。
+- [`shiftblame:think`](skills/think/SKILL.md)——全域路由（唯一閘口，不屬於任何段）；所有輸入第一步路由回此：補充／修正→回意圖揭露經 intent 路由器路由（定義級同 ms 開新輪）；確認／開工→分發執行。
 - [`shiftblame:resume`](skills/resume/SKILL.md)——繼續未完成的 slug／nnn，重走三面向制衡。
 - [`shiftblame:save`](skills/save/SKILL.md)——記錄工作落點到 <repo>/.shiftblame/tmp/<slug>/handoff.md（SLUG 只留狀態與回指），供 shiftblame:resume 恢復。
 - [`shiftblame:dice`](skills/dice/SKILL.md)——依證據選擇最小充分範圍，丟棄未提交變更、當前功能、當前 ms 或整個 slug。
@@ -287,7 +298,7 @@ shiftblame/                         # plugin 套件根（repo 根）
     │   │   ├── REQUIREMENT.md         # 定義層
     │   │   ├── RESEARCH.md
     │   │   ├── PLAN.md
-    │   │   ├── VERIFY.md        # 執行層
+    │   │   ├── VERIFY.md        # 實作層
     │   │   ├── BUILD.md
     │   │   └── TEST.md
     │   └── assets/                # 範本與固定資產
@@ -310,8 +321,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 │       ├── G1.md                  # 需求／驗收標準（requirement 段產出）
 │       ├── G2.md                  # 技術分析（研究階段產出）
 │       └── G3.md                  # 實作計畫（規劃階段產出）
-├── tmp/                           # 對話、工作過程、交接紀錄及執行證據落點；專案工具鏈日誌／快取不收編，只準寫入不準清理
-├── worktree/                      # 多代理並行沙箱（git worktree：research 實證／build 並行 worker）——worker 零主線權，主線整合經 sb wt merge（主 repo 提交閘承載）；收工即清（老闆清理 .shiftblame/ 前先移除活工作樹，殘留髒註冊以 git worktree prune 修）
+├── tmp/                           # 對話、工作過程、交接紀錄及執行證據落點；research／build 段受治理寫入子代理的工作區（產物落 tmp，主對話整合回當前分支）——子代理零 repo 寫入權；專案工具鏈日誌／快取不收編，只準寫入不準清理
 └── archive/
 ```
 
