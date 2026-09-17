@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.3.1');
+assert.equal(manifest.version, '2.3.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.3.1"/);
+assert.match(skill, /version: "2.3.2"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -150,25 +150,14 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /cmdStopReport/, 'CLI 停點申報命
 assert.match(skill, /診斷與狀態修復自由/, 'SKILL 記載異常模式修復自由（唯讀白名單已除）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /修復是異常模式的目的/, 'hooks 異常模式政策：修復自由＋封閉 git 寫入／sb 流程命令');
 
-// 舊機制詞零殘留（「唯開工解鎖／獨立成行／老闆詞印章 hooks 偵測」；SKILL／README／references／sb.mjs／hooks）
-const legacy = ['release→test', 'verdict→', 'converge→', 'ms-done', 'sb lock', 'sb amend', 'sb report', /sb-do(?!cs)/.source, 'sb-start', 'sb-end', 'sb-commit', '--direct', 'direct-change', 'USER_OBSERVABLE', '預設直接修正',
-  '獨立成行', '唯老闆「開工」解鎖', '唯「開工」解鎖', '老闆詞印章', 'bossInputs', '--self-attack', '身分切換自攻', '切換身份', '切換身分', '候選詞', '否定共現', 'CONSENT_WORDS', '非否定候選',
-  '自寫候選', '候選內判讀', '詞集天險', '候選標記', '機械過濾', '機械授權過濾',
-  '薄研究', '薄規劃', '薄產出', '薄流程',
-  'sb unlock --quoted', 'sb unlock --stamp', '對話鎖', '令行靜止', 'thinkRouted', '消費即失效', '逐字錨定', '授權印章', '→audit→', 'SLUG 對照', '時點對抗欄', 'snapshotRev', '基線凍結', 'rev/r', 'unlockLog', '時序元規則', '收尾保鮮', '文件保鮮', '保鮮', '一次定律',
-  '--rerun', '時點①', '時點②', '時點③', '時點對抗①', '執行層', '回頭自由', '回指重整'];
+// 掃描檔案清單（歷史書寫禁令＋負向條文詞掃描的承載面；下沉機制檔 MECHANISMS 同批把關）
 const files = ['README.md', '.codex-plugin/plugin.json', 'hooks/hooks.json', 'skills/shiftblame/SKILL.md', 'skills/think/SKILL.md', 'skills/resume/SKILL.md', 'skills/save/SKILL.md', 'skills/dice/SKILL.md', 'skills/shiftblame/assets/SLUG.md', 'skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md', 'skills/shiftblame/assets/DOCS.md', 'cli/bin/sb.mjs', 'hooks/shiftblame-guard.mjs',
   'skills/shiftblame/references/REQUIREMENT.md', 'skills/shiftblame/references/RESEARCH.md', 'skills/shiftblame/references/PLAN.md', 'skills/shiftblame/references/STRUCTURE.md', 'skills/shiftblame/references/AUDIT.md',
-  'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md'];
-for (const f of files) {
-  const text = read(...f.split('/'));
-  for (const w of legacy) {
-    assert.equal(text.includes(w), false, `${f} 殘留舊詞：${w}`);
-  }
-}
+  'skills/shiftblame/references/TEST.md', 'skills/shiftblame/references/BUILD.md', 'skills/shiftblame/references/VERIFY.md', 'skills/shiftblame/references/MECHANISMS.md'];
 
 // 歷史書寫禁令：repo 只寫當下事實——版本編年史、事件態裁定、死機制敘述的居所是 .shiftblame/ 與 git
-// （版本欄與 revision: 行是當前版本同步聲明，由版號一致斷言對照；測試對舊機制詞的指涉由 legacy 詞表承擔）
+// （版本欄與 revision: 行是當前版本同步聲明，由版號一致斷言對照。防舊機制復活由消融矩陣＋現行正向錨＋對抗審查承擔，
+//  歷史由 git 承擔——以負向禁詞清單累積歷史殘留替代重新設計屬規則堆疊，歷史禁詞表已退役）
 import { readdirSync } from 'node:fs';
 const VER_PAREN = new RegExp('\\uff08' + '[^\\uff09\\u00a7]*' + '1' + '\\.' + '\\d'); // 中文括號內含版本號即編年史（§ 章節引用除外；拼接構造避免本檔自命中）
 const CHRONICLE = ['老闆已否決', '老闆已拍板', '老闆裁定：', '老闆拍板：', '撤鎖範式', '前既有', '實事故'];
@@ -180,7 +169,7 @@ for (const f of [...files, ...testFiles.filter((p) => p !== 'cli/test/sb-agent-g
     assert.equal(text.includes(w), false, `${f} 殘留歷史書寫：${w}`);
   }
 }
-// 禁令承載者自查（本檔）：版本括號樣式零殘留（拼接 regex 零自指；詞面由 legacy 檔清單邏輯排除）
+// 禁令承載者自查（本檔）：版本括號樣式零殘留（拼接 regex 零自指）
 assert.equal(read('cli', 'test', 'sb-agent-governance.mjs').search(VER_PAREN), -1, 'governance 自身零版本編年史');
 
 // 條文正向化：治理文件一律「做什麼」的正向形態——負向條文詞零殘留（機械防復發；
@@ -194,7 +183,7 @@ for (const f of files.filter((p) => p.endsWith('.md') || p.endsWith('.json'))) {
 
 // references 與 assets 版號（revision: 行＝當前版本同步聲明，與 manifest 一致）
 for (const [dir, file] of [
-  ...['REQUIREMENT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md', 'STRUCTURE.md', 'AUDIT.md'].map((f) => ['references', f]),
+  ...['REQUIREMENT.md', 'RESEARCH.md', 'PLAN.md', 'TEST.md', 'BUILD.md', 'VERIFY.md', 'STRUCTURE.md', 'AUDIT.md', 'MECHANISMS.md'].map((f) => ['references', f]),
   ...['SLUG.md', 'SOP.md', 'ROADMAP.md', 'DOCS.md'].map((f) => ['assets', f]),
 ]) {
   const doc = read('skills', 'shiftblame', dir, file);

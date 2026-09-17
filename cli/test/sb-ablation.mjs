@@ -356,6 +356,23 @@ ablation('陳述對照閘（commitmsg 內永續層機制引用驗）', () => {
   assert.equal(payload(neu), 0, 'ablated：拆掉對照閘後過時假設入庫放行');
 });
 
+ablation('註釋座標結構樣式閘（staged 新增行掃——框架機制檔豁免）', () => {
+  const neu = neutralize(SB, [['    if (coordHits.length) die(', '    if (coordHits.length && false) die(']]);
+  const staged = (script, path, content) => {
+    const r = mkSandbox({ state: { node: 'build', adversarialAt: new Date().toISOString(), adversarialConsumed: false }, git: true });
+    mkdirSync(dirname(join(r, path)), { recursive: true });
+    writeFileSync(join(r, path), content);
+    spawnSync('git', ['add', path], { cwd: r });
+    const h = cliRun(script, r, 'commitmsg', 'feat: 消融實驗的提交訊息長度合格');
+    rmSync(r, { recursive: true, force: true });
+    return h.status;
+  };
+  assert.equal(staged(SB, 'src.js', '// 時點②修復的註釋座標\nconst a = 1;\n'), 1, 'intact：staged 註釋含時點座標被擋');
+  assert.equal(staged(SB, 'src.js', '// 第 3 輪重寫的遺留說明\nconst a = 1;\n'), 1, 'intact：staged 註釋含輪次座標被擋');
+  assert.equal(staged(SB, 'hooks/x.js', '// 時點②修復註釋（框架機制檔講流程語言正當）\n'), 0, 'intact：框架機制檔路徑豁免');
+  assert.equal(staged(neu, 'src.js', '// 時點②修復的註釋座標\nconst a = 1;\n'), 0, 'ablated：拆掉座標掃描後流程座標入庫放行');
+});
+
 
 ablation('輪次計數 countRev（零檔案寫入）', () => {
   const neu = neutralize(SB, [['function countRev(st) {', 'function countRev(st) {\n  return null; // ABLATED']]);

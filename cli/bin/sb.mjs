@@ -739,7 +739,7 @@ function cmdInitMain(slugArg) {
   ]);
 }
 
-// sb stop-report：停點申報（停點偵測的合法停點載體，SKILL §1.10）——活動流程中停下前申報具體待決。
+// sb stop-report：停點申報（停點偵測的合法停點載體，SKILL §1.12）——活動流程中停下前申報具體待決。
 // 機械只驗「活動態＋實質問題（≥10 字）」，真待決 or 偷懶由曝光＋老闆終審承擔；下次推進（sb next）即清。
 function cmdStopReport(question) {
   const q = String(question ?? '').replace(/\s+/g, ' ').trim();
@@ -826,7 +826,7 @@ function cmdNext(target, opts) {
   if (problems.length) die(problems);
   const prev = st.node;
   st.node = target;
-  delete st.stopReport; delete st.stopBlockedAt; // 工作已續行——停點申報與擋停自限失效（停點偵測，SKILL §1.10）
+  delete st.stopReport; delete st.stopBlockedAt; // 工作已續行——停點申報與擋停自限失效（停點偵測，SKILL §1.12）
   // 進研究段重置——舊查證不沿用（fail-closed）；回 intent 開新輪重走時重新驗
   if (prev === 'requirement' && target === 'research') st.externalEvidence = null;
   if (prev === 'plan' && target === 'test') {
@@ -1124,6 +1124,22 @@ function cmdCommitmsg(msg) {
     const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
     if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
+    // 註釋座標結構樣式掃描（SKILL §3 註釋紀律＋§7 同源紀律的機械下限）：
+    // staged diff 新增行（+ 行）掃小而穩定的座標結構樣式——時點圈號、時點 N、第 N 輪、兩位以上輪次代號；
+    // 框架機制檔（hooks/、cli/、skills/、.codex-plugin/、README.md）豁免——框架本體講流程語言正當。
+    // 樣式集是字元結構下限（r 變數命名等誤傷屬如實標註天花板），語義級由提交對抗（攻擊點清單）與老闆抽查承擔。
+    const MECH_PATH = /^(?:hooks\/|cli\/|skills\/|\.codex-plugin\/|README\.md)/;
+    const COORD_STYLE = /[①②③④⑤⑥⑦⑧⑨⑩]|時點\s*[0-9０-９]|第\s*[0-9０-９一二三四五六七八九十]+\s*輪|\br\d{2,}\b/;
+    const coordHits = [];
+    const diff = execSync('git -c core.quotePath=false diff --cached -U0 --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    let curFile = null;
+    for (const line of diff.split('\n')) {
+      const fh = line.match(/^\+\+\+ b\/(.+)$/);
+      if (fh) { curFile = fh[1]; continue; }
+      if (!curFile || MECH_PATH.test(curFile)) continue;
+      if (line.startsWith('+') && !line.startsWith('+++') && COORD_STYLE.test(line)) coordHits.push(`${curFile}：${line.slice(1, 60).trim()}`);
+    }
+    if (coordHits.length) die([`staged 新增行含流程座標結構樣式（註釋紀律——輪次／時點座標屬 .shiftblame/tmp 與 G 檔，註釋只描述代碼行為本身）`, ...coordHits.slice(0, 8)]);
     // 陳述對照閘：文件與實況對照是一等公民——永續層文件（docs/、README、skills/）中
     // 可機械對照的陳述（sb 命令引用／sb 命令行內的 --旗標）↔ sb.mjs 實際命令集/旗標集（源碼單一真相）。
     // 引用不存在的機制即擋——過時假設與虛空捏造的機械防線。
