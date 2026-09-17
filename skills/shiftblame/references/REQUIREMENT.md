@@ -1,10 +1,10 @@
 ---
 name: 需求定義
-revision: 2.3.2
+revision: 2.3.3
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
-> **G1 定義邊（定義層工作段）**。 requirement 段＝需求定義（建立在經查證的現況事實上——查證過程落 tmp，RAM/ROM）。主對話依 shiftblame:think 已確認的完整語義，在經查證的現況事實上產出 G1（需求／驗收契約）並直接定稿，不另問確認。此狀態只寫 `<repo>/.shiftblame/` 的 G1 與必要查證結果，不碰 repo 實作。G1 定稿後由 research、plan 段向前對齊；G2/G3 與 G1 不一致時回 intent 開新輪由 requirement 段重新定義，語義出入由 G1 唯一裁定。G1 閉環＝requirement（定義）＋verify（裁判：逐項 AC 判定——verify 判決出 fail／pass 兩種邊，fail 回 intent 重定義、pass 走出口，SKILL §0）。§10 於放行前一次核對。
+> **G1 定義邊（定義層工作段）**。 **段靈魂——把意圖翻譯成標的方故事**：沒有故事就沒有「對」的定義——AC 是故事的可觀察切片，不是老闆命題的字面轉錄。requirement 段＝需求定義（建立在經查證的現況事實上——查證過程落 tmp，RAM/ROM）。主對話依 shiftblame:think 已確認的完整語義，在經查證的現況事實上產出 G1（需求／驗收契約）並直接定稿，不另問確認。此狀態只寫 `<repo>/.shiftblame/` 的 G1 與必要查證結果，不碰 repo 實作。G1 定稿後由 research、plan 段向前對齊；G2/G3 與 G1 不一致時回 intent 開新輪由 requirement 段重新定義，語義出入由 G1 唯一裁定。G1 閉環＝requirement（定義）＋verify（裁判：逐項 AC 判定——verify 判決出 fail／pass 兩種邊，fail 回 intent 重定義、pass 走出口，SKILL §0）。§10 於放行前一次核對。
 
 - **產出**：G1 定義區：經查證的現況事實＋What、Why、正向範圍（由需求與驗收契約完備界定，補集自然排除）、以唯一 AC-ID（BDD 行為規格）表達的原始使用者驗收契約（回指區由 verify 收斂寫入）
 - **制衡**：G2 與 G1 需求一一對應；G3 實作計畫須對應 G1 驗收；本 ms（里程碑）的價值成立

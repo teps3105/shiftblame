@@ -48,7 +48,7 @@ const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|�
 // 收斂期 E2E 後時點 2 老闆 pass 出口（verify→intent 帶 --new-ms 開新 ms，或 sb end 結束 slug）。 ————
 
 const FLOW = {
-  intent:  { next: ['requirement'], desc: '意圖段：意圖揭露路由起點——老闆新輸入經 intent 路由器路由（定義級開新輪／pass 出口落點）' },
+  intent:  { next: ['requirement'], desc: '意圖揭露載體（非流程段）：意圖揭露路由起點——老闆新輸入經 intent 路由器路由（定義級開新輪／pass 出口落點）' },
   requirement: { next: ['research'], desc: 'G1 定義邊：經查證的現況事實＋BDD 行為規格' },
   research:{ next: ['plan', 'requirement'], desc: 'G2 定義邊：技術分析（外部證據打底）；回 requirement＝旗標切段（逐功能循環／CONFORMS 補正——不計返工輪，進段重置外部證據）' },
   plan:    { next: ['test', 'research', 'requirement'], desc: 'G3 定義邊：驗收排程＋實作計畫＋時點 1 放行準備；回 research／requirement＝旗標切段（逐功能循環「下一功能」／CONFORMS 補正——不計返工輪）' },
@@ -101,7 +101,8 @@ const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`
 const usage = (code = 2) => {
   console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
 
-段鏈（兩層兩段式）：定義層 intent → requirement → research → plan（逐功能規劃循環→規劃收斂）
+意圖揭露＋六段（兩層兩段式）：老闆輸入經意圖揭露（intent＝揭露的機械載體，非流程段）
+      → 定義層 requirement → research → plan（逐功能規劃循環→規劃收斂）
       →時點 1 對抗＋老闆 pass→ 實作層 test → build → verify（逐功能：提交閘 commit 回 test 接下一功能；
       紅燈段內修復旗標切段 build→test、verify→build）→ 收斂期 E2E →時點 2 對抗＋老闆 pass→ 出口
       （pass 出口：sb next intent --new-ms 開下一 ms，或 sb end 結束 slug）
@@ -815,7 +816,7 @@ function cmdNext(target, opts) {
   const st = readJson(STATE_FILE);
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——出口同 pass（--new-ms／end），重修走 intent；推進寫檔即自然遷移
   if (st.node === 'ended' || !(st.node in FLOW)) die([`目前狀態 ${st.node ?? '（無）'} 不可推進——slug 已結束或狀態檔不屬於任何段`]);
-  if (!(target in FLOW)) die([`未知段「${target}」。七段：${Object.keys(FLOW).join(' → ')}`], 2);
+  if (!(target in FLOW)) die([`未知段「${target}」。流程節點：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
   // 迴圈升級（escalatedAt／escalations）屬純觀測——不凍結推進：升級的自動回 intent 由 hooks 承擔（不凍結不停擺，
@@ -956,7 +957,7 @@ function cmdSopreview(answers) {
   const q = String(answers ?? '').replace(/\s+/g, ' ').trim();
   if ([...q].length < 10) die(['審查留痕須附三問結論一行（≥10 字）——「審了」不是結論：每問的判斷（基質可答？元行為證據？仍被觸發？）寫進留痕']);
   const current = requireHealthyState();
-  if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效七段流程（直接實行紀錄無 ms 邊界）']);
+  if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效 slug 流程（直接實行紀錄無 ms 邊界）']);
   const st = current.state;
   if (st.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後留痕']);
   const hasDocs = existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'));
@@ -1070,7 +1071,7 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> [--point 1|2]（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
   const current = requireHealthyState();
   if (current.state?.understandingHold) die(['理解停等尚未解除——不得宣告對抗或發章']);
-  if (point && current.kind !== 'active') die(['時點對抗需要有效七段流程；不開 slug 的直接實行只宣告提交對抗，不得偽造段位']);
+  if (point && current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行只宣告提交對抗，不得偽造段位']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());

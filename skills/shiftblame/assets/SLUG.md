@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.3.2
+revision: 2.3.3
 ---
 # SLUG — `<slug>`
 
@@ -39,7 +39,7 @@ revision: 2.3.2
 
 ## 4. 目前段與進度
 
-只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。合法段與七段一一對應：`intent／requirement／research／plan／test／build／verify`。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（定義層放行）pass 才 `--boss-ok` 放行；時點 2（ms 出口前）pass 才走出口（`sb next intent --new-ms`／`sb end`，皆帶 --boss-ok＋--adversarial）。
+只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。流程節點對應**意圖揭露＋六段**：`intent` 是意圖揭露的機械載體（流程之因的狀態位，非流程段），六段＝`requirement／research／plan／test／build／verify`（意圖的手段鏈）。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（定義層放行）pass 才 `--boss-ok` 放行；時點 2（ms 出口前）pass 才走出口（`sb next intent --new-ms`／`sb end`，皆帶 --boss-ok＋--adversarial）。
 
 > SLUG 是 ROM（收斂產出）——對抗產物（時點對抗記錄、攻擊點、修復輪次）屬邊的暫存（RAM），落 `.shiftblame/tmp/` 與 flow-state（adversarialLog），不寫入本檔。
 

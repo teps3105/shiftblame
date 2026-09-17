@@ -13,14 +13,14 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.3.2-2ea44f.svg" alt="version 2.3.2"/>
+  <img src="https://img.shields.io/badge/version-2.3.3-2ea44f.svg" alt="version 2.3.3"/>
 </p>
 
 ---
 
 ## 這是什麼
 
-shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時序進程——七段流程 `intent → requirement → research → plan → test → build → verify`（verify 判決出 fail／pass 兩種邊），主對話秘書連續承載意圖、需求、研究、計畫、測試、實作與驗收。完整權威圖與讀圖規則位於 [`skills/shiftblame/SKILL.md`](skills/shiftblame/SKILL.md)；本 README 是查詢入口，機制細節以 SKILL 為準。
+shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時序進程——**意圖揭露＋六段流程** `requirement → research → plan → test → build → verify`（intent 是意圖揭露的機械載體、流程之因；六段是實現意圖的手段鏈，verify 判決出 fail／pass 兩種邊），主對話秘書連續承載意圖、需求、研究、計畫、測試、實作與驗收。完整權威圖與讀圖規則位於 [`skills/shiftblame/SKILL.md`](skills/shiftblame/SKILL.md)；本 README 是查詢入口，機制細節以 SKILL 為準。
 
 核心原則：
 
@@ -29,7 +29,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
   - 未恢復前診斷與狀態修復自由（唯讀查證、修復腳本、flow-state／tmp 寫入——修復是異常模式的目的）；對抗宣告、提交與 git 寫入等待恢復，正式文件同樣等待恢復。
   - 合法的不開 slug 直接實行仍保留，狀態成功不等於批准。
 
-- **段-檔承載與輪內單向。** 七段由四份文件承載成四條閉環軸——SLUG（intent 入口＋ms 進度與定案）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。
+- **段-檔承載與輪內單向。** 意圖與六段由四份文件承載成四條閉環軸——SLUG（intent 入口＋ms 進度與定案）、G1（requirement 定義＋verify 裁判）、G2（research 定義＋build 落地）、G3（plan 定義＋test 落地）；推進呈 Z 字形，落地段反向回指承載檔（test→G3 驗收排程、build→G2 技術方案、verify→G1 逐項 AC 判定）。
   - 輪內單向定律：每輪 requirement→research→plan 單向一次定稿；修正＝回 intent 開新輪（輪次計數記 flow-state，時序由 history 承擔；歷史不可變性由 git 承擔）。
   - requirement 段建立在經查證的現況事實上（查證過程落 tmp）；G1 需求以 BDD 行為規格立法（Given/When/Then＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值）——字面研究死路。
   - G 檔寫入權分區（定義區：G1→requirement／G2→research／G3→plan；回指區：G1←verify 判定／G2←build 偏離／G3←test 映射；放行時 CLI 對定義區 hash 封存）——跨區（落地段改定義區）＝綁架上游死路。
@@ -61,7 +61,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **決策權中央集權。** 所有判決（放行、合格/返工、commit、路由、reset、pass 出口）由主對話秘書獨佔；臨時檢閱意見只作輸入。
 - **秘書是唯一持久角色與階段承載者。** 主對話連續切換需求定義→研究→規劃→測試→實作→驗收等工作狀態；狀態不是身份或委派邊界，因此不因流程推進反覆切換上下文。
 - **階段完成不是停點。** 主對話吸收每段產出、更新 `Goal／Core／Verified／Open／Next` 並立即續跑。局部綠燈、壓縮將至與老闆沉默都不授權停止；進度回報不等於 final。
-- **段-檔承載閉環（Z 字形）。** 七段由四份文件承載：SLUG 承載 intent 入口與 ms 進度／定案；G1 閉環＝requirement（定義）＋verify（裁判——逐項 AC 判定）；G2 閉環＝research（定義）＋build（落地——實作回指 G2）；G3 閉環＝plan（定義）＋test（落地——測試碼回指驗收排程）。
+- **段-檔承載閉環（Z 字形）。** 意圖與六段由四份文件承載：SLUG 承載 intent 入口與 ms 進度／定案；G1 閉環＝requirement（定義）＋verify（裁判——逐項 AC 判定）；G2 閉環＝research（定義）＋build（落地——實作回指 G2）；G3 閉環＝plan（定義）＋test（落地——測試碼回指驗收排程）。
   - 落地段反向回收承載檔——文件定義後於落地邊復活當裁判。任何 G2/G3 與 G1 不一致＝回 intent 開新輪由 requirement 段重定義——G1 定義權唯一。
 - **純技術裁定不外包給老闆。** repo／第一方文件／實機證據不足或矛盾、無法可靠裁定時，主對話必須立即取得一次外部子代理的自包含唯讀技術意見，複核後自行裁定；不必先反覆失敗。
   - 只有產品語義、G1 成功集合、範圍、成本／風險容忍或新授權才交由老闆決定。

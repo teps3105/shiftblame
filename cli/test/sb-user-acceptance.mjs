@@ -42,7 +42,7 @@ assert.equal(run('init', 'demo').status, 1, '既有工作區重跑 init 擋（�
 
 assert.equal(state().node, 'intent');
 
-// 老闆新輸入回意圖揭露：intent 自身不可回（無意義），其他段可。先走七段——
+// 老闆新輸入回意圖揭露：intent 自身不可回（無意義），其他段可。先走六段——
 // intent→requirement：--boss-ok 邊（老闆決策邊 MUST 留痕）
 assert.match(run('next', 'requirement').stderr, /MUST 帶 --boss-ok/);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
