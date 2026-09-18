@@ -13,13 +13,13 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.4.2');
+assert.equal(manifest.version, '2.5.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.4.2"/);
+assert.match(skill, /version: "2.5.0"/);
 
-// 2.4.2——輸出形狀（人話契約）與老闆章錨定本次對抗條目
+// 輸出形狀（人話契約）與老闆章錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
-assert.match(read('skills', 'shiftblame', 'references', 'MECHANISMS.md'), /輸出形狀（2\.4\.2）/);
+assert.match(read('skills', 'shiftblame', 'references', 'MECHANISMS.md'), /輸出形狀/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /advEntryAt/, 'bossFresh 對抗邊老闆章錨定本次對抗條目（舊輸入不得冒名 pass 章）');
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
