@@ -62,8 +62,8 @@ const projectRoot = (input) => {
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 shiftblame:think（全域入口，不屬於任何段）；揭露第一動——六欄理解立即呈現（先跑內部機制再揭露＝溝通摩擦）；未定案必問（老闆決策域的開放問題明確列出提問停等，沉默≠批准，靜默自裁＝越權）；無歧義即執行。未覆蓋即凍結：任何新輸入未經帶 args 的 think 理解宣告覆蓋前，hooks 硬擋寫入類與流程推進——第一步 think 由機械保證，不是意識到才補路由。新需求主動問走 main（四步：意圖揭露→迭代實作→對抗＋提交閘→老闆判 pass/fail）還是開 slug（管理文件＋<type>/<slug> 分支兩層兩段式六段流程）；免問例外——已有活動 slug（續 slug）、純問題類（直接答）、老闆已明確指定。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪（計返工輪＋rewrite 載入閘）、段內修復自動旗標切段；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。收斂定案權在老闆。',
-  '②兩層兩段式（段鏈）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗在前、老闆判定在後（pass 才 requirement→research 推進——審意圖→需求翻譯）；plan→test 機械推進（零審核）。實作層 test→build→verify——逐功能：提交閘 commit（單功能單提交，測試碼＋實作碼同 commit）回 test 接下一功能；收斂期 E2E 後時點 2 對抗在前、老闆判定在後（驗收回指意圖）——pass 出口 next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由；段內修復自動旗標切段不停等不計輪。前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗條目與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
-  '③兩時點對抗（對抗在前、老闆判定在後；審核資源前移需求與驗收兩接縫，中鏈零審核）：時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 能否從行為矩陣還原一列、翻譯保真）；時點 2＝ms 出口（--new-ms／sb end）前——驗收回指意圖（測試綠但 AC 從行為矩陣還原不出＝假綠燈；CLI 對兩出口驗新鮮度）。--adversarial＋adversarialLog point 條目對照（--point 1／2；新鮮度＝晚於同邊上次推進），不一致即擋；中鏈（research→plan→test→build→verify）僅機械格式閘。',
+  '②兩層兩段式（段鏈）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗在前、老闆判定在後（pass 才 requirement→research 推進——審意圖→需求翻譯）；plan→test 機械推進（零審核）。實作層 test→build→verify——逐功能：提交閘 commit（單功能單提交，測試碼＋實作碼同 commit）回 test 接下一功能；全部功能完成後時點 2 對抗在前、老闆判定在後（build→verify 邊——審驗收資格：GWT 回指意圖、假綠燈）；verify＝真驗收執行——G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；驗收完成老闆終審 pass 出口 next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok——終審章，對抗已在進段前）。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由；段內修復自動旗標切段不停等不計輪。前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗條目與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
+  '③兩時點對抗（對抗在前、老闆判定在後；審核資源前移需求與驗收兩接縫，中鏈零審核）：時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 能否從行為矩陣還原一列、翻譯保真）；時點 2＝build→verify 邊（2.4.1 前移）——審驗收資格：GWT 回指意圖、假綠燈（測試綠但 AC 從行為矩陣還原不出＝綠燈無效）；出口（--new-ms／sb end）＝老闆看行為證據終審（--boss-ok，對抗已在進段前，出口不重驗對抗）。--adversarial＋adversarialLog point 條目對照（--point 1／2；新鮮度＝晚於同邊上次推進），不一致即擋；中鏈（research→plan→test→build）僅機械格式閘。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；受治理寫入子代理的工作落點＝.shiftblame/tmp/（零 repo 寫入權，主對話依其結果整合回當前分支）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
@@ -99,7 +99,7 @@ function nodeLine(root) {
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫＋§10 一致核對；plan→test 機械推進（零審核——時點 1 已於 requirement→research 承載）';
-    if (st.node === 'verify') hint = '——實作層：功能 AC 判定＝段內判決（紅燈旗標切段修復）；時點 2 對抗（驗收回指意圖）在前、老闆判定在後——pass 出口 next（--new-ms）或 end；fail＝老闆新輸入回意圖揭露——判決紀錄寫 G1 回指區';
+    if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；驗不過 fail＝老闆新輸入回意圖揭露（修復旗標切段）；驗收完成老闆終審 pass 出口 next（--new-ms）或 end';
 
     let sopNote = '';
     try {
@@ -385,16 +385,16 @@ function understandingReviewLine(root, mark = true) {
   } catch { return ''; }
 }
 
-// 老闆決策邊雙重鎖：雙邊（intent→requirement／requirement→research＝時點 1）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
-// 時點 1＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復走旗標切段（test→build→verify 迴圈內），不經此雙邊
+// 老闆決策邊雙重鎖：三邊（intent→requirement／requirement→research＝時點 1／build→verify＝時點 2）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
+// 兩時點＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復走旗標切段（test→build→verify 迴圈內），不經此三邊
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|research|verify)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const edge = { intent: 'requirement', requirement: 'research' }[st.node];
-    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/)?.[1];
+    const edge = { intent: 'requirement', requirement: 'research', build: 'verify' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research|verify)\b/)?.[1];
     if (edge && edge === target) {
       return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗條目不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
     }

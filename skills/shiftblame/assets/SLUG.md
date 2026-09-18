@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.4.0
+revision: 2.4.1
 ---
 # SLUG — `<slug>`
 
@@ -39,7 +39,7 @@ revision: 2.4.0
 
 ## 4. 目前段與進度
 
-只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。流程節點對應**意圖揭露＋六段**：`intent` 是意圖揭露的機械載體（流程之因的狀態位，非流程段），六段＝`requirement／research／plan／test／build／verify`（意圖的手段鏈）。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（requirement→research 邊，審意圖→需求翻譯）pass 才 `--boss-ok` 推進；時點 2（ms 出口，驗收回指意圖）pass 才走出口（`sb next intent --new-ms`／`sb end`，皆帶 --boss-ok＋--adversarial）；中鏈（research→plan→test）機械推進零審核。
+只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。流程節點對應**意圖揭露＋六段**：`intent` 是意圖揭露的機械載體（流程之因的狀態位，非流程段），六段＝`requirement／research／plan／test／build／verify`（意圖的手段鏈）。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（requirement→research 邊，審意圖→需求翻譯）pass 才 `--boss-ok` 推進；時點 2（build→verify 邊，審驗收資格：GWT 回指、假綠燈）pass 才 `sb next verify --boss-ok --adversarial` 推進真驗收；真驗收完成老闆終審 pass 走出口（`sb next intent --new-ms`／`sb end`，帶 --boss-ok 終審章——不重驗對抗）；中鏈（research→plan→test）機械推進零審核。
 
 > SLUG 是 ROM（收斂產出）——對抗產物（時點對抗記錄、攻擊點、修復輪次）屬邊的暫存（RAM），落 `.shiftblame/tmp/` 與 flow-state（adversarialLog），不寫入本檔。
 
@@ -51,15 +51,15 @@ revision: 2.4.0
 
 ### 定案索引（同 slug 各 ms 一行式定案——跨 ms 參照載體）
 
-> 時點 2 老闆 pass 後、走出口前由秘書寫入（SKILL §1.7.1）；同 ms 重修後再次 pass 出口＝以 `<nnn>` 為鍵覆寫原行。摘要限指路級（不含參數、數值、承諾）；索引與 G 檔衝突時以 G 檔為準。§9 載入與 requirement／research 段參照義務的標的。
+> 真驗收終審 pass 後、走出口前由秘書寫入（SKILL §1.7.1）；同 ms 重修後再次 pass 出口＝以 `<nnn>` 為鍵覆寫原行。摘要限指路級（不含參數、數值、承諾）；索引與 G 檔衝突時以 G 檔為準。§9 載入與 requirement／research 段參照義務的標的。
 
 | `<nnn>` | 語義邊界（≤30 字） | 選型／架構決策（≤30 字） | G 檔路徑 |
 |---------|---------------------|--------------------------|----------|
 | （首 ms 尚無定案——本 ms 驗收 pass 後寫入首行） | | | |
 
-### 收斂執行記錄（同 slug 各 ms 一行式執行結果——秘書於時點 2 老闆 pass 後、出口前補寫）
+### 收斂執行記錄（同 slug 各 ms 一行式執行結果——秘書於真驗收終審 pass 後、出口前補寫）
 
-> 功能迭代完成、收斂期綠燈收斂、時點 2 對抗畢老闆 pass 後出口前由秘書寫入（SKILL §1.7.1）；讀 `.shiftblame/tmp/` 實作層各階段記錄彙整成一行。SLUG 由秘書維護恆可寫——執行結果記錄屬回指級內容，G3 寫入權無例外（SKILL 寫入矩陣）。同 ms 重修後再次出口＝以 `<nnn>` 為鍵覆寫原行。
+> 功能迭代完成、收斂期 E2E 綠燈收斂、時點 2 對抗畢老闆 pass 推進 verify、真驗收完成老闆終審 pass 後出口前由秘書寫入（SKILL §1.7.1）；讀 `.shiftblame/tmp/` 實作層各階段記錄彙整成一行。SLUG 由秘書維護恆可寫——執行結果記錄屬回指級內容，G3 寫入權無例外（SKILL 寫入矩陣）。同 ms 重修後再次出口＝以 `<nnn>` 為鍵覆寫原行。
 
 | `<nnn>` | 做了什麼／實現價值／發生什麼事 | 各功能 commit | 複驗判定（含三面向重審） | 狀態 |
 |---------|--------------------------------|---------------|--------------------------|------|
@@ -72,7 +72,7 @@ flowchart LR
     A[intent]:::todo --> B[requirement]:::todo --> C[research]:::todo --> D[plan]:::todo
     D --> E[test]:::todo --> F[build]:::todo --> G[verify]:::todo
     G -.->|老闆新輸入回意圖揭露·經intent路由| A
-    G -->|時點2 老闆pass 出口：--new-ms 開新 ms| A
+    G -->|真驗收完成 老闆終審pass 出口：--new-ms 開新 ms| A
     G --> H{sb end}:::todo --> I[收尾+archive]:::todo
     classDef done fill:#c8e6c9,stroke:#388e3c
     classDef active fill:#ffe082,stroke:#f57f17,stroke-width:3px
@@ -81,7 +81,7 @@ flowchart LR
 
 > **維護規則**：把目前段的 `:::todo` 改為 `:::active`、已走過的改 `:::done`、未到的保持 `:::todo`。
 
-**ms 驗收 pass ≠ slug 結束**：前者是時點 2 對抗畢、老闆判定 pass 後走出口（`--new-ms` 開下一里程碑或 `sb end`——皆 --boss-ok 留痕＋時點 2 對抗）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
+**ms 驗收 pass ≠ slug 結束**：前者是真驗收完成老闆終審 pass 後走出口（`--new-ms` 開下一里程碑或 `sb end`——`--boss-ok` 終審章留痕，時點 2 對抗已在 build→verify 進段前）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
 
 ## 5. 目標與品質
 
@@ -297,7 +297,7 @@ flowchart LR
 - **（功能短名）** — 狀態：待開發
 - **（另一功能短名）** — 狀態：待開發
 
-> ms＝里程碑＝整體驗收節點。實作層一每功能依序 test 撰寫測試→build 實作與相關單點／整合驗證→提交閘 commit（測試碼＋實作碼同 commit）→verify 核對功能證據作 AC 判定（段內判決）。功能迭代完成後進實作層二收斂期：test 寫 E2E→build 調環境→verify 跑完整使用者流程，綠燈收斂後時點 2 對抗畢交老闆判定 pass/fail（§1.4.2）。不屬於本 ms 的功能開新 ms。
+> ms＝里程碑＝整體驗收節點。實作層一每功能依序 test 撰寫測試→build 實作與相關單點／整合驗證→提交閘 commit（測試碼＋實作碼同 commit）→verify 核對功能證據作 AC 判定（段內判決）。功能迭代完成後進實作層二收斂期：test 寫 E2E→build 調環境執行至綠燈收斂（build 的功能是讓測試綠），時點 2 對抗畢老闆 pass 推進 verify 真驗收（GWT 逐條劇本實操），驗收完成老闆終審 pass 走出口（§1.4.2）。不屬於本 ms 的功能開新 ms。
 
 **1. 驗收條件（先填）**
 

@@ -84,7 +84,7 @@ function endedFixture() {
   assert.equal(f.run('init', 'old').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', inputs: [{ at: new Date().toISOString(), text: '老闆：確認收尾' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }], adversarialConsumed: false }));
-  const end = f.run('end', '--boss-ok', '--adversarial');
+  const end = f.run('end', '--boss-ok');
   assert.equal(end.status, 0, end.stderr);
   return f;
 }
@@ -143,7 +143,7 @@ for (const mutate of [
   writeFileSync(join(f.cwd, '.shiftblame/old/SLUG.md'), 'doc\n');
   mkdirSync(join(f.cwd, '.shiftblame/archive/old'), { recursive: true });
   const before = readFileSync(f.file, 'utf8');
-  const endRun = f.run('end', '--boss-ok', '--adversarial');
+  const endRun = f.run('end', '--boss-ok');
   assert.equal(endRun.status, 1, '歸檔目標占用即擋');
   assert.match(endRun.stderr, /歸檔目標已占用/);
   assert.equal(readFileSync(f.file, 'utf8'), before, 'die 於寫檔前——狀態仍 verify 可重試');
@@ -153,7 +153,7 @@ for (const mutate of [
 {
   const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], inputs: [{ at: new Date().toISOString(), text: '老闆：確認收尾' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }] }));
   assert.match(f.run('state').stdout, /舊版判決通過態/, 'state 唯讀遷移讀出（不改檔）');
-  const endRun = f.run('end', '--boss-ok', '--adversarial');
+  const endRun = f.run('end', '--boss-ok');
   assert.equal(endRun.status, 0, endRun.stderr);
   const ended = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(ended.node, 'ended', '舊 done 態經 end 遷移為 ended');
@@ -161,7 +161,7 @@ for (const mutate of [
 }
 {
   const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: new Date().toISOString(), text: '老闆：開下一里程碑' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }], rewriteSeen: { rev: 1, at: new Date().toISOString() } }));
-  const r = f.run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial');
+  const r = f.run('next', 'intent', '--new-ms', '--boss-ok');
   assert.equal(r.status, 0, r.stderr);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.node, 'intent');

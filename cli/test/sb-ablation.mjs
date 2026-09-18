@@ -285,7 +285,7 @@ ablation('git 路徑重定向攔截 checkGitRedirect（GIT_DIR/--git-dir）', ()
 
 // —— CLI 機制（sb.mjs）——
 ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () => {
-  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research')); // ABLATED"]]);
+  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research') || (from === 'build' && to === 'verify');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research') || (from === 'build' && to === 'verify')); // ABLATED"]]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'requirement'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：intent→requirement 缺 --boss-ok 被 CLI 擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉後 CLI 層繞過決策邊（hooks 層獨撐）');
@@ -322,7 +322,7 @@ ablation('老闆輸入新鮮度閘 bossFresh 主邊（--boss-ok 由老闆輸入�
 
 ablation('老闆輸入新鮮度閘 bossFresh pass 出口（next/end 鑰匙鏈同源）', () => {
   const neu = neutralize(SB, [['if (!bossFresh(st, \'ended\', { passExit: true })) die(', 'if (false) die( // ABLATED']]);
-  const probe = (script) => { const r = mkSandbox({ state: { node: 'verify', inputs: [], adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'verify', point: '2' }] } }); const h = cliRun(script, r, 'end', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'verify', inputs: [], adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'verify', point: '2' }] } }); const h = cliRun(script, r, 'end', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
   assert.match(probe(SB), /pass 結束缺新鮮老闆輸入/, 'intact：過期輸入不承載 pass 出口老闆決策');
   assert.doesNotMatch(probe(neu), /pass 結束缺新鮮老闆輸入/, 'ablated：拆掉出口新鮮度檢');
 });
@@ -338,7 +338,7 @@ ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
 
 ablation('G1 契約核對（放行後偏離即擋）', () => {
   const neu = neutralize(SB, [["if (st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) {", "if (false && st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) { // ABLATED"]]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'build', inputs: [{ at: new Date().toISOString(), text: '老闆：時點 2 pass，開始驗收' }], adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'build', point: '2' }], g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：G1 偏離放行契約被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉核對後契約漂移放行');
   function r_placeholder() { return '.shiftblame/demo/001'; }

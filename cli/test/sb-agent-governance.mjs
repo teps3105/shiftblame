@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.4.0');
+assert.equal(manifest.version, '2.4.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.4.0"/);
+assert.match(skill, /version: "2.4.1"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -60,7 +60,7 @@ assert.match(skill, /sb commitmsg/);
 assert.match(skill, /sb adversarial/);
 assert.match(skill, /時點 2 對抗/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdAdversarial/);
-assert.match(read('cli', 'bin', 'sb.mjs'), /checkPoint2Fresh/);
+assert.match(read('cli', 'bin', 'sb.mjs'), /from: 'build', to: 'verify', point: '2'/); // 時點 2＝build→verify 邊（2.4.1 前移——新鮮度由通用 adversarial 邊對照承載）
 assert.match(readme, /sb commitmsg/);
 assert.match(readme, /時點 2 對抗/);
 
@@ -117,7 +117,8 @@ assert.match(skill, /AUDIT\.md/, 'SKILL 樹含 AUDIT');
 assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /對抗判定：通過/, 'AUDIT 判定行格式');
 assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /無自代介面/, 'AUDIT 無自代介面');
 assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /修復複審閉環/, 'AUDIT 複審閉環');
-assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /G1 裁判邊/, 'VERIFY G1 裁判邊');
+assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /真驗收執行/, 'VERIFY 真驗收執行（GWT 逐條劇本）');
+assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /build→verify/, 'VERIFY 時點 2＝build→verify 進段前對抗（2.4.1 前移）');
 assert.match(skill, /消融原則/, 'SKILL 消融原則（方法論六落點）');
 assert.match(read('cli', 'bin', 'sb.mjs'), /六鍵（消融/, 'BDD 第六鍵消融（validateG1Acceptance）');
 assert.match(read('cli', 'test', 'sb-ablation.mjs'), /消融矩陣/, '框架本體消融矩陣（sb-ablation.mjs）');

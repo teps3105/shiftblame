@@ -135,14 +135,15 @@ commit('test-1.mjs', 'test: cover acceptance');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
-assert.equal(run('next', 'verify').status, 0, '功能 AC 判定＝段內判決（非時點編號，無需 --adversarial）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
-assert.equal(pt('2').status, 0, '時點 2 對抗——ms 出口前置（end 前驗新鮮度：晚於末次進 verify）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆判定（對抗在前老闆判定在後）
+assert.equal(pt('2').status, 0, '時點 2 宣告（build→verify 邊前置——審驗收資格：GWT 回指、假綠燈）');
+assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（build→verify，2.4.1 前移）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（出口終審——晚於本 ms 進 verify）
 
 // —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n');
-assert.match(run('end', '--boss-ok', '--adversarial').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
+assert.match(run('end', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
 assert.match(run('sopreview').status !== undefined && run('sopreview').stderr, /三問結論/, '缺三問結論即擋');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n本專案規範。\n2026-01-01 起改用新流程\n');
 const dirty = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
@@ -153,7 +154,7 @@ writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n--
 assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
 assert.match(state().sopReview.answers, /三問全過/, '三問結論落檔');
-const endOut = run('end', '--boss-ok', '--adversarial');
+const endOut = run('end', '--boss-ok');
 assert.equal(endOut.status, 0, endOut.stderr);
 
 // —— 6. 產出遙測：git baseline 錨定＋對抗判定（含審查模型）＋計數＋耗時 ——

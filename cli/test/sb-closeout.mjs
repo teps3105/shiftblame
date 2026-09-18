@@ -49,8 +49,8 @@ assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接�
 const withoutDeclaration = state();
 withoutDeclaration.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '2' }];
 withoutDeclaration.inputs = [{ at: new Date().toISOString(), text: '老闆：確認收尾' }];
-save(withoutDeclaration); // 合成 fixture；end 驗時點 2 條目（2.4.0 提交對抗已移除——印章無消費概念）。
-ok(run('end', '--boss-ok', '--adversarial')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
+save(withoutDeclaration); // 合成 fixture；出口僅驗老闆終審章（--boss-ok）——對抗已在 build→verify 進段前，出口不重驗對抗。
+ok(run('end', '--boss-ok')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
 ok(run('commitmsg', 'merge old')); // 2.4.0：ended 接受固定合併訊息——提交審核已移除，僅格式＋印章
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);

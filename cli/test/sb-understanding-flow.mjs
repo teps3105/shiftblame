@@ -57,7 +57,7 @@ assert.match(r.stderr, /sb unlock 不存在/);
 r = spawnSync(sb, [sbBin, 'unlock', '--quoted', '你去想吧', '--as', 'x'], { cwd: root, encoding: 'utf8' });
 assert.equal(r.status, 2, '舊旗標形（--quoted/--as 已撤）→usage 擋');
 
-// —— 6. pass 出口鑰匙：--boss-ok 老闆選擇＋時點 2 對抗（無印章）；--new-ms 開新里程碑 ——
+// —— 6. pass 出口鑰匙：--boss-ok 老闆終審章（對抗已在 build→verify 進段前，出口不重驗）；--new-ms 開新里程碑 ——
 mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
 writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
 writeFileSync(statePath, JSON.stringify({
@@ -65,10 +65,8 @@ writeFileSync(statePath, JSON.stringify({
 }));
 mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
 mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
-writeFileSync(join(root, '.shiftblame', 'tmp', 'pt2.md'), '# p\n對抗判定：通過');
-spawnSync(sb, [sbBin, 'adversarial', join(root, '.shiftblame/tmp/pt2.md'), '--point', '2'], { cwd: root, encoding: 'utf8' });
-r = spawnSync(sb, [sbBin, 'next', 'intent', '--new-ms', '--boss-ok', '--adversarial'], { cwd: root, encoding: 'utf8' });
-assert.equal(r.status, 0, 'pass 出口一：verify→intent --new-ms（--boss-ok 老闆選擇＋時點 2 對抗）');
+r = spawnSync(sb, [sbBin, 'next', 'intent', '--new-ms', '--boss-ok'], { cwd: root, encoding: 'utf8' });
+assert.equal(r.status, 0, 'pass 出口一：verify→intent --new-ms（--boss-ok 老闆終審章）');
 assert.equal(JSON.parse(readFileSync(statePath, 'utf8')).ms, '002', 'ms++');
 writeFileSync(statePath, JSON.stringify({ ...state(), node: 'test' }));
 r = spawnSync(sb, [sbBin, 'next', 'build', '--new-ms'], { cwd: root, encoding: 'utf8' });
