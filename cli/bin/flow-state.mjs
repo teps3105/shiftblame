@@ -103,6 +103,7 @@ function uninitializedState(st) {
   return validHold(st) && hooksOnly(hookRecords(st));
 }
 // 接納工具實際產生的無段位提交紀錄；不接納孤立 null、未知欄位或半個流程。
+// 提交對抗章三鍵（2.4.0 移除——無新寫入者）改為存在時驗形狀、缺席放行：舊 direct 檔保持 direct 分類。
 function directState(st) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'adversarialLog', 'adversarialAt', 'adversarialConsumed', 'understandingHold'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
@@ -110,9 +111,12 @@ function directState(st) {
   if (Object.keys(records).length && !hooksOnly(records)) return false;
   const skeleton = ['slug', 'ms', 'node', 'history'];
   if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null && Array.isArray(st.history) && !st.history.length)) return false;
-  return validHold(st) && Array.isArray(st.adversarialLog) && st.adversarialLog.length > 0 &&
-    st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, null)) &&
-    timestamp(st.adversarialAt) && st.adversarialAt === st.adversarialLog.at(-1).at && typeof st.adversarialConsumed === 'boolean';
+  return validHold(st) &&
+    (!Object.hasOwn(st, 'adversarialLog') || (Array.isArray(st.adversarialLog) && st.adversarialLog.length > 0 &&
+      st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, null)))) &&
+    (!Object.hasOwn(st, 'adversarialAt') || (timestamp(st.adversarialAt) &&
+      (!Object.hasOwn(st, 'adversarialLog') || st.adversarialAt === st.adversarialLog.at(-1).at))) &&
+    (!Object.hasOwn(st, 'adversarialConsumed') || typeof st.adversarialConsumed === 'boolean');
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。

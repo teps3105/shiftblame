@@ -56,12 +56,12 @@ writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 老闆輸入新鮮度（時點 1 邊——requirement→research）
+assert.equal(pt('1').status, 0, '時點 1 對抗宣告');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('1').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0, '放行至執行段');
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 
 // —— 3. 迴圈斷路器：計數純觀測（無預算無上限零干預）；重複才擋（4/7 門檻）；死圈升級 ——
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '回合開始（回合計數歸零）' });
@@ -122,14 +122,14 @@ assert.equal(u7.status, 0, '新回合工具恢復（同操作指紋隨回合重�
 assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
 // —— 4. 重走（老闆新輸入回意圖揭露→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊＋時點 1 邊——晚於上次同邊推進）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
-assert.equal(run('next', 'research').status, 0);
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（research→plan 邊驗——重走進段重置後重新驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（plan→test 決策邊——晚於上次同邊推進）
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 commit('test-1.mjs', 'test: cover acceptance');
 assert.equal(run('next', 'build').status, 0);

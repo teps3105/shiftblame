@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.3.3');
+assert.equal(manifest.version, '2.4.0');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.3.3"/);
+assert.match(skill, /version: "2.4.0"/);
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -55,13 +55,13 @@ assert.match(skill, /節錄快照/);
 assert.match(skill, /自由傾倒區/);
 assert.match(skill, /SB\.md|SLUG\.md/);
 
-// 提交對抗閘與兩時點對抗落地
-assert.match(skill, /提交對抗閘/);
+// 提交格式閘（2.4.0 段內提交對抗移除——審核資源前移兩時點）與兩時點對抗落地
+assert.match(skill, /sb commitmsg/);
 assert.match(skill, /sb adversarial/);
 assert.match(skill, /時點 2 對抗/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdAdversarial/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /checkPoint2Fresh/);
-assert.match(readme, /提交對抗閘/);
+assert.match(readme, /sb commitmsg/);
 assert.match(readme, /時點 2 對抗/);
 
 // 雙流模型落地（時序由輸入流順序天然承擔）
@@ -103,6 +103,9 @@ assert.ok(!read('hooks', 'shiftblame-guard.mjs').includes('markAuditEvidence') &
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkGFileMatrix/, 'hooks G 檔寫入矩陣（RAM/ROM 分區）');
 assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /經查證的現況事實/, 'REQUIREMENT 經查證的現況事實（查證先於研究）');
 assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /BDD 行為規格/, 'REQUIREMENT BDD 行為規格');
+assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /行為矩陣判準/, 'REQUIREMENT 行為矩陣判準（GWT 實質判準）');
+assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /純工程工作不立法/, 'REQUIREMENT 工程活動排除條');
+assert.match(read('skills', 'shiftblame', 'references', 'MECHANISMS.md'), /規格工程化/, 'MECHANISMS 規格工程化攻擊點');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /G3 落地邊/, 'TEST G3 落地邊');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /R1/, 'STRUCTURE 固定規則');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /accepted_exception/, 'STRUCTURE 四態結果');

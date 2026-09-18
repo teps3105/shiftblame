@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗：時點 1＝plan→test 放行前（--point 1）；時點 2＝pass 出口前（next --new-ms／end 兩門，checkPoint2Fresh）；段內提交閘＝提交對抗章（無 point）×adversarialLog point 條目對照（新鮮度＝條目 at 晚於同邊上次推進／晚於末次進 verify）；非對抗邊帶旗標即擋。
+// 時點對抗（2.4.0 審核資源重排）：時點 1＝requirement→research 邊（審意圖→需求翻譯，--point 1）；時點 2＝pass 出口前（next --new-ms／end 兩門，checkPoint2Fresh，--point 2）；中鏈（research→plan→test）機械推進零審核；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -33,28 +33,28 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解宣告：老闆確認意圖與推進授權——定義層規劃循環起走' } }); // 理解宣告落流（未覆蓋即凍結解凍——中段提交閘 hooks 測試承載）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-assert.equal(run('next', 'research').status, 0);
+// 1. 時點 1 邊（requirement→research）：缺 --adversarial／缺時點 1 條目即擋（RAM/ROM：對照源＝point 條目）
+assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
+assert.equal(state().adversarialConsumed, undefined, '--point 條目僅屬 RAM 對照（2.4.0 無 commit 章分流）');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-
-// 1. adversarialLog 缺時點 1 條目即擋（RAM/ROM：對照源＝point 條目）
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
-// 2. 非對抗邊帶 --adversarial 即擋
-assert.match(run('next', 'research', '--adversarial').stderr, /不是對抗邊|不合法推進/);
-// 3. --point 1 宣告→過（帶 --point 不發 commit 章）
-assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
-assert.equal(state().adversarialConsumed, undefined, '--point 條目不發 commit 章（邊章與 commit 章分流）');
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+// 2. 非對抗邊帶 --adversarial 即擋（plan→test 機械推進）
+assert.match(run('next', 'test', '--adversarial').stderr, /不是對抗邊/);
+// 3. plan→test 裸推進（中鏈零審核——2.4.0 取消老闆放行）
+assert.equal(run('next', 'test').status, 0);
 
 // 循環到 verify（build→verify＝段內判決，非時點編號）
 writeFileSync(join(root, 't.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 assert.equal(git('add', 't.mjs').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: cover').status, 0);
 assert.equal(run('next', 'build').status, 0);
-// 提交對抗閘段於 build 態執行（驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
-// 段內合成狀態寫入以快照／還原隔離，不污染主流程狀態與後續新鮮度判定。
+// 提交閘段於 build 態執行（驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
+// 2.4.0：段內提交對抗已移除——以下驗 commitmsg 與對抗宣告脫鉤＋格式／staged／座標／陳述面。
 const stateSnapshot = readFileSync(join(root, ".shiftblame/flow-state.json"), "utf8");
-// —— 提交對抗閘：MUST 子代理報告檔——存在＋判定行＋「通過」才可發章 ——
+// —— adversarial 介面衛生與報告落點（--point 必帶；報告僅 tmp）——
 const tmpDir = join(root, '.shiftblame', 'tmp');
 const reportPath = join(tmpDir, 'review-test.md');
 let r;
@@ -66,24 +66,25 @@ assert.equal(r.status, 2, '拼錯旗標同樣 usage 擋（解析器衛生）');
 // 前綴繞過回歸：.shiftblame-evil 目錄不得通過（startsWith 無分隔符邊界缺陷已修——relative 判定）
 mkdirSync(join(root, '.shiftblame-evil'), { recursive: true });
 writeFileSync(join(root, '.shiftblame-evil', 'review.md'), '# 對抗報告\n對抗判定：通過（零必修）');
-r = run('adversarial', join('.shiftblame-evil', 'review.md'));
+r = run('adversarial', join('.shiftblame-evil', 'review.md'), '--point', '1');
 assert.equal(r.status, 1, '.shiftblame-evil 前綴繞過擋');
 // 工作報告只由 tmp 承載；錯誤落點不改寫任何宣告。
 for (const path of ['.shiftblame/review.md', '.shiftblame/demo/001/review.md', '.shiftblame/tmp-sibling/review.md']) {
   const file = join(root, path);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, '對抗判定：通過\n');
-  for (const flags of [[], ['--point', '1']]) {
-    const before = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
-    const result = run('adversarial', file, ...flags);
-    assert.equal(result.status, 1, `${path} 不在 tmp，提交與時點宣告皆拒絕`);
-    assert.match(result.stderr, /不在 .shiftblame\/tmp 內/);
-    assert.equal(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'), before, '拒絕後狀態原樣保留');
-  }
+  const before = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
+  const result = run('adversarial', file, '--point', '1');
+  assert.equal(result.status, 1, `${path} 不在 tmp，時點宣告拒絕`);
+  assert.match(result.stderr, /不在 .shiftblame\/tmp 內/);
+  const noPoint = run('adversarial', file);
+  assert.equal(noPoint.status, 1, '無 --point 即擋（2.4.0 --point 必帶）');
+  assert.match(noPoint.stderr, /--point 必帶/);
+  assert.equal(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'), before, '拒絕後狀態原樣保留');
 }
 const linkedReports = join(tmpDir, 'linked-reports');
 symlinkSync(join(root, '.shiftblame/tmp-sibling'), linkedReports, process.platform === 'win32' ? 'junction' : 'dir');
-assert.equal(run('adversarial', join(linkedReports, 'review.md')).status, 1, '實體位置越出 tmp 的連結拒絕');
+assert.equal(run('adversarial', join(linkedReports, 'review.md'), '--point', '1').status, 1, '實體位置越出 tmp 的連結拒絕');
 const nestedReport = join(tmpDir, 'reviews', 'report.md');
 mkdirSync(dirname(nestedReport), { recursive: true });
 writeFileSync(nestedReport, '對抗判定：通過\n');
@@ -93,66 +94,47 @@ r = run('adversarial', '.shiftblame/tmp');
 assert.equal(r.status, 1, '目錄非報告檔擋');
 // 多判定行取最後（多輪引用舊判定以最終為準）
 writeFileSync(reportPath, '# 對抗報告\n前次對抗判定：不通過（2 必修）\n修復後本次對抗判定：通過（零必修）');
-r = run('adversarial', reportPath);
+r = run('adversarial', reportPath, '--point', '1');
 assert.equal(r.status, 0, '多判定行取最後（最終判定：通過）');
-{ const st = state(); st.adversarialConsumed = true; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); } // 恢復無未消費宣告狀態
-// 無報告檔→commitmsg 擋（無宣告）
+// 2.4.0：commitmsg 與對抗宣告脫鉤——提交審核移除，格式合格即發章（審核資源前移兩時點）
 r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 1, '無宣告→commitmsg 擋');
-assert.match(r.stderr, /提交前需對抗記錄/);
+assert.equal(r.status, 0, '無對抗宣告 commitmsg 仍發章（提交僅格式閘）');
 // 缺報告參數擋
 r = run('adversarial');
 assert.equal(r.status, 1);
 assert.match(r.stderr, /缺報告檔/);
 // 報告不存在擋
-r = run('adversarial', 'review-missing.md');
+r = run('adversarial', 'review-missing.md', '--point', '1');
 assert.equal(r.status, 1);
 assert.match(r.stderr, /報告檔不存在/);
 // 報告缺判定行擋
 writeFileSync(reportPath, '# 對抗報告\n有些攻擊內容但沒有判定行。');
-r = run('adversarial', reportPath);
+r = run('adversarial', reportPath, '--point', '1');
 assert.equal(r.status, 1, '缺判定行擋');
 assert.match(r.stderr, /缺判定行/);
-// 判定「不通過」擋（必修未清不得發章）
+// 判定「不通過」擋（必修未清不得留條目）
 writeFileSync(reportPath, '# 對抗報告\n攻擊點……\n對抗判定：不通過（2 必修）');
-r = run('adversarial', reportPath);
+r = run('adversarial', reportPath, '--point', '1');
 assert.equal(r.status, 1, '不通過擋——閘環零必修機械化');
 assert.match(r.stderr, /必修未清/);
-// 判定「通過」→宣告→發章（不消費；hooks 消費）
+// 判定「通過」→時點條目留痕；commitmsg 脫鉤照樣發章
 writeFileSync(reportPath, '# 對抗報告\n攻擊點……\n對抗判定：通過（零必修）');
-r = run('adversarial', reportPath);
-assert.equal(r.status, 0, '通過→宣告留痕');
+r = run('adversarial', reportPath, '--point', '1');
+assert.equal(r.status, 0, '通過→條目留痕');
 assert.ok(state().adversarialLog.at(-1).report === reportPath && state().adversarialLog.at(-1).verdict === '通過');
 r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 0, '有未消費宣告→發章');
-assert.equal(state().adversarialConsumed, false, '發章不消費（hooks 消費點）');
-// 模擬 hooks 已消費→再 commitmsg 擋（每 commit 一對一）
-{ const st = state(); st.adversarialConsumed = true; writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify(st)); }
-r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 1, '消費後再 commitmsg→擋');
-// 返工修復後（新報告＋新宣告）再提交可過
-writeFileSync(reportPath, '# 對抗報告\n修復後再對抗。\n對抗判定：通過（零必修）');
-r = run('adversarial', reportPath);
-assert.equal(r.status, 0);
-r = run('commitmsg', 'feat: 對抗閘測試提交');
-assert.equal(r.status, 0, '返工後重新對抗→可提交');
+assert.equal(r.status, 0, 'commitmsg 與對抗宣告脫鉤——格式合格即發章');
 
-// —— 全鏈串接：adversarial→commitmsg→hooks commit 放行且一併消費 ——
-writeFileSync(reportPath, '# 對抗報告\n全鏈時點對抗。\n對抗判定：通過（零必修）');
-r = run('adversarial', reportPath);
-assert.equal(r.status, 0);
+// —— 全鏈串接：commitmsg 發章→hooks commit 驗章焚章（印章一次性）——
 r = run('commitmsg', 'feat: 全鏈提交驗證訊息');
-assert.equal(r.status, 0, '發章（不消費）');
+assert.equal(r.status, 0, '發章');
 const hc = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
-assert.equal(hc.status, 0, '全鏈：hooks commit 放行——單次宣告單次 commit');
-assert.equal(state().adversarialConsumed, true, 'hooks 於 commit 時消費對抗宣告');
+assert.equal(hc.status, 0, '全鏈：hooks commit 放行——印章一對一');
+assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, 'hooks 於 commit 時焚章');
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
 
 // —— staged 系統檔不入庫（禁入僅系統檔 .shiftblame/——其他位置一律放行）——
-writeFileSync(reportPath, '# 對抗報告\nstaged 閘測試。\n對抗判定：通過（零必修）');
-r = run('adversarial', reportPath);
-assert.equal(r.status, 0);
 // staged 含 .shiftblame/ → commitmsg 不發章
 assert.equal(git('add', '-f', join(root, '.shiftblame', 'flow-state.json')).status, 0, '強制 add .shiftblame（模擬繞過 gitignore）');
 r = run('commitmsg', 'feat: 系統檔攔截驗證訊息');
@@ -200,10 +182,8 @@ assert.equal(hm1.status, 2, 'pathspec 在 -m 之後→hooks 擋');
 assert.match(hm1.stderr, /commit-time 暫存繞過/);
 const hm2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 提交期繞過嘗試" -- seed.txt` } });
 assert.equal(hm2.status, 2, '-- 之後 pathspec→hooks 擋');
-// 引號訊息內含旗標字樣 → 不誤傷（訊息是單一引號 token 整體跳過）；前置獨立宣告＋章
+// 引號訊息內含旗標字樣 → 不誤傷（訊息是單一引號 token 整體跳過）；手寫章前置
 const armHook = (msg) => {
-  writeFileSync(reportPath, '# r\n對抗判定：通過');
-  assert.equal(run('adversarial', reportPath).status, 0);
   writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: root, issuedAt: new Date().toISOString() }));
 };
 armHook('fix: 擋下 -a 提交期繞過');
@@ -276,12 +256,10 @@ assert.match(hf.stderr, /非絕對/);
     const hx = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
     assert.equal(hx.status, 2, '內部 repo 缺章→擋');
     assert.match(hx.stderr, /缺少 commit 印章/);
-    // 內部 repo 有效章＋未消費對抗→跨 repo commit 放行，並消費內部 repo 的對抗與印章
+    // 內部 repo 有效章→跨 repo commit 放行，並焚內部 repo 的印章（2.4.0 無對抗消費）
     writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: inner, issuedAt: new Date().toISOString() }));
     const hp = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
     assert.equal(hp.status, 0, '內部 repo 有效章→跨 repo commit 放行');
-    const ist = JSON.parse(readFileSync(join(inner, '.shiftblame', 'flow-state.json'), 'utf8'));
-    assert.equal(ist.adversarialConsumed, true, '消費目標 repo 的對抗宣告');
     assert.equal(existsSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '焚目標 repo 印章');
     // 章綁定其他專案：ext 簽發的章被搬進 inner（偽造面）→擋（章綁定錨點 repo）
     writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: ext, issuedAt: new Date().toISOString() }));
@@ -317,10 +295,6 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
 // —— commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）——
 {
   const adv = mkdtempSync(join(tmpdir(), 'sb-cv-'));
-  mkdirSync(join(adv, '.shiftblame', 'tmp'), { recursive: true });
-  writeFileSync(join(adv, '.shiftblame', 'tmp', 'r.md'), '# 對抗\n\n對抗判定：通過\n');
-  const r0 = run2(adv, 'adversarial', join(adv, '.shiftblame', 'tmp', 'r.md'));
-  assert.equal(r0.status, 0, '對抗宣告（發章前置）');
   for (const bad of ['merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
     const rb = run2(adv, 'commitmsg', bad);
     assert.equal(rb.status, 1, `詞彙閘擋「${bad}」`);
@@ -345,18 +319,17 @@ assert.equal(run('next', 'verify').status, 0, '功能 AC 判定＝段內判決�
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（pass 出口——晚於本 ms 進 verify）
 assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /時點 2/, 'next 出口缺時點 2 條目即擋');
 assert.match(run('end', '--boss-ok', '--adversarial').stderr, /時點 2/, 'end 出口缺時點 2 條目即擋');
-// 5. fail 邊→老闆新輸入回意圖揭露經 intent 路由器路由：零旗標、定義級同 ms 開新輪（計返工輪）
+// 5. fail 邊→老闆新輸入回意圖揭露經 intent 路由器路由：零旗標、定義級同 ms 開新輪（計返工輪）；重走時點 1（requirement→research）
 assert.equal(run('next', 'intent').status, 0, 'fail 回意圖揭露＝零旗標');
 assert.equal(state().ms, '001');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊＋時點 1 邊——晚於上次同邊推進）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
-assert.equal(run('next', 'research').status, 0, '重走進 research——外部證據閘進段重置');
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '重走進 research——外部證據閘進段重置＋時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
-assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（plan→test 決策邊——晚於上次同邊推進）
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核）');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'v3\n');
 assert.equal(git('add', 'seed.txt').status, 0);

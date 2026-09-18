@@ -168,32 +168,23 @@ assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0, 'test 段寫測試
 assert.equal(W('build', 'Edit', 'test/app.test.js').status, 0, 'build 段寫測試碼放行（測試碼寫入權 test＋build——隨功能實作同 commit 定稿）');
 assert.equal(W('plan', 'Edit', 'test/app.test.js').status, 2, '測試碼寫入權屬 test＋build 段（實作層）——定義層擋');
 
-// —— 7. 層間停靠雙重鎖：plan 段 sb next test 缺 --boss-ok 即擋（hooks 同判據——對抗在前老闆判定在後）——
-setNode('plan');
-const st1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --adversarial' } });
+// —— 7. 層間停靠雙重鎖：requirement 段 sb next research 缺 --boss-ok 即擋（hooks 同判據——時點 1 對抗在前老闆判定在後）——
+setNode('requirement');
+const st1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next research --adversarial' } });
 assert.equal(st1.status, 2);
-assert.match(st1.stderr, /plan→test|老闆決策邊/);
-const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next test --boss-ok --adversarial' } });
+assert.match(st1.stderr, /老闆決策邊/);
+const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next research --boss-ok --adversarial' } });
 assert.equal(st2.status, 0, '帶 --boss-ok 放行');
 
-// —— 8. commit 印章＋提交對抗閘（hooks 端：手寫印章不得繞過對抗閘）——
+// —— 8. commit 印章閘（hooks 端：驗章焚章——2.4.0 提交對抗已移除，印章唯一憑證）——
 setNode('build');
 const noStamp = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
 assert.equal(noStamp.status, 2);
 assert.match(noStamp.stderr, /缺少 commit 印章/);
 writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: root, issuedAt: new Date().toISOString() }));
-const forgedStamp = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
-assert.equal(forgedStamp.status, 2, '手寫印章但無對抗宣告→擋');
-assert.match(forgedStamp.stderr, /提交前需對抗記錄/);
-{ // 有未消費對抗宣告→過（且一併消費）
-  const stv = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-  stv.adversarialAt = new Date().toISOString(); stv.adversarialConsumed = false;
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stv));
-}
-writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: root, issuedAt: new Date().toISOString() }));
 const ok = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
-assert.equal(ok.status, 0);
-assert.equal(JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).adversarialConsumed, true, 'hooks 消費印章時一併消費對抗宣告');
+assert.equal(ok.status, 0, '印章相符放行（2.4.0 提交對抗已移除——印章唯一憑證）');
+assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '驗章後焚章——印章一次性');
 
 // —— 8.5 文件鐵律：框架 repo 的 .md 純追加（零刪改）不得 commit；實質重寫（有刪有改）與新增檔放行 ——
 {
@@ -361,7 +352,8 @@ assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
   const brokenRoot = mkdtempSync(join(tmpdir(), 'sb-health-'));
   process.on('exit', () => rmSync(brokenRoot, { recursive: true, force: true }));
   mkdirSync(join(brokenRoot, '.shiftblame', 'tmp'), { recursive: true });
-  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: null, ms: null, node: null, history: [] }));
+  // 2.4.0 directState 放寬：{slug:null,node:null} 屬合法直接實行態（非異常）——異常面改用未知節點 fixture。
+  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ node: 'mystery', history: [] }));
   const hr = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: brokenRoot, ...payload }), encoding: 'utf8' });
   const bash = (command) => hr({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } });
   assert.equal(bash('node repair-state.mjs').status, 0, '修復腳本放行');
@@ -370,7 +362,7 @@ assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
   assert.equal(bash('git add x.txt').status, 2, 'git 寫入封閉');
   assert.match(bash('git add x.txt').stderr, /接入異常/);
   assert.equal(bash('git -c user.name=t commit -m "x"').status, 2, '提交封閉');
-  assert.equal(bash('node sb.mjs adversarial r.md').status, 2, 'sb 對抗宣告封閉（會消費異常狀態）');
+  assert.equal(bash('node sb.mjs adversarial r.md --point 1').status, 2, 'sb 對抗宣告封閉（流程寫入——異常模式封閉）');
   assert.equal(bash('node sb.mjs state').status, 0, 'sb state 診斷放行');
   assert.equal(bash('sb init demo').status, 2, 'sb 流程命令（init）同封閉');
   assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, '.shiftblame', 'flow-state.json'), content: '{"hooksHeartbeat":{"at":"2026-09-11T00:00:00.000Z","event":"SessionStart"}}' } }).status, 0, '寫入工具對 flow-state 修復放行');

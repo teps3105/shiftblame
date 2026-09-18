@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 全流程：intent→requirement→research→plan→（時點 1 放行）→test→build→verify→（功能迭代／旗標切段／收斂期）→（fail＝老闆新輸入回意圖揭露經 intent 路由器路由／pass→--new-ms 開新 ms 或 end 結束）
+// 全流程：intent→requirement→research（時點 1——審意圖→需求翻譯）→plan→（機械推進 中鏈零審核）→test→build→verify→（功能迭代／旗標切段／收斂期）→（fail＝老闆新輸入回意圖揭露經 intent 路由器路由／pass→--new-ms 開新 ms 或 end 結束）
 // 授權鑰匙（撤印章）：--boss-ok 留痕＋--adversarial×adversarialLog point 條目對照＋理解流曝光（hooks 雙流記錄）
 const root = mkdtempSync(join(tmpdir(), 'sb-eight-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
@@ -54,22 +54,22 @@ assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
   writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
 }
 
-// requirement→research：G1 假需求閘
+// requirement→research：時點 1 邊（2.4.0 審意圖→需求翻譯——G1 假需求閘＋對抗＋老闆 pass；過邊即 G1 契約封存）
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯正確，推進研究' }); // 時點 1 老闆輸入新鮮度
+assert.match(run('next', 'research').stderr, /MUST 帶 --boss-ok/);
+assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
+assert.equal(pt('1').status, 0);
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-// plan→test：--boss-ok＋--adversarial＋adversarialLog point 條目；G3 缺承接先擋
-assert.match(run('next', 'test').stderr, /MUST 帶 --boss-ok/);
-assert.match(run('next', 'test', '--boss-ok').stderr, /--adversarial/);
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /G3 未逐項承接 G1：AC-02/);
+// plan→test：機械推進（2.4.0 中鏈零審核——老闆放行與時點對抗取消；G3 承接屬機械結構閘）
+assert.match(run('next', 'test').stderr, /G3 未逐項承接 G1：AC-02/);
+assert.match(run('next', 'test', '--adversarial').stderr, /不是對抗邊/);
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n- AC-02 | 驗收操作=送出不合法資料 | 通過判準=看到明確錯誤 | 需要的證據=實際錯誤輸出 | 測試=test-2.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-// 缺時點 1 條目即擋（RAM/ROM 對照源）→--point 宣告→過
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
-assert.equal(pt('1').status, 0);
-const rel = run('next', 'test', '--boss-ok', '--adversarial');
+const rel = run('next', 'test');
 if (rel.status !== 0) { console.error('release gate:', rel.stderr); }
 assert.equal(rel.status, 0);
 const st1 = state();
@@ -81,16 +81,16 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n被改動。');
 assert.match(run('next', 'build').stderr, /分隔標題出現 0 次|已偏離/);
 assert.equal(run('next', 'intent').status, 0); // 回 intent 同 ms 開新輪（定義級變更）
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
-// 重走（老闆新輸入回意圖揭露開新輪）：老闆決策邊 --boss-ok＋新鮮老闆輸入；research 進段重置外部證據
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 邊）
+// 重走（老闆新輸入回意圖揭露開新輪）：老闆決策邊 --boss-ok＋新鮮老闆輸入；research 進段重置外部證據（時點 1 重過＋G1 重封存）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 邊＋時點 1 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊帶 --boss-ok');
-assert.equal(run('next', 'research').status, 0, 'research 進段重置外部證據');
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
+assert.equal(pt('1', 'r2').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, 'research 進段重置外部證據');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
-assert.equal(pt('1', 'r2').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：返工確認，放行測試' }); // 老闆輸入新鮮度（重走的 plan→test 邊——晚於上次同邊推進）
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.match(run('next', 'test', '--adversarial').stderr, /不是對抗邊/, 'plan→test 機械推進——對抗宣告屬誤用');
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 
 // 功能迭代循環：test（撰寫功能測試）→build（實作＋提交閘 commit）→verify（功能 AC 判定＝段內判決）
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal("完整結果", "完整結果");\n');
@@ -112,14 +112,14 @@ assert.equal(run('next', 'intent').status, 0, 'fail 回指＝老闆新輸入回�
 assert.equal(state().node, 'intent');
 assert.equal(state().ms, '001', 'fail 回指同 ms 開新輪');
 assert.equal(state().rev, 2, '第二次回 intent 輪次遞增（時序可對照）');
-// 重整後重走：老闆決策邊 --boss-ok（輸入新鮮度由既有輸入承載——晚於上次同邊推進）
+// 重整後重走：老闆決策邊 --boss-ok（輸入新鮮度由既有輸入承載——晚於上次同邊推進）；時點 1 重過＋G1 重封存
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重整重走：老闆決策邊帶 --boss-ok');
-assert.equal(run('next', 'research').status, 0, 'research 進段重置外部證據');
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
+assert.equal(pt('1', 'r3').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, 'research 進段重置外部證據');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.match(run('next', 'test', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
-assert.equal(pt('1', 'r2').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 writeFileSync(join(root, 'seed.txt'), 'seed after rework fix\n');
 commit('seed.txt', 'fix: touch for loop');
 assert.equal(run('next', 'build').status, 0);
@@ -146,15 +146,16 @@ writeFileSync(join(ms2, 'G2.md'), '# 技術\n沿用既有入口完成需求並�
 writeFileSync(join(ms2, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=o | 通過判準=r | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，這是真實的失敗點描述。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
 // ms002 的老闆邊：--boss-ok＋新鮮老闆輸入（回意圖揭露開新 ms 後的定義重走）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-// 混合格式擋：單行 G1 加 BDD 塊 → research 邊擋（擇一定義）；移除後放行
+// 混合格式擋：單行 G1 加 BDD 塊 → research 邊擋（擇一定義）；移除後放行（時點 1 全套：對抗＋老闆 pass）
 writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8') + '\n### AC-99（混合）\n- Given：（填）\n');
-assert.match(run('next', 'research').stderr, /混合格式/, '混合格式擋（單行與 BDD 並存擇一）');
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /混合格式/, '混合格式擋（單行與 BDD 並存擇一）');
 writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8').replace('\n### AC-99（混合）\n- Given：（填）\n', ''));
-assert.equal(run('next', 'research').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆輸入新鮮度
+assert.equal(pt('1', 'ms2').status, 0);
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(pt('1', 'ms2').status, 0);
-{ const dbg = run('next', 'test', '--boss-ok', '--adversarial'); if (dbg.status !== 0) console.error('MS2 GATE:', dbg.stderr); assert.equal(dbg.status, 0); }
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 writeFileSync(join(root, 'seed.txt'), 'seed for second ms feature\n');
 commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);

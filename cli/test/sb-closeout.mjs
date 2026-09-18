@@ -43,18 +43,15 @@ ok(git('config', '--add', 'remote.published.push', ':obsolete'));
 // 以下報告與狀態只屬隔離 fixture；驗證格式例外不延伸至未歸檔工作。
 const report = join(cwd, '.shiftblame/tmp/merge-review.md');
 writeFileSync(report, '# 隔離測試報告\n此為合併提交閘的合成測試資料，不代表真實外部檢閱或產品驗收。\n對抗判定：通過\n');
-ok(run('adversarial', report));
 assert.equal(run('commitmsg', 'merge old').status, 1, 'intent 不接受合併格式');
 save({ ...state(), node: 'done' });
 assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接受合併格式');
 const withoutDeclaration = state();
-delete withoutDeclaration.adversarialAt;
-delete withoutDeclaration.adversarialConsumed;
 withoutDeclaration.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '2' }];
 withoutDeclaration.inputs = [{ at: new Date().toISOString(), text: '老闆：確認收尾' }];
-save(withoutDeclaration); // 合成缺提交宣告 fixture；end 驗時點 2 條目（時點對抗）不自動消費提交對抗。
+save(withoutDeclaration); // 合成 fixture；end 驗時點 2 條目（2.4.0 提交對抗已移除——印章無消費概念）。
 ok(run('end', '--boss-ok', '--adversarial')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
-assert.equal(run('commitmsg', 'merge old').status, 1, 'ended 缺提交對抗仍拒絕');
+ok(run('commitmsg', 'merge old')); // 2.4.0：ended 接受固定合併訊息——提交審核已移除，僅格式＋印章
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();
@@ -85,20 +82,17 @@ assert.match(run('closeout', '--base', 'trunk').stderr, /merge /, '指引固定�
 // 回復後以正確訊息重併——證據與訊息皆成立。
 ok(git('reset', '--hard', initial));
 ok(git('merge', '--no-ff', '--no-commit', 'fix/old'));
-ok(run('adversarial', report));
 for (const message of ['merge other', 'merge: old', 'merge old extra', 'merge old\n', 'merge old\r']) {
   assert.equal(run('commitmsg', message).status, 1, `拒絕非精確合併訊息 ${JSON.stringify(message)}`);
 }
 ok(run('commitmsg', 'merge old'));
 const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
 assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'merge old');
-assert.equal(state().adversarialConsumed, false, '發章不消費提交對抗');
 assert.equal(commitHook('merge other').status, 2, '實際提交仍須匹配訊息印章');
 ok(commitHook('merge old'));
-assert.equal(state().adversarialConsumed, true, '提交 hook 消費對抗');
 assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
 ok(git('commit', '-m', 'merge old'));
-assert.equal(run('commitmsg', 'merge old').status, 1, '已消費對抗不可重發章');
+ok(run('commitmsg', 'merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
 assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge old', '合併提交訊息＝merge <slug>');
 commit('base.txt', 'base-only commit\n');
 const baseTip = tip();
@@ -154,13 +148,11 @@ assert.equal(state().node, 'ended', '完結維持 ended 分類（歸檔與 close
 assert.match(run('state').stdout, /ended＋已完結/, 'state 讀出完結態');
 assert.equal(run('init', '--main').status, 1, '重複完結即拒');
 assert.match(run('init', '--main').stderr, /已完結/);
-// 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 closeout 查證）；正常 type 訊息照對抗＋發章。
-ok(run('adversarial', report));
+// 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 closeout 查證）；正常 type 訊息走格式閘＋發章。
 assert.equal(run('commitmsg', 'merge old').status, 1, '完結後固定合併訊息失效');
 assert.match(run('commitmsg', 'merge old').stderr, /已完結/);
 assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
 assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
-assert.equal(state().adversarialConsumed, true, '完結態 commit 消費對抗');
 assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
 commit('base2.txt', 'later base\n');
 const latestBase = tip();

@@ -21,6 +21,7 @@ const statePath = join(root, '.shiftblame/flow-state.json');
 const state = () => JSON.parse(readFileSync(statePath, 'utf8'));
 const setState = (mut) => { const st = state(); mut(st); writeFileSync(statePath, JSON.stringify(st, null, 2)); };
 const extCall = (tool) => hookRun({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: {} });
+const ptReport = (n) => { const f = join(root, '.shiftblame/tmp', `ext-pt${n}.md`); writeFileSync(f, `# 時點${n}對抗\n外部子代理原文節錄，實質內容足夠通過機械驗。\n對抗判定：通過`); return f; };
 
 assert.equal(git('init').status, 0);
 writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -28,15 +29,17 @@ writeFileSync(join(root, 'seed.txt'), 'seed\n');
 assert.equal(git('add', '.gitignore', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: initial').status, 0);
 assert.equal(run('init', 'demo').status, 0);
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR');
+writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 實作步驟\n沿用既有入口並驗證輸出。');
 
 // —— 1. requirement→research 進段重置：預塞舊證據 → 進段即清（fail-closed，舊查證不沿用）——
+// （requirement→research＝時點 1 邊——2.4.0 審意圖→需求翻譯，推進需 --boss-ok＋--adversarial＋point 1 條目）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'WebSearch' }; });
-assert.equal(run('next', 'research').status, 0);
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '時點 1 對抗宣告');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊');
 assert.equal(state().externalEvidence, null, 'requirement→research 進段重置');
 
 // —— 2. research→plan 零外部推不過 ——
@@ -80,8 +83,10 @@ r = run('next', 'requirement', '--boss-ok');
 assert.equal(r.status, 0, '重走：老闆決策邊 --boss-ok（重走必經 intent 路由器路由）');
 assert.equal(run('next', 'research', '--rerun', 'impl').status, 2, '已退役旗標被解析器 usage 擋（退役驗證——旗標本身須存在才能證明已死）');
 
-// —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次）——
-assert.equal(run('next', 'research').status, 0, '進 research——外部證據閘進段重置');
+// —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次；時點 1 重過＝新鮮條目）——
+assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '重走後新鮮時點 1 條目');
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '進 research——外部證據閘進段重置');
 r = run('next', 'plan');
 assert.equal(r.status, 1, '重走後零外部調用→擋（不得閉門自我檢驗）');
 assert.match(r.stderr, /零外部調用/);

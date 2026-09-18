@@ -25,7 +25,8 @@ function fixture(raw) {
   return { cwd, state, run, gate, git, report };
 }
 const active = { slug: 'demo', ms: '001', node: 'build', history: [] };
-const invalid = ['{broken', 'null', '[]', '{}', { slug: null }, { node: 'build' },
+// 2.4.0：空物件 {} 在 directState 放寬下屬合法 direct 態（非 invalid）——歸入合法區塊驗證。
+const invalid = ['{broken', 'null', '[]', { slug: null }, { node: 'build' },
   { ...active, history: null }, { ...active, node: 'unknown' },
   { slug: null, ms: null, node: null, history: [], stamps: {}, unlockLog: [] },
   { ...active, node: 'ended' }, { inputs: 'broken' }, { ...active, inputs: 'broken' },
@@ -33,7 +34,7 @@ const invalid = ['{broken', 'null', '[]', '{}', { slug: null }, { node: 'build' 
 for (const raw of invalid) {
   const f = fixture(raw), before = readFileSync(f.state, 'utf8');
   assert.equal(f.run('state').status, 1, before);
-  for (const args of [['adversarial', f.report], ['commitmsg', 'fix: 接入驗證'], ['next', 'intent'], ['end', '--boss-ok']]) {
+  for (const args of [['adversarial', f.report, '--point', '1'], ['commitmsg', 'fix: 接入驗證'], ['next', 'intent'], ['end', '--boss-ok']]) {
     const r = f.run(...args);
     assert.equal(r.status, 1, r.stdout);
     assert.match(r.stderr, /接入異常/);
@@ -77,12 +78,12 @@ for (const raw of invalid) {
   const saved = JSON.parse(readFileSync(join(f.cwd, '.shiftblame/tmp/recovery-inputs.jsonl'), 'utf8').trim());
   assert.equal(saved.text, '恢復前的新輸入\n原文保留');
 }
-// 合法未初始化與直接實行：不建 slug，對抗後、提交消費後仍可查詢。
+// 合法未初始化與直接實行：不建 slug——2.4.0 起無時點對抗（時點屬六段流程），提交走 commitmsg 格式閘，提交消費後仍可查詢。
 // 第三變體：純紀錄檔含 rewriteSeen（hooks 記錄鍵——HOOK_RECORD_KEYS 白名單容忍，不炸分類）。
 for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' }] }, { inputs: [{ at, text: '紀錄' }], rewriteSeen: { rev: 0, at } }]) {
   const f = fixture(initial);
   assert.equal(f.run('state').status, 0);
-  assert.equal(f.run('adversarial', f.report).status, 0);
+  assert.equal(f.run('adversarial', f.report, '--point', '1').status, 1, '直接實行無時點對抗——時點屬六段流程');
   assert.equal(f.run('state').status, 0);
   assert.match(f.run('state').stdout, /直接實行/);
   // 未覆蓋即凍結（hooks 機械強制）：輸入流有條目而理解流未覆蓋時，repo 寫入擋至第一步 think 落流；
@@ -107,7 +108,7 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
   assert.equal(gate.status, 0, gate.stderr);
   assert.equal(f.git('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', msg).status, 0);
   assert.equal(f.run('state').status, 0);
-  assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).adversarialConsumed, true);
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/tmp/commit-stamp.json')), false, '印章於 commit 驗章焚章（一對一）');
   assert.equal(existsSync(join(f.cwd, '.shiftblame/demo')), false);
 }
 // ended 態容忍 rewriteSeen 殘留（hooks 記錄鍵屬 HOOK_RECORD_KEYS——sb end 冪等清理外的防禦深度，不炸白名單）。
@@ -120,15 +121,13 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
 // 已發章後狀態損壞：提交仍擋，不能以舊印章通行或消費它。
 {
   const f = fixture({ inputs: [{ at, text: '修復' }] });
-  assert.equal(f.run('adversarial', f.report).status, 0);
   assert.equal(f.run('commitmsg', 'fix: 驗證提交時重查').status, 0);
   const stamp = join(f.cwd, '.shiftblame/tmp/commit-stamp.json');
   const original = readFileSync(stamp, 'utf8');
   const st = JSON.parse(readFileSync(f.state, 'utf8'));
   writeFileSync(f.state, JSON.stringify({ ...st, slug: 'half-initialized' }));
   assert.equal(f.gate('Bash', { command: 'git commit -m "fix: 驗證提交時重查"' }).status, 2);
-  assert.equal(readFileSync(stamp, 'utf8'), original);
-  assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).adversarialConsumed, false);
+  assert.equal(readFileSync(stamp, 'utf8'), original, '印章未被消費');
 }
 // 沒有對抗的合法主動 think 停等可以查詢，仍不能写入或發章。
 {
@@ -136,7 +135,7 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
   assert.equal(f.run('state').status, 0);
   assert.match(f.run('state').stdout, /停等/);
   assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md') }).status, 2);
-  assert.equal(f.run('adversarial', f.report).status, 1);
+  assert.equal(f.run('adversarial', f.report, '--point', '1').status, 1);
   assert.equal(f.run('init', 'demo').status, 1);
   for (const tool of ['exec_command', 'functions.exec_command', 'Bash']) {
     assert.equal(f.gate(tool, { cmd: 'git add README.md', command: 'git add README.md' }).status, 2, '所有支援 shell 均遵守停等');
@@ -146,6 +145,13 @@ for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' 
 {
   const f = fixture({ ...active, externalEvidence: null });
   assert.equal(f.run('state').status, 0, '正常外部證據重置仍有效');
+}
+// 2.4.0：空物件 directState——合法 direct 態可查詢、可發章。
+{
+  const f = fixture({});
+  assert.equal(f.run('state').status, 0, '空物件屬合法 direct 態');
+  assert.match(f.run('state').stdout, /直接實行/);
+  assert.equal(f.run('commitmsg', 'fix: 空物件直接實行').status, 0);
 }
 // 正常段位仍遵守既有矩陣。
 for (const initial of [undefined, { inputs: [{ at, text: '修復' }] }]) {
@@ -165,13 +171,13 @@ for (const initial of [undefined, { inputs: [{ at, text: '修復' }] }]) {
   mkdirSync(join(f.cwd, '.shiftblame/archive'));
   writeFileSync(join(f.cwd, '.shiftblame/SOP.md'), '既有專案規範\n');
   assert.equal(f.run('state').status, 0, '純專案文件與空歸檔不強制開 slug');
-  assert.equal(f.run('adversarial', f.report).status, 0);
-  const st = JSON.parse(readFileSync(f.state, 'utf8'));
-  const log = st.adversarialLog;
-  st.adversarialConsumed = true;
-  writeFileSync(f.state, JSON.stringify(st));
+  const stPath = f.state;
+  const st = existsSync(stPath) ? JSON.parse(readFileSync(stPath, 'utf8')) : {};
+  st.inputs = [{ at, text: '直接實行輸入' }];
+  mkdirSync(join(f.cwd, '.shiftblame'), { recursive: true });
+  writeFileSync(stPath, JSON.stringify(st));
   assert.equal(f.run('init', 'demo').status, 0, '另有開 slug 授權時仍可正常初始化');
-  assert.deepEqual(JSON.parse(readFileSync(f.state, 'utf8')).adversarialLog, log, '歷史提交紀錄保持原值');
+  assert.equal(JSON.parse(readFileSync(f.state, 'utf8')).inputsRotated ?? 0, 0, 'hooks 紀錄接納不重置');
 }
 for (const [node, expected] of [['build', 0], ['verify', 2], ['intent', 2]]) {
   const f = fixture({ ...active, node });

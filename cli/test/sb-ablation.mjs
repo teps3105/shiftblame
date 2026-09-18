@@ -103,8 +103,8 @@ ablation('對抗報告落點（僅 tmp，含實體路徑）', () => {
     ['relative(realpathSync(TMP), realpathSync(file))', 'relative(realpathSync(SB_DIR), realpathSync(file))'],
   ]);
   const probe = (script) => {
-    const root = mkSandbox({ flow: false, files: { '.shiftblame/review.md': '對抗判定：通過\n' } });
-    const result = cliRun(script, root, 'adversarial', '.shiftblame/review.md');
+    const root = mkSandbox({ files: { '.shiftblame/review.md': '對抗判定：通過\n' } });
+    const result = cliRun(script, root, 'adversarial', '.shiftblame/review.md', '--point', '1');
     rmSync(root, { recursive: true, force: true });
     return result.status;
   };
@@ -114,7 +114,7 @@ ablation('對抗報告落點（僅 tmp，含實體路徑）', () => {
 
 // —— hooks 機制（guard.mjs）——
 ablation('接入健康閘（異常不降級為無流程）', () => {
-  const broken = { slug: null, ms: null, node: null, history: [] };
+  const broken = { slug: 'demo', ms: '001', node: null, history: [] }; // slug 殘缺流程＝健康閘 invalid、nodeOf null（寫入矩陣不接手——隔離健康閘自身因果；2.4.0 directState 放寬：全 null 骨架屬合法直接實行態）
   const hookProbe = (script) => {
     const r = mkSandbox({ state: broken });
     const result = hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(r, 'README.md'), content: 'x' } });
@@ -126,11 +126,14 @@ ablation('接入健康閘（異常不降級為無流程）', () => {
   assert.equal(hookProbe(noHookHealth), 0, 'ablated：移除健康閘後 null 段位再次放行');
   const cliProbe = (script) => {
     const r = mkSandbox({ state: broken, files: { '.shiftblame/tmp/review-health.md': '對抗判定：通過\n' } });
-    const result = cliRun(script, r, 'adversarial', '.shiftblame/tmp/review-health.md');
+    const result = cliRun(script, r, 'adversarial', '.shiftblame/tmp/review-health.md', '--point', '1');
     rmSync(r, { recursive: true, force: true });
     return result.status;
   };
-  const noCliHealth = neutralize(SB, [['function requireHealthyState() {', 'function requireHealthyState() {\n  return readFlowState(ROOT); // ABLATED']]);
+  const noCliHealth = neutralize(SB, [
+    ['function requireHealthyState() {', 'function requireHealthyState() {\n  return readFlowState(ROOT); // ABLATED'],
+    ["if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬六段流程）']);", "if (false) die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬六段流程）']); // ABLATED"],
+  ]);
   assert.equal(cliProbe(SB), 1, 'intact：異常狀態擋提交對抗宣告');
   assert.equal(cliProbe(noCliHealth), 0, 'ablated：移除健康閘後可在異常狀態宣告對抗');
 });
@@ -282,7 +285,7 @@ ablation('git 路徑重定向攔截 checkGitRedirect（GIT_DIR/--git-dir）', ()
 
 // —— CLI 機制（sb.mjs）——
 ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () => {
-  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'plan' && to === 'test')); // ABLATED"]]);
+  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research')); // ABLATED"]]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'requirement'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：intent→requirement 缺 --boss-ok 被 CLI 擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉後 CLI 層繞過決策邊（hooks 層獨撐）');
@@ -290,14 +293,14 @@ ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () 
 
 ablation('CLI 時點對抗宣告閘 adversarialEdge×adversarialLog point 對照（CARD③ CLI 層，RAM/ROM）', () => {
   const neu = neutralize(SB, [['  const adv = adversarialEdge(st.node, target);\n  if (adv) {', '  const adv = adversarialEdge(st.node, target);\n  if (false && adv) { // ABLATED']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'plan' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1, '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'test', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.status; };
-  assert.equal(payload(SB), 1, 'intact：plan→test 缺 --adversarial 宣告被 CLI 擋');
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  assert.equal(payload(SB), 1, 'intact：requirement→research 缺 --adversarial 宣告被 CLI 擋（時點 1 對抗前置）');
   assert.equal(payload(neu), 0, 'ablated：拆掉後無對抗宣告即放行');
 });
 
 ablation('時點對抗 point 條目對照（--adversarial 對照源＝adversarialLog）', () => {
   const neu = neutralize(SB, [['      const entry = (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1);', '      const entry = null; // ABLATED']]);
-  const mk = (script, withPt) => { const r = mkSandbox({ state: { node: 'plan', adversarialLog: withPt ? [{ at: '2026-01-01T00:00:00Z', report: 'x', verdict: '通過', node: 'plan', point: '1' }] : [] }, files: { '.shiftblame/demo/001/G1.md': BDD_G1, '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'test', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const mk = (script, withPt) => { const r = mkSandbox({ state: { node: 'requirement', adversarialLog: withPt ? [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'requirement', point: '1' }] : [] }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(mk(SB, false), 1, 'intact：無 point 條目即擋（RAM 對照源）');
   assert.equal(mk(SB, true), 0, 'intact：point 條目存在→過（新鮮度：無前次同邊推進）');
   assert.equal(mk(neu, true), 1, 'ablated：拆掉條目對照後仍擋於其他閘或放行不一致（條目存在卻被當無）');
@@ -328,13 +331,13 @@ ablation('老闆輸入新鮮度閘 bossFresh pass 出口（next/end 鑰匙鏈同
 ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
   const neu = neutralize(SB, [['function validateG1Acceptance(g1, problems, passes) {\n  const rows = acRows(g1);', 'function validateG1Acceptance(g1, problems, passes) {\n  return []; // ABLATED\n  const rows = acRows(g1);']]);
   const badG1 = BDD_G1.replace('- 消融：拿掉則無法送出且看不到結果\n', ''); // 僅刪消融行——第六鍵的隔離擋下證明（其餘五鍵完好）
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G1.md': badG1 } }); const h = cliRun(script, r, 'next', 'research'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement', adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'requirement', point: '1' }] }, files: { '.shiftblame/demo/001/G1.md': badG1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：BDD 缺第六鍵消融被擋（其餘五鍵完好——隔離證明）');
   assert.equal(payload(neu), 0, 'ablated：拆掉規格閘後模板照抄即過');
 });
 
 ablation('G1 契約核對（放行後偏離即擋）', () => {
-  const neu = neutralize(SB, [['if (st.g1Contract?.ms === st.ms && target !== \'intent\') {', 'if (false && st.g1Contract?.ms === st.ms && target !== \'intent\') { // ABLATED']]);
+  const neu = neutralize(SB, [["if (st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) {", "if (false && st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) { // ABLATED"]]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'build', g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：G1 偏離放行契約被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉核對後契約漂移放行');

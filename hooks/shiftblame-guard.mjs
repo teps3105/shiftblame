@@ -62,13 +62,13 @@ const projectRoot = (input) => {
 const CARD = [ // 核心不變量；RAM/ROM 分層（G/SLUG=ROM、tmp+flow-state=RAM）；審計＝確認→分發邊的外部對抗
   '[shiftblame 不變量]',
   '①老闆輸入先路由 shiftblame:think（全域入口，不屬於任何段）；揭露第一動——六欄理解立即呈現（先跑內部機制再揭露＝溝通摩擦）；未定案必問（老闆決策域的開放問題明確列出提問停等，沉默≠批准，靜默自裁＝越權）；無歧義即執行。未覆蓋即凍結：任何新輸入未經帶 args 的 think 理解宣告覆蓋前，hooks 硬擋寫入類與流程推進——第一步 think 由機械保證，不是意識到才補路由。新需求主動問走 main（四步：意圖揭露→迭代實作→對抗＋提交閘→老闆判 pass/fail）還是開 slug（管理文件＋<type>/<slug> 分支兩層兩段式六段流程）；免問例外——已有活動 slug（續 slug）、純問題類（直接答）、老闆已明確指定。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪（計返工輪＋rewrite 載入閘）、段內修復自動旗標切段；確認→審計（推進指令外部對抗）→分發——銜接律：審計邊終點＝推進起點。收斂定案權在老闆。',
-  '②兩層兩段式（段鏈）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗在前、老闆判定在後（pass 才 plan→test 放行）。實作層 test→build→verify——逐功能：提交閘 commit（單功能單提交，測試碼＋實作碼同 commit）回 test 接下一功能；收斂期 E2E 後時點 2 對抗在前、老闆判定在後——pass 出口 next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由；段內修復自動旗標切段不停等不計輪。前進要鑰匙（--boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗章與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
-  '③兩時點對抗（對抗在前、老闆判定在後）：時點 1＝定義層放行（plan→test）前——對抗方向；時點 2＝ms 出口（--new-ms／sb end）前——對抗收斂成果（CLI 對兩出口驗新鮮度）；段內提交閘＝實作層一每功能 commit 前對抗（非時點編號）。--adversarial＋adversarialLog point 條目對照（--point 1／2；新鮮度＝晚於同邊上次推進），不一致即擋。',
+  '②兩層兩段式（段鏈）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗在前、老闆判定在後（pass 才 requirement→research 推進——審意圖→需求翻譯）；plan→test 機械推進（零審核）。實作層 test→build→verify——逐功能：提交閘 commit（單功能單提交，測試碼＋實作碼同 commit）回 test 接下一功能；收斂期 E2E 後時點 2 對抗在前、老闆判定在後（驗收回指意圖）——pass 出口 next（sb next intent --new-ms --boss-ok）或 end（sb end --boss-ok --adversarial）。老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由；段內修復自動旗標切段不停等不計輪。前進要鑰匙（老闆決策邊 --boss-ok＋時點對抗）——--boss-ok 由老闆輸入承載（輸入流時戳新鮮度，CLI 驗），對抗條目與理解宣告不替代老闆章，缺老闆決策即 sb stop-report --question 申報停等。',
+  '③兩時點對抗（對抗在前、老闆判定在後；審核資源前移需求與驗收兩接縫，中鏈零審核）：時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 能否從行為矩陣還原一列、翻譯保真）；時點 2＝ms 出口（--new-ms／sb end）前——驗收回指意圖（測試綠但 AC 從行為矩陣還原不出＝假綠燈；CLI 對兩出口驗新鮮度）。--adversarial＋adversarialLog point 條目對照（--point 1／2；新鮮度＝晚於同邊上次推進），不一致即擋；中鏈（research→plan→test→build→verify）僅機械格式閘。',
   '④雙流：輸入流唯增（事實，不覆蓋不消費）；理解流＝shiftblame:think args（雜湊鏈唯增，含意圖／問題分類標注）；正當性＝理解宣告＋必然曝光，無前置攔截。',
   '⑤曝光＝核心制衡：每則輸入展示未審理解＋未覆蓋輸入——越權當場可見；偽造由抽查承擔。',
   '⑥commit 必過 sb commitmsg（hooks 硬擋）；staged 系統檔不入庫（.shiftblame/）；路徑 root 錨定絕對展開；git 重定向／alias 攔截；verify 對 repo 唯讀。G/SLUG＝ROM（自足定義＋回指——返工輪（rev 有值）寫 G 前 hooks 驗本輪已調用 shiftblame:rewrite，重寫為當下事實不靠自發）；受治理寫入子代理的工作落點＝.shiftblame/tmp/（零 repo 寫入權，主對話依其結果整合回當前分支）；對話、工作過程與交接文件一律 .shiftblame/tmp/；flow-state 承載機械狀態。路徑、檔名、slug、命名與註釋須可離開對話辨識；規範溯及既往，舊內容同樣盤點清理。',
   '⑦版號屬老闆決策。',
-  '⑧提交＝段內提交閘（非時點編號）：sb adversarial（外部唯讀子代理＋報告落檔＋判定「通過」）→ sb commitmsg 發章不消費 → hooks 於 commit 消費焚章（一對一）；測試碼＋實作碼同 commit——單功能單提交；假對抗抽查承擔。',
+  '⑧提交＝sb commitmsg（格式驗證＋staged 系統檔檢查＋印章；hooks 於 commit 驗章焚章——審核不在提交時點，對抗承載於兩時點）；測試碼＋實作碼同 commit——單功能單提交。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
   '⑩回合結束≠流程完成：插入疑問以 commentary 解答後接續已授權未完工作；定義級補充／修正先實際 sb next intent（段內修復自動旗標切段回指定 node），再 sb state 查證同 slug／ms 並更新理解（無流程不為形式建 slug）。final 前確認應回退者已回退、應分發者已分發；僅整體完成、無未完工作的純問答、具體待決／必要輸入（須 sb stop-report --question 申報≥10 字具體問題）、主動 think 停等、明確暫停／取消或實際阻塞可停。停點偵測（防偷懶停）：流程進行中（intent~verify、非停等）而無申報即停＝擋停一次——條件式（有申報／hold／無流程一律放行）、單次（stop_hook_active 或本回合已擋過即放行）、不代做路由（不改 node、不判語義，非無條件續跑）；申報與懶停由曝光＋老闆終審承擔。',
   '⑪迴圈斷路器常開（同操作回合內第 4 次重複即擋並要求改變策略、第 7 次升級自動回 intent 依修正分類補正 G1~G3 後接續——不凍結不停擺；同指紋二次升級＝死操作本回合封禁——防遞迴無限擴大；持續推進的多樣操作永遠放行；計數屬純觀測——無預算無上限，工作做到完成為止）；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms（pass）前擋）；基質優先：git／平台已答的另造即拆（重複造輪子），規則由元行為證據錨定、修剪而非堆疊。',
@@ -94,12 +94,12 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——意圖揭露路由起點；老闆新輸入經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
-    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（requirement→research 邊格式閘）';
+    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（GWT 能否從行為矩陣還原一列）；推進前時點 1 對抗（sb adversarial --point 1——審意圖→需求翻譯）＋老闆 pass（--boss-ok），對抗在前老闆判定在後';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
-    if (st.node === 'plan') hint = '——放行前：§10 核對＋時點 1 對抗（--adversarial＋--point 1 條目；對抗在前、老闆判定在後）＋停靠簡報（老闆 pass 後帶 --boss-ok 推進）';
-    if (st.node === 'verify') hint = '——實作層：功能 AC 判定＝段內判決（紅燈旗標切段修復）；時點 2 對抗在前、老闆判定在後——pass 出口 next（--new-ms）或 end；fail＝老闆新輸入回意圖揭露——判決紀錄寫 G1 回指區';
+    if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫＋§10 一致核對；plan→test 機械推進（零審核——時點 1 已於 requirement→research 承載）';
+    if (st.node === 'verify') hint = '——實作層：功能 AC 判定＝段內判決（紅燈旗標切段修復）；時點 2 對抗（驗收回指意圖）在前、老闆判定在後——pass 出口 next（--new-ms）或 end；fail＝老闆新輸入回意圖揭露——判決紀錄寫 G1 回指區';
 
     let sopNote = '';
     try {
@@ -385,18 +385,18 @@ function understandingReviewLine(root, mark = true) {
   } catch { return ''; }
 }
 
-// 老闆決策邊雙重鎖：雙邊（intent→requirement／plan→test）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
+// 老闆決策邊雙重鎖：雙邊（intent→requirement／requirement→research＝時點 1）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
 // 時點 1＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復走旗標切段（test→build→verify 迴圈內），不經此雙邊
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|test)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const edge = { intent: 'requirement', plan: 'test' }[st.node];
-    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|test)\b/)?.[1];
+    const edge = { intent: 'requirement', requirement: 'research' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/)?.[1];
     if (edge && edge === target) {
-      return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗章不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
+      return `老闆決策邊：${st.node}→${target}——--boss-ok 由老闆輸入承載（輸入流新鮮度由 CLI 驗），對抗條目不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
     }
   } catch { /* 非治理工作區 */ }
   return null;
@@ -805,7 +805,7 @@ function checkGitRedirect(cmd) {
 }
 
 // -C 目標錨定（跨 repo 提交）：git 段含絕對 -C 目標時，該目標即本段提交的查證錨點——staged／印章／
-// 對抗狀態／文件鐵律全改對目標 repo 生效（章落目標專案、消費目標的對抗宣告），外部 session 以
+// 停等與唯讀檢查／文件鐵律全改對目標 repo 生效（章落目標專案），外部 session 以
 // git -C <絕對路徑> 提交內部 repo 因此成為合法且全額驗證的路徑；相對 -C 一律擋（路徑展開元規則）。
 function gitCRoot(seg, root) {
   const c = seg.match(/(?:^|\s)-C\s+(?:"([^"]+)"|'([^']+)'|([^\s;&|]+))/);
@@ -823,7 +823,7 @@ function checkCommitStamp(root, seg) {
   // 必須理順邏輯後實質重寫（重看條目、重評估、重設計），追加補釘堆疊即擋。機械判準：修改的框架 .md 於 staged diff
   // 「新增＞0 且刪除＝0」（相對 HEAD）＝純追加；新增檔以 --diff-filter=A 名單豁免（numstat 同形不可判）；純刪除（修剪）放行；
   // merge／rebase 進行中豁免（衝突收尾與歷史重放非演化編輯）。繞過面如實標註：改一字＋整段追加可過本閘（量測分工——
-  // 品質由提交對抗與老闆終審承擔）。
+  // 品質由兩時點對抗與老闆終審承擔）。
   if (existsSync(join(root, 'skills', 'shiftblame', 'SKILL.md')) && existsSync(join(root, 'hooks', 'shiftblame-guard.mjs'))) {
     try {
       if (!existsSync(join(root, '.git', 'MERGE_HEAD')) && !existsSync(join(root, '.git', 'REBASE_HEAD'))) {
@@ -843,7 +843,7 @@ function checkCommitStamp(root, seg) {
           if (offenders.length) return '文件鐵律：框架文件隨演化必須理順邏輯後實質重寫（重看條目、重評估、重設計），非追加補釘堆疊——以下檔案本批僅追加零刪改，重寫既有本文後再提交：' + offenders.slice(0, 5).join('、');
         }
       }
-    } catch { /* 檢查不可行時回退既有閘（提交對抗與老闆終審承擔） */ }
+    } catch { /* 檢查不可行時回退既有閘（兩時點對抗與老闆終審承擔） */ }
   }
   const stampPath = join(root, '.shiftblame', 'tmp', 'commit-stamp.json');
   if (!existsSync(stampPath)) return '缺少 commit 印章——在本次提交的錨定專案（git -C 有目標時＝該目標 repo）跑 sb commitmsg "<訊息>"，再以相同訊息 commit';
@@ -856,18 +856,13 @@ function checkCommitStamp(root, seg) {
     if (age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）——重跑 sb commitmsg "<訊息>"';
     if (age < -60000) return 'commit 印章時間戳在未來——僅接受剛產生的印章，重跑 sb commitmsg';
     if (stamp.message !== extracted.msg) return 'commit 訊息與印章不符——以完全相同的訊息重跑 sb commitmsg 後再 commit';
-    // 提交對抗閘（與 sb commitmsg 同判據）：手寫印章檔繞過 commitmsg 的路徑在此補死——
-    // 消費印章同時核對 flow-state 對抗宣告（存在且未消費）並一併消費（返工修復至提交必然觸發，CARD⑧）
+    // 2.4.0：提交對抗閘已移除（審核資源前移需求與驗收兩時點——段內提交僅機械格式面：印章＋格式＋唯讀與停等檢查）；
+    // 印章消費不再核對 flow-state 對抗宣告，手寫印章偽造由抽查與老闆終審承擔
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     let st = null;
     try { st = JSON.parse(readFileSync(statePath, 'utf8')); } catch { /* 無狀態檔 */ }
     if (st?.understandingHold) return '理解停等尚未解除——不得提交';
     if (st?.node === 'verify') return '驗收段對 repo 唯讀——不得提交';
-    if (!st || !st.adversarialAt || st.adversarialConsumed) {
-      return '提交前需對抗記錄——外部唯讀子代理對抗、報告落檔後 sb adversarial <報告檔> 宣告（判定須「通過」；對抗閘全路徑生效）';
-    }
-    st.adversarialConsumed = true;
-    writeFileSync(statePath, JSON.stringify(st, null, 2));
     unlinkSync(stampPath); // 一次性消費：一枚印章授權一次 commit，重複 commit 須重新驗證
     return null; // 通過
   } catch { return 'commit 印章無法讀取——重跑 sb commitmsg "<訊息>"'; }

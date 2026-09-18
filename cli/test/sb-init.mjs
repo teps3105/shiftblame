@@ -60,7 +60,7 @@ for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__
 }
 const invalid = [
   { ...record, externalEvidence: { done: true, at, tool: 'functions.exec' } },
-  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } },null, [], {}, { slug: null }, { node: 'mystery' }, { history: [] },
+  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } },null, [], { slug: null }, { node: 'mystery' }, { history: [] },
   { ...record, unknown: true }, { hooksHeartbeat: {} }, { inputs: 'bad' },
   { inputs: [{ at, text: 1 }] }, { inputs: [{ at: 'bad', text: 'x' }] },
   { hooksHeartbeat: { at: '2026-02-30T05:20:59.219Z', event: 'SessionStart' } },
@@ -96,7 +96,7 @@ function endedFixture() {
   const oldDoc = readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8');
   const review = join(f.cwd, '.shiftblame/tmp/review.md');
   writeFileSync(review, '對抗判定：通過\n');
-  assert.equal(f.run('adversarial', review).status, 0, 'ended 收尾提交可留下新對抗紀錄');
+  assert.equal(f.run('adversarial', review).status, 1, 'ended 不再收新對抗條目（2.4.0 時點屬六段流程）');
   // end 已清空舊流，模擬其後由 hooks 寫入的新紀錄。
   writeFileSync(f.file, JSON.stringify({ ...JSON.parse(readFileSync(f.file, 'utf8')), ...record }));
   const before = readFileSync(f.file, 'utf8');
@@ -116,7 +116,7 @@ function endedFixture() {
   assert.equal(existsSync(join(f.cwd, '.shiftblame/archive/INDEX.md')), false, '歸檔清單機制已除——archive 僅承載 slug 目錄');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/next/001')));
   assert.equal(f.run('state').status, 0);
-  assert.equal(f.run('commitmsg', 'fix: 新工作不可沿用舊對抗').status, 1);
+  assert.equal(f.run('commitmsg', 'fix: 收尾提交走機械格式閘').status, 0);
 }
 for (const mutate of [
   st => ({ ...st, node: 'done' }),

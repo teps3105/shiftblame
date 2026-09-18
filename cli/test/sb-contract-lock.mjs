@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 契約測試：G1 於 plan→test 時點 1 放行邊封存（hash 記 flow-state）；偏離即擋；回 intent（老闆新輸入回意圖揭露）重定義
+// 契約測試：G1 於 requirement→research 時點 1 邊封存（hash 記 flow-state）；偏離即擋；回 intent（老闆新輸入回意圖揭露）重定義
 const root = mkdtempSync(join(tmpdir(), 'sb-contract-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -32,12 +32,15 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點 1 對抗\n外部子代理原文節錄內容足夠實質。\n對抗判定：通過');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-assert.equal(run('next', 'research').status, 0);
+assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '1').status, 0); // 時點 1 對抗（requirement→research 邊——審意圖→需求翻譯）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯正確，推進研究' }); // 老闆輸入新鮮度（requirement→research 老闆決策邊）
+assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0); // 時點 1 邊——G1 契約封存（自進 research 起全鏈凍結）
+const sealed = state();
+assert.match(sealed.g1Contract.sha256, /^[a-f0-9]{64}$/);
+assert.equal(sealed.g1Contract.snapshot, undefined);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '1').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：放行測試' }); // 老闆輸入新鮮度（plan→test 邊）
-assert.equal(run('next', 'test', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 const locked = state();
 assert.match(locked.g1Contract.sha256, /^[a-f0-9]{64}$/);
 assert.equal(locked.g1Contract.snapshot, undefined);
