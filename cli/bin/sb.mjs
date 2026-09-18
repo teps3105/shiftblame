@@ -374,7 +374,7 @@ function gate(st, target, opts) {
     problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（授權語義由理解流曝光承擔）；時點對抗在前、老闆判定在後——pass 才推進（SKILL §3）`);
   } else if (opts.bossOk) {
     if (!bossFresh(st, target)) {
-      problems.push('老闆決策邊缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於同邊上次推進／本次 slug 起始的條目），對抗章與理解宣告不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等老闆');
+      problems.push('老闆決策邊缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於同邊上次推進的條目；時點對抗邊另須晚於本次對抗條目——老闆章錨定「看了對抗報告之後」，防舊輸入被當成本次判定），對抗章與理解宣告不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等老闆');
       const note = hooksHealthNote(); if (note) problems.push(note);
     } else passes.push('老闆授權留痕（--boss-ok＋老闆輸入新鮮度已驗）');
   }
@@ -999,14 +999,17 @@ function cmdSopreview(answers) {
 
 // 老闆輸入新鮮度（老闆決策邊鑰匙的事實承載）：--boss-ok 由老闆輸入承載——輸入流（hooks UserPromptSubmit
 // 唯增記錄）須存在晚於基準的條目，對抗章與理解宣告不替代老闆章；缺老闆決策即 stop-report 申報停等。
-// 基準鏈＝max(同邊上次推進 at（不過濾旗標，鏡像時點 1 新鮮度）, 本 ms 末次進 verify at（僅 pass 出口——
-// 終審在驗收執行後）, slug 起始 at)。純時戳判定零語義（機械不掃詞）——本閘是「老闆在場且開過口」的下限，
-// 語義授權由理解流曝光＋老闆終審承擔；偽造輸入紀錄由抽查承擔。
+// 基準鏈＝max(同邊上次推進 at（不過濾旗標，鏡像時點 1 新鮮度）, 本次 point 對抗條目 at（僅對抗邊——
+// 老闆章錨定本次對抗報告之後：「看了對抗報告才准」，防重走鏈中舊輸入被當成本次判定的 pass 章雙重消費）,
+// 本 ms 末次進 verify at（僅 pass 出口——終審在驗收執行後）, slug 起始 at)。純時戳判定零語義（機械不掃詞）
+// ——本閘是「老闆在場且開過口」的下限，語義授權由理解流曝光＋老闆終審承擔；偽造輸入紀錄由抽查承擔。
 function bossFresh(st, target, { passExit = false } = {}) {
   const ts = (s) => { const t = Date.parse(s); return Number.isFinite(t) ? t : 0; };
   const sameEdgeAt = (st.history ?? []).filter((h) => h.from === st.node && h.to === target).at(-1)?.at;
   const verifyAt = passExit ? (st.history ?? []).filter((h) => h.to === 'verify' && h.ms === st.ms).at(-1)?.at : undefined;
-  const base = Math.max(ts(sameEdgeAt), ts(verifyAt), ts(st.startedAt));
+  const adv = adversarialEdge(st.node, target);
+  const advEntryAt = adv ? (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1)?.at : undefined;
+  const base = Math.max(ts(sameEdgeAt), ts(advEntryAt), ts(verifyAt), ts(st.startedAt));
   return (st.inputs ?? []).some((e) => ts(e.at) > base);
 }
 function cmdEnd(opts) {

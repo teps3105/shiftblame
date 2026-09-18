@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "以時序制衡約束 agent——意圖揭露＋六段流程（requirement→research→plan→test→build→verify，intent 是意圖揭露的機械載體、流程之因，六段是實現意圖的手段鏈），兩層兩段式：定義層（理論）與實作層（實際）各成循環、段間切換一律 sb next 旗標切段；老闆任何新輸入（含兩時點 fail）回意圖揭露經 intent 路由器路由（定義級同 ms 開新輪）；審核資源集中在兩時點——時點 1＝requirement→research 邊（審意圖→需求翻譯）、時點 2＝build→verify 邊（審驗收資格——GWT 回指、假綠燈），對抗在前、老闆判定在後，pass 才 --boss-ok 推進；verify＝真驗收執行（GWT 逐條＝驗收劇本實操、行為證據落回指區），驗收完成老闆看行為證據終審 pass 出口（--new-ms 開下一里程碑或 sb end 結束 slug），時點對抗採 sb adversarial --point 1|2＋adversarialLog point 條目對照（雙流模型機械抗上下文壓縮），中鏈與段內提交零審核（提交僅 sb commitmsg 格式閘——單功能單提交）；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）；閘門只讀 git 事實與 flow-state.json；主對話秘書連續承載所有段，技術證據不足時強制外部唯讀意見，主對話複核後自行承擔裁定；commit、判決、推進、路由、pass 出口由主對話獨佔。",
   "author": {
     "name": "teps3105"

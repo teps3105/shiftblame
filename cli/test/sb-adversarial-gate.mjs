@@ -38,6 +38,8 @@ assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目僅屬 RAM 對照（2.4.0 無 commit 章分流）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆輸入（2.4.2——晚於本次對抗條目：老闆章錨定對抗報告之後）
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解宣告：老闆確認時點 1 需求翻譯 pass——授權 requirement→research 推進' } }); // 理解宣告覆蓋最新輸入（未覆蓋即凍結解凍——後段 hooks commit 測試承載）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
@@ -313,8 +315,8 @@ assert.equal(git('status', '--porcelain').stdout.trim(), '', '段後工作樹全
 writeFileSync(join(root, 'seed.txt'), 'v2\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆判定（對抗在前老闆判定在後）
 assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告（build→verify 邊前置）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆判定（2.4.2——晚於本次對抗條目；對抗在前老闆判定在後）
 assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（build→verify——審驗收資格：GWT 回指、假綠燈，2.4.1 前移）');
 
 // 4. 出口（next --new-ms／end 兩門）＝老闆終審章（--boss-ok）——對抗已在 build→verify 進段前，出口不重驗對抗
@@ -328,6 +330,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆輸入（2.4.2——晚於本次對抗條目）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '重走進 research——外部證據閘進段重置＋時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
@@ -340,11 +343,13 @@ assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'f
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆輸入（晚於上次同邊推進）
 assert.match(run('next', 'verify', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '時點 2 條目早於同邊上次推進即擋（第一輪舊條目已過期）');
 assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆輸入（2.4.2——晚於本次對抗條目）
 assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（對抗在前老闆判定在後——老闆准的是開始驗收）');
 assert.equal(run('next', 'build').status, 0, 'verify→build 旗標切段（驗收發現問題回 build 修復，不計返工輪）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：修復畢，時點 2 重過' }); // 第二次過邊——老闆輸入晚於上次同邊推進
 assert.match(run('next', 'verify', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 2 條目早於同邊上次推進即擋（新鮮度）');
 assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '重審補時點 2 條目');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 重審通過' }); // build→verify 邊老闆輸入（2.4.2——晚於本次對抗條目）
 assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 重過（真驗收資格重審）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（出口終審——晚於本 ms 進 verify）
 assert.equal(run('end', '--boss-ok').status, 0, '出口僅老闆終審章（--boss-ok）——對抗已在進段前，不重驗');
