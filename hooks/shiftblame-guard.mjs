@@ -63,14 +63,14 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '[shiftblame 不變量]',
   '①老闆主權（A1）：意圖宣告、兩時點 pass/fail、出口、版號、路由與授權只在老闆；沉默≠批准，靜默自裁＝越權；老闆已明確指定者照辦不重問；機制發明須標注「新發明」單獨取得同意。',
   '②事實唯增·雙流（A2）：輸入流唯增（不覆蓋不消費）；理解流＝think args（雜湊鏈唯增）；正當性＝理解宣告＋必然曝光；抗上下文壓縮；偽造由抽查承擔。',
-  '③意圖先於行動（A3）：所有老闆輸入第一步調 shiftblame:think（帶 args 理解宣告），不字面執行；未覆蓋即凍結——hooks 硬擋寫入類與流程推進（唯讀、Skill、tmp 自由），落檔即解凍。新輸入（含兩時點 fail）回意圖揭露經 intent 路由器：定義級 sb next intent 開新輪（計返工輪＋rewrite 載入閘）、段內修復自動旗標切段；確認→審計（推進指令外部對抗）→分發。新需求問走 main 還是開 slug（免問：續活動 slug／純問題／已指定）。對老闆輸出＝人話（A10）：揭露首行一句翻譯、停等首行待判定事、無開場白無客套。',
-  '④段鏈（A4）：定義層 requirement→research→plan（逐功能規劃循環→收斂）；實作層 test→build→verify（逐功能單提交迭代→E2E 收斂）；段間切換一律 sb next 旗標切段；輪內單向、產出即定稿；修正＝回 intent 開新輪；段內修復旗標切段不計輪。',
-  '⑤兩時點（A5）：時點 1 對抗（requirement→research——審意圖→需求翻譯）與時點 2 對抗（build→verify——審驗收資格：GWT 回指、假綠燈）皆對抗在前、老闆判定在後；中鏈零審核。推進帶 --adversarial＋--boss-ok——老闆章由老闆實際輸入承載（CLI 驗時戳；另須晚於本次對抗條目——錨定對抗報告之後防舊輸入冒名）；對抗條目與理解宣告不替代老闆章；出口（--new-ms／sb end）＝終審章不重驗對抗；缺老闆決策即 sb stop-report --question 申報停等。',
+  '③意圖先於行動（A3）：所有老闆輸入第一步調 shiftblame:think（帶 args 理解宣告），不字面執行；未覆蓋即凍結——hooks 硬擋寫入類與流程推進（唯讀、Skill、tmp 自由），落檔即解凍。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段圓環環首）：sb next intent 開新輪（計返工輪＋rewrite 載入閘）、段內修復（執行性修復，非新意圖）自動旗標切段；確認→審計（推進指令外部對抗）→分發。新需求問走 main 還是開 slug（免問：續活動 slug／純問題／已指定）。對老闆輸出＝人話（A10）：揭露首行一句翻譯、停等首行待判定事、無開場白無客套。',
+  '④段鏈（A4）：七段圓環——intent（環首＝環尾：既是起點也是終點，不屬任何層）＋定義層 requirement→research→plan（逐功能規劃循環→收斂）＋實作層 test→build→verify（逐功能單提交迭代→E2E 收斂）；段間切換一律 sb next 旗標切段；輪內單向、產出即定稿；修正＝重走 intent 開新輪；段內修復旗標切段不計輪。',
+  '⑤兩時點（A5）：時點 1 對抗（requirement→research——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈）皆對抗在前、老闆判定在後；中鏈零審核（build→verify 機械推進）。推進帶 --adversarial＋--boss-ok——老闆章由老闆實際輸入承載（CLI 驗時戳；另須晚於本次對抗條目——錨定對抗報告之後防舊輸入冒名）；對抗條目與理解宣告不替代老闆章；出口（--new-ms／sb end）＝時點 2 對抗條目＋終審章同一邊；缺老闆決策即 sb stop-report --question 申報停等。',
   '⑥行為證據（A6）：verify＝真驗收執行——GWT 逐條劇本（Given 實際建立→When 實際操作→Then 觀察真實行為）、證據落回指區；驗收依據＝行為是否發生，非測試燈號；未跑必標「未驗」。',
   '⑦寫入分區（A7）：G/SLUG＝ROM（定義區綁定義邊、回指區綁落地邊；返工輪寫 G 前 hooks 驗本輪已調 shiftblame:rewrite）；tmp＋flow-state＝RAM（對話、工作過程與交接文件一律 .shiftblame/tmp/——自由傾倒區）；子代理零 repo 寫入權；staged 系統檔不入庫；路徑 root 錨定絕對展開、git 重定向／alias 攔截；命名與註釋可離開對話辨識、規範溯及既往。',
   '⑧提交（A7）：commit 必過 sb commitmsg（格式＋staged 檢查＋印章；hooks 驗章焚章——審核承載於兩時點）；測試碼＋實作碼同 commit——單功能單提交。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
-  '⑩曝光與停點（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（同操作第 4 次擋、第 7 次升級自動回 intent 補正續行、二次升級封禁；純觀測——工作做到完成為止）。停點偵測（防偷懶停）：活動流程無申報即停擋停一次（條件式、單次、不代做路由）。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／sb stop-report 申報具體待決／主動 think 停等／明確暫停／取消／實際阻塞；狀態異常修復後重跑 sb state 查證。',
+  '⑩曝光與停點（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（同操作第 4 次擋、第 7 次升級自動重走 intent 補正續行、二次升級封禁；純觀測——工作做到完成為止；非停等期＝互動式迭代——改一點看一點，不一次改完）。停點偵測（防偷懶停）：活動流程無申報即停擋停一次（條件式、單次、不代做路由）。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／sb stop-report 申報具體待決／主動 think 停等／明確暫停／取消／實際阻塞；狀態異常修復後重跑 sb state 查證。',
   '⑪基質與修剪（A9）：基質優先——git／平台已答的另造即拆；規則由元行為證據錨定、修剪而非堆疊；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms 前擋）。',
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
 ].join('\n');
@@ -93,13 +93,13 @@ function nodeLine(root) {
     if (!existsSync(statePath)) return '';
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
-    if (st.node === 'intent') hint = '——意圖揭露路由起點；老闆新輸入經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
+    if (st.node === 'intent') hint = '——七段圓環環首（老闆意圖沉澱，起點也是終點）；任何新意圖在該 ms 內一律重走 intent——sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
     if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（GWT 能否從行為矩陣還原一列）；推進前時點 1 對抗（sb adversarial --point 1——審意圖→需求翻譯）＋老闆 pass（--boss-ok），對抗在前老闆判定在後';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫＋§10 一致核對；plan→test 機械推進（零審核——時點 1 已於 requirement→research 承載）';
-    if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；驗不過 fail＝老闆新輸入回意圖揭露（修復旗標切段）；驗收完成老闆終審 pass 出口 next（--new-ms）或 end';
+    if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；驗不過 fail＝老闆新輸入重走 intent（修復旗標切段）；驗收完成、G1 回指閉環後時點 2 對抗（sb adversarial --point 2——審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 出口 next（--new-ms --adversarial --boss-ok）或 end（--adversarial --boss-ok）';
 
     let sopNote = '';
     try {
@@ -110,7 +110,7 @@ function nodeLine(root) {
       if (parts.length) sopNote = `\n[SOP／ROADMAP] ${parts.join('＋')}｜本 ms 審查：${st.sopReview?.ms === st.ms ? `已審 @${st.sopReview.at}` : '未審（開新 ms（pass）前擋——sb sopreview <三問結論>）'}｜審查＝全文＋機械基本功（updated 同步、零日期日誌行、零重複）`;
     } catch { }
     let loopNote = '';
-    if (st.turnUsage?.escalations) loopNote = `\n[迴圈升級] 本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent 開新輪，依修正分類補正 G1~G3 後接續（不凍結不停擺；同指紋二次升級＝死操作本回合封禁；計數純觀測）`;
+    if (st.turnUsage?.escalations) loopNote = `\n[迴圈升級] 本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動重走 intent 開新輪，依修正分類補正 G1~G3 後接續（不凍結不停擺；同指紋二次升級＝死操作本回合封禁；計數純觀測）`;
     return `\n[段] ${st.slug ?? '?'}/${st.ms ?? '?'} @ ${st.node ?? '?'}${hint}——推進必過 sb next 閘門（sb state 查下一步）。${loopNote}${sopNote}`;
   } catch { return ''; }
 }
@@ -163,7 +163,7 @@ function rotateStreams(root, st) {
 // 計數屬純觀測：無預算、無上限、零干預——工作做到完成為止；量的會計由 sb end 遙測結算（事後可見性）。
 // 迴圈斷路器（常開）＝遞迴防護：重複才是死圈特徵——同指紋（工具＋操作全量信號 hash）回合內
 // 第 4 次出現即擋該次調用（要求改變策略：重跑同樣的失敗＝無限循環）；被擋後仍重複至第 7 次＝升級：
-// 自動回 intent（任何活動段；不凍結不停擺）——依修正分類補正 G1~G3 後接續；同指紋第二次升級＝死操作，
+// 自動重走 intent（任何活動段；不凍結不停擺）——依修正分類補正 G1~G3 後接續；同指紋第二次升級＝死操作，
 // 本回合封禁該操作（防宏觀升級循環），其餘工作照常推進。escalatedAt／escalations 屬純觀測，非凍結旗標；
 // history 條目留 budgetExhausted（CLI 對照 escalatedAt——歷史鍵名，語義＝迴圈升級）。
 const FLOW_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify']);
@@ -198,13 +198,13 @@ function countUsage(root, tool, cmd, toolInput) {
       if (minKey) delete prints[minKey];
     }
     writeFileSync(statePath, JSON.stringify(st, null, 2));
-    // 迴圈斷路器：同操作重複即擋（要求改變策略）；被擋仍重複至升級線＝自動回 intent 續行（不凍結不停擺）。
+    // 迴圈斷路器：同操作重複即擋（要求改變策略）；被擋仍重複至升級線＝自動重走 intent 續行（不凍結不停擺）。
     // 豁免面（Skill 與 sb state／sb next intent——逃生操作可重複使用）；停等期間只計數（寫入／推進由 checkHoldFreeze 治理）。
     const escapeOp = /^skill$/i.test(String(tool ?? '')) || (SHELL_TOOL_RE.test(String(tool ?? '')) && LOOP_ESCAPE_RE.test(String(cmd ?? '')));
     if (escapeOp || st.understandingHold) return { st };
     const preview = String(cmd || toolInput?.file_path || toolInput?.path || toolInput?.skill || tool || '').replace(/\s+/g, ' ').slice(0, 60);
     if (prints[fp] >= LOOP_DENY_AT && prints[fp] < LOOP_ESCALATE_AT) {
-      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續；第 7 次升級＝自動回 intent 補正 G1~G3 後續行；本回合調用計數由 sb state 查閱` };
+      return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第 ${prints[fp]} 次相同重複——重跑同樣的失敗＝無限循環；改變策略（修根因／換方法／不同操作）後繼續；第 7 次升級＝自動重走 intent 補正 G1~G3 後續行；本回合調用計數由 sb state 查閱` };
     }
     if (prints[fp] >= LOOP_ESCALATE_AT) {
       const fpEsc = isRecord(st.turnUsage.fpEscalations) ? st.turnUsage.fpEscalations : (st.turnUsage.fpEscalations = {});
@@ -214,7 +214,7 @@ function countUsage(root, tool, cmd, toolInput) {
       if (fpEsc[fp] >= 2) {
         // 同指紋二次升級＝死操作：回 intent 補正後仍原樣重跑——本回合封禁此操作（防宏觀升級循環）；其他操作與工作不受影響。
         writeFileSync(statePath, JSON.stringify(st, null, 2));
-        return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第二次升級——已證明為死操作（回 intent 補正 G1~G3 後仍原樣重跑）；本回合封禁此操作，換操作或改變策略續行（其他工作照常推進）` };
+        return { st, loopDeny: `迴圈斷路器：此操作（${preview}）本回合已第二次升級——已證明為死操作（重走 intent 補正 G1~G3 後仍原樣重跑）；本回合封禁此操作，換操作或改變策略續行（其他工作照常推進）` };
       }
       // 升級：重置指紋表（補正後的新輪重新計數）＋自動回 intent（任何活動段；intent 時免跑）——工作不停止。
       st.turnUsage.fingerprints = {};
@@ -227,7 +227,7 @@ function countUsage(root, tool, cmd, toolInput) {
         writeFileSync(statePath, JSON.stringify(st, null, 2)); // 先落檔——spawn 出的 sb next intent 須讀到 escalatedAt（history 留痕對照）
         const sbPath = fileURLToPath(new URL('../cli/bin/sb.mjs', import.meta.url));
         const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });
-        retreatNote = r.status === 0 ? '已自動回 intent 開新輪' : `自動回 intent 失敗——手動執行 sb next intent：${String(r.stderr || r.stdout || '').trim().slice(0, 160)}`;
+        retreatNote = r.status === 0 ? '已自動重走 intent 開新輪' : `自動重走 intent 失敗——手動執行 sb next intent：${String(r.stderr || r.stdout || '').trim().slice(0, 160)}`;
       }
       return { st, loopDeny: `迴圈斷路器升級：此操作（${preview}）本回合第 ${prints[fp]} 次相同重複（被擋後仍重複）——${retreatNote}；依修正分類補正 G1~G3 後接續（CONFORMS＝細化 G2/G3、G1 不變；真屬 G1 衝突才走 §1.4.1 修約經老闆確認）——工作不停止、不凍結（定義段首走升級重走時仍停在老闆決策邊，屬既有設計）` };
     }
@@ -442,7 +442,7 @@ function checkGFileMatrix(root, toolInput) {
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
       const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區）' }[g];
-      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝回 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
+      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝重走 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
     }
   }
   return null;
@@ -615,7 +615,7 @@ function checkStateWriteMatrix(root, toolInput) {
     if (isTest) {
       if (node !== 'test' && node !== 'build') return `[shiftblame] 測試碼（${rel}）寫入權屬 test＋build 段（實作層——test 撰寫功能測試、build 到接合點補寫整合；隨功能實作同 commit 定稿）；重修回 test 段後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；老闆新輸入回意圖揭露經 intent 路由器路由後才可寫（SKILL 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；老闆新輸入重走 intent 開新輪後才可寫（SKILL 寫入矩陣）`;
     }
   }
   return null;

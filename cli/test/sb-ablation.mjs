@@ -132,7 +132,7 @@ ablation('接入健康閘（異常不降級為無流程）', () => {
   };
   const noCliHealth = neutralize(SB, [
     ['function requireHealthyState() {', 'function requireHealthyState() {\n  return readFlowState(ROOT); // ABLATED'],
-    ["if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬六段流程）']);", "if (false) die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬六段流程）']); // ABLATED"],
+    ["if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬七段圓環流程）']);", "if (false) die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬七段圓環流程）']); // ABLATED"],
   ]);
   assert.equal(cliProbe(SB), 1, 'intact：異常狀態擋提交對抗宣告');
   assert.equal(cliProbe(noCliHealth), 0, 'ablated：移除健康閘後可在異常狀態宣告對抗');
@@ -285,14 +285,14 @@ ablation('git 路徑重定向攔截 checkGitRedirect（GIT_DIR/--git-dir）', ()
 
 // —— CLI 機制（sb.mjs）——
 ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () => {
-  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research') || (from === 'build' && to === 'verify');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research') || (from === 'build' && to === 'verify')); // ABLATED"]]);
+  const neu = neutralize(SB, [["const needsBossOk = (from, to) =>\n  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');", "const needsBossOk = (from, to) =>\n  false && ((from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research')); // ABLATED"]]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'intent' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'requirement'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：intent→requirement 缺 --boss-ok 被 CLI 擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉後 CLI 層繞過決策邊（hooks 層獨撐）');
 });
 
 ablation('CLI 時點對抗宣告閘 adversarialEdge×adversarialLog point 對照（CARD③ CLI 層，RAM/ROM）', () => {
-  const neu = neutralize(SB, [['  const adv = adversarialEdge(st.node, target);\n  if (adv) {', '  const adv = adversarialEdge(st.node, target);\n  if (false && adv) { // ABLATED']]);
+  const neu = neutralize(SB, [['  const advGate = adv && (adv.point !== \'2\' || opts.newMs);\n  if (advGate) {', '  const advGate = adv && (adv.point !== \'2\' || opts.newMs);\n  if (false && advGate) { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：requirement→research 缺 --adversarial 宣告被 CLI 擋（時點 1 對抗前置）');
   assert.equal(payload(neu), 0, 'ablated：拆掉後無對抗宣告即放行');
@@ -321,13 +321,13 @@ ablation('老闆輸入新鮮度閘 bossFresh 主邊（--boss-ok 由老闆輸入�
 });
 
 ablation('老闆輸入新鮮度閘 bossFresh pass 出口（next/end 鑰匙鏈同源）', () => {
-  const neu = neutralize(SB, [['if (!bossFresh(st, \'ended\', { passExit: true })) die(', 'if (false) die( // ABLATED']]);
-  const probe = (script) => { const r = mkSandbox({ state: { node: 'verify', inputs: [], adversarialLog: [{ at: new Date().toISOString(), report: 'x', verdict: '通過', node: 'verify', point: '2' }] } }); const h = cliRun(script, r, 'end', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
+  const neu = neutralize(SB, [['if (!bossFresh(st, \'intent\', { passExit: true })) die(', 'if (false) die( // ABLATED']]);
+  const probe = (script) => { const r = mkSandbox({ state: { node: 'verify', inputs: [], adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: 'x', verdict: '通過', node: 'verify', point: '2' }] } }); const h = cliRun(script, r, 'end', '--adversarial', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
   assert.match(probe(SB), /pass 結束缺新鮮老闆輸入/, 'intact：過期輸入不承載 pass 出口老闆決策');
   assert.doesNotMatch(probe(neu), /pass 結束缺新鮮老闆輸入/, 'ablated：拆掉出口新鮮度檢');
 });
 
-ablation('bossFresh 對抗邊老闆章錨定（2.4.2——老闆輸入須晚於本次對抗條目，防舊輸入冒名雙重消費）', () => {
+ablation('bossFresh 對抗邊老闆章錨定（老闆輸入須晚於本次對抗條目，防舊輸入冒名雙重消費）', () => {
   const neu = neutralize(SB, [['  const advEntryAt = adv ? (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1)?.at : undefined;', '  const advEntryAt = undefined; // ABLATED']]);
   const mk = (script) => { const r = mkSandbox({ state: { node: 'requirement', startedAt: new Date(Date.now() - 120000).toISOString(), inputs: [{ at: new Date(Date.now() - 90000).toISOString(), text: '老闆：確認推進' }], adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: 'x', verdict: '通過', node: 'requirement', point: '1' }] }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.stderr; };
   assert.match(mk(SB), /缺新鮮老闆輸入/, 'intact：老闆輸入早於本次對抗條目即擋（老闆章錨定對抗報告之後——時點 1 停靠機械強制）');
@@ -345,7 +345,7 @@ ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
 
 ablation('G1 契約核對（放行後偏離即擋）', () => {
   const neu = neutralize(SB, [["if (st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) {", "if (false && st.g1Contract?.ms === st.ms && target !== 'intent' && !(st.node === 'requirement' && target === 'research')) { // ABLATED"]]);
-  const payload = (script) => { const ptAt = new Date(Date.now() - 60000).toISOString(); const r = mkSandbox({ state: { node: 'build', inputs: [{ at: new Date().toISOString(), text: '老闆：時點 2 pass，開始驗收' }], adversarialLog: [{ at: ptAt, report: 'x', verdict: '通過', node: 'build', point: '2' }], g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  const payload = (script) => { const ptAt = new Date(Date.now() - 60000).toISOString(); const r = mkSandbox({ state: { node: 'build', inputs: [{ at: new Date().toISOString(), text: '老闆：驗收通過，決定出口' }], adversarialLog: [{ at: ptAt, report: 'x', verdict: '通過', node: 'verify', point: '2' }], g1Contract: { ms: '001', file: join(r_placeholder(), 'G1.md'), sha256: 'deadbeef'.repeat(8) } }, files: { '.shiftblame/demo/001/G1.md': '# 驗收\n被改動。' } }); const h = cliRun(script, r, 'next', 'verify'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：G1 偏離放行契約被擋');
   assert.equal(payload(neu), 0, 'ablated：拆掉核對後契約漂移放行');
   function r_placeholder() { return '.shiftblame/demo/001'; }
@@ -630,7 +630,7 @@ ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒�
 ablation('SOP／ROADMAP 每 ms 審查閘（pass 前機械驗本 ms 已審）', () => {
   const neu = neutralize(SB, [['if (sopProblem) die([sopProblem]);', '// ABLATED']]);
   const probe = (script) => {
-    const r = mkSandbox({ state: { node: 'verify', adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] }, files: { '.shiftblame/SOP.md': '# SOP\n本專案規範。\n' } });
+    const r = mkSandbox({ state: { node: 'verify', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] }, files: { '.shiftblame/SOP.md': '# SOP\n本專案規範。\n' } });
     const result = cliRun(script, r, 'end', '--boss-ok', '--adversarial');
     rmSync(r, { recursive: true, force: true });
     return result;
@@ -642,7 +642,7 @@ ablation('SOP／ROADMAP 每 ms 審查閘（pass 前機械驗本 ms 已審）', (
 ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout）', () => {
   const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit, slug) {', 'function noFfMergeEvidence(workCommit, baseCommit, slug) {\n  return baseCommit; // ABLATED']]);
   const probe = (script) => {
-    const r = mkSandbox({ git: true, state: { node: 'verify', adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] } });
+    const r = mkSandbox({ git: true, state: { node: 'verify', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] } });
     const base = spawnSync('git', ['branch', '--show-current'], { cwd: r, encoding: 'utf8' }).stdout.trim();
     spawnSync('git', ['checkout', '-b', 'feat/demo'], { cwd: r });
     writeFileSync(join(r, 'work.txt'), 'w\n');

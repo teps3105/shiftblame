@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 契約測試：G1 於 requirement→research 時點 1 邊封存（hash 記 flow-state）；偏離即擋；回 intent（老闆新輸入回意圖揭露）重定義
+// 契約測試：G1 於 requirement→research 時點 1 邊封存（hash 記 flow-state）；偏離即擋；重走 intent（老闆新輸入）重定義
 const root = mkdtempSync(join(tmpdir(), 'sb-contract-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -47,12 +47,12 @@ assert.equal(locked.g1Contract.snapshot, undefined);
 // 回指區更新→定義區 hash 不觸（RAM/ROM 分區封存正向）
 { const g1 = readFileSync(join(ms, 'G1.md'), 'utf8'); writeFileSync(join(ms, 'G1.md'), g1 + '- AC-01｜判定=SATISFIED｜證據節錄=節錄｜commit=abc\n'); }
 assert.equal(run('next', 'build').status, 0, '回指區追加不觸契約（定義區未變）');
-// 定義區偏離／分隔標題破壞→前進擋；回 intent（老闆新輸入回意圖揭露）不擋
+// 定義區偏離／分隔標題破壞→前進擋；重走 intent（老闆新輸入）不擋
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n局部模型改寫了契約。');
 assert.match(run('next', 'verify').stderr, /分隔標題出現 0 次|已偏離/);
 const revOut = run('next', 'intent');
 assert.equal(revOut.status, 0);
-assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '回 intent 開新輪——純計數訊息');
+assert.match(revOut.stdout, /修正輪 r01：新輪重寫自洽/, '重走 intent 開新輪——純計數訊息');
 assert.equal(state().g1Contract, undefined); // 回 intent 解除契約，重定義後重新封存
 assert.equal(state().rev, 1, '輪次編號記入 flow-state');
 assert.ok(!existsSync(join(ms, 'rev')), '零 rev 目錄寫入（歷史歸 git）');

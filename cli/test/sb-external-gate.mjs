@@ -1,5 +1,5 @@
 // sb-external-gate：研究外部性閘——externalEvidence 標記（真實 hooks）、
-// research→plan 邊驗（零外部推不過）、回 intent 開新輪重走（老闆決策邊）＋進 research 段重置（每次重走重新驗）
+// research→plan 邊驗（零外部推不過）、重走 intent 開新輪（老闆決策邊）＋進 research 段重置（每次重走重新驗）
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -77,11 +77,11 @@ assert.equal(state().externalEvidence.tool, 'WebSearch');
 r = run('next', 'plan');
 assert.equal(r.status, 0, '外部調用後 research→plan 過（規模自由：一次即底線）');
 
-// —— 5. 重走（老闆新輸入回意圖揭露經 intent 路由器路由→定義級同 ms 開新輪）：重走＝老闆決策邊 --boss-ok ——
+// —— 5. 重走（老闆新輸入重走 intent→定義級同 ms 開新輪）：重走＝老闆決策邊 --boss-ok ——
 setState((st) => { st.node = 'intent'; });
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
 r = run('next', 'requirement', '--boss-ok');
-assert.equal(r.status, 0, '重走：老闆決策邊 --boss-ok（重走必經 intent 路由器路由）');
+assert.equal(r.status, 0, '重走：老闆決策邊 --boss-ok（重走必經 intent 環首）');
 assert.equal(run('next', 'research', '--rerun', 'impl').status, 2, '已退役旗標被解析器 usage 擋（退役驗證——旗標本身須存在才能證明已死）');
 
 // —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次；時點 1 重過＝新鮮條目）——
@@ -101,6 +101,6 @@ assert.equal(r.status, 0, '外部協助後重走推進過');
 
 // —— 8. 回 intent 中止：回頭邊免外部驗——重置責任在再進 research 的進段邊 ——
 r = run('next', 'intent');
-assert.equal(r.status, 0, '回意圖揭露免外部驗（回頭邊）');
+assert.equal(r.status, 0, '重走 intent 免外部驗（回頭邊）');
 assert.equal(run('next', 'requirement').status, 1, 'intent→requirement 決策邊缺 --boss-ok 擋');
 console.log('sb-external-gate: pass');

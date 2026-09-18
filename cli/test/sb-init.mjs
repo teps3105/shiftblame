@@ -83,8 +83,11 @@ function endedFixture() {
   const f = fixture();
   assert.equal(f.run('init', 'old').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
-  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', inputs: [{ at: new Date().toISOString(), text: '老闆：確認收尾' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }], adversarialConsumed: false }));
-  const end = f.run('end', '--boss-ok');
+  // 出口時序：slug 起始 < 時點 2 對抗條目 < 老闆終審輸入（老闆章錨定對抗報告之後——出口同一邊兩章）
+  const t0 = Date.parse(st.startedAt);
+  const advAt = new Date(t0 + 60_000).toISOString(), bossAt = new Date(t0 + 120_000).toISOString();
+  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', inputs: [{ at: bossAt, text: '老闆：確認收尾' }], adversarialAt: advAt, adversarialLog: [{ at: advAt, report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }], adversarialConsumed: false }));
+  const end = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(end.status, 0, end.stderr);
   return f;
 }
@@ -96,7 +99,7 @@ function endedFixture() {
   const oldDoc = readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8');
   const review = join(f.cwd, '.shiftblame/tmp/review.md');
   writeFileSync(review, '對抗判定：通過\n');
-  assert.equal(f.run('adversarial', review).status, 1, 'ended 不再收新對抗條目（2.4.0 時點屬六段流程）');
+  assert.equal(f.run('adversarial', review).status, 1, 'ended 不再收新對抗條目（時點屬七段圓環流程——slug 已結束）');
   // end 已清空舊流，模擬其後由 hooks 寫入的新紀錄。
   writeFileSync(f.file, JSON.stringify({ ...JSON.parse(readFileSync(f.file, 'utf8')), ...record }));
   const before = readFileSync(f.file, 'utf8');
@@ -138,12 +141,12 @@ for (const mutate of [
 }
 // 歸檔目標占用：die 於寫檔前——狀態仍 verify、雙方目錄原樣（可重試）。
 {
-  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', history: [], inputs: [{ at: new Date().toISOString(), text: '老闆：確認收尾' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }], adversarialConsumed: false }));
+  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', history: [], inputs: [{ at: '2026-09-07T05:21:59.219Z', text: '老闆：確認收尾' }], adversarialLog: [{ at: '2026-09-07T05:20:59.219Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }] }));
   mkdirSync(join(f.cwd, '.shiftblame/old'), { recursive: true });
   writeFileSync(join(f.cwd, '.shiftblame/old/SLUG.md'), 'doc\n');
   mkdirSync(join(f.cwd, '.shiftblame/archive/old'), { recursive: true });
   const before = readFileSync(f.file, 'utf8');
-  const endRun = f.run('end', '--boss-ok');
+  const endRun = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(endRun.status, 1, '歸檔目標占用即擋');
   assert.match(endRun.stderr, /歸檔目標已占用/);
   assert.equal(readFileSync(f.file, 'utf8'), before, 'die 於寫檔前——狀態仍 verify 可重試');
@@ -151,17 +154,17 @@ for (const mutate of [
 }
 // 舊版判決通過態（node:done）遷移：2.2.0 語意＝verify pass 後——出口同 pass；推進寫檔即自然遷移為 2.2.0 態。
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], inputs: [{ at: new Date().toISOString(), text: '老闆：確認收尾' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }] }));
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], inputs: [{ at: '2026-09-07T05:21:01.000Z', text: '老闆：確認收尾' }], adversarialLog: [{ at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }] }));
   assert.match(f.run('state').stdout, /舊版判決通過態/, 'state 唯讀遷移讀出（不改檔）');
-  const endRun = f.run('end', '--boss-ok');
+  const endRun = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(endRun.status, 0, endRun.stderr);
   const ended = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(ended.node, 'ended', '舊 done 態經 end 遷移為 ended');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/archive/legacy/SLUG.md')) === false, '無 slug 目錄時跳過歸檔移動');
 }
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: new Date().toISOString(), text: '老闆：開下一里程碑' }], adversarialAt: at, adversarialLog: [{ at: new Date().toISOString(), report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }], rewriteSeen: { rev: 1, at: new Date().toISOString() } }));
-  const r = f.run('next', 'intent', '--new-ms', '--boss-ok');
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: '2026-09-07T05:21:01.000Z', text: '老闆：開下一里程碑' }], adversarialLog: [{ at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }], rewriteSeen: { rev: 1, at: '2026-09-07T05:21:01.000Z' } }));
+  const r = f.run('next', 'intent', '--new-ms', '--adversarial', '--boss-ok');
   assert.equal(r.status, 0, r.stderr);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.node, 'intent');

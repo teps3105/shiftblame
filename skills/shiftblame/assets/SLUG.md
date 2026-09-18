@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.5.0
+revision: 2.5.1
 ---
 # SLUG — `<slug>`
 
@@ -39,7 +39,7 @@ revision: 2.5.0
 
 ## 4. 目前段與進度
 
-只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。流程節點對應**意圖揭露＋六段**：`intent` 是意圖揭露的機械載體（流程之因的狀態位，非流程段），六段＝`requirement／research／plan／test／build／verify`（意圖的手段鏈）。老闆任何新輸入（含 fail 判定）一律回意圖揭露，揭露後由 intent 路由器路由（定義級＝回 intent 開新輪，計返工輪＋rewrite 載入閘；段內修復＝agents 旗標切段回指定 node，不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（requirement→research 邊，審意圖→需求翻譯）pass 才 `--boss-ok` 推進；時點 2（build→verify 邊，審驗收資格：GWT 回指、假綠燈）pass 才 `sb next verify --boss-ok --adversarial` 推進真驗收；真驗收完成老闆終審 pass 走出口（`sb next intent --new-ms`／`sb end`，帶 --boss-ok 終審章——不重驗對抗）；中鏈（research→plan→test）機械推進零審核。
+只有老闆說「開新 ms」時才能新增一列；同一子需求的追加／重修更新原列。流程節點對應**七段圓環**：`intent` 是環首也是環尾（老闆意圖沉澱，不屬任何層），其餘六段＝定義層 `requirement／research／plan`＋實作層 `test／build／verify`（意圖的手段鏈）。任何新意圖（含 fail 判定）在該 ms 內一律重走 intent 開新輪（計返工輪＋rewrite 載入閘）；段內修復＝agents 旗標切段回指定 node（不計輪不停等）；前進要鑰匙（--boss-ok＋時點對抗 --adversarial）。兩時點皆對抗在前、老闆判定在後——時點 1（requirement→research 邊，G1 準則建立後審意圖→需求翻譯）pass 才 `--boss-ok --adversarial` 推進；時點 2（verify 出口邊，驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 同一邊走出口（`sb next intent --new-ms --adversarial --boss-ok`／`sb end --adversarial --boss-ok`）；中鏈（research→plan→test→build→verify）機械推進零審核（build→verify＝E2E 全綠＋working tree 乾淨即過）。
 
 > SLUG 是 ROM（收斂產出）——對抗產物（時點對抗記錄、攻擊點、修復輪次）屬邊的暫存（RAM），落 `.shiftblame/tmp/` 與 flow-state（adversarialLog），不寫入本檔。
 
@@ -71,9 +71,9 @@ revision: 2.5.0
 flowchart LR
     A[intent]:::todo --> B[requirement]:::todo --> C[research]:::todo --> D[plan]:::todo
     D --> E[test]:::todo --> F[build]:::todo --> G[verify]:::todo
-    G -.->|老闆新輸入回意圖揭露·經intent路由| A
-    G -->|真驗收完成 老闆終審pass 出口：--new-ms 開新 ms| A
-    G --> H{sb end}:::todo --> I[收尾+archive]:::todo
+    G -.->|任何新意圖·重走intent開新輪| A
+    G -->|驗收完成·G1回指閉環 時點2對抗畢·老闆終審pass 出口：--new-ms 開新 ms| A
+    G -->|時點2對抗＋終審pass| H{sb end}:::todo --> I[收尾+archive]:::todo
     classDef done fill:#c8e6c9,stroke:#388e3c
     classDef active fill:#ffe082,stroke:#f57f17,stroke-width:3px
     classDef todo fill:#eeeeee,stroke:#9e9e9e,stroke-dasharray: 5 5
@@ -81,13 +81,13 @@ flowchart LR
 
 > **維護規則**：把目前段的 `:::todo` 改為 `:::active`、已走過的改 `:::done`、未到的保持 `:::todo`。
 
-**ms 驗收 pass ≠ slug 結束**：前者是真驗收完成老闆終審 pass 後走出口（`--new-ms` 開下一里程碑或 `sb end`——`--boss-ok` 終審章留痕，時點 2 對抗已在 build→verify 進段前）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
+**ms 驗收 pass ≠ slug 結束**：前者是真驗收完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 走出口（`--new-ms` 開下一里程碑或 `sb end`——出口＝時點 2 對抗條目＋`--boss-ok` 終審章同一邊）；後者是老闆以 `sb end` 結束 slug（收尾歸檔——移 <repo>/.shiftblame/archive/）。老闆在同一 slug 內開新 ms 不需先結束 slug。frontmatter `status`：建立時 `in_progress`，`sb end` 後改 `ended`。
 
 ## 5. 目標與品質
 
 - **目標**：（填）
 - **業務品質**：（填）
-- **範圍**：（正向完備描述——由目標與業務品質界定；範圍外＝尚未授權，回意圖揭露經 intent 路由可擴）
+- **範圍**：（正向完備描述——由目標與業務品質界定；範圍外＝尚未授權，重走 intent 擴大授權）
 
 ## 6. 技術債
 
@@ -121,7 +121,7 @@ flowchart LR
 
 ### G1 範本 — 需求／驗收標準（requirement 段主導）
 
-> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 shiftblame:think 已確認語義直接定稿（輪內單向定律，A4）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 MECHANISMS §9）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，時點 1 過邊（requirement→research）時 CLI 對定義區 hash 封存；verify 段把 AC 判定收斂寫入回指區（段內秘書判決，不觸契約）。契約不足／衝突＝停經 think 老闆裁決後回 intent 開新輪重定義後重新過時點 1。
+> requirement 段主導（G1 定義邊；verify 為裁判邊）——需求建立在經查證的現況事實上（盤點 codebase 實況、對照文件差異、識別過時假設），承接 shiftblame:think 已確認語義直接定稿（輪內單向定律，A4）；只寫需求／驗收面向，不寫技術選型或實作步驟。每項 AC-ID 以 BDD 行為規格表達（Given 前置情境／When 操作／Then 可觀察結果＋使用者＋失敗邊界＋消融——拿掉此需求使用者失去什麼可觀察價值，答不出＝偽需求；消融原則 MECHANISMS §9）。G1 定義區（`## 回指記錄` 標題前）只由 requirement 段寫，時點 1 過邊（requirement→research）時 CLI 對定義區 hash 封存；verify 段把 AC 判定收斂寫入回指區（段內秘書判決，不觸契約）。契約不足／衝突＝停經 think 老闆裁決後重走 intent 開新輪重定義後重新過時點 1。
 
 **0. 需求架構索引**（老闆入口——一眼看懂這個 ms 要做什麼）
 
@@ -188,7 +188,7 @@ flowchart LR
 
 **4. 範圍**
 
-> 範圍由需求結論與驗收契約正向完備界定（補集自然排除）——範圍外的不是「不做」，而是尚未授權，發現需要時回意圖揭露經 intent 路由擴大授權（老闆任何新輸入回揭露）。填寫時考慮跨模組耦合影響，視野不因本 ms 焦點侷限於局部。
+> 範圍由需求結論與驗收契約正向完備界定（補集自然排除）——範圍外的不是「不做」，而是尚未授權，發現需要時重走 intent 擴大授權（老闆任何新意圖一律重走 intent）。填寫時考慮跨模組耦合影響，視野不因本 ms 焦點侷限於局部。
 
 - **必須包含**：（填）
 - **使用情境**：（填）

@@ -50,7 +50,7 @@ assert.equal(run('init', 'demo').status, 0);
 assert.equal(state().baseCommit, baseline, 'init 錨定 git baseline（進入需求層前的時序錨點）');
 assert.match(state().startedAt, /^\d{4}-\d\d-\d\dT/, 'init 記起始時間（耗時基準）');
 
-// —— 2. 六段快走到執行段（test）——
+// —— 2. 七段圓環快走到執行段（test）——
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
@@ -121,7 +121,7 @@ const u7 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inpu
 assert.equal(u7.status, 0, '新回合工具恢復（同操作指紋隨回合重置）');
 assert.equal(state().turnUsage.requests, 1, '新回合從 1 重新計數');
 
-// —— 4. 重走（老闆新輸入回意圖揭露→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
+// —— 4. 重走（老闆新輸入重走 intent→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊＋時點 1 邊——晚於上次同邊推進）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
@@ -136,15 +136,14 @@ commit('test-1.mjs', 'test: cover acceptance');
 assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
-assert.equal(pt('2').status, 0, '時點 2 宣告（build→verify 邊前置——審驗收資格：GWT 回指、假綠燈）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆判定（2.4.2——晚於本次對抗條目；對抗在前老闆判定在後）
-assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（build→verify，2.4.1 前移）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆輸入新鮮度（出口終審——晚於本 ms 進 verify）
+assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（中鏈零審核——樹淨即過）');
+assert.equal(pt('2').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（晚於時點 2 條目＋本 ms 進 verify）
 
 // —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n');
-assert.match(run('end', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
 assert.match(run('sopreview').status !== undefined && run('sopreview').stderr, /三問結論/, '缺三問結論即擋');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n本專案規範。\n2026-01-01 起改用新流程\n');
 const dirty = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
@@ -155,7 +154,7 @@ writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n--
 assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
 assert.match(state().sopReview.answers, /三問全過/, '三問結論落檔');
-const endOut = run('end', '--boss-ok');
+const endOut = run('end', '--adversarial', '--boss-ok');
 assert.equal(endOut.status, 0, endOut.stderr);
 
 // —— 6. 產出遙測：git baseline 錨定＋對抗判定（含審查模型）＋計數＋耗時 ——

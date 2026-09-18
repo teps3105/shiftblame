@@ -3,8 +3,8 @@
 //
 // 對抗兩類系統性問題：
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
-//      對策：兩層兩段式段鏈＋回頭邊（→intent 經 intent 路由器路由）＋每個推進點的前置閘門；推進
-//      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭＝老闆新輸入回意圖揭露，前進要鑰匙。
+//      對策：七段圓環（intent 環首＝環尾）＋兩層兩段式段鏈＋回頭邊（任意段→intent 重走開新輪）＋每個推進點的前置閘門；推進
+//      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭＝老闆新輸入重走 intent，前進要鑰匙。
 //   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋adversarialLog point 條目對照
 //      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
 //      與時點對抗承擔（閘門不讀 tmp）。
@@ -43,47 +43,47 @@ const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好',
 // 敷衍詞（段落全為此類 = 假）
 const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
 
-// ———— 段節點鏈（兩層兩段式）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；時點 1 對抗＋老闆 pass
-// 於 requirement→research 邊（審「意圖→需求翻譯」——審核資源前移需求與驗收兩接縫）；plan→test 機械推進（假規劃閘，零審核）；
+// ———— 段節點鏈（七段圓環——intent 環首＝環尾＋兩層兩段式）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；
+// 時點 1 對抗＋老闆 pass 於 requirement→research 邊（G1 準則建立後審「意圖→需求翻譯」）；plan→test 機械推進（假規劃閘，零審核）；
 // 實作層 test→build→verify（逐功能：提交閘 commit 回 test；紅燈段內修復旗標切段——build→test、verify→build→test；
-// 中鏈零審核資源，僅機械格式閘）；全部功能完成後時點 2 對抗＋老闆 pass 於 build→verify 邊（審驗收資格——GWT 回指意圖、
-// 假綠燈：測試綠但 AC 從行為矩陣還原不出＝綠燈無效）；verify＝真驗收執行——G1 GWT 逐條＝驗收劇本（Given 實際建立→
-// When 實際操作→Then 觀察真實行為→證據落回指區），驗收依據＝行為是否真的發生而非測試燈號；驗收完成老闆終審 pass
-// 出口（verify→intent 帶 --new-ms 開新 ms，或 sb end 結束 slug——--boss-ok 終審章，對抗已在進段前）。 ————
+// 中鏈零審核資源，僅機械格式閘——build→verify 亦機械推進：E2E 全綠＋working tree 乾淨即過）；verify＝真驗收執行——G1 GWT
+// 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區），驗收依據＝行為是否真的發生而非
+// 測試燈號；驗收完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 於 verify 出口邊（審驗收結果——GWT 回指意圖、假綠燈：
+// 測試綠但 AC 從行為矩陣還原不出＝綠燈無效；出口同一邊兩章：verify→intent 帶 --new-ms 開新 ms，或 sb end 結束 slug）。 ————
 
 const FLOW = {
-  intent:  { next: ['requirement'], desc: '意圖揭露載體（非流程段）：意圖揭露路由起點——老闆新輸入經 intent 路由器路由（定義級開新輪／pass 出口落點）' },
+  intent:  { next: ['requirement'], desc: '七段圓環環首＝環尾（老闆意圖沉澱，不屬任何層）：任何新意圖在該 ms 內一律重走 intent 開新輪；verify 出口邊閉環落點' },
   requirement: { next: ['research'], desc: 'G1 定義邊：經查證的現況事實＋BDD 行為規格；推進前時點 1 對抗＋老闆 pass（審意圖→需求翻譯）' },
   research:{ next: ['plan', 'requirement'], desc: 'G2 定義邊：技術分析（外部證據打底）；回 requirement＝旗標切段（逐功能循環／CONFORMS 補正——不計返工輪，進段重置外部證據；補正後重進本段即重封存 G1 契約）' },
   plan:    { next: ['test', 'research', 'requirement'], desc: 'G3 定義邊：驗收排程＋實作計畫；plan→test 機械推進（假規劃閘，零審核）；回 research／requirement＝旗標切段（逐功能循環「下一功能」／CONFORMS 補正——不計返工輪）' },
   test:    { next: ['build'], desc: 'G3 落地邊：撰寫功能測試（回指驗收排程 AC-ID 映射）' },
-  build:   { next: ['verify', 'test'], desc: 'G2 落地邊：實作＋提交閘 commit（單功能單提交）；段內修復旗標切段回 test；全部功能完成後 build→verify 邊＝時點 2 對抗＋老闆 pass（審驗收資格——GWT 回指、假綠燈）' },
-  verify:  { next: ['intent', 'test', 'build'], desc: '真驗收執行：G1 GWT 逐條＝驗收劇本——實操觀察真實行為、證據落回指區（驗收依據＝行為是否發生，非測試燈號）；驗不過 fail 回老闆路由（修復→test／build 旗標切段）；驗收完成老闆終審 pass 出口→intent（--new-ms／end）' },
+  build:   { next: ['verify', 'test'], desc: 'G2 落地邊：實作＋提交閘 commit（單功能單提交）；段內修復旗標切段回 test；收斂期 E2E 全綠＋working tree 乾淨即 build→verify 機械推進（中鏈零審核）' },
+  verify:  { next: ['intent', 'test', 'build'], desc: '真驗收執行：G1 GWT 逐條＝驗收劇本——實操觀察真實行為、證據落回指區（驗收依據＝行為是否發生，非測試燈號）；驗不過 fail＝老闆新輸入重走 intent（修復旗標切段回 test／build）；驗收完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 出口→intent（--new-ms --adversarial --boss-ok／end --adversarial --boss-ok）' },
 };
 
-// 回頭邊（老闆新輸入回意圖揭露經 intent 路由器路由）：任意節點→intent 合法——定義級變更同 ms 開新輪
-// （計返工輪＋rewrite 載入閘）；時點 2 老闆 pass 後帶 --new-ms 開新 ms 或 sb end 結束 slug。
+// 回頭邊（任何新意圖一律重走 intent）：任意節點→intent 合法——同 ms 開新輪（計返工輪＋rewrite 載入閘）；
+// verify 出口邊（時點 2 對抗＋老闆終審 pass）帶 --new-ms 開新 ms 或 sb end 結束 slug。
 const backEdge = (from, to) => to === 'intent';
 
 // 前進鑰匙三層（SKILL 授權章）：
 //   ① 雙流（hooks 層）：輸入流＋理解流唯增記錄＋必然曝光——無前置攔截，CLI 不重複
 //   ② 老闆決策邊鑰匙＝--boss-ok 留痕＋時點對抗；--new-ms 開新里程碑（verify→intent 邊，pass 後）
 //   ③ --boss-ok 旗標：老闆輸入承載（輸入流時戳新鮮度 bossFresh 驗）＋留痕；缺失仍擋以保留形式邊界
-// 兩時點（2.4.1）：時點 1＝requirement→research（審意圖→需求翻譯）；時點 2＝build→verify（審驗收資格——
-// GWT 回指、假綠燈）；中鏈（research→plan→test→build）零審核資源——老闆不看中間產物，問題在前期
-// （翻譯錯）與驗收開始前（對不上）暴露，中間機械推進；verify＝真驗收執行，出口＝老闆證據終審。
+// 兩時點：時點 1＝requirement→research（G1 準則建立後審意圖→需求翻譯）；時點 2＝verify 出口邊（驗收完成、
+// G1 回指閉環後審驗收結果——GWT 回指、假綠燈）；中鏈（research→plan→test→build→verify）零審核資源——老闆不看
+// 中間產物，問題在前期（翻譯錯）與驗收後（對不上）暴露，中間機械推進；verify＝真驗收執行，出口＝時點 2 對抗＋老闆證據終審。
 const needsBossOk = (from, to) =>
-  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research') || (from === 'build' && to === 'verify');
+  (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');
 
 // --adversarial＝時點對抗宣告＋adversarialLog point 條目對照（缺條目或過期即擋）。
 // 時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 從行為矩陣還原、翻譯保真）；
-// 時點 2＝build→verify 邊（2.4.1 前移）——審驗收資格：GWT 回指意圖、假綠燈（測試綠但 AC 從行為矩陣
-// 還原不出＝綠燈無效）；verify 段執行真驗收（GWT 逐條實操、行為證據落回指區）；出口（sb end／
-// next --new-ms）＝老闆看行為證據終審——--boss-ok 承載，對抗章已在進段前完成。
+// 時點 2＝verify→intent 出口邊——驗收完成、G1 回指閉環後審驗收結果：GWT 回指意圖、假綠燈（測試綠但 AC
+// 從行為矩陣還原不出＝綠燈無效）；出口（sb end／next --new-ms）＝時點 2 對抗條目＋老闆終審章同一邊
+// （--adversarial＋--boss-ok；時點 2 老闆 pass 即終審 pass）。
 // 段內提交閘無對抗（2.4.0 移除）——commitmsg 格式驗證＋印章承載提交機械，審核不在提交時點。
 const ADVERSARIAL_EDGES = [
   { from: 'requirement', to: 'research', point: '1' },
-  { from: 'build', to: 'verify', point: '2' },
+  { from: 'verify', to: 'intent', point: '2' },
 ];
 const adversarialEdge = (from, to) => ADVERSARIAL_EDGES.find((e) => e.from === from && e.to === to) ?? null;
 
@@ -111,15 +111,14 @@ const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`
 const usage = (code = 2) => {
   console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
 
-意圖揭露＋六段（兩層兩段式）：老闆輸入經意圖揭露（intent＝揭露的機械載體，非流程段）
+七段圓環（intent 環首＝環尾——不屬任何層；兩層兩段式）
       → 定義層 requirement →時點 1 對抗＋老闆 pass（審意圖→需求翻譯）→ research → plan
       （逐功能規劃循環→規劃收斂；plan→test 機械推進——中鏈零審核資源）
       → 實作層 test → build → verify（逐功能：提交閘 commit 回 test 接下一功能；
-      紅燈段內修復旗標切段 build→test、verify→build）→ 全部功能完成 →時點 2 對抗＋老闆 pass
-      （build→verify 邊——審驗收資格：GWT 回指、假綠燈）→ verify 真驗收（GWT 逐條實操、行為證據落回指區）
-      → 老闆終審 → 出口
-      （pass 出口：sb next intent --new-ms 開下一 ms，或 sb end 結束 slug——--boss-ok 終審章）
-      （老闆任何新輸入回意圖揭露經 intent 路由器路由：任意節點→intent——定義級同 ms 開新輪＋rewrite 載入閘；
+      紅燈段內修復旗標切段 build→test、verify→build）→ E2E 全綠＋working tree 乾淨 →build→verify 機械推進
+      → verify 真驗收（GWT 逐條實操、行為證據落回指區、G1 回指閉環）→ 時點 2 對抗＋老闆終審 pass 出口
+      （sb next intent --new-ms --adversarial --boss-ok 開下一 ms，或 sb end --adversarial --boss-ok 結束 slug——出口同一邊兩章）
+      （任何新意圖在該 ms 內一律重走 intent：任意節點→intent 同 ms 開新輪＋rewrite 載入閘；
       段內修復類由 agents 自動旗標切段不停等不計輪；前進要鑰匙：老闆決策邊 --boss-ok＋時點對抗 --adversarial）
 
 雙流模型：輸入＝獨立理解對象，不是鎖的鑰匙——
@@ -132,19 +131,19 @@ const usage = (code = 2) => {
   sb state                              顯示目前段、可走下一步與其前置條件
   sb adversarial <報告檔> --point 1|2    時點對抗宣告（條目入 adversarialLog）：
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
-                                        （必修全清才可宣告）；--point 必帶（1＝requirement→research；2＝build→verify）
+                                        （必修全清才可宣告）；--point 必帶（1＝requirement→research；2＝verify 出口）
   sb next <段> [--boss-ok] [--adversarial] [--new-ms]
                                         推進（閘門不過即擋）
                                         外部證據閘：research→plan 邊驗
                                         「至少一次外部工具調用」（hooks 標記 externalEvidence——
                                         WebSearch／WebFetch／webReader／web.run（web__run）／Agent；
-                                        回 intent 開新輪重走時進 research 段重置、該邊重新驗）；零外部推不過
-                                        --boss-ok：老闆授權留痕（intent→requirement、requirement→research、build→verify 邊＋pass 出口：--new-ms／sb end）
-                                        --new-ms：開新里程碑（僅 verify→intent 邊，老闆終審 pass 後；MUST --boss-ok）
-                                        --adversarial：時點對抗宣告（requirement→research＝時點 1；build→verify＝時點 2——
+                                        重走 intent 開新輪時進 research 段重置、該邊重新驗）；零外部推不過
+                                        --boss-ok：老闆授權留痕（intent→requirement、requirement→research 邊＋pass 出口：--new-ms／sb end）
+                                        --new-ms：開新里程碑（僅 verify→intent 出口邊，時點 2 對抗＋老闆終審 pass 後；MUST --adversarial --boss-ok）
+                                        --adversarial：時點對抗宣告（requirement→research＝時點 1；verify→intent 出口＝時點 2——
                                         對抗在前、老闆判定在後）；需 sb adversarial --point 對應條目
                                         （adversarialLog，新鮮度＝晚於同邊上次推進）
-  sb end --boss-ok                      老闆終審 pass 後結束 slug（僅 verify 態；--boss-ok 終審章——時點 2 對抗已於 build→verify 進段前）：收尾歸檔＋產出遙測
+  sb end --adversarial --boss-ok        時點 2 對抗＋老闆終審 pass 後結束 slug（僅 verify 態——出口同一邊兩章）：收尾歸檔＋產出遙測
                                         （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
   sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
                                         開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）
@@ -155,8 +154,8 @@ const usage = (code = 2) => {
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
 
 完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
-  老闆「結束」→ sb end --boss-ok（pass 邊選 end）；「下一個／開新 ms」→ sb next intent --new-ms --boss-ok（pass 邊選 next）；
-  老闆任何新輸入（含兩時點 fail）→ 回意圖揭露（shiftblame:think）經 intent 路由器路由——定義級 sb next intent 同 ms 開新輪，
+  老闆「結束」→ sb end --adversarial --boss-ok（出口邊選 end）；「下一個／開新 ms」→ sb next intent --new-ms --adversarial --boss-ok（出口邊選 next）；
+  老闆任何新輸入（含兩時點 fail）→ 重走 intent（shiftblame:think）——sb next intent 同 ms 開新輪，
   段內修復類由 agents 自動旗標切段（不停等不計輪）。授權語義由 agent 理解（shiftblame:think args 落理解流），
   理解有誤即越權——老闆每則輸入審視曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
   process.exit(code);
@@ -238,7 +237,7 @@ const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
 
 // 輪次計數——僅計數零檔案寫入，歷史不可變性由 git 承擔：
-// 回 intent 開新輪只遞增計數（ms 目錄有 G 檔才計），零檔案寫入
+// 重走 intent 開新輪只遞增計數（ms 目錄有 G 檔才計），零檔案寫入
 function countRev(st) {
   const dir = msDir(st);
   const has = [1, 2, 3].some((n) => existsSync(join(dir, `G${n}.md`)));
@@ -344,7 +343,7 @@ function gate(st, target, opts) {
     problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由秘書手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);
   }
 
-  // G1 契約核對（封存於 requirement→research 邊，之後任何推進重算；回 intent 邊（老闆新輸入回意圖揭露）重定義前不擋）。
+  // G1 契約核對（封存於 requirement→research 邊，之後任何推進重算；回 intent 邊（老闆新輸入重走 intent）重定義前不擋）。
   // requirement→research 邊本身跳過 hash 比對——該邊「重封存」（research→requirement 旗標切段補正 G1 後，
   // 重進 research 即以補正版重新凍結；機械擋會使 BDD 格式閘逼出的 CONFORMS 補正死鎖）。滿足集合的變更
   // 仍 MUST 回 intent（語義由文件層承載：CONFORMS 補正不改變 G1 滿足集合）。
@@ -361,7 +360,7 @@ function gate(st, target, opts) {
   }
 
   // 外部證據閘：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence；
-  // requirement→research 進段重置——回 intent 開新輪重走時重新驗）。
+  // requirement→research 進段重置——重走 intent 開新輪時重新驗）。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
     problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader／web.run（web__run） 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
     const note = hooksHealthNote(); if (note) problems.push(note);
@@ -379,18 +378,21 @@ function gate(st, target, opts) {
     } else passes.push('老闆授權留痕（--boss-ok＋老闆輸入新鮮度已驗）');
   }
 
-  // --new-ms：老闆終審 pass 後開下一里程碑——僅 verify→intent 邊；MUST --boss-ok（老闆終審章——
-  // 時點 2 對抗已於 build→verify 進段前完成；出口驗老闆章，不重驗對抗）
+  // --new-ms：時點 2 對抗條目＋老闆終審章同一邊——verify→intent 出口邊＝時點 2 對抗邊：
+  // --adversarial＋adversarialLog point 2 條目由下方對抗邊檢查承載；--boss-ok 終審章新鮮度含對抗條目錨定
   if (opts.newMs) {
     if (!(st.node === 'verify' && target === 'intent')) die(['--new-ms 僅限 verify→intent 邊（老闆終審 pass 後開下一 ms）——其他推進走各自旗標']);
     if (!opts.bossOk) die(['開新里程碑是老闆選擇（終審 pass 後 next）——MUST 帶 --boss-ok 留痕']);
-    if (!bossFresh(st, 'intent', { passExit: true })) die(['開新 ms 缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
+    if (!bossFresh(st, 'intent', { passExit: true })) die(['開新 ms 缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本次時點 2 對抗條目、本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
     passes.push('老闆終審：pass 後開新 ms（--boss-ok＋新鮮度已驗）');
   }
   // --adversarial＋adversarialLog point 條目對照（對抗產物屬 RAM，不入 SLUG）：
   // 新鮮度＝point 條目 at 晚於 history 中最近一次同 point 邊推進——防舊條目重放（兩個唯增流交叉判定，零新欄位）
+  // 時點 2（verify→intent）的對抗義務僅限出口（--new-ms）：fail＝老闆新輸入重走 intent 零旗標
+  // （fail 本身是時點 2 對抗／終審的產物——不通過即回走證據；sb end 出口另由 cmdEnd 手動驗雙章）
   const adv = adversarialEdge(st.node, target);
-  if (adv) {
+  const advGate = adv && (adv.point !== '2' || opts.newMs);
+  if (advGate) {
     if (!opts.adversarial) problems.push(`「${st.node} → ${target}」需時點 ${adv.point} 對抗——MUST 帶 --adversarial 宣告（對抗在前、老闆判定在後——pass 才推進）`);
     else {
       const lastEdgeAt = (st.history ?? []).filter((h) => h.from === st.node && h.to === target).at(-1)?.at;
@@ -400,7 +402,8 @@ function gate(st, target, opts) {
       else passes.push(`時點 ${adv.point} 對抗：adversarialLog 條目對照一致（新鮮度已驗）`);
     }
   } else if (opts.adversarial) {
-    problems.push(`「${st.node} → ${target}」不是對抗邊——--adversarial 留給時點對抗邊（requirement→research／build→verify）`);
+    if (adv) problems.push(`「${st.node} → ${target}」的時點 ${adv.point} 對抗義務僅限出口（--new-ms）——fail＝老闆新輸入重走 intent 零旗標（fail 本身是對抗／終審產物，不重驗）`);
+    else problems.push(`「${st.node} → ${target}」不是對抗邊——--adversarial 留給時點對抗邊（時點 1 requirement→research／時點 2 verify 出口）`);
   }
 
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
@@ -470,8 +473,8 @@ function gate(st, target, opts) {
       } catch { /* 非 git 環境略過 */ }
       break;
 
-    case 'intent': // 回頭邊（老闆新輸入回意圖揭露經 intent 路由器路由）：補充／重修／追加子需求／修約——定義級同 ms 開新輪；--new-ms 時 ms++（cmdNext）
-      passes.push(st.node === 'verify' && opts?.newMs ? '--new-ms——回 intent 且開新里程碑' : '回 intent——老闆新輸入回意圖揭露經 intent 路由器路由（定義級同 ms 開新輪）');
+    case 'intent': // 回頭邊（任何新意圖一律重走 intent）：補充／重修／追加子需求／修約——同 ms 開新輪；--new-ms 時出口邊 ms++（cmdNext）
+      passes.push(st.node === 'verify' && opts?.newMs ? '--new-ms——出口邊閉環回 intent 且開新里程碑' : '回 intent——任何新意圖一律重走 intent 開新輪（同 ms）');
       break;
   }
   return { problems, passes };
@@ -735,7 +738,7 @@ function cmdInit(slug, type = 'feat') {
   delete carried.turnUsage; delete carried.usageTotals;
   delete carried.adversarialAt; delete carried.adversarialConsumed; // 提交對抗章歷史鍵（2.4.0 移除——舊檔殘留不帶入新 slug；adversarialLog 唯增流保留）
   writeFileSync(STATE_FILE, JSON.stringify({ ...carried, slug, ms: '001', node: 'intent', history: [], startedAt: new Date().toISOString(), baseCommit: gitHeadCommit(), ...(workBranch ? { workBranch } : {}) }, null, 2));
-  fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent——意圖揭露經 intent 路由器路由後由此開始`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
+  fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent——七段圓環環首，任何新意圖經 shiftblame:think 揭露後由此展開`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
 // sb init --main：完結 ended 生命週期——不開新 slug、不建工作分支，留在 closeout 基底分支直接作業
@@ -808,14 +811,14 @@ function cmdState() {
   }
   if (st.node === 'done') { // 舊版判決通過態（2.2.0 遷移讀出）：出口同 pass，唯讀不改檔
     out(`slug: ${st.slug}   ms: ${st.ms}   段: done（舊版判決通過態——2.2.0 語意＝verify pass 後）`);
-    out('  出口同 pass：sb next intent --new-ms --boss-ok（下一 ms）或 sb end --boss-ok（結束 slug）；重修＝老闆新輸入回意圖揭露經 intent 路由器路由');
+    out('  出口同 pass：sb next intent --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；重修＝老闆新輸入重走 intent 開新輪');
     return;
   }
   if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !Array.isArray(st.history) || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
   if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
-  if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動回 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
+  if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動重走 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
   else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
   if (st.stopReport) out(`停點申報：#${st.stopReport.inputIdx} @${st.stopReport.node}「${st.stopReport.question}」——老闆終審真待決 or 偷懶（曝光於老闆下則輸入；推進即清）`);
   if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview <三問結論> 留痕（開新 ms（pass）前機械驗，含機械基本功）`);
@@ -823,7 +826,7 @@ function cmdState() {
   if (st.node !== 'intent' && !nexts.includes('intent')) nexts.push('intent');
   for (const n of nexts) {
     if (n === 'intent' && !FLOW[st.node].next.includes('intent')) {
-      out('  → intent（回頭：老闆新輸入回意圖揭露經 intent 路由器路由——定義級同 ms 開新輪）');
+      out('  → intent（回頭：任何新意圖一律重走 intent 開新輪——同 ms）');
       continue;
     }
     const { problems, passes } = gate({ ...st }, n, {});
@@ -831,7 +834,7 @@ function cmdState() {
     for (const p of passes) out(`      ✓ ${p}`);
     for (const p of problems) out(`      ✗ ${p}`);
   }
-  if (st.node === 'verify') out('  老闆終審 pass 出口（真驗收完成——GWT 逐條行為證據在回指區）：sb next intent --new-ms --boss-ok（下一 ms）或 sb end --boss-ok（結束 slug）；fail＝老闆新輸入回意圖揭露');
+  if (st.node === 'verify') out('  時點 2 對抗＋老闆終審 pass 出口（真驗收完成、G1 回指閉環——GWT 逐條行為證據在回指區）：sb next intent --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；fail＝老闆新輸入重走 intent');
 }
 
 function cmdNext(target, opts) {
@@ -851,7 +854,7 @@ function cmdNext(target, opts) {
   const prev = st.node;
   st.node = target;
   delete st.stopReport; delete st.stopBlockedAt; // 工作已續行——停點申報與擋停自限失效（停點偵測，SKILL §1.12）
-  // 進研究段重置——舊查證不沿用（fail-closed）；回 intent 開新輪重走時重新驗
+  // 進研究段重置——舊查證不沿用（fail-closed）；重走 intent 開新輪時重新驗
   if (prev === 'requirement' && target === 'research') st.externalEvidence = null;
   if (prev === 'requirement' && target === 'research') {
     // G1 封存＋重封存（2.4.0 前移）：時點 1 推進邊即封存邊——G1 契約自首次進 research 起全鏈凍結；
@@ -866,7 +869,7 @@ function cmdNext(target, opts) {
     passes.push(`G1 定義區契約${reseal ? '已重封存（CONFORMS 補正後重新凍結）' : '已封存（時點 1——自進 research 起全鏈凍結）'}（flow-state）：${st.g1Contract.sha256.slice(0, 12)}`);
   }
   if (target === 'intent') {
-    // 回頭邊（老闆新輸入回意圖揭露）：定義級同 ms 開新輪；--new-ms（老闆授權開新里程碑）→ms++
+    // 回頭邊（任何新意圖一律重走 intent）：同 ms 開新輪；--new-ms（出口邊——老闆終審開新里程碑）→ms++
     delete st.g1Contract;
     if (prev === 'verify' && opts.newMs) {
       const prevMs = st.ms; // per-ms 遙測結算對象＝前一 ms（鍵＝被結算 ms）
@@ -1016,12 +1019,18 @@ function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = readJson(STATE_FILE);
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——本指令完成即遷移為 ended
-  if (st.node !== 'verify') die([`sb end 僅限 verify 態選 end（目前 ${st.node}）——真驗收（GWT 逐條實操、行為證據落回指區）完成後老闆終審 pass 先於結束`]);
+  if (st.node !== 'verify') die([`sb end 僅限 verify 態選 end（目前 ${st.node}）——真驗收（GWT 逐條實操、行為證據落回指區）完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 先於結束`]);
   if (!opts.bossOk) die(['結束是老闆終審決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由理解流曝光承擔）']);
-  if (!bossFresh(st, 'ended', { passExit: true })) die(['pass 結束缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
+  if (!opts.adversarial) die(['結束出口＝時點 2 對抗條目＋老闆終審章同一邊（verify 出口邊）——MUST 帶 --adversarial（驗收完成後 sb adversarial --point 2 審驗收結果至通過）']);
+  const pt2Entry = (st.adversarialLog ?? []).filter((e) => e.point === '2').at(-1);
+  const verifyEnteredAt = (st.history ?? []).filter((h) => h.to === 'verify' && h.ms === st.ms).at(-1)?.at;
+  if (!pt2Entry) die(['adversarialLog 缺時點 2 條目——驗收完成、G1 回指閉環後 MUST sb adversarial <報告檔> --point 2（審驗收結果：GWT 回指、假綠燈、錯誤處置完整性）才可出口']);
+  if (verifyEnteredAt && pt2Entry.at <= verifyEnteredAt) die(['時點 2 對抗條目過期（早於本 ms 進 verify）——本輪 MUST 重新 sb adversarial --point 2（驗收後審驗收結果）才可出口']);
+  if (!bossFresh(st, 'intent', { passExit: true })) die(['pass 結束缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本次時點 2 對抗條目、本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
   const sopProblem = sopReviewProblem(st);
   if (sopProblem) die([sopProblem]);
   const problems = [], passes = [];
+  passes.push('時點 2 對抗條目＋老闆終審章（--adversarial＋--boss-ok——出口同一邊兩章）已驗');
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
   // 產出遙測（基質優先）：diff 事實由 git 承擔——sb init 錨定 baseline commit，end 做時序分析；
@@ -1086,14 +1095,14 @@ function cmdEnd(opts) {
 // 機械驗三條：報告檔存在（.shiftblame/tmp 內）→ 含判定行（「對抗判定：通過/不通過」）→ 判定「通過」才可留條目
 // （判定「通過」即零必修）。自代無合法介面——
 // 子代理工具不可用＝流程阻塞等待至可用（自代無合法介面）；偽造報告檔屬手改造假（天花板：抽查承擔）。
-// 2.4.1：--point 必帶——時點 1（requirement→research）／時點 2（build→verify）；段內提交對抗章（無 point）已移除
+// --point 必帶——時點 1（requirement→research：審意圖→需求翻譯）／時點 2（verify 出口：驗收完成後審驗收結果）；段內提交對抗章（無 point）已移除
 // （審核資源前移需求與驗收兩接縫；提交閘僅存 commitmsg 格式驗證＋印章，審核不在提交時點）。
 function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（RAM）
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> --point 1|2（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
-  if (!point) die(['--point 必帶——sb adversarial <報告檔> --point 1|2（1＝requirement→research 時點 1；2＝build→verify 時點 2）；段內提交對抗已於 2.4.0 移除（審核資源前移需求與驗收兩時點）']);
+  if (!point) die(['--point 必帶——sb adversarial <報告檔> --point 1|2（1＝requirement→research 時點 1：審意圖→需求翻譯；2＝verify 出口時點 2：驗收完成後審驗收結果）；段內提交對抗章已移除（審核資源前移需求與驗收兩時點）']);
   const current = requireHealthyState();
   if (current.state?.understandingHold) die(['理解停等尚未解除——不得宣告對抗']);
-  if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬六段流程）']);
+  if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬七段圓環流程）']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());

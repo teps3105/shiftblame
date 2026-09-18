@@ -1,6 +1,6 @@
 ---
 name: AUDIT
-revision: 2.5.0
+revision: 2.5.1
 ---
 
 # 對抗審計職能（外部唯讀子代理規範）
@@ -42,7 +42,7 @@ revision: 2.5.0
 
 | 閘門 | 調用 | 報告落點 |
 |---|---|---|
-| 時點對抗 | `sb adversarial <報告> --point 1｜2`（`--point` 必帶）＋推進帶 `--adversarial`（1＝時點 1 requirement→research 邊——審意圖→需求翻譯；2＝時點 2 build→verify 邊——審驗收資格：GWT 回指、假綠燈，推進驗 point 2 條目新鮮；出口（`--new-ms`／`sb end`）＝老闆終審 `--boss-ok`，不重驗對抗。對抗在前、老闆判定在後。段內提交僅 `sb commitmsg` 機械格式閘，功能 AC 判決屬段內秘書判決，非時點編號） | 同上（adversarialLog point 條目） |
+| 時點對抗 | `sb adversarial <報告> --point 1｜2`（`--point` 必帶）＋推進帶 `--adversarial`（1＝時點 1 requirement→research 邊——審意圖→需求翻譯；2＝時點 2 verify 出口邊（真驗收完成、G1 回指閉環後）——審驗收結果：GWT 回指、假綠燈；出口（`--new-ms`／`sb end`）＝時點 2 對抗條目＋老闆終審 `--adversarial --boss-ok` 同一邊承載。對抗在前、老闆判定在後。段內提交僅 `sb commitmsg` 機械格式閘，功能 AC 判決屬段內秘書判決，非時點編號） | 同上（adversarialLog point 條目） |
 | 唯讀技術意見 | 證據不足或矛盾時一次 | tmp（主對話複核後自行裁定） |
 
 ## 7. 防偽造

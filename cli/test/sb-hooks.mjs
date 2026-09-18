@@ -155,7 +155,7 @@ r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
 assert.equal(r.status, 0, 'Stop 放行（ended——非活動流程不偵測）');
 assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
 
-// —— 6. 六段寫入矩陣 ——
+// —— 6. 段-檔寫入矩陣 ——
 const W = (node, tool, target) => {
   setNode(node);
   return run({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { file_path: target } });
@@ -298,7 +298,7 @@ setNode2('requirement');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'requirement 段寫 G1 放行（定義邊）');
 const gKidnap = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), old_string: 'a', new_string: 'b' } });
 assert.equal(gKidnap.status, 2, 'requirement 段寫 G2 擋（G2 寫入權屬 research）');
-assert.match(gKidnap.stderr, /G2|寫入權屬|無寫入權/, '綁架訊息指向回 intent 開新輪');
+assert.match(gKidnap.stderr, /G2|寫入權屬|無寫入權/, '綁架訊息指向重走 intent 開新輪');
 setNode2('research');
 assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), content: 'x' } }).status, 0, 'research 段寫 G2 放行');
 setNode2('test');

@@ -78,12 +78,12 @@ for (const raw of invalid) {
   const saved = JSON.parse(readFileSync(join(f.cwd, '.shiftblame/tmp/recovery-inputs.jsonl'), 'utf8').trim());
   assert.equal(saved.text, '恢復前的新輸入\n原文保留');
 }
-// 合法未初始化與直接實行：不建 slug——2.4.0 起無時點對抗（時點屬六段流程），提交走 commitmsg 格式閘，提交消費後仍可查詢。
+// 合法未初始化與直接實行：不建 slug——2.4.0 起無時點對抗（時點屬七段圓環流程），提交走 commitmsg 格式閘，提交消費後仍可查詢。
 // 第三變體：純紀錄檔含 rewriteSeen（hooks 記錄鍵——HOOK_RECORD_KEYS 白名單容忍，不炸分類）。
 for (const initial of [undefined, { inputs: [{ at, text: '不開 slug，修復' }] }, { inputs: [{ at, text: '紀錄' }], rewriteSeen: { rev: 0, at } }]) {
   const f = fixture(initial);
   assert.equal(f.run('state').status, 0);
-  assert.equal(f.run('adversarial', f.report, '--point', '1').status, 1, '直接實行無時點對抗——時點屬六段流程');
+  assert.equal(f.run('adversarial', f.report, '--point', '1').status, 1, '直接實行無時點對抗——時點屬七段圓環流程');
   assert.equal(f.run('state').status, 0);
   assert.match(f.run('state').stdout, /直接實行/);
   // 未覆蓋即凍結（hooks 機械強制）：輸入流有條目而理解流未覆蓋時，repo 寫入擋至第一步 think 落流；

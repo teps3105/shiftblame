@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.5.0');
+assert.equal(manifest.version, '2.5.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.5.0"/);
+assert.match(skill, /version: "2.5.1"/);
 
 // 輸出形狀（人話契約）與老闆章錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -48,12 +48,12 @@ assert.match(guardSrc, /beatHeartbeat/, 'hooks 每次成功執行寫心跳');
 assert.match(read('cli', 'bin', 'sb.mjs'), /hooksHealthNote/, 'CLI 閘擋對照心跳輸出 hooks 健康診斷');
 assert.match(read('cli', 'bin', 'sb.mjs'), /閘保持封閉/, '診斷只揭露不降級（閘保持封閉）');
 
-// 六段詞彙落地（意圖揭露＋六段流程——intent 是意圖揭露的機械載體；verify 判決出 fail／pass 兩種邊——done 節點已除名）
-assert.match(skill, /requirement→research→plan→test→build→verify/);
+// 七段圓環詞彙落地（意圖揭露＋圓環主鏈——intent 環首＝環尾；verify 判決出 fail／pass 兩種邊——done 節點已除名）
+assert.match(skill, /intent→requirement→research→plan→test→build→verify/);
 assert.match(skill, /意圖揭露|第一性思想/, 'SKILL 承載意圖揭露與第一性思想');
-assert.match(skill, /回 intent/);
+assert.match(skill, /重走 intent/);
 assert.match(skill, /時點 1 對抗/);
-assert.match(skill, /老闆新輸入回意圖揭露/);
+assert.match(skill, /老闆新輸入重走 intent/);
 assert.match(skill, /流程代號不進程式碼/);
 assert.match(skill, /令行靜止|--adversarial 宣告/);
 assert.match(skill, /節錄快照/);
@@ -65,7 +65,7 @@ assert.match(skill, /sb commitmsg/);
 assert.match(skill, /sb adversarial/);
 assert.match(skill, /時點 2 對抗/);
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdAdversarial/);
-assert.match(read('cli', 'bin', 'sb.mjs'), /from: 'build', to: 'verify', point: '2'/); // 時點 2＝build→verify 邊（2.4.1 前移——新鮮度由通用 adversarial 邊對照承載）
+assert.match(read('cli', 'bin', 'sb.mjs'), /from: 'verify', to: 'intent', point: '2'/); // 時點 2＝verify→intent 出口邊（驗收完成、G1 回指閉環後審驗收結果——新鮮度由通用 adversarial 邊對照承載）
 assert.match(readme, /sb commitmsg/);
 assert.match(readme, /時點 2 對抗/);
 
@@ -114,7 +114,7 @@ assert.match(read('skills', 'shiftblame', 'references', 'MECHANISMS.md'), /規�
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /G3 落地邊/, 'TEST G3 落地邊');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /R1/, 'STRUCTURE 固定規則');
 assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /accepted_exception/, 'STRUCTURE 四態結果');
-assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /與六段的銜接/, 'STRUCTURE 六段銜接');
+assert.match(read('skills', 'shiftblame', 'references', 'STRUCTURE.md'), /與七段圓環的銜接/, 'STRUCTURE 七段圓環銜接');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /測試規模與穩定度成正比/, 'TEST 規模∝穩定度');
 assert.match(read('skills', 'shiftblame', 'references', 'TEST.md'), /同生命週期/, 'TEST 生命週期紀律');
 assert.match(skill, /STRUCTURE\.md/, 'SKILL 樹含 STRUCTURE');
@@ -123,7 +123,7 @@ assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /對抗判�
 assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /無自代介面/, 'AUDIT 無自代介面');
 assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /修復複審閉環/, 'AUDIT 複審閉環');
 assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /真驗收執行/, 'VERIFY 真驗收執行（GWT 逐條劇本）');
-assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /build→verify/, 'VERIFY 時點 2＝build→verify 進段前對抗（2.4.1 前移）');
+assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /時點 2 對抗.*出口邊/s, 'VERIFY 時點 2＝verify 出口邊對抗（驗收完成、G1 回指閉環後——build→verify 機械推進）');
 assert.match(skill, /消融原則/, 'SKILL 消融原則（方法論六落點）');
 assert.match(read('cli', 'bin', 'sb.mjs'), /六鍵（消融/, 'BDD 第六鍵消融（validateG1Acceptance）');
 assert.match(read('cli', 'test', 'sb-ablation.mjs'), /消融矩陣/, '框架本體消融矩陣（sb-ablation.mjs）');
@@ -212,7 +212,7 @@ for (const k of ['sb-start', 'sb-do', 'sb-end', 'sb-commit', 'sb-report', 'docs'
 // shiftblame:think 核心語義
 assert.match(think, /全域路由|唯一閘口/);
 assert.match(think, /回 intent|回think/);
-assert.match(readme, /六段|requirement → research/);
+assert.match(readme, /七段|requirement → research/);
 assert.match(readme, /--boss-ok/);
-assert.match(manifest.description, /六段/);
+assert.match(manifest.description, /七段/);
 console.log('sb-agent-governance: pass');

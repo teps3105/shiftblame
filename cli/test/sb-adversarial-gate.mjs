@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗（2.4.1 前移）：時點 1＝requirement→research 邊（審意圖→需求翻譯，--point 1）；時點 2＝build→verify 邊（審驗收資格：GWT 回指、假綠燈，--point 2）；中鏈（research→plan→test→build）機械推進零審核；出口（next --new-ms／end）＝老闆終審章（--boss-ok）——對抗已在進段前，出口不重驗對抗；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
+// 時點對抗（時點屬七段圓環流程）：時點 1＝requirement→research 邊（審意圖→需求翻譯，--point 1）；時點 2＝verify→intent 出口邊（驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈，--point 2）；中鏈（research→plan→test→build→verify）機械推進零審核（build→verify 裸推進——E2E 全綠＋樹淨即過）；出口（next --new-ms／end）＝時點 2 對抗條目＋老闆終審章同一邊（--adversarial＋--boss-ok，老闆章錨定對抗條目之後）；fail＝老闆新輸入重走 intent 零旗標（對抗義務僅限出口）；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -315,16 +315,21 @@ assert.equal(git('status', '--porcelain').stdout.trim(), '', '段後工作樹全
 writeFileSync(join(root, 'seed.txt'), 'v2\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
-assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告（build→verify 邊前置）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆判定（2.4.2——晚於本次對抗條目；對抗在前老闆判定在後）
-assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（build→verify——審驗收資格：GWT 回指、假綠燈，2.4.1 前移）');
+// —— build→verify 機械推進（E2E 全綠＋working tree 乾淨即過，中鏈零審核——無老闆停靠、無對抗）——
+assert.match(run('next', 'verify', '--boss-ok').stderr, /不是老闆決策邊/, 'build→verify 機械推進——--boss-ok 留給老闆決策邊');
+assert.match(run('next', 'verify', '--adversarial').stderr, /不是對抗邊/, 'build→verify 非對抗邊——時點 2 在 verify 出口邊');
+assert.equal(run('next', 'verify').status, 0, 'build→verify 裸推進（機械推進——樹淨即過）');
 
-// 4. 出口（next --new-ms／end 兩門）＝老闆終審章（--boss-ok）——對抗已在 build→verify 進段前，出口不重驗對抗
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（出口終審——晚於本 ms 進 verify）
-assert.match(run('next', 'intent', '--new-ms', '--boss-ok', '--adversarial').stderr, /不是對抗邊/, '出口非對抗邊——--adversarial 留給時點對抗邊（requirement→research／build→verify）');
-assert.match(run('end').stderr, /--boss-ok|終審決策/, 'end 缺老闆終審章即擋');
-// 5. fail 邊→老闆新輸入回意圖揭露經 intent 路由器路由：零旗標、定義級同 ms 開新輪（計返工輪）；重走時點 1（requirement→research）
-assert.equal(run('next', 'intent').status, 0, 'fail 回意圖揭露＝零旗標');
+// 4. 出口（next --new-ms／end 兩門）＝時點 2 對抗條目＋老闆終審章同一邊（verify 出口邊——出口同一邊兩章）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆終審輸入（晚於本 ms 進 verify）
+assert.match(run('next', 'intent', '--new-ms', '--boss-ok').stderr, /需時點 2 對抗/, '出口缺 --adversarial 即擋——出口＝時點 2 對抗＋終審同一邊');
+assert.match(run('end', '--boss-ok').stderr, /--adversarial/, 'end 出口缺對抗宣告即擋（同一邊兩章）');
+assert.match(run('next', 'intent', '--new-ms', '--adversarial', '--boss-ok').stderr, /缺時點 2 條目/, '出口缺時點 2 條目即擋');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /缺時點 2 條目/, 'end 缺時點 2 條目即擋');
+assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
+assert.match(run('next', 'intent', '--new-ms', '--adversarial', '--boss-ok').stderr, /缺新鮮老闆輸入|晚於本次時點 2/, '老闆章錨定對抗條目之後——條目前的舊輸入不得冒名終審');
+// 5. fail 邊→老闆新輸入重走 intent 開新輪：零旗標、定義級同 ms 開新輪（計返工輪）；fail 本身是對抗／終審產物不重驗；重走時點 1（requirement→research）
+assert.equal(run('next', 'intent').status, 0, 'fail＝老闆新輸入重走 intent（零旗標——出口對抗義務不擋 fail 回走）');
 assert.equal(state().ms, '001');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊＋時點 1 邊——晚於上次同邊推進）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
@@ -339,18 +344,16 @@ assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'v3\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);
-// 6. 時點 2 新鮮度（build→verify 邊——條目早於同邊上次推進即擋）：舊條目過期擋→重審過邊→修復回 build 再過邊又過期→再重審；出口僅老闆終審章
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆輸入（晚於上次同邊推進）
-assert.match(run('next', 'verify', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '時點 2 條目早於同邊上次推進即擋（第一輪舊條目已過期）');
-assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 pass，開始驗收' }); // build→verify 邊老闆輸入（2.4.2——晚於本次對抗條目）
-assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（對抗在前老闆判定在後——老闆准的是開始驗收）');
+// 6. 時點 2 新鮮度（verify 出口邊——條目早於本 ms 進 verify 即擋）：機械推進進 verify→旗標切段回 build→修復→二進 verify→舊條目過期擋→重審→終審→出口雙章收尾
+assert.equal(run('next', 'verify').status, 0, 'build→verify 裸推進（重走輪機械推進進 verify）');
 assert.equal(run('next', 'build').status, 0, 'verify→build 旗標切段（驗收發現問題回 build 修復，不計返工輪）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：修復畢，時點 2 重過' }); // 第二次過邊——老闆輸入晚於上次同邊推進
-assert.match(run('next', 'verify', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 2 條目早於同邊上次推進即擋（新鮮度）');
-assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '重審補時點 2 條目');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：時點 2 重審通過' }); // build→verify 邊老闆輸入（2.4.2——晚於本次對抗條目）
-assert.equal(run('next', 'verify', '--boss-ok', '--adversarial').status, 0, '時點 2 重過（真驗收資格重審）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，決定出口' }); // 老闆輸入新鮮度（出口終審——晚於本 ms 進 verify）
-assert.equal(run('end', '--boss-ok').status, 0, '出口僅老闆終審章（--boss-ok）——對抗已在進段前，不重驗');
+writeFileSync(join(root, 'seed.txt'), 'v4\n');
+assert.equal(git('add', 'seed.txt').status, 0);
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: fix-verify').status, 0);
+assert.equal(run('next', 'verify').status, 0, 'build→verify 裸推進（二次進 verify——機械推進）');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /過期|早於本 ms 進 verify/, '時點 2 條目早於本 ms 進 verify 即擋（新鮮度）');
+assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '重審補時點 2 條目（驗收後審驗收結果）');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /缺新鮮老闆輸入|晚於本次時點 2/, '老闆章錨定對抗條目之後——重審後需新終審輸入');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：終審 pass，結束 slug' }); // 老闆終審輸入（晚於本次對抗條目＋本 ms 進 verify）
+assert.equal(run('end', '--adversarial', '--boss-ok').status, 0, '出口＝時點 2 對抗條目＋老闆終審章同一邊（--adversarial＋--boss-ok）');
 console.log('sb-adversarial-gate: pass');
