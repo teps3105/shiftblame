@@ -289,13 +289,13 @@ function validateG1Acceptance(g1, problems, passes) {
     if (!problems.length) passes.push(`G1 使用者驗收契約：${unique(ids).join('、')}（BEHAVIOR）`);
     return unique(ids);
   }
-  // BDD 分段格式（主推；含消融鍵）：### AC- 分段，每段含 Given／When／Then＋使用者＋失敗邊界＋消融＋證據——值逐鍵驗實質
+  // BDD 分段格式（主推；含現狀＋消融鍵）：### AC- 分段，每段含 Given／When／Then＋現狀＋使用者＋失敗邊界＋消融＋證據——值逐鍵驗實質
   const blocks = String(g1).split(/^###\s+AC-/m).slice(1);
   if (blocks.length) {
     const ids = blocks.map((b) => 'AC-' + ((b.match(/^\s*(\d{2,})/) ?? [, '?'])[1])); // 剝中文短名——id 恆為 AC-數字（G3 對照鍵）
     if (unique(ids).length !== ids.length) problems.push('G1 驗收契約含重複 AC-ID——每個 AC-ID MUST 唯一');
     for (const [i, b] of blocks.entries()) {
-      for (const [key, re] of [['Given', /Given[:：]/], ['When', /When[:：]/], ['Then', /Then[:：]/], ['使用者', /使用者[:：]/], ['失敗邊界', /失敗邊界[:：]/], ['消融', /消融[:：]/]]) { // 六鍵（消融——拿掉此需求使用者失去什麼）
+      for (const [key, re] of [['Given', /Given[:：]/], ['When', /When[:：]/], ['Then', /Then[:：]/], ['現狀', /現狀[:：]/], ['使用者', /使用者[:：]/], ['失敗邊界', /失敗邊界[:：]/], ['消融', /消融[:：]/]]) { // 七鍵（現狀——差異宣言左邊：現行系統同 Given/When 的實際觀察，現狀＝Then 即偽需求；消融——拿掉此需求使用者失去什麼）
         if (!re.test(b)) { problems.push(`G1 ${ids[i]} 缺 ${key}（BDD 行為規格——字面搬運產不行為規格）`); continue; }
         const val = (b.match(new RegExp(`^[-*]?\\s*${key}[^\\S\\n]*[:：]\\s*(.+)$`, 'm')) ?? [, ''])[1].trim();
         if (!filled(val)) problems.push(`G1 ${ids[i]} ${key} 未填實質（模板照抄不構成行為規格）`);
@@ -306,7 +306,7 @@ function validateG1Acceptance(g1, problems, passes) {
     if (!problems.length) passes.push(`G1 使用者驗收契約（BDD 行為規格）：${ids.join('、')}（BEHAVIOR）`);
     return unique(ids);
   }
-  problems.push('G1 缺 AC 驗收契約——單行（- AC-01 | 鍵=值 |…）或 BDD 分段（### AC-01＋Given／When／Then／使用者／失敗邊界／證據——主推 BDD）擇一定義');
+  problems.push('G1 缺 AC 驗收契約——單行（- AC-01 | 鍵=值 |…）或 BDD 分段（### AC-01＋Given／When／Then／現狀／使用者／失敗邊界／消融／證據——主推 BDD）擇一定義');
   return [];
 }
 

@@ -186,7 +186,7 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 npm install -g <shiftblame repo>/cli
 sb init <slug>                     # 開 slug：建全骨架（flow-state＋目錄＋SLUG.md＋archive/＋開發分支自動切換）
 sb state                           # 目前節點與各下一步前置條件
-sb next research --boss-ok --adversarial  # 時點 1 邊（requirement→research——審意圖→需求翻譯：BDD 格式閘＋GWT 機械掃描＋時點 1 對抗＋adversarialLog point 條目對照＋G1 hash 封存——對抗在前老闆判定在後，pass 才推進）
+sb next research --boss-ok --adversarial  # 時點 1 邊（requirement→research——審意圖→需求翻譯：BDD 格式閘（七鍵——含現狀差異宣言）＋GWT 機械掃描＋時點 1 對抗＋adversarialLog point 條目對照＋G1 hash 封存——對抗在前老闆判定在後，pass 才推進）
 sb next test                       # plan→test 機械推進（中鏈零審核——審核資源前移時點 1 與時點 2）
 sb next verify                     # build→verify 機械推進（中鏈零審核；working tree 乾淨＝實作已存檔，git 判定）
 sb next build                      # 紅燈段內修復旗標切段（不停等不計輪）

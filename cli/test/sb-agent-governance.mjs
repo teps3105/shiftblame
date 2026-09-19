@@ -119,7 +119,9 @@ assert.match(read('skills', 'shiftblame', 'references', 'AUDIT.md'), /修復複�
 assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /真驗收執行/, 'VERIFY 真驗收執行（GWT 逐條劇本）');
 assert.match(read('skills', 'shiftblame', 'references', 'VERIFY.md'), /時點 2 對抗.*出口邊/s, 'VERIFY 時點 2＝verify 出口邊對抗（驗收完成、G1 回指閉環後——build→verify 機械推進）');
 assert.match(skill, /消融原則/, 'SKILL 消融原則（方法論六落點）');
-assert.match(read('cli', 'bin', 'sb.mjs'), /六鍵（消融/, 'BDD 第六鍵消融（validateG1Acceptance）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /七鍵（現狀——差異宣言左邊/, 'BDD 現狀鍵＝需求先驗（validateG1Acceptance）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /消融——拿掉此需求使用者失去什麼/, 'BDD 消融鍵（validateG1Acceptance）');
+assert.match(read('skills', 'shiftblame', 'references', 'REQUIREMENT.md'), /現狀＝.*即偽需求/, 'REQUIREMENT 現狀差異宣言條文（需求先驗——文件陳述錨）');
 assert.match(read('cli', 'test', 'sb-ablation.mjs'), /消融矩陣/, '框架本體消融矩陣（sb-ablation.mjs）');
 assert.ok(existsSync(join(repo, 'cli', 'test', 'sb-ablation.mjs')), '消融矩陣測試檔存在');
 assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');

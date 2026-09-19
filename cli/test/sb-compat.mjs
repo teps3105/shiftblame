@@ -79,12 +79,12 @@ classify({
 
 // —— 3. 十專案實機回歸：分類與 2.5.2 重整後基準一致（流不落檔——各 repo 已主動遷移新形） ——
 // 基準＝2.5.2 重整（migrateStreams 全套＋老鍵剝除）當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；
-// 已 invalid 者屬既有事實（Varellune_Document 的 ms-done 髒節點——恢復程序另行承擔），相容性要求＝分類不變。
+// Varellune_Document 的 ms-done 髒節點已歸位（2.3x 舊版里程碑完成態 → 2.5.2 七段圓環 intent——差異宣言同批收斂）。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'ended',
   'Trickster-Web': 'active',
   Varellune: 'active',
-  'Varellune_Document': 'invalid',
+  'Varellune_Document': 'active',
   'dnd-prototype': 'active',
   'gpt-image-mcp': 'uninitialized',
   'moffee-pos': 'invalid',

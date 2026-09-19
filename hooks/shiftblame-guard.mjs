@@ -94,7 +94,7 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——七段圓環環首（老闆意圖沉澱，起點也是終點）；任何新意圖在該 ms 內一律重走 intent——sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
-    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 六鍵（GWT 能否從行為矩陣還原一列）；推進前時點 1 對抗（sb adversarial --point 1——審意圖→需求翻譯）＋老闆 pass（--boss-ok），對抗在前老闆判定在後';
+    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 七鍵（現狀差異宣言＋GWT 能否從行為矩陣還原一列）；推進前時點 1 對抗（sb adversarial --point 1——審意圖→需求翻譯）＋老闆 pass（--boss-ok），對抗在前老闆判定在後';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';

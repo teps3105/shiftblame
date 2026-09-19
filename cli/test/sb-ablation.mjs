@@ -17,7 +17,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const GUARD = join(repo, 'hooks', 'shiftblame-guard.mjs');
 const SB = join(repo, 'cli', 'bin', 'sb.mjs');
 
-const BDD_G1 = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n';
+const BDD_G1 = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n';
 const G2 = '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴。';
 const G3 = '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。';
 
@@ -278,10 +278,18 @@ ablation('外部證據閘（research→plan 邊驗）', () => {
 
 ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {
   const neu = neutralize(SB, [['function validateG1Acceptance(g1, problems, passes) {\n  const rows = acRows(g1);', 'function validateG1Acceptance(g1, problems, passes) {\n  return []; // ABLATED\n  const rows = acRows(g1);']]);
-  const badG1 = BDD_G1.replace('- 消融：拿掉則無法送出且看不到結果\n', ''); // 僅刪消融行——第六鍵的隔離擋下證明（其餘五鍵完好）
+  const badG1 = BDD_G1.replace('- 消融：拿掉則無法送出且看不到結果\n', ''); // 僅刪消融行——該鍵的隔離擋下證明（其餘六鍵完好）
   const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: 'x', verdict: '通過', node: 'requirement', point: '1' }] }, files: { '.shiftblame/demo/001/G1.md': badG1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
-  assert.equal(payload(SB), 1, 'intact：BDD 缺第六鍵消融被擋（其餘五鍵完好——隔離證明）');
+  assert.equal(payload(SB), 1, 'intact：BDD 缺消融鍵被擋（其餘六鍵完好——隔離證明）');
   assert.equal(payload(neu), 0, 'ablated：拆掉規格閘後模板照抄即過');
+});
+
+ablation('BDD 現狀鍵（需求先驗——差異宣言左邊）', () => {
+  const neu = neutralize(SB, [["['現狀', /現狀[:：]/], ", ""]]);
+  const badG1 = BDD_G1.replace('- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n', ''); // 僅刪現狀行——缺先驗基準即擋
+  const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: 'x', verdict: '通過', node: 'requirement', point: '1' }] }, files: { '.shiftblame/demo/001/G1.md': badG1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok', '--adversarial'); rmSync(r, { recursive: true, force: true }); return h.status; };
+  assert.equal(payload(SB), 1, 'intact：BDD 缺現狀鍵被擋（無先驗基準的需求即空中宣言）');
+  assert.equal(payload(neu), 0, 'ablated：拆掉現狀鍵驗證後無先驗需求放行');
 });
 
 ablation('G1 契約核對（放行後偏離即擋）', () => {
