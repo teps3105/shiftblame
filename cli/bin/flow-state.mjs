@@ -1,5 +1,4 @@
 // CLI 與 hooks 共用狀態分類；讀不到有效段位不等於沒有流程。
-import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -8,16 +7,15 @@ const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArra
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
-// 觀測紀錄（hooks 寫）：心跳／輸入流／理解流／外部證據＋回合計數（turnUsage／usageTotals）
-// ＋觀測流輪替偏移（inputsRotated 等＋understandingSeedHash——已輪替前綴的鏈種子；舊檔無偏移＝0，向後相容）。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'inputs', 'understandings', 'externalEvidence', 'turnUsage', 'usageTotals', 'inputsRotated', 'understandingsRotated', 'understandingSeedHash', 'adversarialRotated', 'historyRotated', 'rewriteSeen'];
+// 觀測紀錄（hooks 寫）：心跳／外部證據／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）。
+// 對話性質流（輸入流／理解流雜湊鏈）不落檔——對話事實由平台承載（基質優先），flow-state 只承載當下階段證據。
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'externalEvidence', 'turnUsage', 'usageTotals', 'rewriteSeen'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st) {
   const allowed = HOOK_RECORD_KEYS;
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
-  if (Object.hasOwn(st, 'inputs') && !(Array.isArray(st.inputs) && st.inputs.every(x => exactKeys(x, ['at', 'text']) && timestamp(x.at) && typeof x.text === 'string'))) return false;
   if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
   if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
   if (Object.hasOwn(st, 'turnUsage')) {
@@ -26,27 +24,14 @@ function hooksOnly(st) {
       ...(Object.hasOwn(tu, 'escalatedAt') ? ['escalatedAt'] : []),
       ...(Object.hasOwn(tu, 'escalations') ? ['escalations'] : []),
       ...(Object.hasOwn(tu, 'fpEscalations') ? ['fpEscalations'] : []),
-      ...(Object.hasOwn(tu, 'fingerprints') ? ['fingerprints'] : [])];
+      ...(Object.hasOwn(tu, 'repeats') ? ['repeats'] : [])];
     if (!(exactKeys(tu, tuKeys) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests)
       && (!Object.hasOwn(tu, 'escalatedAt') || timestamp(tu.escalatedAt))
       && (!Object.hasOwn(tu, 'escalations') || nonNegativeInt(tu.escalations))
-      && (!Object.hasOwn(tu, 'fpEscalations') || (objectRecord(tu.fpEscalations) && Object.keys(tu.fpEscalations).length <= 128 && Object.values(tu.fpEscalations).every(nonNegativeInt)))
-      && (!Object.hasOwn(tu, 'fingerprints') || (objectRecord(tu.fingerprints) && Object.keys(tu.fingerprints).length <= 128 && Object.values(tu.fingerprints).every(nonNegativeInt))))) return false;
+      && (!Object.hasOwn(tu, 'fpEscalations') || (objectRecord(tu.fpEscalations) && Object.keys(tu.fpEscalations).length <= 128 && Object.values(tu.fpEscalations).every(v => v === true)))
+      && (!Object.hasOwn(tu, 'repeats') || (objectRecord(tu.repeats) && Object.keys(tu.repeats).length <= 128 && Object.values(tu.repeats).every(v => v === 'seen' || v === 'denied'))))) return false;
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
-  for (const k of ['inputsRotated', 'understandingsRotated', 'adversarialRotated', 'historyRotated']) if (Object.hasOwn(st, k) && !nonNegativeInt(st[k])) return false;
-  if (Object.hasOwn(st, 'understandingSeedHash') && !/^[0-9a-f]{16}$/.test(st.understandingSeedHash)) return false;
-  if (Object.hasOwn(st, 'understandings')) {
-    if (!Array.isArray(st.understandings)) return false;
-    let prev = st.understandingSeedHash ?? '';
-    const inputTop = Math.max(0, (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1);
-    for (const x of st.understandings) {
-      if (!(exactKeys(x, ['at', 'uptoInput', 'as', 'reviewed', 'hash']) && timestamp(x.at) && Number.isInteger(x.uptoInput) && x.uptoInput >= 0 && x.uptoInput <= inputTop && typeof x.as === 'string' && typeof x.reviewed === 'boolean')) return false;
-      const hash = createHash('sha256').update(prev + String(x.uptoInput) + x.as + x.at).digest('hex').slice(0, 16);
-      if (x.hash !== hash) return false;
-      prev = hash;
-    }
-  }
   return true;
 }
 
@@ -57,14 +42,58 @@ function validCloseout(st) {
   return exactKeys(c, ['slug', 'workBranch', 'workCommit', 'baseBranch', 'at', 'remotes']) && c.slug === st.slug && branchName(c.workBranch) && (!st.workBranch || st.workBranch === c.workBranch) && commitId(c.workCommit) && branchName(c.baseBranch) && c.workBranch !== c.baseBranch && timestamp(c.at) && Array.isArray(c.remotes) && c.remotes.every(r => exactKeys(r, ['name', 'ref', 'configHash']) && typeof r.name === 'string' && r.name.length > 0 && typeof r.ref === 'string' && r.ref.startsWith('refs/heads/') && branchName(r.ref.slice(11)) && /^[0-9a-f]{64}$/.test(r.configHash));
 }
 
+// 舊檔載入即遷移（對話性質流不落檔——讀取端統一剝除；寫入點自然落新形）：
+// 輸入流／理解流（含雜湊鏈與輪替偏移）直接刪——對話事實由平台承載；
+// 對抗流轉各時點最後條目（lastAdv）、推進流轉各邊最後時戳（edgeAt）——閘門新鮮度對照語義不變，承載由無界清單改定長欄位。
+function migrateStreams(st) {
+  if (!objectRecord(st)) return st;
+  const ended = st.node === 'ended'; // ended 白名單不含 lastAdv/edgeAt——對抗流與推進流對已終態無閘門對照價值，只刪不轉
+  delete st.inputs; delete st.understandings; delete st.understandingHold;
+  delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash;
+  delete st.adversarialRotated; delete st.historyRotated;
+  if (Array.isArray(st.adversarialLog)) {
+    if (!ended) {
+      const lastAdv = st.lastAdv ?? {};
+      for (const p of ['1', '2']) {
+        const e = st.adversarialLog.filter((x) => x?.point === p).at(-1);
+        if (e && !objectRecord(lastAdv[p])) lastAdv[p] = { at: e.at, report: e.report, verdict: e.verdict, node: e.node, ...(e.model ? { model: e.model } : {}) };
+      }
+      if (Object.keys(lastAdv).length) st.lastAdv = lastAdv;
+    }
+    delete st.adversarialLog;
+  }
+  if (Array.isArray(st.history)) {
+    if (!ended) {
+      const edgeAt = st.edgeAt ?? {};
+      for (const h of st.history) if (h?.from && h?.to && timestamp(h.at)) edgeAt[`${h.from}→${h.to}`] = h.at;
+      if (Object.keys(edgeAt).length) st.edgeAt = edgeAt;
+    }
+    delete st.history;
+  }
+  delete st.adversarialAt; delete st.adversarialConsumed;
+  // 舊版流程鍵冪等剝除（2.0x 時代欄位——讀取端統一清理；active 容忍未知鍵但 ended 白名單拒絕）
+  delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
+  if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
+  if (objectRecord(st.stopReport) && Object.hasOwn(st.stopReport, 'inputIdx')) {
+    const { inputIdx, ...rest } = st.stopReport;
+    st.stopReport = rest;
+  }
+  if (objectRecord(st?.turnUsage)) { // 斷路器形態遷移：舊計數形（fingerprints／fpEscalations 數字值）歸零重觀察；
+    // 新形標記（fpEscalations 值===true）＝模式②升級事實，保留——否則 sb next 讀寫一輪即剝除，模式③永不觸發
+    delete st.turnUsage.fingerprints;
+    if (objectRecord(st.turnUsage.fpEscalations)) for (const k of Object.keys(st.turnUsage.fpEscalations)) { if (st.turnUsage.fpEscalations[k] !== true) delete st.turnUsage.fpEscalations[k]; }
+  }
+  return st;
+}
+
 // 產出遙測（sb end 留痕於 ended 態）：diff 由 git baseline..HEAD 時序分析得出（基質優先——不另建記錄）；
-// 各鍵允許缺省值 null（無 git、舊流程無 baseline、計數缺檔），結構完整即有效。
+// 各鍵允許缺省值 null（無 git、舊流程無 baseline、計數缺檔），結構完整即有效。counts 形狀世代相容（舊檔含已拆流計數）。
 function validTelemetry(t) {
   if (!exactKeys(t, ['diff', 'baseCommit', 'headCommit', 'adversarial', 'counts', 'durationMinutes'])) return false;
   if (t.diff !== null && !(exactKeys(t.diff, ['additions', 'deletions', 'files']) && [t.diff.additions, t.diff.deletions, t.diff.files].every(nonNegativeInt))) return false;
   if (!(t.baseCommit === null || commitId(t.baseCommit)) || !(t.headCommit === null || commitId(t.headCommit))) return false;
   if (t.adversarial !== null && !(exactKeys(t.adversarial, ['verdict', 'model']) && t.adversarial.verdict === '通過' && (t.adversarial.model === null || (typeof t.adversarial.model === 'string' && t.adversarial.model.trim().length > 0)))) return false;
-  if (!(exactKeys(t.counts, ['inputs', 'understandings', 'adversarial', 'toolCalls']) && Object.values(t.counts).every(v => v === null || nonNegativeInt(v)))) return false;
+  if (!(objectRecord(t.counts) && Object.values(t.counts).every(v => v === null || nonNegativeInt(v)))) return false;
   if (!(t.durationMinutes === null || (typeof t.durationMinutes === 'number' && t.durationMinutes >= 0))) return false;
   return true;
 }
@@ -75,48 +104,30 @@ const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_K
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
 
 function endedState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'endedAt', 'adversarialAt', 'adversarialConsumed', 'adversarialLog', 'understandingHold', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
-  if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt) || !Array.isArray(st.history) || st.history.length) return false;
+  if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt)) return false;
   if (Object.hasOwn(st, 'concludedAt') && !timestamp(st.concludedAt)) return false; // sb init --main 完結戳（維持 ended 分類——main 直接作業）
-  if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
   if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
   if (Object.hasOwn(st, 'closeout') && !validCloseout(st)) return false;
   if (Object.hasOwn(st, 'telemetry') && !validTelemetry(st.telemetry)) return false;
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準（ended 帶全帳本）
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
-  if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, 'ended')))) return false;
-  if (Object.hasOwn(st, 'adversarialConsumed') && typeof st.adversarialConsumed !== 'boolean') return false;
-  if (Object.hasOwn(st, 'understandingHold') && !(exactKeys(st.understandingHold, ['inputIdx', 'at']) && timestamp(st.understandingHold.at) && Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 && st.understandingHold.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length)) return false;
   const records = hookRecords(st);
   return !Object.keys(records).length || hooksOnly(records);
 }
 
-const validHold = (st) => !Object.hasOwn(st, 'understandingHold') ||
-  (exactKeys(st.understandingHold, ['at', 'inputIdx']) && timestamp(st.understandingHold.at) &&
-   Number.isInteger(st.understandingHold.inputIdx) && st.understandingHold.inputIdx >= 0 &&
-   st.understandingHold.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length);
 function uninitializedState(st) {
-  if (hooksOnly(st)) return true;
-  if (!objectRecord(st) || !Object.hasOwn(st, 'understandingHold') ||
-      Object.keys(st).some(k => ![...HOOK_RECORD_KEYS, 'understandingHold'].includes(k))) return false;
-  return validHold(st) && hooksOnly(hookRecords(st));
+  return hooksOnly(st);
 }
 // 接納工具實際產生的無段位提交紀錄；不接納孤立 null、未知欄位或半個流程。
-// 提交對抗章三鍵（2.4.0 移除——無新寫入者）改為存在時驗形狀、缺席放行：舊 direct 檔保持 direct 分類。
 function directState(st) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'history', 'adversarialLog', 'adversarialAt', 'adversarialConsumed', 'understandingHold'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
+  const skeleton = ['slug', 'ms', 'node'];
+  if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null)) return false;
   const records = hookRecords(st);
-  if (Object.keys(records).length && !hooksOnly(records)) return false;
-  const skeleton = ['slug', 'ms', 'node', 'history'];
-  if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null && Array.isArray(st.history) && !st.history.length)) return false;
-  return validHold(st) &&
-    (!Object.hasOwn(st, 'adversarialLog') || (Array.isArray(st.adversarialLog) && st.adversarialLog.length > 0 &&
-      st.adversarialLog.every((x) => ADV_ENTRY_SHAPE(x, null)))) &&
-    (!Object.hasOwn(st, 'adversarialAt') || (timestamp(st.adversarialAt) &&
-      (!Object.hasOwn(st, 'adversarialLog') || st.adversarialAt === st.adversarialLog.at(-1).at))) &&
-    (!Object.hasOwn(st, 'adversarialConsumed') || typeof st.adversarialConsumed === 'boolean');
+  return !Object.keys(records).length || hooksOnly(records);
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
@@ -128,9 +139,8 @@ function activeExtras(st) {
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
-  if (Object.hasOwn(st, 'stopReport') && !(objectRecord(st.stopReport) && exactKeys(st.stopReport, ['at', 'inputIdx', 'node', 'question', 'reviewed'])
-    && timestamp(st.stopReport.at) && Number.isInteger(st.stopReport.inputIdx) && st.stopReport.inputIdx >= 0
-    && st.stopReport.inputIdx < (st.inputsRotated ?? 0) + (st.inputs ?? []).length
+  if (Object.hasOwn(st, 'stopReport') && !(objectRecord(st.stopReport) && exactKeys(st.stopReport, ['at', 'node', 'question', 'reviewed'])
+    && timestamp(st.stopReport.at)
     && typeof st.stopReport.node === 'string' && ACTIVE_NODES.has(st.stopReport.node)
     && typeof st.stopReport.question === 'string' && [...st.stopReport.question.trim()].length >= 10
     && typeof st.stopReport.reviewed === 'boolean')) return false;
@@ -142,9 +152,8 @@ function activeRecords(st) {
   // research／返工進段以 null 重置外部證據，屬正常流程產物。
   if (records.externalEvidence === null) delete records.externalEvidence;
   if (Object.keys(records).length && !hooksOnly(records)) return false;
-  if (Object.hasOwn(st, 'adversarialLog') && !(Array.isArray(st.adversarialLog) && st.adversarialLog.every(objectRecord))) return false;
-  if (Object.hasOwn(st, 'adversarialAt') && !timestamp(st.adversarialAt)) return false;
-  if (Object.hasOwn(st, 'adversarialConsumed') && typeof st.adversarialConsumed !== 'boolean') return false;
+  if (Object.hasOwn(st, 'lastAdv') && !(objectRecord(st.lastAdv) && Object.entries(st.lastAdv).every(([k, v]) => ['1', '2'].includes(k) && ADV_ENTRY_SHAPE(v, v.node)))) return false;
+  if (Object.hasOwn(st, 'edgeAt') && !(objectRecord(st.edgeAt) && Object.values(st.edgeAt).every(timestamp))) return false;
   return activeExtras(st);
 }
 function classifyState(st) {
@@ -153,14 +162,14 @@ function classifyState(st) {
   if (endedState(st)) return 'ended';
   if (objectRecord(st) && typeof st.slug === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) &&
       typeof st.ms === 'string' && /^\d{3,}$/.test(st.ms) && Number(st.ms) >= 1 &&
-      Array.isArray(st.history) && st.history.every(objectRecord) && ACTIVE_NODES.has(st.node) && validHold(st) && activeRecords(st)) return 'active';
+      ACTIVE_NODES.has(st.node) && activeRecords(st)) return 'active';
   return 'invalid';
 }
 function readFlowState(root) {
   const file = join(root, '.shiftblame', 'flow-state.json');
   let result;
   try {
-    const state = JSON.parse(readFileSync(file, 'utf8'));
+    const state = migrateStreams(JSON.parse(readFileSync(file, 'utf8')));
     result = { kind: classifyState(state), state };
   } catch (error) {
     if (error.code !== 'ENOENT') return { kind: 'invalid', state: null };
@@ -193,5 +202,5 @@ function hasFlowArtifacts(root) {
   }
   return false;
 }
-export { objectRecord, exactKeys, timestamp, hookRecords, hooksOnly, uninitializedState, directState,
+export { objectRecord, exactKeys, timestamp, hookRecords, hooksOnly, migrateStreams, uninitializedState, directState,
   endedState, validCloseout, classifyState, readFlowState };

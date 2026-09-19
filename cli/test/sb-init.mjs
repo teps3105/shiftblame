@@ -20,11 +20,8 @@ function fixture(raw) {
   return { cwd, file, run };
 }
 const at = '2026-09-07T05:20:59.219Z';
-const as = '理解：測試保留輸入與理解原值';
 const record = {
   hooksHeartbeat: { at, event: 'SessionStart' },
-  inputs: [{ at, text: '原始輸入\n保留換行' }],
-  understandings: [{ at, uptoInput: 0, as, reviewed: false, hash: createHash('sha256').update('0' + as + at).digest('hex').slice(0, 16) }],
   externalEvidence: { done: true, at, tool: 'Agent' },
 };
 for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, record]) {
@@ -40,7 +37,7 @@ for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, rec
   assert.equal(r.status, 0, r.stderr);
   const initialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt, baseCommit, ...rest } = initialized;
-  assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent', history: [] });
+  assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent' });
   assert.match(startedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, 'init 錨定流程起始時間（遙測耗時基準）');
   assert.equal(baseCommit, null, '非 git 工作區 baseline 記 null（遙測 diff 缺省）');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/demo/SLUG.md')));
@@ -58,17 +55,24 @@ for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__
   assert.equal(f.run('init', 'demo').status, 0, tool);
   assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')).externalEvidence, initial.externalEvidence);
 }
+// 純紀錄檔含 2.0x 老流鍵（stamps／unlockLog）——讀取端 migrateStreams 剝除後歸 direct 態：init 成功、寫回即瘦身（舊鍵零殘留）。
+{
+  const f = fixture(JSON.stringify({ slug: null, ms: null, node: null, stamps: {}, unlockLog: [] }));
+  assert.equal(f.run('init', 'demo').status, 0);
+  const st = JSON.parse(readFileSync(f.file, 'utf8'));
+  assert.equal(st.stamps, undefined, 'stamps 隨 init 剝除');
+  assert.equal(st.unlockLog, undefined, 'unlockLog 隨 init 剝除');
+  assert.equal(st.slug, 'demo');
+}
 const invalid = [
   { ...record, externalEvidence: { done: true, at, tool: 'functions.exec' } },
-  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } },null, [], { slug: null }, { node: 'mystery' }, { history: [] },
-  { ...record, unknown: true }, { hooksHeartbeat: {} }, { inputs: 'bad' },
-  { inputs: [{ at, text: 1 }] }, { inputs: [{ at: 'bad', text: 'x' }] },
+  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } }, null, [], { slug: null }, { node: 'mystery' },
+  { ...record, unknown: true }, { hooksHeartbeat: {} }, { turnUsage: 'bad' },
+  { turnUsage: { startedAt: 'bad' } },
   { hooksHeartbeat: { at: '2026-02-30T05:20:59.219Z', event: 'SessionStart' } },
-  { ...record, understandings: [{ ...record.understandings[0], hash: 'bad' }] },
   { ...record, externalEvidence: { done: false, at, tool: 'Agent' } },
-  { ...record, understandingHold: { at, inputIdx: 0 } },
-  { slug: 'old', ms: '001', node: 'intent', history: [] },
-  { slug: 'old', ms: '001', node: 'ended', history: [] }];
+  { slug: 'old', ms: '001', node: 'intent' },
+  { slug: 'old', ms: '001', node: 'ended' }];
 for (const raw of [...invalid.map(x => JSON.stringify(x)), '{broken']) {
   const f = fixture(raw);
   assert.equal(f.run('init', 'demo').status, 1, raw);
@@ -83,10 +87,10 @@ function endedFixture() {
   const f = fixture();
   assert.equal(f.run('init', 'old').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
-  // 出口時序：slug 起始 < 時點 2 對抗條目 < 老闆終審輸入（老闆章錨定對抗報告之後——出口同一邊兩章）
+  // 出口時序：時點 2 對抗條目（lastAdv 定長欄位）＋--boss-ok 旗標即章（2.5.2——機械不驗時戳，語義由對話揭露＋老闆終審承擔）
   const t0 = Date.parse(st.startedAt);
-  const advAt = new Date(t0 + 60_000).toISOString(), bossAt = new Date(t0 + 120_000).toISOString();
-  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', inputs: [{ at: bossAt, text: '老闆：確認收尾' }], adversarialAt: advAt, adversarialLog: [{ at: advAt, report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }], adversarialConsumed: false }));
+  const advAt = new Date(t0 + 60_000).toISOString();
+  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', lastAdv: { '2': { at: advAt, report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
   const end = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(end.status, 0, end.stderr);
   return f;
@@ -113,7 +117,7 @@ function endedFixture() {
   assert.equal(r.status, 0, r.stderr);
   const reinitialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt: reStartedAt, ...reRest } = reinitialized;
-  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', history: [], baseCommit: null });
+  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', baseCommit: null });
   assert.match(reStartedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8'), oldDoc);
   assert.equal(existsSync(join(f.cwd, '.shiftblame/archive/INDEX.md')), false, '歸檔清單機制已除——archive 僅承載 slug 目錄');
@@ -127,10 +131,9 @@ for (const mutate of [
   st => ({ ...st, endedAt: 'bad' }),
   st => ({ ...st, slug: '../outside' }),
   st => ({ ...st, ms: null }),
-  st => ({ ...st, history: [{}] }),
+  st => ({ ...st, edgeAt: { 'build→verify': 'bad' } }),
   st => ({ ...st, unknown: true }),
-  st => ({ ...st, ...record, understandings: [{ ...record.understandings[0], hash: 'bad' }] }),
-  st => ({ ...st, ...record, understandingHold: { at, inputIdx: 0 } }),
+  st => ({ ...st, ...record, hooksHeartbeat: { at: 'bad', event: 'SessionStart' } }),
 ]) {
   const f = endedFixture();
   const raw = JSON.stringify(mutate(JSON.parse(readFileSync(f.file, 'utf8'))));
@@ -141,7 +144,7 @@ for (const mutate of [
 }
 // 歸檔目標占用：die 於寫檔前——狀態仍 verify、雙方目錄原樣（可重試）。
 {
-  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', history: [], inputs: [{ at: '2026-09-07T05:21:59.219Z', text: '老闆：確認收尾' }], adversarialLog: [{ at: '2026-09-07T05:20:59.219Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify', point: '2' }] }));
+  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', lastAdv: { '2': { at: '2026-09-07T05:20:59.219Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
   mkdirSync(join(f.cwd, '.shiftblame/old'), { recursive: true });
   writeFileSync(join(f.cwd, '.shiftblame/old/SLUG.md'), 'doc\n');
   mkdirSync(join(f.cwd, '.shiftblame/archive/old'), { recursive: true });
@@ -154,7 +157,7 @@ for (const mutate of [
 }
 // 舊版判決通過態（node:done）遷移：2.2.0 語意＝verify pass 後——出口同 pass；推進寫檔即自然遷移為 2.2.0 態。
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], inputs: [{ at: '2026-09-07T05:21:01.000Z', text: '老闆：確認收尾' }], adversarialLog: [{ at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }] }));
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], lastAdv: { '2': { at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done' } } }));
   assert.match(f.run('state').stdout, /舊版判決通過態/, 'state 唯讀遷移讀出（不改檔）');
   const endRun = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(endRun.status, 0, endRun.stderr);
@@ -169,7 +172,7 @@ for (const mutate of [
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.node, 'intent');
   assert.equal(st.ms, '002', '舊 done 態經 --new-ms 開新 ms');
-  assert.equal(st.history.at(-1).from, 'verify', '遷移後邊紀錄採 2.2.0 語意（from verify）');
+  assert.deepEqual(Object.keys(st.edgeAt ?? {}), ['verify→intent'], '新 ms 邊時戳淨空重計——舊 ms 邊不帶入，只留本推進邊');
   assert.equal(st.rewriteSeen, undefined, '新 ms 不帶入舊 ms 的 rewrite 載入鑰匙（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）');
 }
 // 僅刪除舊目錄而沒有歸檔，不會被當作已收尾。

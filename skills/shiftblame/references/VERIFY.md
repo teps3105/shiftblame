@@ -1,12 +1,12 @@
 ---
 name: 驗收
-revision: 2.5.1
+revision: 2.5.2
 ---
 # verify 段 — 真驗收執行：GWT 逐條實操、行為證據落回指區
 
 > **真驗收執行段（實作層終點）**。**段靈魂——驗收依據＝行為是否真的發生，不是測試燈號**：build 讓測試綠；verify 回到 G1，把每條 GWT 當驗收劇本真正走一遍——Given 實際建立、When 實際操作、Then 觀察真實行為，證據落回指區。測試綠只證明代碼對代碼；標的方最低能力假設下的實際操作與可觀察結果才證明價值。此狀態對 repo 唯讀，只可調整不改變斷言語義的環境配套；build→verify 為機械推進（E2E 全綠＋working tree 乾淨即過，中鏈零審核）——時點 2 對抗＋老闆終審在 verify 真驗收完成、G1 回指閉環後的出口邊。
 
-**verify 是七段圓環的驗收執行段；時點 2 對抗在驗收後的出口邊**：build 段完成全部功能與 E2E 綠燈收斂、working tree 乾淨後，build→verify 機械推進（中鏈零審核）。verify 段＝**真驗收執行**：G1 GWT 逐條＝驗收劇本，逐項實操並留下行為證據；驗不過 fail＝老闆新輸入重走 intent（未覆蓋即凍結），修復走旗標切段（實作問題回 build、測試定義錯誤回 test），不停等、不計返工輪。**驗收完成、G1 回指閉環後＝時點 2 對抗＋老闆終審**——對抗審驗收結果（GWT 回指意圖、假綠燈：測試綠但 AC 從行為矩陣還原不出＝綠燈無效）在前、老闆判定 pass 在後，pass 走兩個出口：`sb next intent --new-ms --adversarial --boss-ok` 閉環回 intent 開下一里程碑（msBaseline 重錨、前一 ms 遙測結算）或 `sb end --adversarial --boss-ok` 結束 slug 進 ended（末段 ms 遙測結算）——出口邊＝時點 2 對抗條目＋老闆終審章同一邊承載，時點 2 pass 即終審 pass。
+**verify 是七段圓環的驗收執行段；時點 2 對抗在驗收後的出口邊**：build 段完成全部功能與 E2E 綠燈收斂、working tree 乾淨後，build→verify 機械推進（中鏈零審核）。verify 段＝**真驗收執行**：G1 GWT 逐條＝驗收劇本，逐項實操並留下行為證據；驗不過 fail＝老闆新輸入重走 intent，修復走旗標切段（實作問題回 build、測試定義錯誤回 test），不停等、不計返工輪。**驗收完成、G1 回指閉環後＝時點 2 對抗＋老闆終審**——對抗審驗收結果（GWT 回指意圖、假綠燈：測試綠但 AC 從行為矩陣還原不出＝綠燈無效）在前、老闆判定 pass 在後，pass 走兩個出口：`sb next intent --new-ms --adversarial --boss-ok` 閉環回 intent 開下一里程碑（msBaseline 重錨、前一 ms 遙測結算）或 `sb end --adversarial --boss-ok` 結束 slug 進 ended（末段 ms 遙測結算）——出口邊＝時點 2 對抗條目＋老闆終審章同一邊承載，時點 2 pass 即終審 pass。
 
 - **產出**：G1 全部必填 AC 的逐條驗收劇本執行紀錄——實際操作、真實觀察、行為證據（節錄快照）；判定收斂寫 G1 回指區
 - **對應**：requirement 段（G1）——G1 GWT 逐條即驗收劇本（需求契約↔逐條執行）；操作序依 G3 排程（驗收環境與操作計畫）

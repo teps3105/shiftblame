@@ -19,7 +19,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 不變量卡＋輸入流與曝光"
+            "statusMessage": "shiftblame: 不變量卡＋節點行與停點申報行"
           }
         ]
       }

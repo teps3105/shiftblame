@@ -5,8 +5,8 @@
 //   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
 //      對策：七段圓環（intent 環首＝環尾）＋兩層兩段式段鏈＋回頭邊（任意段→intent 重走開新輪）＋每個推進點的前置閘門；推進
 //      MUST 跑 `sb next`，閘門不過即擋（exit 1）。回頭＝老闆新輸入重走 intent，前進要鑰匙。
-//   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋adversarialLog point 條目對照
-//      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 留痕＋理解流曝光）
+//   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋lastAdv 時點條目對照
+//      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 旗標即章＋think 理解揭露）
 //      與時點對抗承擔（閘門不讀 tmp）。
 //
 // 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
@@ -18,7 +18,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, sta
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState } from './flow-state.mjs';
+import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams } from './flow-state.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -66,16 +66,17 @@ const FLOW = {
 const backEdge = (from, to) => to === 'intent';
 
 // 前進鑰匙三層（SKILL 授權章）：
-//   ① 雙流（hooks 層）：輸入流＋理解流唯增記錄＋必然曝光——無前置攔截，CLI 不重複
+//   ① 理解宣告（對話承載）：think args 揭露語義授權——flow-state 不另造對話流記錄（2.5.2），CLI 不重複
 //   ② 老闆決策邊鑰匙＝--boss-ok 留痕＋時點對抗；--new-ms 開新里程碑（verify→intent 邊，pass 後）
-//   ③ --boss-ok 旗標：老闆輸入承載（輸入流時戳新鮮度 bossFresh 驗）＋留痕；缺失仍擋以保留形式邊界
+//   ③ --boss-ok 旗標即章：老闆實際輸入由對話承載（基質優先——平台已答，不另造記錄）；機械不驗時戳，
+//      語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔
 // 兩時點：時點 1＝requirement→research（G1 準則建立後審意圖→需求翻譯）；時點 2＝verify 出口邊（驗收完成、
 // G1 回指閉環後審驗收結果——GWT 回指、假綠燈）；中鏈（research→plan→test→build→verify）零審核資源——老闆不看
 // 中間產物，問題在前期（翻譯錯）與驗收後（對不上）暴露，中間機械推進；verify＝真驗收執行，出口＝時點 2 對抗＋老闆證據終審。
 const needsBossOk = (from, to) =>
   (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');
 
-// --adversarial＝時點對抗宣告＋adversarialLog point 條目對照（缺條目或過期即擋）。
+// --adversarial＝時點對抗宣告＋lastAdv 時點條目對照（缺條目或過期即擋）。
 // 時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 從行為矩陣還原、翻譯保真）；
 // 時點 2＝verify→intent 出口邊——驗收完成、G1 回指閉環後審驗收結果：GWT 回指意圖、假綠燈（測試綠但 AC
 // 從行為矩陣還原不出＝綠燈無效）；出口（sb end／next --new-ms）＝時點 2 對抗條目＋老闆終審章同一邊
@@ -129,7 +130,7 @@ const usage = (code = 2) => {
 用法：
   sb init <slug> [type]                 開 slug：建全骨架（flow-state＋<slug>/001/＋SLUG.md＋archive/＋<type>/<slug> 分支；type 預設 feat）
   sb state                              顯示目前段、可走下一步與其前置條件
-  sb adversarial <報告檔> --point 1|2    時點對抗宣告（條目入 adversarialLog）：
+  sb adversarial <報告檔> --point 1|2    時點對抗宣告（條目入 lastAdv 定長欄位）：
                                         落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
                                         （必修全清才可宣告）；--point 必帶（1＝requirement→research；2＝verify 出口）
   sb next <段> [--boss-ok] [--adversarial] [--new-ms]
@@ -142,7 +143,7 @@ const usage = (code = 2) => {
                                         --new-ms：開新里程碑（僅 verify→intent 出口邊，時點 2 對抗＋老闆終審 pass 後；MUST --adversarial --boss-ok）
                                         --adversarial：時點對抗宣告（requirement→research＝時點 1；verify→intent 出口＝時點 2——
                                         對抗在前、老闆判定在後）；需 sb adversarial --point 對應條目
-                                        （adversarialLog，新鮮度＝晚於同邊上次推進）
+                                        （lastAdv，新鮮度＝晚於同邊上次推進）
   sb end --adversarial --boss-ok        時點 2 對抗＋老闆終審 pass 後結束 slug（僅 verify 態——出口同一邊兩章）：收尾歸檔＋產出遙測
                                         （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
   sb sopreview                          SOP／ROADMAP 每 ms 審查留痕（三問：基質可答／元行為證據／仍被觸發）；
@@ -366,28 +367,24 @@ function gate(st, target, opts) {
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
-  // --boss-ok：老闆決策邊留痕＋老闆輸入新鮮度（對抗章不替代老闆章——缺老闆輸入停等不自蓋）
+  // --boss-ok：老闆決策邊留痕（旗標即章——老闆實際輸入由對話承載，機械不驗時戳；偽造由抽查承擔）
   if (opts.bossOk && !needsBossOk(st.node, target) && !opts.newMs) {
     problems.push(`「${st.node} → ${target}」不是老闆決策邊——--boss-ok 留給老闆決策邊；段內旗標切段與回頭邊不帶，工作邊沿用既有授權`);
   } else if (needsBossOk(st.node, target) && !opts.bossOk) {
-    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（授權語義由理解流曝光承擔）；時點對抗在前、老闆判定在後——pass 才推進（SKILL §3）`);
+    problems.push(`「${st.node} → ${target}」是老闆決策邊——MUST 帶 --boss-ok 留痕（理解老闆授權的語義由 think 揭露承擔）；時點對抗在前、老闆判定在後——pass 才推進（SKILL §3）`);
   } else if (opts.bossOk) {
-    if (!bossFresh(st, target)) {
-      problems.push('老闆決策邊缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於同邊上次推進的條目；時點對抗邊另須晚於本次對抗條目——老闆章錨定「看了對抗報告之後」，防舊輸入被當成本次判定），對抗章與理解宣告不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等老闆');
-      const note = hooksHealthNote(); if (note) problems.push(note);
-    } else passes.push('老闆授權留痕（--boss-ok＋老闆輸入新鮮度已驗）');
+    passes.push('老闆授權留痕（--boss-ok——旗標即章，對話承載老闆實際輸入）');
   }
 
   // --new-ms：時點 2 對抗條目＋老闆終審章同一邊——verify→intent 出口邊＝時點 2 對抗邊：
-  // --adversarial＋adversarialLog point 2 條目由下方對抗邊檢查承載；--boss-ok 終審章新鮮度含對抗條目錨定
+  // --adversarial＋lastAdv['2'] 條目由下方對抗邊檢查承載；--boss-ok 終審章（旗標即章——老闆輸入由對話承載）
   if (opts.newMs) {
     if (!(st.node === 'verify' && target === 'intent')) die(['--new-ms 僅限 verify→intent 邊（老闆終審 pass 後開下一 ms）——其他推進走各自旗標']);
     if (!opts.bossOk) die(['開新里程碑是老闆選擇（終審 pass 後 next）——MUST 帶 --boss-ok 留痕']);
-    if (!bossFresh(st, 'intent', { passExit: true })) die(['開新 ms 缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本次時點 2 對抗條目、本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
-    passes.push('老闆終審：pass 後開新 ms（--boss-ok＋新鮮度已驗）');
+    passes.push('老闆終審：pass 後開新 ms（--boss-ok——旗標即章）');
   }
-  // --adversarial＋adversarialLog point 條目對照（對抗產物屬 RAM，不入 SLUG）：
-  // 新鮮度＝point 條目 at 晚於 history 中最近一次同 point 邊推進——防舊條目重放（兩個唯增流交叉判定，零新欄位）
+  // --adversarial＋lastAdv point 條目對照（對抗產物屬 RAM，不入 SLUG）：
+  // 新鮮度＝point 條目 at 晚於同邊上次推進（edgeAt）——防舊條目重放（兩個事實交叉判定，零新欄位）
   // 時點 2（verify→intent）的對抗義務僅限出口（--new-ms）：fail＝老闆新輸入重走 intent 零旗標
   // （fail 本身是時點 2 對抗／終審的產物——不通過即回走證據；sb end 出口另由 cmdEnd 手動驗雙章）
   const adv = adversarialEdge(st.node, target);
@@ -395,11 +392,11 @@ function gate(st, target, opts) {
   if (advGate) {
     if (!opts.adversarial) problems.push(`「${st.node} → ${target}」需時點 ${adv.point} 對抗——MUST 帶 --adversarial 宣告（對抗在前、老闆判定在後——pass 才推進）`);
     else {
-      const lastEdgeAt = (st.history ?? []).filter((h) => h.from === st.node && h.to === target).at(-1)?.at;
-      const entry = (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1);
-      if (!entry) problems.push(`adversarialLog 缺時點 ${adv.point} 條目——MUST sb adversarial <報告檔> --point ${adv.point}（外部唯讀子代理，報告落 tmp）後推進`);
+      const lastEdgeAt = st.edgeAt?.[`${st.node}→${target}`];
+      const entry = st.lastAdv?.[adv.point];
+      if (!entry) problems.push(`lastAdv 缺時點 ${adv.point} 條目——MUST sb adversarial <報告檔> --point ${adv.point}（外部唯讀子代理，報告落 tmp）後推進`);
       else if (lastEdgeAt && entry.at <= lastEdgeAt) problems.push(`時點 ${adv.point} 對抗條目過期（早於同邊上次推進）——本輪 MUST 重新 sb adversarial --point ${adv.point}`);
-      else passes.push(`時點 ${adv.point} 對抗：adversarialLog 條目對照一致（新鮮度已驗）`);
+      else passes.push(`時點 ${adv.point} 對抗：lastAdv 條目對照一致（新鮮度已驗）`);
     }
   } else if (opts.adversarial) {
     if (adv) problems.push(`「${st.node} → ${target}」的時點 ${adv.point} 對抗義務僅限出口（--new-ms）——fail＝老闆新輸入重走 intent 零旗標（fail 本身是對抗／終審產物，不重驗）`);
@@ -484,7 +481,7 @@ function gate(st, target, opts) {
 
 const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'build', 'ci'];
 function readStartupState() {
-  try { return readJson(STATE_FILE); }
+  try { return migrateStreams(readJson(STATE_FILE)); }
   catch { die([`flow-state 無法解析：${STATE_FILE}——保留原檔，查明損壞原因後修復`]); }
 }
 function requireHealthyState() {
@@ -495,7 +492,6 @@ function requireHealthyState() {
 // ended 是新 slug 的入口；只接納正常 end 產物及其後的 hooks 紀錄。
 function endedInitProblems(st) {
   const problems = [];
-  if (st.understandingHold) problems.push('理解停等尚未解除——待老闆終審回覆後初始化');
   if (existsSync(join(SB_DIR, st.slug))) problems.push(`舊 slug 尚未移出：${join(SB_DIR, st.slug)}——先完成收尾歸檔`);
   const archived = join(SB_DIR, 'archive', st.slug, 'SLUG.md');
   if (!existsSync(archived) || !statSync(archived).isFile()) problems.push(`舊 slug 歸檔缺失：${archived}——先完成收尾歸檔`);
@@ -688,7 +684,6 @@ function cmdInit(slug, type = 'feat') {
   const prior = existsSync(STATE_FILE) ? readStartupState() : null;
   const ended = endedState(prior);
   if (existsSync(STATE_FILE) && !uninitializedState(prior) && !directState(prior) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法未初始化／直接實行紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
-  if (!ended && prior?.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後初始化']);
   if (ended) { const problems = endedInitProblems(prior); if (problems.length) die(problems); }
   for (const target of ended ? [join(SB_DIR, slug), join(SB_DIR, 'archive', slug)] : []) {
     if (existsSync(target)) die([`新 slug 路徑已占用：${target}——選擇未使用的 slug，既有文件保持原樣`]);
@@ -735,9 +730,8 @@ function cmdInit(slug, type = 'feat') {
   // git baseline 錨定（產出遙測的時序基準）：init 時記 HEAD 與起始時間——sb end 以 baseline..HEAD 做 diff 時序分析
   // （資料在 git；非 git 工作區記 null，遙測 diff 缺省）。回合計數屬 slug 生命週期——新 slug 歸零重計。
   const carried = prior ? (ended ? hookRecords(prior) : prior) : {};
-  delete carried.turnUsage; delete carried.usageTotals;
-  delete carried.adversarialAt; delete carried.adversarialConsumed; // 提交對抗章歷史鍵（2.4.0 移除——舊檔殘留不帶入新 slug；adversarialLog 唯增流保留）
-  writeFileSync(STATE_FILE, JSON.stringify({ ...carried, slug, ms: '001', node: 'intent', history: [], startedAt: new Date().toISOString(), baseCommit: gitHeadCommit(), ...(workBranch ? { workBranch } : {}) }, null, 2));
+  delete carried.turnUsage; delete carried.usageTotals; // 回合計數屬 slug 生命週期——新 slug 歸零重計
+  writeFileSync(STATE_FILE, JSON.stringify({ ...carried, slug, ms: '001', node: 'intent', startedAt: new Date().toISOString(), baseCommit: gitHeadCommit(), ...(workBranch ? { workBranch } : {}) }, null, 2));
   fin([`slug「${slug}」骨架建立：flow-state＋<slug>/001/＋SLUG.md＋archive/ → ${SB_DIR}`, branchNote, `目前段：intent——七段圓環環首，任何新意圖經 shiftblame:think 揭露後由此展開`, `專案根錨定：${ROOT}${ROOT === resolve(process.cwd()) ? '' : `（由 ${process.cwd()} 向上錨定）`}`]);
 }
 
@@ -773,19 +767,15 @@ function cmdStopReport(question) {
   if ([...q].length < 10) die([`停點申報須附具體待決問題（--question ≥10 字）——「需要老闆決策」不是問題內容；空泛申報＝偷懶，曝光承擔`]);
   const { kind, state: st } = requireHealthyState();
   if (kind !== 'active') die([`停點申報僅限活動流程（目前 ${kind}）——ended／無流程的停點本就合法，無須申報`]);
-  if (st.understandingHold) die(['理解停等中——主動 think 停等本就合法，無須停點申報']);
-  const lastInputIdx = (st.inputsRotated ?? 0) + (st.inputs ?? []).length - 1;
-  if (lastInputIdx < 0) die(['輸入流為空（hooks 未信任或未記錄）——無法標定申報新鮮度：修復 hooks 記錄後重試（sb state 對照心跳）']); // 對抗必修：inputIdx=-1 會使狀態立即 invalid
   st.stopReport = {
     at: new Date().toISOString(),
-    inputIdx: lastInputIdx, // 全域輸入編號（新鮮度基準——跨回合即陳舊）
     node: st.node,
     question: q,
     reviewed: false,
   };
   delete st.stopBlockedAt; // 申報完成——本次停點改走申報面放行
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([`停點申報留痕：#${st.stopReport.inputIdx} @${st.node}「${q}」——可停；老闆下則輸入時曝光終審（真待決 or 偷懶）；下次推進即清`]);
+  fin([`停點申報留痕：@${st.node}「${q}」——可停；老闆終審（真待決 or 偷懶，對話承載）；下次推進即清`]);
 }
 
 function cmdState() {
@@ -793,7 +783,6 @@ function cmdState() {
   if (['missing', 'uninitialized', 'direct'].includes(kind)) {
     out(kind === 'direct' ? '直接實行：合法無段位紀錄；沒有 slug。' : '尚未初始化：沒有已接入的 slug；既有 hooks 紀錄保持原值。');
     out('經 shiftblame:think 依老闆授權路由：不開 slug 可直接實行；明確開 slug 才執行 sb init <slug>。狀態可辨識不等於批准。');
-    if (st?.understandingHold) out('  理解停等尚未解除——正式寫入與推進保持凍結');
     return;
   }
   if (st?.node === 'ended') {
@@ -814,13 +803,12 @@ function cmdState() {
     out('  出口同 pass：sb next intent --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；重修＝老闆新輸入重走 intent 開新輪');
     return;
   }
-  if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !Array.isArray(st.history) || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
-  if (st.understandingHold) out(`停等理解：輸入 #${st.understandingHold.inputIdx} 主動觸發中——寫入與推進凍結，待老闆終審回覆（兩種觸發樣態，SKILL §0）`);
+  if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
   if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動重走 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
   else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
-  if (st.stopReport) out(`停點申報：#${st.stopReport.inputIdx} @${st.stopReport.node}「${st.stopReport.question}」——老闆終審真待決 or 偷懶（曝光於老闆下則輸入；推進即清）`);
+  if (st.stopReport) out(`停點申報：@${st.stopReport.node}「${st.stopReport.question}」——老闆終審真待決 or 偷懶（對話承載）；推進即清`);
   if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審（三問：基質可答／元行為證據／仍被觸發）→ sb sopreview <三問結論> 留痕（開新 ms（pass）前機械驗，含機械基本功）`);
   const nexts = [...FLOW[st.node].next];
   if (st.node !== 'intent' && !nexts.includes('intent')) nexts.push('intent');
@@ -839,7 +827,7 @@ function cmdState() {
 
 function cmdNext(target, opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readJson(STATE_FILE);
+  const st = migrateStreams(readJson(STATE_FILE));
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——出口同 pass（--new-ms／end），重修走 intent；推進寫檔即自然遷移
   if (st.node === 'ended' || !(st.node in FLOW)) die([`目前狀態 ${st.node ?? '（無）'} 不可推進——slug 已結束或狀態檔不屬於任何段`]);
   if (!(target in FLOW)) die([`未知段「${target}」。流程節點：${Object.keys(FLOW).join(' → ')}`], 2);
@@ -877,6 +865,7 @@ function cmdNext(target, opts) {
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
       delete st.rewriteSeen; // 舊 ms 的 rewrite 載入鑰匙不帶入（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）
       delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
+      delete st.edgeAt; delete st.lastAdv; // 邊推進時戳與對抗條目屬 ms——新 ms 重驗（出口新鮮度由新 ms 的條目對照承載）
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
       if (existsSync(join(ROOT, '.git')) && (st.msBaseline || st.baseCommit)) {
         const d = gitDiffStats(st.msBaseline || st.baseCommit, gitHeadCommit());
@@ -884,23 +873,21 @@ function cmdNext(target, opts) {
       }
       st.msBaseline = gitHeadCommit(); // 新 ms 記自身基準
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪
-      // 開新輪：新輪重寫自洽，時序由 history＋輪次計數承擔（歷史不可變性歸 git）
+      // 開新輪：新輪重寫自洽，時序由 edgeAt＋輪次計數承擔（歷史不可變性歸 git）
       const revN = countRev(st);
-      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 history 承擔，歷史歸 git）——本輪寫 G 檔前 hooks 驗已調用 shiftblame:rewrite（未載入即擋）`); }
+      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 edgeAt 承擔，歷史歸 git）——本輪寫 G 檔前 hooks 驗已調用 shiftblame:rewrite（未載入即擋）`); }
     }
   }
-  const entry = { from: prev, to: target, at: new Date().toISOString(), ms: st.ms, bossOk: !!opts.bossOk, adversarial: !!opts.adversarial };
-  if (st.turnUsage?.escalatedAt) entry.budgetExhausted = true; // 迴圈升級自動回 intent 留痕（歷史鍵名，語義＝迴圈升級；hooks 觸發，CLI 對照 escalatedAt）
-  st.history.push(entry);
+  // 邊推進留痕（定長欄位——各邊最後時戳，閘門新鮮度對照用；迴圈升級旗標由 hooks 的 escalatedAt 對照）
+  st.edgeAt = { ...(st.edgeAt ?? {}), [`${prev}→${target}`]: new Date().toISOString() };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
 }
 
-// sb unlock 不存在：雙流模型——輸入＝獨立理解對象，不是鎖的鑰匙材料。
-// 理解經 shiftblame:think 調用（args＝理解宣告）由 hooks 自動落理解流（understandings，雜湊鏈唯增）＋必然曝光；
-// 無引句、無消費——輸入與理解流皆唯增，無鑰匙材料。
+// sb unlock 不存在：理解由對話承載——think args 理解宣告在對話流即可見（2.5.2 起不落檔），
+// 無引句、無鑰匙材料、無檔案記錄；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗。
 function cmdUnlockAbsent() {
-  die(['sb unlock 不存在——輸入是理解對象不是鑰匙：理解經 shiftblame:think 調用（args＝理解宣告）自動落理解流並曝光；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
+  die(['sb unlock 不存在——理解經 shiftblame:think 揭露（args 理解宣告，對話承載）即可行動；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
 // SOP／ROADMAP 機械基本功檢查（日期類＋重複類——全機械可判，審查必過）：違規未清即不發審查戳記。
@@ -988,7 +975,6 @@ function cmdSopreview(answers) {
   const current = requireHealthyState();
   if (current.kind !== 'active') die(['SOP／ROADMAP 審查留痕需要有效 slug 流程（直接實行紀錄無 ms 邊界）']);
   const st = current.state;
-  if (st.understandingHold) die(['理解停等尚未解除——待老闆終審回覆後留痕']);
   const hasDocs = existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'));
   const docProblems = hasDocs ? sopDocProblems() : [];
   if (docProblems.length) die(['SOP／ROADMAP 機械基本功未過——審查戳記不發（修復後重跑 sb sopreview）：', ...docProblems]);
@@ -1000,33 +986,19 @@ function cmdSopreview(answers) {
   ]);
 }
 
-// 老闆輸入新鮮度（老闆決策邊鑰匙的事實承載）：--boss-ok 由老闆輸入承載——輸入流（hooks UserPromptSubmit
-// 唯增記錄）須存在晚於基準的條目，對抗章與理解宣告不替代老闆章；缺老闆決策即 stop-report 申報停等。
-// 基準鏈＝max(同邊上次推進 at（不過濾旗標，鏡像時點 1 新鮮度）, 本次 point 對抗條目 at（僅對抗邊——
-// 老闆章錨定本次對抗報告之後：「看了對抗報告才准」，防重走鏈中舊輸入被當成本次判定的 pass 章雙重消費）,
-// 本 ms 末次進 verify at（僅 pass 出口——終審在驗收執行後）, slug 起始 at)。純時戳判定零語義（機械不掃詞）
-// ——本閘是「老闆在場且開過口」的下限，語義授權由理解流曝光＋老闆終審承擔；偽造輸入紀錄由抽查承擔。
-function bossFresh(st, target, { passExit = false } = {}) {
-  const ts = (s) => { const t = Date.parse(s); return Number.isFinite(t) ? t : 0; };
-  const sameEdgeAt = (st.history ?? []).filter((h) => h.from === st.node && h.to === target).at(-1)?.at;
-  const verifyAt = passExit ? (st.history ?? []).filter((h) => h.to === 'verify' && h.ms === st.ms).at(-1)?.at : undefined;
-  const adv = adversarialEdge(st.node, target);
-  const advEntryAt = adv ? (st.adversarialLog ?? []).filter((e) => e.point === adv.point).at(-1)?.at : undefined;
-  const base = Math.max(ts(sameEdgeAt), ts(advEntryAt), ts(verifyAt), ts(st.startedAt));
-  return (st.inputs ?? []).some((e) => ts(e.at) > base);
-}
+// --boss-ok＝旗標即章（2.5.2）：老闆實際輸入由對話承載（基質優先——平台已答，flow-state 不另造記錄）；
+// 機械不驗時戳，語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔。
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
-  const st = readJson(STATE_FILE);
+  const st = migrateStreams(readJson(STATE_FILE));
   if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——本指令完成即遷移為 ended
   if (st.node !== 'verify') die([`sb end 僅限 verify 態選 end（目前 ${st.node}）——真驗收（GWT 逐條實操、行為證據落回指區）完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 先於結束`]);
-  if (!opts.bossOk) die(['結束是老闆終審決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由理解流曝光承擔）']);
+  if (!opts.bossOk) die(['結束是老闆終審決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由 think 揭露承擔）']);
   if (!opts.adversarial) die(['結束出口＝時點 2 對抗條目＋老闆終審章同一邊（verify 出口邊）——MUST 帶 --adversarial（驗收完成後 sb adversarial --point 2 審驗收結果至通過）']);
-  const pt2Entry = (st.adversarialLog ?? []).filter((e) => e.point === '2').at(-1);
-  const verifyEnteredAt = (st.history ?? []).filter((h) => h.to === 'verify' && h.ms === st.ms).at(-1)?.at;
-  if (!pt2Entry) die(['adversarialLog 缺時點 2 條目——驗收完成、G1 回指閉環後 MUST sb adversarial <報告檔> --point 2（審驗收結果：GWT 回指、假綠燈、錯誤處置完整性）才可出口']);
+  const pt2Entry = st.lastAdv?.['2'];
+  const verifyEnteredAt = st.edgeAt?.['build→verify'];
+  if (!pt2Entry) die(['lastAdv 缺時點 2 條目——驗收完成、G1 回指閉環後 MUST sb adversarial <報告檔> --point 2（審驗收結果：GWT 回指、假綠燈、錯誤處置完整性）才可出口']);
   if (verifyEnteredAt && pt2Entry.at <= verifyEnteredAt) die(['時點 2 對抗條目過期（早於本 ms 進 verify）——本輪 MUST 重新 sb adversarial --point 2（驗收後審驗收結果）才可出口']);
-  if (!bossFresh(st, 'intent', { passExit: true })) die(['pass 結束缺新鮮老闆輸入——--boss-ok 由老闆輸入承載（輸入流須有晚於本次時點 2 對抗條目、本 ms 進 verify／slug 起始的條目），對抗章不替代老闆章；缺老闆決策即 sb stop-report --question 申報待決後停等', hooksHealthNote()].filter(Boolean));
   const sopProblem = sopReviewProblem(st);
   if (sopProblem) die([sopProblem]);
   const problems = [], passes = [];
@@ -1034,20 +1006,17 @@ function cmdEnd(opts) {
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
   // 產出遙測（基質優先）：diff 事實由 git 承擔——sb init 錨定 baseline commit，end 做時序分析；
-  // 對抗判定取最後條目（verdict＋審查模型）；計數與耗時來自 hooks 觀測流；缺省一律 null（舊流程／無 git 可比）。
+  // 對抗判定取時點 2 條目（lastAdv——verdict＋審查模型）；計數與耗時來自 hooks 觀測紀錄；缺省一律 null（舊流程／無 git 可比）。
   const head = gitHeadCommit();
   const diff = ((st.msBaseline || st.baseCommit) && head && (st.msBaseline || st.baseCommit) !== head) ? gitDiffStats(st.msBaseline || st.baseCommit, head) : null; // per-ms 結算
   if (diff) st.msTelemetry = { ...(st.msTelemetry ?? {}), [st.ms]: { diff, settledAt: new Date().toISOString() } }; // per-ms 遙測：末段 ms 於 end 出口同步結算
-  const lastAdv = (st.adversarialLog ?? []).at(-1) ?? null;
+  const pt2 = st.lastAdv?.['2'] ?? null;
   st.telemetry = {
     diff,
     baseCommit: st.baseCommit ?? null,
     headCommit: head,
-    adversarial: lastAdv ? { verdict: lastAdv.verdict, model: lastAdv.model ?? null } : null,
+    adversarial: pt2 ? { verdict: pt2.verdict, model: pt2.model ?? null } : null,
     counts: {
-      inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length,
-      understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length,
-      adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length,
       toolCalls: Object.hasOwn(st, 'usageTotals') ? st.usageTotals.requests : null,
     },
     durationMinutes: st.startedAt ? Math.round(((Date.now() - Date.parse(st.startedAt)) / 60000) * 10) / 10 : null,
@@ -1067,10 +1036,10 @@ function cmdEnd(opts) {
   }
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
-  st.history.push({ from: 'verify', to: 'ended', at: st.endedAt, ms: st.ms, bossOk: true, pass: true });
-  // slug 邊界清理（終態留痕後）：累積流（曝光與對照價值隨 slug 終結）直接清空——零副本、零殭屍存續
-  const cleared = { inputs: (st.inputsRotated ?? 0) + (st.inputs ?? []).length, understandings: (st.understandingsRotated ?? 0) + (st.understandings ?? []).length, adversarial: (st.adversarialRotated ?? 0) + (st.adversarialLog ?? []).length, history: (st.historyRotated ?? 0) + st.history.length };
-  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; st.history = [];
+  // slug 邊界清理（終態留痕後）：lastAdv/edgeAt 屬 ms 生命週期欄位，隨 slug 終結清除；
+  // 舊版流鍵冪等清理（對話流不落檔——2.5.2，零副本、零殭屍存續）
+  delete st.lastAdv; delete st.edgeAt;
+  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; delete st.history;
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals; delete st.stopReport; delete st.stopBlockedAt;
   delete st.worktrees; // 冪等清理歷史鍵（已移除的 worktree 帳本欄位——舊 flow-state 兼容清理）
@@ -1083,7 +1052,7 @@ function cmdEnd(opts) {
   fin([
     'verify → ended（pass）',
     `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分`,
-    `flow-state 累積流已清（slug 邊界——輸入 ${cleared.inputs}／理解 ${cleared.understandings}／對抗 ${cleared.adversarial}／history ${cleared.history}；零副本）`,
+    'slug 邊界清理完成（flow-state 純狀態機——對話流不落檔；lastAdv/edgeAt 隨 slug 終結清除，舊版流鍵冪等清空）',
     '收尾歸檔已完成（機械化——聲稱與實做一致）：<slug>/ 已移至 archive/<slug>/（永續層文件已隨各 commit 即時保真——same-commit）',
     ...passes,
   ]);
@@ -1101,7 +1070,6 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> --point 1|2（.shiftblame/tmp/review-*.md；MUST 外部唯讀子代理，報告原文落檔後引用）']);
   if (!point) die(['--point 必帶——sb adversarial <報告檔> --point 1|2（1＝requirement→research 時點 1：審意圖→需求翻譯；2＝verify 出口時點 2：驗收完成後審驗收結果）；段內提交對抗章已移除（審核資源前移需求與驗收兩時點）']);
   const current = requireHealthyState();
-  if (current.state?.understandingHold) die(['理解停等尚未解除——不得宣告對抗']);
   if (current.kind !== 'active') die(['時點對抗需要有效 slug 流程；不開 slug 的直接實行無時點對抗（時點屬七段圓環流程）']);
   mkdirSync(TMP, { recursive: true }); // 參數驗證通過才建目錄（bare repo 誤跑不長出空 .shiftblame）
   const st = current.state ?? {};
@@ -1119,18 +1087,18 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
   // 審查模型（遙測素材）：報告內含「審查模型：」行則記錄（外部子代理自報身份），缺省為無鍵——不新增宣告介面
   const model = text.match(/^[ \t]*審查模型[：:][ \t]*([^\n\r]{1,80})/m)?.[1]?.trim() || null;
   const at = new Date().toISOString();
-  const entry = { at, report: report.trim(), verdict, node: st.node ?? null, point, ...(model ? { model } : {}) };
-  (st.adversarialLog ??= []).push(entry);
+  const entry = { at, report: report.trim(), verdict, node: st.node ?? null, ...(model ? { model } : {}) };
+  // 定長欄位（2.5.2）：各時點保留最後條目（point 為鍵）——閘門新鮮度對照用，累積流不落檔
+  st.lastAdv = { ...(st.lastAdv ?? {}), [point]: entry };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
-    `時點${point}對抗條目留痕（@${st.node ?? '未入段'}）：${report.trim()}（判定：${verdict}）——adversarialLog 條目；推進帶 --adversarial 由 CLI 對照條目與新鮮度`,
+    `時點${point}對抗條目留痕（@${st.node ?? '未入段'}）：${report.trim()}（判定：${verdict}）——lastAdv 定長欄位；推進帶 --adversarial 由 CLI 對照條目與新鮮度`,
   ]);
 }
 
 function cmdCommitmsg(msg) {
   if (!msg) usage();
   const current = requireHealthyState();
-  if (current.state?.understandingHold) die(['理解停等尚未解除——不得發出提交印章']);
   // 2.4.0：提交對抗閘已移除（審核資源前移需求與驗收兩時點；老闆不看中間產物，提交審核＝審核無人讀）。
   // 提交閘僅存機械面：commitmsg 格式驗證＋staged 系統檔檢查＋座標樣式掃描＋陳述對照閘＋印章（hooks 於 git commit 驗章焚章）。
   // 發章：hooks PreToolUse 對 git commit 硬擋的憑證——10 分鐘內、訊息相符才放行。

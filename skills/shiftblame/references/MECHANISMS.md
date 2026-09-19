@@ -1,25 +1,25 @@
 ---
 name: MECHANISMS
-revision: 2.5.1
+revision: 2.5.2
 ---
 
 # 機制細節（主 SKILL 骨架的下沉承載）
 
-用途：承載主 SKILL 骨架指路而來的機制全文——雙流模型、觸發樣態、如實天花板、修約與收斂細節、方法論各節（消融／基質優先／迴圈斷路器／觀測／停點）、對抗記錄格式、hooks 機械注入與圖表判準。主 SKILL 每個機制保留一句錨與指路，語義以本檔為準；章節引用（§n）指主 SKILL。
+用途：承載主 SKILL 骨架指路而來的機制全文——對話承載、觸發樣態、如實天花板、修約與收斂細節、方法論各節（消融／基質優先／迴圈斷路器／觀測／停點）、對抗記錄格式、hooks 機械注入與圖表判準。主 SKILL 每個機制保留一句錨與指路，語義以本檔為準；章節引用（§n）指主 SKILL。
 
-## 1. 確認綁定與雙流模型
+## 1. 確認綁定與對話承載
 
-**確認綁定語義決策，不綁定階段箭頭**：老闆確認 shiftblame:think 的完整理解後，該授權由 G1、G2、G3、兩時點邊、測試、實作、驗收與 pass 出口共同承接；同一語義在文件定稿、skill 觸發與 CLI 推進間一次承接。`--boss-ok` 由老闆輸入承載：CLI 於老闆決策邊驗**輸入流時戳新鮮度**——輸入流（hooks 唯增記錄）須存在晚於基準（同邊上次推進／本 ms 末次進 verify／slug 起始）的老闆輸入條目，對抗章與理解宣告不替代老闆章，缺新鮮老闆輸入即 `sb stop-report --question` 申報待決後停等老闆；本閘為純時戳判定零語義（機械不掃詞）——驗「老闆在場且開過口」的下限，語義授權仍由理解流曝光＋老闆終審承擔，偽造輸入紀錄由抽查承擔；實質鑰匙是老闆輸入新鮮度＋老闆決策邊留痕＋時點對抗＋理解流必然曝光。
+**確認綁定語義決策，不綁定階段箭頭**：老闆確認 shiftblame:think 的完整理解後，該授權由 G1、G2、G3、兩時點邊、測試、實作、驗收與 pass 出口共同承接；同一語義在文件定稿、skill 觸發與 CLI 推進間一次承接。`--boss-ok` 旗標即章：CLI 於老闆決策邊機械驗**本次對抗條目新鮮度**——adversarialLog point 條目須晚於基準（同邊上次推進／本 ms 末次進 verify／slug 起始），舊對抗條目重複消費即擋；缺新鮮條目即 `sb stop-report --question` 申報待決後停等老闆。本閘為純時序判定零語義（機械不掃詞）——驗「本次判定對抗在前」的下限，語義授權由理解宣告對話揭露＋老闆終審承擔；實質鑰匙是老闆決策邊留痕＋時點對抗＋旗標即章。
 
-**雙流模型（輸入＝獨立理解對象，不是鎖的鑰匙）**：每則老闆輸入由 hooks 記入**輸入流**（唯增事實——永不覆蓋、永不消費、無時序跳躍與翻舊帳概念，機械抗上下文壓縮）；agent 經 shiftblame:think 路由理解（調用 args＝理解宣告，一句話：這授權了什麼）由 hooks 落**理解流**（雜湊鏈唯增，涵蓋至最新輸入）。行動正當性來自理解宣告＋**必然曝光**（老闆每則輸入時未審理解全部展示、未覆蓋輸入可見——理解有誤即越權或沒理解就動手，當場看到）。語義認定權歸理解：機械不掃詞、不標否定、不對照類型；理解成立 MUST 立即進入下一步（意圖類輸入的下一步＝六欄揭露呈現；不設停等關鍵詞、不要求老闆改述）；理解不明才發問（該輸入保持「尚無理解覆蓋」曝光可見）。輸入不是鑰匙、理解不被攔截消費；**未覆蓋即凍結**是唯一的機械前置——最新輸入尚無理解覆蓋時 hooks 硬擋寫入與推進類動作（揭露第一動由機械保證，不依賴自覺），理解宣告落檔即解凍；完成類鑰匙＝老闆決策邊 `--boss-ok` 留痕＋老闆輸入時戳新鮮度（CLI 驗——此為「輸入不是鑰匙」公理在老闆決策邊的唯一錨定例外：機械只驗老闆在場事實，語義仍歸理解）＋時點對抗＋理解流曝光（`--new-ms` 開新里程碑，僅真驗收終審 pass 後出口邊）。
+**對話由平台承載（輸入＝獨立理解對象，不是鎖的鑰匙）**：對話事實（老闆輸入時序與理解授權）由平台 session 承載——對話流零落檔、零雜湊綁定（基質優先：平台已記對話，另造即拆）；flow-state 只承載狀態機本體與定長欄位（lastAdv／edgeAt／adversarialLog point 條目），舊版雙流鍵（inputs／understandings 等）於回合邊界冪等剝除——舊檔升級即瘦身。agent 經 shiftblame:think 路由理解（調用 args＝理解宣告，一句話：這授權了什麼）於對話直接揭露——理解有誤即越權或沒理解就動手，老闆當場看到。語義認定權歸理解：機械不掃詞、不標否定、不對照類型；理解成立 MUST 立即進入下一步（意圖類輸入的下一步＝六欄揭露呈現；不設停等關鍵詞、不要求老闆改述）；理解不明才發問。輸入不是鑰匙、理解零機械前置攔截——未理解就行動由對話可見性＋老闆終審承擔；完成類鑰匙＝老闆決策邊 `--boss-ok` 旗標即章＋對抗條目新鮮度（CLI 驗）＋時點對抗（`--new-ms` 開新里程碑，僅真驗收終審 pass 後出口邊）。
 
 ## 2. 觸發樣態——揭露第一動；未定案必問；無歧義即執行
 
-全文由 `skills/think/SKILL.md` 承載（A3／A10 的展開）——揭露第一動（理解立即以人話呈現）、未定案必問（開放問題列出提問停等，授權僅來自老闆明確回覆）、無歧義即執行（已明確指定照辦不重問）、問題類直接回答（收斂定案權在老闆）、主動觸發呈現即停／被動觸發揭露後續跑、main／slug 詢問守則與免問例外。本檔僅承載機械接面：主動觸發（`/shiftblame:think`、`$shiftblame:think`、裸名開頭的調用形式輸入）設 `understandingHold` 停等——`sb state` 顯示停等狀態，老闆回覆即解凍。
+全文由 `skills/think/SKILL.md` 承載（A3／A10 的展開）——揭露第一動（理解立即以人話呈現）、未定案必問（開放問題列出提問停等，授權僅來自老闆明確回覆）、無歧義即執行（已明確指定照辦不重問）、問題類直接回答（收斂定案權在老闆）、主動觸發呈現即停（以 `sb stop-report --question` 申報待決後停）／被動觸發揭露後續跑、main／slug 詢問守則與免問例外。本檔僅承載機械接面：主動觸發（`/shiftblame:think`、`$shiftblame:think`、裸名開頭的調用形式輸入）的停等以停點申報承載——申報於老闆下則輸入曝光（`[停點申報]` 行）供終審。
 
 ## 3. 如實天花板（通道層，不防刻意偽造）
 
-hooks 輸入事件無來源鑑別——agent 可自行調用 hooks 偽造 UserPromptSubmit（自寫輸入流）或 PreToolUse Skill(shiftblame:think)（自寫理解流，args＝任意文本），並洗除曝光審視標記；understandings 唯增雜湊鏈僅使「刪改中間條目」斷鏈擋死，不防完整重算重寫（整體刪除重建同）。手改 flow-state（含 inputs／understandings／externalEvidence／understandingHold、偽造 history 條目與 ms 欄——刪 hold 即機械自解凍）不防；理解流的抽查面＝understandings 的理解宣告對照對話實蹟（理解是真是假、有無越權，曝光終審＋抽查承擔）；自調 hooks 偽造 PreToolUse 外部工具事件（餵 WebSearch／Agent 假調用標記 externalEvidence）同類不防，且 externalEvidence 是單值覆寫欄位（無唯增日誌、重置即失）——外部性閘的抽查面＝G2 記錄的外部證據來源與其結論，對照對話實蹟與工具調用實蹟（老闆抽查承擔）；rewrite 載入閘同屬通道層——自調 hooks 偽造 Skill(shiftblame:rewrite) 調用可自寫 rewriteSeen 開鎖，且調用≠消化（機械只驗調用事實，重寫品質由 verify 驗收與抽查承擔）；對抗宣告無 TTL 且跨老闆輸入存活——sb adversarial 宣告後（無 TTL）舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度與報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。理解流自身的天花板：理解宣告是無約束的 agent 文本（Skill args），機械不驗——「理解是假的」（老闆說疑問句卻宣告行動許可）機械照樣落檔，語義真假只能靠曝光行完整展示理解宣告、由老闆終審。此為通道層結構限制，非流程可封閉——最終由老闆抽查 understandings 與對話實蹟對照承擔；曝光依賴平台渲染 hooks 注入文本，平台不渲染則曝光承諾不成立。停等凍結同屬通道層：agent 以 Bash 行內直譯（python/node 落檔）或直跑腳本檔可繞寫入工具攔截（同寫入矩陣殘餘面，verify 邊樹檢查兜底）。
+對話事實由平台 session 承載——框架零落檔即零偽造面：抽查面＝理解宣告（對話中的 Skill args）對照對話實蹟與後續行動（理解是真是假、有無越權，由老闆終審＋抽查承擔），平台不保存對話的平台由平台自身遺跡承擔天花板。手改 flow-state（含 lastAdv／edgeAt／externalEvidence、偽造 edgeAt 條目與 ms 欄）機械不防——抽查面＝對照 git 實蹟與對話實蹟；自調 hooks 偽造 PreToolUse 外部工具事件（餵 WebSearch／Agent 假調用標記 externalEvidence）不防，且 externalEvidence 是單值覆寫欄位（無唯增日誌、重置即失）——外部性閘的抽查面＝G2 記錄的外部證據來源與其結論，對照對話實蹟與工具調用實蹟（老闆抽查承擔）；rewrite 載入閘同屬通道層——自調 hooks 偽造 Skill(shiftblame:rewrite) 調用可自寫 rewriteSeen 開鎖，且調用≠消化（機械只驗調用事實，重寫品質由 verify 驗收與抽查承擔）；對抗宣告無 TTL 且跨老闆輸入存活——sb adversarial 宣告後（無 TTL）舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度由 CLI 對抗邊機械驗（條目晚於基準），報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。理解宣告自身的天花板：理解宣告是無約束的 agent 文本（Skill args），機械不驗——「理解是假的」（老闆說疑問句卻宣告行動許可）對話照樣揭露，語義真假只能靠對話完整展示理解宣告、由老闆終審。此為通道層結構限制，非流程可封閉。寫入攔截的通道層殘餘：agent 以 Bash 行內直譯（python/node 落檔）或直跑腳本檔可繞寫入工具攔截（同寫入矩陣殘餘面，verify 邊樹檢查兜底）。
 
 ## 4. 單調細化 vs 顯式修約（判定圖與開發期間意圖路由）
 
@@ -35,7 +35,7 @@ sequenceDiagram
 
      alt CONFORMS（不改變 G1 滿足集合）
          SEC->>SEC: 重走 intent 開新輪至對應定義段<br/>（research 細化 G2／plan 細化 G3）
-         Note over SEC: G1 語義不變（補正後重進時點 1 邊即重封存）<br/>history 留時序
+         Note over SEC: G1 語義不變（補正後重進時點 1 邊即重封存）<br/>edgeAt 留時序
      else UNDERSPECIFIED／CONFLICTS
          SEC->>SEC: 停止開發 · 重走 intent 開新輪重定義
          SEC->>SEC: 老闆確認後重走 intent
@@ -95,14 +95,14 @@ sequenceDiagram
 4. **三面向各自重審主導文件**：主對話對照封存 G1、G2 技術與 G3 計畫重審。
 5. **build→verify 機械推進**：E2E 全綠且 working tree 乾淨（實作已存檔）即 `sb next verify` 推進真驗收——中鏈零審核、無老闆停靠；應跑未跑的 E2E MUST 標「未驗」。
 6. **verify 真驗收執行**：G1 GWT 逐條＝驗收劇本——Given 實際建立→When 實際操作→Then 觀察真實行為，證據落回指區（判定收斂寫 G1 回指區，定義區不變——修約路徑唯一變更），過程落 tmp（`references/VERIFY.md`）。驗收依據＝行為是否真的發生，非測試燈號；全部必填 AC 須 SATISFIED 行為證據（出口前置）。驗不過 fail＝老闆新輸入重走 intent（修復旗標切段回 test／build）。
-7. **時點 2 對抗＋老闆終審出口（verify 出口邊——對抗在前、老闆判定在後）**：verify 真驗收完成、G1 回指閉環後，先取得一次子代理**對抗驗收結果**檢閱並複核——審驗收結果：GWT 回指意圖、假綠燈（測試綠但 AC 從行為矩陣還原不出＝綠燈無效）、ms 整體價值、錯誤處置完整性——三分類處理至乾淨（adversarialLog point 2 條目），對抗乾淨後才交老闆終審判定 pass/fail。**老闆 pass**＝終審章：出口二選一由老闆語義決定——`sb next intent --new-ms --adversarial --boss-ok`（閉環回 intent 開下一里程碑）或 `sb end --adversarial --boss-ok`（結束 slug 進 ended）；出口邊＝時點 2 對抗條目＋老闆終審章同一邊承載。**老闆 fail**：視為老闆新輸入——重走 intent（未覆蓋即凍結）：段內修復類旗標切段回對應段續迭代（不計返工輪），定義級變更開新輪（計返工輪＋rewrite 載入閘）；修復後依 §1.4 重驗受影響範圍。
+7. **時點 2 對抗＋老闆終審出口（verify 出口邊——對抗在前、老闆判定在後）**：verify 真驗收完成、G1 回指閉環後，先取得一次子代理**對抗驗收結果**檢閱並複核——審驗收結果：GWT 回指意圖、假綠燈（測試綠但 AC 從行為矩陣還原不出＝綠燈無效）、ms 整體價值、錯誤處置完整性——三分類處理至乾淨（adversarialLog point 2 條目），對抗乾淨後才交老闆終審判定 pass/fail。**老闆 pass**＝終審章：出口二選一由老闆語義決定——`sb next intent --new-ms --adversarial --boss-ok`（閉環回 intent 開下一里程碑）或 `sb end --adversarial --boss-ok`（結束 slug 進 ended）；出口邊＝時點 2 對抗條目＋老闆終審章同一邊承載。**老闆 fail**：視為老闆新輸入——重走 intent：段內修復類旗標切段回對應段續迭代（不計返工輪），定義級變更開新輪（計返工輪＋rewrite 載入閘）；修復後依 §1.4 重驗受影響範圍。
 8. **輕量動作**：老闆終審 pass 後秘書更新 SLUG 技術債／臨時租約、§4 段表與**定案索引**（本 ms 一行式定案，見 §7）；不動 SOP／ROADMAP／archive。
 
 ## 7. pass 出口的輕量動作
 
 1. SLUG §4 該 `<ms>` 列節點隨出口更新（--new-ms 開新列、sb end 定收斂；SLUG §4 更新段表與技術債，不需先做其他動作）。收斂執行記錄由秘書寫入 SLUG §4「收斂執行記錄」表（G3 寫入權無例外——SLUG 恆可寫）。
 2. 秘書確認本 `<ms>` 證據、未驗項與三者重審通過。
-3. 重新讀取當下 `<ms>` 的 G1／G2／G3 與證據（時序由 history 承擔——本輪文件對本輪實況）。
+3. 重新讀取當下 `<ms>` 的 G1／G2／G3 與證據（時序由 edgeAt 承擔——本輪文件對本輪實況）。
 4. 把本循環產生、跨 `<ms>` 仍有效的技術債、臨時租約寫回 SLUG §6／§7；已失效者標記處置。
 5. **寫入 SLUG 定案索引**：本 `<ms>` 一行式——`<nnn>｜語義邊界一句（≤30 字）｜選型／架構決策一句（≤30 字）｜G 檔路徑`。摘要限指路級（不含參數、數值、承諾）；索引與 G 檔衝突時以 G 檔為準。同 `<ms>` 重修後再出口＝以 `<nnn>` 為鍵覆寫原行（不追加；`.shiftblame/` 不入 git，覆寫即無歷史——當下層過時無罪承擔）。此索引是同 slug 過往 ms 定案的可發現性載體（§9 載入與段參照義務的標的）。
 6. **SOP／ROADMAP 每 ms 審查**（§10 修剪迴路）：對照實況跑三問後 `sb sopreview <三問結論>` 留痕——開新 ms（`--new-ms`）與結束（`sb end`）前機械驗本 ms 已審（無 SOP／ROADMAP 的專案不擋）；審查含機械基本功檢查（updated 同步、零日期日誌行、零重複行與重複標題——未過即戳記不發）；刪修結論走正常 commit。
@@ -120,7 +120,7 @@ sequenceDiagram
 3. 歸檔移動由 `sb end` 機械執行（聲稱與實做一致）：`<slug>/` 已移至 `<repo>/.shiftblame/archive/`（移動失敗即 die、狀態保持 ended 可重試）；秘書核對 `archive/<slug>/SLUG.md` 歸檔完整（archive 僅承載各 slug 目錄與其文件）。
 4. 歸檔是 merge 的 gate——歸檔完成即可合併、推送與清理（文件已在各 commit 保真，收尾無補救工作）。**合併政策三規則**：①在 main 直接作業的工作屬於 main，無合併步驟；②開了分支的工作合併一律 `--no-ff`（快轉使 slug 邊界消失）且合併訊息固定為 `merge <slug>`——`sb closeout` 以「工作提交經合併提交進入基底」為機械證據，快轉不過；③外部協作倉庫依該倉庫自身的 issue／PR 策略執行（本框架合併政策讓位，提交與對抗閘仍照常）——此類倉庫以直接實行作業（不開 slug，即無 closeout 需求）；已開 slug 而必須讓位時，依該倉庫策略完成整合後以等效合併事實收尾。多人協作的 repo 內文件權限依 §5，與歸檔正交。
 5. Git 工作在歸檔、合併後，先執行 `sb closeout --base <本機基底分支>` 查證舊工作提交已經 `--no-ff` 合併提交進入基底並留痕，再依已查證 tip 清除本機及曾推送的遠端分支。closeout 是 ended 內的查證動作，不新增階段；不代做合併或刪除。
-6. **ended 的兩個出口**（收束生命週期）：**開新流程**——老闆決定下一個 slug 後，以 `sb init <新slug>` 從合法 ended 建立新流程（CLI 查證舊工作路徑已移出、`archive/<舊slug>/SLUG.md` 存在、新 slug 的工作與歸檔路徑均未占用；新流程只承接合法 hooks 紀錄，重建 slug／001／intent／空 history，舊對抗、返工與結束欄位不沿用，舊歸檔文件保持原樣）。**完結留 main**——`sb init --main` 結束 ended 生命週期、留在 closeout 基底分支直接作業（不開 slug、不建分支；同 ended 驗證重跑＋當前分支＝closeout 基底；寫入完結戳維持 ended 分類，歸檔與 closeout 證據保留；之後正常提交走 `sb commitmsg`——固定合併訊息僅限完結前收尾）。日後開新 slug 時回到 `sb init <新slug>`（同 ended 驗證重跑）。squash／rebase 缺祖先證據時先補整合證據。遠端查伺服器實況；已記錄來源缺失、變更或查詢失敗均擋。未記錄且已移除的歷史推送來源須恢復；查證後新增提交須重做 closeout，手動新增後刪除造成的證據過期由操作紀律與抽查承擔。
+6. **ended 的兩個出口**（收束生命週期）：**開新流程**——老闆決定下一個 slug 後，以 `sb init <新slug>` 從合法 ended 建立新流程（CLI 查證舊工作路徑已移出、`archive/<舊slug>/SLUG.md` 存在、新 slug 的工作與歸檔路徑均未占用；新流程只承接合法 hooks 紀錄，重建 slug／001／intent／空 edgeAt，舊對抗、返工與結束欄位不沿用，舊歸檔文件保持原樣）。**完結留 main**——`sb init --main` 結束 ended 生命週期、留在 closeout 基底分支直接作業（不開 slug、不建分支；同 ended 驗證重跑＋當前分支＝closeout 基底；寫入完結戳維持 ended 分類，歸檔與 closeout 證據保留；之後正常提交走 `sb commitmsg`——固定合併訊息僅限完結前收尾）。日後開新 slug 時回到 `sb init <新slug>`（同 ended 驗證重跑）。squash／rebase 缺祖先證據時先補整合證據。遠端查伺服器實況；已記錄來源缺失、變更或查詢失敗均擋。未記錄且已移除的歷史推送來源須恢復；查證後新增提交須重做 closeout，手動新增後刪除造成的證據過期由操作紀律與抽查承擔。
 
 ## 9. 消融原則（方法論）
 
@@ -157,23 +157,23 @@ sequenceDiagram
 回合治理原則：**工作做到完成為止**——量（調用數／分鐘）純屬觀測（hooks 計數＋每 ms 遙測結算，無預算、無上限、零干預）；唯一的中斷理由是**遞迴**——重跑同樣的失敗＝無限循環。ms 非停等期（老闆 checkpoint 之外）的協作模式＝**互動式迭代**——改一點看一點（小步推進、沿途揭露，不一次改完）、老闆可隨時插話；不停下不等於黑箱悶跑。機械承載：
 
 1. **計數（純觀測）**：hooks 於 PreToolUse 計數——`turnUsage`（本回合工具調用數＋起始時間；老闆下一則輸入重置）與 `usageTotals`（slug 累計）。工具調用數＝model 請求數的**上界代理**（每請求至少產出一個工具調用，批次並行時高估）——欄位誠實標名，真值在平台用量紀錄。計數不作任何干預——成本的控制在於看得見、結算得了、歸因得出（§12 遙測），由老闆事後依數據處置。
-2. **迴圈斷路器（常開）**：hooks 對每次工具調用計**指紋**（工具＋操作全量信號——shell 取完整命令字串、其他工具取完整參數 JSON——的 hash，記 `turnUsage.fingerprints`，上限 128 鍵；同檔不同區段的讀取、同檔不同內容的編輯屬多樣操作各自計數，逐字重跑的同一操作才同指紋）。同指紋回合內**第 4 次**出現即擋該次調用——訊息要求改變策略（修根因／換方法／不同操作）；被擋後仍重複至**第 7 次**＝升級：**自動重走 intent**（任何活動段；history 條目留 `budgetExhausted`——歷史鍵名，語義＝迴圈升級）並重置指紋表，依**修正分類**補正 G1~G3 後接續——CONFORMS 級（典型：執行策略失敗）細化 G2／G3、G1 不變；真屬 G1 衝突才走 §5 修約經老闆確認。**不凍結、不停擺**——升級後工作續行；同指紋**第二次升級**＝死操作（重走 intent 補正後仍原樣重跑），本回合封禁該操作（防宏觀升級循環），其餘工作不受影響。CLI 不凍結前進（`escalatedAt`／`escalations` 屬純觀測）。理解停等期間只計數不升級（寫入與推進由停等凍結治理）。Skill 調用與 `sb state`／`sb next intent` 為逃生豁免面。門檻值為暫行值——由 §12 觀測數據回饋校正（元行為錨定）。
-3. **殘餘（如實標註）**：指紋以操作字面前 200 字為準——參數微調的變體循環（如每次改一個字重跑）或前 200 字同形的長命令不觸發字面重複判定；被其他閘攔截的調用同樣計入指紋（修復後重試與死圈計數上不可區分——跨回合重置承擔）；128 鍵淘汰使被淘汰指紋的計數歸零重計（超長多樣回合中高重複操作可能被稀釋——漏擋方向）；由曝光與抽查承擔。
+2. **迴圈斷路器（擋行為模式，非數量）**：hooks 對每次工具調用計**指紋**（工具＋操作全量信號——shell 取完整命令字串、其他工具取完整參數 JSON——的 hash，記 `turnUsage.repeats`，上限 128 鍵；同檔不同區段的讀取、同檔不同內容的編輯屬多樣操作各自記錄，逐字重跑的同一操作才同指紋）。三模式：**模式①無變更重跑**——同指紋再現且自其上次出現以來無任何寫入類操作（世界未變，重跑結果必然相同）即擋該次調用，引導先實際變更再重試；**模式②忽視回饋**——被擋後逐字重發同指紋即升級：**自動重走 intent**（任何活動段；edgeAt 留升級邊）並記 `fpEscalations`，依**修正分類**補正 G1~G3 後接續——CONFORMS 級（典型：執行策略失敗）細化 G2／G3、G1 不變；真屬 G1 衝突才走 §5 修約經老闆確認。**不凍結、不停擺**——升級後工作續行；**模式③死操作**——升級補正後仍逐字重發同指紋，本回合封禁該操作（防宏觀升級循環），其餘工作不受影響。寫入類操作（寫檔工具或含寫入特徵的 shell 命令）一出現＝世界已變——重複追蹤全清（同操作重跑有了新基礎，test→edit→test 迭代正當）。CLI 不凍結前進（`escalatedAt`／`escalations` 屬純觀測）。Skill 調用與 `sb state`／`sb next intent` 為逃生豁免面。
+3. **殘餘（如實標註）**：指紋以操作字面前 200 字為準——參數微調的變體循環（如每次改一個字重跑）或前 200 字同形的長命令不觸發字面重複判定；shell 寫入特徵為高訊號近似——罕見寫入形誤判唯讀時誤擋後微調命令即新指紋放行；被其他閘攔截的調用同樣計入指紋（修復後重試與死圈計數上不可區分——跨回合重置承擔）；128 鍵淘汰使被淘汰指紋的記錄歸零重計（超長多樣回合中高重複操作可能被稀釋——漏擋方向）；由曝光與抽查承擔。
 
 ## 12. 觀測紀律（測得到）
 
 框架與 agent 的花費／產出／規則觸發 MUST 機械可觀測——「框架 CP 值」以真產出回答，平台遺跡不可重建的由框架自己記：
 
 1. **sb 呼叫事件**：sb 每次調用（子命令＋參數摘要）追加一行 JSONL 至 `<repo>/.shiftblame/tmp/sb-usage.jsonl`——sb 呼叫頻譜的機械觀測；老闆可隨時清理該檔，缺檔自動重建，觀測落檔失敗靜默（遙測失效不影響命令執行）。
-2. **產出遙測（每 ms 結算）**：`sb init` 錨定 git baseline（HEAD commit＋起始時間）；**每個 ms 記自身基準（msBaseline）**，於 pass 出口結算——`--new-ms` 邊結算前一 ms、`sb end` 結算末段 ms（msTelemetry 逐 ms 收 diff 統計（additions／deletions／files）＋settledAt），`sb end` 另寫最終遙測（baseline..HEAD 全期 diff＋最後對抗判定（verdict＋審查模型——報告內含「審查模型：」行則記，缺省 null）＋計數（inputs／understandings／adversarial／toolCalls）＋耗時（分鐘））入 flow-state ended 態 `telemetry` 欄。資料恆在 git——遙測可隨時重導，不另建記錄檔（基質優先）。
-3. **觀測流輪替**：flow-state 四條觀測流（inputs／understandings／adversarialLog／history）於老闆輸入邊界超門檻時（40／40／12／120 條）由 hooks 將較舊、對照價值已耗盡者（已審理解、舊對抗條目、舊 history）輪替至 `.shiftblame/tmp/flow-rotated.jsonl`——事實保留（老闆清理 tmp 時隨之消失）、flow-state 恆有界；輪替偏移（`inputsRotated` 等＋理解鏈種子）記於 flow-state，舊檔無偏移欄位＝零偏移（向後相容）；未審理解永留檔內（曝光義務優先）。輸入與理解的編號採全域基準（含已輪替前綴）。殘餘（如實標註）：adversarialLog 與 history 的保留視野各異（6 條 vs 60 條），重度輪替後時點新鮮度檢查的對照源可能早於同邊推進而放寬——剝削仍需 `--boss-ok` 共犯且輪替事實留 tmp 可稽，由抽查承擔。`archive/` 與 `tmp/` 內容不做框架清理。
+2. **產出遙測（每 ms 結算）**：`sb init` 錨定 git baseline（HEAD commit＋起始時間）；**每個 ms 記自身基準（msBaseline）**，於 pass 出口結算——`--new-ms` 邊結算前一 ms、`sb end` 結算末段 ms（msTelemetry 逐 ms 收 diff 統計（additions／deletions／files）＋settledAt），`sb end` 另寫最終遙測（baseline..HEAD 全期 diff＋最後對抗判定（verdict＋審查模型——報告內含「審查模型：」行則記，缺省 null）＋計數（toolCalls——對話流計數已隨輸入流拆除，用量真值在平台紀錄）＋耗時（分鐘））入 flow-state ended 態 `telemetry` 欄。資料恆在 git——遙測可隨時重導，不另建記錄檔（基質優先）。
+3. **flow-state 定長承載**：flow-state 只承載狀態機本體與定長欄位（lastAdv／edgeAt／adversarialLog point 條目／stopReport 單值）——對話流零落檔（§1），無輪替需求；adversarialLog 條目隨段邊少量累積、`sb end` 時 RAM 以 slug 為單位清空。舊版雙流鍵（inputs／understandings／stamps 等）由 CLI 讀取端遷移（migrateStreams）與 hooks 回合邊界冪等剝除——舊檔升級即瘦身。`archive/` 與 `tmp/` 內容不做框架清理。
 
 ## 13. 停點偵測（防偷懶停）
 
 停點的真偽機械不可判——機械只判「有無本回合申報」，真待決 or 偷懶由申報曝光＋老闆終審承擔：
 
-1. **擋停（條件式、單次、不代做路由）**：Stop hook 對活動流程（node 屬 intent~verify、無理解停等）而無本回合停點申報者擋停一次——訊息要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；不改 node、不跑 sb next、不判定語義上的未完工作。與「無條件續跑」的界線：不問狀態、每次一律擋才是無條件續跑；本機制條件觸發、至多一次、零路由代行。
-2. **放行面**：有申報（`flow-state.stopReport`，inputIdx 採全域基準——跨回合即陳舊失效）、主動 think 停等、ended（含完結戳）、無流程（含接入異態）、`stop_hook_active` 或本回合已擋過一次（`stopBlockedAt` 自限——不無限循環擋停）一律放行。
+1. **擋停（條件式、單次、不代做路由）**：Stop hook 對活動流程（node 屬 intent~verify）而無本回合停點申報者擋停一次——訊息要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；不改 node、不跑 sb next、不判定語義上的未完工作。與「無條件續跑」的界線：不問狀態、每次一律擋才是無條件續跑；本機制條件觸發、至多一次、零路由代行。
+2. **放行面**：有申報（`flow-state.stopReport`，本回合判定＝申報 at 晚於回合起點——跨回合即陳舊失效；主動 think 停等＝待老闆終審的待決，經申報放行）、ended（含完結戳）、無流程（含接入異態）、`stop_hook_active` 或本回合已擋過一次（`stopBlockedAt` 自限——不無限循環擋停）一律放行。
 3. **申報與曝光**：`sb stop-report --question「具體待決問題」` 僅限活動態，問題實質門檻 ≥10 字（「需要老闆決策」不是問題內容——空泛申報＝偷懶）；申報於老闆下則輸入曝光（`[停點申報]` 行）供終審真偽，流程下次推進（sb next）即清——工作已續行＝問題已解。
 4. **消融**：拆掉擋停（Stop handler 判準）後，無申報之停全數放行——防護消失（消融矩陣對帳，§9）。
 
@@ -195,7 +195,7 @@ sequenceDiagram
 
 ## 16. hooks 機械注入（§9 反偏移細節）
 
-plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝輸入流／理解流／外部證據標記缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件職責：`SessionStart` 注入載入程序＋不變量卡＋輸入流／理解流狀態（壓縮後自動回流——機械抗上下文壓縮）；`UserPromptSubmit` 輸入流唯增記錄＋停等狀態機（shiftblame:think 調用形式輸入設 hold、老闆回覆解凍）＋未審理解必然曝光＋狀態卡注入；`PreToolUse` 理解流記錄（Skill(shiftblame:think) 調用 args＝理解宣告）、停等凍結（hold 期間寫入類與流程推進硬擋——唯讀、外部查證、tmp 傾倒自由）、外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；同操作重複即擋、死圈升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／停等／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
+plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與停點申報記錄缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除（零內容寫入，§1）；`PreToolUse` 外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
 
 ## 17. 圖表使用判準
 

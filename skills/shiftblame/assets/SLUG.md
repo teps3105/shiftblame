@@ -4,7 +4,7 @@ status: in_progress
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_save:          # 由 shiftblame:save skill 寫入；shiftblame:resume skill 消費後清除
-revision: 2.5.1
+revision: 2.5.2
 ---
 # SLUG — `<slug>`
 
@@ -13,7 +13,7 @@ revision: 2.5.1
 
 ## 1. 老闆原始命題
 
-> （忠實承載老闆提出的問題或目標，不加入候選解法；將對話中的指代展開為明確對象。原始對話由輸入流承載，需要另存的對話材料一律 tmp。）
+> （忠實承載老闆提出的問題或目標，不加入候選解法；將對話中的指代展開為明確對象。原始對話由平台 session 承載，需要另存的對話材料一律 tmp。）
 
 ## 2. 秘書 意圖揭露
 

@@ -13,14 +13,14 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.5.1');
+assert.equal(manifest.version, '2.5.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.5.1"/);
+assert.match(skill, /version: "2.5.2"/);
 
-// 輸出形狀（人話契約）與老闆章錨定本次對抗條目
+// 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
 assert.match(read('skills', 'shiftblame', 'references', 'MECHANISMS.md'), /輸出形狀/);
-assert.match(read('cli', 'bin', 'sb.mjs'), /advEntryAt/, 'bossFresh 對抗邊老闆章錨定本次對抗條目（舊輸入不得冒名 pass 章）');
+assert.match(read('cli', 'bin', 'sb.mjs'), /lastAdv/, '對抗邊時點條目對照（lastAdv——舊對抗條目重複消費即擋）');
 
 // hooks 註冊型式：單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集
 // （command 型＋CLAUDE_PLUGIN_ROOT 兩端展開＋秒級 timeout）；不為個別平台綁專屬配置。
@@ -69,25 +69,21 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /from: 'verify', to: 'intent', point:
 assert.match(readme, /sb commitmsg/);
 assert.match(readme, /時點 2 對抗/);
 
-// 雙流模型落地（時序由輸入流順序天然承擔）
-assert.match(skill, /輸入流/);
-assert.match(skill, /雙流模型/);
-assert.match(skill, /輸入流/);
-assert.match(skill, /理解流/);
-assert.match(skill, /必然曝光/);
-assert.match(skill, /抗上下文壓縮|抗壓縮/);
+// 對話由平台承載（時序由平台 session 序天然承擔）＋旗標即章
+assert.match(skill, /對話由平台承載/);
+assert.match(skill, /旗標即章/);
+assert.match(skill, /理解宣告/);
+assert.match(skill, /對話實蹟/, 'SKILL 記載抽查面（對話實蹟對照）');
 assert.match(skill, /外部證據打底/, 'SKILL 記載 G2 外部證據打底');
 assert.match(skill, /externalEvidence/, 'SKILL 記載 externalEvidence 閘');
 assert.match(skill, /大型研究.*MUST 外部唯讀子代理/s, 'SKILL 記載大型研究 MUST 子代理承擔');
-assert.match(readme, /雙流模型/);
-assert.match(readme, /輸入流/);
+assert.match(readme, /對話由平台承載/);
 assert.match(readme, /理解宣告/);
 assert.match(readme, /外部性/, 'README 記載研究／返工外部性閘');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /EXTERNAL_RESEARCH_TOOLS/, 'hooks 外部工具清單存在');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /⑨/, 'CARD⑨ 外部性閘條');
 assert.ok(!read('hooks', 'shiftblame-guard.mjs').includes('isUnlockCmd'), '解鎖單體通道已撤');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordInput/, 'hooks 輸入流記錄');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordUnderstanding/, 'hooks 理解流記錄');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordInput/, 'hooks 回合邊界處理（模式追蹤重置＋舊流鍵冪等剝除）');
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdUnlockAbsent/, 'sb unlock 不存在命令處理');
 assert.match(read('cli', 'bin', 'sb.mjs'), /陳述對照閘/, '陳述對照閘（永續層文件↔實況）');
 assert.match(skill, /文件陳述錨/, 'SKILL 記載文件陳述錨（行為測試附文件陳述斷言——刪除漂移攔截）');
@@ -96,9 +92,7 @@ assert.match(readme, /文件陳述錨/, 'README 記載文件陳述錨');
 assert.match(skill, /文件先行/, 'SKILL 記載文件先行（永續層文件先於實作碼——build 順序原則）');
 assert.match(read('skills', 'shiftblame', 'references', 'BUILD.md'), /文件先行（永續層義務）/, 'BUILD 記載文件先行義務');
 assert.match(readme, /文件先行/, 'README 記載文件先行');
-assert.match(skill, /觸發樣態——揭露第一動；未定案必問；無歧義即執行/, 'SKILL 觸發樣態條文（揭露第一動＋未定案必問＋主動觸發停等）');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /checkHoldFreeze/, 'hooks 停等凍結（hold 硬擋寫入與推進）');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /understandingHold/, 'hooks understandingHold 狀態機');
+assert.match(skill, /觸發樣態——揭露第一動；未定案必問；無歧義即執行/, 'SKILL 觸發樣態條文（揭露第一動＋未定案必問）');
 assert.match(skill, /段-檔承載規格/, 'SKILL 段-檔承載規格（四閉環軸）');
 assert.match(skill, /輪內單向定律/, 'SKILL 輪內單向定律');
 assert.match(read('cli', 'bin', 'sb.mjs'), /countRev/, 'CLI 輪次計數；');
@@ -140,8 +134,8 @@ assert.match(skill, /merge <slug>/, 'SKILL 記載固定合併訊息 merge <slug>
 assert.match(skill, /外部協作倉庫依該倉庫自身的 issue／PR 策略/, 'SKILL 記載協作倉庫政策讓位');
 assert.match(skill, /在 main 直接作業的工作屬於 main，無合併步驟/, 'SKILL 記載 main 直接作業免合併');
 assert.match(skill, /sb-usage\.jsonl/, 'SKILL 記載 usage 觀測事件');
-assert.match(skill, /觀測流輪替/, 'SKILL 記載觀測流輪替（flow-state 恆有界）');
-assert.match(skill, /迴圈斷路器/, 'SKILL 記載迴圈斷路器（同操作重複即擋——防遞迴無限擴大）');
+assert.match(skill, /flow-state 恆定長/, 'SKILL 記載 flow-state 定長承載（對話流零落檔）');
+assert.match(skill, /迴圈斷路器/, 'SKILL 記載迴圈斷路器（擋行為模式——無變更重跑即擋）');
 assert.match(skill, /工作做到完成為止/, 'SKILL 記載計數純觀測（工作做到完成為止）');
 assert.match(readme, /迴圈斷路器/, 'README 記載迴圈斷路器');
 assert.match(readme, /基質優先/, 'README 記載方法論（基質優先）');
@@ -150,9 +144,8 @@ assert.ok(!readme.includes('INDEX.md'), 'README 歸檔清單機制零殘留');
 assert.match(read('cli', 'bin', 'sb.mjs'), /cmdSopreview/, 'CLI SOP／ROADMAP 審查留痕命令');
 assert.match(read('cli', 'bin', 'sb.mjs'), /sb-usage\.jsonl/, 'CLI usage 事件落檔');
 assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb end）');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /rotateStreams/, 'hooks 觀測流輪替');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /budgetExhausted/, 'hooks 迴圈升級自動回 intent 留痕對照');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數＋斷路器模式判定');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /repeats\[fp\] = 'seen'/, 'hooks 指紋記錄（模式①判定基礎）');
 assert.match(skill, /停點偵測/, 'SKILL 記載停點偵測（防偷懶停——活動流程無申報擋停一次）');
 assert.match(skill, /sb stop-report/, 'SKILL 記載停點申報命令（合法停點載體）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /stopReportLine/, 'hooks 停點申報曝光行（老闆終審真待決 or 偷懶）');

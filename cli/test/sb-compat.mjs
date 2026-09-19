@@ -77,17 +77,21 @@ classify({
   stopBlockedAt: at,
 }, 'active', '2.1.2 停點偵測欄位（stopReport／stopBlockedAt——僅活動態）');
 
-// —— 3. 十專案實機回歸：分類與升級前基準一致（舊檔讀取不改變判定） ——
-// 基準＝升級當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；已 invalid 者屬既有事實（恢復程序另行承擔），相容性要求＝分類不變。向後相容面：2.0.4 期 turnUsage.exceededAt 檔在新鍵集下 invalid（fail-closed，手動清鍵即癒）；active 對歷史 budget 鍵靜默容忍（零消費者；sb end 冪等清理）。
+// —— 3. 十專案實機回歸：分類與 2.5.2 重整後基準一致（流不落檔——各 repo 已主動遷移新形） ——
+// 基準＝2.5.2 重整（migrateStreams 全套＋老鍵剝除）當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；
+// 已 invalid 者屬既有事實（Varellune_Document 的 ms-done 髒節點——恢復程序另行承擔），相容性要求＝分類不變。
 const TEN_PROJECT_BASELINE = {
-  'CF-Simulator-Godot': 'invalid',
+  'CF-Simulator-Godot': 'ended',
   'Trickster-Web': 'active',
   Varellune: 'active',
-  Varellune_Document: 'invalid',
-  'dnd-prototype': 'active', // 2.2.0 升級時重新量測：實機已開新 slug（windows-mouse-offset）——ended→active 漂移屬正常，非分類器變更
+  'Varellune_Document': 'invalid',
+  'dnd-prototype': 'active',
+  'gpt-image-mcp': 'uninitialized',
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
-  shiftblame: 'direct',
+  'ro-server': 'active',
+  shiftblame: 'uninitialized',
+  wsxt: 'active',
 };
 let scanned = 0;
 for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {

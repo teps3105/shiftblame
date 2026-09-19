@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.1-2ea44f.svg" alt="version 2.5.1"/>
+  <img src="https://img.shields.io/badge/version-2.5.2-2ea44f.svg" alt="version 2.5.2"/>
 </p>
 
 ---
@@ -25,15 +25,15 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 核心原則（十公理一覽——全文唯一定義於 [SKILL §0](skills/shiftblame/SKILL.md)，此處每條一行指路）：
 
 - **A1 老闆主權** — 產品語義、範圍、成本／風險容忍、授權、版號與 pass 出口由老闆決定；純技術裁定（實作、API、根因、測試設計、證據解讀）由秘書自行承擔——證據不足或矛盾時先取得一次外部子代理唯讀技術意見，不必先反覆失敗。
-- **A2 事實唯增（雙流模型）** — 每則老闆輸入記入**輸入流**（hooks 唯增事實——永不覆蓋、永不消費）；agent 經 shiftblame:think 路由理解，調用 args＝**理解宣告**落理解流（雜湊鏈唯增）。行動正當性＝理解宣告＋必然曝光（未審理解全部展示、未覆蓋輸入可見）；完成類鑰匙＝--boss-ok 留痕＋老闆輸入時戳新鮮度；對話摘要不作數。
-- **A3 意圖先於行動** — 所有老闆輸入第一步路由回 shiftblame:think，不字面執行；最新輸入未經理解宣告覆蓋期間 hooks 硬擋一切寫入與流程推進（未覆蓋即凍結）。
+- **A2 對話由平台承載** — 對話事實（老闆輸入時序與理解授權）由平台 session 承載，對話流零落檔、零雜湊綁定；agent 經 shiftblame:think 路由理解，調用 args＝**理解宣告**於對話直接揭露（理解有誤即越權——老闆當場看到，終審承擔）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）；對話摘要不作數。
+- **A3 意圖先於行動** — 所有老闆輸入第一步路由回 shiftblame:think，不字面執行；理解以 args 於對話揭露，未理解就行動由對話可見性＋老闆終審承擔。
 - **A4 七段圓環與旗標切段** — intent（環首＝環尾，不屬任何層）＋定義層 requirement→research→plan＋實作層 test→build→verify；七段由四份文件承載成四條閉環軸（SLUG＝intent＋ms 出入口、G1＝requirement 定義＋verify 裁判、G2＝research 定義＋build 落地、G3＝plan 定義＋test 落地），推進呈 Z 字形反向回指；輪內單向（每輪一次定稿），段間切換一律 sb next 旗標切段；修正＝重走 intent 開新輪。
 - **A5 審核兩時點** — 時點 1 對抗（requirement→research 邊——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈、錯誤處置完整性；出口＝時點 2 對抗條目＋老闆終審章同一邊）；對抗在前、老闆判定在後，對抗 MUST 外部唯讀子代理（無自代介面）；中鏈零審核（build→verify 機械推進：E2E 全綠＋working tree 乾淨即過），段內提交僅 sb commitmsg 機械格式閘；研究／返工以外部調用打底（外部性閘——externalEvidence 機械驗，大型研究 MUST 外部唯讀子代理承擔）。
 - **A6 行為證據（真驗收）** — 驗收依據＝行為是否真的發生，不是測試燈號；verify 把 G1 每條 GWT 當驗收劇本實際操作與觀察，行為證據（節錄快照）落回指區；假測試（無斷言、測實作細節、mock 過度、規模溢出）判返工。
 - **A7 寫入分區（RAM/ROM）** — G1~G3／SLUG＝ROM（定義區綁定義邊、回指區綁落地邊，時點 1 邊 hash 封存 G1 契約）；tmp＋flow-state＝RAM；commit 由秘書獨佔、必過 sb commitmsg（hooks 驗章焚章）；.shiftblame/ 經 .gitignore 排除。
-- **A8 曝光制衡與停點** — **迴圈斷路器**常開（同操作第 4 次重複即擋並要求改變策略、第 7 次升級回 intent 補正 G 檔；同指針二次升級＝本回合封禁）；停點偵測（活動流程無申報即停＝擋停一次）；觀測落 sb-usage.jsonl（計數純觀測零干預）——工作做到完成為止，老闆沉默不停。
+- **A8 曝光制衡與停點** — **迴圈斷路器**擋行為模式而非數量（無變更重跑即擋；擋後逐字重發＝升級自動回 intent 補正 G 檔；升級後仍逐字重發＝本回合封禁；寫入一出現即全清）；停點偵測（活動流程無申報即停＝擋停一次）；觀測落 sb-usage.jsonl（計數純觀測零干預）——工作做到完成為止，老闆沉默不停。
 - **A9 基質與修剪（兩層文件模型）** — 永續層（docs/、SOP、ROADMAP、README）是唯一需與實況對照的文件：**文件先行**（先改到目標狀態再寫碼）、same-commit 更新、提交時陳述對照閘＋測試附**文件陳述錨**（文件漂移即紅燈）；當下層（G/SLUG）用後即歸檔；新機制先對照基質（**基質優先**——git 可答的另造即拆）、錨定實測元行為證據；SOP／ROADMAP 每 ms 審查三問（sb sopreview）。
-- **A10 對話即人話** — 對老闆輸出＝人話對話（首行一句翻譯、只展開差異點、待決具體問題、每回合重述狀態）；六欄結構是理解流的記錄 schema，不是對話輸出形態。
+- **A10 對話即人話** — 對老闆輸出＝人話對話（首行一句翻譯、只展開差異點、待決具體問題、每回合重述狀態）；六欄結構是檔案的記錄 schema，不是對話輸出形態。
 
 ## 流程概覽
 
@@ -134,13 +134,13 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 
 - 整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 終審、明確暫停／取消及實際阻塞才是停點。
 - 完整契約見 [`think`](skills/think/SKILL.md#回合結束與流程接續)。
-- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify、非停等）無本回合申報即擋停一次（條件式、單次、不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報／ended／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
+- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify）無本回合申報即擋停一次（條件式、單次、不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報／ended／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
 
 **hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋。
 
-- **雙流模型**：每則老闆輸入記入輸入流唯增事實——永不覆蓋消費；shiftblame:think 調用 args＝理解宣告落理解流，雜湊鏈唯增；無鎖無解鎖命令——行動正當性＝理解宣告＋必然曝光：老闆每則輸入時未審理解全部展示、未覆蓋輸入可見；完成類鑰匙＝--boss-ok 留痕＋老闆輸入時戳新鮮度（CLI 驗）＋時點對抗。
-- `SessionStart` 於壓縮後自動注入動態狀態卡（段位／輸入流與理解流狀態——抗上下文壓縮）。
-- **兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解六欄呈現即停，hooks 於 hold 期間硬擋寫入類工具與流程推進（唯讀、外部查證、tmp 傾倒自由），老闆回覆即解凍（確認→分發；修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告落流＋事後曝光、直接續跑。
+- **對話由平台承載**：對話事實由平台 session 承載——對話流零落檔、零雜湊綁定（基質優先：平台已記對話，另造即拆）；shiftblame:think 調用 args＝理解宣告於對話直接揭露，理解有誤即越權、由老闆終審承擔；完成類鑰匙＝--boss-ok 旗標即章（CLI 驗本次對抗條目新鮮度）＋時點對抗。
+- `SessionStart` 於壓縮後自動注入動態狀態卡（不變量卡＋節點行與停點申報行）。
+- **兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解六欄呈現即停，以 `sb stop-report --question` 申報待決後停，老闆回覆後確認→分發（修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告於對話揭露後直接續跑。
 - 寫檔工具比對段（測試碼 test＋build 段、實作碼限 build／ended）。
 - **staged 系統檔不入庫**：`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據；跨 repo 提交以 `git -C <絕對路徑>` 的絕對目標為錨定 repo，同一判據對錨定 repo 生效。
 - **路徑展開元規則**：一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋。
@@ -198,12 +198,12 @@ sb end --adversarial --boss-ok     # 時點 2 對抗＋終審 pass 出口：結�
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
-初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳、輸入流、理解流及外部證據，再加入新 slug 的初始結構。
+初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳與外部證據，再加入新 slug 的初始結構（舊版對話流鍵由讀取端遷移剝除）。
 
 - 合法 `ended` 狀態在舊 slug 已移至 `archive/<舊slug>/SLUG.md`、原位置已移出，且 Git 工作完成下述合併與分支清理查證後，也可用 `sb init <新slug>` 開始下一份工作；新 slug 的工作與歸檔路徑均須未占用。
 - ended 另有完結出口：`sb init --main` 留在 closeout 基底分支直接作業——同 ended 驗證重跑＋當前分支等於 closeout 基底分支，寫入完結戳後 ended 分類維持，之後提交只走正常 `sb commitmsg`（`merge <slug>` 固定訊息退役）。
-- 新狀態只保留合法 hooks 紀錄，重新建立 slug／001／intent／空 history，舊結束時間、對抗及返工欄位不沿用。
-- 進行中流程（含驗收 pass 判定後尚未走出口、仍停在 verify 的 ms）、部分初始化、未知欄位、損壞資料及理解停等仍拒絕初始化，拒絕前不建檔或切換分支。
+- 新狀態只保留合法 hooks 紀錄，重新建立 slug／001／intent／空 edgeAt，舊結束時間、對抗及返工欄位不沿用。
+- 進行中流程（含驗收 pass 判定後尚未走出口、仍停在 verify 的 ms）、部分初始化、未知欄位及損壞資料仍拒絕初始化，拒絕前不建檔或切換分支。
 - `sb state` 對 ended 顯示下一次初始化入口或尚缺的歸檔／停等條件，對純紀錄檔提示尚未初始化，對異常狀態報錯；診斷皆不修改檔案。
 
 ### shiftblame:* 功能型技能
