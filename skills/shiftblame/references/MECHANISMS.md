@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.5.3
+revision: 2.5.4
 ---
 
 # 機制細節（主 SKILL 骨架的下沉承載）

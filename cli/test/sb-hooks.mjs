@@ -162,6 +162,10 @@ assert.equal(st1.status, 2);
 assert.match(st1.stderr, /老闆決策邊/);
 const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next research --boss-ok --adversarial' } });
 assert.equal(st2.status, 0, '帶 --boss-ok 放行');
+// build→verify＝中鏈機械推進零停靠：hook 零攔（時點 2 在 verify 出口邊由 CLI 驗；working tree 乾淨由 CLI 驗）——無旗標即推進
+setNode('build');
+const midChain = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next verify' } });
+assert.equal(midChain.status, 0, 'build→verify 中鏈機械推進零停靠——hook 零攔（殘留第三邊定義＝錯鎖死路：無旗標被 hook 擋、帶旗標被 CLI 擋）');
 
 // —— 8. commit 印章閘（hooks 端：驗章焚章——印章唯一憑證）——
 setNode('build');

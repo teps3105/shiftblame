@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.5.3');
+assert.equal(manifest.version, '2.5.4');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.5.3"/);
+assert.match(skill, /version: "2.5.4"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');

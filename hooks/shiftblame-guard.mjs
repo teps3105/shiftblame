@@ -297,16 +297,16 @@ function flatOneLine(s, n = 200) {
 
 // 必然曝光已隨理解流拆除（2.5.2）：理解宣告由 think 於對話揭露——對話即事實，曝光由老闆讀對話承擔。
 
-// 老闆決策邊雙重鎖：三邊（intent→requirement／requirement→research＝時點 1／build→verify＝時點 2）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；pass 出口（--new-ms／end）旗標組由 CLI 專屬驗證承擔
-// 兩時點＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復走旗標切段（test→build→verify 迴圈內），不經此三邊
+// 老闆決策邊雙重鎖：兩邊（intent→requirement／requirement→research＝時點 1）的 `sb next <段>` 缺 --boss-ok 即擋；註解中的旗標不算；時點 2＝verify 出口邊（--new-ms／end）旗標組由 CLI 專屬驗證承擔；build→verify＝中鏈機械推進零停靠（working tree 乾淨由 CLI 驗）——hook 零攔
+// 兩時點＝對抗在前、老闆判定在後——pass 才 --boss-ok；段內修復與中鏈推進走旗標切段（test→build→verify 迴圈內），不經此兩邊
 function checkLayerStopover(root, cmd) {
   if (!root) return null;
   const clean = cmd.replace(/#[^\n]*/g, ''); // 剝除註解——# --boss-ok 不構成旗標
-  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|research|verify)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
+  if (!/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/.test(clean) || /(^|\s)--boss-ok(?=\s|$)/.test(clean)) return null;
   try {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-    const edge = { intent: 'requirement', requirement: 'research', build: 'verify' }[st.node];
-    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research|verify)\b/)?.[1];
+    const edge = { intent: 'requirement', requirement: 'research' }[st.node];
+    const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/)?.[1];
     if (edge && edge === target) {
       return `老闆決策邊：${st.node}→${target}——--boss-ok 旗標即章（老闆實際輸入由對話承載，機械不驗時戳；語義授權由 think 揭露＋老闆終審承擔），對抗條目不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
     }
