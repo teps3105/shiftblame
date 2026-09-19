@@ -70,7 +70,7 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '⑦寫入分區（A7）：G/SLUG＝ROM（定義區綁定義邊、回指區綁落地邊；返工輪寫 G 前 hooks 驗本輪已調 shiftblame:rewrite）；tmp＋flow-state＝RAM（對話、工作過程與交接文件一律 .shiftblame/tmp/——自由傾倒區）；子代理零 repo 寫入權；staged 系統檔不入庫；路徑 root 錨定絕對展開、git 重定向／alias 攔截；命名與註釋可離開對話辨識、規範溯及既往。',
   '⑧提交（A7）：commit 必過 sb commitmsg（格式＋staged 檢查＋印章；hooks 驗章焚章——審核承載於兩時點）；測試碼＋實作碼同 commit——單功能單提交。',
   '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
-  '⑩曝光與停點（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（行為模式判定，非數量閾值——重複次數不是違規，無變化才是：無變更重跑（同操作再現且期間無寫入）即擋；擋後逐字重發＝升級自動重走 intent 補正續行；升級後仍逐字重發＝本回合封禁；寫入後重跑＝新基礎正當放行；非停等期＝互動式迭代——改一點看一點，不一次改完）。停點偵測（防偷懶停）：活動流程無申報即停擋停一次（條件式、單次、不代做路由）。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／sb stop-report 申報具體待決／主動 think 停等／明確暫停／取消／實際阻塞；狀態異常修復後重跑 sb state 查證。',
+  '⑩曝光與停點（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（行為模式判定，非數量閾值——重複次數不是違規，無變化才是：無變更重跑（同操作再現且期間無寫入）即擋；擋後逐字重發＝升級自動重走 intent 補正續行；升級後仍逐字重發＝本回合封禁；寫入後重跑＝新基礎正當放行；非停等期＝互動式迭代——改一點看一點，不一次改完）。停點偵測（防偷懶停）：活動流程無申報即停擋停一次（條件式、單次消費式——放行即焚攔停標記、不代做路由）。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／sb stop-report 申報具體待決／主動 think 停等／明確暫停／取消／實際阻塞；狀態異常修復後重跑 sb state 查證。',
   '⑪基質與修剪（A9）：基質優先——git／平台已答的另造即拆；規則由元行為證據錨定、修剪而非堆疊；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms 前擋）。',
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
 ].join('\n');
@@ -754,9 +754,11 @@ try {
   }
 
   if (event === 'Stop') {
-    // 停點偵測（防偷懶停，CARD⑩）：條件式（活動流程 intent~verify 才查）、單次（stop_hook_active 或
-    // 本回合已擋過即放行）、不代做路由（不改 node、不跑 sb next、不判語義——只強制「續行 or 申報」二選一）。
-    // 機械只判「有無本回合申報」（stopReport.at 晚於 turnUsage.startedAt＝回合內第一個工具調用），
+    // 停點偵測（防偷懶停，CARD⑩）：條件式（活動流程 intent~verify 才查）、單次消費式（stop_hook_active 或
+    // 本回合已擋過即放行——放行同時焚毀 stopBlockedAt：殘留標記至多錯放一次即自清，新回合重閘由
+    // UserPromptSubmit 刪除＋放行消費雙路徑保證）、不代做路由（不改 node、不跑 sb next、不判語義——只強制「續行 or 申報」二選一）。
+    // 機械只判「有無本回合申報」（stopReport.at 晚於 turnUsage.startedAt＝回合內第一個工具調用；
+    // turnUsage 缺席＝本回合零工具調用——殘留舊申報不放行，不得跨回合頂替），
     // 真待決 or 偷懶由申報曝光＋老闆終審承擔；invalid／missing／uninitialized／direct／done／ended 一律放行；
     // 主動 think 停等＝待老闆終審的待決——依 SKILL 以 sb stop-report 申報後放行。
     if (!root || !healthy) process.exit(0);
@@ -765,8 +767,11 @@ try {
       if (!existsSync(statePath)) process.exit(0);
       const st = JSON.parse(readFileSync(statePath, 'utf8'));
       if (st.node === 'done' || st.node === 'ended' || !FLOW_NODES.has(st.node)) process.exit(0);
-      if (isRecord(st.stopReport) && st.stopReport.at > (st.turnUsage?.startedAt ?? '')) process.exit(0); // 本回合已申報——放行
-      if (input.stop_hook_active === true || st.stopBlockedAt) process.exit(0); // 單次自限——不無限循環擋停
+      if (isRecord(st.stopReport) && st.turnUsage?.startedAt && st.stopReport.at > st.turnUsage.startedAt) process.exit(0); // 本回合已申報——放行（回合錨：申報須晚於本回合第一個工具調用）
+      if (input.stop_hook_active === true || st.stopBlockedAt) {
+        if (st.stopBlockedAt) { delete st.stopBlockedAt; writeFileSync(statePath, JSON.stringify(st, null, 2)); } // 放行即消費——單次標記一次性，不跨回合殘留
+        process.exit(0); // 單次自限——不無限循環擋停
+      }
       st.stopBlockedAt = new Date().toISOString();
       writeFileSync(statePath, JSON.stringify(st, null, 2));
       process.stderr.write('[shiftblame] 停點偵測：流程進行中（' + (st.slug ?? '?') + '/' + (st.ms ?? '?') + ' @ ' + st.node + '）而無停點申報——若確實需要老闆決策／缺必要輸入（含主動 think 停等），先執行 sb stop-report --question「具體待決問題（≥10 字）」再停（申報會曝光供老闆終審）；否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\n');

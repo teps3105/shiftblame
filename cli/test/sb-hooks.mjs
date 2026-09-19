@@ -91,8 +91,8 @@ for (const payload of [
     assert.ok(context.additionalContext.includes(rule), `${payload.hook_event_name} 注入接續規則：${rule}`);
   }
 }
-// Stop＝停點偵測：活動流程（intent~verify）無本回合申報即停＝擋停一次（條件式、單次、不代做路由）；
-// 有申報／stop_hook_active／停等／done／ended／無流程放行。
+// Stop＝停點偵測：活動流程（intent~verify）無本回合申報即停＝擋停一次（條件式、單次消費式、不代做路由）；
+// 有申報／stop_hook_active／停等／done／ended／無流程放行——放行即消費自限標記（殘留至多錯放一次）。
 for (const node of ['intent', 'plan', 'build', 'verify']) {
   setNode(node);
   up('停點偵測回合輸入（回合邊界——申報新鮮度基準 turnUsage 於回合內第一個工具調用重建）');
@@ -104,17 +104,28 @@ for (const node of ['intent', 'plan', 'build', 'verify']) {
   assert.equal(state().stopBlockedAt !== undefined, true, '擋停寫自限標記（本回合至多擋一次）');
   const pass2 = run({ hook_event_name: 'Stop', last_assistant_message: '再停一次' });
   assert.equal(pass2.status, 0, node + '：第二次停走自限放行（單次——不無限循環擋停）');
+  assert.equal(state().stopBlockedAt, undefined, node + '：放行即消費——標記一次性，不跨回合殘留');
   const st2 = state();
   delete st2.hooksHeartbeat; delete st2.stopBlockedAt;
   assert.deepEqual(st2, before, 'Stop 不改流程節點與狀態事實（不代做路由）');
-  // 本回合申報：放行（新鮮度＝at 晚於 turnUsage.startedAt；up 已刪 turnUsage → startedAt 缺省＝恆新鮮）
+  const blocked3 = run({ hook_event_name: 'Stop', last_assistant_message: '第三次停（模擬新輸入清除失效——僅消費保證重閘）' });
+  assert.equal(blocked3.status, 2, node + '：消費後再停重新擋（殘留標記至多錯放一次——新回合重閘由刪除＋消費雙路徑保證）');
+  // 本回合申報：放行（回合錨：申報須晚於 turnUsage.startedAt＝回合內第一個工具調用——真實流 sb stop-report 必經 PreToolUse 建立 startedAt）
   const stNow = state();
+  stNow.turnUsage = { startedAt: new Date(Date.now() - 60000).toISOString(), requests: 1, repeats: {}, fpEscalations: {} };
   stNow.stopReport = { at: new Date().toISOString(), node, question: '需要老闆決定是否引入新依賴以完成此功能', reviewed: false };
   delete stNow.stopBlockedAt;
   writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stNow));
   const declared = run({ hook_event_name: 'Stop', last_assistant_message: '已申報待決，停' });
   assert.equal(declared.status, 0, node + '：有本回合申報放行');
-  // stop_hook_active：放行（平台自限雙保險）
+  // 殘留舊申報＋本回合零工具調用（turnUsage 缺席）：不放行——擋（舊申報不得跨回合頂替新回合的偷懶停）
+  const stStale = state();
+  stStale.stopReport = { at: new Date(Date.now() - 3600000).toISOString(), node, question: '上一回合殘留的舊申報待決問題（fixture 須過 activeExtras 驗證）', reviewed: false };
+  delete stStale.turnUsage; delete stStale.stopBlockedAt;
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stStale));
+  const stale = run({ hook_event_name: 'Stop', last_assistant_message: '新回合純文字回覆直接停' });
+  assert.equal(stale.status, 2, node + '：零工具回合殘留舊申報不放行（回合錨定）');
+  // stop_hook_active：放行（平台自限雙保險——ZCode 無此欄位時由消費式標記承擔單次語義）
   const stH = state();
   delete stH.stopReport; delete stH.stopBlockedAt;
   writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stH));

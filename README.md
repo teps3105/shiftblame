@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.2-2ea44f.svg" alt="version 2.5.2"/>
+  <img src="https://img.shields.io/badge/version-2.5.3-2ea44f.svg" alt="version 2.5.3"/>
 </p>
 
 ---
@@ -134,7 +134,7 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 
 - 整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 終審、明確暫停／取消及實際阻塞才是停點。
 - 完整契約見 [`think`](skills/think/SKILL.md#回合結束與流程接續)。
-- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify）無本回合申報即擋停一次（條件式、單次、不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報／ended／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
+- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify）無本回合申報即擋停一次（條件式、單次消費式——放行即焚攔停標記，不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報（新鮮度以本回合第一個工具調用為錨——零工具回合的殘留舊申報不放行）／ended／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
 
 **hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋。
 
