@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.5.4"
+  version: "2.5.5"
 description: 時序制衡的 agent 協作框架。七段鏈 intent→requirement→research→plan→test→build→verify 由主對話連續承載，段間切換一律 sb next 旗標切段；ms start／ms done 是里程碑生命週期邊界，與七段鏈正交。任何新意圖在該 ms 內一律重走 intent（七段之首）開新輪。老闆 pass/fail 判定權只在兩時點：時點 1（requirement→research——G1 準則建立後，審意圖→需求翻譯）與時點 2（verify 真驗收完成、G1 回指閉環後的出口邊——審驗收結果：GWT 回指、假綠燈），對抗在前老闆判定在後，中鏈零審核。verify＝真驗收執行——GWT 逐條行為證據落回指區；時點 2 對抗＋老闆終審 pass 即出口。對話由平台承載（對話流零落檔——基質優先）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）。main 模式最小環：意圖揭露→迭代→提交→老闆判 pass/fail。對老闆輸出為人話（think SKILL「輸出形狀（人話契約）」）。機制細節見 references/MECHANISMS.md。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -15,7 +15,7 @@ description: 時序制衡的 agent 協作框架。七段鏈 intent→requirement
 
 - **A1 老闆主權**：意圖宣告權、兩時點 pass/fail 判定權、pass 出口、版號、路由與授權全數只在老闆；agents 證明、執行、揭露，不代判。授權僅來自老闆明確回覆——沉默≠批准，靜默自裁＝越權。問題揭露不等於修改授權（現況描述、疑問與缺陷回報只授權唯讀分析）。機制發明屬老闆決策域：agent 自行發明的機制（非老闆拍板語義的直接實作）須在設計揭露顯性標注「新發明」並單獨取得同意，靜默通過屬越權設計，一經發現即拆除＋同類清查。
 - **A2 對話由平台承載（基質優先）**：對話事實（老闆輸入時序與理解授權）由平台 session 承載——對話流零落檔、零雜湊綁定，舊檔升級即於回合邊界冪等剝除舊版流鍵。理解授權＝think 調用 args（理解宣告）於對話揭露＋老闆終審；--boss-ok 旗標即章——機械驗本次對抗條目新鮮度（晚於基準邊），老闆輸入時序由平台對話序天然承擔。偽造由抽查承擔（對話實蹟對照）。
-- **A3 意圖先於行動（think 唯一閘口）**：所有老闆輸入第一步路由回 shiftblame:think（args＝一句話理解宣告，於對話揭露——老闆當場可見，理解有誤即越權由老闆終審承擔），不字面執行——指令字面≠老闆意圖。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段之首）開新輪：`sb next intent` 同 ms 開新輪（計返工輪＋rewrite 載入閘）；段內修復（執行性修復，非新意圖——紅燈、測試定義錯誤）自動旗標切段回指定 node（不停等不計輪）；確認→審計（推進指令外部對抗）→分發——審計邊終點＝推進起點。收斂定案權在老闆。
+- **A3 意圖先於行動（think 唯一閘口）**：所有老闆輸入第一步路由回 shiftblame:think（args＝一句話理解宣告，於對話揭露——老闆當場可見，理解有誤即越權由老闆終審承擔），不字面執行——指令字面≠老闆意圖。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段之首）開新輪：`sb next intent` 同 ms 開新輪（計返工輪＋rewrite 載入閘）——老闆新輪由 hooks 機械執行（2.5.5）：活動流程停在中段（非 intent）而無停點申報時 UserPromptSubmit 代跑 `sb next intent` 推回，段內修復不因老闆輸入而合法；有停點申報＝裁決通道（老闆回覆零推回——pass 走出口推進、fail／新意圖重走 intent）；「繼續」類中性續行（詞表精確全等）非新輪——不推回接續原段；疑問輸入零流程位移——問題類直接解答不開新輪。段內修復（執行性修復，非老闆輸入驅動——紅燈、測試定義錯誤）自動旗標切段回指定 node（不停等不計輪；老闆輸入後以段內修復名義回退切段由 CLI 段內修復邊防護擋）；確認→審計（推進指令外部對抗）→分發——審計邊終點＝推進起點。收斂定案權在老闆。
 - **A4 段鏈與旗標切段**：七段圓環 intent＋requirement→research→plan（定義層）＋test→build→verify（實作層）由主對話（秘書）唯一持久承載——狀態是工作狀態，非角色或派發邊界；intent 既是起點也是終點（環首環尾，不屬於任何層）：起點＝ms start 後段鏈由此展開（老闆意圖沉澱，承載於 SLUG），終點＝verify 出口邊閉環回 intent；ms start／ms done 是里程碑生命週期邊界、與七段圓環正交（不是段）。任何新意圖重走 intent 開新輪。段間切換一律 sb next 旗標切段（flow-state.node 同步＋edgeAt 留痕＋hooks 按 node 開關寫入權，三位一體）。輪內單向定律：輪內單向推進、每階段一次產出、產出即定稿；修正＝重走 intent 開新輪（新輪重寫自洽——rewrite 紀律；僅老闆輸入驅動的返工計輪，旗標切段與閘口自動返工不計）。
 - **A5 審核兩時點**：時點 1 對抗＝requirement→research 邊（G1 準則建立完成後——審意圖→需求翻譯：GWT 能否從行為矩陣還原一列、翻譯保真——標的方主語、可觀察結果、規格工程化、範圍走私）；時點 2 對抗＝verify 出口邊（verify 真驗收完成、G1 回指閉環後——審驗收結果：GWT 回指意圖、假綠燈——測試綠但 AC 從行為矩陣還原不出＝綠燈無效、錯誤處置完整性）；中鏈（research→plan→test→build→verify）零審核、僅機械格式閘（build→verify 機械推進——working tree 乾淨即過）。兩時點皆對抗在前、老闆判定在後：唯讀子代理檢閱→複核（反向對抗）至乾淨→`sb adversarial <報告> --point 1|2` 條目留痕→老闆判定 pass 才推進；對抗邊推進一律帶 --adversarial 宣告＋--boss-ok 旗標即章（CLI 機械驗本次對抗條目新鮮——條目晚於基準邊（同邊上次推進／本 ms 末次進 verify／slug 起始），舊對抗條目重複消費即擋）；對抗條目不替代老闆章。對抗出口三分類：①乾淨續行②需修復——agents 自動旗標切段回指定 node③需老闆裁決——停經 think。ms 出口（`sb next intent --new-ms --adversarial --boss-ok`／`sb end --adversarial --boss-ok`）＝時點 2 對抗條目＋老闆終審章（同一邊兩章——時點 2 老闆 pass 即終審 pass）；出口前置＝verify 態、working tree 乾淨、全部必填 AC 行為證據完整。
 - **A6 行為證據（真驗收）**：verify＝真驗收執行——G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為）、行為證據落回指區、驗收報告逐項 SATISFIED／UNSATISFIED／UNVERIFIED；驗收依據＝行為是否發生，非測試燈號；引用專案輸出以節錄快照為證。測試碼隨功能實作同 commit 定稿，不可變性由 git 承擔。應執行而未跑的查證、檢閱或 E2E 必須標「未驗」。
@@ -267,7 +267,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 
 ## 9. 啟動載入程序與脈絡提議
 
-**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`），同一份配置雙平台（ZCode／Codex）生效；Codex 須以 `/hooks` 審閱信任一次（未信任＝hooks 不跑＝記錄缺失，CLI 閘擋時附 hooks 健康警示——記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除（零內容寫入，A2）；`PreToolUse` 回合計數與迴圈斷路器（A8）、外部證據標記、破壞性命令防護、`git commit` 驗 sb commitmsg 留痕（staged 系統檔與註釋座標樣式檢查）、寫入矩陣（A7）、層間停靠與 git 重定向／alias 防護；`Stop` 執行停點偵測（A8）。事件職責全文見 MECHANISMS §16。
+**hooks 機械注入（反偏移）**：plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`），同一份配置雙平台（ZCode／Codex）生效；Codex 須以 `/hooks` 審閱信任一次（未信任＝hooks 不跑＝記錄缺失，CLI 閘擋時附 hooks 健康警示——記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（2.5.5：中性續行／疑問零位移；新意圖記 lastBossInputAt 時戳＋中段無申報機械推回 intent——A3）；`PreToolUse` 回合計數與迴圈斷路器（A8）、外部證據標記、破壞性命令防護、`git commit` 驗 sb commitmsg 留痕（staged 系統檔與註釋座標樣式檢查）、寫入矩陣（A7）、層間停靠與 git 重定向／alias 防護；`Stop` 執行停點偵測（A8）。事件職責全文見 MECHANISMS §16。
 
 載入本 skill 後，秘書 MUST 依序唯讀：
 

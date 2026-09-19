@@ -33,6 +33,7 @@ writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點 1 對抗\n外部�
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '1').status, 0); // 時點 1 對抗（requirement→research 邊——審意圖→需求翻譯）
+assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯正確，推進研究' }); // 老闆輸入新鮮度（requirement→research 老闆決策邊）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0); // 時點 1 邊——G1 契約封存（自進 research 起全鏈凍結）
 const sealed = state();

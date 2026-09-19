@@ -172,7 +172,7 @@ ablation('破壞性命令防護 scanInlineDestructive（相對路徑遞迴刪除
 });
 
 ablation('回合邊界 recordInput（模式追蹤重置＋舊流鍵冪等剝除）', () => {
-  const neu = neutralize(GUARD, [['function recordInput(root) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;', 'function recordInput(root) {\n  return null; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;']]);
+  const neu = neutralize(GUARD, [['function recordInput(root, prompt) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;', 'function recordInput(root, prompt) {\n  return null; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return null;']]);
   const payload = (script) => { const r = mkSandbox({ state: { inputs: [{ at: new Date().toISOString(), text: '舊版流鍵' }], understandings: [{ at: new Date().toISOString(), uptoInput: 0, as: '舊理解', reviewed: true, hash: 'x' }], turnUsage: { startedAt: new Date().toISOString(), requests: 3, repeats: { k: 'denied' } } } }); hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '消融實驗輸入' }); const st = stateOf(r); const clean = st.inputs === undefined && st.understandings === undefined && st.turnUsage === undefined; rmSync(r, { recursive: true, force: true }); return clean; };
   assert.equal(payload(GUARD), true, 'intact：回合邊界剝舊流鍵＋重置模式追蹤（舊檔升級即瘦身）');
   assert.equal(payload(neu), false, 'ablated：拆掉後舊鍵留存（瘦身與回合重置失效）');
@@ -478,7 +478,7 @@ ablation('迴圈斷路器（無變更重跑即擋——行為模式判定）', (
   const neu = neutralize(GUARD, [["        repeats[fp] = 'seen'; // 首次出現——記錄放行；淘汰超限舊鍵（恆 ≤128 且當前指紋留存）", '        // ABLATED：不記指紋——重跑永遠視為首見']]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'test' } });
-    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '繼續' /* 中性續行——2.5.5 推回豁免，隔離被測機制 */ });
     const run = () => hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node rerun-failing-test.mjs' } });
     const first = run();
     const second = run();
@@ -499,7 +499,7 @@ ablation('迴圈升級自動回 intent（模式②——不凍結續行）', () 
   const neu = neutralize(GUARD, [["const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });", 'const r = { status: 1, stderr: "ABLATED" }; // ABLATED']]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'test' } });
-    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '繼續' /* 中性續行——2.5.5 推回豁免，隔離被測機制 */ });
     const run = () => hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node dead-op.mjs' } });
     let last;
     for (let i = 0; i < 3; i++) last = run(); // 首見放行→模式①擋→逐字重發升級擋
@@ -519,7 +519,7 @@ ablation('停點偵測（無申報之停擋停一次）', () => {
   const neu = neutralize(GUARD, [["否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(2);", "否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(0); // ABLATED"]]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'test' } });
-    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '回合開始' });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '繼續' /* 中性續行——2.5.5 推回豁免，隔離被測機制 */ });
     const result = hookRun(script, { cwd: r, hook_event_name: 'Stop', last_assistant_message: '停在這裡' });
     const st = stateOf(r);
     rmSync(r, { recursive: true, force: true });
@@ -610,6 +610,36 @@ ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout�
   };
   assert.equal(probe(SB), 1, 'intact：快轉合併無證據——closeout 擋下（slug 邊界死守）');
   assert.equal(probe(neu), 0, 'ablated：證據檢查拆除即放行（快轉收尾復活）');
+});
+
+// —— 2.5.5 機制群：老闆新輪機械推回＋段內修復邊防護 ——
+ablation('老闆新輪機械推回（recordInput 代跑 sb next intent）', () => {
+  const neu = neutralize(GUARD, [['const r = spawnSync(process.execPath, [sbPath, \'next\', \'intent\'], { cwd: root, encoding: \'utf8\', timeout: 20000 });', 'const r = { status: 1, stderr: "ABLATED" }; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'build' } });
+    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '老闆：這部分改成另一套作法' });
+    const st = stateOf(r);
+    rmSync(r, { recursive: true, force: true });
+    return { node: st.node, stamped: !!st.lastBossInputAt };
+  };
+  const intact = probe(GUARD);
+  assert.equal(intact.node, 'intent', 'intact：中段老闆輸入（無停點申報）機械推回 intent 開新輪');
+  assert.equal(intact.stamped, true, 'intact：老闆輸入時戳落檔（段內修復邊防護對照源）');
+  const gone = probe(neu);
+  assert.equal(gone.node, 'build', 'ablated：拆掉代跑即不推回（新輪機械執行面消失——提醒制復活）');
+  assert.equal(gone.stamped, true, 'ablated：時戳仍記錄（記錄與推回職責分離——因果乾淨）');
+});
+
+ablation('段內修復邊防護（老闆輸入後的切段擋——CLI）', () => {
+  const neu = neutralize(SB, [['if (RETREAT_EDGES[st.node]?.includes(target) && st.lastBossInputAt) {', 'if (false && RETREAT_EDGES[st.node]?.includes(target) && st.lastBossInputAt) { // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'build', edgeAt: { 'test→build': new Date(Date.now() - 120000).toISOString() }, lastBossInputAt: new Date().toISOString() } });
+    const h = cliRun(script, r, 'next', 'test');
+    rmSync(r, { recursive: true, force: true });
+    return h.status;
+  };
+  assert.equal(probe(SB), 1, 'intact：老闆輸入後的段內修復切段（build → test）擋下（走私新意圖）');
+  assert.equal(probe(neu), 0, 'ablated：拆掉邊防護即放行（第二道防線消失）');
 });
 
 for (const { name, fn } of ABLATIONS) {

@@ -7,9 +7,10 @@ const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArra
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
-// 觀測紀錄（hooks 寫）：心跳／外部證據／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）。
+// 觀測紀錄（hooks 寫）：心跳／外部證據／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）
+// ＋老闆輸入時戳（lastBossInputAt——新輪事實非內容；CLI 段內修復邊防護的新鮮度對照源，任何分類態皆可攜帶）。
 // 對話性質流（輸入流／理解流雜湊鏈）不落檔——對話事實由平台承載（基質優先），flow-state 只承載當下階段證據。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'externalEvidence', 'turnUsage', 'usageTotals', 'rewriteSeen'];
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'externalEvidence', 'turnUsage', 'usageTotals', 'rewriteSeen', 'lastBossInputAt'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st) {
@@ -18,6 +19,7 @@ function hooksOnly(st) {
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
   if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
   if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
+  if (Object.hasOwn(st, 'lastBossInputAt') && !timestamp(st.lastBossInputAt)) return false; // 老闆輸入時戳（事實非內容——永不主動清，新鮮度由「晚於進段時間」條件自限）
   if (Object.hasOwn(st, 'turnUsage')) {
     const tu = st.turnUsage;
     const tuKeys = ['startedAt', 'requests',

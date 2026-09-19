@@ -38,7 +38,9 @@ assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目僅屬 RAM 對照（2.4.0 無 commit 章分流）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 回合邊界模擬（2.5.2 旗標即章——時點 1 邊由 --boss-ok 承載）
+// 停時點 1 決策邊先申報（2.5.5：有停點申報＝裁決通道——老闆回覆零推回；無申報的中段老闆輸入＝機械推回新輪）
+assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 回合邊界模擬（裁決通道——stopReport 在場零推回；2.5.2 旗標即章——時點 1 邊由 --boss-ok 承載）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
@@ -52,6 +54,16 @@ writeFileSync(join(root, 't.mjs'), 'import assert from "node:assert/strict";\nas
 assert.equal(git('add', 't.mjs').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: cover').status, 0);
 assert.equal(run('next', 'build').status, 0);
+// —— 段內修復邊防護（2.5.5）：老闆輸入時戳晚於進段時間的切段＝走私新意圖——CLI 擋（hook 機械推回的第二道防線：推回失敗／繞過時的殘局）；代理自主段內修復（老闆輸入早於進段）放行 ——
+const fsState = join(root, '.shiftblame/flow-state.json');
+const inBuild = JSON.parse(readFileSync(fsState, 'utf8'));
+const olderTs = new Date(Date.now() - 2 * 60 * 1000).toISOString(), newerTs = new Date().toISOString();
+writeFileSync(fsState, JSON.stringify({ ...inBuild, edgeAt: { ...(inBuild.edgeAt ?? {}), 'test→build': olderTs }, lastBossInputAt: newerTs }));
+assert.match(run('next', 'test').stderr, /重走 intent 開新輪/, '老闆輸入後的段內修復切段（build → test）擋');
+assert.equal(JSON.parse(readFileSync(fsState, 'utf8')).node, 'build', '擋後狀態原樣（仍停 build）');
+writeFileSync(fsState, JSON.stringify({ ...inBuild, edgeAt: { ...(inBuild.edgeAt ?? {}), 'test→build': newerTs }, lastBossInputAt: olderTs }));
+assert.equal(run('next', 'test').status, 0, '代理自主段內修復放行（老闆輸入早於進段——非新意圖消化）');
+writeFileSync(fsState, JSON.stringify(inBuild)); // 沙箱復位（後續段於 build 態驗提交閘）
 // 提交閘段於 build 態執行（驗收段對 repo 唯讀——commitmsg 於 verify 擋）；
 // 2.4.0：段內提交對抗已移除——以下驗 commitmsg 與對抗宣告脫鉤＋格式／staged／座標／陳述面。
 const stateSnapshot = readFileSync(join(root, ".shiftblame/flow-state.json"), "utf8");

@@ -63,7 +63,7 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '[shiftblame 不變量]',
   '①老闆主權（A1）：意圖宣告、兩時點 pass/fail、出口、版號、路由與授權只在老闆；沉默≠批准，靜默自裁＝越權；老闆已明確指定者照辦不重問；機制發明須標注「新發明」單獨取得同意。',
   '②對話承載事實（A2）：對話（老闆輸入、理解宣告）由平台承載——不落檔、不綁雜湊；flow-state 只承載當下階段證據（定長欄位，恆有界）；理解經 shiftblame:think args 揭露於對話——理解有誤即越權，老闆終審；偽造由抽查承擔。',
-  '③意圖先於行動（A3）：所有老闆輸入第一步調 shiftblame:think（帶 args 理解宣告），不字面執行；理解宣告於對話揭露（機械不凍結——第一步路由由治理紀律承載）。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段圓環環首）：sb next intent 開新輪（計返工輪＋rewrite 載入閘）、段內修復（執行性修復，非新意圖）自動旗標切段；確認→審計（推進指令外部對抗）→分發。新需求問走 main 還是開 slug（免問：續活動 slug／純問題／已指定）。對老闆輸出＝人話（A10）：揭露首行一句翻譯、停等首行待判定事、無開場白無客套。',
+  '③意圖先於行動（A3）：所有老闆輸入第一步調 shiftblame:think（帶 args 理解宣告），不字面執行；理解宣告於對話揭露（機械不凍結——第一步路由由治理紀律承載）。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段圓環環首）：sb next intent 開新輪（計返工輪＋rewrite 載入閘）——老闆新輪由 hooks 機械推回（無停點申報的中段活動流程即代跑 sb next intent；有申報＝裁決通道，pass 走出口推進、fail／新意圖重走 intent）；「繼續」類中性續行（詞表精確全等）非新輪——不推回，接續原段；段內修復（執行性修復，非老闆輸入驅動）旗標切段，老闆輸入後的段內修復切段＝走私新意圖，CLI 擋；確認→審計（推進指令外部對抗）→分發。新需求問走 main 還是開 slug（免問：續活動 slug／純問題／已指定）。對老闆輸出＝人話（A10）：揭露首行一句翻譯、停等首行待判定事、無開場白無客套。',
   '④段鏈（A4）：七段圓環——intent（環首＝環尾：既是起點也是終點，不屬任何層）＋定義層 requirement→research→plan（逐功能規劃循環→收斂）＋實作層 test→build→verify（逐功能單提交迭代→E2E 收斂）；段間切換一律 sb next 旗標切段；輪內單向、產出即定稿；修正＝重走 intent 開新輪；段內修復旗標切段不計輪。',
   '⑤兩時點（A5）：時點 1 對抗（requirement→research——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈）皆對抗在前、老闆判定在後；中鏈零審核（build→verify 機械推進）。推進帶 --adversarial＋--boss-ok——旗標即章（老闆實際輸入由對話承載，機械不驗時戳；語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔）；對抗條目與理解宣告不替代老闆章；出口（--new-ms／sb end）＝時點 2 對抗條目＋終審章同一邊；缺老闆決策即 sb stop-report --question 申報停等。',
   '⑥行為證據（A6）：verify＝真驗收執行——GWT 逐條劇本（Given 實際建立→When 實際操作→Then 觀察真實行為）、證據落回指區；驗收依據＝行為是否發生，非測試燈號；未跑必標「未驗」。',
@@ -134,6 +134,16 @@ function nodeLine(root) {
 // 誤擋後微調命令即新指紋放行，逐字重發才升級——升級語義是補正不是懲罰，代價可控）。
 // escalatedAt／escalations 屬純觀測，非凍結旗標。逃生操作（Skill 與 sb state／sb next intent）豁免。
 const FLOW_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify']);
+// 中性續行詞表（精確全等——trim＋英文小寫後比對，非子串掃描）：「繼續」類輸入無新意圖，不算新輪——
+// 不推回、不記老闆輸入時戳（視同接續原回合）。保守列舉：未列同義詞偶爾多跑一輪可接受（重走 intent 冪等）；
+// 複合輸入（「繼續，但改X」）不精確匹配＝帶新意圖，照常推回。
+const CONTINUE_WORDS = new Set(['繼續', '請繼續', '繼續吧', '接著', '接著做', '往下', '往下做', 'continue', 'go on', 'go ahead', 'keep going']);
+const isNeutralContinue = (p) => CONTINUE_WORDS.has(String(p ?? '').trim().toLowerCase());
+// 疑問輸入偵測（問題類＝零流程位移——CARD⑩ 插入疑問以 commentary 解答後接續原段）：句尾問號（？/?／嗎／呢）
+// 或疑問詞開頭。從寬認定（漏推由 think 紀律承載——代理理解為新意圖時仍重走 intent；誤推＝問題被當新輪多跑一輪，不可）。
+const QUESTION_TAIL_RE = /[?？嗎呢]$/;
+const QUESTION_LEAD_RE = /^(?:為什麼|為何|怎麼|怎樣|怎麼樣|如何|什麼|甚麼|啥|哪個|哪些|哪裡|哪邊|哪一|多少|是否|可不可以|能不能|可否|難道|請問)\b|^(?:what|why|how|when|where|who|whom|which|whose|is|are|was|were|do|does|did|can|could|would|should|will|shall|may|might)\b/i;
+const isQuestion = (p) => { const s = String(p ?? '').trim(); return QUESTION_TAIL_RE.test(s) || QUESTION_LEAD_RE.test(s); };
 const LOOP_ESCAPE_RE = /\bsb(?:\.mjs)?\s+(?:state(?:\s|$)|next\s+intent\b)/;
 const isRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 // shell 寫入特徵（高訊號近似）：重定向、git 寫入、sb 流程寫入命令、套件安裝、就地編輯、檔案操作、直譯器 -e/-c、下載解壓、行程控制
@@ -215,7 +225,12 @@ function countUsage(root, tool, cmd, toolInput) {
 
 // 回合邊界（UserPromptSubmit）：老闆輸入＝新回合——斷路器模式追蹤與停點自限重置；
 // 冪等剝除舊版流鍵（對話流不落檔——舊檔升級即瘦身；新檔本無此鍵）。對話事實由平台承載，此處零內容寫入。
-function recordInput(root) {
+// 老闆輸入＝新輪的機械執行面（2.5.5）：活動流程停在中段而無停點申報 → 代跑 sb next intent 推回 intent 開新輪
+// （計輪／edgeAt／rewrite 閘由 CLI 承載）；有停點申報＝裁決通道——零推回（pass 走出口推進、fail／新意圖由代
+// 理重走 intent；裁決後把老闆輸入當執行性修復的段內修復切段由 CLI 邊防護擋）。中性續行（「繼續」類——詞表
+// 精確全等）豁免：無新意圖＝不算新輪，不推回也不記時戳。lastBossInputAt＝老闆輸入時戳（事實非內容）——
+// CLI 段內修復邊防護的新鮮度對照源（晚於進段時間＝老闆輸入後的修復）。
+function recordInput(root, prompt) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return null;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
@@ -227,8 +242,25 @@ function recordInput(root) {
     delete st.dialogueLock; delete st.input; // 冪等清理（不相容欄位）
     delete st.inputs; delete st.understandings; // 冪等剝除（舊版雙流——對話事實由平台承載）
     delete st.stamps; delete st.unlockLog; delete st.thinkRouted; // 冪等剝除（2.0x 舊流程鍵——與 migrateStreams 老鍵清單對齊）
+    if (isNeutralContinue(prompt)) {
+      writeFileSync(statePath, JSON.stringify(st, null, 2));
+      return '\n[續行] 中性續行輸入（詞表精確全等）——非新輪：接續原段已授權未完工作；有新意圖時照常從 intent 重走（A3）。';
+    }
+    if (isQuestion(prompt)) {
+      writeFileSync(statePath, JSON.stringify(st, null, 2));
+      return '\n[問答] 疑問輸入——零流程位移（不推回、不計新輪）：以 commentary 解答後接續原段已授權未完工作；若回答衍生新工作，照常從 intent 重走（A3）。';
+    }
+    st.lastBossInputAt = new Date().toISOString(); // 老闆輸入時戳（事實非內容，永不主動清——新鮮度由「晚於進段時間」條件自限）
     writeFileSync(statePath, JSON.stringify(st, null, 2));
-    return null;
+    let retreatNote = '';
+    if (FLOW_NODES.has(st.node) && st.node !== 'intent' && !isRecord(st.stopReport)) {
+      const sbPath = fileURLToPath(new URL('../cli/bin/sb.mjs', import.meta.url));
+      const r = spawnSync(process.execPath, [sbPath, 'next', 'intent'], { cwd: root, encoding: 'utf8', timeout: 20000 });
+      retreatNote = r.status === 0
+        ? '\n[新輪] 老闆新輸入＝新輪——已機械推回 intent（sb next intent 代跑，計返工輪）：任何後續工作從 intent 重走（think 理解宣告先行）；段內修復僅限代理自主執行性修復，老闆輸入驅動的工作一律重走 intent（A3）。'
+        : `\n[新輪] 老闆新輪推回失敗（${String(r.stderr || r.stdout || '').trim().slice(0, 160)}）——手動執行 sb next intent 重走；老闆輸入驅動的工作一律從 intent 開始（A3）。`;
+    }
+    return retreatNote;
   } catch { return null; } /* 狀態異常靜默 */
 }
 
@@ -749,8 +781,10 @@ try {
   }
 
   if (event === 'UserPromptSubmit') {
-    if (healthy) recordInput(root); // 回合邊界：模式追蹤與停點自限重置＋舊流鍵冪等剝除（對話事實由平台承載，零內容寫入）
-    inject(CARD + nodeLine(root) + stopReportLine(root, healthy), 'UserPromptSubmit');
+    // 回合邊界：模式追蹤與停點自限重置＋舊流鍵冪等剝除（對話事實由平台承載，零內容寫入）
+    // ＋老闆輸入＝新輪機械推回（無停點申報的中段活動流程——sb next intent 代跑；nodeLine 於推回後讀檔即顯 @intent）
+    const retreatNote = healthy ? recordInput(root, input.prompt) : '';
+    inject(CARD + nodeLine(root) + retreatNote + stopReportLine(root, healthy), 'UserPromptSubmit');
   }
 
   if (event === 'Stop') {

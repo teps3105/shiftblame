@@ -61,6 +61,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 assert.match(run('next', 'research').stderr, /MUST 帶 --boss-ok/);
 assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
 assert.equal(pt('1').status, 0);
+assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯正確，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
@@ -86,6 +87,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊帶 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
 assert.equal(pt('1', 'r2').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
+assert.equal(run('stop-report', '--question', '時點 1 終審：重走後意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, 'research 進段重置外部證據');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
@@ -104,6 +106,7 @@ assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（中
 // verify 判決段唯讀：pass 出口前未存檔變更即擋（出口鑰匙鏈已齊——時點 2 條目＋老闆終審輸入）
 writeFileSync(join(root, 'seed.txt'), '驗收中偷改\n');
 assert.equal(pt('2', 't0').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
+assert.equal(run('stop-report', '--question', '時點 2 終審：驗收結果待老闆判定（出口裁決）').status, 0); // 停裁決邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（對話承載——旗標即章）
 assert.match(run('end', '--adversarial', '--boss-ok').stderr, /working tree 未乾淨|乾淨/);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature 1\n');
@@ -117,6 +120,7 @@ assert.equal(state().rev, 2, '第二次重走 intent 輪次遞增（時序可對
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重整重走：老闆決策邊帶 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
 assert.equal(pt('1', 'r3').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
+assert.equal(run('stop-report', '--question', '時點 1 終審：重整後意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯重整確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, 'research 進段重置外部證據');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
@@ -128,6 +132,7 @@ assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（重走輪——樹淨即過）');
 
 // pass 出口一：next --new-ms（出口＝時點 2 對抗條件＋--boss-ok 旗標即章同一邊——2.5.2：時點 2 條目新鮮度機械驗，老闆章語義由對話＋老闆終審承擔）
+assert.equal(run('stop-report', '--question', '時點 2 終審：重走輪驗收結果待老闆判定（出口裁決）').status, 0); // 停裁決邊申報（2.5.5：裁決通道——老闆回覆零推回；出口邊 die 不清申報，覆蓋至放行）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，考慮出口' }); // 老闆終審輸入（對話承載——機械不驗時戳）
 assert.match(run('next', 'intent', '--new-ms', '--boss-ok').stderr, /需時點 2 對抗/, '出口缺 --adversarial 即擋——出口＝時點 2 對抗＋終審同一邊');
 assert.match(run('next', 'intent', '--new-ms', '--adversarial', '--boss-ok').stderr, /過期|缺時點 2 條目/, '出口舊時點 2 條目過期即擋（fail 回走是同邊推進——新鮮度重驗）');
@@ -153,6 +158,7 @@ writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8') + '\n
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /混合格式/, '混合格式擋（單行與 BDD 並存擇一）');
 writeFileSync(join(ms2, 'G1.md'), readFileSync(join(ms2, 'G1.md'), 'utf8').replace('\n### AC-99（混合）\n- Given：（填）\n', ''));
 assert.equal(pt('1', 'ms2').status, 0);
+assert.equal(run('stop-report', '--question', '時點 1 終審：ms002 意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
@@ -163,6 +169,7 @@ commit('seed.txt', 'feat: second ms');
 assert.equal(run('next', 'build').status, 0);
 assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進');
 assert.equal(pt('2', 'ms2').status, 0, '時點 2 宣告（verify 內——驗收完成後審驗收結果）');
+assert.equal(run('stop-report', '--question', '時點 2 終審：ms002 驗收結果待老闆判定（slug 終結裁決）').status, 0); // 停裁決邊申報（2.5.5：裁決通道——老闆回覆零推回；end 邊 die 不清申報，覆蓋至出口）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：整體完成，結束 slug' }); // 老闆終審輸入（對話承載——旗標即章）
 assert.match(run('end').stderr, /--boss-ok|終審決策/, 'end 缺 --boss-ok 終審章即擋');
 assert.match(run('end', '--adversarial').stderr, /--boss-ok|終審決策/, 'end 缺 --boss-ok 即擋');

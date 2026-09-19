@@ -57,6 +57,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆決策邊輸入（對話承載——旗標即章）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(pt('1').status, 0, '時點 1 對抗宣告');
+assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
@@ -64,7 +65,7 @@ assert.equal(run('next', 'plan').status, 0);
 assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
 
 // —— 3. 迴圈斷路器（行為模式判定——非數量）：計數純觀測；無變更重跑即擋；擋後逐字重發＝升級自動回 intent；升級後仍逐字重發＝本回合封禁 ——
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '回合開始（模式追蹤重置）' });
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '繼續' }); // 中性續行（2.5.5 推回豁免）——回合邊界重置模式追蹤但不開新輪（隔離被測機制）
 assert.equal(state().turnUsage, undefined, '老闆輸入＝回合邊界（模式追蹤重置）');
 const u1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls -la' } });
 assert.equal(u1.status, 0, '工具調用放行（計數僅觀測）');
@@ -123,6 +124,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
+assert.equal(run('stop-report', '--question', '時點 1 終審：重走後意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（research→plan 邊驗——重走進段重置後重新驗）
@@ -135,6 +137,7 @@ writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
 assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（中鏈零審核——樹淨即過）');
 assert.equal(pt('2').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
+assert.equal(run('stop-report', '--question', '時點 2 終審：驗收結果待老闆判定（slug 終結裁決）').status, 0); // 停裁決邊申報（2.5.5：裁決通道——老闆回覆零推回；end 邊擋停不清申報，覆蓋至出口）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（對話承載——旗標即章）
 
 // —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——

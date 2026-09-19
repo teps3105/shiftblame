@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.5.4
+revision: 2.5.5
 ---
 
 # 機制細節（主 SKILL 骨架的下沉承載）
@@ -12,6 +12,8 @@ revision: 2.5.4
 **確認綁定語義決策，不綁定階段箭頭**：老闆確認 shiftblame:think 的完整理解後，該授權由 G1、G2、G3、兩時點邊、測試、實作、驗收與 pass 出口共同承接；同一語義在文件定稿、skill 觸發與 CLI 推進間一次承接。`--boss-ok` 旗標即章：CLI 於老闆決策邊機械驗**本次對抗條目新鮮度**——adversarialLog point 條目須晚於基準（同邊上次推進／本 ms 末次進 verify／slug 起始），舊對抗條目重複消費即擋；缺新鮮條目即 `sb stop-report --question` 申報待決後停等老闆。本閘為純時序判定零語義（機械不掃詞）——驗「本次判定對抗在前」的下限，語義授權由理解宣告對話揭露＋老闆終審承擔；實質鑰匙是老闆決策邊留痕＋時點對抗＋旗標即章。
 
 **對話由平台承載（輸入＝獨立理解對象，不是鎖的鑰匙）**：對話事實（老闆輸入時序與理解授權）由平台 session 承載——對話流零落檔、零雜湊綁定（基質優先：平台已記對話，另造即拆）；flow-state 只承載狀態機本體與定長欄位（lastAdv／edgeAt／adversarialLog point 條目），舊版雙流鍵（inputs／understandings 等）於回合邊界冪等剝除——舊檔升級即瘦身。agent 經 shiftblame:think 路由理解（調用 args＝理解宣告，一句話：這授權了什麼）於對話直接揭露——理解有誤即越權或沒理解就動手，老闆當場看到。語義認定權歸理解：機械不掃詞、不標否定、不對照類型；理解成立 MUST 立即進入下一步（意圖類輸入的下一步＝六欄揭露呈現；不設停等關鍵詞、不要求老闆改述）；理解不明才發問。輸入不是鑰匙、理解零機械前置攔截——未理解就行動由對話可見性＋老闆終審承擔；完成類鑰匙＝老闆決策邊 `--boss-ok` 旗標即章＋對抗條目新鮮度（CLI 驗）＋時點對抗（`--new-ms` 開新里程碑，僅真驗收終審 pass 後出口邊）。
+
+**老闆輸入機械分流（UserPromptSubmit 執行面——2.5.5）**：老闆新輪不再只靠紀律提醒，由 hooks 機械執行——三類分流：①**中性續行**（「繼續」類，詞表精確全等——trim＋英文小寫後比對，非子串掃描）：無新意圖不算新輪，不推回不記時戳，接續原段已授權未完工作；②**疑問輸入**（疑問句尾或疑問詞開頭，從寬認定）：零流程位移——問題類直接解答後接續原段；漏推由 think 紀律承載（代理理解為新意圖時仍重走 intent——誤推＝問題被當新輪多跑一輪，不可）；③**其他（推定新意圖）**：記 `lastBossInputAt` 時戳（事實非內容），活動流程停在中段（node≠intent）而無停點申報（stopReport）時代跑 `sb next intent` 推回開新輪（計輪／edgeAt／rewrite 閘由 CLI 承載）。停點申報＝**裁決通道**——老闆對已申報待決的回覆零推回（pass 走出口推進、fail／新意圖由代理重走 intent）。`lastBossInputAt` 同時是 CLI 段內修復邊防護的新鮮度對照源：verify→test／build、build→test 回退切段若晚於老闆輸入即擋——老闆輸入後以段內修復名義續走＝走私新意圖。
 
 ## 2. 觸發樣態——揭露第一動；未定案必問；無歧義即執行
 
@@ -174,7 +176,7 @@ sequenceDiagram
 
 1. **擋停（條件式、單次消費式、不代做路由）**：Stop hook 對活動流程（node 屬 intent~verify）而無本回合停點申報者擋停一次——訊息要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；不改 node、不跑 sb next、不判定語義上的未完工作。與「無條件續跑」的界線：不問狀態、每次一律擋才是無條件續跑；本機制條件觸發、至多一次、零路由代行。
 2. **放行面**：有申報（`flow-state.stopReport`，本回合判定＝申報 at 晚於本回合第一個工具調用（`turnUsage.startedAt`）——回合邊界刪 turnUsage 後零工具調用即缺席，殘留舊申報零跨回合效力；主動 think 停等＝待老闆終審的待決，經申報放行）、ended（含完結戳）、無流程（含接入異態）、`stop_hook_active` 或本回合已擋過一次一律放行——攔停標記（`stopBlockedAt`）採消費式：放行同時焚毀，殘留標記至多錯放一次即自清；新回合重閘由回合邊刪除＋放行消費雙路徑保證（單靠刪除一路徑時，hook 未觸發／寫入失效會讓殘留標記放行後續回合的偷懶停）。
-3. **申報與曝光**：`sb stop-report --question「具體待決問題」` 僅限活動態，問題實質門檻 ≥10 字（「需要老闆決策」不是問題內容——空泛申報＝偷懶）；申報於老闆下則輸入曝光（`[停點申報]` 行）供終審真偽，流程下次推進（sb next）即清——工作已續行＝問題已解。
+3. **申報與曝光**：`sb stop-report --question「具體待決問題」` 僅限活動態，問題實質門檻 ≥10 字（「需要老闆決策」不是問題內容——空泛申報＝偷懶）；申報於老闆下則輸入曝光（`[停點申報]` 行）供終審真偽，流程下次推進（sb next）即清——工作已續行＝問題已解。申報同時是老闆輸入推回的**裁決通道**（2.5.5，§1）：有申報時老闆回覆零推回（pass 走出口推進、fail／新意圖由代理重走 intent），無申報的中段老闆輸入由 UserPromptSubmit 機械推回 intent 開新輪。
 4. **消融**：拆掉擋停（Stop handler 判準）後，無申報之停全數放行——防護消失（消融矩陣對帳，§9）。
 
 ## 14. 標準攻擊點清單（對抗任務組裝 MUST 轉錄）
@@ -195,7 +197,7 @@ sequenceDiagram
 
 ## 16. hooks 機械注入（§9 反偏移細節）
 
-plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與停點申報記錄缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除（零內容寫入，§1）；`PreToolUse` 外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
+plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與停點申報記錄缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（§1——2.5.5：中性續行／疑問零位移；新意圖記 lastBossInputAt＋中段無申報機械推回 intent）；`PreToolUse` 外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
 
 ## 17. 圖表使用判準
 

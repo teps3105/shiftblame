@@ -39,6 +39,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'WebSearch' }; });
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '時點 1 對抗宣告');
+assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆輸入（2.4.2——晚於本次對抗條目：老闆章錨定對抗報告之後）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊');
 assert.equal(state().externalEvidence, null, 'requirement→research 進段重置');
@@ -87,6 +88,7 @@ assert.equal(run('next', 'research', '--rerun', 'impl').status, 2, '已退役旗
 // —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次；時點 1 重過＝新鮮條目）——
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '重走後新鮮時點 1 條目');
+assert.equal(run('stop-report', '--question', '時點 1 終審：重走後意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆輸入（2.4.2——晚於本次對抗條目）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '進 research——外部證據閘進段重置');
 r = run('next', 'plan');

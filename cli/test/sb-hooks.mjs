@@ -78,6 +78,40 @@ assert.equal(ss2.status, 0);
 assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
 assert.ok(ss2.stdout.includes('@ plan'), '段位');
 
+// —— 4.5 老闆輸入＝新輪機械推回（2.5.5）：無停點申報的中段活動流程 → hook 代跑 sb next intent；有申報＝裁決通道零推回 ——
+setNode('build');
+const ret = up('老闆新輸入（機械推回驗證）');
+assert.equal(ret.status, 0);
+assert.equal(state().node, 'intent', '老闆新輸入＝新輪——中段無停點申報即機械推回 intent（hook 代跑 sb next intent，計返工輪由 CLI 承載）');
+assert.ok(state().lastBossInputAt, '老闆輸入時戳記錄（事實非內容——段內修復邊防護的對照源）');
+assert.ok(JSON.parse(ret.stdout).hookSpecificOutput.additionalContext.includes('[新輪]'), '推回說明注入對話');
+setNode('verify');
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), stopReport: { at: new Date().toISOString(), node: 'verify', question: '時點 2 終審：驗收結果待老闆判定（fixture 過 activeExtras 驗證）', reviewed: false } }));
+const adj = up('老闆裁決回覆（裁決通道驗證）');
+assert.equal(adj.status, 0);
+assert.equal(state().node, 'verify', '有停點申報＝裁決通道——零推回（pass 走出口推進邊、fail／新意圖由代理重走 intent，CLI 邊承載）');
+// 中性續行豁免：「繼續」類詞表精確全等——非新輪（不推回、不記時戳，接續原段）
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), lastBossInputAt: undefined, stopReport: undefined, node: 'build' }));
+const cont = up('繼續');
+assert.equal(cont.status, 0);
+assert.equal(state().node, 'build', '中性續行（詞表精確全等）非新輪——不推回，接續原段');
+assert.equal(state().lastBossInputAt, undefined, '中性續行不記老闆輸入時戳（無新意圖——段內修復邊防護不誤觸）');
+assert.ok(JSON.parse(cont.stdout).hookSpecificOutput.additionalContext.includes('[續行]'), '續行說明注入對話');
+// 複合輸入（帶新意圖）不精確匹配＝照常推回
+setNode('build');
+const comp = up('繼續，但改用另一種做法');
+assert.equal(state().node, 'intent', '複合輸入（「繼續，但…」）＝帶新意圖——照常推回 intent');
+// 疑問輸入零流程位移（問題類＝零位移——CARD⑩ commentary 解答後接續）：句尾問號／疑問詞開頭
+setNode('build');
+const qa = up('為什麼這個 API 要這樣設計？');
+assert.equal(qa.status, 0);
+assert.equal(state().node, 'build', '疑問輸入零流程位移——不推回，接續原段');
+assert.equal(state().lastBossInputAt, undefined, '疑問輸入不記老闆輸入時戳（非新意圖——段內修復邊防護不誤觸）');
+assert.ok(JSON.parse(qa.stdout).hookSpecificOutput.additionalContext.includes('[問答]'), '問答說明注入對話');
+setNode('build');
+const qa2 = up('目前進度到哪了嗎');
+assert.equal(state().node, 'build', '句尾「嗎」疑問輸入同零位移');
+
 // —— 5. 回合接續契約在輸入／重啟時注入；Stop 不代改流程或反覆喚醒 ——
 for (const payload of [
   { hook_event_name: 'SessionStart' },
@@ -228,9 +262,11 @@ assert.match(bad.stderr, /破壞性操作/);
 setNode('build');
 const activeSlash = up('/shiftblame:think 幫我做理解呈現');
 assert.equal(activeSlash.status, 0, '主動觸發輸入照常處理');
+assert.equal(state().node, 'intent', 'think 輸入＝老闆輸入——中段機械推回 intent 開新輪（2.5.5）');
 assert.equal(state().understandingHold, undefined, '零機械凍結（understandingHold 已拆——對話承載）');
+setNode('build'); // 沙箱直寫重設段位（隔離驗證寫入矩陣——非流程切段）
 const holdEdit = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
-assert.equal(holdEdit.status, 0, '寫入由段位矩陣判定（build 段放行——停等屬對話層紀律非機械閘）');
+assert.equal(holdEdit.status, 0, '寫入由段位矩陣判定（build 段放行——think 輸入後零殘留凍結）');
 const holdSb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs state' } });
 assert.equal(holdSb.status, 0, 'sb state 唯讀照常放行');
 // —— 11. G 檔寫入矩陣（RAM/ROM 分區） ——

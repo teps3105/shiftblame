@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.4-2ea44f.svg" alt="version 2.5.4"/>
+  <img src="https://img.shields.io/badge/version-2.5.5-2ea44f.svg" alt="version 2.5.5"/>
 </p>
 
 ---
@@ -69,7 +69,7 @@ flowchart TB
     B2 -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| BOSS
 ```
 
-**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後任何新意圖在該 ms 內一律重走 intent：`sb next intent` 同 ms 開新輪，段內修復類（執行性修復）由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
+**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後任何新意圖在該 ms 內一律重走 intent：`sb next intent` 同 ms 開新輪（hooks 機械推回承載——中段無停點申報即代跑；有申報＝裁決通道零推回；「繼續」類中性續行與疑問輸入零位移），段內修復類（執行性修復）由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
 
 **pass 與 fail 是邊，不是節點。** 全部功能完成、收斂期 E2E 綠燈收斂、working tree 乾淨即 build→verify 機械推進（中鏈零審核）——verify 真驗收（GWT 逐條劇本實操、行為證據落回指區、G1 回指閉環）。驗收完成後時點 2 對抗（對抗在前）審驗收結果，老闆終審 pass 走出口——出口＝時點 2 對抗條目＋終審章同一邊：`sb next intent --new-ms --adversarial --boss-ok`（開下一里程碑，每 ms 遙測結算）或 `sb end --adversarial --boss-ok`（結束 slug 收尾歸檔）；fail 視為老闆新意圖重走 intent。
 

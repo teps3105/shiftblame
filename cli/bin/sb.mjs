@@ -403,6 +403,19 @@ function gate(st, target, opts) {
     else problems.push(`「${st.node} → ${target}」不是對抗邊——--adversarial 留給時點對抗邊（時點 1 requirement→research／時點 2 verify 出口）`);
   }
 
+  // 段內修復邊防護（老闆輸入＝新輪，2.5.5）：老闆輸入時戳（lastBossInputAt——UserPromptSubmit 記，事實非內容）
+  // 晚於進入現段時間（edgeAt 邊時戳——verify 只能自 build 進、build 只能自 test 進，進段鍵唯一）時的段內修復
+  // 切段＝把老闆新意圖當執行性修復消化——擋，重走 sb next intent 開新輪。段內修復僅限代理自主執行性修復
+  // （紅燈修補等，期間無老闆輸入——lastBossInputAt 早於進段時間即放行）；裁決後的新輪內修復通道自然恢復
+  // （新輪進段時間晚於老闆輸入時戳）。edgeAt 缺席＝無進段事實可判，放行（fail-open on missing evidence）。
+  const RETREAT_EDGES = { verify: ['test', 'build'], build: ['test'] };
+  if (RETREAT_EDGES[st.node]?.includes(target) && st.lastBossInputAt) {
+    const enteredAt = st.node === 'verify' ? st.edgeAt?.['build→verify'] : st.edgeAt?.['test→build'];
+    if (enteredAt && st.lastBossInputAt > enteredAt) {
+      problems.push(`老闆輸入後的段內修復切段（${st.node} → ${target}）＝把老闆新意圖當執行性修復消化——老闆任何輸入驅動的工作一律重走 intent 開新輪（sb next intent，計返工輪）；段內修復僅限代理自主執行性修復（A3）`);
+    }
+  }
+
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
 
   switch (target) {
