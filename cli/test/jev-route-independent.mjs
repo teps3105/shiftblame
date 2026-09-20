@@ -1,0 +1,43 @@
+// 提示凍結後由獨立審閱者提供的受控資料；不是生產分布或通用可靠性保證。
+const rows = [
+  ['u01','zh-Hant','先找出能重複使用的既存程序，讓我挑一個來處理新一批資料；不要讀上次執行。',
+    ['尚未取得已儲存程序清單。',{run_id:'r_7q4m',label:'整理上一批問卷',status:'completed',stopReason:null}],
+    [{name:'GetWorkflowRun',input:{run_id:'r_7q4m'},description:'Read the execution details of the previous questionnaire-processing run.'},{name:'ListSavedWorkflows',input:{},description:'List saved reusable workflow definitions.'},{name:'TodoRead',input:{},description:'Read the current to-do list.'}],1],
+  ['u02','en','Check which tasks are waiting for reduced-demand execution, not the recurring reminders.',
+    ["The pending-work inventory has not been retrieved. The user is asking about the platform's off-peak execution queue."],
+    [{name:'CronList',input:{},description:'List scheduled and recurring jobs.'},{name:'TodoRead',input:{},description:'Read the current to-do list.'},{name:'OffPeakList',input:{},description:'List jobs queued for off-peak execution.'}],2],
+  ['u03','zh-Hant','如果校稿工作已設成每月自動執行，就查排程；若只是記下來提醒自己，才查待辦。',
+    ['建立收據明確寫明：每月第一天自動執行校稿，已建立週期工作；沒有新增待辦。'],
+    [{name:'TodoRead',input:{},description:'Read the current to-do list.'},{name:'CronList',input:{},description:'List scheduled and recurring jobs.'},{name:'ListSavedWorkflows',input:{},description:'List saved reusable workflow definitions.'}],1],
+  ['u04','en','We need an inventory of the AI inference engines available to this agent before making a selection. Do not choose one yet.',
+    ['No available-model catalog has been retrieved.'],
+    [{name:'ListSavedWorkflows',input:{},description:'List saved reusable workflow definitions.'},{name:'ListModels',input:{},description:'List AI models available to this agent.'},{name:'OffPeakList',input:{},description:'List jobs queued for off-peak execution.'}],1],
+  ['u05','zh-Hant','查的是錄音裡說話者切換位置那次處理，不是把說話內容轉成文字的那次。',
+    [{run_id:'r_2v8k',label:'將訪談錄音轉寫成逐字稿',status:'completed',stopReason:null},{run_id:'r_9b3x',label:'標記訪談錄音中每位說話者的起訖時間',status:'completed',stopReason:null},'兩次完整執行結果都尚未讀取。'],
+    [{name:'GetWorkflowRun',input:{run_id:'r_2v8k'},description:'Read the interview speech-transcription execution.'},{name:'GetWorkflowRun',input:{run_id:'r_9b3x'},description:'Read the execution that marks speaker turns and timestamps.'}],1],
+  ['u06','en','Inspect the run that checked whether residents could evacuate the building safely, rather than the one that checked energy consumption.',
+    [{run_id:'r_4n6p',label:'Assess emergency exits and evacuation routes',status:'stopped',stopReason:'provider'},{run_id:'r_8c1w',label:'Assess heating and lighting energy usage',status:'stopped',stopReason:'provider'},'Detailed results have not been retrieved for either run.'],
+    [{name:'GetWorkflowRun',input:{run_id:'r_8c1w'},description:'Read the building energy-usage assessment execution.'},{name:'GetWorkflowRun',input:{run_id:'r_4n6p'},description:'Read the emergency-exit and evacuation-route assessment execution.'}],1],
+  ['u07','zh-Hant','如果這次是在查引用是否真的支持論述，就讀來源核對那次；如果只是在排版，才讀格式檢查那次。',
+    ['本次問題是文獻是否支持稿件中的主張，與引用格式無關。',{run_id:'r_6j2z',label:'核對文章論述與引用文獻內容是否一致',status:'running',stopReason:null},{run_id:'r_3f9a',label:'檢查參考文獻的標點與排列格式',status:'running',stopReason:null}],
+    [{name:'GetWorkflowRun',input:{run_id:'r_3f9a'},description:'Read the bibliography punctuation and formatting check.'},{name:'GetWorkflowRun',input:{run_id:'r_6j2z'},description:"Read the check of whether cited sources support the manuscript's claims."}],1],
+  ['u08','en','Read the run that compared the shipment with what was ordered. Do not inspect the check of damage to the packaging.',
+    [{run_id:'r_5d7u',label:'Compare delivered item quantities against the purchase order',status:'completed',stopReason:null},{run_id:'r_1h8e',label:'Inspect cartons for dents, tears, and water damage',status:'completed',stopReason:null},'Neither detailed execution result is available yet.'],
+    [{name:'GetWorkflowRun',input:{run_id:'r_5d7u'},description:'Read the delivered-quantities versus purchase-order comparison.'},{name:'GetWorkflowRun',input:{run_id:'r_1h8e'},description:'Read the shipment-packaging damage inspection.'}],0],
+  ['u09','zh-Hant','查看我選定要保留的那次字幕處理結果。',
+    ['選定紀錄不在目前資料中，也沒有任何證據指出使用者採用哪個候選。',{run_id:'r_8s4g',label:'字幕處理候選甲',status:'completed',stopReason:null},{run_id:'r_2l5y',label:'字幕處理候選乙',status:'completed',stopReason:null}],
+    [{name:'GetWorkflowRun',input:{run_id:'r_8s4g'},description:'Read subtitle-processing candidate A.'},{name:'GetWorkflowRun',input:{run_id:'r_2l5y'},description:'Read subtitle-processing candidate B.'}],'insufficient'],
+  ['u10','en','Change the existing weekly digest so it runs on Friday instead of Thursday.',
+    ['The exact schedule and requested change are already identified and authorized. No further lookup is needed. The available candidates cannot modify schedules.'],
+    [{name:'CronList',input:{},description:'Read the schedule inventory; this tool cannot change a schedule.'},{name:'TodoRead',input:{},description:'Read the current to-do list.'},{name:'ListSavedWorkflows',input:{},description:'List saved workflow definitions; this tool cannot edit schedules.'}],'insufficient'],
+  ['u11','zh-Hant','根據剛完成的核對，寫兩句交付說明，交代字幕檔是否齊全以及剩下的問題。',
+    [{run_id:'r_7a1t',label:'核對課程影片字幕交付',status:'completed',stopReason:null},'完整結果及實際檔案已驗證：八支影片都有可讀字幕檔，沒有缺檔或未處理問題。撰寫說明所需證據齊全，毋須重新查詢。'],
+    [{name:'GetWorkflowRun',input:{run_id:'r_7a1t'},description:'Retrieve the already-verified subtitle-delivery check again.'},{name:'TodoRead',input:{},description:'Read the current to-do list.'}],'generate'],
+  ['u12','en','Using the complete inventory we just retrieved, tell me briefly whether any reusable procedures are available. Do not refresh it.',
+    ['The current complete saved-workflow inventory contains zero entries, with no pagination, errors, or omitted records.'],
+    [{name:'ListSavedWorkflows',input:{},description:'Retrieve the saved-workflow inventory again.'},{name:'ListModels',input:{},description:'List AI models available to this agent.'}],'generate']
+];
+export const cases = rows.map(([id,language,goal,observations,candidates,expected]) => ({
+  id,language,split:'independent',state:{goal,observations},candidates,expected,
+  tools:[...new Set(candidates.map(candidate=>candidate.name))].map(name=>({name}))
+}));

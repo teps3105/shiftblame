@@ -14,7 +14,7 @@ const self = fileURLToPath(import.meta.url);
 const MAX_BYTES = 1024 * 1024;
 function address(root) {
   const hash = createHash('sha256').update(homedir()).update(root);
-  for (const path of [self, ...['./jev-work.mjs','../cli/bin/jev.mjs','../cli/bin/jev-route.mjs','../cli/bin/jev-compact.mjs',...['compact','state','request'].map(name=>`../cli/bin/vendor/fast-jev-compaction/${name}.js`)].map(path=>fileURLToPath(new URL(path,import.meta.url)))]) hash.update(readFileSync(path));
+  for (const path of [self, ...['./jev-work.mjs','./jev-filter-policy.json','../cli/bin/jev-calibration.mjs','../cli/bin/jev.mjs','../cli/bin/jev-route.mjs','../cli/bin/jev-values.mjs','../cli/bin/jev-compact.mjs',...['compact','state','request'].map(name=>`../cli/bin/vendor/fast-jev-compaction/${name}.js`)].map(path=>fileURLToPath(new URL(path,import.meta.url)))]) hash.update(readFileSync(path));
   const id = hash.digest('hex').slice(0, 32);
   return process.platform === 'win32' ? `\\\\.\\pipe\\sb-jev-${id}` : join(tmpdir(), `sb-jev-${id}.sock`);
 }

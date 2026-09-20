@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildRouteRequest, createRouter, resolveRoute, judgeRoute } from '../bin/jev-route.mjs';
+import {sourceValues,matchesSchema} from '../bin/jev-values.mjs';
 
 const model = 'jev-1.13.0';
 const tools = [{ name: 'inspect', description: 'Inspect a named resource.', inputSchema: {
@@ -8,6 +9,61 @@ const tools = [{ name: 'inspect', description: 'Inspect a named resource.', inpu
 } }];
 const answer = (question, choice) => ({ type: 'choice', choice, confidence: 0.9,
   probabilities: Object.fromEntries(Object.keys(question.criteria).map(key => [key, key === choice ? 1 : 0])) });
+
+test('unseen tool names bind open strings from raw observations without a tool recipe', () => {
+  for (const name of ['inspect_asset','lookup_invoice','read_unfamiliar_record']) {
+    const batch=buildRouteRequest({model,tools:[{...tools[0],name}],state:{goal:'讀取缺少附件的項目',
+      observations:[{content:'{"items":[{"id":"item-甲","status":"完整"},{"id":"item-乙","status":"缺少附件"}]}'}]}});
+    const question=batch.request.questions.a0_0;
+    const selected=Object.entries(question.criteria).find(([,row])=>row.value==='item-乙')[0];
+    const result=resolveRoute(batch,{model,answers:{operation:answer(batch.request.questions.operation,'t0'),a0_0:answer(question,selected)}});
+    assert.deepEqual(result.call,{name,input:{id:'item-乙'}});
+  }
+});
+
+test('a single observed value still requires semantic selection rather than becoming a constant',()=>{
+  const batch=buildRouteRequest({model,tools,state:'unrelated'});
+  assert.ok(batch.request.questions.a0_0);
+  const result=resolveRoute(batch,{model,answers:{operation:answer(batch.request.questions.operation,'t0'),
+    a0_0:answer(batch.request.questions.a0_0,'insufficient')}});
+  assert.equal(result.mode,'fallback');
+});
+
+test('nested parameters select a complete observed object and preserve its field relationships',()=>{
+  const shape={type:'object',properties:{id:{type:'string'},settings:{type:'object',properties:{enabled:{type:'boolean'}},required:['enabled'],additionalProperties:false}},required:['id','settings'],additionalProperties:false};
+  const state={records:[{id:'甲',settings:{enabled:true}},{id:'乙',settings:{enabled:false}}]};
+  const batch=buildRouteRequest({model,state,tools:[{name:'unseen_nested_tool',inputSchema:{type:'object',properties:{record:shape},required:['record'],additionalProperties:false}}]});
+  const question=batch.request.questions.a0_0;
+  const selected=Object.entries(question.criteria).find(([,row])=>row.value?.id==='乙')[0];
+  state.records[1].settings.enabled=true;
+  const result=resolveRoute(batch,{model,answers:{operation:answer(batch.request.questions.operation,'t0'),a0_0:answer(question,selected)}});
+  assert.deepEqual(result.call.input,{record:{id:'乙',settings:{enabled:false}}});
+});
+
+test('source strings are not decoded through an unrelated serialization format',()=>{
+  for(const text of [JSON.stringify({id:'a&amp;b'}),'value "a&amp;b"']) {
+    const values=sourceValues({text}).map(row=>row.value);
+    assert.ok(values.includes('a&amp;b'));
+    assert.equal(values.includes('a&b'),false);
+  }
+});
+
+test('optional bounded arguments can be omitted without disabling an observed path',()=>{
+  const batch=buildRouteRequest({model,state:{path:'D:/資料/檔案.txt'},tools:[{name:'unfamiliar_read',inputSchema:{type:'object',
+    properties:{file_path:{type:'string'},offset:{type:'integer',minimum:0}},required:['file_path'],additionalProperties:false}}]});
+  assert.ok(batch);
+  assert.ok(batch.request.questions.a0_1.criteria.omit);
+  assert.equal(Object.values(batch.request.questions.a0_1.criteria).some(row=>typeof row.value==='number'),false);
+});
+
+test('constant and enum constraints use the same validator, including Unicode code point lengths',()=>{
+  for(const property of [{type:'string',enum:['x'],minLength:2},{type:'integer',const:0,minimum:1}]) {
+    assert.equal(buildRouteRequest({model,state:{},tools:[{name:'bounded',inputSchema:{type:'object',properties:{value:property},required:['value'],additionalProperties:false}}]}),null);
+  }
+  assert.equal(matchesSchema('😀',{type:'string',minLength:2}),false);
+  assert.equal(matchesSchema('😀',{type:'string',maxLength:1}),true);
+  assert.equal(matchesSchema('字😀',{type:'string',minLength:2,maxLength:2}),true);
+});
 
 test('dynamic observed IDs can execute repeatedly without a generator between operations', async () => {
   let calls = 0, providerRequests = 0, executions = 0, permissionChecks = 0;
