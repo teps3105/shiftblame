@@ -8,12 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { delegate } from '../cli/bin/jev.mjs';
 import { filterToolResult } from './jev-work.mjs';
 import { compactWorkingMemory } from '../cli/bin/jev-compact.mjs';
+import { judgeRoute } from '../cli/bin/jev-route.mjs';
 
 const self = fileURLToPath(import.meta.url);
 const MAX_BYTES = 1024 * 1024;
 function address(root) {
   const hash = createHash('sha256').update(homedir()).update(root);
-  for (const path of [self, ...['./jev-work.mjs','../cli/bin/jev.mjs','../cli/bin/jev-compact.mjs',...['compact','state','request'].map(name=>`../cli/bin/vendor/fast-jev-compaction/${name}.js`)].map(path=>fileURLToPath(new URL(path,import.meta.url)))]) hash.update(readFileSync(path));
+  for (const path of [self, ...['./jev-work.mjs','../cli/bin/jev.mjs','../cli/bin/jev-route.mjs','../cli/bin/jev-compact.mjs',...['compact','state','request'].map(name=>`../cli/bin/vendor/fast-jev-compaction/${name}.js`)].map(path=>fileURLToPath(new URL(path,import.meta.url)))]) hash.update(readFileSync(path));
   const id = hash.digest('hex').slice(0, 32);
   return process.platform === 'win32' ? `\\\\.\\pipe\\sb-jev-${id}` : join(tmpdir(), `sb-jev-${id}.sock`);
 }
@@ -91,7 +92,7 @@ export function serve(rootPath, options = {}) {
       let message;
       try {
         message = JSON.parse(data.slice(0, data.indexOf('\n')));
-        if (message.root !== root || !['filter','delegate','compact','shutdown'].includes(message.kind) || typeof message.id !== 'string' ||
+        if (message.root !== root || !['filter','delegate','compact','route','shutdown'].includes(message.kind) || typeof message.id !== 'string' ||
             !Number.isFinite(message.deadline) || message.deadline <= Date.now() || message.deadline > Date.now() + 5000 ||
             message.fingerprint !== createHash('sha256').update(JSON.stringify(message.payload)).digest('hex')) throw new Error('invalid');
       } catch { socket.destroy(); return; }
@@ -104,6 +105,7 @@ export function serve(rootPath, options = {}) {
         const transport = { ...options, fetch: pooledFetch, timeoutMs };
         const value = message.kind === 'filter' ? await filterToolResult(root,message.payload,transport)
           : message.kind === 'compact' ? await compactWorkingMemory(message.payload,transport)
+          : message.kind === 'route' ? await judgeRoute(message.payload,transport)
           : await delegate(root,message.payload,transport);
         reply(Date.now() < message.deadline ? value : null);
       } catch { reply(null); }
@@ -120,10 +122,11 @@ export function serve(rootPath, options = {}) {
 
 if (process.argv[1] && resolve(process.argv[1]) === self) {
   if (process.argv[2] === '--serve') serve(process.argv[3]);
-  else if (['--request','--compact'].includes(process.argv[2])) {
+  else if (['--request','--compact','--route'].includes(process.argv[2])) {
     try {
       const payload = JSON.parse(Buffer.from(process.argv[4], 'base64').toString('utf8'));
-      process.stdout.write(JSON.stringify(await requestJudgment(process.argv[3], process.argv[2] === '--compact' ? 'compact' : 'delegate', payload)));
+      const kind = { '--request': 'delegate', '--compact': 'compact', '--route': 'route' }[process.argv[2]];
+      process.stdout.write(JSON.stringify(await requestJudgment(process.argv[3], kind, payload)));
     } catch { process.stdout.write('null'); process.exitCode = 1; }
   }
 }

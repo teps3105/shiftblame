@@ -10,6 +10,10 @@ let calls=0, active=0, peak=0, bodies=0, peakBodies=0;
 const server=serve(root,{getKey:()=> 'test',idleMs:1000,fetch:async(_,opts)=>{
  calls++; active++; peak=Math.max(peak,active);
  const req=JSON.parse(opts.body);
+ if(req.questions.operation) {
+  active--;
+  return {ok:true,json:async()=>({model:req.model,usage:{input_tokens:1,output_tokens:1},answers:{operation:{type:'choice',choice:'c0',confidence:1,probabilities:{generate:0,insufficient:0,c0:1}}}})};
+ }
  if(Object.values(req.questions)[0].type==='noul') {
   active--; bodies++; peakBodies=Math.max(peakBodies,bodies);
   return {ok:true,json:async()=>{await new Promise(r=>setTimeout(r,80));bodies--;return {answers:Object.fromEntries(Object.keys(req.questions).map(id=>[id,{type:'noul',noul:0.01}]))};}};
@@ -27,6 +31,8 @@ try {
  assert.equal(peak,2,'獨立事件真正並行'); assert.equal(calls,2);
  const reused=await Promise.all(['slow 中文','fast 中文'].map(text=>requestJudgment(root,'delegate',input(text))));
  assert.ok(reused.every(r=>r.metrics.cacheHits===1),'並行答案均保留於共用快取'); assert.equal(calls,2);
+ const routed=await requestJudgment(root,'route',{model:'jev-1.13.0',state:{goal:'Inspect observed item'},tools:[{name:'inspect'}],candidates:[{name:'inspect',input:{id:'實際候選'},description:'Inspect the observed item.'}]});
+ assert.equal(routed.mode,'candidate');assert.deepEqual(routed.call,{name:'inspect',input:{id:'實際候選'}});
  assert.equal(await requestJudgment(root,'delegate',{}),null,'無效輸入直通');
  assert.equal(await requestJudgment(root,'unknown',{}),null,'未知工作不執行');
  const messages=[{role:'user',text:'Find remaining work.',toolUses:[]}],ids=[];
