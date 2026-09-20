@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.5.8');
+assert.equal(manifest.version, '2.5.9');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.5.8"/);
+assert.match(skill, /version: "2.5.9"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -94,7 +94,7 @@ assert.match(read('skills', 'shiftblame', 'references', 'BUILD.md'), /文件先�
 assert.match(readme, /文件先行/, 'README 記載文件先行');
 assert.match(skill, /觸發樣態——揭露第一動；未定案必問；無歧義即執行/, 'SKILL 觸發樣態條文（揭露第一動＋未定案必問）');
 assert.match(skill, /段-檔承載規格/, 'SKILL 段-檔承載規格（四閉環軸）');
-assert.match(skill, /輪內單向定律/, 'SKILL 輪內單向定律');
+assert.match(skill, /依證據回退修正/, 'SKILL 允許代理依證據回責任段修正');
 assert.match(read('cli', 'bin', 'sb.mjs'), /countRev/, 'CLI 輪次計數；');
 assert.ok(!read('cli', 'bin', 'sb.mjs').includes('snapshotRev') && !read('cli', 'bin', 'sb.mjs').includes('rev/rN'), 'snapshotRev 識別字零殘留（rev 快照禁復活）');
 assert.ok(!read('cli', 'bin', 'sb.mjs').includes('auditEvidence'), 'auditEvidence 識別字零殘留——CLI');

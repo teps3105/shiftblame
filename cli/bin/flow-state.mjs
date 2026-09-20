@@ -1,12 +1,28 @@
 // CLI 與 hooks 共用狀態分類；讀不到有效段位不等於沒有流程。
 import { readFileSync, readdirSync, lstatSync } from 'node:fs';
-import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
+
+// 沿用同一份已核准需求；不以相似文字推定同義，也不替新的老闆輸入授權。
+function unchangedG1Approval(root, st) {
+  const c = st?.g1Contract;
+  if (!c || c.ms !== st.ms || !timestamp(c.sealedAt) || !/^[a-f0-9]{64}$/.test(c.sha256 ?? '')) return false;
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug ?? '') || !/^\d{3,}$/.test(st.ms ?? '')) return false;
+  if (st.lastBossInputAt && (!timestamp(st.lastBossInputAt) || st.lastBossInputAt > c.sealedAt)) return false;
+  const file = resolve(root, '.shiftblame', st.slug, st.ms, 'G1.md');
+  if (typeof c.file !== 'string' || resolve(c.file) !== file) return false;
+  try {
+    const raw = readFileSync(file, 'utf8');
+    const heads = [...raw.matchAll(/^## 回指記錄$/gm)];
+    return heads.length === 1 && createHash('sha256').update(raw.slice(0, heads[0].index), 'utf8').digest('hex') === c.sha256;
+  } catch { return false; }
+}
 // 觀測紀錄（hooks 寫）：心跳／外部證據／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）
 // ＋老闆輸入時戳（lastBossInputAt——新輪事實非內容；CLI 段內修復邊防護的新鮮度對照源，任何分類態皆可攜帶）。
 // 對話性質流（輸入流／理解流雜湊鏈）不落檔——對話事實由平台承載（基質優先），flow-state 只承載當下階段證據。
@@ -204,5 +220,5 @@ function hasFlowArtifacts(root) {
   }
   return false;
 }
-export { objectRecord, exactKeys, timestamp, hookRecords, hooksOnly, migrateStreams, uninitializedState, directState,
+export { objectRecord, exactKeys, timestamp, unchangedG1Approval, hookRecords, hooksOnly, migrateStreams, uninitializedState, directState,
   endedState, validCloseout, classifyState, readFlowState };

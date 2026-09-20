@@ -1,10 +1,10 @@
 ---
 name: 需求定義
-revision: 2.5.8
+revision: 2.5.9
 ---
 # requirement 段 — 經查證的現況事實＋定義需求（G1 定義邊 · 定義層）
 
-> **G1 定義邊（定義層工作段）**。 **段靈魂——把意圖翻譯成標的方故事**：沒有故事就沒有「對」的定義——AC 是故事的可觀察切片，不是老闆命題的字面轉錄。requirement 段＝需求定義（建立在經查證的現況事實上——查證過程落 tmp，RAM/ROM）。主對話依 shiftblame:think 已確認的完整語義，在經查證的現況事實上產出 G1（需求／驗收契約）並直接定稿，不另問確認。此狀態只寫 `<repo>/.shiftblame/` 的 G1 與必要查證結果，不碰 repo 實作。G1 定稿後由 research、plan 段向前對齊；G2/G3 與 G1 不一致時重走 intent 開新輪由 requirement 段重新定義，語義出入由 G1 唯一裁定。G1 閉環＝requirement（定義）＋verify（真驗收：GWT 逐條劇本實操——驗不過 fail 回 intent 重定義、驗收完成老闆看行為證據終審 pass 走出口，SKILL §1）。§10 於定義層二收斂時由秘書一次核對（plan→test 機械推進——一致性屬工作紀律非機械閘）。
+> **G1 定義邊**。requirement 將已確認的意圖翻譯成使用者行為與驗收契約，以經查證的現況事實為依據。G1 定義由本段產出，初次核准或定義變更後經時點 1 封存；research、plan 及實作中的新證據可帶回本段檢驗需求前提。G1 清楚而技術成果有錯時，由對應段修正技術成果；需要改變 G1 或授權時，經 think 交老闆裁決後修約。verify 以逐條 GWT 真實行為回指 G1，老闆終審決定出口。
 
 - **產出**：G1 定義區：經查證的現況事實＋What、Why、正向範圍（由需求與驗收契約完備界定，補集自然排除）、以唯一 AC-ID（BDD 行為規格）表達的原始使用者驗收契約（回指區由 verify 收斂寫入）
 - **制衡**：G2 與 G1 需求一一對應；G3 實作計畫須對應 G1 驗收；本 ms（里程碑）的價值成立
@@ -29,14 +29,14 @@ flowchart TB
     end
     SEC -- 切換狀態 --> AUD
     ACC == "G1 裁判<br/>逐項 AC 判定" ==> AUD
-    AUD == "向前對齊<br/>一次定稿" ==> RES
-    RES == "向前對齊<br/>一次定稿" ==> PLA
+    AUD == "承接與回饋<br/>依證據修正" ==> RES
+    RES == "承接與回饋<br/>依證據修正" ==> PLA
     classDef thisrole fill:#ffe082,stroke:#f57f17,stroke-width:3px;
 ```
 
 > requirement 段（G1 定義邊）高亮。用 G1 制約 G2 與 G3；G1 的裁判是 verify 段（逐項回指 AC 判定，判決出邊）——G1 閉環的裁判邊。
 
-requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame/tmp/`（見 SKILL §4 消歧），不碰 repo。G1 只由 requirement 段產出，保持乾淨的決策結論；實作層各階段的執行記錄存 `<repo>/.shiftblame/tmp/`（RAM）；G1 回指區由對應落地段收斂寫入（定義區唯定義邊——requirement 段）。**輪內單向定律**：定義層一逐功能推進（requirement→research→plan 接下一功能），G1 承接 shiftblame:think 的一次語義確認後逐功能定稿，後續階段（G2／G3）向前對齊 G1；輪內 G1 定稿後保持單向向前，對齊問題由 G2／G3 在其對應工作狀態自行重寫（research 改 G2、plan 改 G3）；老闆新輸入驅動的定義級修正＝停經 think 裁決後重走 intent 開新輪（輪次計數記 flow-state＋rewrite 載入閘）由 requirement 段重新定義 G1。
+requirement 段寫 G1 定義，查證過程落 tmp，repo 實作保持唯讀。research→requirement 是正常回查路徑，回查不解除已核准契約。G1 定義與本 ms 封存完全相同時，再進 research 沿用既有核准；定義有變仍須時點 1 對抗與老闆判定。G2／G3 的技術修正由 research／plan 承擔，代理自行依證據回退與修正，不因回頭本身重走 intent。
 
 **經查證的現況事實（查證先於研究）**：在研究解法之前先查證現況——盤點 codebase 實況（既有能力、結構、可複用資產）、對照永續層文件（SOP／ROADMAP／docs）與實況差異、識別過時假設、**對照同 slug 過往 ms G1 定案**（經 SLUG 定案索引回讀 G 檔定義區——每項新需求顯式判定與既有定案的關係：延伸／獨立／衝突；首 ms 明寫「無過往定案」）——收斂為 G1 定義區的**經查證的現況事實**節：每項需求標明該 AC 於現行系統的現狀行為（as-is 行為矩陣一列——同 Given/When 下現行實際觀察，BDD 現狀鍵的查證來源）。查證過程（工具調用、反證）落 tmp（RAM）——G 檔只收斂結論；requirement→research 邊（時點 1）由 BDD 格式閘與 GWT 機械掃描把關——機械下限，翻譯攻防與老闆 pass 在其上。
 
@@ -53,10 +53,10 @@ requirement 段寫管理文件 G1，研究中間產物可寫 `<repo>/.shiftblame
 
 **回指 G1 的工作區前置條件**：從開發期顯式修約（開新輪）或完成的 ms 回到 requirement 段前，秘書 MUST 先盤點 working tree；可保留成果依 `sb commitmsg` 精準提交，不應保留的變更明確捨棄，直到工作區乾淨才得進入 G1——實作殘留先完成提交／捨棄分類。
 
-§10 核對缺漏時由**責任面向一次補正**後重核（輪內單向定律，A4），不環形重跑——修補由 plan 段基於證據設計。時點 1 過邊（requirement→research）時 G1 契約封存——本輪自進 research 起全鏈凍結（research→requirement 旗標切段補正後重進該邊即重封存；重走 intent 開新輪解除契約）；開發出入若為契約不足／衝突，走顯式修約＝重走 intent 開新輪（MECHANISMS §5）——開新輪修約是唯一吸收路徑。
+§10 核對缺漏時由問題歸屬段修正，再核對受影響方向。G1 定義的變更須依需求授權處理，回指區的驗收證據依實際行為更新；技術修正不解除契約，也不要求重開整輪。
 
-外部子代理檢閱於 SKILL §5 **兩個固定時點強制**（時點 1＝requirement→research 邊——G1 準則建立後審意圖→需求翻譯；時點 2＝verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈），其中時點 2 是需求面向在驗收後複驗時的固定步驟；中鏈（research→plan→test→build→verify）與段內提交零審核資源——僅 `sb commitmsg` 機械格式閘；其餘依 §3 強制／選擇性條件觸發。純技術證據不足或矛盾、無法可靠裁定時必須立即取得一次自包含意見，不必先反覆失敗；結果存 `<repo>/.shiftblame/tmp/`，由主對話複核並自行承擔裁定。對抗類檢閱 MUST 外部唯讀子代理——不可用即阻塞等待至可用（SKILL §5）；純技術意見取不到則標「未驗」並繼續授權內查證。使用者可觀察的行為驗收是判定基準（檔案、字串、grep、行數等結構證據僅輔助）；出口（`sb next intent --new-ms` 開下一 ms，或 `sb end` 結束 slug——帶 --adversarial＋--boss-ok）由老闆決策邊把關：時點 2 對抗與老闆終審 pass 同在 verify 出口邊——出口就是老闆看行為證據的終審。
+外部子代理檢閱於 SKILL §5 **兩個固定時點強制**（時點 1＝requirement→research 邊——G1 準則建立後審意圖→需求翻譯；回查未變且無封存後新意圖時沿用原核准；時點 2＝verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈），其中時點 2 是需求面向在驗收後複驗時的固定步驟；中鏈（research→plan→test→build→verify）與段內提交零審核資源——僅 `sb commitmsg` 機械格式閘；其餘依 §3 強制／選擇性條件觸發。純技術證據不足或矛盾、無法可靠裁定時必須立即取得一次自包含意見，不必先反覆失敗；結果存 `<repo>/.shiftblame/tmp/`，由主對話複核並自行承擔裁定。對抗類檢閱 MUST 外部唯讀子代理——不可用即阻塞等待至可用（SKILL §5）；純技術意見取不到則標「未驗」並繼續授權內查證。使用者可觀察的行為驗收是判定基準（檔案、字串、grep、行數等結構證據僅輔助）；出口（`sb next intent --new-ms` 開下一 ms，或 `sb end` 結束 slug——帶 --adversarial＋--boss-ok）由老闆決策邊把關：時點 2 對抗與老闆終審 pass 同在 verify 出口邊——出口就是老闆看行為證據的終審。
 
-**ms 價值制衡**（SKILL §1、§1.4、§10）：plan 段在 G3 §1.5 定義 ms 範圍時，requirement 段 MUST 對本 ms 是否構成 G1 的使用者可觀察完整價值進行制衡——價值不成立時要求plan 段一次重定範圍後繼續（不環形重跑，輪內單向定律 A4；屬需求方向改變者走重大例外 §1.4.1 開新輪）。ms＝里程碑＝驗收節點；未開的待辦只記於 SLUG §3 待辦清單簡述，不開 ms；驗收節點＝ms（里程碑，一組功能構成的完整價值）——requirement 段以 ms 價值制衡界定範圍。
+**ms 價值制衡**（SKILL §10）：plan 定義的 ms 範圍須構成 G1 的使用者可觀察完整價值。價值不成立時，依問題所在修正計畫、重新研究或檢驗需求前提；需求方向改變才走修約。ms＝里程碑＝驗收節點；未開的待辦記於 SLUG §3，不預建 ms。
 
-**收斂時 ms 價值複驗**（SKILL §1、§1.4、§1.4.2）：驗收節點是 **ms（里程碑）**，不是單一功能。秘書逐個功能推進實作層一小循環（test 撰寫→build 實作至綠燈＋判決（綠燈＋測試真實性核對）→提交閘 commit；紅燈段內旗標切段續迭代——SKILL §1）；功能迭代完成後進實作層二收斂期（test 寫 E2E→build 調環境執行至綠燈收斂——build 的功能是讓測試綠），requirement 段對照**封存 G1**逐項確認驗收項，結果寫 `<repo>/.shiftblame/tmp/`，結果歸 tmp；G1 由修約路徑唯一變更。新技術細節若不改變 G1 滿足集合，要求研究／plan 段單調細化 G2／G3；若 G1 不足或衝突，停經 think 老闆裁決後走顯式修約（重走 intent 開新輪，MECHANISMS §5）。複驗不合格者段內返工；綠燈收斂、working tree 乾淨後 build→verify 機械推進真驗收，驗收完成、G1 回指閉環後 MUST 經時點 2 對抗驗收結果檢閱（記錄寫 tmp 自由區）交老闆終審判定——pass 走出口（`sb next intent --new-ms --adversarial --boss-ok`／`sb end --adversarial --boss-ok`），CLI 驗時點 2 條目新鮮與老闆輸入新鮮度（對抗在前、老闆判定在後；出口邊承載時點 2 對抗條目＋終審章）；外部子代理意見也受同一分類約束——G1 修改經修約路徑，裁定權在主對話。
+**收斂時 ms 價值複驗**（SKILL §1、§1.4、§1.4.2）：驗收節點是 **ms（里程碑）**，不是單一功能。秘書逐個功能推進實作層一小循環（test 撰寫→build 實作至綠燈＋判決（綠燈＋測試真實性核對）→提交閘 commit；紅燈段內旗標切段續迭代——SKILL §1）；功能迭代完成後進實作層二收斂期（test 寫 E2E→build 調環境執行至綠燈收斂——build 的功能是讓測試綠），requirement 段對照**封存 G1**逐項確認驗收項，結果寫 `<repo>/.shiftblame/tmp/`，結果歸 tmp；G1 由修約路徑唯一變更。新技術細節若不改變 G1 滿足集合，要求研究／plan 段技術修正 G2／G3；若 G1 不足或衝突，停經 think 老闆裁決後走顯式修約（重走 intent 開新輪，MECHANISMS §5）。複驗不合格者段內返工；綠燈收斂、working tree 乾淨後 build→verify 機械推進真驗收，驗收完成、G1 回指閉環後 MUST 經時點 2 對抗驗收結果檢閱（記錄寫 tmp 自由區）交老闆終審判定——pass 走出口（`sb next intent --new-ms --adversarial --boss-ok`／`sb end --adversarial --boss-ok`），CLI 驗時點 2 條目新鮮與老闆輸入新鮮度（對抗在前、老闆判定在後；出口邊承載時點 2 對抗條目＋終審章）；外部子代理意見也受同一分類約束——G1 修改經修約路徑，裁定權在主對話。

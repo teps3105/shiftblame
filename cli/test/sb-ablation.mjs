@@ -255,7 +255,7 @@ ablation('CLI 老闆決策邊鑰匙閘 needsBossOk（CARD②③ CLI 層）', () 
 });
 
 ablation('CLI 時點對抗宣告閘 adversarialEdge×adversarialLog point 對照（CARD③ CLI 層，RAM/ROM）', () => {
-  const neu = neutralize(SB, [['  const advGate = adv && (adv.point !== \'2\' || opts.newMs);\n  if (advGate) {', '  const advGate = adv && (adv.point !== \'2\' || opts.newMs);\n  if (false && advGate) { // ABLATED']]);
+  const neu = neutralize(SB, [['  const advGate = adv && !reuseApproval && (adv.point !== \'2\' || opts.newMs);\n  if (advGate) {', '  const advGate = adv && !reuseApproval && (adv.point !== \'2\' || opts.newMs);\n  if (false && advGate) { // ABLATED']]);
   const payload = (script) => { const r = mkSandbox({ state: { node: 'requirement' }, files: { '.shiftblame/demo/001/G1.md': BDD_G1 } }); const h = cliRun(script, r, 'next', 'research', '--boss-ok'); rmSync(r, { recursive: true, force: true }); return h.status; };
   assert.equal(payload(SB), 1, 'intact：requirement→research 缺 --adversarial 宣告被 CLI 擋（時點 1 對抗前置）');
   assert.equal(payload(neu), 0, 'ablated：拆掉後無對抗宣告即放行');

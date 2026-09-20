@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.8-2ea44f.svg" alt="version 2.5.8"/>
+  <img src="https://img.shields.io/badge/version-2.5.9-2ea44f.svg" alt="version 2.5.9"/>
 </p>
 
 ---
@@ -27,7 +27,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **A1 老闆主權** — 產品語義、範圍、成本／風險容忍、授權、版號與 pass 出口由老闆決定；純技術裁定（實作、API、根因、測試設計、證據解讀）由秘書自行承擔——證據不足或矛盾時先取得一次外部子代理唯讀技術意見，不必先反覆失敗。
 - **A2 對話由平台承載** — 對話事實（老闆輸入時序與理解授權）由平台 session 承載，對話流零落檔、零雜湊綁定；agent 經 shiftblame:think 路由理解，調用 args＝**理解宣告**於對話直接揭露（理解有誤即越權——老闆當場看到，終審承擔）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）；對話摘要不作數。
 - **A3 意圖先於行動** — 所有老闆輸入第一步路由回 shiftblame:think，不字面執行；理解以 args 於對話揭露，未理解就行動由對話可見性＋老闆終審承擔。
-- **A4 七段圓環與旗標切段** — intent（環首＝環尾，不屬任何層）＋定義層 requirement→research→plan＋實作層 test→build→verify；七段由四份文件承載成四條閉環軸（SLUG＝intent＋ms 出入口、G1＝requirement 定義＋verify 裁判、G2＝research 定義＋build 落地、G3＝plan 定義＋test 落地），推進呈 Z 字形反向回指；輪內單向（每輪一次定稿），段間切換一律 sb next 旗標切段；修正＝重走 intent 開新輪。
+- **A4 七段圓環與旗標切段** — intent 承載意圖；requirement→research→plan 定義需求、技術與計畫，test→build→verify 落地並檢驗。**依證據回退修正**：相鄰工作段雙向連通（包含 test→plan），代理依問題歸屬選擇工作段，修正後重驗受影響成果再前進。技術修正保留已核准的 G1、不計返工輪；需求或授權變更依 A3 重走 intent。段間仍以 sb next 同步寫入責任。
 - **A5 審核兩時點** — 時點 1 對抗（requirement→research 邊——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈、錯誤處置完整性；出口＝時點 2 對抗條目＋老闆終審章同一邊）；對抗在前、老闆判定在後，對抗 MUST 外部唯讀子代理（無自代介面）；中鏈零審核（build→verify 機械推進：E2E 全綠＋working tree 乾淨即過），段內提交僅 sb commitmsg 機械格式閘；研究／返工以外部調用打底（外部性閘——externalEvidence 機械驗，大型研究 MUST 外部唯讀子代理承擔）。
 - **A6 行為證據（真驗收）** — 驗收依據＝行為是否真的發生，不是測試燈號；verify 把 G1 每條 GWT 當驗收劇本實際操作與觀察，行為證據（節錄快照）落回指區；假測試（無斷言、測實作細節、mock 過度、規模溢出）判返工。
 - **A7 寫入分區（RAM/ROM）** — G1~G3／SLUG＝ROM（定義區綁定義邊、回指區綁落地邊，時點 1 邊 hash 封存 G1 契約）；tmp＋flow-state＝RAM；commit 由秘書獨佔、必過 sb commitmsg（hooks 驗章焚章）；.shiftblame/ 經 .gitignore 排除。
@@ -53,17 +53,21 @@ flowchart TB
         P2 --> RS2 --> R2
     end
     P2 -->|機械推進 中鏈零審核| T
+    T -->|計畫問題| P2
     subgraph IMPL1[實作層一 逐功能迭代循環·實際·單功能單提交]
         T[test] --> B[build] --> V[verify]
         V --> B --> T
         V -->|提交→下一功能| T
     end
     V -->|功能迭代完成| T2
+    T2 -->|計畫問題| P2
     subgraph CONV[實作層二 收斂期 E2E綠燈收斂·實際·旗標切段]
         T2[test] --> B2[build]
         B2 -->|紅燈| T2
     end
     B2 -->|機械推進 E2E全綠＋樹淨·中鏈零審核| V3[verify 真驗收執行]
+    V3 -->|實作問題| B2
+    V3 -->|測試定義錯誤| T2
     V3 -->|驗收完成·G1回指閉環·時點2對抗畢·老闆終審pass 開新ms| INTENT
     V3 -->|sb end 時點2對抗＋終審pass| FIN[slug結束]
     B2 -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| BOSS
@@ -82,10 +86,10 @@ flowchart TB
 ```mermaid
 flowchart TB
     SEC["秘書（主對話）<br/>唯一持久角色 · 調控時序進程"]
-    subgraph Consult["定義層 · 定義該做什麼 · 輪內單向定律"]
+    subgraph Consult["定義層 · 定義該做什麼 · 依證據回退修正"]
         direction LR
-        G1["需求定義狀態 · G1<br/>主對話 · 一次定稿"] -->|向前對齊| G2["研究狀態 · G2<br/>主對話 · 外部證據打底"]
-        G2 -->|向前對齊| G3["規劃狀態 · G3<br/>主對話 · 對齊推進"]
+        G1["需求定義狀態 · G1<br/>主對話 · 已核准契約"] <-->|承接與回饋| G2["研究狀態 · G2<br/>主對話 · 外部證據打底"]
+        G2 <-->|承接與回饋| G3["規劃狀態 · G3<br/>主對話 · 對齊推進"]
     end
     subgraph Build["實作層 · 落地段反向回指承載檔（Z 字形）"]
         direction LR

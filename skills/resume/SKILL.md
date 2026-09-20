@@ -25,7 +25,7 @@ description: 繼續之前未完成的 slug/ms，基於既有 G1~G3 重新核對�
    - **無 `last_save`** → 落點不明，走重新核對（step 3-4）。
 3. **依原節點重建落點**（非清空重寫，不向老闆重問）：以 flow-state 為節點依據，核對已存在、該段應承接的文件與實況。intent／requirement 承接 SLUG 與已有需求草案；research 承接 G1 與已有技術草案；plan 承接 G1／G2 與已有計畫草案；實作層承接已定稿的 G1~G3。後續階段尚未產生的文件不當作遺失，也不為 resume 提前產出。codebase 差異只能作為可行性證據，不能反向改義需求。依承載歸屬核對現有文件：
    - 仍成立 → 保留。
-   - G2／G3 過時但仍 CONFORMS → 對應面向單調細化。
+   - G2／G3 過時但仍 CONFORMS → 對應面向技術修正。
    - G1 hash 偏離、契約不足或衝突 → 停止；以 `tmp/amendment.md` 記錄原條款／新條款／影響範圍，經老闆確認後 `回 intent（sb next intent）`——修約是改 G1 的唯一路徑。
 4. **從原節點接續**：將可驗落點寫入 tmp，按原節點繼續未完工作。到達既有放行邊時才按 §10 核對三對六向並驗相應授權與對抗；resume 本身不切換階段，交接遺失也不把 research／verify 等節點轉成 build。
 

@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readFlowState } from '../cli/bin/flow-state.mjs';
+import { readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
 
@@ -64,12 +64,12 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '①老闆主權（A1）：意圖宣告、兩時點 pass/fail、出口、版號、路由與授權只在老闆；沉默≠批准，靜默自裁＝越權；老闆已明確指定者照辦不重問；機制發明須標注「新發明」單獨取得同意。',
   '②對話承載事實（A2）：對話（老闆輸入、理解宣告）由平台承載——不落檔、不綁雜湊；flow-state 只承載當下階段證據（定長欄位，恆有界）；理解經 shiftblame:think args 揭露於對話——理解有誤即越權，老闆終審；偽造由抽查承擔。',
   '③意圖先於行動（A3）：所有老闆輸入第一步調 shiftblame:think（帶 args 理解宣告），不字面執行；理解宣告於對話揭露（機械不凍結——第一步路由由治理紀律承載）。任何新意圖（含兩時點 fail）在該 ms 內一律重走 intent（七段圓環環首）：sb next intent 開新輪（計返工輪＋rewrite 載入閘）——老闆新輪由 hooks 機械推回（無停點申報的中段活動流程即代跑 sb next intent；有申報＝裁決通道，pass 走出口推進、fail／新意圖重走 intent）；「繼續」類中性續行（詞表精確全等）非新輪——不推回，接續原段；段內修復（執行性修復，非老闆輸入驅動）旗標切段，老闆輸入後的段內修復切段＝走私新意圖，CLI 擋；確認→審計（推進指令外部對抗）→分發。新需求問走 main 還是開 slug（免問：續活動 slug／純問題／已指定）。對老闆輸出＝人話（A10）：揭露首行一句翻譯、停等首行待判定事、無開場白無客套。',
-  '④段鏈（A4）：七段圓環——intent（環首＝環尾：既是起點也是終點，不屬任何層）＋定義層 requirement→research→plan（逐功能規劃循環→收斂）＋實作層 test→build→verify（逐功能單提交迭代→E2E 收斂）；段間切換一律 sb next 旗標切段；輪內單向、產出即定稿；修正＝重走 intent 開新輪；段內修復旗標切段不計輪。',
-  '⑤兩時點（A5）：時點 1 對抗（requirement→research——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈）皆對抗在前、老闆判定在後；中鏈零審核（build→verify 機械推進）。推進帶 --adversarial＋--boss-ok——旗標即章（老闆實際輸入由對話承載，機械不驗時戳；語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔）；對抗條目與理解宣告不替代老闆章；出口（--new-ms／sb end）＝時點 2 對抗條目＋終審章同一邊；缺老闆決策即 sb stop-report --question 申報停等。',
+  '④段鏈（A4）：階段承載目前工作與寫入責任，依證據回退修正——research→requirement、plan→research、test→plan、build→test、verify→build 皆為正常修復路徑，可連續回到根因段；技術修正保留 G1 契約、不計返工輪，重驗受影響成果後續行。段間一律 sb next；老闆新意圖或需求修約才依 A3 重走 intent。',
+  '⑤兩時點（A5）：時點 1 對抗（requirement→research——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈）皆對抗在前、老闆判定在後；中鏈零審核；需求回查後若本 ms 封存完全未變且無新意圖，沿用原核准。決策邊推進帶 --adversarial＋--boss-ok——旗標即章（老闆實際輸入由對話承載，機械不驗時戳；語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔）；對抗條目與理解宣告不替代老闆章；出口（--new-ms／sb end）＝時點 2 對抗條目＋終審章同一邊；缺老闆決策即 sb stop-report --question 申報停等。',
   '⑥行為證據（A6）：verify＝真驗收執行——GWT 逐條劇本（Given 實際建立→When 實際操作→Then 觀察真實行為）、證據落回指區；驗收依據＝行為是否發生，非測試燈號；未跑必標「未驗」。',
   '⑦寫入分區（A7）：G/SLUG＝ROM（定義區綁定義邊、回指區綁落地邊；返工輪寫 G 前 hooks 驗本輪已調 shiftblame:rewrite）；tmp＋flow-state＝RAM（對話、工作過程與交接文件一律 .shiftblame/tmp/——自由傾倒區）；子代理零 repo 寫入權；staged 系統檔不入庫；路徑 root 錨定絕對展開、git 重定向／alias 攔截；命名與註釋可離開對話辨識、規範溯及既往。',
   '⑧提交（A7）：commit 必過 sb commitmsg（格式＋staged 檢查＋印章；hooks 驗章焚章——審核承載於兩時點）；測試碼＋實作碼同 commit——單功能單提交。',
-  '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（requirement→research 進段與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
+  '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（每次進 research 與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
   '⑩曝光與停點（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（行為模式判定，非數量閾值——重複次數不是違規，無變化才是：無變更重跑（同操作再現且期間無寫入）即擋；擋後逐字重發＝升級自動重走 intent 補正續行；升級後仍逐字重發＝本回合封禁；寫入後重跑＝新基礎正當放行；非停等期＝互動式迭代——改一點看一點，不一次改完）。停點偵測（防偷懶停）：活動流程無申報即停擋停一次（條件式、單次消費式——放行即焚攔停標記、不代做路由）。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／sb stop-report 申報具體待決／主動 think 停等／明確暫停／取消／實際阻塞；狀態異常修復後重跑 sb state 查證。',
   '⑪基質與修剪（A9）：基質優先——git／平台已答的另造即拆；規則由元行為證據錨定、修剪而非堆疊；SOP／ROADMAP 每 ms 必審（sb sopreview 三問留痕——開新 ms 前擋）。',
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
@@ -97,12 +97,15 @@ function nodeLine(root) {
     const st = JSON.parse(readFileSync(statePath, 'utf8'));
     let hint = '';
     if (st.node === 'intent') hint = '——七段圓環環首（老闆意圖沉澱，起點也是終點）；任何新意圖在該 ms 內一律重走 intent——sb next intent 同 ms 開新輪、段內修復旗標切段回指定 node';
-    if (st.node === 'requirement') hint = '——G1 定義邊：經查證的現況事實＋BDD 七鍵（現狀差異宣言＋GWT 能否從行為矩陣還原一列）；推進前時點 1 對抗（sb adversarial --point 1——審意圖→需求翻譯）＋老闆 pass（--boss-ok），對抗在前老闆判定在後';
+    if (st.node === 'requirement') hint = unchangedG1Approval(root, st)
+      ? '——回查後 G1 與本 ms 已核准契約完全相同，且無封存後的新意圖；可沿用核准 sb next research'
+      : '——G1 定義邊：經查證的現況事實＋BDD 七鍵；初次核准或定義變更後，時點 1 對抗（sb adversarial --point 1）＋老闆 pass（--boss-ok）才進 research';
     if (st.node === 'research') hint = st.externalEvidence?.done
-      ? `——外部證據已記（@${st.externalEvidence.tool}）；G2 結論式產出、向前對齊 G1`
+      ? `——外部證據已記（@${st.externalEvidence.tool}）；依證據檢驗 G1 前提與 G2 結論，需求疑義回 requirement 查證`
       : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
-    if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫＋§10 一致核對；plan→test 機械推進（零審核——時點 1 已於 requirement→research 承載）';
-    if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；驗不過 fail＝老闆新輸入重走 intent（修復旗標切段）；驗收完成、G1 回指閉環後時點 2 對抗（sb adversarial --point 2——審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 出口 next（--new-ms --adversarial --boss-ok）或 end（--adversarial --boss-ok）';
+    if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫；研究前提不成立回 research 修正，計畫成立並核對一致後進 test';
+    if (st.node === 'test') hint = '——將 G3 寫成可執行測試；計畫操作、依賴或可測性不成立時 sb next plan 修正，保留需求契約與輪次';
+    if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；代理驗出問題時回 build／test 修復，依根因可續退 plan／research；老闆判 fail 或需求修約才重走 intent；驗收完成、G1 回指閉環後時點 2 對抗（sb adversarial --point 2——審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 出口 next（--new-ms --adversarial --boss-ok）或 end（--adversarial --boss-ok）';
 
     let sopNote = '';
     try {
@@ -288,7 +291,7 @@ function recordRewriteSeen(root, tool, toolInput) {
 
 // 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
 // 與 Agent／Task（外部唯讀子代理）；Codex 事件實名為 webrun／collaborationspawn_agent／collaborationfollowup_task。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
-// 記錄 {done, at, tool}。重置由 CLI 承擔（requirement→research 進段與返工時清）——hooks 只記事實不重置。
+// 記錄 {done, at, tool}。重置由 CLI 承擔（每次進 research 與返工時清）——hooks 只記事實不重置。
 const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']);
 function markExternalEvidence(root, tool) {
   if (!root) return;
@@ -342,6 +345,7 @@ function checkLayerStopover(root, cmd) {
     const st = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
     const edge = { intent: 'requirement', requirement: 'research' }[st.node];
     const target = clean.match(/\bsb(?:\.mjs)?\s+next\s+(requirement|research)\b/)?.[1];
+    if (st.node === 'requirement' && target === 'research' && unchangedG1Approval(root, st)) return null;
     if (edge && edge === target) {
       return `老闆決策邊：${st.node}→${target}——--boss-ok 旗標即章（老闆實際輸入由對話承載，機械不驗時戳；語義授權由 think 揭露＋老闆終審承擔），對抗條目不替代老闆章；時點對抗在前、老闆判定在後——pass 才帶 --boss-ok 推進，缺老闆決策即 sb stop-report --question 申報停等（SKILL §3）`;
     }
@@ -389,7 +393,7 @@ function checkGFileMatrix(root, toolInput) {
     const g = Number(m[2]);
     if (!G_WRITE_NODES[g].has(node)) {
       const owner = { 1: 'requirement（定義區）／verify（回指區）', 2: 'research（定義區）／build（回指區）', 3: 'plan（定義區）／test（回指區）' }[g];
-      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；跨區（落地段改定義區）＝綁架上游死路，修正＝重走 intent 開新輪（sb next intent）（RAM/ROM，SKILL §0/§5）`;
+      return `[shiftblame] 段 ${node} 對 G${g}.md 無寫入權——G${g} 定義區／回指區寫入權屬 ${owner}；依 A4 沿合法邊回責任段修正。技術修正保留 G1，需求或授權變更才重走 intent（RAM/ROM，SKILL §0/§5）`;
     }
   }
   return null;
@@ -498,7 +502,7 @@ function checkStateWriteMatrix(root, toolInput) {
     if (isTest) {
       if (node !== 'test' && node !== 'build') return `[shiftblame] 測試碼（${rel}）寫入權屬 test＋build 段（實作層——test 撰寫功能測試、build 到接合點補寫整合；隨功能實作同 commit 定稿）；重修回 test 段後建立新 commit（SKILL 寫入矩陣）`;
     } else if (!IMPL_WRITE_NODES.has(node)) {
-      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；老闆新輸入重走 intent 開新輪後才可寫（SKILL 寫入矩陣）`;
+      return `[shiftblame] 段 ${node} 對 repo 實作檔（${rel}）唯讀——實作寫入限 build 段（ended 態收尾歸檔）；技術修復沿合法邊回 build 後寫入；需求或授權變更才重走 intent（SKILL 寫入矩陣）`;
     }
   }
   return null;
