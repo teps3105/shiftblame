@@ -8,6 +8,7 @@ const record = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = v => typeof v === 'string' && v.trim().length > 0;
 const probability = v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 const digest = v => createHash('sha256').update(v).digest('hex');
+export const containsSensitive = value => /authorization|bearer\s|api[_ -]?key|password|secret|token\s*[:=]|-----BEGIN|https?:\/\/\S*[?@]|憑證|密碼|\b(?:sk|ghp|gho|github_pat|xoxb|xoxp)[_-][\w-]+|\beyJ[\w-]+\.[\w-]+\.[\w-]+/i.test(value);
 const canonical = v => JSON.stringify(v, (_, x) => record(x)
   ? Object.fromEntries(Object.keys(x).sort().map(k => [k, x[k]])) : x);
 const within = (root, path) => { const r = relative(root, path); return r === '' || (r !== '..' && !/^\.\.[\\/]/.test(r) && !isAbsolute(r)); };
@@ -86,7 +87,7 @@ function validAnswer(answer, criteria) {
     answer.probabilities[answer.choice] >= Math.max(...values) - 0.001;
 }
 
-function credential() {
+export function credential() {
   let key = process.env.TYPESAFE_API_KEY?.trim();
   if (!key) { try { key = readFileSync(join(homedir(), '.agents/secrets/typesafe-api-key'), 'utf8').trim(); } catch {} }
   return key;
@@ -133,7 +134,7 @@ export async function delegate(rootPath, input, options = {}) {
       report.metrics.remoteQuestions = rows.length;
       try {
         const response = await (options.fetch ?? globalThis.fetch)('https://api.typesafe.ai/v1/systemone', {
-          method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+          method: 'POST', redirect: 'error', signal: AbortSignal.timeout(options.timeoutMs ?? 15000),
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body,
         });
         if (!response.ok) failure = `http_${response.status}`;
@@ -174,7 +175,19 @@ export async function delegate(rootPath, input, options = {}) {
   if (pinned) {
     let temp;
     try {
-      const bounded = Object.fromEntries(Object.entries(entries).slice(-128));
+      // 遠端等待期間其他事件可能已寫入；同步合併本次答案，避免並行覆蓋。
+      let latest = {};
+      try {
+        if (statSync(cacheFile).size <= LIMIT) {
+          const saved = JSON.parse(readFileSync(cacheFile, 'utf8'));
+          if (saved.format === 1 && record(saved.entries)) latest = saved.entries;
+        }
+      } catch {}
+      for (const row of prepared) {
+        const value = entries[row.key];
+        if (value) { delete latest[row.key]; latest[row.key] = value; }
+      }
+      const bounded = Object.fromEntries(Object.entries(latest).slice(-128));
       const data = JSON.stringify({ format: 1, entries: bounded });
       if (Buffer.byteLength(data) <= LIMIT) {
         temp = `${cacheFile}.${randomUUID()}.tmp`;
@@ -186,6 +199,13 @@ export async function delegate(rootPath, input, options = {}) {
   }
   report.metrics.elapsedMs = Math.round(performance.now() - started);
   return report;
+}
+
+export function saveSourceSnapshot(rootPath, content) {
+  const root = realpathSync(rootPath);
+  const file = cacheLocation(root, `hook-source-${digest(content).slice(0, 32)}`, 'source');
+  writeFileSync(file, content, { mode: 0o600 });
+  return file;
 }
 
 export async function runDelegate(root, path) {

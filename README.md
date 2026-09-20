@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.6-2ea44f.svg" alt="version 2.5.6"/>
+  <img src="https://img.shields.io/badge/version-2.5.7-2ea44f.svg" alt="version 2.5.7"/>
 </p>
 
 ---
@@ -293,4 +293,4 @@ MIT License. 不接受外部貢獻。
 
 ## Jev 常駐工作判斷
 
-Jev 持續參與 main／slug 的工作判斷，包括工具與資料選擇、除錯定位、方案比較，不限流程節點。主代理先分工，適用的窄判斷以 `sb delegate <輸入JSON>` 委派或重用；一項即可執行，獨立題合批，輸入、準則、模型或來源改變時重算，例外交回主代理。精確規則交原工具，複雜推理與最終整合由主代理承擔。輸入格式、CJK 驗證、來源失效與效率量測見 [Jev 常駐工作判斷](skills/shiftblame/references/JEV.md)。常駐是工作紀律，不是背景服務；工具不取得流程、授權或驗收判決權。
+Jev 以常駐 worker 承接高頻工具選擇、分類、風險辨識與路由，獨立工作併發，可靠答案直接由宿主程式派送原生工具；大型模型負責生成與低信心例外。PostToolUse 自動接入資訊初篩。工作記憶採 fast-jev-compaction 的 call/result 配對、雙 Noul 與原文裁剪核心，原始資料保留於呼叫方 RAM；未替換 Codex 完整對話。常駐生命週期、宿主接法與實際能力邊界見 [Jev 調度與工作記憶](skills/shiftblame/references/JEV.md)。

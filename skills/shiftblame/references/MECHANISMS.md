@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.5.6
+revision: 2.5.7
 ---
 
 # 機制細節（主 SKILL 骨架的下沉承載）
@@ -197,7 +197,7 @@ sequenceDiagram
 
 ## 16. hooks 機械注入（§9 反偏移細節）
 
-plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同一份 hooks.json 兩端生效）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與停點申報記錄缺失，CLI 閘擋時附 hooks 健康警示——hooks 每次成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。五事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（§1——2.5.5：中性續行／疑問零位移；新意圖記 lastBossInputAt＋中段無申報機械推回 intent）；`PreToolUse` 外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
+plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同步治理事件沿用相同介面；結果替換須查目標平台支援）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與停點申報記錄缺失，CLI 閘擋時附 hooks 健康警示——同步治理 hooks 成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。同步治理事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行與停點申報行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（§1——2.5.5：中性續行／疑問零位移；新意圖記 lastBossInputAt＋中段無申報機械推回 intent）；`PreToolUse` 外部證據標記（WebSearch／WebFetch／webReader／web.run（web__run）／Agent；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task）、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停點偵測（§13——活動流程無申報擋停一次；申報／ended／無流程放行；不代做路由）。另有 `PostToolUse` 前置初判，依 JEV.md 在強模型讀取前以可靠結果與低信心待補項替換原始結果，不寫 flow-state，來源快照可回查。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
 
 ## 17. 圖表使用判準
 

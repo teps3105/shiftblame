@@ -408,7 +408,7 @@ ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔�
   const intactDir = driftedRepo();
   assert.notEqual(runGov(intactDir).status, 0, 'intact：文件漂移被錨攔（governance 紅）');
   // neutralize：拆掉 governance 對該陳述的錨（L「兩層文件模型條文」斷言行）
-  const gov = readFileSync(join(repo, 'cli', 'test', 'sb-agent-governance.mjs'), 'utf8');
+  const gov = readFileSync(join(repo, 'cli', 'test', 'sb-agent-governance.mjs'), 'utf8').replace(/\r\n/g, '\n');
   const ablated = gov.replace("assert.match(skill, /兩層文件模型/, '兩層文件模型條文（永續層對照義務／當下層用後即弃）');\n", '');
   assert.notEqual(ablated, gov, 'neutralize 錨存在於源碼');
   const dir2 = driftedRepo();

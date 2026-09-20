@@ -75,7 +75,7 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
 ].join('\n');
 
-const WORK_JUDGMENT_CARD = '\n[Jev 工作判斷常駐] main／slug 每個非平凡工作判斷依 SKILL §12＋references/JEV.md 分工：精確規則交原工具，適用窄判斷預設 sb delegate 委派或重用，複雜推理與例外交主代理；不限流程節點或批次。不適用須有具體原因，不新增每步台帳或強制 API；CJK 適用性與總效率須驗證，Jev 不取得授權／流程／驗收判決權。';
+const WORK_JUDGMENT_CARD = '\n[Jev 工作判斷常駐] hooks 在強模型讀取前自動完成 Jev 初判；直接使用 facts，只補判 needsReview 的低信心與例外，不評估要不要用 Jev、不準備例行請求、不重判全部資料。未替換時沿原結果工作；授權、流程與真實驗收仍依原規則。';
 
 const SESSION_CARD = [
   CARD,
@@ -775,7 +775,16 @@ try {
   const root = projectRoot(input);
   const healthy = !root || readFlowState(root).kind !== 'invalid';
   // 異常原檔保持原樣，不能由新增心跳把空物件／部分資料洗成有效紀錄。
-  if (healthy) beatHeartbeat(root, event);
+  if (healthy && event !== 'PostToolUse' && event !== 'PostToolUseFailure') beatHeartbeat(root, event);
+
+  if (event === 'PostToolUse' || event === 'PostToolUseFailure') {
+    if (healthy) {
+      const { requestJudgment } = await import('./jev-client.mjs');
+      const judgment = await requestJudgment(root, 'filter', input);
+      if (judgment) process.stdout.write(JSON.stringify({ continue: false, stopReason: judgment }));
+    }
+    process.exit(0);
+  }
 
   if (event === 'SessionStart') {
     // 壓縮後自動注入（compact 來源同走此事件）：靜態卡＋動態狀態卡——壓縮摘要抹掉過程後，
