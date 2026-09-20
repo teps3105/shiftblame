@@ -49,10 +49,12 @@ const ssOut = run({ hook_event_name: 'SessionStart', source: 'startup' });
 const ssJson = JSON.parse(ssOut.stdout);
 assert.equal(ssJson.hookSpecificOutput.hookEventName, 'SessionStart', 'SessionStart 注入歸因正確事件名');
 assert.ok(ssJson.hookSpecificOutput.additionalContext.length > 50, 'SessionStart 注入實質內容（載入程序＋不變量卡）');
+assert.ok(ssJson.hookSpecificOutput.additionalContext.includes('[Jev 工作判斷常駐]'), '啟動回流常駐工作分工');
 const upOut = up('inject 格式驗證輸入');
 const upJson = JSON.parse(upOut.stdout);
 assert.equal(upJson.hookSpecificOutput.hookEventName, 'UserPromptSubmit', 'UserPromptSubmit 注入歸因正確事件名');
 assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[shiftblame 不變量]'), '不變量卡經 additionalContext 真正注入');
+assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[Jev 工作判斷常駐]'), '每回合回流常駐工作分工');
 // 心跳守門：無 .shiftblame 的 cwd 不得長出流浪工作區
 const strayRoot = mkdtempSync(join(tmpdir(), 'sb-stray-'));
 process.on('exit', () => rmSync(strayRoot, { recursive: true, force: true }));

@@ -75,8 +75,11 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
 ].join('\n');
 
+const WORK_JUDGMENT_CARD = '\n[Jev 工作判斷常駐] main／slug 每個非平凡工作判斷依 SKILL §12＋references/JEV.md 分工：精確規則交原工具，適用窄判斷預設 sb delegate 委派或重用，複雜推理與例外交主代理；不限流程節點或批次。不適用須有具體原因，不新增每步台帳或強制 API；CJK 適用性與總效率須驗證，Jev 不取得授權／流程／驗收判決權。';
+
 const SESSION_CARD = [
   CARD,
+  WORK_JUDGMENT_CARD,
   '',
   '[冷啟動載入（§9）] 依序唯讀：<repo>/.shiftblame/SOP.md → ROADMAP.md → 當前 slug（SLUG.md＋定案索引——同 slug 過往 ms 一行式定案，回讀由段義務承載）→ archive/（近者先於遠者）。載入後 shiftblame:think 的路由提議才有脈絡依據。',
   '[hooks] 本卡由 plugin hooks 機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse）；迴圈斷路器（行為模式）、寫入矩陣與 commit 印章硬擋已啟用，失效時回到文件與 CLI 閘門層。',
@@ -784,7 +787,7 @@ try {
     // 回合邊界：模式追蹤與停點自限重置＋舊流鍵冪等剝除（對話事實由平台承載，零內容寫入）
     // ＋老闆輸入＝新輪機械推回（無停點申報的中段活動流程——sb next intent 代跑；nodeLine 於推回後讀檔即顯 @intent）
     const retreatNote = healthy ? recordInput(root, input.prompt) : '';
-    inject(CARD + nodeLine(root) + retreatNote + stopReportLine(root, healthy), 'UserPromptSubmit');
+    inject(CARD + WORK_JUDGMENT_CARD + nodeLine(root) + retreatNote + stopReportLine(root, healthy), 'UserPromptSubmit');
   }
 
   if (event === 'Stop') {

@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.5.5"
+  version: "2.5.6"
 description: 時序制衡的 agent 協作框架。七段鏈 intent→requirement→research→plan→test→build→verify 由主對話連續承載，段間切換一律 sb next 旗標切段；ms start／ms done 是里程碑生命週期邊界，與七段鏈正交。任何新意圖在該 ms 內一律重走 intent（七段之首）開新輪。老闆 pass/fail 判定權只在兩時點：時點 1（requirement→research——G1 準則建立後，審意圖→需求翻譯）與時點 2（verify 真驗收完成、G1 回指閉環後的出口邊——審驗收結果：GWT 回指、假綠燈），對抗在前老闆判定在後，中鏈零審核。verify＝真驗收執行——GWT 逐條行為證據落回指區；時點 2 對抗＋老闆終審 pass 即出口。對話由平台承載（對話流零落檔——基質優先）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）。main 模式最小環：意圖揭露→迭代→提交→老闆判 pass/fail。對老闆輸出為人話（think SKILL「輸出形狀（人話契約）」）。機制細節見 references/MECHANISMS.md。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
@@ -298,3 +298,7 @@ shiftblame/                         # plugin 套件根（repo 根）
 ## 11. 圖表使用判準
 
 先問「這段內容的資訊本質是什麼」再選圖：描繪流程（推進、時序、迴圈、決策）用時序圖或狀態機；描繪架構（組成、關係、層級）用結構圖；獨立任務與待辦清單用純文字，不畫圖。全文見 MECHANISMS §17。
+
+## 12. Jev 常駐工作判斷
+
+main／slug 的每個非平凡工作判斷，MUST 依 `references/JEV.md` 先分工：精確規則交原工具，有明確輸入與候選的窄語意判斷預設交 Jev，複雜推理與例外交主對話。適用即調用或重用，不限流程階段、審查或批次；不適用須有具體原因，不另造每步必填表。主對話消費結果並執行已授權操作，再依新證據迭代。啟動時讀取 JEV.md 以維持這項工作紀律；以完整交付的時間、成本與品質衡量收益。此分工不免除 §9 必讀、兩時點對抗或 A6 真實驗收，Jev 不判老闆意圖、pass 或流程出口。

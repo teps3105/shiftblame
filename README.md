@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.5.5-2ea44f.svg" alt="version 2.5.5"/>
+  <img src="https://img.shields.io/badge/version-2.5.6-2ea44f.svg" alt="version 2.5.6"/>
 </p>
 
 ---
@@ -290,3 +290,7 @@ MIT License. 不接受外部貢獻。
   - hooks 與初始化驗證採相同精確名單；Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 分別承接網頁查證、建立子代理與接續檢閱，不能只看介面名稱。
   - 不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
 - 初始化保留既有紀錄：純 hooks 紀錄與已歸檔的合法 ended 可初始化，進行中或異常流程保持原樣；狀態診斷提示下一個入口。
+
+## Jev 常駐工作判斷
+
+Jev 持續參與 main／slug 的工作判斷，包括工具與資料選擇、除錯定位、方案比較，不限流程節點。主代理先分工，適用的窄判斷以 `sb delegate <輸入JSON>` 委派或重用；一項即可執行，獨立題合批，輸入、準則、模型或來源改變時重算，例外交回主代理。精確規則交原工具，複雜推理與最終整合由主代理承擔。輸入格式、CJK 驗證、來源失效與效率量測見 [Jev 常駐工作判斷](skills/shiftblame/references/JEV.md)。常駐是工作紀律，不是背景服務；工具不取得流程、授權或驗收判決權。
