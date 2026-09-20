@@ -6,6 +6,19 @@ import {judgeRoute} from '../bin/jev-route.mjs';
 import {hostProfile} from '../bin/jev-zcode.mjs';
 const {run}=createRequire(import.meta.url)('../bin/jev-code-mode.cjs');
 if(process.argv[2]!=='--live'||!isAbsolute(process.argv[3]??''))throw new Error('需 --live 與輸出絕對路徑');
+if(process.argv[4]==='--independent') {
+  const {cases}=await import('./jev-generic-independent.mjs');
+  const began=performance.now();
+  const rows=await Promise.all(cases.map(async item=>{
+    const result=await judgeRoute({model:hostProfile.model,tools:item.tools,state:item.state});
+    const actual=result.call??result.reason;
+    return {id:item.id,expected:item.expected,actual,correct:JSON.stringify(actual)===JSON.stringify(item.expected),result};
+  }));
+  const summary={cases:rows.length,correct:rows.filter(row=>row.correct).length,elapsedMs:Math.round(performance.now()-began),
+    failures:rows.filter(row=>!row.correct).map(({id,expected,actual})=>({id,expected,actual}))};
+  writeFileSync(process.argv[3],JSON.stringify({datasetType:'synthetic_controlled',productionEvidence:false,summary,rows},null,2));
+  console.log(JSON.stringify(summary));process.exit(0);
+}
 const catalog={
   'catalog-root':{entries:[{id:'record-甲',label:'插圖授權',status:'缺少證明'},{id:'record-乙',label:'文字校對',status:'通過'}]},
   'record-甲':{cause:'插圖使用紀錄未附授權證明。'},
