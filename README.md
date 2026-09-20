@@ -293,4 +293,4 @@ MIT License. 不接受外部貢獻。
 
 ## Jev 常駐工作判斷
 
-Jev 以常駐 worker 承接高頻工具選擇、分類、風險辨識與路由，獨立工作併發，可靠答案直接由宿主程式派送原生工具；大型模型負責生成與低信心例外。PostToolUse 自動接入資訊初篩。工作記憶採 fast-jev-compaction 的 call/result 配對、雙 Noul 與原文裁剪核心，原始資料保留於呼叫方 RAM；未替換 Codex 完整對話。常駐生命週期、宿主接法與實際能力邊界見 [Jev 調度與工作記憶](skills/shiftblame/references/JEV.md)。
+Jev 以常駐 worker 承接高頻工具選擇、分類、風險辨識與路由，獨立工作併發，可靠答案直接由宿主程式派送原生工具；大型模型負責生成與低信心例外。PostToolUse 自動接入資訊初篩。工作記憶以工具呼叫／結果配對、雙 Noul 與原文裁剪處理，原始資料保留於呼叫方 RAM；透過通用輸入與輸出接入執行器。常駐生命週期、宿主接法與實際能力邊界見 [Jev 調度與工作記憶](skills/shiftblame/references/JEV.md)。

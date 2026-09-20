@@ -28,11 +28,11 @@ export function questionsFor(call) {
     return {
         [`call_${call.id}`]: {
             type: 'noul',
-            instructions: `Tool call ${call.id} (${call.tool}) should stay in the history: knowing this call was made, with its input, still matters for what the assistant does next`,
+            instructions: `Tool call ${call.id} (${call.tool}) should stay in the history: knowing this call was made, with its input, still matters for the next operation`,
         },
         [`result_${call.id}`]: {
             type: 'noul',
-            instructions: `The full output of tool call ${call.id} (${call.tool}, ${call.resultChars} chars) should stay in the history verbatim: the assistant still needs its contents and re-running the tool would not do`,
+            instructions: `The full output of tool call ${call.id} (${call.tool}, ${call.resultChars} chars) should stay in the history verbatim: the next operation still needs its exact contents directly in the working view`,
         },
     };
 }
@@ -89,7 +89,7 @@ function truncatedResultText(text, isError, headChars) {
     if (text.length <= headChars + 120)
         return text;
     const head = headChars > 0 ? `${text.slice(0, headChars)}\n` : '';
-    return `${head}[fast-jev-compaction truncated ${text.length - headChars} chars of this tool result${isError ? ' (error)' : ''}; re-run the tool if needed]`;
+    return `${head}[工作視圖省略 ${text.length - headChars} 字元${isError ? '（錯誤結果）' : ''}；需要原文時以 tool_use_id 從呼叫方記憶體回讀]`;
 }
 /**
  * Rebuilds the conversation from the decisions. A dropped call disappears

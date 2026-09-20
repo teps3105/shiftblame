@@ -24,13 +24,13 @@ Jev 是強模型之前的第一層推論。單一模型已足以承擔某項判�
 
 ## 原文工作記憶壓縮
 
-採用 [fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction) 的純函式核心，來源與 MIT 授權位於 `cli/bin/vendor/fast-jev-compaction/`。`jev-compact.mjs` 以 tool_use_id 配對工具呼叫與結果，每組問兩個 Noul：呼叫及參數是否仍需要、完整結果是否仍需要；依 state＋題目預算切批，透過同一常駐 worker 有限並行。保留部分維持原文，結果截短明示，移除時成對移除，不生成摘要。
+工作記憶是獨立於平台的資料處理能力：輸入目標、訊息、工具呼叫／結果與固定保留的依賴，輸出裁剪後的工作視圖與統計；呼叫方負責保存原始資料及採用視圖，不需要平台的完整對話替換介面。`jev-compact.mjs` 以 tool_use_id 配對工具呼叫與結果，每組問兩個 Noul：呼叫及參數是否仍需要、完整結果是否仍需要；依 state＋題目預算切批，透過同一常駐 worker 有限並行。保留部分維持原文，結果截短明示，移除時成對移除，不生成摘要。
 
-此接合處理原生工具迴圈自己的 RAM 工作記憶。呼叫方保留完整原始 messages，另接收可裁剪視圖，疑義由原始 ID 回讀；不重跑有副作用工具假裝恢復原觀察，不把對話寫到 tmp。RAM 結束後不宣稱仍持有原文。上游 Claude `session.compact`／`turn.complete` hook 沒有移植到 Codex，也未替換 Codex 完整對話。
+執行器在組裝下一次模型或工具判斷輸入前，使用這個通用方法整理 RAM 工作記憶。呼叫方保留完整原始 messages，另接收可裁剪視圖，疑義由原始 ID 回讀；不重跑有副作用工具假裝恢復原觀察，不把對話寫到 tmp。RAM 結束後不宣稱仍持有原文。平台適配只負責提供資料與消費回傳視圖；壓縮核心不讀平台對話檔、不呼叫平台專屬 session API。
 
 `requestJudgment(root,'compact',{messages,goal,replaySafeToolUseIds,pinnedToolUseIds})` 回 `{messages,decisions,stats}` 或 null。CLI 小型輸入可用 `--compact` 替代 `--request`；大型 RAM 資料不經命令列。第一則與最近六則固定保留；未完成配對、副作用操作、已標錯誤及呼叫方宣告的相依項保留。只有明列為可恢復的舊讀取才可裁剪；重複 ID、孤立結果、未知格式或媒體、畸形／缺失概率、任一批失敗均保留原視圖。Noul 低於 0.2 才容許不保留該部分，不確定範圍保留，不增加一次模型覆核；此數值仍須以目標工作量校驗。
 
-上游 state 省略工具結果全文，只提供結果狀態與長度，不能宣稱 Jev 已讀過並驗證每個輸出。已知依賴與反證必須由程式 pin，原始 RAM 不刪。state／request 使用 18000／24000 的估計 token 預算留餘裕；估計不等於 CJK 真實 tokenizer 用量。達記憶預算才執行壓縮，不能每個工具步驟額外壓一次。
+判斷用的 state 省略工具結果全文，只提供結果狀態與長度，不能宣稱 Jev 已讀過並驗證每個輸出。已知依賴與反證必須由程式 pin，原始 RAM 不刪。state／request 使用 18000／24000 的估計 token 預算留餘裕；估計不等於 CJK 真實 tokenizer 用量。達記憶預算才執行壓縮，不能每個工具步驟額外壓一次。
 
 ## hooks 前置資訊初篩
 
