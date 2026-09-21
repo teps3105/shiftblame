@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.6.1');
+assert.equal(manifest.version, '2.6.2');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.6.1"/);
+assert.match(skill, /version: "2.6.2"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -186,6 +186,17 @@ for (const f of files.filter((p) => p.endsWith('.md') || p.endsWith('.json'))) {
   const text = read(...f.split('/'));
   for (const w of ['MUST NOT', '不得', '禁止']) {
     assert.equal(text.includes(w), false, `${f} 殘留負向條文詞：${w}（正向化）`);
+  }
+}
+
+// 治理檔範本去代號／去框架化錨：範本正文零掃描詞是機械基本功掃描零例外的基準
+// （範本被複製進專案時無佔位替換——範本乾淨，複製品才可能乾淨；行為面由 sopreview 掃描測試承載）
+for (const f of ['skills/shiftblame/assets/SOP.md', 'skills/shiftblame/assets/ROADMAP.md']) {
+  const all = read(...f.split('/')).split(/\r?\n/);
+  const close = all.indexOf('---', 1);
+  const body = (all[0] === '---' && close > 0 ? all.slice(close + 1) : all).join('\n');
+  for (const w of ['slug', 'SLUG', 'AC-', 'shiftblame', '七段', '兩時點', '時點', '秘書', 'boss-ok', 'adversarial', 'same-commit', 'flow-state', 'sopreview', 'commitmsg', 'stop-report', 'MECHANISMS', 'SKILL', 'G1', 'G2', 'G3', '<nnn>', '<ms>']) {
+    assert.equal(body.includes(w), false, `${f} 正文殘留治理掃描詞：${w}（範本零命中是掃描零例外的基準）`);
   }
 }
 

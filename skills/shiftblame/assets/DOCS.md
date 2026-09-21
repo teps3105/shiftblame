@@ -1,6 +1,6 @@
 ---
 name: DOCS
-revision: 2.6.1
+revision: 2.6.2
 ---
 # DOCS — 專案系統文件的寫法判準
 
@@ -86,6 +86,7 @@ flowchart TD
 
 - **R2** — `grep -rnE "為了|讓玩家|避免|調和|用以|旨在|以便|希望|確保|保證|會感覺|爽快|挫敗|玩家感知|為什麼(這樣)?設計|設計(理由|意圖)" docs/` → 0 命中。
 - **R3** — `grep -rnE ":[0-9]+|func |enum |signal |await |\.gd" docs/` → 0 命中。
+- **任務代號／框架重述（§0 內容自足）** — `grep -rniE "ac-[0-9]+|\.shiftblame/[^ ]+/[0-9]{3}|<(slug|nnn|ms)>|\bslug\b|\bshiftblame\b" docs/` → 0 命中（任務層識別字與路由歸屬屬任務文件與臨時工作區；治理規範單一來源於中央技能文件，docs/ 僅描述系統實際運作）。
 - **R4** — `ls docs/` 對照入口總覽檔的文件清單 → 齊全且一致。
 
 ## 5. 邊界案例

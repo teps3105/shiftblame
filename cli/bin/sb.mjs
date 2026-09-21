@@ -904,7 +904,7 @@ function cmdUnlockAbsent() {
   die(['sb unlock 不存在——理解經 shiftblame:think 揭露（args 理解宣告，對話承載）即可行動；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
 }
 
-// SOP／ROADMAP 機械基本功檢查（日期類＋重複類——全機械可判，審查必過）：違規未清即不發審查戳記。
+// SOP／ROADMAP 機械基本功檢查（日期類＋重複類＋治理內容類——全機械可判，審查必過）：違規未清即不發審查戳記。
 function sopDocProblems() {
   const problems = [];
   for (const name of ['SOP.md', 'ROADMAP.md']) {
@@ -950,6 +950,28 @@ function sopDocProblems() {
     }
     const headDups = [...heads.entries()].filter(([, n]) => n > 1);
     if (headDups.length) problems.push(`${name}: 重複標題 ${headDups.length} 組（同名段合一）：${headDups.slice(0, 3).map(([k]) => k.split('|')[1].slice(0, 30)).join('、')}`);
+    // 治理檔內容掃描（兩組）：任務代號——任務層識別字與路由歸屬屬任務文件與臨時工作區；
+    // 框架重述——治理規範單一來源於中央技能文件，專案治理檔重述框架規則或範本即雙重來源。
+    // 範本自身已去框架化（零代號字樣、零框架語彙），正文零例外。樣式集是字元結構下限，
+    // 語義級（如 URL slug 領域術語）由審查三問與老闆抽查承擔。
+    const TASK_CODE = [
+      [/\bslug\b/i, '任務工作項目識別字（slug）'],
+      [/\bAC-\d+\b/, '驗收條目編號'],
+      [/\bT\d{1,2}\b/, '技術條目編號'],
+      [/\bG[123]\b/, '三面向文檔指涉'],
+      [/\.shiftblame[\/\\]\S+[\/\\]\d{3}/, '任務目錄路徑'],
+      [/<(?:slug|nnn|ms)>/i, '未替換佔位字樣'],
+      [/\bshiftblame\b/i, '框架名稱（治理規範單一來源於中央技能文件）'],
+      [/\bsb\s+(?:init|state|unlock|adversarial|next|end|closeout|commitmsg|sopreview|stop-report)\b/, '框架指令引用'],
+      [/(?:七段|兩時點|時點\s*[12]|時點對抗|審查戳記|審查留痕)/, '流程機制語彙'],
+      [/(?:boss-ok|adversarial|new-ms|flow-state|same-commit|sopreview|commitmsg|stop-report|closeout)/i, '流程旗標／命令名'],
+      [/\b(?:SKILL|MECHANISMS)\b/, '框架文件指涉'],
+      [/秘書/, '框架角色語彙'],
+    ];
+    for (const [re, label] of TASK_CODE) {
+      const hits = body.filter((l) => re.test(l));
+      if (hits.length) problems.push(`${name}: ${hits.length} 行含${label}（治理檔以產品／專案語言表達，條目內容與流程規則留在各自載體）：${hits.slice(0, 3).map((l) => l.trim().slice(0, 40)).join('、')}`);
+    }
   }
   return problems;
 }
@@ -995,7 +1017,7 @@ function cmdSopreview(answers) {
   st.sopReview = { ms: st.ms, at: new Date().toISOString(), answers: q.slice(0, 200) };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
-    `SOP／ROADMAP 審查留痕（ms ${st.ms}）：三問結論「${q.slice(0, 80)}」已落檔；機械基本功（updated 同步／零日期日誌行／零重複）已過`,
+    `SOP／ROADMAP 審查留痕（ms ${st.ms}）：三問結論「${q.slice(0, 80)}」已落檔；機械基本功（updated 同步／零日期日誌行／零重複／零任務代號／零框架重述）已過`,
     hasDocs ? '審查發現的刪修走正常 commit（same-commit 文件先行）' : '（本工作區無 SOP／ROADMAP——留痕記錄審查週期）',
   ]);
 }
@@ -1124,11 +1146,12 @@ function cmdCommitmsg(msg) {
       .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
     if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
     // 註釋座標結構樣式掃描（SKILL §3 註釋紀律＋§7 同源紀律的機械下限）：
-    // staged diff 新增行（+ 行）掃小而穩定的座標結構樣式——時點圈號、時點 N、第 N 輪、兩位以上輪次代號；
+    // staged diff 新增行（+ 行）掃小而穩定的座標結構樣式——時點圈號、時點 N、第 N 輪、兩位以上輪次代號、
+    // 任務代號（驗收條目編號／任務目錄路徑／未替換佔位字樣）與框架指令引用（治理規範單一來源於中央技能文件）；
     // 框架機制檔（hooks/、cli/、skills/、.codex-plugin/、README.md）豁免——框架本體講流程語言正當。
     // 樣式集是字元結構下限（r 變數命名等誤傷屬如實標註天花板），語義級由老闆抽查承擔。
     const MECH_PATH = /^(?:hooks\/|cli\/|skills\/|\.codex-plugin\/|\.claude-plugin\/|README\.md)/;
-    const COORD_STYLE = /[①②③④⑤⑥⑦⑧⑨⑩]|時點\s*[0-9０-９]|第\s*[0-9０-９一二三四五六七八九十]+\s*輪|\br\d{2,}\b/;
+    const COORD_STYLE = /[①②③④⑤⑥⑦⑧⑨⑩]|時點\s*[0-9０-９]|第\s*[0-9０-９一二三四五六七八九十]+\s*輪|\br\d{2,}\b|\bAC-\d+\b|\.shiftblame[\/\\]\S+[\/\\]\d{3}|<(?:slug|nnn|ms)>|\bsb\s+(?:init|state|unlock|adversarial|next|end|closeout|commitmsg|sopreview|stop-report)\b/;
     const coordHits = [];
     const diff = execSync('git -c core.quotePath=false diff --cached -U0 --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     let curFile = null;

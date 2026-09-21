@@ -150,6 +150,16 @@ const dirty = run('sopreview', '三問全過：無基質重複、無退役規則
 assert.equal(dirty.status, 1, '機械基本功未過——審查戳記不發');
 assert.match(dirty.stderr, /重複行|日期開頭/, '違規清單指出重複與日期日誌行');
 assert.equal(state().sopReview, undefined, '髒文件不發戳記');
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範，登入強化由 slug: hardening 系列承載並對照 AC-03 驗收條目。\n');
+const coded = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+assert.equal(coded.status, 1, '任務代號未清——審查戳記不發');
+assert.match(coded.stderr, /任務工作項目識別字|驗收條目編號/, '違規清單指出任務代號');
+assert.equal(state().sopReview, undefined, '含任務代號的文件不發戳記');
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範，開發流程依 shiftblame 七段推進，每次 commit 過 sb commitmsg 印章。\n');
+const framed = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+assert.equal(framed.status, 1, '框架重述未清——審查戳記不發');
+assert.match(framed.stderr, /框架名稱|流程機制語彙|框架指令引用/, '違規清單指出框架重述');
+assert.equal(state().sopReview, undefined, '含框架重述的文件不發戳記');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範（重複句已合併）。\n');
 assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');

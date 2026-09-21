@@ -332,6 +332,9 @@ ablation('註釋座標結構樣式閘（staged 新增行掃——框架機制檔
   };
   assert.equal(staged(SB, 'src.js', '// 時點②修復的註釋座標\nconst a = 1;\n'), 1, 'intact：staged 註釋含時點座標被擋');
   assert.equal(staged(SB, 'src.js', '// 第 3 輪重寫的遺留說明\nconst a = 1;\n'), 1, 'intact：staged 註釋含輪次座標被擋');
+  assert.equal(staged(SB, 'src.js', '// 驗收對照 AC-03\nconst a = 1;\n'), 1, 'intact：staged 註釋含任務條目編號被擋');
+  assert.equal(staged(SB, 'docs/guide.md', '此功能由 .shiftblame/hardening/001/G1.md 定義。\n'), 1, 'intact：staged 文件含任務目錄路徑被擋');
+  assert.equal(staged(SB, 'docs/guide.md', '開發時以 sb next 推進流程。\n'), 1, 'intact：staged 文件含框架指令引用被擋');
   assert.equal(staged(SB, 'hooks/x.js', '// 時點②修復註釋（框架機制檔講流程語言正當）\n'), 0, 'intact：框架機制檔路徑豁免');
   assert.equal(staged(neu, 'src.js', '// 時點②修復的註釋座標\nconst a = 1;\n'), 0, 'ablated：拆掉座標掃描後流程座標入庫放行');
 });
