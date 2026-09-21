@@ -617,7 +617,7 @@ ablation('SOP／ROADMAP 每 ms 審查閘（pass 前機械驗本 ms 已審）', (
   assert.equal(probe(neu).status, 0, 'ablated：拆掉審查閘即放行');
 });
 
-ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout）', () => {
+ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 end 內建查證）', () => {
   const neu = neutralize(SB, [['function noFfMergeEvidence(workCommit, baseCommit, slug) {', 'function noFfMergeEvidence(workCommit, baseCommit, slug) {\n  return baseCommit; // ABLATED']]);
   const probe = (script) => {
     const r = mkSandbox({ git: true, state: { node: 'verify', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] } });
@@ -628,15 +628,15 @@ ablation('--no-ff 合併提交證據 noFfMergeEvidence（快轉不過 closeout�
     spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: work'], { cwd: r });
     const st = stateOf(r);
     st.workBranch = 'feat/demo';
+    st.baseCommit = spawnSync('git', ['rev-parse', base], { cwd: r, encoding: 'utf8' }).stdout.trim(); // 基底自動偵測錨點
     writeFileSync(join(r, '.shiftblame/flow-state.json'), JSON.stringify(st));
-    cliRun(SB, r, 'end', '--boss-ok', '--adversarial'); // pass 出口＋機械歸檔（與被消融函數無關——end 固定用原版）
     spawnSync('git', ['checkout', base], { cwd: r });
-    spawnSync('git', ['merge', '--ff-only', 'feat/demo'], { cwd: r });
-    const result = cliRun(script, r, 'closeout', '--base', base);
+    spawnSync('git', ['merge', '--ff-only', 'feat/demo'], { cwd: r }); // 代理先手動收尾成快轉形——end 內建查證須擋
+    const result = cliRun(script, r, 'end', '--boss-ok', '--adversarial');
     rmSync(r, { recursive: true, force: true });
     return result.status;
   };
-  assert.equal(probe(SB), 1, 'intact：快轉合併無證據——closeout 擋下（slug 邊界死守）');
+  assert.equal(probe(SB), 1, 'intact：快轉合併無證據——end 內建查證擋下（ended 未寫入）');
   assert.equal(probe(neu), 0, 'ablated：證據檢查拆除即放行（快轉收尾復活）');
 });
 

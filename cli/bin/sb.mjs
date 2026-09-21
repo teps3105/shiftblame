@@ -145,15 +145,21 @@ const usage = (code = 2) => {
                                         --adversarial：時點對抗宣告（requirement→research＝時點 1；verify→intent 出口＝時點 2——
                                         對抗在前、老闆判定在後）；需 sb adversarial --point 對應條目
                                         （lastAdv，時點 1 晚於同邊上次推進；時點 2 晚於本 ms 末次進 verify）
-  sb end --adversarial --boss-ok        時點 2 對抗＋老闆終審 pass 後結束 slug（僅 verify 態——出口同一邊兩章）：收尾歸檔＋產出遙測
-                                        （git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，事實由 git 承擔）
+  sb end [--base <本機分支>] --adversarial --boss-ok
+                                        時點 2 對抗＋老闆終審 pass 後結束 slug（僅 verify 態——出口同一邊兩章）：
+                                        收尾歸檔＋一條龍 git 收尾（--no-ff 合併回基底（訊息固定 merge <slug>）＋
+                                        內建查證留痕＋刪本機工作分支——任一步失敗整體擋下，狀態保持 verify 重試）
+                                        ＋產出遙測（git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，
+                                        事實由 git 承擔）；基底自動偵測（slug 起始提交所在唯一本機分支），
+                                        零命中或歧義即擋要求 --base 明示，不猜主幹名稱
   sb sopreview "<逐檔三態計數>"        SOP／ROADMAP 審查留痕（整檔重寫自洽——逐條三問裁定：基質可答／
                                         元行為證據／仍被觸發；淘汰即刪，先刪改後留痕）：
                                         「SOP 逐條重評估：刪N 改N 留N（增N 選配）；ROADMAP 逐條重評估：刪N 改N 留N」；
                                         slug 期間開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審且戳記未失效
                                         （綁定各檔 sha256——審後改檔即重審）；非 slug 期間以 commit 為審查邊
                                         （每次提交前驗戳記）；無 SOP／ROADMAP 的專案不擋
-  sb closeout --base <本機分支>           歸檔與合併後、刪分支前查證留痕；init 再驗本機與遠端舊分支已清除
+  sb closeout --base <本機分支>           事後查證與例外修復留痕（end 已一條龍代做合併與刪本機分支——手動整合後查證）；
+                                        init 再驗本機與遠端舊分支已清除
   sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
                                         引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
                                         機制即擋）＋staged 系統檔檢查；
@@ -641,6 +647,9 @@ function cmdCloseout(base) {
   if (!existsSync(STATE_FILE)) die(['尚無流程，無法查證收尾']);
   const st = readStartupState();
   if (!endedState(st, ROOT)) die(['收尾查證僅接受合法 ended 狀態']);
+  if (hasGitMetadata() && st.closeout?.slug === st.slug && st.closeout.workBranch && !branchTip(st.closeout.workBranch)) {
+    die([`收尾已完成留痕且工作分支已清除（${st.closeout.workBranch} → ${st.closeout.baseBranch}）——無需再查證；如需重建或修復請人工處理後再查證`]);
+  }
   const problems = endedInitProblems(st);
   if (!hasGitMetadata()) problems.push('非 Git 工作區不需合併查證');
   if (!branchName(base)) problems.push('請以 --base 明確指定本機基底分支');
@@ -1090,6 +1099,68 @@ function cmdSopreview(answers) {
   ]);
 }
 
+// 收尾合併一條龍（2.6.4——代理零收尾記憶負擔）：歸檔後機械完成 git 收尾段——
+// 偵測基底 → merge --no-ff（訊息固定 merge <slug>）→ 內建查證 → 留痕 closeout → 刪本機工作分支。
+// 任一步 die（ended 未寫入，狀態保持 verify 可修後重試）；重試冪等——已合併且有證據即跳過重併。
+// 回傳 null＝無工作分支可收（非 Git 或分支已隨前次收尾清除），僅歸檔；否則回傳留痕摘要供輸出。
+function finalizeMerge(st, baseFlag) {
+  const candidates = st.workBranch ? [st.workBranch] : TYPES.map(type => `${type}/${st.slug}`).filter(name => branchTip(name));
+  if (!candidates.length) return null;
+  if (candidates.length > 1) die(['多個候選工作分支無法唯一辨識——人工查明分支狀態後重試 sb end，或以 sb closeout 查證']);
+  const workBranch = candidates[0];
+  const workCommit = branchTip(workBranch);
+  if (!workCommit) {
+    if (st.closeout?.slug === st.slug && st.closeout?.workBranch === workBranch) return null; // 前次收尾已完成（留痕在、分支已刪）——冪等跳過
+    die([`工作分支 ${workBranch} 不存在且無收尾留痕——人工查明或恢復分支後重試 sb end`]);
+  }
+  if (baseFlag && workBranch === baseFlag) die([`--base 不可等於工作分支本身（${workBranch}）——指定收尾合併的基底分支`]);
+  let base = baseFlag;
+  if (!base) {
+    // 基底自動偵測：slug 起始提交（st.baseCommit——init 時錨定）所在的唯一本機分支；不猜主幹名稱
+    if (!st.baseCommit) die(['無法自動偵測基底（缺 slug 起始提交錨點）——MUST 帶 --base <本機基底分支> 明示']);
+    const r = gitRun('for-each-ref', '--format=%(refname:short)', '--contains', st.baseCommit, 'refs/heads');
+    if (r.status !== 0) die(['基底偵測查詢失敗——MUST 帶 --base <本機基底分支> 明示']);
+    const hits = r.stdout.trim().split(/\r?\n/).filter(n => n && n !== workBranch);
+    if (hits.length === 1) base = hits[0];
+    else if (!hits.length) die([`基底偵測零命中（起始提交不在任何本機分支）——MUST 帶 --base <本機基底分支> 明示`]);
+    else die([`基底偵測歧義（${hits.join('、')} 皆含 slug 起始提交）——MUST 帶 --base <本機基底分支> 明示`]);
+  }
+  if (!branchName(base)) die([`--base 須為合法本機分支名：${base}`]);
+  const baseCommit = branchTip(base);
+  if (!baseCommit) die([`基底分支不存在或尚無提交：${base}`]);
+  const isAncestor = gitRun('merge-base', '--is-ancestor', workCommit, baseCommit).status === 0;
+  if (isAncestor) {
+    const ev = noFfMergeEvidence(workCommit, baseCommit, st.slug);
+    if (!ev || ev.invalidMessage) {
+      die([ev?.invalidMessage
+        ? `工作提交已進基底但合併訊息不符固定格式（實得「${ev.subject}」）——回到合併前基底（git reflog 可查）後 git merge --no-ff ${workBranch} -m "merge ${st.slug}" 重併，再重試 sb end`
+        : '工作提交已快轉進基底（無 --no-ff 合併提交證據）——git reset --hard <合併前基底>（git reflog 可查）後重試 sb end，或以 sb closeout 查證修復']);
+    }
+  } else {
+    const cur = gitRun('branch', '--show-current');
+    if (cur.status === 0 && cur.stdout.trim() !== base) {
+      const co = gitRun('checkout', base);
+      if (co.status !== 0) die([`無法切換至基底分支 ${base}——排除阻礙後重試 sb end（狀態仍為 verify）`]);
+    }
+    const merge = gitRun('merge', '--no-ff', workBranch, '-m', `merge ${st.slug}`);
+    if (merge.status !== 0) die([`收尾合併失敗（衝突或阻礙）——git merge --abort 復原後排除衝突原因，重試 sb end（狀態仍為 verify，未寫 ended）`]);
+    if (!noFfMergeEvidence(branchTip(workBranch), branchTip(base), st.slug)) die(['合併後查證失敗（無 --no-ff 證據）——人工查明 git 狀態後以 sb closeout 查證']);
+  }
+  // 遠端來源留痕（與 closeout 同準：遠端有未進基底的舊功能提交即擋）
+  const remotes = [];
+  try {
+    for (const r of knownRemoteTargets(workBranch)) {
+      const remote = remoteTips(r.name, r.ref);
+      if (remote.tips.some(tip => gitRun('merge-base', '--is-ancestor', tip, branchTip(base)).status !== 0)) throw new Error(`遠端 ${r.name} 的舊功能提交尚無基底祖先證據——先 fetch／處理遠端後重試 sb end`);
+      remotes.push({ ...r, configHash: remote.configHash });
+    }
+  } catch (e) { die([e.message]); }
+  st.closeout = { slug: st.slug, workBranch, workCommit, baseBranch: base, at: new Date().toISOString(), remotes };
+  const del = gitRun('branch', '-d', workBranch);
+  if (del.status !== 0) die([`收尾留痕完成但刪除工作分支失敗——人工 git branch -d ${workBranch} 後重試 sb end（重試冪等跳過重併）`]);
+  return { workBranch, workCommit, baseBranch: base };
+}
+
 // --boss-ok＝旗標即章（2.5.2）：老闆實際輸入由對話承載（基質優先——平台已答，flow-state 不另造記錄）；
 // 機械不驗時戳，語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔。
 function cmdEnd(opts) {
@@ -1109,8 +1180,25 @@ function cmdEnd(opts) {
   passes.push('時點 2 對抗條目＋老闆終審章（--adversarial＋--boss-ok——出口同一邊兩章）已驗');
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
+  mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
+  // 收尾歸檔機械化（聲稱與實做一致）：實際執行 slug 目錄的歸檔移動——此前僅輸出聲稱、移動靠手動。
+  // 移動失敗即 die（ended 狀態未寫入，保持 verify 可重試）；歸檔目標已占用保持原狀由人工查明。
+  const slugDir = join(SB_DIR, st.slug);
+  if (existsSync(slugDir)) {
+    const archivedSlug = join(SB_DIR, 'archive', st.slug);
+    if (existsSync(archivedSlug)) die([`歸檔目標已占用：${archivedSlug}——保持原狀（狀態仍為 verify），查明後重試 sb end`]);
+    try {
+      renameSync(slugDir, archivedSlug);
+    } catch (error) {
+      die([`歸檔移動失敗（${error.message}）——狀態仍為 verify，排除阻礙後重試 sb end`]);
+    }
+  }
+  // 收尾合併一條龍（2.6.4）：歸檔後機械完成 git 收尾段——偵測基底→merge --no-ff→查證→留痕→刪分支；
+  // 失敗即 die（ended 未寫入，狀態保持 verify 可修後重試）。
+  const finalize = finalizeMerge(st, opts.base);
   // 產出遙測（基質優先）：diff 事實由 git 承擔——sb init 錨定 baseline commit，end 做時序分析；
   // 對抗判定取時點 2 條目（lastAdv——verdict＋審查模型）；計數與耗時來自 hooks 觀測紀錄；缺省一律 null（舊流程／無 git 可比）。
+  // 錨定收尾合併後的 HEAD——遙測涵蓋整個 slug 生命週期直到收尾合併。
   const head = gitHeadCommit();
   const diff = ((st.msBaseline || st.baseCommit) && head && (st.msBaseline || st.baseCommit) !== head) ? gitDiffStats(st.msBaseline || st.baseCommit, head) : null; // per-ms 結算
   if (diff) st.msTelemetry = { ...(st.msTelemetry ?? {}), [st.ms]: { diff, settledAt: new Date().toISOString() } }; // per-ms 遙測：末段 ms 於 end 出口同步結算
@@ -1125,19 +1213,6 @@ function cmdEnd(opts) {
     },
     durationMinutes: st.startedAt ? Math.round(((Date.now() - Date.parse(st.startedAt)) / 60000) * 10) / 10 : null,
   };
-  mkdirSync(join(SB_DIR, 'archive'), { recursive: true });
-  // 收尾歸檔機械化（聲稱與實做一致）：實際執行 slug 目錄的歸檔移動——此前僅輸出聲稱、移動靠手動。
-  // 移動失敗即 die（ended 狀態未寫入，保持 verify 可重試）；歸檔目標已占用保持原狀由人工查明。
-  const slugDir = join(SB_DIR, st.slug);
-  if (existsSync(slugDir)) {
-    const archivedSlug = join(SB_DIR, 'archive', st.slug);
-    if (existsSync(archivedSlug)) die([`歸檔目標已占用：${archivedSlug}——保持原狀（狀態仍為 verify），查明後重試 sb end`]);
-    try {
-      renameSync(slugDir, archivedSlug);
-    } catch (error) {
-      die([`歸檔移動失敗（${error.message}）——狀態仍為 verify，排除阻礙後重試 sb end`]);
-    }
-  }
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   // slug 邊界清理（終態留痕後）：lastAdv/edgeAt 屬 ms 生命週期欄位，隨 slug 終結清除；
@@ -1158,6 +1233,9 @@ function cmdEnd(opts) {
     `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分`,
     'slug 邊界清理完成（flow-state 純狀態機——對話流不落檔；lastAdv/edgeAt 隨 slug 終結清除，舊版流鍵冪等清空）',
     '收尾歸檔已完成（機械化——聲稱與實做一致）：<slug>/ 已移至 archive/<slug>/（永續層文件已隨各 commit 即時保真——same-commit）',
+    finalize
+      ? `收尾合併已完成（一條龍——代理零收尾記憶負擔）：${finalize.workBranch} @ ${finalize.workCommit.slice(0, 12)} --no-ff → ${finalize.baseBranch}（訊息 merge ${st.slug}）；本機工作分支已刪，曾推送的遠端分支依留痕清除（init 再驗）`
+      : '收尾僅歸檔（無工作分支可收——非 Git 工作區或前次收尾已完成）',
     ...passes,
   ]);
 }
@@ -1314,7 +1392,7 @@ for (let i = 0; i < rest.length; i++) {
   else if (rest[i] === '--new-ms') flags.newMs = true;
   else if (rest[i] === '--main') { flags.main = true; if (cmd !== 'init') usage(); }
   else if (rest[i] === '--point') { flags.point = rest[++i] ?? ''; if (!['1', '2'].includes(flags.point)) usage(); }
-  else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if (cmd !== 'closeout' || !flags.base || flags.base.startsWith('-')) usage(); }
+  else if (rest[i] === '--base') { flags.base = rest[++i] ?? ''; if ((cmd !== 'closeout' && cmd !== 'end') || !flags.base || flags.base.startsWith('-')) usage(); }
   else if (rest[i].startsWith('--')) usage(); // 未知旗標（拼錯）直接提示 usage——解析器衛生
   else pos.push(rest[i]);
 }

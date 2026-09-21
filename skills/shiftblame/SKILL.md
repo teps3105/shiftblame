@@ -79,7 +79,7 @@ flowchart TB
         V3 -->|時點2 對抗畢·老闆終審pass 審驗收結果：GWT回指·假綠燈| I
     end
 
-    I -->|sb end --adversarial --boss-ok| FIN([ms done<br/>slug 結束·收尾歸檔])
+    I -->|sb end --adversarial --boss-ok| FIN([ms done<br/>slug 結束·收尾歸檔＋合併])
     BOSS -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| THINK
 ```
 
@@ -130,7 +130,7 @@ MUST（必須）｜SHOULD（應）｜MAY（得）。條文一律正向形態（�
 
 **兩個老闆 checkpoint**：
 - **Checkpoint 1：shiftblame:think** — 完成條件＝老闆確認理解正確；這一次確認同時是後續 G1 定稿、G2／G3 對齊與內部狀態推進的語義來源。老闆對緊接上一份理解回覆「確定／同意／照做」＝Checkpoint 1 完成事件，think 直接消費並分發（確認訊息只消費一次）；只有語義對象或授權範圍實質差異時才揭露差異建立新確認。
-- **pass 出口**（A5：verify 真驗收完成、G1 回指閉環後，時點 2 對抗＋老闆終審 pass）——`sb next intent --new-ms --adversarial --boss-ok` 或 `sb end --adversarial --boss-ok`；收尾歸檔隨 end 執行（MECHANISMS §8）。
+- **pass 出口**（A5：verify 真驗收完成、G1 回指閉環後，時點 2 對抗＋老闆終審 pass）——`sb next intent --new-ms --adversarial --boss-ok` 或 `sb end --adversarial --boss-ok`；收尾歸檔與合併隨 end 一條龍執行（MECHANISMS §8）。
 
 ## 4. 秘書、認知負載與技術裁定
 
@@ -214,7 +214,7 @@ think 分發後的執行路由（各路由只說明關係，不授權秘書代�
 
 - **沿用目前 `<ms>`** — 同一子需求的擴充；從目前循環的三面向制衡重走。
 - **既有 `<slug>` 開新 `<ms>`** — 同一大需求的新里程碑：verify 真驗收完成、時點 2 對抗＋老闆終審 pass→`sb next intent --new-ms --adversarial --boss-ok`→閉環回 intent 展開新 ms（ms++）。
-- **結束 `<slug>`** — 整個 slug 所有子需求完成，老闆拍板結束：verify 完成、時點 2 對抗＋老闆終審 pass→`sb end --adversarial --boss-ok`→收尾歸檔（MECHANISMS §8）。
+- **結束 `<slug>`** — 整個 slug 所有子需求完成，老闆拍板結束：verify 完成、時點 2 對抗＋老闆終審 pass→`sb end --adversarial --boss-ok`→收尾歸檔與合併一條龍（MECHANISMS §8）。
 - **完結 ended（留 main 直接作業）** — slug 已結束、closeout 完成，老闆指示直接在基底分支繼續工作：`sb init --main`。
 - **新增待辦到當前 `<slug>`** — 秘書直接寫入 SLUG §3（老闆指示即授權；一句價值簡述、純短名無編號、清單末尾）。
 - **main 模式（直接實行，不開 slug）** — 框架演化、微修、文件變更（A9 文件先行＋same-commit＋寫入矩陣）或老闆指定 main 的輕量變更與快速試錯。性質＝人機交互快速迭代：老闆在場快速往返，工作直接在 main 分支，不建骨架；新需求進門時 agent 依 think 詢問守則主動提供 main／slug 二選一。

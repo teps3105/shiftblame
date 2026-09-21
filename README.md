@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.3-2ea44f.svg" alt="version 2.6.3"/>
+  <img src="https://img.shields.io/badge/version-2.6.4-2ea44f.svg" alt="version 2.6.4"/>
 </p>
 
 ---
@@ -69,13 +69,13 @@ flowchart TB
     V3 -->|實作問題| B2
     V3 -->|測試定義錯誤| T2
     V3 -->|驗收完成·G1回指閉環·時點2對抗畢·老闆終審pass 開新ms| INTENT
-    V3 -->|sb end 時點2對抗＋終審pass| FIN[slug結束]
+    V3 -->|sb end 時點2對抗＋終審pass| FIN[slug結束·收尾歸檔與合併]
     B2 -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| BOSS
 ```
 
 **所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後任何新意圖在該 ms 內一律重走 intent：`sb next intent` 同 ms 開新輪（hooks 機械推回承載——中鏈段位與對抗未完成的決策邊即代跑 sb next intent；對抗已完成的決策邊＝裁決通道零推回；「繼續」類中性續行與疑問輸入零位移），段內修復類（執行性修復）由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
 
-**pass 與 fail 是邊，不是節點。** 全部功能完成、收斂期 E2E 綠燈收斂、working tree 乾淨即 build→verify 機械推進（中鏈零審核）——verify 真驗收（GWT 逐條劇本實操、行為證據落回指區、G1 回指閉環）。驗收完成後時點 2 對抗（對抗在前）審驗收結果，老闆終審 pass 走出口——出口＝時點 2 對抗條目＋終審章同一邊：`sb next intent --new-ms --adversarial --boss-ok`（開下一里程碑，每 ms 遙測結算）或 `sb end --adversarial --boss-ok`（結束 slug 收尾歸檔）；fail 視為老闆新意圖重走 intent。
+**pass 與 fail 是邊，不是節點。** 全部功能完成、收斂期 E2E 綠燈收斂、working tree 乾淨即 build→verify 機械推進（中鏈零審核）——verify 真驗收（GWT 逐條劇本實操、行為證據落回指區、G1 回指閉環）。驗收完成後時點 2 對抗（對抗在前）審驗收結果，老闆終審 pass 走出口——出口＝時點 2 對抗條目＋終審章同一邊：`sb next intent --new-ms --adversarial --boss-ok`（開下一里程碑，每 ms 遙測結算）或 `sb end --adversarial --boss-ok`（結束 slug——收尾歸檔＋`--no-ff` 合併回基底＋刪工作分支一條龍，MECHANISMS §8）；fail 視為老闆新意圖重走 intent。
 
 讀圖規則：①沿箭頭逐段前進；②下游發現缺口，沿退回箭頭處理；③每個節點只產出自己的內容；④圖文衝突時，以權威圖為準。
 
@@ -177,7 +177,7 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 - **沿用 `<nnn>`**——同一子需求的擴充。
 - **開新 `<nnn>`**——同一 `<slug>` 中的新子需求（前置：目前 ms 已走 pass 出口）。
 - **開新 `<slug>`**——與既有功能幾乎無關的新功能。
-- **結束 `<slug>`**——老闆 `sb end`（pass 出口）→ 完整收尾歸檔 → 移 <repo>/.shiftblame/archive/。
+- **結束 `<slug>`**——老闆 `sb end`（pass 出口）→ 完整收尾（歸檔＋`--no-ff` 合併回基底＋刪工作分支）→ 歸檔移 <repo>/.shiftblame/archive/。
 - **完結留 main**——ended 後 `sb init --main` 寫入完結戳，留在 closeout 基底分支直接作業（之後提交走正常 `<type>: <繁中描述>`）。
 - **直接實行（不開 slug）**——框架演化、微修或老闆指定不開 slug 的輕量變更。
 - **框架演化**——修改 shiftblame 自身；不開 slug，仍須先揭露方案取得授權。
@@ -198,7 +198,7 @@ sb next test                       # 提交閘判決通過回 test 接下一個�
 sb next intent                     # 任何新意圖一律重走 intent：同 ms 開新輪
 sb next intent --new-ms --adversarial --boss-ok  # 時點 2 對抗＋終審 pass 出口：開下一里程碑（驗收完成·G1 回指閉環；前一 ms 遙測結算）
 sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（逐條三態計數——刪N 改N 留N＋hash 綁定戳記；開新 ms 與 pass 出口前機械驗，非 slug 期間由 sb commitmsg 每 commit 驗戳記，無文件不擋）
-sb end --adversarial --boss-ok     # 時點 2 對抗＋終審 pass 出口：結束 slug → 收尾歸檔＋末段 ms 產出遙測（diff／對抗／計數／耗時）
+sb end [--base <本機分支>] --adversarial --boss-ok  # 時點 2 對抗＋終審 pass 出口：結束 slug → 收尾歸檔＋--no-ff 合併回基底（merge <slug>）＋刪本機工作分支＋產出遙測（diff／對抗／計數／耗時）；基底自動偵測，歧義時 --base 明示
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```
 
@@ -277,9 +277,10 @@ MIT License. 不接受外部貢獻。
 
 ### 外部工具辨識與初始化
 
-- Git 工作的收尾順序是 `sb end`（pass 出口）→ 歸檔 → 合併 → `sb closeout --base <本機基底分支>` → 清除舊本機與遠端分支 → `sb init <新slug>`（或 `sb init --main` 完結留 main 直接作業）。
-  - 合併政策三規則：main 直接作業的工作無合併步驟；開了分支一律 `--no-ff` 且合併訊息固定 `merge <slug>`——closeout 查證工作提交已經合併提交進入基底（快轉／squash 皆不過），記錄提交、分支及遠端來源，只查證留痕不代做合併或刪除；外部協作倉庫依該倉庫自身的 issue／PR 策略執行。
-  - `sb commitmsg` 僅在合法 ended 狀態接受目前 slug 的精確 `merge <slug>` 訊息（寫入完結戳後——`sb init --main` 完結——固定訊息退役，一般提交走 `<type>: <繁中描述>`）；印章檢查照常。新合併先用 `git merge --no-ff --no-commit` 準備，再發章並以相同訊息 `git commit -m`；一般提交仍用 `<type>: <繁中描述>`。
+- Git 工作的收尾由 `sb end`（pass 出口）一條龍機械完成：歸檔 → `--no-ff` 合併回基底（訊息固定 `merge <slug>`）→ 內建查證留痕 → 刪除本機工作分支 → 寫入 ended——任一步失敗即整體擋下（狀態保持 verify，修復後重試；重試冪等，已合併有證據即跳過重併）。基底分支自動偵測（slug 起始提交所在的唯一本機分支），零命中或歧義時 MUST `--base <本機基底分支>` 明示。→ `sb init <新slug>`（或 `sb init --main` 完結留 main 直接作業）。
+  - 合併政策三規則：main 直接作業的工作無合併步驟；開了分支一律 `--no-ff` 且合併訊息固定 `merge <slug>`——end 代做合併後以「工作提交經合併提交進入基底」為機械證據查證（快轉／squash 皆不過），記錄提交、分支及遠端來源；外部協作倉庫依該倉庫自身的 issue／PR 策略執行。
+  - `sb closeout --base <本機基底分支>` 降為事後查證與例外修復工具：end 無法自動收尾（衝突、遠端阻礙）而代理手動整合後，以 closeout 查證留痕再刪分支；closeout 不代做合併或刪除。曾推送的遠端分支清除仍在收尾後依留痕執行。
+  - `sb commitmsg` 僅在合法 ended 狀態接受目前 slug 的精確 `merge <slug>` 訊息（寫入完結戳後——`sb init --main` 完結——固定訊息退役，一般提交走 `<type>: <繁中描述>`）；印章檢查照常。end 代做的收尾合併提交由 CLI 直接執行、不經 commitmsg 印章（老闆終審章已隨 end 出口驗證）；手動重併先用 `git merge --no-ff --no-commit` 準備，再發章並以相同訊息 `git commit -m`；一般提交仍用 `<type>: <繁中描述>`。
   - init 再驗工作樹乾淨、記錄提交仍在目前基底、本機舊分支不存在、遠端伺服器已無舊 ref、新分支未占用，才從此次查證的基底提交建立新分支。
   - 首次 init 記錄 workBranch；舊狀態可由唯一的 type/slug 分支取得來源，缺失或有歧義時先補足來源，不能拿目前 HEAD 代替。
   - `sb state` 顯示未完成項。squash／rebase 無祖先證據時保持原狀；基底由 --base 明示，不猜主幹名稱。

@@ -113,16 +113,17 @@ sequenceDiagram
 
 這是既定維護動作，不需另行取得一次寫入授權。
 
-## 8. 收尾歸檔（slug 結束：sb end 後）
+## 8. 收尾歸檔與合併（slug 結束：sb end 一條龍）
 
-收尾＝簡單、機械化、快速結束——歸檔既成事實。永續層文件（SOP／ROADMAP／docs／README）在開發期間已隨各 commit 即時更新（same-commit 原則，§1.7 兩層文件模型）；收尾零重寫、零補救。
+收尾＝簡單、機械化、快速結束——歸檔與合併皆既成事實的機械收束。永續層文件（SOP／ROADMAP／docs／README）在開發期間已隨各 commit 即時更新（same-commit 原則，§1.7 兩層文件模型）；收尾零重寫、零補救。
 
-1. 秘書確認證據、未驗項與老闆結束拍板（終審 pass 經 `sb end --adversarial --boss-ok`——時點 2 對抗條目已於出口邊驗證）；`sb end` 已於出口時留產出遙測於 flow-state（§12——每 ms 結算＋最終 diff 統計＋對抗判定＋計數＋耗時）。
+1. 秘書確認證據、未驗項與老闆結束拍板（終審 pass 經 `sb end --adversarial --boss-ok`——時點 2 對抗條目已於出口邊驗證）；`sb end` 已於出口時留產出遙測於 flow-state（§12——每 ms 結算＋最終 diff 統計＋對抗判定＋計數＋耗時；結算錨定收尾合併後的 HEAD）。
 2. 依 SOP 盤點測試資產；探索性內容留在 `<repo>/.shiftblame/tmp/`。
-3. 歸檔移動由 `sb end` 機械執行（聲稱與實做一致）：`<slug>/` 已移至 `<repo>/.shiftblame/archive/`（移動失敗即 die、狀態保持 ended 可重試）；秘書核對 `archive/<slug>/SLUG.md` 歸檔完整（archive 僅承載各 slug 目錄與其文件）。
-4. 歸檔是 merge 的 gate——歸檔完成即可合併、推送與清理（文件已在各 commit 保真，收尾無補救工作）。**合併政策三規則**：①在 main 直接作業的工作屬於 main，無合併步驟；②開了分支的工作合併一律 `--no-ff`（快轉使 slug 邊界消失）且合併訊息固定為 `merge <slug>`——`sb closeout` 以「工作提交經合併提交進入基底」為機械證據，快轉不過；③外部協作倉庫依該倉庫自身的 issue／PR 策略執行（本框架合併政策讓位，提交與對抗閘仍照常）——此類倉庫以直接實行作業（不開 slug，即無 closeout 需求）；已開 slug 而必須讓位時，依該倉庫策略完成整合後以等效合併事實收尾。多人協作的 repo 內文件權限依 §5，與歸檔正交。
-5. Git 工作在歸檔、合併後，先執行 `sb closeout --base <本機基底分支>` 查證舊工作提交已經 `--no-ff` 合併提交進入基底並留痕，再依已查證 tip 清除本機及曾推送的遠端分支。closeout 是 ended 內的查證動作，不新增階段；不代做合併或刪除。
-6. **ended 的兩個出口**（收束生命週期）：**開新流程**——老闆決定下一個 slug 後，以 `sb init <新slug>` 從合法 ended 建立新流程（CLI 查證舊工作路徑已移出、`archive/<舊slug>/SLUG.md` 存在、新 slug 的工作與歸檔路徑均未占用；新流程只承接合法 hooks 紀錄，重建 slug／001／intent／空 edgeAt，舊對抗、返工與結束欄位不沿用，舊歸檔文件保持原樣）。**完結留 main**——`sb init --main` 結束 ended 生命週期、留在 closeout 基底分支直接作業（不開 slug、不建分支；同 ended 驗證重跑＋當前分支＝closeout 基底；寫入完結戳維持 ended 分類，歸檔與 closeout 證據保留；之後正常提交走 `sb commitmsg`——固定合併訊息僅限完結前收尾）。日後開新 slug 時回到 `sb init <新slug>`（同 ended 驗證重跑）。squash／rebase 缺祖先證據時先補整合證據。遠端查伺服器實況；已記錄來源缺失、變更或查詢失敗均擋。未記錄且已移除的歷史推送來源須恢復；查證後新增提交須重做 closeout，手動新增後刪除造成的證據過期由操作紀律與抽查承擔。
+3. 歸檔移動由 `sb end` 機械執行（聲稱與實做一致）：`<slug>/` 已移至 `<repo>/.shiftblame/archive/`（移動失敗即 die、狀態保持 verify 可重試）；秘書核對 `archive/<slug>/SLUG.md` 歸檔完整（archive 僅承載各 slug 目錄與其文件）。
+4. 收尾合併由 `sb end` 機械執行（代理零收尾記憶負擔）：基底分支自動偵測（slug 起始提交所在的唯一本機分支——零命中或歧義即 die 要求 `--base <本機基底分支>` 明示，不猜主幹名稱）→ 切至基底 → `git merge --no-ff <工作分支> -m "merge <slug>"` → 內建查證（工作提交經合併提交進入基底——快轉／squash 皆不過）→ 留痕 closeout（提交、分支與遠端來源）→ 刪除本機工作分支。任一步失敗即整體 die（ended 未寫入，狀態保持 verify，修復後重試；重試冪等——已合併且有證據即跳過重併）。收尾合併提交由 CLI 直接執行、不經 commitmsg 印章（老闆終審章已隨 end 出口驗證）。
+5. 歸檔是 merge 的 gate——歸檔完成即可合併、推送與清理（文件已在各 commit 保真，收尾無補救工作）。**合併政策三規則**：①在 main 直接作業的工作屬於 main，無合併步驟；②開了分支的工作合併一律 `--no-ff`（快轉使 slug 邊界消失）且合併訊息固定為 `merge <slug>`——`sb end` 代做合併並內建查證，`sb closeout` 為同一機械證據的事後查證與例外修復工具，快轉不過；③外部協作倉庫依該倉庫自身的 issue／PR 策略執行（本框架合併政策讓位，提交與對抗閘仍照常）——此類倉庫以直接實行作業（不開 slug，即無 closeout 需求）；已開 slug 而必須讓位時，依該倉庫策略完成整合後以等效合併事實收尾。多人協作的 repo 內文件權限依 §5，與歸檔正交。
+6. `sb closeout --base <本機基底分支>` 事後查證與例外修復留痕：end 無法自動收尾（衝突、遠端阻礙）而代理手動整合後，以 closeout 查證舊工作提交已經 `--no-ff` 合併提交進入基底並留痕，再依已查證 tip 清除本機及曾推送的遠端分支。closeout 不代做合併或刪除。
+7. **ended 的兩個出口**（收束生命週期）：**開新流程**——老闆決定下一個 slug 後，以 `sb init <新slug>` 從合法 ended 建立新流程（CLI 查證舊工作路徑已移出、`archive/<舊slug>/SLUG.md` 存在、新 slug 的工作與歸檔路徑均未占用；新流程只承接合法 hooks 紀錄，重建 slug／001／intent／空 edgeAt，舊對抗、返工與結束欄位不沿用，舊歸檔文件保持原樣）。**完結留 main**——`sb init --main` 結束 ended 生命週期、留在 closeout 基底分支直接作業（不開 slug、不建分支；同 ended 驗證重跑＋當前分支＝closeout 基底；寫入完結戳維持 ended 分類，歸檔與 closeout 證據保留；之後正常提交走 `sb commitmsg`——固定合併訊息僅限完結前收尾）。日後開新 slug 時回到 `sb init <新slug>`（同 ended 驗證重跑）。squash／rebase 缺祖先證據時先補整合證據。遠端查伺服器實況；已記錄來源缺失、變更或查詢失敗均擋。未記錄且已移除的歷史推送來源須恢復；查證後新增提交須重做 closeout，手動新增後刪除造成的證據過期由操作紀律與抽查承擔。
 
 ## 9. 消融原則（方法論）
 

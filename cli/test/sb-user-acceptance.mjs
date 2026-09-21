@@ -178,17 +178,12 @@ assert.equal(run('end', '--adversarial', '--boss-ok').status, 0, '出口＝時�
   assert.ok(!existsSync(join(root, '.shiftblame', 'tmp', 'flow-archive')), '零副本——無殭屍歸檔目錄');
 }
 assert.equal(state().node, 'ended');
-// 完整流程的真實結束產物可開下一份工作；拒絕不切分支，成功建立新分支。
-const endedBranch = git('branch', '--show-current').stdout.trim();
-assert.equal(run('init', 'next-work', 'fix').status, 1, 'closeout 前拒絕（歸檔已由 sb end 機械完成）');
-assert.equal(git('branch', '--show-current').stdout.trim(), endedBranch);
+// 完整流程的真實結束產物可開下一份工作——end 一條龍已完成合併、查證留痕與本機分支刪除。
+assert.equal(git('branch', '--show-current').stdout.trim(), originalBase, 'end 一條龍收尾後停在基底分支');
+assert.equal(String(git('branch', '--list', 'feat/demo').stdout).trim(), '', '本機工作分支已隨 end 清除');
+assert.equal(git('log', '-1', '--format=%s', originalBase).stdout.trim(), 'merge demo', '收尾合併訊息固定 merge <slug>');
 const oldG1 = readFileSync(join(root, '.shiftblame/archive/demo/002/G1.md'), 'utf8'); // sb end 已機械化歸檔——自 archive 讀回
-assert.equal(run('init', 'next-work', 'fix').status, 1, '歸檔不等於合併與清理完成');
-assert.equal(git('checkout', originalBase).status, 0);
-assert.equal(git('merge', '--no-ff', endedBranch, '-m', 'merge demo').status, 0, '分支合併一律 --no-ff＋固定訊息 merge <slug>');
-{ const co = run('closeout', '--base', originalBase); if (co.status !== 0) console.error('CLOSEOUT:', co.stderr); assert.equal(co.status, 0); }
-assert.equal(run('init', 'next-work', 'fix').status, 1, '舊本機分支存在仍拒絕');
-assert.equal(git('branch', '-d', endedBranch).status, 0);
+assert.match(run('closeout', '--base', originalBase).stderr, /收尾已完成留痕/, '收尾已完成的 slug 不再收 closeout（事後查證工具）');
 const nextBaseTip = git('rev-parse', 'HEAD').stdout.trim();
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '開始下一份工作' });
 const nextRecords = state();

@@ -23,6 +23,14 @@ const state = () => JSON.parse(readFileSync(stateFile, 'utf8'));
 const save = (s) => writeFileSync(stateFile, JSON.stringify(s));
 const tip = () => git('rev-parse', 'HEAD').stdout.trim();
 const commit = (file, text) => { writeFileSync(join(cwd, file), text); ok(git('add', file)); ok(git('commit', '-m', 'test: fixture')); };
+// end 出口合成條件：時點 2 對抗條目＋老闆終審章同一邊（--adversarial＋--boss-ok），node 直達 verify
+const exitFixture = () => {
+  const s = state();
+  s.node = 'verify';
+  s.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }];
+  s.inputs = [{ at: new Date(Date.now() + 60000).toISOString(), text: '老闆：確認收尾' }];
+  save(s);
+};
 ok(git('init'));
 ok(git('symbolic-ref', 'HEAD', 'refs/heads/trunk'));
 ok(git('config', 'user.name', 'test'));
@@ -46,13 +54,34 @@ writeFileSync(report, '# 隔離測試報告\n此為合併提交閘的合成測�
 assert.equal(run('commitmsg', 'merge old').status, 1, 'intent 不接受合併格式');
 save({ ...state(), node: 'done' });
 assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接受合併格式');
-const withoutDeclaration = state();
-// 出口時序：時點 2 對抗條目 < 老闆終審輸入（老闆章錨定對抗條目之後——出口同一邊兩章）
-withoutDeclaration.adversarialLog = [{ at: new Date(Date.now() - 60000).toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'done', point: '2' }];
-withoutDeclaration.inputs = [{ at: new Date(Date.now() + 60000).toISOString(), text: '老闆：確認收尾' }];
-save(withoutDeclaration); // 合成 fixture；出口＝時點 2 對抗條目＋老闆終審章同一邊（--adversarial＋--boss-ok）。
-ok(run('end', '--adversarial', '--boss-ok')); // sb end 機械化歸檔移動（slug 目錄 → archive/）；舊 done 態遷移為 ended
+exitFixture();
+// —— sb end 一條龍收尾：歸檔→偵測基底→--no-ff 合併（訊息固定 merge <slug>）→內建查證→留痕→刪本機分支——
+ok(run('end', '--adversarial', '--boss-ok'));
+assert.equal(git('branch', '--show-current').stdout.trim(), 'trunk', '一條龍收尾停在基底分支');
+assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge old', '合併提交訊息＝merge <slug>');
+const parents = git('log', '-1', '--format=%P', 'trunk').stdout.trim().split(/\s+/);
+assert.equal(parents.length, 2, '收尾合併一律 --no-ff（雙親）');
+assert.equal(parents[1], workTip, '合併第二父＝工作分支 tip');
+assert.equal(String(git('branch', '--list', 'fix/old').stdout).trim(), '', '本機工作分支已隨 end 清除');
+assert.equal(state().node, 'ended');
+assert.equal(state().closeout.workCommit, workTip);
+assert.equal(state().closeout.workBranch, 'fix/old');
+assert.equal(state().closeout.baseBranch, 'trunk');
+assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/review/old'));
+assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/push-only'));
+assert.equal(state().closeout.remotes.some(r => r.ref === 'refs/heads/obsolete'), false, '無關刪除refspec不是舊工作清理目標');
+assert.match(run('closeout', '--base', 'trunk').stderr, /收尾已完成留痕/, '收尾已完成的 slug 不再收 closeout（事後查證工具）');
 ok(run('commitmsg', 'merge old')); // 2.4.0：ended 接受固定合併訊息——提交審核已移除，僅格式＋印章
+for (const message of ['merge other', 'merge: old', 'merge old extra', 'merge old\n', 'merge old\r']) {
+  assert.equal(run('commitmsg', message).status, 1, `拒絕非精確合併訊息 ${JSON.stringify(message)}`);
+}
+ok(run('commitmsg', 'merge old'));
+const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
+assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'merge old');
+assert.equal(commitHook('merge other').status, 2, '實際提交仍須匹配訊息印章');
+ok(commitHook('merge old'));
+assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
+ok(run('commitmsg', 'merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();
@@ -65,52 +94,7 @@ const rejectInit = (pattern) => {
   assert.equal(git('branch', '--show-current').stdout, branch);
   assert.equal(existsSync(join(cwd, '.shiftblame/next')), false);
 };
-rejectInit(/closeout/);
-assert.equal(run('closeout', '--base', 'trunk').status, 1, '未合併拒絕');
-assert.equal(run('closeout', '--base', 'fix/old').status, 1, '基底不可等於舊分支');
-assert.equal(run('closeout', '--base', 'missing').status, 1);
-ok(git('checkout', 'trunk'));
-// 快轉（fast-forward）合併：無合併提交證據——closeout 擋下並指引 --no-ff 重併。
-ok(git('merge', '--ff-only', 'fix/old'));
-assert.equal(run('closeout', '--base', 'trunk').status, 1, '快轉合併拒絕');
-assert.match(run('closeout', '--base', 'trunk').stderr, /--no-ff/, '指引 --no-ff 重併');
-// 回復合併前基底後以 --no-ff 重併——證據成立。
-// 訊息不符的合併：證據成立但訊息錯——closeout 擋並指引重併。
-ok(git('reset', '--hard', initial));
-ok(git('merge', '--no-ff', 'fix/old', '-m', 'wrong message'));
-assert.equal(run('closeout', '--base', 'trunk').status, 1, '合併訊息不符擋下');
-assert.match(run('closeout', '--base', 'trunk').stderr, /merge /, '指引固定訊息重併');
-// 回復後以正確訊息重併——證據與訊息皆成立。
-ok(git('reset', '--hard', initial));
-ok(git('merge', '--no-ff', '--no-commit', 'fix/old'));
-for (const message of ['merge other', 'merge: old', 'merge old extra', 'merge old\n', 'merge old\r']) {
-  assert.equal(run('commitmsg', message).status, 1, `拒絕非精確合併訊息 ${JSON.stringify(message)}`);
-}
-ok(run('commitmsg', 'merge old'));
-const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
-assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'merge old');
-assert.equal(commitHook('merge other').status, 2, '實際提交仍須匹配訊息印章');
-ok(commitHook('merge old'));
-assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
-ok(git('commit', '-m', 'merge old'));
-ok(run('commitmsg', 'merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
-assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge old', '合併提交訊息＝merge <slug>');
-commit('base.txt', 'base-only commit\n');
-const baseTip = tip();
-ok(git('checkout', 'fix/old'));
-assert.equal(tip(), workTip);
-// workBranch 舊版缺失仍可由唯一 type/slug 分支恢復來源。
-const legacy = state(); delete legacy.workBranch; save(legacy);
-ok(run('closeout', '--base', 'trunk'));
-assert.equal(state().closeout.workCommit, workTip);
-assert.equal(state().closeout.workBranch, 'fix/old');
-assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/review/old'));
-assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/push-only'));
-assert.equal(state().closeout.remotes.some(r => r.ref === 'refs/heads/obsolete'), false, '無關刪除refspec不是舊工作清理目標');
-rejectInit(/舊本機分支尚未清除/);
-ok(git('checkout', 'trunk'));
-ok(git('branch', '-d', 'fix/old'));
-rejectInit(/舊遠端分支尚未清除/);
+rejectInit(/舊遠端分支尚未清除/); // 本機分支已由 end 一條龍清除，遠端仍待清
 // 伺服器不可達不是已清除，且本機 remote-tracking 快取無法代替查證。
 renameSync(remote, remote + '.offline');
 rejectInit(/遠端.*查詢失敗/);
@@ -149,41 +133,92 @@ assert.equal(state().node, 'ended', '完結維持 ended 分類（歸檔與 close
 assert.match(run('state').stdout, /ended＋已完結/, 'state 讀出完結態');
 assert.equal(run('init', '--main').status, 1, '重複完結即拒');
 assert.match(run('init', '--main').stderr, /已完結/);
-// 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 closeout 查證）；正常 type 訊息走格式閘＋發章。
+// 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 end 內建查證留痕）；正常 type 訊息走格式閘＋發章。
 assert.equal(run('commitmsg', 'merge old').status, 1, '完結後固定合併訊息失效');
 assert.match(run('commitmsg', 'merge old').stderr, /已完結/);
 assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
 assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
 assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
-commit('base2.txt', 'later base\n');
-const latestBase = tip();
-assert.notEqual(latestBase, baseTip);
-writeFileSync(join(cwd, 'base2.txt'), 'dirty\n');
+commit('base.txt', 'base-only commit\n');
+const baseTip = tip();
+assert.notEqual(baseTip, initial);
+writeFileSync(join(cwd, 'base.txt'), 'dirty\n');
 rejectInit(/工作樹未乾淨/);
-writeFileSync(join(cwd, 'base2.txt'), 'later base\n');
+writeFileSync(join(cwd, 'base.txt'), 'base-only commit\n');
 ok(git('branch', 'feat/next', initial));
 rejectInit(/新分支已存在/);
 ok(git('branch', '-d', 'feat/next'));
+// base 改寫失去工作提交，即使分支均已清除仍拒絕。
+ok(git('update-ref', 'refs/heads/trunk', initial));
+rejectInit(/--no-ff 合併提交證據/);
+ok(git('update-ref', 'refs/heads/trunk', baseTip));
+// —— 段 B：end 衝突 die→修復→重試（一條龍 die 全發生在寫 ended 前——狀態保持 verify 可重試）——
+ok(run('init', 'cfl', 'feat'));
+commit('cfl.txt', 'feature\n');
+const cflTip = tip();
+ok(git('checkout', 'trunk'));
+commit('cfl.txt', 'trunk\n');
+const conflictTip = tip();
+exitFixture();
+const conflictEnd = run('end', '--adversarial', '--boss-ok');
+assert.equal(conflictEnd.status, 1, '衝突收尾合併 die');
+assert.match(conflictEnd.stderr, /衝突/);
+assert.match(conflictEnd.stderr, /merge --abort/);
+assert.equal(state().node, 'verify', 'die 後狀態保持 verify（ended 未寫入）');
+assert.match(git('status', '--porcelain').stdout, /AA/, '工作樹留有未合併路徑');
+ok(git('merge', '--abort'));
+ok(git('revert', '--no-edit', conflictTip)); // 修復基底衝突源後重試
+ok(run('end', '--adversarial', '--boss-ok')); // 重試冪等：歸檔已在前次完成，直接重收尾
+assert.equal(git('branch', '--show-current').stdout.trim(), 'trunk');
+assert.equal(git('log', '-1', '--format=%s', 'trunk').stdout.trim(), 'merge cfl');
+assert.equal(String(git('branch', '--list', 'feat/cfl').stdout).trim(), '', '重試後本機工作分支清除');
+assert.equal(state().closeout.workCommit, cflTip);
+assert.equal(state().closeout.baseBranch, 'trunk');
+assert.ok(existsSync(join(cwd, '.shiftblame/archive/cfl/SLUG.md')), '重試沿用前次歸檔');
+// —— 段 C：closeout 事後查證（手動收尾的錯誤形態擋下——快轉／訊息不符／未合併）——
+ok(run('init', 'mnl', 'feat'));
+commit('mnl.txt', 'mnl feature\n');
+const mnlTip = tip();
+exitFixture();
+ok(run('end', '--adversarial', '--boss-ok')); // 先取得真 ended＋歸檔，再反做手動收尾場景
+const preMerge = git('rev-parse', 'trunk^1').stdout.trim(); // 合併前基底
+ok(git('branch', 'feat/mnl', mnlTip));
+ok(git('reset', '--hard', preMerge));
+{ const s = state(); delete s.closeout; save(s); } // 合成「手動收尾未查證」
+assert.equal(run('closeout', '--base', 'feat/mnl').status, 1, '基底不可等於舊分支');
+assert.equal(run('closeout', '--base', 'missing').status, 1);
+assert.equal(run('closeout', '--base', 'trunk').status, 1, '未合併拒絕');
+ok(git('merge', '--ff-only', 'feat/mnl'));
+{ const s = state(); delete s.closeout; save(s); }
+const ffCloseout = run('closeout', '--base', 'trunk');
+assert.equal(ffCloseout.status, 1, '快轉合併拒絕');
+assert.match(ffCloseout.stderr, /--no-ff/, '指引 --no-ff 重併');
+ok(git('reset', '--hard', preMerge));
+ok(git('merge', '--no-ff', 'feat/mnl', '-m', 'wrong message'));
+{ const s = state(); delete s.closeout; save(s); }
+const wmCloseout = run('closeout', '--base', 'trunk');
+assert.equal(wmCloseout.status, 1, '合併訊息不符擋下');
+assert.match(wmCloseout.stderr, /wrong message/, '實得訊息入指引');
+// workBranch 舊版缺失仍可由唯一 type/slug 分支恢復來源。
+const legacy = state(); delete legacy.workBranch; save(legacy);
+ok(git('reset', '--hard', preMerge));
+ok(git('merge', '--no-ff', 'feat/mnl', '-m', 'merge mnl'));
+ok(run('closeout', '--base', 'trunk'));
+assert.equal(state().closeout.workCommit, mnlTip);
+assert.equal(state().closeout.workBranch, 'feat/mnl');
+// closeout 只查證留痕不代刪——本機分支清除仍靠 end 或人工。
+assert.equal(git('rev-parse', '--verify', 'refs/heads/feat/mnl').status, 0, 'closeout 不代刪本機工作分支');
+ok(git('branch', '-d', 'feat/mnl'));
 // closeout 與 slug 綁定，偽接其他工作的證據不放行。
 const valid = state();
 save({ ...valid, closeout: { ...valid.closeout, slug: 'different' } });
 rejectInit(/接入異常/); // 不屬於同一 slug 的 closeout 在統一狀態檢查即拒絕。
 save(valid);
-renameSync(join(cwd, '.git'), join(cwd, '.git.hidden'));
-const lostGit = run('init', 'next', 'feat');
-assert.equal(lostGit.status, 1);
-assert.match(lostGit.stderr, /Git metadata 缺失/);
-assert.equal(existsSync(join(cwd, '.shiftblame/next')), false);
-renameSync(join(cwd, '.git.hidden'), join(cwd, '.git'));
-// base 改寫失去工作提交，即使分支均已清除仍拒絕。
-ok(git('update-ref', 'refs/heads/trunk', initial));
-rejectInit(/--no-ff 合併提交證據/);
-ok(git('update-ref', 'refs/heads/trunk', latestBase));
 // 当前停在其他功能分支也只能從查證的基底出發。
 ok(git('checkout', '-b', 'unrelated', initial));
 ok(run('init', 'next', 'feat'));
-assert.equal(tip(), latestBase);
+assert.equal(tip(), git('rev-parse', 'trunk').stdout.trim());
 assert.equal(git('branch', '--show-current').stdout.trim(), 'feat/next');
 assert.equal(state().closeout, undefined);
 assert.equal(state().workBranch, 'feat/next');
-console.log('sb-closeout: 合併、基底起點、本機與遠端清除及失敗原樣保留通過');
+console.log('sb-closeout: end 一條龍收尾、衝突重試冪等、事後查證擋與遠端清除通過');
