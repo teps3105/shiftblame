@@ -128,7 +128,6 @@ const usage = (code = 2) => {
       無鎖、無解鎖命令、無引句。
 
 用法：
-  sb delegate <輸入JSON>               Jev 批次委派＋同工作結果重用（無流程權，例外交主代理；見 JEV.md）
   sb init <slug> [type]                 開 slug：建全骨架（flow-state＋<slug>/001/＋SLUG.md＋archive/＋<type>/<slug> 分支；type 預設 feat）
   sb state                              顯示目前段、可走下一步與其前置條件
   sb adversarial <報告檔> --point 1|2    時點對抗宣告（條目入 lastAdv 定長欄位）：
@@ -1147,7 +1146,7 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'stop-report', 'delegate']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'stop-report']);
       const flags = new Set(['--boss-ok', '--adversarial', '--new-ms', '--point', '--base', '--question', '--main', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
@@ -1221,7 +1220,6 @@ for (let i = 0; i < rest.length; i++) {
 }
 if (['next', 'end', 'closeout', 'sopreview'].includes(cmd)) requireHealthyState();
 switch (cmd) {
-  case 'delegate': if (rest.length !== 1 || pos.length !== 1) usage(); await (await import('./jev.mjs')).runDelegate(ROOT, pos[0]); break;
   case 'init': if (flags.main) { if (pos.length) usage(); cmdInitMain(); } else cmdInit(pos[0], pos[1]); break;
   case 'state': cmdState(); break;
   case 'unlock': cmdUnlockAbsent(); break;
