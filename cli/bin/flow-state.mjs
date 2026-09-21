@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { isExternalResearchTool } from './external-tools.mjs';
 
 const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
@@ -29,11 +30,13 @@ function unchangedG1Approval(root, st) {
 const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'externalEvidence', 'turnUsage', 'usageTotals', 'rewriteSeen', 'lastBossInputAt'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
-function hooksOnly(st) {
+// externalEvidence.tool 成員資格由共用判準驗（內建名單＋repo 設定擴充——root 缺省時設定側不生效，
+// 內建名仍驗）：紀錄只能來自 hooks 真實標記——非判準內工具名＝不可能的紀錄＝無效狀態。
+function hooksOnly(st, root) {
   const allowed = HOOK_RECORD_KEYS;
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
-  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task'].includes(st.externalEvidence.tool))) return false;
+  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && isExternalResearchTool(st.externalEvidence.tool, root))) return false;
   if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
   if (Object.hasOwn(st, 'lastBossInputAt') && !timestamp(st.lastBossInputAt)) return false; // 老闆輸入時戳（事實非內容——永不主動清，新鮮度由「晚於進段時間」條件自限）
   if (Object.hasOwn(st, 'turnUsage')) {
@@ -121,7 +124,7 @@ const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_K
   && (!Object.hasOwn(x, 'point') || ['1', '2'].includes(x.point))
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
 
-function endedState(st) {
+function endedState(st, root) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt)) return false;
@@ -132,20 +135,20 @@ function endedState(st) {
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準（ended 帶全帳本）
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
   const records = hookRecords(st);
-  return !Object.keys(records).length || hooksOnly(records);
+  return !Object.keys(records).length || hooksOnly(records, root);
 }
 
-function uninitializedState(st) {
-  return hooksOnly(st);
+function uninitializedState(st, root) {
+  return hooksOnly(st, root);
 }
 // 接納工具實際產生的無段位提交紀錄；不接納孤立 null、未知欄位或半個流程。
-function directState(st) {
+function directState(st, root) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
   const skeleton = ['slug', 'ms', 'node'];
   if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null)) return false;
   const records = hookRecords(st);
-  return !Object.keys(records).length || hooksOnly(records);
+  return !Object.keys(records).length || hooksOnly(records, root);
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
@@ -165,22 +168,22 @@ function activeExtras(st) {
   if (Object.hasOwn(st, 'stopBlockedAt') && !timestamp(st.stopBlockedAt)) return false;
   return true;
 }
-function activeRecords(st) {
+function activeRecords(st, root) {
   const records = hookRecords(st);
   // research／返工進段以 null 重置外部證據，屬正常流程產物。
   if (records.externalEvidence === null) delete records.externalEvidence;
-  if (Object.keys(records).length && !hooksOnly(records)) return false;
+  if (Object.keys(records).length && !hooksOnly(records, root)) return false;
   if (Object.hasOwn(st, 'lastAdv') && !(objectRecord(st.lastAdv) && Object.entries(st.lastAdv).every(([k, v]) => ['1', '2'].includes(k) && ADV_ENTRY_SHAPE(v, v.node)))) return false;
   if (Object.hasOwn(st, 'edgeAt') && !(objectRecord(st.edgeAt) && Object.values(st.edgeAt).every(timestamp))) return false;
   return activeExtras(st);
 }
-function classifyState(st) {
-  if (uninitializedState(st)) return 'uninitialized';
-  if (directState(st)) return 'direct';
-  if (endedState(st)) return 'ended';
+function classifyState(st, root) {
+  if (uninitializedState(st, root)) return 'uninitialized';
+  if (directState(st, root)) return 'direct';
+  if (endedState(st, root)) return 'ended';
   if (objectRecord(st) && typeof st.slug === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) &&
       typeof st.ms === 'string' && /^\d{3,}$/.test(st.ms) && Number(st.ms) >= 1 &&
-      ACTIVE_NODES.has(st.node) && activeRecords(st)) return 'active';
+      ACTIVE_NODES.has(st.node) && activeRecords(st, root)) return 'active';
   return 'invalid';
 }
 function readFlowState(root) {
@@ -188,7 +191,7 @@ function readFlowState(root) {
   let result;
   try {
     const state = migrateStreams(JSON.parse(readFileSync(file, 'utf8')));
-    result = { kind: classifyState(state), state };
+    result = { kind: classifyState(state, root), state };
   } catch (error) {
     if (error.code !== 'ENOENT') return { kind: 'invalid', state: null };
     try { lstatSync(file); return { kind: 'invalid', state: null }; }

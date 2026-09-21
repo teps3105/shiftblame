@@ -53,7 +53,9 @@ const NEU_DIRS = [];
 process.on('exit', () => { for (const d of NEU_DIRS) rmSync(d, { recursive: true, force: true }); });
 
 function relocateShared(text) {
-  return text.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${new URL('../../cli/bin/flow-state.mjs', import.meta.url).href}'`);
+  return text
+    .replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${new URL('../../cli/bin/flow-state.mjs', import.meta.url).href}'`)
+    .replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)external-tools\.mjs['"]/g, `from '${new URL('../../cli/bin/external-tools.mjs', import.meta.url).href}'`);
 }
 
 function neutralize(srcPath, pairs) {
@@ -68,9 +70,11 @@ function neutralize(srcPath, pairs) {
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu-'));
   NEU_DIRS.push(dir);
   const out = join(dir, 'ablated.mjs');
-  // 消融檔在隔離目錄執行，仍指向同一份狀態分類實作。
+  // 消融檔在隔離目錄執行，仍指向同一份狀態分類與外部工具判準實作。
   const shared = new URL('../../cli/bin/flow-state.mjs', import.meta.url).href;
+  const sharedExt = new URL('../../cli/bin/external-tools.mjs', import.meta.url).href;
   t = t.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${shared}'`);
+  t = t.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)external-tools\.mjs['"]/g, `from '${sharedExt}'`);
   writeFileSync(out, t);
   return out;
 }
@@ -417,7 +421,7 @@ ablation('文件陳述錨（governance assert.match 錨行——刪除漂移攔�
 });
 
 ablation('ended 初始化入口（移除即重現結束後死路）', () => {
-  const neu = neutralize(SB, [['const ended = endedState(prior);', 'const ended = false;']]);
+  const neu = neutralize(SB, [['const ended = endedState(prior, ROOT);', 'const ended = false;']]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'ended', endedAt: '2026-09-08T01:00:00.000Z' } });
     mkdirSync(join(r, '.shiftblame/archive'));

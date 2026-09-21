@@ -20,6 +20,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
+import { isExternalResearchTool } from '../cli/bin/external-tools.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
 
@@ -99,7 +100,7 @@ function nodeLine(root) {
       : '——G1 定義邊：經查證的現況事實＋BDD 七鍵；初次核准或定義變更後，時點 1 對抗（sb adversarial --point 1）＋老闆 pass（--boss-ok）才進 research';
     if (st.node === 'research') hint = st.externalEvidence?.done
       ? `——外部證據已記（@${st.externalEvidence.tool}）；依證據檢驗 G1 前提與 G2 結論，需求疑義回 requirement 查證`
-      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（WebSearch／WebFetch／webReader／web.run（web__run） 查證或外部唯讀子代理）——零外部推不過（CARD⑨）';
+      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（平台查證／外部唯讀子代理——判準＝內建精確名單＋.shiftblame/external-tools.json 設定擴充（git 追蹤且乾淨才生效））——零外部推不過（CARD⑨）';
     if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫；研究前提不成立回 research 修正，計畫成立並核對一致後進 test';
     if (st.node === 'test') hint = '——將 G3 寫成可執行測試；計畫操作、依賴或可測性不成立時 sb next plan 修正，保留需求契約與輪次';
     if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；代理驗出問題時回 build／test 修復，依根因可續退 plan／research；老闆判 fail 或需求修約才重走 intent；驗收完成、G1 回指閉環後時點 2 對抗（sb adversarial --point 2——審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 出口 next（--new-ms --adversarial --boss-ok）或 end（--adversarial --boss-ok）';
@@ -286,14 +287,14 @@ function recordRewriteSeen(root, tool, toolInput) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 外部證據標記：PreToolUse 偵測外部工具調用——WebSearch／WebFetch／webReader／web.run（web__run）（外部查證）
-// 與 Agent／Task（外部唯讀子代理）；Codex 事件實名為 webrun／collaborationspawn_agent／collaborationfollowup_task。精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
+// 外部證據標記：PreToolUse 偵測外部工具調用（外部查證與外部唯讀子代理）。判準由共用模組承擔（單一事實來源）：
+// 內建各平台精確名單＋repo 設定擴充（.shiftblame/external-tools.json——git 追蹤且乾淨才生效）；
+// 精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
 // 記錄 {done, at, tool}。重置由 CLI 承擔（每次進 research 與返工時清）——hooks 只記事實不重置。
-const EXTERNAL_RESEARCH_TOOLS = new Set(['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']);
 function markExternalEvidence(root, tool) {
   if (!root) return;
   const name = String(tool ?? '');
-  if (!EXTERNAL_RESEARCH_TOOLS.has(name)) return;
+  if (!isExternalResearchTool(name, root)) return;
   try {
     const statePath = join(root, '.shiftblame', 'flow-state.json');
     if (!existsSync(statePath)) return;

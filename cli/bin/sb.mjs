@@ -19,6 +19,7 @@ import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:pat
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
+import { externalToolConfigStatus } from './external-tools.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -137,7 +138,7 @@ const usage = (code = 2) => {
                                         推進（閘門不過即擋）
                                         外部證據閘：research→plan 邊驗
                                         「至少一次外部工具調用」（hooks 標記 externalEvidence——
-                                        WebSearch／WebFetch／webReader／web.run（web__run）／Agent；
+                                        平台查證／外部唯讀子代理（內建精確名單＋.shiftblame/external-tools.json 設定擴充）；
                                         重走 intent 開新輪時進 research 段重置、該邊重新驗）；零外部推不過
                                         --boss-ok：老闆授權留痕（intent→requirement、requirement→research 邊＋pass 出口：--new-ms／sb end）
                                         --new-ms：開新里程碑（僅 verify→intent 出口邊，時點 2 對抗＋老闆終審 pass 後；MUST --adversarial --boss-ok）
@@ -364,7 +365,9 @@ function gate(st, target, opts) {
   // 外部證據閘：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence；
   // 每次進 research 都重置，包含 plan→research 的技術修正）。
   if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
-    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（WebSearch／WebFetch／webReader／web.run（web__run） 查證，或外部唯讀子代理；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
+    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（平台查證／外部唯讀子代理——判準＝內建精確名單＋.shiftblame/external-tools.json 設定擴充；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
+    const cfg = externalToolConfigStatus(ROOT);
+    if (cfg.reason) problems.push(`〔設定擴充未生效〕.shiftblame/external-tools.json ${cfg.reason}——生效條件：git 追蹤且工作樹乾淨（經提交審查面）`);
     const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
@@ -633,7 +636,7 @@ function closedGitPlan(st) {
 function cmdCloseout(base) {
   if (!existsSync(STATE_FILE)) die(['尚無流程，無法查證收尾']);
   const st = readStartupState();
-  if (!endedState(st)) die(['收尾查證僅接受合法 ended 狀態']);
+  if (!endedState(st, ROOT)) die(['收尾查證僅接受合法 ended 狀態']);
   const problems = endedInitProblems(st);
   if (!hasGitMetadata()) problems.push('非 Git 工作區不需合併查證');
   if (!branchName(base)) problems.push('請以 --base 明確指定本機基底分支');
@@ -694,8 +697,8 @@ function cmdInit(slug, type = 'feat') {
   if (!TYPES.includes(type)) die([`type 僅接受：${TYPES.join('/')}（預設 feat）——收到：${type}`], 2);
   requireHealthyState();
   const prior = existsSync(STATE_FILE) ? readStartupState() : null;
-  const ended = endedState(prior);
-  if (existsSync(STATE_FILE) && !uninitializedState(prior) && !directState(prior) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法未初始化／直接實行紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
+  const ended = endedState(prior, ROOT);
+  if (existsSync(STATE_FILE) && !uninitializedState(prior, ROOT) && !directState(prior, ROOT) && !ended) die([`flow-state 已存在（${STATE_FILE}）且非合法未初始化／直接實行紀錄或 ended——進行中流程、部分初始化或異常資料保持原樣`]);
   if (ended) { const problems = endedInitProblems(prior); if (problems.length) die(problems); }
   for (const target of ended ? [join(SB_DIR, slug), join(SB_DIR, 'archive', slug)] : []) {
     if (existsSync(target)) die([`新 slug 路徑已占用：${target}——選擇未使用的 slug，既有文件保持原樣`]);
@@ -754,7 +757,7 @@ function cmdInit(slug, type = 'feat') {
 function cmdInitMain(slugArg) {
   if (slugArg) usage();
   const current = requireHealthyState();
-  if (!endedState(current.state)) die([`完結僅接受合法 ended 狀態（目前 ${current.kind}）——sb init --main 是 ended 的收束出口；開新流程走 sb init <新slug>`]);
+  if (!endedState(current.state, ROOT)) die([`完結僅接受合法 ended 狀態（目前 ${current.kind}）——sb init --main 是 ended 的收束出口；開新流程走 sb init <新slug>`]);
   const st = current.state;
   if (st.concludedAt) die([`本 slug 已完結（${st.concludedAt}）——base 分支直接作業中；開新流程走 sb init <新slug>`]);
   const problems = [...endedInitProblems(st), ...closedGitPlan(st).problems];
@@ -798,7 +801,7 @@ function cmdState() {
     return;
   }
   if (st?.node === 'ended') {
-    if (!endedState(st)) die(['ended 狀態不完整或未知——保留原檔，查明原因後修復']);
+    if (!endedState(st, ROOT)) die(['ended 狀態不完整或未知——保留原檔，查明原因後修復']);
     if (st.concludedAt) {
       out(`slug: ${st.slug}   狀態：ended＋已完結（${st.concludedAt}）——base 分支直接作業中（直接實行語意）`);
       out('  提交走 sb commitmsg（正常 type 訊息）；開新工作：經 shiftblame:think 對齊後 sb init <新slug>');
@@ -1172,9 +1175,9 @@ function cmdCommitmsg(msg) {
   const problems = [];
   // 已歸檔 slug 的合併訊息由 closeout 固定；仍經對抗檢查及精確訊息印章。
   // 完結（sb init --main）後固定合併訊息失效——合併證據已由 closeout 查證，直接作業走正常 type 訊息。
-  const isSlugMerge = endedState(current.state) && !current.state.concludedAt && msg === `merge ${current.state.slug}`;
+  const isSlugMerge = endedState(current.state, ROOT) && !current.state.concludedAt && msg === `merge ${current.state.slug}`;
   const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
-  if (!m && !isSlugMerge) problems.push(endedState(current.state) && current.state.concludedAt && msg === `merge ${current.state.slug}`
+  if (!m && !isSlugMerge) problems.push(endedState(current.state, ROOT) && current.state.concludedAt && msg === `merge ${current.state.slug}`
     ? 'slug 已完結（sb init --main）——固定合併訊息僅限完結前收尾；直接作業提交走 `<type>: <繁中描述>`'
     : '缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）；已歸檔合併限目前 slug 的 `merge <slug>`');
   else if (m) {

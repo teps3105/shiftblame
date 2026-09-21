@@ -57,6 +57,24 @@ hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { comman
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'Agent' } });
 assert.equal(state().externalEvidence, null, '冒名／相近名／Bash 內嵌／Skill 夾帶皆不標記（精確錨定工具名）');
 
+// —— 3.5 設定擴充（跨平台通用結構）：未提交不生效 → 經提交審查面後登錄生效過閘 ——
+const beforeCfg = readFileSync(statePath, 'utf8');
+writeFileSync(join(root, '.shiftblame', 'external-tools.json'), JSON.stringify({ tools: ['NewPlatformSearch'] }));
+extCall('NewPlatformSearch');
+assert.equal(state().externalEvidence, null, '未追蹤設定不標記（agent 自寫≠登錄——經提交審查面）');
+r = run('next', 'plan');
+assert.equal(r.status, 1, '未登錄的平台工具零外部調用仍擋');
+assert.match(r.stderr, /設定擴充未生效/, '閘擋附設定未生效原因提示');
+assert.equal(git('add', '-f', '.shiftblame/external-tools.json').status, 0);
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'chore: 登錄平台外部工具').status, 0);
+// 測試直跑 git 不經 hook——第二次以不同輸入成新指紋，避免迴圈斷路器模式①（無變更重跑）誤傷本驗證。
+const logged = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'NewPlatformSearch', tool_input: { query: '登錄後驗證' } });
+assert.equal(logged.status, 0, logged.stderr);
+assert.equal(state().externalEvidence?.tool, 'NewPlatformSearch', '已提交設定登錄的平台工具標記 externalEvidence');
+r = run('next', 'plan');
+assert.equal(r.status, 0, '設定登錄的平台工具查證後可推進 plan（免改框架碼）');
+writeFileSync(statePath, beforeCfg);
+
 // Codex 平台事件：實際跑 hook → CLI 推進；近似名稱及包裝器不算。
 for (const tool of ['web.runX', 'webrunX', 'mcp__x__webrun', 'collaborationspawn_agentX', 'collaborationfollowup_taskX', 'collaborationwait_agent', 'mcp__unknown__web__run', 'collaboration.wait_agent', 'functions.exec']) {
   hookRun({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { code: 'await tools.web__run({search_query:[{q:"x"}]})' } });

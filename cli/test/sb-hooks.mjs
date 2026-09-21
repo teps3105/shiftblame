@@ -361,4 +361,63 @@ assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
   writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));
   assert.equal(bash('git add x.txt').status, 0, '修復完成（狀態可辨識）後 git 寫入恢復');
 }
+// —— 13. 外部工具判準設定擴充（跨平台通用結構）：未追蹤／未提交／格式無效 fail-closed，提交後生效 ——
+{
+  const cfgRoot = mkdtempSync(join(tmpdir(), 'sb-extcfg-'));
+  process.on('exit', () => rmSync(cfgRoot, { recursive: true, force: true }));
+  mkdirSync(join(cfgRoot, '.shiftblame', 'tmp'), { recursive: true });
+  const cr = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: cfgRoot, ...payload }), encoding: 'utf8' });
+  const cstate = () => JSON.parse(readFileSync(join(cfgRoot, '.shiftblame', 'flow-state.json'), 'utf8'));
+  writeFileSync(join(cfgRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'research', history: [] }));
+  const extCall = (tool) => cr({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: {} });
+  const cfgFile = join(cfgRoot, '.shiftblame', 'external-tools.json');
+  const writeCfg = (obj) => writeFileSync(cfgFile, typeof obj === 'string' ? obj : JSON.stringify(obj));
+  const commitCfg = (msg) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-am', msg], { cwd: cfgRoot, encoding: 'utf8' });
+  // 非 git 目錄：設定存在也不生效（fail-closed）
+  writeCfg({ tools: ['NewPlatformSearch'] });
+  extCall('NewPlatformSearch');
+  assert.equal(cstate().externalEvidence, undefined, '非 git 目錄設定不生效（fail-closed）');
+  assert.equal(spawnSync('git', ['init'], { cwd: cfgRoot, encoding: 'utf8' }).status, 0);
+  // git 目錄但未追蹤：不生效
+  extCall('NewPlatformSearch');
+  assert.equal(cstate().externalEvidence, undefined, '未追蹤設定不生效（agent 自寫≠登錄——經提交審查面）');
+  // 追蹤且提交後：生效（精確全等）
+  assert.equal(spawnSync('git', ['add', '-f', '.shiftblame/external-tools.json'], { cwd: cfgRoot, encoding: 'utf8' }).status, 0);
+  assert.equal(commitCfg('chore: 登錄平台工具').status, 0);
+  extCall('NewPlatformSearch');
+  assert.equal(cstate().externalEvidence?.tool, 'NewPlatformSearch', '已提交設定登錄的平台工具名標記 externalEvidence（跨平台通用化）');
+  extCall('mcp__myresearch__query');
+  assert.equal(cstate().externalEvidence?.tool, 'NewPlatformSearch', '未登錄 MCP server 不標記（mcp__web_reader__webReader 為唯一內建——server 信任單位）');
+  // server 前綴條目：提交後承接整個 server
+  writeCfg({ tools: ['NewPlatformSearch', 'mcp__myresearch__'] });
+  assert.equal(commitCfg('chore: 登錄 research server').status, 0);
+  extCall('mcp__myresearch__query');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', 'server 前綴條目（mcp__ 開頭＋__ 結尾）承接整個 server');
+  // 精確錨定不變：大小寫／相近名／內建外本地工具不計
+  extCall('newplatformsearch');
+  extCall('NewPlatformSearchX');
+  extCall('Read');
+  extCall('Bash');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '大小寫變體／相近名／本地工具不覆寫（精確錨定）');
+  // 提交後再改（未提交變更）：失效回 fail-closed
+  writeCfg({ tools: ['AnotherTool'] });
+  extCall('AnotherTool');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '未提交變更的設定不生效（dirty 即 fail-closed）');
+  // 格式無效（提交後乾淨狀態驗格式面）：整份不生效、不崩
+  assert.equal(commitCfg('chore: 暫存').status, 0);
+  writeCfg('not json');
+  assert.equal(commitCfg('chore: 壞格式').status, 0);
+  extCall('AnotherTool');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', 'JSON 無法解析整份不生效（不崩潰、留既有標記）');
+  writeCfg({ tools: [] });
+  assert.equal(commitCfg('chore: 空清單').status, 0);
+  extCall('AnotherTool');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '空 tools 陣列無效（fail-closed）');
+  writeCfg({ tools: ['mcp__'] });
+  assert.equal(commitCfg('chore: 裸前綴').status, 0);
+  extCall('mcp__anything__goes');
+  extCall('mcp__zz');
+  extCall('NewPlatformSearch');
+  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '裸 mcp__ 條目＝整個 MCP 命名空間萬用——整份格式無效不生效（連精確條目一併失效）');
+}
 console.log('sb-hooks: pass');

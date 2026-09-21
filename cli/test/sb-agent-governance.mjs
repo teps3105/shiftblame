@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.6.0');
+assert.equal(manifest.version, '2.6.1');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.6.0"/);
+assert.match(skill, /version: "2.6.1"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -80,7 +80,10 @@ assert.match(skill, /大型研究.*MUST 外部唯讀子代理/s, 'SKILL 記載�
 assert.match(readme, /對話由平台承載/);
 assert.match(readme, /理解宣告/);
 assert.match(readme, /外部性/, 'README 記載研究／返工外部性閘');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /EXTERNAL_RESEARCH_TOOLS/, 'hooks 外部工具清單存在');
+assert.match(read('cli', 'bin', 'external-tools.mjs'), /BUILTIN_EXTERNAL_TOOLS/, '外部工具判準共用模組存在（單一事實來源）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /external-tools\.mjs/, 'hooks 標記側接入共用判準');
+assert.match(read('cli', 'bin', 'sb.mjs'), /external-tools\.mjs/, 'CLI 閘門接入共用判準');
+assert.match(read('cli', 'bin', 'flow-state.mjs'), /isExternalResearchTool/, '狀態驗證側接入共用判準（紀錄只能來自 hooks——與標記側同源）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /⑨/, 'CARD⑨ 外部性閘條');
 assert.ok(!read('hooks', 'shiftblame-guard.mjs').includes('isUnlockCmd'), '解鎖單體通道已撤');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordInput/, 'hooks 回合邊界處理（模式追蹤重置＋舊流鍵冪等剝除）');

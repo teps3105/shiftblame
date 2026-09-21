@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.0-2ea44f.svg" alt="version 2.6.0"/>
+  <img src="https://img.shields.io/badge/version-2.6.1-2ea44f.svg" alt="version 2.6.1"/>
 </p>
 
 ---
@@ -290,7 +290,10 @@ MIT License. 不接受外部貢獻。
   - 只有確定未忽略才補一行，沿用原換行格式；Git 查詢失敗則提示並保留原檔。
   - 非 Git 目錄採有限的直接規則辨識，接受 LF／CRLF 與根目錄前綴。
   - 忽略規則檢查不改動已追蹤檔案的索引，staged 系統檔仍由提交閘門攔截。
-- 外部查證辨識支援 Codex 的 `web.run`／`web__run`／`functions.web__run` 與 `spawn_agent`／`collaboration.spawn_agent`／`functions.spawn_agent`。
-  - hooks 與初始化驗證採相同精確名單；Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 分別承接網頁查證、建立子代理與接續檢閱，不能只看介面名稱。
-  - 不把 `functions.exec` 的程式碼文字或任意 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
+- 外部查證辨識＝跨平台通用結構：hooks 標記、CLI 閘門與狀態驗證共用同一份判準（`cli/bin/external-tools.mjs` 單一事實來源）＝內建精確名單＋repo 設定擴充。
+  - 內建名單涵蓋各平台已查證的註冊事件名（ZCode `WebSearch`／`WebFetch`／`Agent`、Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 與介面名 `web.run`／`web__run`／`functions.web__run`／`spawn_agent` 族、`mcp__web_reader__webReader` 等）——精確全等，大小寫／相近名／內嵌字串不計。
+  - 設定擴充 `.shiftblame/external-tools.json`：`{ "tools": ["精確工具名", "mcp__server__"] }`——新平台或新 MCP server 免改框架碼即可登錄；僅 git 追蹤且工作樹乾淨時生效（設定內容經提交審查面，agent 未提交的自寫設定不生效——防自肥外部性閘）；`mcp__` 開頭且 `__` 結尾的條目以 server 為信任單位承接其全部工具（以 `__` 字面分段——裸 `mcp__` 整份視為格式無效）。
+  - 設定檔的提交路徑：`.shiftblame/` 受系統檔不入庫閘約束，agent 的 staged 會被擋——登錄＝由老闆在 hooks 外手動 `git add -f`＋提交（被 gitignore 但強制追蹤，兩性質並存）。
+  - 設定失效的後果：externalEvidence 已記錄設定工具名後，設定轉為未追蹤／未提交變更或被刪除時，當前 flow-state 分類即轉 invalid（接入異常封閉，fail-closed）——恢復＝還原或提交該設定檔。
+  - 不把 `functions.exec` 的程式碼文字或未登錄的 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
 - 初始化保留既有紀錄：純 hooks 紀錄與已歸檔的合法 ended 可初始化，進行中或異常流程保持原樣；狀態診斷提示下一個入口。
