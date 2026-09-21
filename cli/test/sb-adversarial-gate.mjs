@@ -38,9 +38,8 @@ assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目僅屬 RAM 對照（2.4.0 無 commit 章分流）');
-// 停時點 1 決策邊先申報（2.5.5：有停點申報＝裁決通道——老闆回覆零推回；無申報的中段老闆輸入＝機械推回新輪）
-assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 回合邊界模擬（裁決通道——stopReport 在場零推回；2.5.2 旗標即章——時點 1 邊由 --boss-ok 承載）
+// 時點 1 決策邊停靠（2.6.3 位置導向——requirement＋對抗完成＝裁決通道）：老闆回覆零推回，待決由回覆說明承載
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 回合邊界模擬（裁決通道——requirement＋新鮮時點 1 條目零推回；旗標即章——時點 1 邊由 --boss-ok 承載）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);

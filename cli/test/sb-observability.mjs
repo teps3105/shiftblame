@@ -57,8 +57,7 @@ writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出�
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆決策邊輸入（對話承載——旗標即章）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 assert.equal(pt('1').status, 0, '時點 1 對抗宣告');
-assert.equal(run('stop-report', '--question', '時點 1 終審：意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆 pass 輸入（requirement＋對抗完成＝決策邊裁決通道——零推回，對話承載）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
 assert.equal(run('next', 'plan').status, 0);
@@ -124,8 +123,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
 assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
-assert.equal(run('stop-report', '--question', '時點 1 終審：重走後意圖→需求翻譯（G1）待老闆判定').status, 0); // 停決策邊申報（2.5.5：裁決通道——老闆回覆零推回）
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆 pass 輸入（對話承載——機械不驗時戳）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆 pass 輸入（requirement＋對抗完成＝決策邊裁決通道——零推回，對話承載）
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（research→plan 邊驗——重走進段重置後重新驗）
 assert.equal(run('next', 'plan').status, 0);
@@ -137,33 +135,38 @@ writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
 assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（中鏈零審核——樹淨即過）');
 assert.equal(pt('2').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
-assert.equal(run('stop-report', '--question', '時點 2 終審：驗收結果待老闆判定（slug 終結裁決）').status, 0); // 停裁決邊申報（2.5.5：裁決通道——老闆回覆零推回；end 邊擋停不清申報，覆蓋至出口）
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（對話承載——旗標即章）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（verify＋對抗完成＝決策邊裁決通道——零推回，對話承載）
 
-// —— 5. SOP／ROADMAP 每 ms 審查閘：有文件未審即 pass 擋；sopreview 留痕後放行——機械基本功未過則戳記不發 ——
+// —— 5. SOP／ROADMAP 每 ms 審查閘（2.6.3）：有文件未審即出口擋；sopreview 逐檔三態計數留痕＋sha256 綁定
+// （審後改檔即失效——堵「審了」橡皮章與只增不減）；機械基本功未過則戳記不發 ——
 const today = new Date().toISOString().slice(0, 10);
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n');
-assert.match(run('end', '--adversarial', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即 pass 擋下');
-assert.match(run('sopreview').status !== undefined && run('sopreview').stderr, /三問結論/, '缺三問結論即擋');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /每 ms 必審/, '本 ms 未審即出口擋下');
+assert.match(run('sopreview').stderr, /三態計數|逐條重評估/, '結論未逐檔申報三態計數即擋（「審了」「三問全過」不是審查——刪／改／留計數可抽查）');
+const triState = 'SOP 逐條重評估：刪1 改1 留3（增0）';
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範。\n本專案規範。\n2026-01-01 起改用新流程\n');
-const dirty = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+const dirty = run('sopreview', triState);
 assert.equal(dirty.status, 1, '機械基本功未過——審查戳記不發');
 assert.match(dirty.stderr, /重複行|日期開頭/, '違規清單指出重複與日期日誌行');
 assert.equal(state().sopReview, undefined, '髒文件不發戳記');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範，登入強化由 slug: hardening 系列承載並對照 AC-03 驗收條目。\n');
-const coded = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+const coded = run('sopreview', triState);
 assert.equal(coded.status, 1, '任務代號未清——審查戳記不發');
 assert.match(coded.stderr, /任務工作項目識別字|驗收條目編號/, '違規清單指出任務代號');
 assert.equal(state().sopReview, undefined, '含任務代號的文件不發戳記');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範，開發流程依 shiftblame 七段推進，每次 commit 過 sb commitmsg 印章。\n');
-const framed = run('sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+const framed = run('sopreview', triState);
 assert.equal(framed.status, 1, '框架重述未清——審查戳記不發');
 assert.match(framed.stderr, /框架名稱|流程機制語彙|框架指令引用/, '違規清單指出框架重述');
 assert.equal(state().sopReview, undefined, '含框架重述的文件不發戳記');
 writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範（重複句已合併）。\n');
-assert.equal(run('sopreview', '三問全過：無基質重複、無退役規則、無死規則').status, 0, '基本功過——審查留痕');
+assert.equal(run('sopreview', triState).status, 0, '基本功過——審查留痕（逐檔三態計數）');
 assert.equal(state().sopReview.ms, '001', '戳記屬本 ms');
-assert.match(state().sopReview.answers, /三問全過/, '三問結論落檔');
+assert.match(state().sopReview.answers, /刪1 改1 留3/, '逐檔三態計數落檔（刪 0 可見——抽查對照）');
+assert.match(state().sopReview.files['SOP.md'], /^[0-9a-f]{64}$/, '戳記綁定 SOP.md sha256（審後改檔即失效）');
+writeFileSync(join(root, '.shiftblame/SOP.md'), '---\nupdated: ' + today + '\n---\n# SOP\n本專案規範（重複句已合併，審後偷改一行）。\n');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /已變更/, '審查後治理檔變更＝戳記失效——出口擋（堵先審後改窗口）');
+assert.equal(run('sopreview', triState).status, 0, '變更後重跑 sb sopreview 重新綁定');
 const endOut = run('end', '--adversarial', '--boss-ok');
 assert.equal(endOut.status, 0, endOut.stderr);
 

@@ -95,10 +95,7 @@ function migrateStreams(st) {
   // 舊版流程鍵冪等剝除（2.0x 時代欄位——讀取端統一清理；active 容忍未知鍵但 ended 白名單拒絕）
   delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
   if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
-  if (objectRecord(st.stopReport) && Object.hasOwn(st.stopReport, 'inputIdx')) {
-    const { inputIdx, ...rest } = st.stopReport;
-    st.stopReport = rest;
-  }
+  delete st.stopReport; // 停點申報機制已除（2.6.3——停等改位置導向承載）；舊檔讀取即剝（ended 白名單亦拒此鍵）
   if (objectRecord(st?.turnUsage)) { // 斷路器形態遷移：舊計數形（fingerprints／fpEscalations 數字值）歸零重觀察；
     // 新形標記（fpEscalations 值===true）＝模式②升級事實，保留——否則 sb next 讀寫一輪即剝除，模式③永不觸發
     delete st.turnUsage.fingerprints;
@@ -125,8 +122,9 @@ const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_K
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
 
 function endedState(st, root) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt', 'sopReview'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 完結後主基底直接作業的審查戳記（2.6.3）
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt)) return false;
   if (Object.hasOwn(st, 'concludedAt') && !timestamp(st.concludedAt)) return false; // sb init --main 完結戳（維持 ended 分類——main 直接作業）
   if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
@@ -139,33 +137,45 @@ function endedState(st, root) {
 }
 
 function uninitializedState(st, root) {
-  return hooksOnly(st, root);
+  if (!objectRecord(st)) return false;
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記（2.6.3）
+  const { sopReview: _stamp, ...records } = st;
+  return hooksOnly(records, root);
 }
 // 接納工具實際產生的無段位提交紀錄；不接納孤立 null、未知欄位或半個流程。
 function directState(st, root) {
-  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node'];
+  const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'sopReview'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記（2.6.3）
   const skeleton = ['slug', 'ms', 'node'];
   if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null)) return false;
   const records = hookRecords(st);
   return !Object.keys(records).length || hooksOnly(records, root);
 }
 const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
-// SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除。
+// SOP／ROADMAP 審查戳記的綁定清單（各檔 sha256）——鍵集限 SOP.md／ROADMAP.md。
+function validStampFiles(f) {
+  return objectRecord(f) && Object.keys(f).length <= 2 && Object.keys(f).every(k => /^(?:SOP|ROADMAP)\.md$/.test(k) && /^[0-9a-f]{64}$/.test(f[k]));
+}
+// 非 slug 期間審查戳記（直接實行／完結後主基底作業，2.6.3）：at＋answers＋files（＋head 錨定當下 HEAD——無 git 缺省）。
+function validDirectStamp(s) {
+  return objectRecord(s) && exactKeys(s, ['at', 'answers', 'files', ...(Object.hasOwn(s, 'head') ? ['head'] : [])])
+    && timestamp(s.at) && typeof s.answers === 'string' && [...s.answers.trim()].length >= 10
+    && validStampFiles(s.files)
+    && (!Object.hasOwn(s, 'head') || commitId(s.head));
+}
+// SOP／ROADMAP 審查戳記（sb sopreview）屬 ms 內欄位——跨 ms（--new-ms）由 CLI 清除；
+// files（hash 綁定）與 answers 可缺省（舊格式戳記讀取相容——出口閘另擋未綁定者）。
 function activeExtras(st) {
   // worktrees（已移除的多代理工作樹帳本）殘留鍵由 sb end 冪等清理，此處不驗不拒（舊檔兼容）。
-  if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
-    && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10)))) return false;
+  if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : []), ...(Object.hasOwn(st.sopReview, 'files') ? ['files'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
+    && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10))
+    && (!Object.hasOwn(st.sopReview, 'files') || validStampFiles(st.sopReview.files)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
-  if (Object.hasOwn(st, 'stopReport') && !(objectRecord(st.stopReport) && exactKeys(st.stopReport, ['at', 'node', 'question', 'reviewed'])
-    && timestamp(st.stopReport.at)
-    && typeof st.stopReport.node === 'string' && ACTIVE_NODES.has(st.stopReport.node)
-    && typeof st.stopReport.question === 'string' && [...st.stopReport.question.trim()].length >= 10
-    && typeof st.stopReport.reviewed === 'boolean')) return false;
-  if (Object.hasOwn(st, 'stopBlockedAt') && !timestamp(st.stopBlockedAt)) return false;
+  if (Object.hasOwn(st, 'stopBlockedAt') && !timestamp(st.stopBlockedAt)) return false; // 擋停單次消費標記（停等位置導向——純機械標記非報告內容）
   return true;
 }
 function activeRecords(st, root) {

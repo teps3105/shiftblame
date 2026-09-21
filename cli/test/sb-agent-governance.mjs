@@ -13,9 +13,9 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致
-assert.equal(manifest.version, '2.6.2');
+assert.equal(manifest.version, '2.6.3');
 assert.equal(cliPackage.version, manifest.version);
-assert.match(skill, /version: "2.6.2"/);
+assert.match(skill, /version: "2.6.3"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -151,10 +151,11 @@ assert.match(read('cli', 'bin', 'sb.mjs'), /sb-usage\.jsonl/, 'CLI usage 事件�
 assert.match(read('cli', 'bin', 'sb.mjs'), /telemetry/, 'CLI 產出遙測（sb end）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /countUsage/, 'hooks 回合計數＋斷路器模式判定');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /repeats\[fp\] = 'seen'/, 'hooks 指紋記錄（模式①判定基礎）');
-assert.match(skill, /停點偵測/, 'SKILL 記載停點偵測（防偷懶停——活動流程無申報擋停一次）');
-assert.match(skill, /sb stop-report/, 'SKILL 記載停點申報命令（合法停點載體）');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /stopReportLine/, 'hooks 停點申報曝光行（老闆終審真待決 or 偷懶）');
-assert.match(read('cli', 'bin', 'sb.mjs'), /cmdStopReport/, 'CLI 停點申報命令（活動態＋實質門檻）');
+assert.match(skill, /停等位置導向/, 'SKILL 記載停等位置導向（防偷懶停——中鏈段位與對抗未完成的決策邊擋停一次）');
+assert.ok(!skill.includes('stop-report'), 'SKILL 零停點申報命令殘留——機制已除，待決由回覆說明承載');
+assert.match(skill, /待決由回覆說明承載/, 'SKILL 記載待決由回覆說明承載（對話 A2——零申報表單）');
+assert.match(read('hooks', 'shiftblame-guard.mjs'), /atDecisionWait/, 'hooks 停等位置導向判準（intent／對抗已完成決策邊＝合法停等放行）');
+assert.ok(!read('cli', 'bin', 'sb.mjs').includes('cmdStopReport'), 'CLI 停點申報命令已除——合法停等由位置承載，申報表單不復活');
 assert.match(skill, /診斷與狀態修復自由/, 'SKILL 記載異常模式修復自由（唯讀白名單已除）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /修復是異常模式的目的/, 'hooks 異常模式政策：修復自由＋封閉 git 寫入／sb 流程命令');
 

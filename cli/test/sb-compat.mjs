@@ -27,6 +27,10 @@ function classify(state, kind, note) {
 }
 classify({ hooksHeartbeat: { at, event: 'SessionStart' }, inputs: [{ at, text: '舊輸入' }] }, 'uninitialized', '舊未初始化紀錄');
 classify({
+  hooksHeartbeat: { at, event: 'SessionStart' },
+  sopReview: { at, answers: 'SOP 逐條重評估：刪0 改1 留2（增0）', files: { 'SOP.md': 'a'.repeat(64) } },
+}, 'uninitialized', '2.6.3 非 slug 期間審查戳記（at＋answers＋files——head 無 git 缺省）');
+classify({
   slug: null, ms: null, node: null, history: [], hooksHeartbeat: { at, event: 'PreToolUse' },
   adversarialLog: [{ at, report: '.shiftblame/tmp/review-old.md', verdict: '通過', node: null }],
   adversarialAt: at, adversarialConsumed: false,
@@ -54,6 +58,14 @@ classify({
   understandings: [{ at, uptoInput: 4, as, reviewed: false, hash: chain(chain('', 0), 4) }],
 }, 'active', '新欄位齊備的 active（輪替偏移＋全域輸入編號＋鏈自種子接續）');
 classify({
+  slug: 'demo', ms: '001', node: 'test', history: [],
+  sopReview: { ms: '001', at, answers: 'SOP 逐條重評估：刪1 改0 留2（增1）', files: { 'SOP.md': 'b'.repeat(64), 'ROADMAP.md': 'c'.repeat(64) } },
+}, 'active', '2.6.3 活動戳記新形（answers＋files sha256 綁定）讀取相容');
+classify({
+  slug: 'demo', ms: '001', node: 'test', history: [],
+  sopReview: { ms: '001', at, answers: '短', files: { 'SOP.md': '非hex' } },
+}, 'invalid', '活動戳記形狀損壞即 invalid（answers≥10 字、files 值須 sha256）');
+classify({
   slug: 'demo', ms: '001', node: 'ended', endedAt: at, history: [],
   telemetry: {
     diff: { additions: 10, deletions: 2, files: 3 }, baseCommit: 'b'.repeat(40), headCommit: 'c'.repeat(40),
@@ -70,16 +82,26 @@ classify({
   slug: 'demo', ms: '001', node: 'test', history: [],
   turnUsage: { startedAt: at, requests: 40, escalatedAt: at, escalations: 2, fpEscalations: { abc: 2 }, fingerprints: {} },
 }, 'active', '2.1.2 迴圈升級觀測鍵（escalations／fpEscalations——缺省自由、形狀驗證）');
-classify({
-  slug: 'demo', ms: '001', node: 'test', history: [],
-  inputs: [{ at, text: 'x' }],
-  stopReport: { at, inputIdx: 0, node: 'test', question: '需要老闆決定是否引入新依賴以完成功能', reviewed: false },
-  stopBlockedAt: at,
-}, 'active', '2.1.2 停點偵測欄位（stopReport／stopBlockedAt——僅活動態）');
+// 2.6.3 停等位置導向：stopReport（停點申報——機制已除）舊鍵讀取即剝；stopBlockedAt（擋停單次消費標記——
+// 純機械標記非報告內容）保留且形狀驗證。
+{
+  const root = scratch();
+  mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+  writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({
+    slug: 'demo', ms: '001', node: 'test', history: [],
+    stopReport: { at, inputIdx: 0, node: 'test', question: '需要老闆決定是否引入新依賴以完成功能', reviewed: false },
+    stopBlockedAt: at,
+  }));
+  const read = readFlowState(root);
+  assert.equal(read.kind, 'active', 'stopReport 舊鍵不影響分類（讀取即剝）');
+  assert.equal(read.state.stopReport, undefined, 'stopReport 舊鍵由 migrateStreams 剝除（停點申報機制已除——2.6.3）');
+  assert.equal(read.state.stopBlockedAt, at, 'stopBlockedAt 保留（位置導向擋停標記——非報告內容）');
+}
 
 // —— 3. 十專案實機回歸：分類與 2.5.2 重整後基準一致（流不落檔——各 repo 已主動遷移新形） ——
 // 基準＝2.5.2 重整（migrateStreams 全套＋老鍵剝除）當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；
 // Varellune_Document 的 ms-done 髒節點已歸位（2.3x 舊版里程碑完成態 → 2.5.2 七段圓環 intent——差異宣言同批收斂）。
+// 2.6.3 升版重新量測：wsxt 於 2.5.2 後完成 slug（wsxt-rebase ended）——active→ended 漂移如註解預期。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'ended',
   'Trickster-Web': 'active',
@@ -91,7 +113,7 @@ const TEN_PROJECT_BASELINE = {
   'palserver-gui': 'ended',
   'ro-server': 'active',
   shiftblame: 'uninitialized',
-  wsxt: 'active',
+  wsxt: 'ended',
 };
 let scanned = 0;
 for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {

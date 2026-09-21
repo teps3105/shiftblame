@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.2-2ea44f.svg" alt="version 2.6.2"/>
+  <img src="https://img.shields.io/badge/version-2.6.3-2ea44f.svg" alt="version 2.6.3"/>
 </p>
 
 ---
@@ -31,8 +31,8 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **A5 審核兩時點** — 時點 1 對抗（requirement→research 邊——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈、錯誤處置完整性；出口＝時點 2 對抗條目＋老闆終審章同一邊）；對抗在前、老闆判定在後，對抗 MUST 外部唯讀子代理（無自代介面）；中鏈零審核（build→verify 機械推進：E2E 全綠＋working tree 乾淨即過），段內提交僅 sb commitmsg 機械格式閘；研究／返工以外部調用打底（外部性閘——externalEvidence 機械驗，大型研究 MUST 外部唯讀子代理承擔）。
 - **A6 行為證據（真驗收）** — 驗收依據＝行為是否真的發生，不是測試燈號；verify 把 G1 每條 GWT 當驗收劇本實際操作與觀察，行為證據（節錄快照）落回指區；假測試（無斷言、測實作細節、mock 過度、規模溢出）判返工。
 - **A7 寫入分區（RAM/ROM）** — G1~G3／SLUG＝ROM（定義區綁定義邊、回指區綁落地邊，時點 1 邊 hash 封存 G1 契約）；tmp＋flow-state＝RAM；commit 由秘書獨佔、必過 sb commitmsg（hooks 驗章焚章）；.shiftblame/ 經 .gitignore 排除。
-- **A8 曝光制衡與停點** — **迴圈斷路器**擋行為模式而非數量（無變更重跑即擋；擋後逐字重發＝升級自動回 intent 補正 G 檔；升級後仍逐字重發＝本回合封禁；寫入一出現即全清）；停點偵測（活動流程無申報即停＝擋停一次）；觀測落 sb-usage.jsonl（計數純觀測零干預）——工作做到完成為止，老闆沉默不停。
-- **A9 基質與修剪（兩層文件模型）** — 永續層（docs/、SOP、ROADMAP、README）是唯一需與實況對照的文件：**文件先行**（先改到目標狀態再寫碼）、same-commit 更新、提交時陳述對照閘＋測試附**文件陳述錨**（文件漂移即紅燈）；當下層（G/SLUG）用後即歸檔；新機制先對照基質（**基質優先**——git 可答的另造即拆）、錨定實測元行為證據；SOP／ROADMAP 每 ms 審查三問（sb sopreview）。
+- **A8 曝光制衡與停等** — **迴圈斷路器**擋行為模式而非數量（無變更重跑即擋；擋後逐字重發＝升級自動回 intent 補正 G 檔；升級後仍逐字重發＝本回合封禁；寫入一出現即全清）；停等位置導向（中鏈段位與對抗未完成的決策邊＝擋停一次——intent 與對抗已完成的決策邊停等正當，待決由回覆說明承載）；觀測落 sb-usage.jsonl（計數純觀測零干預）——工作做到完成為止，老闆沉默不停。
+- **A9 基質與修剪（兩層文件模型）** — 永續層（docs/、SOP、ROADMAP、README）是唯一需與實況對照的文件：**文件先行**（先改到目標狀態再寫碼）、same-commit 更新、提交時陳述對照閘＋測試附**文件陳述錨**（文件漂移即紅燈）；當下層（G/SLUG）用後即歸檔；新機制先對照基質（**基質優先**——git 可答的另造即拆）、錨定實測元行為證據；SOP／ROADMAP 每 ms 逐條三態裁定（刪／改／留計數申報＋hash 綁定戳記——sb sopreview；非 slug 期間由 sb commitmsg 每 commit 驗戳記）。
 - **A10 對話即人話** — 對老闆輸出＝人話對話（首行一句翻譯、只展開差異點、待決具體問題、每回合重述狀態）；六欄結構是檔案的記錄 schema，不是對話輸出形態。
 
 ## 流程概覽
@@ -73,7 +73,7 @@ flowchart TB
     B2 -.->|任何老闆新輸入 全部段位 適用 含兩時點fail| BOSS
 ```
 
-**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後任何新意圖在該 ms 內一律重走 intent：`sb next intent` 同 ms 開新輪（hooks 機械推回承載——中段無停點申報即代跑；有申報＝裁決通道零推回；「繼續」類中性續行與疑問輸入零位移），段內修復類（執行性修復）由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
+**所有老闆輸入第一步路由回 shiftblame:think，不字面執行指令。** shiftblame:think 是責任轉移線——之前是老闆的鍋（意圖沒打磨好），之後是 agents 的鍋（事情沒做好）。揭露後任何新意圖在該 ms 內一律重走 intent：`sb next intent` 同 ms 開新輪（hooks 機械推回承載——中鏈段位與對抗未完成的決策邊即代跑 sb next intent；對抗已完成的決策邊＝裁決通道零推回；「繼續」類中性續行與疑問輸入零位移），段內修復類（執行性修復）由 agents 自動旗標切段，確認／開工分發執行；純技術裁定由 agents 查證、必要時取得外部子代理唯讀意見後自行負責；只有產品語義、範圍、風險容忍、授權或 pass 出口等非技術決策才路由回 shiftblame:think。
 
 **pass 與 fail 是邊，不是節點。** 全部功能完成、收斂期 E2E 綠燈收斂、working tree 乾淨即 build→verify 機械推進（中鏈零審核）——verify 真驗收（GWT 逐條劇本實操、行為證據落回指區、G1 回指閉環）。驗收完成後時點 2 對抗（對抗在前）審驗收結果，老闆終審 pass 走出口——出口＝時點 2 對抗條目＋終審章同一邊：`sb next intent --new-ms --adversarial --boss-ok`（開下一里程碑，每 ms 遙測結算）或 `sb end --adversarial --boss-ok`（結束 slug 收尾歸檔）；fail 視為老闆新意圖重走 intent。
 
@@ -132,19 +132,19 @@ flowchart TB
 
 ## 安裝
 
-shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、停點偵測（Stop）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
+shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`skills/`](skills/)，並內建 [`hooks/`](hooks/) 反偏移機械注入（SessionStart／UserPromptSubmit／Stop／PreToolUse：不變量卡、節點提醒、停等位置導向（Stop）、commit 留痕硬擋）。依你所使用的 agent 平台之 plugin 載入機制安裝即可，不綁定特定平台。
 
 **Codex 回合結束與流程完成分離**：進行中任務的插入疑問以 commentary 解答後，主對話接續原有已授權未完工作；補充／修正先完成實際 intent 路由與查證，final 前確認應回退者已回退、應分發者已分發。
 
-- 整體完成、無未完工作的純問答、具體待決／必要輸入、主動 think 終審、明確暫停／取消及實際阻塞才是停點。
+- 整體完成、無未完工作的純問答、決策邊待老闆判定（時點對抗完成後）、主動 think 終審、明確暫停／取消及實際阻塞才是合法停等。
 - 完整契約見 [`think`](skills/think/SKILL.md#回合結束與流程接續)。
-- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停點偵測**——活動流程（intent~verify）無本回合申報即擋停一次（條件式、單次消費式——放行即焚攔停標記，不代做路由），要求「續行已授權未完工作」或「`sb stop-report --question` 申報具體待決（≥10 字）」二選一；有申報（新鮮度以本回合第一個工具調用為錨——零工具回合的殘留舊申報不放行）／ended／無流程一律放行。機械只判有無申報，真待決 or 偷懶由申報曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
+- 規則由 SessionStart／UserPromptSubmit 注入；Stop 執行**停等位置導向**——活動流程停在中鏈段位（research／plan／test／build）或對抗未完成的決策邊即擋停一次（條件式、單次消費式——真外部阻塞再停一次即放行，不代做路由），要求續行已授權未完工作至最近決策邊（時點對抗後）再停；intent 與對抗已完成的決策邊（只剩老闆 pass/fail）／ended／無流程一律放行，待決由回覆說明承載（對話而非表單）。機械只判位置與對抗完成度，真待決 or 偷懶由對話曝光＋老闆終審承擔。[Codex Stop 官方協議](https://learn.chatgpt.com/docs/hooks#stop) 的拒停會建立續行提示——單次擋停非無條件重試，不取代上述路由責任。
 
 **hooks 生效說明**：hooks 同時提供路徑安全與**狀態寫入矩陣**防護——破壞性命令（各語言遞迴刪除／覆蓋）配相對路徑即硬擋，`git clean/reset --hard` 未以 `-C` 絕對錨定即擋。
 
 - **對話由平台承載**：對話事實由平台 session 承載——對話流零落檔、零雜湊綁定（基質優先：平台已記對話，另造即拆）；shiftblame:think 調用 args＝理解宣告於對話直接揭露，理解有誤即越權、由老闆終審承擔；完成類鑰匙＝--boss-ok 旗標即章（CLI 驗本次對抗條目新鮮度）＋時點對抗。
-- `SessionStart` 於壓縮後自動注入動態狀態卡（不變量卡＋節點行與停點申報行）。
-- **兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解六欄呈現即停，以 `sb stop-report --question` 申報待決後停，老闆回覆後確認→分發（修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告於對話揭露後直接續跑。
+- `SessionStart` 於壓縮後自動注入動態狀態卡（不變量卡＋節點行）。
+- **兩種觸發樣態**：老闆以 shiftblame:think 調用形式輸入（`/shiftblame:think`、`$shiftblame:think` 或裸名 `shiftblame:think` 開頭）＝主動觸發→停等——理解呈現後本輪即停，回覆說明待決（對話承載——老闆終審回覆），確認→分發（修正→重呈現仍停等）；一般輸入＝被動觸發→理解宣告於對話揭露後直接續跑。
 - 寫檔工具比對段（測試碼 test＋build 段、實作碼限 build／ended）。
 - **staged 系統檔不入庫**：`git commit` 前讀 `git diff --cached --name-only` 事實清單——一律 root 錨定絕對展開後判 `.shiftblame/`，`sb commitmsg` 發章前同判據；跨 repo 提交以 `git -C <絕對路徑>` 的絕對目標為錨定 repo，同一判據對錨定 repo 生效。
 - **路徑展開元規則**：一切路徑判斷 root 錨定絕對展開；git 重定向 GIT_DIR／`--git-dir` 與 alias 定義即擋。
@@ -197,7 +197,7 @@ sb next build                      # 紅燈段內修復旗標切段（不停等�
 sb next test                       # 提交閘判決通過回 test 接下一個功能（旗標切段）
 sb next intent                     # 任何新意圖一律重走 intent：同 ms 開新輪
 sb next intent --new-ms --adversarial --boss-ok  # 時點 2 對抗＋終審 pass 出口：開下一里程碑（驗收完成·G1 回指閉環；前一 ms 遙測結算）
-sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（三問；開新 ms 與 pass 出口前機械驗，無文件不擋）
+sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（逐條三態計數——刪N 改N 留N＋hash 綁定戳記；開新 ms 與 pass 出口前機械驗，非 slug 期間由 sb commitmsg 每 commit 驗戳記，無文件不擋）
 sb end --adversarial --boss-ok     # 時點 2 對抗＋終審 pass 出口：結束 slug → 收尾歸檔＋末段 ms 產出遙測（diff／對抗／計數／耗時）
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
 ```

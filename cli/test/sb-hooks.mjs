@@ -64,34 +64,45 @@ assert.equal(existsSync(join(strayRoot, '.shiftblame')), false, '不得創建流
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
 assert.equal(r.status, 0, '一般 Bash 不攔（無對話鎖）');
 
-// —— 3. 必然曝光已隨理解流拆除（2.5.2 對話承載）：UserPromptSubmit 注入＝不變量卡＋段位＋停點申報——無檔案側理解審視行 ——
+// —— 3. 必然曝光已隨理解流拆除（2.5.2 對話承載）：UserPromptSubmit 注入＝不變量卡＋段位——無檔案側理解審視行 ——
 r = up('曝光驗證輸入');
 assert.equal(r.status, 0);
 const upCtx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
 assert.ok(upCtx.includes('[shiftblame 不變量]'), '不變量卡注入');
 assert.ok(!upCtx.includes('理解審視'), '無檔案側曝光行（理解宣告由 think args 於對話揭露——老闆讀對話即審）');
 
-// —— 4. SessionStart 動態狀態卡（壓縮後回流：段位＋停點申報——機械事實；對話過程由平台摘要承載） ——
+// —— 4. SessionStart 動態狀態卡（壓縮後回流：段位——機械事實；對話過程由平台摘要承載） ——
 setNode('plan');
 const ss2 = run({ hook_event_name: 'SessionStart', source: 'compact' });
 assert.equal(ss2.status, 0);
 assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
 assert.ok(ss2.stdout.includes('@ plan'), '段位');
+assert.ok(!ss2.stdout.includes('停點申報'), '停點申報行已除（2.6.3——待決由回覆說明承載）');
 
-// —— 4.5 老闆輸入＝新輪機械推回（2.5.5）：無停點申報的中段活動流程 → hook 代跑 sb next intent；有申報＝裁決通道零推回 ——
+// —— 4.5 老闆輸入＝新輪機械推回（2.6.3 位置導向）：中鏈段位與對抗未完成的決策邊 → hook 代跑 sb next intent；對抗已完成的決策邊＝裁決通道零推回 ——
 setNode('build');
 const ret = up('老闆新輸入（機械推回驗證）');
 assert.equal(ret.status, 0);
-assert.equal(state().node, 'intent', '老闆新輸入＝新輪——中段無停點申報即機械推回 intent（hook 代跑 sb next intent，計返工輪由 CLI 承載）');
+assert.equal(state().node, 'intent', '老闆新輸入＝新輪——中鏈段位即機械推回 intent（hook 代跑 sb next intent，計返工輪由 CLI 承載）');
 assert.ok(state().lastBossInputAt, '老闆輸入時戳記錄（事實非內容——段內修復邊防護的對照源）');
 assert.ok(JSON.parse(ret.stdout).hookSpecificOutput.additionalContext.includes('[新輪]'), '推回說明注入對話');
 setNode('verify');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), stopReport: { at: new Date().toISOString(), node: 'verify', question: '時點 2 終審：驗收結果待老闆判定（fixture 過 activeExtras 驗證）', reviewed: false } }));
-const adj = up('老闆裁決回覆（裁決通道驗證）');
-assert.equal(adj.status, 0);
-assert.equal(state().node, 'verify', '有停點申報＝裁決通道——零推回（pass 走出口推進邊、fail／新意圖由代理重走 intent，CLI 邊承載）');
+const retV = up('老闆新輸入（verify 對抗未完成推回驗證）');
+assert.equal(retV.status, 0);
+assert.equal(state().node, 'intent', '對抗未完成的決策邊＝機械推回 intent（時點 2 對抗未做——非裁決通道）');
+// 對抗已完成的決策邊＝裁決通道（requirement＋時點1／verify＋時點2——老闆 pass/fail 是唯一剩餘工作，零推回）
+setNode('requirement');
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { 'intent→requirement': new Date(Date.now() - 7200000).toISOString() }, lastAdv: { '1': { at: new Date(Date.now() - 3600000).toISOString(), report: '時點 1 對抗報告（fixture）', verdict: '通過', node: 'requirement', point: '1' } } }));
+const adj1 = up('老闆時點 1 裁決回覆（pass）');
+assert.equal(adj1.status, 0);
+assert.equal(state().node, 'requirement', '時點 1 對抗完成＝裁決通道——零推回（pass 走出口推進邊、fail／新意圖由代理重走 intent，CLI 邊承載）');
+setNode('verify');
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { 'build→verify': new Date(Date.now() - 7200000).toISOString() }, lastAdv: { '2': { at: new Date(Date.now() - 3600000).toISOString(), report: '時點 2 對抗報告（fixture）', verdict: '通過', node: 'verify', point: '2' } } }));
+const adj2 = up('老闆時點 2 裁決回覆（pass）');
+assert.equal(adj2.status, 0);
+assert.equal(state().node, 'verify', '時點 2 對抗完成＝裁決通道——零推回（出口邊由 CLI 承載）');
 // 中性續行豁免：「繼續」類詞表精確全等——非新輪（不推回、不記時戳，接續原段）
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), lastBossInputAt: undefined, stopReport: undefined, node: 'build' }));
+writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), lastBossInputAt: undefined, node: 'build' }));
 const cont = up('繼續');
 assert.equal(cont.status, 0);
 assert.equal(state().node, 'build', '中性續行（詞表精確全等）非新輪——不推回，接續原段');
@@ -121,55 +132,53 @@ for (const payload of [
   assert.equal(result.status, 0);
   const context = JSON.parse(result.stdout).hookSpecificOutput;
   assert.equal(context.hookEventName, payload.hook_event_name);
-  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', '停點偵測（防偷懶停）', 'sb stop-report']) {
+  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', '停等位置導向（防偷懶停）', '回覆說明承載']) {
     assert.ok(context.additionalContext.includes(rule), `${payload.hook_event_name} 注入接續規則：${rule}`);
   }
 }
-// Stop＝停點偵測：活動流程（intent~verify）無本回合申報即停＝擋停一次（條件式、單次消費式、不代做路由）；
-// 有申報／stop_hook_active／停等／done／ended／無流程放行——放行即消費自限標記（殘留至多錯放一次）。
-for (const node of ['intent', 'plan', 'build', 'verify']) {
+// Stop＝停等位置導向（2.6.3）：中鏈段位與對抗未完成的決策邊＝擋停一次（條件式、單次消費式、不代做路由）；
+// intent／對抗已完成的決策邊／stop_hook_active／done／ended／無流程放行——待決由回覆說明承載；放行即消費自限標記。
+for (const node of ['plan', 'build', 'verify']) {
   setNode(node);
-  up('停點偵測回合輸入（回合邊界——申報新鮮度基準 turnUsage 於回合內第一個工具調用重建）');
   const before = state();
   delete before.hooksHeartbeat; // 心跳隨每次 hook 執行更新——比對事實面時排除
   const blocked = run({ hook_event_name: 'Stop', last_assistant_message: '先停在這' });
-  assert.equal(blocked.status, 2, node + '：無申報之停擋停一次（停點偵測）');
-  assert.match(blocked.stderr, /停點偵測/, '擋停訊息要求「續行或申報」');
+  assert.equal(blocked.status, 2, node + '：中鏈段位／對抗未完成的決策邊擋停一次（停等位置導向）');
+  assert.match(blocked.stderr, /停等位置導向/, '擋停訊息要求續行至最近決策邊（時點對抗後）');
   assert.equal(state().stopBlockedAt !== undefined, true, '擋停寫自限標記（本回合至多擋一次）');
   const pass2 = run({ hook_event_name: 'Stop', last_assistant_message: '再停一次' });
-  assert.equal(pass2.status, 0, node + '：第二次停走自限放行（單次——不無限循環擋停）');
+  assert.equal(pass2.status, 0, node + '：第二次停走自限放行（單次——真外部阻塞逃生口，不無限循環擋停）');
   assert.equal(state().stopBlockedAt, undefined, node + '：放行即消費——標記一次性，不跨回合殘留');
   const st2 = state();
   delete st2.hooksHeartbeat; delete st2.stopBlockedAt;
   assert.deepEqual(st2, before, 'Stop 不改流程節點與狀態事實（不代做路由）');
-  const blocked3 = run({ hook_event_name: 'Stop', last_assistant_message: '第三次停（模擬新輸入清除失效——僅消費保證重閘）' });
-  assert.equal(blocked3.status, 2, node + '：消費後再停重新擋（殘留標記至多錯放一次——新回合重閘由刪除＋消費雙路徑保證）');
-  // 本回合申報：放行（回合錨：申報須晚於 turnUsage.startedAt＝回合內第一個工具調用——真實流 sb stop-report 必經 PreToolUse 建立 startedAt）
-  const stNow = state();
-  stNow.turnUsage = { startedAt: new Date(Date.now() - 60000).toISOString(), requests: 1, repeats: {}, fpEscalations: {} };
-  stNow.stopReport = { at: new Date().toISOString(), node, question: '需要老闆決定是否引入新依賴以完成此功能', reviewed: false };
-  delete stNow.stopBlockedAt;
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stNow));
-  const declared = run({ hook_event_name: 'Stop', last_assistant_message: '已申報待決，停' });
-  assert.equal(declared.status, 0, node + '：有本回合申報放行');
-  // 殘留舊申報＋本回合零工具調用（turnUsage 缺席）：不放行——擋（舊申報不得跨回合頂替新回合的偷懶停）
-  const stStale = state();
-  stStale.stopReport = { at: new Date(Date.now() - 3600000).toISOString(), node, question: '上一回合殘留的舊申報待決問題（fixture 須過 activeExtras 驗證）', reviewed: false };
-  delete stStale.turnUsage; delete stStale.stopBlockedAt;
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stStale));
-  const stale = run({ hook_event_name: 'Stop', last_assistant_message: '新回合純文字回覆直接停' });
-  assert.equal(stale.status, 2, node + '：零工具回合殘留舊申報不放行（回合錨定）');
+  const blocked3 = run({ hook_event_name: 'Stop', last_assistant_message: '第三次停（模擬新回合重閘——僅消費保證）' });
+  assert.equal(blocked3.status, 2, node + '：消費後再停重新擋（新回合重閘由回合邊刪除＋放行消費雙路徑保證）');
   // stop_hook_active：放行（平台自限雙保險——ZCode 無此欄位時由消費式標記承擔單次語義）
   const stH = state();
-  delete stH.stopReport; delete stH.stopBlockedAt;
+  delete stH.stopBlockedAt;
   writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stH));
   const hookActive = run({ hook_event_name: 'Stop', stop_hook_active: true, last_assistant_message: '平台已擋過一次' });
   assert.equal(hookActive.status, 0, node + '：stop_hook_active 放行');
 }
+// 合法停等＝位置承載：intent（意圖沉澱）恆可停；對抗已完成的決策邊停等正當；對抗未完成或時序顛倒從嚴擋
+setNode('intent');
+assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '意圖沉澱停等' }).status, 0, 'intent：決策邊停等正當（放行）');
+const edgeOld = new Date(Date.now() - 7200000).toISOString();
+for (const [node, advKey, edgeKey] of [['requirement', '1', 'intent→requirement'], ['verify', '2', 'build→verify']]) {
+  setNode(node);
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { [edgeKey]: edgeOld }, lastAdv: { [advKey]: { at: new Date(Date.now() - 3600000).toISOString(), report: '時點對抗報告（fixture）', verdict: '通過', node, point: advKey } } }));
+  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '決策邊停等老闆判定' }).status, 0, node + '＋時點對抗完成＝決策邊停等正當（只剩老闆 pass/fail——放行）');
+  setNode(node);
+  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '對抗未完成就停' }).status, 2, node + ' 無時點對抗紀錄：對抗未完成的決策邊零停靠（擋停一次）');
+  setNode(node);
+  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { [edgeKey]: edgeOld }, lastAdv: { [advKey]: { at: new Date(Date.now() - 10800000).toISOString(), report: '舊對抗（進段前）', verdict: '通過', node, point: advKey } } }));
+  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '舊對抗重複消費' }).status, 2, node + '：對抗條目早於進段時間＝未完成（edgeAt 對照從嚴——擋停）');
+}
 for (const node of ['done', 'ended']) {
   setNode(node);
   const result = run({ hook_event_name: 'Stop', last_assistant_message: '完成態停' });
-  assert.equal(result.status, 0, node + '：done／ended 停點本就合法放行');
+  assert.equal(result.status, 0, node + '：done／ended 停等本就合法放行');
 }
 setNode('ended');
 r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
@@ -258,7 +267,7 @@ const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: 
 assert.equal(bad.status, 2);
 assert.match(bad.stderr, /破壞性操作/);
 
-// —— 10. 主動觸發停等已隨理解流拆除（2.5.2 對話承載）：/shiftblame:think 輸入＝回合邊界如常——機械零凍結，寫入回到段位矩陣判定；停等紀律由對話層（think 揭露＋老闆終審＋sb stop-report 申報）承擔 ——
+// —— 10. 主動觸發停等已隨理解流拆除（2.5.2 對話承載）：/shiftblame:think 輸入＝回合邊界如常——機械零凍結，寫入回到段位矩陣判定；停等紀律由對話層（think 揭露＋老闆終審——待決由回覆說明承載）承擔 ——
 setNode('build');
 const activeSlash = up('/shiftblame:think 幫我做理解呈現');
 assert.equal(activeSlash.status, 0, '主動觸發輸入照常處理');

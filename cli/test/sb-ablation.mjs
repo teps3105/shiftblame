@@ -522,23 +522,6 @@ ablation('迴圈升級自動回 intent（模式②——不凍結續行）', () 
   assert.equal(gone.node, 'test', 'ablated：拆掉撤退 spawn 即不自動回 intent（防護消失——停擺風險復活）');
 });
 
-ablation('停點偵測（無申報之停擋停一次）', () => {
-  const neu = neutralize(GUARD, [["否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(2);", "否則續行已授權未完工作。偷懶停由曝光＋老闆終審承擔。\\n');\n      process.exit(0); // ABLATED"]]);
-  const probe = (script) => {
-    const r = mkSandbox({ state: { node: 'test' } });
-    hookRun(script, { cwd: r, hook_event_name: 'UserPromptSubmit', prompt: '繼續' /* 中性續行——2.5.5 推回豁免，隔離被測機制 */ });
-    const result = hookRun(script, { cwd: r, hook_event_name: 'Stop', last_assistant_message: '停在這裡' });
-    const st = stateOf(r);
-    rmSync(r, { recursive: true, force: true });
-    return { status: result.status, blocked: st.stopBlockedAt !== undefined };
-  };
-  const intact = probe(GUARD);
-  assert.equal(intact.status, 2, 'intact：活動流程無申報之停擋停一次（防偷懶停）');
-  assert.equal(intact.blocked, true, 'intact：自限標記落檔（單次擋停）');
-  const gone = probe(neu);
-  assert.equal(gone.status, 0, 'ablated：拆掉擋停判準即無申報之停放行（防護消失——偷懶停復活）');
-});
-
 ablation('文件鐵律（框架 .md 純追加不得 commit）', () => {
   const neu = neutralize(GUARD, [["if (offenders.length) return '文件鐵律：", "// ABLATED: if (offenders.length) return '文件鐵律："]]);
   const probe = (script) => {
@@ -568,10 +551,10 @@ ablation('文件鐵律（框架 .md 純追加不得 commit）', () => {
 });
 
 ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒文件不發審查戳記）', () => {
-  const neu = neutralize(SB, [['const docProblems = hasDocs ? sopDocProblems() : [];', 'const docProblems = []; // ABLATED']]);
+  const neu = neutralize(SB, [['const docProblems = files.length ? sopDocProblems() : [];', 'const docProblems = []; // ABLATED']]);
   const probe = (script) => {
     const r = mkSandbox({ state: { node: 'done' }, files: { '.shiftblame/SOP.md': '---\nupdated: 2020-01-01\n---\n# SOP\n規範甲。\n規範甲。\n' } });
-    const result = cliRun(script, r, 'sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+    const result = cliRun(script, r, 'sopreview', 'SOP 逐條重評估：刪0 改0 留2（增0）');
     const st = stateOf(r);
     rmSync(r, { recursive: true, force: true });
     return { status: result.status, stamped: st.sopReview?.ms === '001' };
@@ -582,6 +565,44 @@ ablation('SOP／ROADMAP 機械基本功檢查（日期類＋重複類——髒�
   const gone = probe(neu);
   assert.equal(gone.status, 0, 'ablated：拆掉機械檢查即髒文件照樣發戳記（防護消失）');
   assert.equal(gone.stamped, true, 'ablated：戳記已發');
+});
+
+ablation('審查結論逐檔三態計數（刪／改／留申報——「審了」橡皮章不發戳記）', () => {
+  const neu = neutralize(SB, [['const conclusionProblems = sopConclusionProblems(q, files);', 'const conclusionProblems = []; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'done' }, files: { '.shiftblame/SOP.md': '---\nupdated: 2026-09-22\n---\n# SOP\n規範甲。\n' } });
+    const result = cliRun(script, r, 'sopreview', '三問全過：無基質重複、無退役規則、無死規則');
+    rmSync(r, { recursive: true, force: true });
+    return result.status;
+  };
+  assert.equal(probe(SB), 1, 'intact：結論未逐檔申報三態計數即擋（不可驗證的宣告不算審查）');
+  assert.equal(probe(neu), 0, 'ablated：拆掉計數驗證即自由文字照樣過（防護消失）');
+});
+
+ablation('審查戳記 sha256 綁定（審後改檔即失效——堵先審後改窗口）', () => {
+  const neu = neutralize(SB, [['if (drifted.length) return `審查後治理檔已變更（${drifted.join(\'、\')}）——重跑 sb sopreview 重新綁定`;', '// ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'verify', adversarialLog: [{ at: new Date(Date.now() - 60000).toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }] }, files: { '.shiftblame/SOP.md': '---\nupdated: 2026-09-22\n---\n# SOP\n規範甲。\n' } });
+    assert.equal(cliRun(script, r, 'sopreview', 'SOP 逐條重評估：刪0 改0 留1（增0）').status, 0, '先留痕（乾淨文件＋計數申報）');
+    writeFileSync(join(r, '.shiftblame/SOP.md'), '---\nupdated: 2026-09-22\n---\n# SOP\n規範甲，審後偷改。\n');
+    const result = cliRun(script, r, 'end', '--boss-ok', '--adversarial');
+    rmSync(r, { recursive: true, force: true });
+    return result;
+  };
+  assert.match(probe(SB).stderr, /已變更/, 'intact：審後改檔＝戳記失效——出口擋');
+  assert.equal(probe(neu).status, 0, 'ablated：拆掉綁定驗證即舊戳記放行（防護消失）');
+});
+
+ablation('Stop 停等位置導向（防偷懶停——中鏈段位擋停一次）', () => {
+  const neu = neutralize(GUARD, [["  if (!isRecord(st)) return false;\n  if (st.node === 'intent') return true;", '  return true; // ABLATED']]);
+  const probe = (script) => {
+    const r = mkSandbox({ state: { node: 'build' } });
+    const h = hookRun(script, { cwd: r, hook_event_name: 'Stop', last_assistant_message: '先停在這' });
+    rmSync(r, { recursive: true, force: true });
+    return h.status;
+  };
+  assert.equal(probe(GUARD), 2, 'intact：中鏈段位（build）之停擋停一次——續行至最近決策邊');
+  assert.equal(probe(neu), 0, 'ablated：拆掉位置判準即全段位停等放行（防偷懶停防護消失）');
 });
 
 ablation('SOP／ROADMAP 每 ms 審查閘（pass 前機械驗本 ms 已審）', () => {
