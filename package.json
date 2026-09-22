@@ -1,0 +1,16 @@
+{
+  "name": "shiftblame",
+  "version": "2.6.6",
+  "description": "shiftblame — 時序制衡的 agent 協作框架（全域 CLI：sb）",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/teps3105/shiftblame"
+  },
+  "bin": {
+    "sb": "cli/bin/sb.mjs"
+  },
+  "files": [
+    "cli/bin/"
+  ]
+}

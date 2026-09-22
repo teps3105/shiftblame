@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.5-2ea44f.svg" alt="version 2.6.5"/>
+  <img src="https://img.shields.io/badge/version-2.6.6-2ea44f.svg" alt="version 2.6.6"/>
 </p>
 
 ---
@@ -154,10 +154,10 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 - **hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。
 - hooks 故障時靜默放行，不阻斷工作。
 
-**安裝來源**
+**安裝來源（開發與發布隔離）**
 
-- **本地目錄**——開發、自用、測試；指向本 repo 根目錄。
-- **Git（GitHub）**——分享、版本追蹤、更新；指向 `https://github.com/teps3105/shiftblame`。
+- **市集（GitHub）為唯一安裝與更新來源**——plugin 自 `https://github.com/teps3105/shiftblame` 安裝與更新；全域 CLI 自同一 repo 安裝：`npm install -g github:teps3105/shiftblame`。框架新版以 push 到該 repo 為發布點，各端從市集更新後才吃到新機制。
+- **開發 repo 零消費端掛載**——本 repo 工作目錄僅供開發與測試（`npm test` 於 cli/、直接 `node cli/bin/sb.mjs` 驗證）。以本地路徑註冊 plugin marketplace、`npm link` 指向本 repo、或任何把執行路徑直接綁到開發工作區的掛載皆為隔離破口——開發中的未發布機制會即時觸及其他專案運行中的治理（症狀：迭代期間其他工作被中途新閘擋下）。全域 CLI 與 plugin 安裝保持市集版快照。
 
 ## 使用
 
@@ -187,7 +187,7 @@ shiftblame skill 會依任務描述自動觸發（開發、審查、研究任務
 流程規範以腳本鎖死（閘門只讀 git 事實與 flow-state，推進需顯式鑰匙；見 SKILL §7）——每個 slug 開始跑 `sb init <slug> [type]`（建全骨架含 <type>/<slug> 分支自動切換），每個階段推進跑 `sb next <node>`，閘門過了（exit 0）才推進。一般階段沿用既有授權，不帶 `--boss-ok`；只有老闆決策邊（意圖確認、時點 1 需求翻譯推進、pass 出口）與顯式修約等真正語義決策留痕：
 
 ```bash
-npm install -g <shiftblame repo>/cli
+npm install -g github:teps3105/shiftblame
 sb init <slug>                     # 開 slug：建全骨架（flow-state＋目錄＋SLUG.md＋archive/＋開發分支自動切換）
 sb state                           # 目前節點與各下一步前置條件
 sb next research --boss-ok --adversarial  # 時點 1 邊（requirement→research——審意圖→需求翻譯：BDD 格式閘（七鍵——含現狀差異宣言）＋GWT 機械掃描＋時點 1 對抗＋adversarialLog point 條目對照＋G1 hash 封存——對抗在前老闆判定在後，pass 才推進）
