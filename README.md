@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.4-2ea44f.svg" alt="version 2.6.4"/>
+  <img src="https://img.shields.io/badge/version-2.6.5-2ea44f.svg" alt="version 2.6.5"/>
 </p>
 
 ---
@@ -124,7 +124,7 @@ flowchart TB
 
 欄位模板與拒絕規則以 [`skills/shiftblame/assets/SOP.md`](skills/shiftblame/assets/SOP.md) 及 [`skills/shiftblame/assets/ROADMAP.md`](skills/shiftblame/assets/ROADMAP.md) 為準；寫入內容依模板准入條件。
 
-文件與實況對照是一等公民（兩層文件模型）：永續層（ROADMAP、SOP、`<repo>/docs/`、`<repo>/README.md`）隨造成變化的程式碼同批更新（same-commit，文件先行——文件先改到目標狀態、碼依文件而寫）。
+文件與實況對照是一等公民（兩層文件模型）：永續層（ROADMAP、SOP、`<repo>/docs/`、`<repo>/README.md`）隨造成變化的程式碼同批更新（same-commit，文件先行——文件先改到目標狀態、碼依文件而寫）。文件位置硬規則——**README 唯一根目錄**：README.md 僅允許存在於 repo 根目錄一份，模塊／子目錄與 docs/ 索引保持無 README，其餘專案文件統一放 `<repo>/docs/`；hooks 寫入攔截＋sb commitmsg 追蹤集驗證機械承載（存量違規擋提交，溯及既往），判準全文見 [`skills/shiftblame/assets/DOCS.md`](skills/shiftblame/assets/DOCS.md) 文件位置節。
 
 - ROADMAP 移除已完成條目並修正剩餘方向、SOP 刪除被取代的值並同步段落、docs 與專案 README 對照 codebase 補齊或刪除。
 - 收尾只是機械歸檔（當下層工作文件移至 archive），零文件改寫。

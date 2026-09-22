@@ -501,6 +501,30 @@ function checkStateWriteMatrix(root, toolInput) {
   return null;
 }
 
+// ———— README 唯一根目錄（assets/DOCS.md §0 文件位置——MUST）：寫入工具觸及非根目錄 README.md 即擋 ————
+// README.md 只允許存在於 repo 根目錄一份——模塊 README 與 docs/README.md 索引皆多重來源；其餘專案文件統一 docs/。
+// 不依段位（root 辨識即管，直接實行同生效）；刪除類＝清理方向放行；搬移類只判落點鍵；
+// 存量違規由 sb commitmsg 追蹤集掃描承擔（溯及既往）；Bash 內直寫不在此層（同寫入矩陣殘餘面——verify 邊樹檢查兜底）。
+const README_RM_TOOL_RE = /delete|remove|unlink|\brm\b|trash/i;
+const README_DEST_KEYS = ['destination', 'dest', 'new_path', 'to'];
+
+function checkReadmePlacement(root, tool, toolInput) {
+  if (!root) return null;
+  if (README_RM_TOOL_RE.test(tool)) return null;
+  const keys = /move|rename/i.test(tool) ? README_DEST_KEYS : PATH_KEYS;
+  const targets = keys.map(k => toolInput?.[k]).filter(v => typeof v === 'string' && v.trim());
+  if (typeof toolInput?.uri === 'string' && /^file:/i.test(toolInput.uri)) targets.push(toolInput.uri.replace(/^file:\/\//i, ''));
+  if (!targets.length) return null;
+  for (const target of targets) {
+    const rel = relative(root, absPath(root, target)).replace(/\\/g, '/');
+    if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此規則管
+    if (rel.includes('/') && /(^|\/)readme\.md$/i.test(rel)) {
+      return `[shiftblame] README 唯一根目錄（${rel}）——README.md 只允許存在於 repo 根目錄一份（模塊 README 與 docs/README.md 索引皆多重來源）；內容搬 <repo>/docs/ 並以主題命名（assets/DOCS.md §0 文件位置）`;
+    }
+  }
+  return null;
+}
+
 // ———— 破壞性命令防護：相對路徑＋遞迴刪除／覆蓋＝錯誤資料夾摧毀組合 ————
 
 // 絕對＝完整錨定。~ 與 $HOME 不視為錨定（~/.. 可鑽出 home）；根目錄本身（/、C:\）即令絕對也拒
@@ -867,6 +891,9 @@ try {
       // 狀態寫入矩陣：段越界寫檔即擋（含 MCP 寫檔／刪搬類工具；decoy 鍵逐一生效）
       const matrix = checkStateWriteMatrix(root, input.tool_input ?? {});
       if (matrix) deny(matrix);
+      // README 唯一根目錄（DOCS.md §0 文件位置）：寫入／更新非根目錄 README.md 即擋（刪除類放行＝清理通道）
+      const readmePlace = checkReadmePlacement(root, tool, input.tool_input ?? {});
+      if (readmePlace) deny(readmePlace);
       // 提醒比對只認路徑鍵（防 content 字串誤觸）；verify 報告逐鍵精確匹配
       const pathStr = PATH_KEYS.map((k) => input.tool_input?.[k]).filter((v) => typeof v === 'string').join(' ');
       const isVerify = /(^|[\\/])verify-[^\\/]+\.md($|\s)/i.test(pathStr) && !/(^|[\\/])review-verify-/i.test(pathStr);

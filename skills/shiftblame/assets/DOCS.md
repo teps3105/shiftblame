@@ -1,16 +1,21 @@
 ---
 name: DOCS
-revision: 2.6.3
+revision: 2.6.5
 ---
 # DOCS — 專案系統文件的寫法判準
 
-> 本檔規範專案 `<repo>/docs/` 系統文件的**寫法品質**，不改變流程與寫入授權（流程看 SKILL §1 主圖，授權看 SKILL §2、§3、§6）。
+> 本檔規範專案文件的**位置**（README 唯一根目錄）與 `<repo>/docs/` 系統文件的**寫法品質**，不改變流程與寫入授權（流程看 SKILL §1 主圖，授權看 SKILL §2、§3、§6）。
 
-## 0. 適用範圍（硬性釘死）
+## 0. 適用範圍與文件位置（硬性釘死）
 
 ```mermaid
 flowchart TD
-    File[/待判文件/] --> Type{文件類型？}
+    File[/待判文件/] --> Pos{位置合法？}
+    Pos -- "README.md 在非根目錄" --> Bad[❌ 位置違規<br/>刪除或搬移改名後入 docs/]
+    Pos -- "非 README 專案文件在 docs/ 外" --> Q{屬永續層法定位置？}
+    Q -- "SOP／ROADMAP／skills 等" --> Ok["✅ 法定位置外文件照常"]
+    Q -- "系統說明文件" --> Move["搬移 docs/ 後再判"]
+    Pos -- "README.md 在根目錄 或 文件在 docs/" --> Type{文件類型？}
     Type -- "docs/ 系統文件" --> Apply["✅ 適用<br/>執行 R1-R4 ＋ grep 查核"]
     Type -- "<repo>/.shiftblame/ 管理文件" --> NoApply["❌ 套用範圍外"]
     Type -- "<repo>/.shiftblame/SOP.md" --> NoApply
@@ -21,6 +26,12 @@ flowchart TD
 - **套用範圍外**：`<repo>/.shiftblame/SOP.md`——SOP 保留真實路徑／命令／行號是法定職責，與 R3「無 code 導覽」有意分工：SOP 寫「怎麼跑／配置在哪」，<repo>/docs/ 寫「系統怎麼運作」。
 
 本檔的 grep 反向詞清單（§2）執行範圍僅限 `<repo>/docs/`——`<repo>/.shiftblame/` 與 SOP 在範圍外。
+
+### 文件位置（README 唯一根目錄——MUST）
+
+- **MUST**：README.md 僅允許存在於 repo 根目錄一份。模塊／子目錄另寫 README.md（不論自我介紹或模塊說明用途）即多重來源，判不合格；docs/ 內保持無 README（入口總覽檔命名避開 README.md，取主題名）；其餘專案文件統一放 `<repo>/docs/`。
+- **判定樣式**：路徑含分隔符且以 `readme.md` 結尾（不分大小寫）＝違規；根目錄 `README.md`（路徑無分隔符）為唯一合法形態。
+- **機械承載**：hooks 寫入攔截（寫入工具觸及非根目錄 README.md 即擋）＋ sb commitmsg 掃 git 追蹤集（存量違規擋提交直至清理——規範溯及既往）。
 
 **內容自足**：檔名、章節與內容從正式定義即可辨識；對話、任務代號、修正歷史與交接材料一律 `<repo>/.shiftblame/tmp/`。此判準依 SKILL §4 適用專案全部內容；本檔 R1–R4 的限定範圍不構成命名或工作紀錄的例外。
 
@@ -87,6 +98,7 @@ flowchart TD
 - **R2** — `grep -rnE "為了|讓玩家|避免|調和|用以|旨在|以便|希望|確保|保證|會感覺|爽快|挫敗|玩家感知|為什麼(這樣)?設計|設計(理由|意圖)" docs/` → 0 命中。
 - **R3** — `grep -rnE ":[0-9]+|func |enum |signal |await |\.gd" docs/` → 0 命中。
 - **任務代號／框架重述（§0 內容自足）** — `grep -rniE "ac-[0-9]+|\.shiftblame/[^ ]+/[0-9]{3}|<(slug|nnn|ms)>|\bslug\b|\bshiftblame\b" docs/` → 0 命中（任務層識別字與路由歸屬屬任務文件與臨時工作區；治理規範單一來源於中央技能文件，docs/ 僅描述系統實際運作）。
+- **文件位置（README 唯一根目錄）** — `git ls-files | grep -iE "(^|/)readme\.md$"` → 僅根目錄 `README.md` 一檔；任何含分隔符的命中即違規（docs/README.md 索引與模塊 README 同管——存量違規擋提交，溯及既往）。
 - **R4** — `ls docs/` 對照入口總覽檔的文件清單 → 齊全且一致。
 
 ## 5. 邊界案例
@@ -102,4 +114,5 @@ flowchart TD
 - **SKILL §8**：框架檔結構含本檔。
 - **SKILL §4**：開發後 requirement 段對照 G1 驗收；文件化工作裡 requirement 段 MAY 引用本檔作為 <repo>/docs/ 驗收尺。
 - **<repo>/.shiftblame/SOP.md §1.3**：SOP 保留真實路徑／命令／行號，與本檔 R3 分工（見 §0）。
+- **hooks 與 sb commitmsg**：本檔 §0 文件位置規則（README 唯一根目錄）的機械承載——寫入工具觸及非根目錄 README.md 即擋；提交閘掃 git 追蹤集，存量違規擋提交直至清理。
 - **references/REQUIREMENT.md**：本檔不取代 requirement 段主導的 G1 驗收。
