@@ -164,6 +164,11 @@ const usage = (code = 2) => {
                                         引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
                                         機制即擋）＋staged 系統檔檢查；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
+  sb docs-vault                          以 <repo>/docs/ 為 Obsidian vault 根自動建立結構（冪等）：
+                                        docs/ 與 docs/.obsidian/ 缺則建＋最小配置補缺（既有檔不覆蓋
+                                        ——使用者自訂優先）＋docs/.obsidian/ 忽略規則查證補行；
+                                        圖譜範圍僅 docs/——非 docs/ 文件不讀取，不處理子儲存庫、
+                                        不處理 .shiftblame/
 
 完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
   老闆「結束」→ sb end --adversarial --boss-ok（出口邊選 end）；「下一個／開新 ms」→ sb next intent --new-ms --adversarial --boss-ok（出口邊選 next）；
@@ -703,6 +708,48 @@ function ensureWorkspaceIgnored() {
   }
   const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
+}
+// sb docs-vault：以 <repo>/docs/ 為 Obsidian vault 根自動建立結構（冪等）——docs/ 與 docs/.obsidian/
+// 缺則建、.obsidian/ 只補缺的最小配置（既有檔不覆蓋——使用者自訂優先），並查證 docs/.obsidian/
+// 忽略規則（未忽略補一行；查證模式同 ensureWorkspaceIgnored）。範圍＝僅 <repo>/docs/：非 docs/ 文件
+// 不讀取、不處理子儲存庫、不處理 .shiftblame/——vault 根即 docs/，圖譜範圍由 Obsidian 消費端天然限定。
+function ensureDocsVaultIgnored() {
+  const giPath = join(ROOT, '.gitignore');
+  const target = 'docs/.obsidian/';
+  const gi = existsSync(giPath) ? readFileSync(giPath, 'utf8') : '';
+  if (hasGitMetadata()) {
+    // --no-index 只判規則不動索引；.gitignore／.git/info/exclude／全域 excludes 一併由 git 判定。
+    const check = spawnSync('git', ['-C', ROOT, 'check-ignore', '--quiet', '--no-index', '--', target], { encoding: 'utf8' });
+    if (check.status !== 0 && check.status !== 1) return 'Git 忽略查詢失敗，保留 .gitignore 原樣——請修復 Git 後確認 docs/.obsidian/ 忽略設定';
+    if (check.status === 0) return 'docs/.obsidian/ 已被忽略規則涵蓋（.gitignore 原樣）';
+  } else {
+    // 非 Git 目錄只辨識直接規則，含最後一條直接否定；不模擬 Git 通配語義。
+    const direct = [...gi.matchAll(/^(\!?)\/?docs\/\.obsidian\/?[ \t]*(?:\r?$)/gm)].at(-1);
+    if (direct && direct[1] !== '!') return 'docs/.obsidian/ 已有忽略規則（非 Git 工作區，直接規則判定）';
+  }
+  const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
+  appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + target + eol);
+  return '.gitignore 已補一行：docs/.obsidian/';
+}
+function cmdDocsVault() {
+  const docsDir = join(ROOT, 'docs');
+  const obsidianDir = join(docsDir, '.obsidian');
+  const created = [];
+  if (!existsSync(docsDir)) { mkdirSync(docsDir, { recursive: true }); created.push('docs/'); }
+  if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('docs/.obsidian/'); }
+  // 最小配置：空 app.json 供 Obsidian 錨定；其餘設定（appearance／core-plugins 等）版本相依，
+  // 由 Obsidian 首次開啟自行生成——預寫易過時，不代寫。
+  const appJson = join(obsidianDir, 'app.json');
+  if (!existsSync(appJson)) { writeFileSync(appJson, '{}\n'); created.push('docs/.obsidian/app.json'); }
+  let ignoreNote;
+  try { ignoreNote = ensureDocsVaultIgnored(); }
+  catch { ignoreNote = '無法讀寫 .gitignore——請手動確認 docs/.obsidian/ 忽略設定'; }
+  fin([
+    `docs/ 為 Obsidian vault 根——結構就緒（Obsidian「開啟資料夾為儲存庫」選 ${docsDir}，Graph View 為核心插件預設啟用）`,
+    created.length ? `建立：${created.join('、')}` : '結構已存在，零變更（冪等）',
+    ignoreNote,
+    '圖譜範圍僅 <repo>/docs/——非 docs/ 文件不讀取；子儲存庫與 .shiftblame/ 不處理',
+  ]);
 }
 function cmdInit(slug, type = 'feat') {
   if (!slug) usage();
@@ -1336,7 +1383,7 @@ function cmdCommitmsg(msg) {
     if (eternal.length) {
       // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
       // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview']);
+      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'docs-vault']);
       const flags = new Set(['--boss-ok', '--adversarial', '--new-ms', '--point', '--base', '--question', '--main', '--help']);
       const bad = [];
       const add = (x) => { if (!bad.includes(x)) bad.push(x); };
@@ -1418,5 +1465,6 @@ switch (cmd) {
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
+  case 'docs-vault': cmdDocsVault(); break;
   default: usage();
 }

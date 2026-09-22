@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.6.6"
+  version: "2.6.7"
 description: 時序制衡的 agent 協作框架。七段鏈 intent→requirement→research→plan→test→build→verify 由主對話連續承載，段間切換一律 sb next 旗標切段；ms start／ms done 是里程碑生命週期邊界，與七段鏈正交。任何新意圖在該 ms 內一律重走 intent（七段之首）開新輪。老闆 pass/fail 判定權只在兩時點：時點 1（requirement→research——G1 準則建立後，審意圖→需求翻譯）與時點 2（verify 真驗收完成、G1 回指閉環後的出口邊——審驗收結果：GWT 回指、假綠燈），對抗在前老闆判定在後，中鏈零審核。verify＝真驗收執行——GWT 逐條行為證據落回指區；時點 2 對抗＋老闆終審 pass 即出口。對話由平台承載（對話流零落檔——基質優先）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）。main 模式最小環：意圖揭露→迭代→提交→老闆判 pass/fail。對老闆輸出為人話（think SKILL「輸出形狀（人話契約）」）。機制細節見 references/MECHANISMS.md。
 ---
 # shiftblame — 時序制衡的 agent 協作框架
