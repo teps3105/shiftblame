@@ -74,6 +74,20 @@ const stdout = (r) => `${r.stdout}\n${r.stderr}`;
   assert.equal(cleared.status, 0, `根 README 與 docs/ 主題文件放行：${stdout(cleared)}`);
 }
 
+// —— 2b. sb commitmsg：套件安裝目錄豁免（官方套件自帶 README 屬生態慣例——非治理標的）——
+{
+  const { root, git } = sandbox();
+  for (const dir of [join(root, 'addons', 'godot_ai'), join(root, 'node_modules', 'pkg'), join(root, 'vendor', 'lib')]) mkdirSync(dir, { recursive: true });
+  writeFileSync(join(root, 'addons', 'godot_ai', 'README.md'), '# godot-ai 官方插件門面\n');
+  writeFileSync(join(root, 'node_modules', 'pkg', 'README.md'), '# 套件門面\n');
+  writeFileSync(join(root, 'vendor', 'lib', 'readme.md'), '# 小寫變體（同豁免）\n');
+  writeFileSync(join(root, 'app.txt'), 'base\n');
+  assert.equal(git('add', '.').status, 0);
+  assert.equal(spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: 帶官方套件的初始提交'], { cwd: root }).status, 0);
+  const passed = commitmsg(root);
+  assert.equal(passed.status, 0, `套件安裝目錄內 README 豁免：${stdout(passed)}`);
+}
+
 // —— 3. hooks 寫入攔截：寫非根 README.md 即擋；刪除類放行；docs/ 主題文件放行 ——
 {
   const { root } = sandbox();
@@ -94,8 +108,12 @@ const stdout = (r) => `${r.stdout}\n${r.stderr}`;
   assert.equal(allowMoveOut.status, 0, '搬移類只判落點——搬出違規位置放行');
   const denyMoveIn = hookRun(root, 'Move', { path: join(root, 'README.md'), destination: join(root, 'docs', 'README.md') });
   assert.notEqual(denyMoveIn.status, 0, '搬移落點為非根 README.md 擋');
-  const allowOutside = hookRun(root, 'Write', { file_path: join(tmpdir(), 'outside-readme', 'README.md'), content: '# 專案外\n' });
-  assert.equal(allowOutside.status, 0, '專案外路徑不歸此規則管');
+  const allowAddon = hookRun(root, 'Write', { file_path: join(root, 'addons', 'godot_ai', 'README.md'), content: '# 官方插件門面\n' });
+  assert.equal(allowAddon.status, 0, '套件安裝目錄（addons/）內 README 豁免——官方套件自帶 README 屬生態慣例');
+  const allowVendor = hookRun(root, 'Edit', { file_path: join(root, 'node_modules', 'pkg', 'README.md'), old_string: 'a', new_string: 'b' });
+  assert.equal(allowVendor.status, 0, 'node_modules/ 內 README 豁免');
+  const outside = hookRun(root, 'Write', { file_path: join(tmpdir(), 'outside-readme', 'README.md'), content: '# 專案外\n' });
+  assert.equal(outside.status, 0, '專案外路徑不歸此規則管');
 }
 
 // —— 4. 文件陳述錨（SKILL §1 A9：MUST 級機制的行為測試 MUST 附文件陳述錨——機制拆除時測試與錨同拆）——
@@ -107,6 +125,7 @@ assert.match(skill, /assets\/DOCS\.md 文件位置節/, '陳述錨：主 SKILL �
 assert.match(docs, /文件位置（README 唯一根目錄/, '陳述錨：DOCS.md §0 文件位置節仍在');
 assert.match(docs, /README\.md 僅允許存在於 repo 根目錄一份/, '陳述錨：DOCS.md 位置規則條文仍在');
 assert.match(docs, /docs\/ 內保持無 README/, '陳述錨：DOCS.md 禁 README 索引條文仍在');
+assert.match(docs, /套件安裝目錄.*?生態慣例.*?位置規則對其放行/s, '陳述錨：DOCS.md 套件安裝目錄豁免條文仍在（官方套件自帶 README 非治理標的）');
 assert.match(docs, /追蹤集.*?溯及既往|溯及既往.*?追蹤集/s, '陳述錨：DOCS.md 述 commitmsg 追蹤集掃描與溯及既往');
 assert.match(readme, /README 唯一根目錄/, '陳述錨：框架 README 仍述位置硬規則');
 

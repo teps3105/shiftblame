@@ -29,7 +29,7 @@ flowchart TD
 
 ### 文件位置（README 唯一根目錄——MUST）
 
-- **MUST**：README.md 僅允許存在於 repo 根目錄一份。模塊／子目錄另寫 README.md（不論自我介紹或模塊說明用途）即多重來源，判不合格；docs/ 內保持無 README（入口總覽檔命名避開 README.md，取主題名）；其餘專案文件統一放 `<repo>/docs/`。
+- **MUST**：README.md 僅允許存在於 repo 根目錄一份，治理標的為本專案自身文件——模塊／子目錄另寫 README.md（不論自我介紹或模塊說明用途）即多重來源，判不合格；docs/ 內保持無 README（入口總覽檔命名避開 README.md，取主題名）；其餘專案文件統一放 `<repo>/docs/`。套件安裝目錄（Godot `addons/<套件>/`、`node_modules/`、`vendor/`、`third_party/`、`bower_components/`、`site-packages/`）內容屬外來套件自身——官方／第三方套件自帶 README 屬生態慣例，位置規則對其放行（寫入攔截與提交閘同判準），本專案自家文件保持離開這些目錄。
 - **判定樣式**：路徑含分隔符且以 `readme.md` 結尾（不分大小寫）＝違規；根目錄 `README.md`（路徑無分隔符）為唯一合法形態。
 - **機械承載**：hooks 寫入攔截（寫入工具觸及非根目錄 README.md 即擋）＋ sb commitmsg 掃 git 追蹤集（存量違規擋提交直至清理——規範溯及既往）。
 

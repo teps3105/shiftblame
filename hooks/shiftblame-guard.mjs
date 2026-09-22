@@ -503,10 +503,13 @@ function checkStateWriteMatrix(root, toolInput) {
 
 // ———— README 唯一根目錄（assets/DOCS.md §0 文件位置——MUST）：寫入工具觸及非根目錄 README.md 即擋 ————
 // README.md 只允許存在於 repo 根目錄一份——模塊 README 與 docs/README.md 索引皆多重來源；其餘專案文件統一 docs/。
+// 套件安裝目錄豁免（DOCS.md §0）：第三方／官方套件自帶 README 屬生態慣例——addons/（Godot）、node_modules/、
+// vendor/、third_party/、bower_components/、site-packages/ 內容屬外來套件自身，非治理標的（與 commitmsg 同判準）。
 // 不依段位（root 辨識即管，直接實行同生效）；刪除類＝清理方向放行；搬移類只判落點鍵；
 // 存量違規由 sb commitmsg 追蹤集掃描承擔（溯及既往）；Bash 內直寫不在此層（同寫入矩陣殘餘面——verify 邊樹檢查兜底）。
 const README_RM_TOOL_RE = /delete|remove|unlink|\brm\b|trash/i;
 const README_DEST_KEYS = ['destination', 'dest', 'new_path', 'to'];
+const README_VENDORED_RE = /(^|\/)(?:node_modules|vendor|third_party|third-party|bower_components|site-packages|addons)\//i;
 
 function checkReadmePlacement(root, tool, toolInput) {
   if (!root) return null;
@@ -518,8 +521,9 @@ function checkReadmePlacement(root, tool, toolInput) {
   for (const target of targets) {
     const rel = relative(root, absPath(root, target)).replace(/\\/g, '/');
     if (!rel || rel.startsWith('..') || isAbsolute(rel)) continue; // 專案外：不歸此規則管
+    if (README_VENDORED_RE.test(rel)) continue; // 套件安裝目錄：外來套件自身內容，非治理標的
     if (rel.includes('/') && /(^|\/)readme\.md$/i.test(rel)) {
-      return `[shiftblame] README 唯一根目錄（${rel}）——README.md 只允許存在於 repo 根目錄一份（模塊 README 與 docs/README.md 索引皆多重來源）；內容搬 <repo>/docs/ 並以主題命名（assets/DOCS.md §0 文件位置）`;
+      return `[shiftblame] README 唯一根目錄（${rel}）——README.md 只允許存在於 repo 根目錄一份（模塊 README 與 docs/README.md 索引皆多重來源）；內容搬 <repo>/docs/ 並以主題命名（套件安裝目錄內的外來套件 README 豁免——assets/DOCS.md §0 文件位置）`;
     }
   }
   return null;

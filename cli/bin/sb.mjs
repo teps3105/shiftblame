@@ -1300,11 +1300,14 @@ function cmdCommitmsg(msg) {
     if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
     // README 唯一根目錄（DOCS.md §0 文件位置——MUST）：README.md 只允許存在於 repo 根目錄一份——
     // 模塊／子目錄另寫 README（含索引用途的 docs/README.md）即多重來源；其餘專案文件統一 docs/。
+    // 套件安裝目錄豁免（DOCS.md §0）：第三方／官方套件自帶 README 屬生態慣例——addons/（Godot）、
+    // node_modules/、vendor/、third_party/、bower_components/、site-packages/ 內容屬外來套件自身，非治理標的。
     // 溯及既往：掃 git 追蹤集（不限 staged）——存量違規擋提交直至刪除或搬移改名；大小寫不敏感；
     // 判定樣式小而穩定（路徑含分隔符且以 readme.md 結尾）；非 git 工作區由下方 catch 跳過（hooks 寫入攔截層照常把關）。
+    const VENDORED_RE = /(^|\/)(?:node_modules|vendor|third_party|third-party|bower_components|site-packages|addons)\//i;
     const readmeHits = execSync('git -c core.quotePath=false ls-files', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).filter(Boolean)
-      .filter((p) => p.includes('/') && /(^|\/)readme\.md$/i.test(p));
+      .filter((p) => p.includes('/') && /(^|\/)readme\.md$/i.test(p) && !VENDORED_RE.test(p));
     if (readmeHits.length) die([`README 唯一根目錄——追蹤檔含非根目錄 README（模塊 README 與 docs/README.md 索引皆多重來源；其餘專案文件統一 docs/，DOCS.md §0 文件位置）：`, ...readmeHits.slice(0, 8), '先刪除或搬移改名（如 docs/<主題>.md）並提交，再發章']);
     // 註釋座標結構樣式掃描（SKILL §3 註釋紀律＋§7 同源紀律的機械下限）：
     // staged diff 新增行（+ 行）掃小而穩定的座標結構樣式——時點圈號、時點 N、第 N 輪、兩位以上輪次代號、
