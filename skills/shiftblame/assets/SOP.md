@@ -4,7 +4,7 @@ type: TWO_FILE
 role: sop
 status: active
 updated: <YYYY-MM-DD>
-revision: 2.6.9
+revision: 2.7.0
 ---
 # SOP — 專案本地配置與執行規範
 

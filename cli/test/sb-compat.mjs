@@ -103,18 +103,20 @@ classify({
 // Varellune_Document 的 ms-done 髒節點已歸位（2.3x 舊版里程碑完成態 → 2.5.2 七段圓環 intent——差異宣言同批收斂）。
 // 2.6.3 升版重新量測：wsxt 於 2.5.2 後完成 slug（wsxt-rebase ended）——active→ended 漂移如註解預期。
 // 2.6.4 升版重新量測：dnd-prototype 於 2.6.3 後完成 slug——active→ended 漂移如註解預期。
+// 2.7.0 升版重新量測：dnd-prototype 開新 slug（character-item-data-foundation）ended→active；
+// wsxt flow-state 已重置（node 空）ended→uninitialized。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'ended',
   'Trickster-Web': 'active',
   Varellune: 'active',
   'Varellune_Document': 'active',
-  'dnd-prototype': 'ended',
+  'dnd-prototype': 'active',
   'gpt-image-mcp': 'uninitialized',
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
   'ro-server': 'active',
   shiftblame: 'uninitialized',
-  wsxt: 'ended',
+  wsxt: 'uninitialized',
 };
 let scanned = 0;
 for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {

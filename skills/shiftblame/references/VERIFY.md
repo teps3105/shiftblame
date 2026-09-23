@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 2.6.9
+revision: 2.7.0
 ---
 # verify 段 — 真驗收執行：GWT 逐條實操、行為證據落回指區
 

@@ -1,6 +1,6 @@
 ---
 name: STRUCTURE
-revision: 2.6.9
+revision: 2.7.0
 ---
 
 # 結構與驗證紀律（通用技術作業規程）

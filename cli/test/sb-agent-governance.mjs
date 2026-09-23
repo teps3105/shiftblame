@@ -13,13 +13,13 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致（含根殼 package.json——npm install -g github:teps3105/shiftblame 的市集安裝載體）
-assert.equal(manifest.version, '2.6.9');
+assert.equal(manifest.version, '2.7.0');
 assert.equal(cliPackage.version, manifest.version);
 const rootShell = JSON.parse(read('package.json'));
 assert.equal(rootShell.version, manifest.version);
 assert.equal(rootShell.bin.sb, 'cli/bin/sb.mjs');
 readFileSync(join(repo, rootShell.bin.sb), 'utf8');
-assert.match(skill, /version: "2.6.9"/);
+assert.match(skill, /version: "2.7.0"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
