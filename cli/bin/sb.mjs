@@ -172,10 +172,9 @@ const usage = (code = 2) => {
                                         核心不索引 dot 資料夾——標準解：release 三檔下載至
                                         .obsidian/plugins/、community-plugins.json 補缺啟用、
                                         data.json enabledFolders 補 .shiftblame，受限模式 GUI 關閉一次）
-                                        ＋app.json userIgnoreFilters 補缺（黑名單——既有條目不動）
-                                        ——索引集＝docs/＋.shiftblame 治理文件（SOP／ROADMAP／SLUG／
-                                        G 檔／archive），tmp/ 由過濾排除，非 docs/ 頂層項目動態掃入
-                                        過濾（新增後重跑即涵蓋）；需 Obsidian 1.13+ desktop；
+                                        ＋app.json userIgnoreFilters 強制接管——每次配置重寫為規定集：
+                                        顯示＝docs/＋README＋.shiftblame SOP／ROADMAP，其餘一律隱藏
+                                        （漂移自動對齊；新增項目後重跑即涵蓋）；需 Obsidian 1.13+ desktop；
                                         不處理子儲存庫
 
 完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
@@ -719,26 +718,36 @@ function ensureWorkspaceIgnored() {
 }
 // sb docs-vault：以 <repo> 根為 Obsidian vault 根自動建立結構（冪等）——Obsidian 的設定目錄固定
 // 位於 vault 根（無法指向子目錄），故 .obsidian/ 建在 <repo>/.obsidian/；vault 根＝repo 根會把整個
-// repo 收進索引，以 Obsidian「已忽略檔案」（app.json userIgnoreFilters，黑名單補缺——既有條目不動，
-// 使用者自訂優先）過濾。Obsidian 核心不索引 dot 資料夾——標準解為 Hidden Folders Access 外掛
+// repo 收進索引，以 Obsidian「已忽略檔案」（app.json userIgnoreFilters）強制接管過濾：每次配置都
+// 重寫為規定集——顯示＝docs/＋README＋.shiftblame SOP／ROADMAP，其餘一律隱藏（漂移自動對齊）。
+// Obsidian 核心不索引 dot 資料夾——標準解為 Hidden Folders Access 外掛
 // （dsebastien/obsidian-hidden-folders-access，GitHub release 三檔自動安裝至 .obsidian/plugins/，
-// community-plugins.json 補缺啟用、data.json enabledFolders 補 .shiftblame——既有條目不動）；
-// .shiftblame 治理文件（SOP／ROADMAP／SLUG／G 檔／archive）因此現身，tmp/ 由過濾排除。
-// 索引集＝docs/ ∪（.shiftblame/ − tmp/）。外掛需 Obsidian 1.13+（desktop）；受限模式須於 GUI 關閉一次。
+// community-plugins.json 補缺啟用、data.json enabledFolders 補 .shiftblame——既有條目不動），
+// 讓 .shiftblame 內 SOP／ROADMAP 現身，SLUG／archive／tmp／flow-state 等其餘項目由過濾隱藏。
+// 顯示集＝docs/ ∪ {README.md, .shiftblame/SOP.md, .shiftblame/ROADMAP.md}。外掛需 Obsidian 1.13+（desktop）；
+// 受限模式須於 GUI 關閉一次。
 const DOCS_VAULT_PLUGIN_ID = 'hidden-folders-access';
 const DOCS_VAULT_PLUGIN_FILES = ['main.js', 'manifest.json', 'styles.css'];
 const DOCS_VAULT_PLUGIN_BASE = 'https://github.com/dsebastien/obsidian-hidden-folders-access/releases/latest/download';
-const DOCS_VAULT_FILTERS = ['.shiftblame/tmp/'];
+const DOCS_VAULT_KEEP = new Set(['docs', 'README.md', 'SOP.md', 'ROADMAP.md']);
 function vaultIgnoreFilters() {
-  // 頂層動態黑名單：除 docs/ 外的頂層非 dot 項目全排（dot 項 Obsidian 本就不索引，不列）。
+  // 顯示規定集的反面——除 docs/、README.md 與 .shiftblame/{SOP,ROADMAP}.md 外全部隱藏：
+  // repo 頂層（非 dot，docs/ 與 README.md 除外）＋.shiftblame 頂層（SOP.md／ROADMAP.md 除外）
+  // 動態列舉；dot 項 Obsidian 本就不索引，不列。
   const filters = [];
   let entries = [];
-  try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { return [...DOCS_VAULT_FILTERS]; }
+  try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { return ['.shiftblame/tmp/']; }
   for (const e of entries) {
-    if (e.name.startsWith('.') || e.name === 'docs') continue;
+    if (e.name.startsWith('.') || DOCS_VAULT_KEEP.has(e.name)) continue;
     filters.push(e.isDirectory() ? `${e.name}/` : e.name);
   }
-  return [...DOCS_VAULT_FILTERS, ...filters.sort()];
+  let sbEntries = [];
+  try { sbEntries = readdirSync(join(ROOT, '.shiftblame'), { withFileTypes: true }); } catch { sbEntries = []; }
+  for (const e of sbEntries) {
+    if (DOCS_VAULT_KEEP.has(e.name)) continue;
+    filters.push(`.shiftblame/${e.name}${e.isDirectory() ? '/' : ''}`);
+  }
+  return filters.sort();
 }
 function ensureIgnoredTargets(targets) {
   const giPath = join(ROOT, '.gitignore');
@@ -837,21 +846,26 @@ async function cmdDocsVault() {
   } else pluginNotes.push(`外掛檔案已齊（既有檔不覆蓋）`);
   try { if (plan.cpWritable) writeFileSync(plan.cpPath, JSON.stringify(plan.cp, null, 2) + '\n'); } catch { pluginNotes.push('無法寫 community-plugins.json——外掛啟用未補'); }
   try { if (plan.dataWritable) writeFileSync(plan.dataPath, JSON.stringify(plan.data, null, 2) + '\n'); } catch { pluginNotes.push('無法寫外掛 data.json——enabledFolders 未補'); }
+  let filterChanged = false;
   const filterNote = (() => {
     const appJsonPath = join(obsidianDir, 'app.json');
     let cfg = {};
     if (existsSync(appJsonPath)) {
-      try { cfg = JSON.parse(readFileSync(appJsonPath, 'utf8')); } catch { return '.obsidian/app.json 非 JSON——保持原樣，過濾器未補（修復或刪除後重跑）'; }
-      if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return '.obsidian/app.json 結構非物件——保持原樣，過濾器未補';
+      try { cfg = JSON.parse(readFileSync(appJsonPath, 'utf8')); } catch { return '.obsidian/app.json 非 JSON——保持原樣，過濾器未設定（修復或刪除後重跑）'; }
+      if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return '.obsidian/app.json 結構非物件——保持原樣，過濾器未設定';
     }
-    const have = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters.filter((f) => typeof f === 'string') : [];
-    const missingF = vaultIgnoreFilters().filter((f) => !have.includes(f));
-    if (!missingF.length) return 'userIgnoreFilters 已涵蓋所需過濾（既有設定未動）';
-    cfg.userIgnoreFilters = [...have, ...missingF];
-    try { writeFileSync(appJsonPath, JSON.stringify(cfg, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/app.json——過濾器未補'; }
-    return `userIgnoreFilters 已補 ${missingF.length} 條（索引集＝docs/＋.shiftblame 治理文件，tmp/ 排除；既有條目未動）`;
+    // 強制接管：userIgnoreFilters 每次配置都對齊規定集——顯示＝docs/＋README＋SOP／ROADMAP，
+    // 其餘隱藏；漂移（舊版生成項、手動增刪）一律重寫修正，無漂移不動檔，非過濾鍵不動。
+    const prev = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters : [];
+    const required = vaultIgnoreFilters();
+    const drift = required.length !== prev.length || required.some((f, i) => prev[i] !== f);
+    if (!drift) return `userIgnoreFilters 已對齊規定集（${required.length} 條，無漂移）`;
+    cfg.userIgnoreFilters = required;
+    try { writeFileSync(appJsonPath, JSON.stringify(cfg, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/app.json——過濾器未設定'; }
+    filterChanged = true;
+    return `userIgnoreFilters 已強制設定 ${required.length} 條——顯示＝docs/＋README＋.shiftblame SOP／ROADMAP，其餘隱藏（既有過濾條目已對齊規定集）`;
   })();
-  if (filterNote.includes('已補')) created.push('.obsidian/app.json 過濾器');
+  if (filterChanged) created.push('.obsidian/app.json 過濾器');
   let ignoreNotes;
   try { ignoreNotes = ensureIgnoredTargets(['.obsidian/']); }
   catch { ignoreNotes = ['無法讀寫 .gitignore——請手動確認 .obsidian/ 忽略設定']; }
@@ -861,7 +875,7 @@ async function cmdDocsVault() {
     ...pluginNotes,
     filterNote,
     ...ignoreNotes,
-    '索引集＝docs/＋.shiftblame 治理文件（tmp/ 排除）——新增頂層項目後重跑 sb docs-vault 即涵蓋',
+    '顯示集＝docs/＋README＋.shiftblame SOP／ROADMAP——其餘一律隱藏；新增頂層或 .shiftblame 項目後重跑 sb docs-vault 即對齊',
   ]);
 }
 function cmdInit(slug, type = 'feat') {

@@ -7,9 +7,10 @@ import { fileURLToPath } from 'node:url';
 
 // sb docs-vault：以 <repo> 根為 Obsidian vault 根——.obsidian/ 建於 <repo>/.obsidian/（Obsidian 設定
 // 目錄固定在 vault 根）、Hidden Folders Access 外掛自動安裝（Obsidian 核心不索引 dot 資料夾——標準解；
-// 測試以 localhost 假源模擬 release 下載）、community-plugins.json 補缺啟用、data.json enabledFolders
-// 補 .shiftblame、app.json userIgnoreFilters 補缺（索引集＝docs/＋.shiftblame 治理文件、tmp/ 排除、
-// 非 docs/ 頂層項目動態掃入）、.gitignore 查證補行 .obsidian/。冪等：既有檔與既有條目不覆蓋。
+// 測試以獨立子進程假源模擬 release 下載）、community-plugins.json 補缺啟用、data.json enabledFolders
+// 補 .shiftblame、app.json userIgnoreFilters 強制接管——每次配置重寫為規定集：顯示＝docs/＋README＋
+// .shiftblame SOP／ROADMAP，其餘一律隱藏、漂移自動對齊；.gitignore 查證補行 .obsidian/。
+// 冪等：既有檔不覆蓋；userIgnoreFilters 例外——強制接管對齊規定集。
 const here = dirname(fileURLToPath(import.meta.url));
 const cli = resolve(here, '../bin/sb.mjs');
 const roots = [];
@@ -23,7 +24,10 @@ const sandbox = ({ git = true, gitignore = '.shiftblame/\n', withSb = true, topE
   const root = mkdtempSync(join(tmpdir(), 'sb-docs-vault-'));
   roots.push(root);
   mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
+  writeFileSync(join(root, '.shiftblame/SOP.md'), '# SOP\n');
+  writeFileSync(join(root, '.shiftblame/ROADMAP.md'), '# ROADMAP\n');
   if (!withSb) rmSync(join(root, '.shiftblame'), { recursive: true, force: true });
+  writeFileSync(join(root, 'README.md'), '# t\n');
   for (const name of topEntries) {
     mkdirSync(join(root, name), { recursive: true });
     writeFileSync(join(root, name, 'placeholder.txt'), 'x\n');
@@ -85,8 +89,10 @@ const startFakeSource = ({ fail = false } = {}) => new Promise((res, rej) => {
   const data = readJson(root, '.obsidian/plugins/hidden-folders-access/data.json');
   assert.deepEqual(data.enabledFolders, ['.shiftblame'], 'data.json 開啟 .shiftblame');
   const filters = readJson(root, '.obsidian/app.json').userIgnoreFilters;
-  assert.ok(filters.includes('.shiftblame/tmp/'), 'tmp/ 已排除');
-  assert.ok(filters.includes('cli/'), '頂層非 docs 項目已掃入過濾');
+  assert.ok(filters.includes('.shiftblame/tmp/'), 'tmp/ 已隱藏');
+  assert.ok(filters.includes('cli/'), '頂層非顯示項目已掃入過濾');
+  assert.ok(!filters.includes('README.md'), 'README.md 屬顯示集不掃入過濾');
+  assert.ok(!filters.includes('.shiftblame/SOP.md') && !filters.includes('.shiftblame/ROADMAP.md'), 'SOP／ROADMAP 屬顯示集不掃入過濾');
   assert.ok(!filters.some((f) => f === 'docs' || f === 'docs/'), 'docs/ 本身不被排除');
   assert.match(readFileSync(join(root, '.gitignore'), 'utf8'), /^\.obsidian\/$/m, '.gitignore 已補 .obsidian/');
   assert.equal(spawnSync('git', ['-C', root, 'check-ignore', '--quiet', '--', '.obsidian/']).status, 0, 'git 判 .obsidian/ 已忽略');
@@ -107,7 +113,7 @@ const startFakeSource = ({ fail = false } = {}) => new Promise((res, rej) => {
   assert.match(stdout(r2), /零新增/, '結構齊備時零新增');
 }
 
-// —— 3. 既有設定自訂：community-plugins／app.json／data.json 的使用者條目保留、缺項補上 ——
+// —— 3. 既有設定：外掛啟用／data.json 既有條目保留、過濾器強制接管對齊規定集 ——
 {
   const base = await startFakeSource();
   const root = sandbox();
@@ -121,13 +127,13 @@ const startFakeSource = ({ fail = false } = {}) => new Promise((res, rej) => {
   assert.equal(r.status, 0, stdout(r));
   assert.deepEqual(readJson(root, '.obsidian/community-plugins.json'), ['another-plugin', 'hidden-folders-access'], '既有啟用保留、補缺');
   const cfg = readJson(root, '.obsidian/app.json');
-  assert.ok(cfg.userIgnoreFilters.includes('私人筆記/') && cfg.userIgnoreFilters.includes('.shiftblame/tmp/'), '過濾器補缺不覆蓋');
-  assert.equal(cfg.alwaysUpdateLinks, true, '其他設定鍵未動');
+  assert.ok(cfg.userIgnoreFilters.includes('.shiftblame/tmp/'), '規定集強制寫入');
+  assert.ok(!cfg.userIgnoreFilters.includes('私人筆記/'), '過時過濾條目被強制對齊移除');
+  assert.equal(cfg.alwaysUpdateLinks, true, '非過濾鍵未動');
   const data = readJson(root, '.obsidian/plugins/hidden-folders-access/data.json');
   assert.deepEqual(data.enabledFolders, ['.秘密', '.shiftblame'], 'enabledFolders 既有保留、補缺');
   assert.deepEqual(data.allowedExtensions, ['md'], 'allowedExtensions 未動');
   assert.equal(readFileSync(join(pluginDir(root), 'main.js'), 'utf8'), '/* 使用者既有 */', '既有外掛檔不覆蓋');
-  assert.ok(!existsSync(join(pluginDir(root), 'styles.css')) || true, '缺的下載、有的不動（見上斷言）');
 }
 
 // —— 4. 下載失敗降級：不擋結構、輸出替代指引 ——
@@ -193,6 +199,21 @@ const startFakeSource = ({ fail = false } = {}) => new Promise((res, rej) => {
   assert.equal(readFileSync(join(root, '.obsidian', 'app.json'), 'utf8'), 'not-json{', '損壞 app.json 保持原樣');
   assert.equal(readFileSync(join(root, '.obsidian', 'community-plugins.json'), 'utf8'), 'also-bad[', '損壞 community-plugins.json 保持原樣');
   assert.match(stdout(r), /非 JSON/, '輸出說明保持原樣未補');
+}
+
+// —— 9. 漂移對齊：手動改亂過濾（加私項、清掉規定項）後重跑恢復規定集 ——
+{
+  const base = await startFakeSource();
+  const root = sandbox();
+  assert.equal(run(root, { SB_DOCS_VAULT_PLUGIN_BASE: base }).status, 0);
+  writeFileSync(join(root, '.obsidian/app.json'), JSON.stringify({ userIgnoreFilters: ['私人筆記/'] }));
+  const r = run(root, { SB_DOCS_VAULT_PLUGIN_BASE: base });
+  assert.equal(r.status, 0, stdout(r));
+  const filters = readJson(root, '.obsidian/app.json').userIgnoreFilters;
+  assert.ok(filters.includes('.shiftblame/tmp/') && filters.includes('cli/'), '規定集恢復');
+  assert.ok(!filters.includes('私人筆記/'), '漂移條目清除');
+  assert.ok(!filters.includes('README.md'), '顯示集項目不被過濾');
+  assert.match(stdout(r), /強制設定/, '輸出說明強制接管');
 }
 
 console.log('sb docs-vault 測試全數通過');
