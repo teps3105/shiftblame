@@ -2,3 +2,4 @@
 .shiftblame/
 # npm CLI 依賴
 cli/node_modules/
+.obsidian/
