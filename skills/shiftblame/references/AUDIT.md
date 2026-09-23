@@ -1,6 +1,6 @@
 ---
 name: AUDIT
-revision: 2.6.8
+revision: 2.6.9
 ---
 
 # 對抗審計職能（外部唯讀子代理規範）
