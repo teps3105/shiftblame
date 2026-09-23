@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "以時序制衡約束 agent——七段圓環（intent 環首＝環尾：requirement→research→plan→test→build→verify，任何新意圖在該 ms 內一律重走 intent 開新輪；ms 邊界與環正交），兩層兩段式：定義層（理論）與實作層（實際）各成循環、段間切換一律 sb next 旗標切段；審核資源集中在兩時點——時點 1＝requirement→research 邊（G1 準則建立後審意圖→需求翻譯）、時點 2＝verify 出口邊（驗收完成、G1 回指閉環後審驗收結果——GWT 回指、假綠燈），對抗在前、老闆判定在後；出口＝時點 2 對抗條目＋老闆終審章同一邊（--new-ms --adversarial --boss-ok 開下一里程碑或 sb end --adversarial --boss-ok 結束 slug）；build→verify 機械推進（E2E 全綠＋working tree 乾淨）、中鏈與段內提交零審核（提交僅 sb commitmsg 格式閘——單功能單提交）；verify＝真驗收執行（GWT 逐條＝驗收劇本實操、行為證據落回指區）；時點對抗採 sb adversarial --point 1|2＋adversarialLog point 條目對照（對抗條目新鮮度機械驗——旗標即章）；RAM/ROM 分層（G/SLUG＝ROM 收斂產出、tmp/flow-state＝RAM 運行層）；閘門只讀 git 事實與 flow-state.json；主對話秘書連續承載所有段，技術證據不足時強制外部唯讀意見，主對話複核後自行承擔裁定；commit、判決、推進、路由、pass 出口由主對話獨佔。",
   "author": {
     "name": "teps3105"

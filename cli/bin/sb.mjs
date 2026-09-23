@@ -17,6 +17,8 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync, readdirSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
+import { get as httpGet } from 'node:http';
+import { get as httpsGet } from 'node:https';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
 import { externalToolConfigStatus } from './external-tools.mjs';
@@ -164,11 +166,17 @@ const usage = (code = 2) => {
                                         引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
                                         機制即擋）＋staged 系統檔檢查；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
-  sb docs-vault                          以 <repo>/docs/ 為 Obsidian vault 根自動建立結構（冪等）：
-                                        docs/ 與 docs/.obsidian/ 缺則建＋最小配置補缺（既有檔不覆蓋
-                                        ——使用者自訂優先）＋docs/.obsidian/ 忽略規則查證補行；
-                                        圖譜範圍僅 docs/——非 docs/ 文件不讀取，不處理子儲存庫、
-                                        不處理 .shiftblame/
+  sb docs-vault                          以 <repo> 根為 Obsidian vault 根自動建立結構（冪等）：
+                                        .obsidian/ 建於 <repo>/.obsidian/（Obsidian 設定目錄固定
+                                        在 vault 根）＋Hidden Folders Access 外掛自動安裝（Obsidian
+                                        核心不索引 dot 資料夾——標準解：release 三檔下載至
+                                        .obsidian/plugins/、community-plugins.json 補缺啟用、
+                                        data.json enabledFolders 補 .shiftblame，受限模式 GUI 關閉一次）
+                                        ＋app.json userIgnoreFilters 補缺（黑名單——既有條目不動）
+                                        ——索引集＝docs/＋.shiftblame 治理文件（SOP／ROADMAP／SLUG／
+                                        G 檔／archive），tmp/ 由過濾排除，非 docs/ 頂層項目動態掃入
+                                        過濾（新增後重跑即涵蓋）；需 Obsidian 1.13+ desktop；
+                                        不處理子儲存庫
 
 完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
   老闆「結束」→ sb end --adversarial --boss-ok（出口邊選 end）；「下一個／開新 ms」→ sb next intent --new-ms --adversarial --boss-ok（出口邊選 next）；
@@ -709,46 +717,151 @@ function ensureWorkspaceIgnored() {
   const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
 }
-// sb docs-vault：以 <repo>/docs/ 為 Obsidian vault 根自動建立結構（冪等）——docs/ 與 docs/.obsidian/
-// 缺則建、.obsidian/ 只補缺的最小配置（既有檔不覆蓋——使用者自訂優先），並查證 docs/.obsidian/
-// 忽略規則（未忽略補一行；查證模式同 ensureWorkspaceIgnored）。範圍＝僅 <repo>/docs/：非 docs/ 文件
-// 不讀取、不處理子儲存庫、不處理 .shiftblame/——vault 根即 docs/，圖譜範圍由 Obsidian 消費端天然限定。
-function ensureDocsVaultIgnored() {
-  const giPath = join(ROOT, '.gitignore');
-  const target = 'docs/.obsidian/';
-  const gi = existsSync(giPath) ? readFileSync(giPath, 'utf8') : '';
-  if (hasGitMetadata()) {
-    // --no-index 只判規則不動索引；.gitignore／.git/info/exclude／全域 excludes 一併由 git 判定。
-    const check = spawnSync('git', ['-C', ROOT, 'check-ignore', '--quiet', '--no-index', '--', target], { encoding: 'utf8' });
-    if (check.status !== 0 && check.status !== 1) return 'Git 忽略查詢失敗，保留 .gitignore 原樣——請修復 Git 後確認 docs/.obsidian/ 忽略設定';
-    if (check.status === 0) return 'docs/.obsidian/ 已被忽略規則涵蓋（.gitignore 原樣）';
-  } else {
-    // 非 Git 目錄只辨識直接規則，含最後一條直接否定；不模擬 Git 通配語義。
-    const direct = [...gi.matchAll(/^(\!?)\/?docs\/\.obsidian\/?[ \t]*(?:\r?$)/gm)].at(-1);
-    if (direct && direct[1] !== '!') return 'docs/.obsidian/ 已有忽略規則（非 Git 工作區，直接規則判定）';
+// sb docs-vault：以 <repo> 根為 Obsidian vault 根自動建立結構（冪等）——Obsidian 的設定目錄固定
+// 位於 vault 根（無法指向子目錄），故 .obsidian/ 建在 <repo>/.obsidian/；vault 根＝repo 根會把整個
+// repo 收進索引，以 Obsidian「已忽略檔案」（app.json userIgnoreFilters，黑名單補缺——既有條目不動，
+// 使用者自訂優先）過濾。Obsidian 核心不索引 dot 資料夾——標準解為 Hidden Folders Access 外掛
+// （dsebastien/obsidian-hidden-folders-access，GitHub release 三檔自動安裝至 .obsidian/plugins/，
+// community-plugins.json 補缺啟用、data.json enabledFolders 補 .shiftblame——既有條目不動）；
+// .shiftblame 治理文件（SOP／ROADMAP／SLUG／G 檔／archive）因此現身，tmp/ 由過濾排除。
+// 索引集＝docs/ ∪（.shiftblame/ − tmp/）。外掛需 Obsidian 1.13+（desktop）；受限模式須於 GUI 關閉一次。
+const DOCS_VAULT_PLUGIN_ID = 'hidden-folders-access';
+const DOCS_VAULT_PLUGIN_FILES = ['main.js', 'manifest.json', 'styles.css'];
+const DOCS_VAULT_PLUGIN_BASE = 'https://github.com/dsebastien/obsidian-hidden-folders-access/releases/latest/download';
+const DOCS_VAULT_FILTERS = ['.shiftblame/tmp/'];
+function vaultIgnoreFilters() {
+  // 頂層動態黑名單：除 docs/ 外的頂層非 dot 項目全排（dot 項 Obsidian 本就不索引，不列）。
+  const filters = [];
+  let entries = [];
+  try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { return [...DOCS_VAULT_FILTERS]; }
+  for (const e of entries) {
+    if (e.name.startsWith('.') || e.name === 'docs') continue;
+    filters.push(e.isDirectory() ? `${e.name}/` : e.name);
   }
-  const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
-  appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + target + eol);
-  return '.gitignore 已補一行：docs/.obsidian/';
+  return [...DOCS_VAULT_FILTERS, ...filters.sort()];
 }
-function cmdDocsVault() {
-  const docsDir = join(ROOT, 'docs');
-  const obsidianDir = join(docsDir, '.obsidian');
+function ensureIgnoredTargets(targets) {
+  const giPath = join(ROOT, '.gitignore');
+  let gi = existsSync(giPath) ? readFileSync(giPath, 'utf8') : '';
+  const notes = [];
+  for (const target of targets) {
+    if (hasGitMetadata()) {
+      // --no-index 只判規則不動索引；.gitignore／.git/info/exclude／全域 excludes 一併由 git 判定。
+      const check = spawnSync('git', ['-C', ROOT, 'check-ignore', '--quiet', '--no-index', '--', target], { encoding: 'utf8' });
+      if (check.status !== 0 && check.status !== 1) { notes.push(`Git 忽略查詢失敗，${target} 保留 .gitignore 原樣——請手動確認忽略設定`); continue; }
+      if (check.status === 0) { notes.push(`${target} 已被忽略規則涵蓋（.gitignore 原樣）`); continue; }
+    } else {
+      // 非 Git 目錄只辨識直接規則，含最後一條直接否定；不模擬 Git 通配語義。
+      const direct = [...gi.matchAll(new RegExp(`^(\\!?)\\/?${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/?[ \\t]*(?:\\r?$)`, 'gm'))].at(-1);
+      if (direct && direct[1] !== '!') { notes.push(`${target} 已有忽略規則（非 Git 工作區，直接規則判定）`); continue; }
+    }
+    const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
+    const line = target + eol;
+    appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + line);
+    gi += (gi && !gi.endsWith('\n') ? eol : '') + line;
+    notes.push(`.gitignore 已補一行：${target}`);
+  }
+  return notes;
+}
+async function downloadToFile(url, dest, hops = 0) {
+  if (hops > 5) throw new Error(`重導過多：${url}`);
+  const res = await new Promise((resolvePromise, reject) => {
+    const send = (u, hop) => {
+      // 連線層錯誤（離線／拒絕連線）必須掛 handler，否則 Node 直接 crash 而非走降級。
+      const req = (u.startsWith('http://') ? httpGet : httpsGet)(u, { headers: { 'user-agent': 'shiftblame-cli' } }, (r) => {
+        if ([301, 302, 303, 307, 308].includes(r.statusCode) && r.headers.location) {
+          r.resume();
+          const next = new URL(r.headers.location, u).href;
+          if (hop >= 5) { reject(new Error(`重導過多：${next}`)); return; }
+          send(next, hop + 1);
+          return;
+        }
+        if (r.statusCode !== 200) { r.resume(); reject(new Error(`HTTP ${r.statusCode}：${u}`)); return; }
+        resolvePromise(r);
+      });
+      req.on('error', reject);
+    };
+    send(url, hops);
+  });
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of res) { size += chunk.length; if (size > 10 * 1024 * 1024) throw new Error(`下載逾 10MB 上限：${url}`); chunks.push(chunk); }
+  writeFileSync(dest, Buffer.concat(chunks));
+}
+function ensureHiddenFoldersPlugin() {
+  // 同步面：community-plugins.json 與 data.json 的補缺計畫；三檔下載由 cmdDocsVault await 後寫入。
+  const pluginDir = join(ROOT, '.obsidian', 'plugins', DOCS_VAULT_PLUGIN_ID);
+  const cpPath = join(ROOT, '.obsidian', 'community-plugins.json');
+  const dataPath = join(pluginDir, 'data.json');
+  const notes = [];
+  let cp = [];
+  let cpWritable = true;
+  if (existsSync(cpPath)) {
+    try { const parsed = JSON.parse(readFileSync(cpPath, 'utf8')); if (Array.isArray(parsed)) cp = parsed.filter((x) => typeof x === 'string'); else { cpWritable = false; notes.push('community-plugins.json 非陣列——保持原樣，外掛啟用未補'); } }
+    catch { cpWritable = false; notes.push('community-plugins.json 非 JSON——保持原樣，外掛啟用未補'); }
+  }
+  if (cpWritable && !cp.includes(DOCS_VAULT_PLUGIN_ID)) cp.push(DOCS_VAULT_PLUGIN_ID);
+  let data = { enabledFolders: [] };
+  let dataWritable = true;
+  if (existsSync(dataPath)) {
+    try { const parsed = JSON.parse(readFileSync(dataPath, 'utf8')); if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) data = parsed; else { dataWritable = false; notes.push('外掛 data.json 非物件——保持原樣，enabledFolders 未補'); } }
+    catch { dataWritable = false; notes.push('外掛 data.json 非 JSON——保持原樣，enabledFolders 未補'); }
+  }
+  if (dataWritable) {
+    if (!Array.isArray(data.enabledFolders)) data.enabledFolders = [];
+    if (!data.enabledFolders.includes('.shiftblame')) data.enabledFolders.push('.shiftblame');
+  }
+  return { pluginDir, cpPath, dataPath, cp, data, cpWritable, dataWritable, notes };
+}
+async function cmdDocsVault() {
   const created = [];
+  const docsDir = join(ROOT, 'docs');
+  const obsidianDir = join(ROOT, '.obsidian');
   if (!existsSync(docsDir)) { mkdirSync(docsDir, { recursive: true }); created.push('docs/'); }
-  if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('docs/.obsidian/'); }
-  // 最小配置：空 app.json 供 Obsidian 錨定；其餘設定（appearance／core-plugins 等）版本相依，
-  // 由 Obsidian 首次開啟自行生成——預寫易過時，不代寫。
-  const appJson = join(obsidianDir, 'app.json');
-  if (!existsSync(appJson)) { writeFileSync(appJson, '{}\n'); created.push('docs/.obsidian/app.json'); }
-  let ignoreNote;
-  try { ignoreNote = ensureDocsVaultIgnored(); }
-  catch { ignoreNote = '無法讀寫 .gitignore——請手動確認 docs/.obsidian/ 忽略設定'; }
+  if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('.obsidian/'); }
+  // 外掛安裝（標準解——Obsidian 核心不索引 dot 資料夾）：三檔缺則下載，既有檔不覆蓋；
+  // community-plugins.json 補缺啟用、data.json enabledFolders 補 .shiftblame。下載失敗降級不擋。
+  const plan = ensureHiddenFoldersPlugin();
+  const pluginNotes = [...plan.notes];
+  const missing = DOCS_VAULT_PLUGIN_FILES.filter((f) => !existsSync(join(plan.pluginDir, f)));
+  if (missing.length) {
+    const base = process.env.SB_DOCS_VAULT_PLUGIN_BASE || DOCS_VAULT_PLUGIN_BASE;
+    mkdirSync(plan.pluginDir, { recursive: true });
+    try {
+      for (const f of missing) await downloadToFile(`${base}/${f}`, join(plan.pluginDir, f));
+      created.push(`.obsidian/plugins/${DOCS_VAULT_PLUGIN_ID}（${missing.join('、')}）`);
+      pluginNotes.push(`外掛已安裝：${DOCS_VAULT_PLUGIN_ID}（來源 ${base}）——需 Obsidian 1.13+ desktop，受限模式於 GUI 關閉一次後生效`);
+    } catch (e) {
+      pluginNotes.push(`外掛下載失敗（${e.message}）——治理文件暫不出現在圖譜；可離線後重跑，或於 Obsidian 社群外掛市集手動安裝 Hidden Folders Access 並開啟 .shiftblame`);
+    }
+  } else pluginNotes.push(`外掛檔案已齊（既有檔不覆蓋）`);
+  try { if (plan.cpWritable) writeFileSync(plan.cpPath, JSON.stringify(plan.cp, null, 2) + '\n'); } catch { pluginNotes.push('無法寫 community-plugins.json——外掛啟用未補'); }
+  try { if (plan.dataWritable) writeFileSync(plan.dataPath, JSON.stringify(plan.data, null, 2) + '\n'); } catch { pluginNotes.push('無法寫外掛 data.json——enabledFolders 未補'); }
+  const filterNote = (() => {
+    const appJsonPath = join(obsidianDir, 'app.json');
+    let cfg = {};
+    if (existsSync(appJsonPath)) {
+      try { cfg = JSON.parse(readFileSync(appJsonPath, 'utf8')); } catch { return '.obsidian/app.json 非 JSON——保持原樣，過濾器未補（修復或刪除後重跑）'; }
+      if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return '.obsidian/app.json 結構非物件——保持原樣，過濾器未補';
+    }
+    const have = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters.filter((f) => typeof f === 'string') : [];
+    const missingF = vaultIgnoreFilters().filter((f) => !have.includes(f));
+    if (!missingF.length) return 'userIgnoreFilters 已涵蓋所需過濾（既有設定未動）';
+    cfg.userIgnoreFilters = [...have, ...missingF];
+    try { writeFileSync(appJsonPath, JSON.stringify(cfg, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/app.json——過濾器未補'; }
+    return `userIgnoreFilters 已補 ${missingF.length} 條（索引集＝docs/＋.shiftblame 治理文件，tmp/ 排除；既有條目未動）`;
+  })();
+  if (filterNote.includes('已補')) created.push('.obsidian/app.json 過濾器');
+  let ignoreNotes;
+  try { ignoreNotes = ensureIgnoredTargets(['.obsidian/']); }
+  catch { ignoreNotes = ['無法讀寫 .gitignore——請手動確認 .obsidian/ 忽略設定']; }
   fin([
-    `docs/ 為 Obsidian vault 根——結構就緒（Obsidian「開啟資料夾為儲存庫」選 ${docsDir}，Graph View 為核心插件預設啟用）`,
-    created.length ? `建立：${created.join('、')}` : '結構已存在，零變更（冪等）',
-    ignoreNote,
-    '圖譜範圍僅 <repo>/docs/——非 docs/ 文件不讀取；子儲存庫與 .shiftblame/ 不處理',
+    `vault 根＝${ROOT}——Obsidian「開啟資料夾為儲存庫」選 repo 根（Graph View 為核心插件預設啟用）`,
+    created.length ? `建立：${created.join('、')}` : '結構已存在，零新增（冪等）',
+    ...pluginNotes,
+    filterNote,
+    ...ignoreNotes,
+    '索引集＝docs/＋.shiftblame 治理文件（tmp/ 排除）——新增頂層項目後重跑 sb docs-vault 即涵蓋',
   ]);
 }
 function cmdInit(slug, type = 'feat') {
@@ -1465,6 +1578,6 @@ switch (cmd) {
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
-  case 'docs-vault': cmdDocsVault(); break;
+  case 'docs-vault': cmdDocsVault().catch((e) => die([`docs-vault 異常：${e.message}`])); break;
   default: usage();
 }

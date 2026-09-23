@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.6.7-2ea44f.svg" alt="version 2.6.7"/>
+  <img src="https://img.shields.io/badge/version-2.6.8-2ea44f.svg" alt="version 2.6.8"/>
 </p>
 
 ---
@@ -200,7 +200,7 @@ sb next intent --new-ms --adversarial --boss-ok  # 時點 2 對抗＋終審 pass
 sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（逐條三態計數——刪N 改N 留N＋hash 綁定戳記；開新 ms 與 pass 出口前機械驗，非 slug 期間由 sb commitmsg 每 commit 驗戳記，無文件不擋）
 sb end [--base <本機分支>] --adversarial --boss-ok  # 時點 2 對抗＋終審 pass 出口：結束 slug → 收尾歸檔＋--no-ff 合併回基底（merge <slug>）＋刪本機工作分支＋產出遙測（diff／對抗／計數／耗時）；基底自動偵測，歧義時 --base 明示
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
-sb docs-vault                      # 以 docs/ 為 Obsidian vault 根自動建立結構（docs/.obsidian/ 缺則建＋忽略規則查證補行；冪等——既有檔不覆蓋；圖譜範圍僅 docs/，非 docs/ 文件不讀取，不處理子儲存庫與 .shiftblame/）
+sb docs-vault                      # 以 repo 根為 Obsidian vault 根自動建立結構（.obsidian/ 建於 <repo>/.obsidian/——Obsidian 設定目錄固定在 vault 根；userIgnoreFilters 過濾補缺——索引集＝docs/＋.shiftblame 治理文件、tmp/ 排除；Obsidian 預設不索引 dot 資料夾——標準解＝自動安裝 Hidden Folders Access 外掛並啟用 .shiftblame（community-plugins.json／data.json 補缺，既有條目不覆蓋；受限模式於 GUI 關閉一次）；需 Obsidian 1.13+ desktop；非 docs/ 頂層項目動態掃入過濾清單，新增後重跑即涵蓋；冪等——既有檔不覆蓋）
 ```
 
 初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳與外部證據，再加入新 slug 的初始結構（舊版對話流鍵由讀取端遷移剝除）。
