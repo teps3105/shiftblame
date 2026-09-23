@@ -166,8 +166,9 @@ const usage = (code = 2) => {
                                         機制即擋）＋staged 系統檔檢查；
                                         通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
   sb vault                              Obsidian vault 初始化並註冊（冪等，無外掛）：初始化 <repo>/.obsidian/
-                                        （app.json userIgnoreFilters 強制接管——顯示規定集＝docs/＋README.md，
-                                        其餘頂層一律隱藏，漂移自動對齊）＋補掛全域註冊表
+                                        （app.json userIgnoreFilters 強制接管——查詢層顯示規定集＝docs/＋README.md，
+                                        其餘頂層一律隱藏，漂移自動對齊；檔案總管顯示面＝CSS snippet sb-vault-filter
+                                        反白名單隱藏＋appearance.json enabledCssSnippets 確保啟用）＋補掛全域註冊表
                                         （%APPDATA%\obsidian\obsidian.json，已註冊不重寫）；舊機制外掛殘留
                                         （hidden-folders-access、community-plugins.json）自動清除；
                                         Obsidian 執行中會把全域註冊寫回覆蓋——關閉後執行，重啟載入
@@ -712,9 +713,12 @@ function ensureWorkspaceIgnored() {
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
 }
 // sb vault：Obsidian vault 初始化並註冊（冪等，無外掛）——vault 根＝repo 根；顯示規定集＝docs/＋README.md。
-// 核心事實（本機 obsidian.asar 實查）：userIgnoreFilters 生效於圖譜／搜尋／快速切換／屬性（查詢層），
-// 檔案總管與索引器不套用——索引掃描範圍＝vault 根全樹，為 Obsidian 機制邊界；dot 項核心本就不索引，
-// 不列規定集。舊機制（docs-vault——Hidden Folders Access 偷渡＋SOP／ROADMAP 顯示）已於 2.7.0 移除，殘留自動清除。
+// 核心事實（本機 obsidian.asar 實查）：userIgnoreFilters 全部 13 處讀取點均在 metadata cache（查詢層：
+// 圖譜／搜尋／快速切換／屬性）與 config 預設表——檔案總管原生不讀任何過濾設定；索引器掃描範圍＝vault 根
+// 全樹（查詢結果已被 isUserIgnored 過濾）。檔案總管顯示面以原生 CSS snippet 機制補上：條目 DOM 帶
+// data-path 屬性，snippet 目錄＝configDir/snippets、啟用清單＝appearance.json enabledCssSnippets，
+// 目錄變更由 onRaw 監聽自動重載。dot 項核心本就不索引，不列規定集。舊機制（docs-vault——Hidden Folders
+// Access 偷渡＋SOP／ROADMAP 顯示）已於 2.7.0 移除，殘留自動清除。
 // 全域註冊表＝%APPDATA%\obsidian\obsidian.json：Obsidian 啟動讀取；執行中退出會整表寫回——外部寫入須於
 // Obsidian 關閉時為之。vault 條目 id 為 16 hex 隨機（Obsidian 僅作唯一鍵與狀態檔名）。
 const OBSIDIAN_GLOBAL_DIR = process.env.SB_OBSIDIAN_GLOBAL || join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'obsidian');
@@ -762,6 +766,26 @@ function ensureObsidianIgnored() {
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.obsidian/' + eol);
   return '.gitignore 已補一行：.obsidian/';
 }
+const VAULT_SNIPPET_NAME = 'sb-vault-filter';
+const VAULT_SNIPPET_WHITELIST = { folders: ['docs'], files: ['README.md'] };
+function vaultFilterCss() {
+  // 檔案總管顯示規定集反白名單：頂層條目（data-path 不含 /）白名單之外一律 display:none；
+  // 子層條目 data-path 含 /（如 docs/ 下內容）不受影響。選擇器綁 nav class（檔案總管條目專屬，
+  // asar 實證 setAttr('data-path', ...) 位於 nav-folder-title／nav-file-title），不誤擊其他面板。
+  const css = [
+    `/* sb vault 生成：檔案總管顯示規定集——頂層僅顯示 ${VAULT_SNIPPET_WHITELIST.folders.join('、')} 與 ${VAULT_SNIPPET_WHITELIST.files.join('、')}，其餘一律隱藏。 */`,
+  ];
+  for (const name of VAULT_SNIPPET_WHITELIST.folders) {
+    css.push(`.nav-folder-title:not([data-path*="/"]):not([data-path="${name}"]),`);
+  }
+  for (const name of VAULT_SNIPPET_WHITELIST.files) {
+    css.push(`.nav-file-title:not([data-path*="/"]):not([data-path="${name}"]),`);
+  }
+  css[css.length - 1] = css[css.length - 1].replace(/,$/, ' {');
+  css.push('  display: none !important;', '}', '');
+  return css.join('\n');
+}
+
 function cmdVault() {
   const created = [];
   const obsidianDir = join(ROOT, '.obsidian');
@@ -793,6 +817,35 @@ function cmdVault() {
     return `userIgnoreFilters 已強制設定 ${required.length} 條——顯示規定集＝docs/＋README.md，其餘一律隱藏`;
   })();
   if (filterChanged) created.push('.obsidian/app.json 過濾器');
+  let explorerChanged = false;
+  const explorerNote = (() => {
+    // 檔案總管過濾（asar 實證：檔案總管原生不讀過濾設定）——原生 CSS snippet 機制補上顯示面：
+    // snippet 檔內容漂移重寫；appearance.json enabledCssSnippets 確保包含本 snippet（不整表接管，
+    // 使用者自裝 snippet 不屬規定集管轄；停用本 snippet 視為漂移，重跑即恢復）。
+    const snippetsDir = join(obsidianDir, 'snippets');
+    const cssPath = join(snippetsDir, VAULT_SNIPPET_NAME + '.css');
+    let snippetWritten = false;
+    try {
+      mkdirSync(snippetsDir, { recursive: true });
+      const css = vaultFilterCss();
+      if (!existsSync(cssPath) || readFileSync(cssPath, 'utf8') !== css) { writeFileSync(cssPath, css); snippetWritten = true; explorerChanged = true; }
+    } catch { return '無法寫入 .obsidian/snippets/——檔案總管過濾未設定'; }
+    const appearancePath = join(obsidianDir, 'appearance.json');
+    let appearance = {};
+    if (existsSync(appearancePath)) {
+      try { appearance = JSON.parse(readFileSync(appearancePath, 'utf8')); } catch { return '.obsidian/appearance.json 非 JSON——snippet 未啟用（修復或刪除後重跑）'; }
+      if (typeof appearance !== 'object' || appearance === null || Array.isArray(appearance)) return '.obsidian/appearance.json 結構非物件——snippet 未啟用';
+    }
+    const prev = Array.isArray(appearance.enabledCssSnippets) ? appearance.enabledCssSnippets : [];
+    if (prev.includes(VAULT_SNIPPET_NAME)) {
+      return snippetWritten ? `檔案總管過濾：snippet ${VAULT_SNIPPET_NAME} 內容已更新（啟用中）` : `檔案總管過濾已生效（snippet ${VAULT_SNIPPET_NAME}，無漂移）`;
+    }
+    appearance.enabledCssSnippets = [...prev, VAULT_SNIPPET_NAME];
+    try { writeFileSync(appearancePath, JSON.stringify(appearance, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/appearance.json——snippet 未啟用'; }
+    explorerChanged = true;
+    return `檔案總管過濾：snippet ${VAULT_SNIPPET_NAME} 已生成並啟用——頂層僅顯示 docs 與 README.md，其餘一律隱藏`;
+  })();
+  if (explorerChanged) created.push('.obsidian 檔案總管過濾');
   let ignoreNote;
   try { ignoreNote = ensureObsidianIgnored(); } catch { ignoreNote = '無法讀寫 .gitignore——請手動確認 .obsidian/ 忽略設定'; }
   const reg = ensureVaultRegistration();
@@ -801,9 +854,10 @@ function cmdVault() {
     created.length ? `建立：${created.join('、')}` : '結構已存在，零新增（冪等）',
     ...staleNotes,
     filterNote,
+    explorerNote,
     ignoreNote,
     `全域註冊表：${reg.note}`,
-    '顯示規定集＝docs/＋README.md（userIgnoreFilters 生效於圖譜／搜尋／快速切換／屬性；檔案總管與索引器不套用——Obsidian 機制邊界）',
+    '顯示規定集＝docs/＋README.md（查詢層：userIgnoreFilters 生效於圖譜／搜尋／快速切換／屬性；檔案總管：CSS snippet ' + VAULT_SNIPPET_NAME + ' 隱藏白名單外頂層條目；索引器掃描範圍仍為全樹——查詢結果已被過濾）',
     'Obsidian 執行中退出會把全域註冊表與設定寫回覆蓋——建議關閉 Obsidian 後執行本命令，再開啟 Obsidian 載入；漂移重跑即對齊',
   ]);
 }

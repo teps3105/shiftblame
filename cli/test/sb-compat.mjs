@@ -105,6 +105,7 @@ classify({
 // 2.6.4 升版重新量測：dnd-prototype 於 2.6.3 後完成 slug——active→ended 漂移如註解預期。
 // 2.7.0 升版重新量測：dnd-prototype 開新 slug（character-item-data-foundation）ended→active；
 // wsxt flow-state 已重置（node 空）ended→uninitialized。
+// 2.7.0 後續重新量測（檔案總管過濾輪）：wsxt 已開新 slug——uninitialized→active。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'ended',
   'Trickster-Web': 'active',
@@ -116,7 +117,7 @@ const TEN_PROJECT_BASELINE = {
   'palserver-gui': 'ended',
   'ro-server': 'active',
   shiftblame: 'uninitialized',
-  wsxt: 'uninitialized',
+  wsxt: 'active',
 };
 let scanned = 0;
 for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {

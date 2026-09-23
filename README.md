@@ -200,7 +200,7 @@ sb next intent --new-ms --adversarial --boss-ok  # 時點 2 對抗＋終審 pass
 sb sopreview                       # SOP／ROADMAP 每 ms 審查留痕（逐條三態計數——刪N 改N 留N＋hash 綁定戳記；開新 ms 與 pass 出口前機械驗，非 slug 期間由 sb commitmsg 每 commit 驗戳記，無文件不擋）
 sb end [--base <本機分支>] --adversarial --boss-ok  # 時點 2 對抗＋終審 pass 出口：結束 slug → 收尾歸檔＋--no-ff 合併回基底（merge <slug>）＋刪本機工作分支＋產出遙測（diff／對抗／計數／耗時）；基底自動偵測，歧義時 --base 明示
 sb commitmsg "<訊息>"               # 提交訊息機械驗證（hooks 留痕硬擋提交）
-sb vault                           # Obsidian vault 初始化並註冊（冪等，無外掛）：初始化 <repo>/.obsidian/（app.json userIgnoreFilters 強制接管——顯示規定集＝docs/＋README.md，其餘頂層一律隱藏，漂移自動對齊）＋補掛全域註冊表（%APPDATA%\obsidian\obsidian.json，已註冊不重寫）；舊機制外掛殘留（hidden-folders-access、community-plugins.json）自動清除；Obsidian 執行中會把全域註冊寫回覆蓋——關閉後執行，重啟載入
+sb vault                           # Obsidian vault 初始化並註冊（冪等，無外掛）：初始化 <repo>/.obsidian/（app.json userIgnoreFilters 強制接管——查詢層顯示規定集＝docs/＋README.md，其餘頂層一律隱藏，漂移自動對齊；檔案總管顯示面＝CSS snippet sb-vault-filter 反白名單隱藏＋appearance.json enabledCssSnippets 確保啟用）＋補掛全域註冊表（%APPDATA%\obsidian\obsidian.json，已註冊不重寫）；舊機制外掛殘留（hidden-folders-access、community-plugins.json）自動清除；Obsidian 執行中會把全域註冊寫回覆蓋——關閉後執行，重啟載入
 ```
 
 初始化前若 hooks 已建立純紀錄檔，`sb init` 會保留合法的心跳與外部證據，再加入新 slug 的初始結構（舊版對話流鍵由讀取端遷移剝除）。
