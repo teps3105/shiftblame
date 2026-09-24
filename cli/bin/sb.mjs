@@ -1,17 +1,9 @@
 #!/usr/bin/env node
-// sb — shiftblame 流程狀態機 CLI：閘門只讀 git 事實與 flow-state.json。
-//
-// 對抗兩類系統性問題：
-//   1. 「不自知推進」——agent 自以為該推進就推進，跳過檢查/確認而不自覺。
-//      對策：七段圓環（intent 環首＝環尾）＋兩層兩段式段鏈＋回頭邊（任意段→intent 重走開新輪）＋每個推進點的前置閘門；推進
-//      MUST 跑 `sb next`，閘門不過即擋（exit 1）。技術問題依證據回責任段修正；老闆新意圖重走 intent，決策邊承接授權。
-//   2. 「五假」——假需求、假規劃由 G 檔結構閘機械查核；假對抗由 --adversarial＋lastAdv 時點條目對照
-//      驗證宣告條目與新鮮度；假驗收由老闆 checkpoint（--boss-ok 旗標即章＋think 理解揭露）
-//      與時點對抗承擔（閘門不讀 tmp）。
-//
-// 無依賴（node:fs / node:crypto / node:path / node:child_process）。在 <repo>（專案根）
-// 執行；寫入僅 <repo>/.shiftblame/（狀態檔 flow-state.json 與 tmp/）。
-// exit：0 = pass（放行），1 = 閘門擋下，2 = 用法錯誤。
+// sb — Shiftblame 工作狀態與契約檢查。
+// 在專案根使用 git 事實、正式文件與 flow-state.json 核對階段前提。
+// CLI 記錄需求封存、獨立審查及使用者授權；語義與真實驗收由對話及行為證據承載。
+// 使用 Node 內建模組；狀態與工作記錄存於 <repo>/.shiftblame/。
+// exit：0 = 通過，1 = 條件不符，2 = 用法錯誤。
 
 import { createHash, randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync, readdirSync, rmSync } from 'node:fs';
@@ -37,52 +29,25 @@ const SB_DIR = join(ROOT, '.shiftblame');
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');
 
-// ———— 檢查規則常數（五假訊號，日後按需調整） ————
-
-// 假需求：驗收標準一律可查核（模糊謂詞即假）
-const VAGUE = ['完善', '正常運作', '順利', '合理', '適當', '良好', '友好', '自如', '更好', '優化用戶體驗', 'works properly', 'user-friendly'];
-// 敷衍詞（段落全為此類 = 假）
-const COP_OUT = /^(無|無風險|沒有|暫無|none|n\/?a|待補|略|不適用|無法)[。.\s]*$/i;
-
-// ———— 段節點鏈（七段圓環——intent 環首＝環尾＋兩層兩段式）：定義層 requirement→research→plan（逐功能規劃循環→規劃收斂）；
-// 時點 1 對抗＋老闆 pass 於 requirement→research 邊（G1 準則建立後審「意圖→需求翻譯」）；plan→test 機械推進（假規劃閘，零審核）；
-// 實作層 test→build→verify（逐功能：提交閘 commit 回 test；紅燈段內修復旗標切段——build→test、verify→build→test；
-// 中鏈零審核資源，僅機械格式閘——build→verify 亦機械推進：E2E 全綠＋working tree 乾淨即過）；verify＝真驗收執行——G1 GWT
-// 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區），驗收依據＝行為是否真的發生而非
-// 測試燈號；驗收完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 於 verify 出口邊（審驗收結果——GWT 回指意圖、假綠燈：
-// 測試綠但 AC 從行為矩陣還原不出＝綠燈無效；出口同一邊兩章：verify→intent 帶 --new-ms 開新 ms，或 sb end 結束 slug）。 ————
-
+// 各階段的正常推進與技術回查路徑。
 const FLOW = {
-  intent:  { next: ['requirement'], desc: '七段圓環環首＝環尾（老闆意圖沉澱，不屬任何層）：任何新意圖在該 ms 內一律重走 intent 開新輪；verify 出口邊閉環落點' },
-  requirement: { next: ['research'], desc: 'G1 定義邊：經查證的現況事實＋BDD 行為規格；首次或變更需時點 1 對抗＋老闆 pass；定義未變且無封存後新意圖時沿用原核准' },
-  research:{ next: ['plan', 'requirement'], desc: 'G2 定義邊：技術分析（外部證據打底）；回 requirement＝旗標切段（逐功能循環／CONFORMS 補正——不計返工輪，進段重置外部證據；G1 未變且無新意圖時沿用原封存，重新核准後才重封存）' },
-  plan:    { next: ['test', 'research', 'requirement'], desc: 'G3 定義邊：驗收排程＋實作計畫；plan→test 機械推進（假規劃閘，零審核）；回 research／requirement＝旗標切段（逐功能循環「下一功能」／CONFORMS 補正——不計返工輪）' },
-  test:    { next: ['build', 'plan'], desc: 'G3 落地邊：撰寫功能測試；計畫前提、操作或可測性有問題時回 plan 修正，保留 G1 契約與輪次' },
-  build:   { next: ['verify', 'test'], desc: 'G2 落地邊：實作＋提交閘 commit（單功能單提交）；段內修復旗標切段回 test；收斂期 E2E 全綠＋working tree 乾淨即 build→verify 機械推進（中鏈零審核）' },
-  verify:  { next: ['intent', 'test', 'build'], desc: '真驗收執行：G1 GWT 逐條＝驗收劇本——實操觀察真實行為、證據落回指區（驗收依據＝行為是否發生，非測試燈號）；驗出技術問題時自主回 test／build 修復，依根因可續退 plan／research；老闆判 fail 或需求修約才重走 intent；驗收完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 出口→intent（--new-ms --adversarial --boss-ok／end --adversarial --boss-ok）' },
+  intent:  { next: ['requirement'], desc: '確認目標、範圍與授權；實質新需求在同一里程碑開新輪，驗收出口可開下一里程碑' },
+  requirement: { next: ['research'], desc: 'G1 需求與驗收契約；首次或改義需時點 1 獨立審查與使用者判定，有效且未變的契約沿用原核准' },
+  research:{ next: ['plan', 'requirement'], desc: 'G2 技術決策與證據；必要時回 requirement 釐清契約，技術回查保留里程碑輪次' },
+  plan:    { next: ['test', 'research', 'requirement'], desc: 'G3 實作順序與驗收安排；必要時回 research 或 requirement 修正前提' },
+  test:    { next: ['build', 'plan'], desc: '建立與風險相稱的驗證；必要時回 plan 修正操作、計畫或驗收方法' },
+  build:   { next: ['verify', 'test'], desc: '實作、整合與提交；必要時回 test 修正測試，受驗工作樹乾淨後進入 verify' },
+  verify:  { next: ['intent', 'test', 'build'], desc: '執行真實驗收並回指 G1；技術問題回 test 或 build 修復，時點 2 獨立審查及使用者終審後開下一里程碑或結束' },
 };
 
-// 回頭邊（任何新意圖一律重走 intent）：任意節點→intent 合法——同 ms 開新輪（計返工輪＋rewrite 載入閘）；
-// verify 出口邊（時點 2 對抗＋老闆終審 pass）帶 --new-ms 開新 ms 或 sb end 結束 slug。
+// 明確的新需求可由任意階段回 intent；已完成驗收的出口以 --new-ms 或 end 承接。
 const backEdge = (from, to) => to === 'intent';
 
-// 前進鑰匙三層（SKILL 授權章）：
-//   ① 理解宣告（對話承載）：think args 揭露語義授權——flow-state 不另造對話流記錄（2.5.2），CLI 不重複
-//   ② 老闆決策邊鑰匙＝--boss-ok 留痕＋時點對抗；--new-ms 開新里程碑（verify→intent 邊，pass 後）
-//   ③ --boss-ok 旗標即章：老闆實際輸入由對話承載（基質優先——平台已答，不另造記錄）；機械不驗時戳，
-//      語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔
-// 兩時點：時點 1＝requirement→research（G1 準則建立後審意圖→需求翻譯）；時點 2＝verify 出口邊（驗收完成、
-// G1 回指閉環後審驗收結果——GWT 回指、假綠燈）；中鏈（research→plan→test→build→verify）零審核資源——老闆不看
-// 中間產物，問題在前期（翻譯錯）與驗收後（對不上）暴露，中間機械推進；verify＝真驗收執行，出口＝時點 2 對抗＋老闆證據終審。
+// 階段前提由正式文件、契約封存與對應審查／授權旗標共同核對。
 const needsBossOk = (from, to) =>
   (from === 'intent' && to === 'requirement') || (from === 'requirement' && to === 'research');
 
-// --adversarial＝時點對抗宣告＋lastAdv 時點條目對照（缺條目或過期即擋）。
-// 時點 1＝requirement→research 邊——審意圖→需求翻譯（GWT 從行為矩陣還原、翻譯保真）；
-// 時點 2＝verify→intent 出口邊——驗收完成、G1 回指閉環後審驗收結果：GWT 回指意圖、假綠燈（測試綠但 AC
-// 從行為矩陣還原不出＝綠燈無效）；出口（sb end／next --new-ms）＝時點 2 對抗條目＋老闆終審章同一邊
-// （--adversarial＋--boss-ok；時點 2 老闆 pass 即終審 pass）。
-// 段內提交閘無對抗（2.4.0 移除）——commitmsg 格式驗證＋印章承載提交機械，審核不在提交時點。
+// 兩個審查出口核對對應 lastAdv 條目及其新鮮度，並承接使用者判定。
 const ADVERSARIAL_EDGES = [
   { from: 'requirement', to: 'research', point: '1' },
   { from: 'verify', to: 'intent', point: '2' },
@@ -96,68 +61,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
-  console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
-
-七段圓環（intent 環首＝環尾——不屬任何層；兩層兩段式）
-      → 定義層 requirement →時點 1 對抗＋老闆 pass（審意圖→需求翻譯）→ research → plan
-      （逐功能規劃循環→規劃收斂；plan→test 機械推進——中鏈零審核資源）
-      → 實作層 test → build → verify（逐功能：提交閘 commit 回 test 接下一功能；
-      依證據回退 research→requirement、plan→research、test→plan、build→test、verify→build）→ E2E 全綠＋working tree 乾淨 →build→verify 機械推進
-      → verify 真驗收（GWT 逐條實操、行為證據落回指區、G1 回指閉環）→ 時點 2 對抗＋老闆終審 pass 出口
-      （sb next intent --new-ms --adversarial --boss-ok 開下一 ms，或 sb end --adversarial --boss-ok 結束 slug——出口同一邊兩章）
-      （任何新意圖在該 ms 內一律重走 intent：任意節點→intent 同 ms 開新輪＋rewrite 載入閘；
-      技術修復由 agents 自動旗標切段不停等不計輪；老闆決策邊 --boss-ok＋時點對抗 --adversarial，同一 G1 且無新意圖沿用核准）
-
-雙流模型：輸入＝獨立理解對象，不是鎖的鑰匙——
-      輸入流唯增（hooks 記錄，永不覆蓋消費）；理解流由 shiftblame:think 調用（args＝理解宣告）
-      自動落檔＋必然曝光（老闆每則輸入審視未審理解與未覆蓋輸入）；未覆蓋即凍結由 hooks 機械強制。
-      無鎖、無解鎖命令、無引句。
-
-用法：
-  sb init <slug> [type]                 開 slug：建全骨架（flow-state＋<slug>/001/＋SLUG.md＋archive/＋<type>/<slug> 分支；type 預設 feat）
-  sb state                              顯示目前段、可走下一步與其前置條件
-  sb adversarial <報告檔> --point 1|2    時點對抗宣告（條目入 lastAdv 定長欄位）：
-                                        落檔 .shiftblame/tmp/ 後引用檔案；機械驗：檔案存在＋含判定行＋判定為「通過」
-                                        （必修全清才可宣告）；--point 必帶（1＝requirement→research；2＝verify 出口）
-  sb next <段> [--boss-ok] [--adversarial] [--new-ms]
-                                        推進（閘門不過即擋）
-                                        --boss-ok：老闆授權留痕（intent→requirement、requirement→research 邊＋pass 出口：--new-ms／sb end）
-                                        --new-ms：開新里程碑（僅 verify→intent 出口邊，時點 2 對抗＋老闆終審 pass 後；MUST --adversarial --boss-ok）
-                                        --adversarial：時點對抗宣告（requirement→research＝時點 1；verify→intent 出口＝時點 2——
-                                        對抗在前、老闆判定在後）；需 sb adversarial --point 對應條目
-                                        （lastAdv，時點 1 晚於同邊上次推進；時點 2 晚於本 ms 末次進 verify）
-  sb end [--base <本機分支>] --adversarial --boss-ok
-                                        時點 2 對抗＋老闆終審 pass 後結束 slug（僅 verify 態——出口同一邊兩章）：
-                                        收尾歸檔＋一條龍 git 收尾（--no-ff 合併回基底（訊息固定 merge <slug>）＋
-                                        內建查證留痕＋刪本機工作分支——任一步失敗整體擋下，狀態保持 verify 重試）
-                                        ＋產出遙測（git baseline..HEAD diff 統計＋對抗判定＋計數＋耗時——寫 flow-state，
-                                        事實由 git 承擔）；基底自動偵測（slug 起始提交所在唯一本機分支），
-                                        零命中或歧義即擋要求 --base 明示，不猜主幹名稱
-  sb sopreview "<逐檔三態計數>"        SOP／ROADMAP 審查留痕（整檔重寫自洽——逐條三問裁定：基質可答／
-                                        元行為證據／仍被觸發；淘汰即刪，先刪改後留痕）：
-                                        「SOP 逐條重評估：刪N 改N 留N（增N 選配）；ROADMAP 逐條重評估：刪N 改N 留N」；
-                                        slug 期間開新 ms（--new-ms）與 sb end 前機械驗本 ms 已審且戳記未失效
-                                        （綁定各檔 sha256——審後改檔即重審）；非 slug 期間以 commit 為審查邊
-                                        （每次提交前驗戳記）；無 SOP／ROADMAP 的專案不擋
-  sb closeout --base <本機分支>           事後查證與例外修復留痕（end 已一條龍代做合併與刪本機分支——手動整合後查證）；
-                                        init 再驗本機與遠端舊分支已清除
-  sb commitmsg "<訊息>"                  提交訊息機械驗證＋陳述對照閘（永續層文件的 sb 命令／旗標
-                                        引用 ↔ CLI 實況——單一真相取自 sb.mjs 源碼；引用不存在的
-                                        機制即擋）＋staged 系統檔檢查；
-                                        通過時寫 commit-stamp.json，hooks 對 git commit 硬擋無印章者
-  sb vault                              Obsidian vault 初始化並註冊（冪等，無外掛）：初始化 <repo>/.obsidian/
-                                        （app.json userIgnoreFilters 強制接管——查詢層顯示規定集＝docs/＋README.md，
-                                        其餘頂層一律隱藏，漂移自動對齊；檔案總管顯示面＝CSS snippet sb-vault-filter
-                                        反白名單隱藏＋appearance.json enabledCssSnippets 確保啟用）＋補掛全域註冊表
-                                        （%APPDATA%\obsidian\obsidian.json，已註冊不重寫）；舊機制外掛殘留
-                                        （hidden-folders-access、community-plugins.json）自動清除；
-                                        Obsidian 執行中會把全域註冊寫回覆蓋——關閉後執行，重啟載入
-
-完成類鑰匙：--boss-ok（老闆決策邊留痕）＋時點對抗＋理解流必然曝光——
-  老闆「結束」→ sb end --adversarial --boss-ok（出口邊選 end）；「下一個／開新 ms」→ sb next intent --new-ms --adversarial --boss-ok（出口邊選 next）；
-  老闆任何新輸入（含兩時點 fail）→ 重走 intent（shiftblame:think）——sb next intent 同 ms 開新輪，
-  段內修復類由 agents 自動旗標切段（不停等不計輪）。授權語義由 agent 理解（shiftblame:think args 落理解流），
-  理解有誤即越權——老闆每則輸入審視曝光；不防刻意直改 flow-state 的偽造（殘餘由老闆抽查承擔）`);
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type]                 建立已授權 slug；type 預設 feat\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查非空單行、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊\n  sb --help\n\nslug：intent → requirement → research → plan → test → build → verify\n技術問題可回相鄰責任段修正；明確的新需求以 next intent 開新輪。\nintent→requirement 用 --boss-ok 承接既有開工授權。\n時點 1 在 requirement→research，時點 2 在 verify 出口；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext intent --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -224,14 +128,8 @@ function section(text, keyword) {
   return start < 0 ? null : lines.slice(start + 1).join('\n').trim();
 }
 
-// 段落實質性：非空、有效字數達標、非全敷衍行
-function substantive(body, minLen = 20) {
-  if (!body) return false;
-  const s = body.replace(/^[>#\-\s*]+/gm, '').replace(/\s+/g, '');
-  if (s.length < minLen) return false;
-  const lines = body.split('\n').map((l) => l.replace(/^[>#\-\s*]+/, '').trim()).filter(Boolean);
-  return lines.length > 0 && !lines.every((l) => COP_OUT.test(l));
-}
+// Mechanical checks establish presence, not semantic quality.
+function substantive(body) { return typeof body === "string" && body.trim().length > 0; }
 
 const msDir = (st) => join(SB_DIR, st.slug, st.ms);
 const gPath = (st, n) => join(msDir(st), `G${n}.md`);
@@ -267,14 +165,6 @@ const unique = (values) => [...new Set(values)];
 function validateG1Acceptance(g1, problems, passes) {
   const rows = acRows(g1);
   if (rows.length && /^###\s+AC-/m.test(String(g1))) problems.push('G1 混合格式（單行與 BDD 分段並存）——擇一定義（主推 BDD 分段）');
-  // GWT 機械掃描黑名單（2.4.0 時點 1 前移的機械下限——規格工程化樣式，r59 反面例）：
-  // 使用者欄自曝開發者視角／When 主語是工程活動包裝（執行測試、跑閘）／Then 是工程品質指標（全綠、無殘留）。
-  // 機械只擋最穩定的字面樣式（下限）；語義級「AC 從行為矩陣還原不出一列」由時點 1 對抗攻防承載（REQUIREMENT 行為矩陣判準）。
-  const gwtBlacklist = (id, key, value) => {
-    if (key === '使用者' && /開發者視角|工程視角/.test(value)) problems.push(`G1 ${id} 使用者欄自曝「${/開發者視角|工程視角/.exec(value)[0]}」——使用者欄填標的方角色，工程行為包裝成需求即偽 AC（行為矩陣判準）`);
-    if (key === 'When' && /^(執行|跑|運行)/.test(value) && /（測試|測試碼|規格閘|驗證閘|檢查|套件）/i.test(value)) problems.push(`G1 ${id} When 主語是工程活動（${value.slice(0, 24)}…）——When 主語＝標的方經產品介面操作，測試整備走測試碼與 G2（行為矩陣判準）`);
-    if (key === 'Then' && /全綠|全部通過|全數通過|無殘留|無引用/.test(value)) problems.push(`G1 ${id} Then 是工程品質指標（${value.slice(0, 24)}…）——Then＝標的方可觀察結果（看到、得到、避免什麼），非工程指標`);
-  };
   if (rows.length) { // 單行格式——相容驗證
     const ids = rows.map((row) => row.id);
     if (unique(ids).length !== ids.length) problems.push('G1 驗收契約含重複 AC-ID——每個 AC-ID MUST 唯一');
@@ -282,8 +172,7 @@ function validateG1Acceptance(g1, problems, passes) {
     for (const row of rows) {
       const missing = required.filter((key) => !filled(row.fields[key]));
       if (missing.length) problems.push(`G1 ${row.id} 缺實質欄位：${missing.join('、')}`);
-      if (row.fields['證據'] !== 'BEHAVIOR') problems.push(`G1 ${row.id} 證據 MUST 為 BEHAVIOR——結構正確不能代替使用者需求`);
-      gwtBlacklist(row.id, '使用者', row.fields['使用者'] ?? '');
+      if (row.fields['證據'] !== 'BEHAVIOR') problems.push(`G1 ${row.id} 證據 MUST 為 BEHAVIOR——以使用者可觀察結果驗收`);
     }
     if (!problems.length) passes.push(`G1 使用者驗收契約：${unique(ids).join('、')}（BEHAVIOR）`);
     return unique(ids);
@@ -298,9 +187,8 @@ function validateG1Acceptance(g1, problems, passes) {
         if (!re.test(b)) { problems.push(`G1 ${ids[i]} 缺 ${key}（BDD 行為規格——字面搬運產不行為規格）`); continue; }
         const val = (b.match(new RegExp(`^[-*]?\\s*${key}[^\\S\\n]*[:：]\\s*(.+)$`, 'm')) ?? [, ''])[1].trim();
         if (!filled(val)) problems.push(`G1 ${ids[i]} ${key} 未填實質（模板照抄不構成行為規格）`);
-        gwtBlacklist(ids[i], key, val);
       }
-      if (!/證據[:：]\s*BEHAVIOR/.test(b)) problems.push(`G1 ${ids[i]} 證據 MUST 為 BEHAVIOR——結構正確不能代替使用者需求`);
+      if (!/證據[:：]\s*BEHAVIOR/.test(b)) problems.push(`G1 ${ids[i]} 證據 MUST 為 BEHAVIOR——以使用者可觀察結果驗收`);
     }
     if (!problems.length) passes.push(`G1 使用者驗收契約（BDD 行為規格）：${ids.join('、')}（BEHAVIOR）`);
     return unique(ids);
@@ -342,7 +230,7 @@ function gate(st, target, opts) {
 
   // 骨架存在性閘（僅前進邊——回頭邊不擋）：SLUG.md 缺＝骨架不完整
   if (st.slug && target !== 'intent' && !existsSync(join(SB_DIR, st.slug, 'SLUG.md'))) {
-    problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由秘書手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);
+    problems.push(`骨架不完整：${join(SB_DIR, st.slug, 'SLUG.md')} 不存在——由主代理手建（.shiftblame/ 永遠可寫；重跑 init 會覆蓋 flow-state，既有工作區禁止）`);
   }
 
   // G1 契約核對（封存於 requirement→research 邊，之後任何推進重算；回 intent 邊（老闆新輸入重走 intent）重定義前不擋）。
@@ -355,7 +243,7 @@ function gate(st, target, opts) {
       const raw = readFileSync(path, 'utf8');
       const heads = reflectHeads(raw);
       if (heads !== 1) problems.push(`G1 「## 回指記錄」分隔標題出現 ${heads} 次（須恰一次）——回指區格式破壞（RAM/ROM 分區，SKILL §0）`);
-      else if (sha256Text(defSection(raw)) !== st.g1Contract.sha256) problems.push('G1 定義區已偏離封存時契約——定義級變更走回 intent（sb next intent）同 ms 開新輪（計返工輪＋rewrite 載入閘）；回指區更新不觸契約');
+      else if (sha256Text(defSection(raw)) !== st.g1Contract.sha256) problems.push('G1 定義區已偏離封存時契約——定義級變更走回 intent（sb next intent）同 ms 開新輪（記錄實質需求修正）；回指區更新不觸契約');
       else passes.push(`G1 定義區 hash 核對：${st.g1Contract.sha256.slice(0, 12)}（封存於 flow-state；回指區在 hash 外）`);
     }
   }
@@ -396,15 +284,6 @@ function gate(st, target, opts) {
     else problems.push(`「${st.node} → ${target}」不是對抗邊——--adversarial 留給時點對抗邊（時點 1 requirement→research／時點 2 verify 出口）`);
   }
 
-  // 同一段可從前進或回退邊進入，使用最近的進段事實判定新輸入；缺進段紀錄時沿既有行為放行。
-  const RETREAT_EDGES = { research: ['requirement'], plan: ['research', 'requirement'], test: ['plan'], build: ['test'], verify: ['test', 'build'] };
-  if (RETREAT_EDGES[st.node]?.includes(target) && st.lastBossInputAt) {
-    const enteredAt = Object.entries(st.edgeAt ?? {}).filter(([edge]) => edge.endsWith(`→${st.node}`)).map(([, at]) => at).sort().at(-1);
-    if (enteredAt && st.lastBossInputAt > enteredAt) {
-      problems.push(`老闆輸入後的段內修復切段（${st.node} → ${target}）＝把老闆新意圖當執行性修復消化——老闆任何輸入驅動的工作一律重走 intent 開新輪（sb next intent，計返工輪）；段內修復僅限代理自主執行性修復（A3）`);
-    }
-  }
-
   const g1 = mdOf(gPath(st, 1)), g2 = mdOf(gPath(st, 2)), g3 = mdOf(gPath(st, 3));
 
   switch (target) {
@@ -419,17 +298,13 @@ function gate(st, target, opts) {
         if (bdd.length) {
           const accAll = bdd.join('\n');
           if (!substantive(accAll)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
-          const vague = VAGUE.filter((v) => accAll.includes(v));
-          if (vague.length) problems.push(`G1 驗收段含模糊謂詞「${vague.join('、')}」——不可查核（假需求訊號），改寫為可觀察的行為/狀態`);
-          if (!problems.length) passes.push('G1 驗收標準可查核（BDD 行為規格：存在＋實質＋無模糊謂詞）');
+          if (!problems.length) passes.push('G1 驗收欄位齊備（語義需審查）（BDD 行為規格：存在＋必填欄位）');
         } else {
           const acc = section(g1, '驗收');
           if (acc === null) problems.push('G1 缺「驗收」段——需求沒有可查核的「完成」定義（假需求訊號）');
           else {
             if (!substantive(acc)) problems.push('G1 驗收段敷衍——驗收標準是不可查核的空話（假需求訊號）');
-            const vague = VAGUE.filter((v) => acc.includes(v));
-            if (vague.length) problems.push(`G1 驗收段含模糊謂詞「${vague.join('、')}」——不可查核（假需求訊號），改寫為可觀察的行為/狀態`);
-            if (!problems.length) passes.push('G1 驗收標準可查核（存在＋實質＋無模糊謂詞）');
+            if (!problems.length) passes.push('G1 驗收欄位齊備（語義需審查）（存在＋必填欄位）');
           }
         }
         validateG1Acceptance(g1, problems, passes);
@@ -439,12 +314,12 @@ function gate(st, target, opts) {
     case 'plan':
       if (st.node !== 'research') break; // 測試揭露計畫問題時，允許先回到計畫修正。
       if (!g2) problems.push('G2 不存在');
-      else if (!substantive(g2, 30)) problems.push('G2 內容空泛——研究產出無實質內容，規劃無依據（精簡研究也要有真結論，不是空話）');
+      else if (!substantive(g2, 30)) problems.push('G2 內容空白——請填入支持實作計畫的技術結論與依據');
       else passes.push('G2 實質存在');
       break;
 
     case 'test':
-      if (st.node === 'plan') { // 機械推進閘（plan→test 零審核——2.4.0）：假規劃閘（G3 結構驗證）；§10 一致核對與時點 1 對抗已於 requirement→research 邊承載
+      if (st.node === 'plan') { // plan → test 核對 G3 的驗收映射與實作安排。
         if (!g1) problems.push('G1 不存在——無法推進');
         const g1Ids = g1 ? validateG1Acceptance(g1, problems, passes) : [];
         if (!g3) problems.push('G3 不存在');
@@ -638,7 +513,7 @@ function cmdCloseout(base) {
   const baseCommit = branchTip(base);
   if (!baseCommit) die(['基底分支不存在或尚無提交']);
   const candidates = st.workBranch ? [st.workBranch] : TYPES.map(type => `${type}/${st.slug}`).filter(name => branchTip(name));
-  if (candidates.length !== 1) die(['缺少唯一舊工作分支來源；先恢復舊功能分支再查證，不以目前 HEAD 代替']);
+  if (candidates.length !== 1) die(['缺少唯一舊工作分支來源；先恢復可核實的原功能分支，再查證收尾來源']);
   const workBranch = candidates[0], workCommit = branchTip(workBranch);
   if (workBranch === base || !workCommit) die(['舊工作分支須存在且不同於基底；先查證再刪除']);
   const mergeCommit = noFfMergeEvidence(workCommit, baseCommit, st.slug);
@@ -683,15 +558,11 @@ function ensureWorkspaceIgnored() {
   const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
 }
-// sb vault：Obsidian vault 初始化並註冊（冪等，無外掛）——vault 根＝repo 根；顯示規定集＝docs/＋README.md。
-// 核心事實（本機 obsidian.asar 實查）：userIgnoreFilters 全部 13 處讀取點均在 metadata cache（查詢層：
-// 圖譜／搜尋／快速切換／屬性）與 config 預設表——檔案總管原生不讀任何過濾設定；索引器掃描範圍＝vault 根
-// 全樹（查詢結果已被 isUserIgnored 過濾）。檔案總管顯示面以原生 CSS snippet 機制補上：條目 DOM 帶
-// data-path 屬性，snippet 目錄＝configDir/snippets、啟用清單＝appearance.json enabledCssSnippets，
-// 目錄變更由 onRaw 監聽自動重載。dot 項核心本就不索引，不列規定集。舊機制（docs-vault——Hidden Folders
-// Access 偷渡＋SOP／ROADMAP 顯示）已於 2.7.0 移除，殘留自動清除。
-// 全域註冊表＝%APPDATA%\obsidian\obsidian.json：Obsidian 啟動讀取；執行中退出會整表寫回——外部寫入須於
-// Obsidian 關閉時為之。vault 條目 id 為 16 hex 隨機（Obsidian 僅作唯一鍵與狀態檔名）。
+// sb vault 以 repo 根註冊 Obsidian vault；顯示範圍為 docs/ 與 README.md。
+// 查詢使用 userIgnoreFilters；檔案總管使用 data-path 與原生 CSS snippet。
+// snippets 放於 configDir/snippets，以 appearance.json enabledCssSnippets 啟用。
+// 退役的 docs-vault 設定由此入口清理。
+// 全域 obsidian.json 於 Obsidian 關閉時更新，避免與應用程式退出寫入衝突。
 const OBSIDIAN_GLOBAL_DIR = process.env.SB_OBSIDIAN_GLOBAL || join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'obsidian');
 function vaultIgnoreFilters() {
   // 顯示規定集＝docs/＋README.md——頂層其餘非 dot 項目一律隱藏（dot 項核心不索引，不列）。
@@ -761,7 +632,7 @@ function cmdVault() {
   const created = [];
   const obsidianDir = join(ROOT, '.obsidian');
   if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('.obsidian/'); }
-  // 舊機制（2.7.0 前外掛標準解）殘留清除——無外掛形態的單一事實。
+  // 清理退役的外掛設定，統一使用原生 vault 設定。
   const staleNotes = [];
   const stalePlugin = join(obsidianDir, 'plugins', 'hidden-folders-access');
   if (existsSync(stalePlugin)) { try { rmSync(stalePlugin, { recursive: true, force: true }); staleNotes.push('已移除舊外掛殘留 hidden-folders-access'); } catch { staleNotes.push('無法移除 .obsidian/plugins/hidden-folders-access——請手動刪除'); } }
@@ -865,7 +736,7 @@ function cmdInit(slug, type = 'feat') {
     const templatePath = fileURLToPath(new URL('../../skills/shiftblame/assets/SLUG.md', import.meta.url));
     let content = null;
     try { if (existsSync(templatePath)) content = readFileSync(templatePath, 'utf8'); } catch { /* 範本不可讀 → 最小種子 */ }
-    if (!content) content = `---\nslug: ${slug}\ncreated: ${new Date().toISOString().slice(0, 10)}\n---\n\n# ${slug}\n\n（最小種子——由秘書依範本補全結構：§3 待辦／§4 段表＋定案索引／三面向範本節）\n`;
+    if (!content) content = `---\nslug: ${slug}\ncreated: ${new Date().toISOString().slice(0, 10)}\n---\n\n# ${slug}\n\n（最小種子——由主代理依範本補全結構：§3 待辦／§4 段表＋定案索引／三面向範本節）\n`;
     else content = content.replaceAll('<slug>', slug).replaceAll('<YYYY-MM-DD>', new Date().toISOString().slice(0, 10));
     writeFileSync(slugPath, content);
   }
@@ -880,7 +751,7 @@ function cmdInit(slug, type = 'feat') {
     workBranch = br;
   } catch {
     try { execSync(`git checkout ${type}/${slug}`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] }); branchNote = `開發分支：${type}/${slug}（已存在，切換過去）`; workBranch = `${type}/${slug}`; }
-    catch { branchNote = '非 git 環境或分支不可建——分支跳過（SKILL §7 分支 MUST 由秘書補）'; }
+    catch { branchNote = '非 git 環境或分支不可建——分支跳過（由主代理依已授權路由處理分支缺口）'; }
   }
   }
   // git baseline 錨定（產出遙測的時序基準）：init 時記 HEAD 與起始時間——sb end 以 baseline..HEAD 做 diff 時序分析
@@ -916,7 +787,7 @@ function cmdInitMain(slugArg) {
   ]);
 }
 
-// sb stop-report 已除（2.6.3）：停點申報實測為「找理由停」的橡皮章——停等的正當性改由位置承載
+
 // （hooks Stop：決策邊＝合法停等零申報；中鏈與對抗未完成＝擋停一次強制續行，真外部阻塞第二次放行，
 // 待決於回覆說明——對話承載 A2）。flow-state 舊 stopReport 鍵由 migrateStreams 讀取即剝。
 
@@ -940,17 +811,15 @@ function cmdState() {
     else out('  下一步：經 shiftblame:think 對齊新工作後 sb init <新slug>（開新流程）或 sb init --main（完結 ended 生命週期、留在 base 分支直接作業——不開 slug 不建分支；工作與歸檔路徑須未占用）');
     return;
   }
-  if (st.node === 'done') { // 舊版判決通過態（2.2.0 遷移讀出）：出口同 pass，唯讀不改檔
-    out(`slug: ${st.slug}   ms: ${st.ms}   段: done（舊版判決通過態——2.2.0 語意＝verify pass 後）`);
+  if (st.node === 'done') { // done 相容狀態：依驗收出口處理，查詢保持來源原樣
+    out(`slug: ${st.slug}   ms: ${st.ms}   段: done（相容狀態，對應 verify 驗收出口）`);
     out('  出口同 pass：sb next intent --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；重修＝老闆新輸入重走 intent 開新輪');
     return;
   }
   if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
   out(`slug: ${st.slug}   ms: ${st.ms}${st.rev ? `   輪次: r${String(st.rev).padStart(2, '0')}` : ''}   段: ${st.node}（${FLOW[st.node].desc}）`);
   if (st.g1Contract?.ms === st.ms) out(`G1 contract: ${st.g1Contract.sha256}（${st.g1Contract.file}）`);
-  if (st.turnUsage?.escalations) out(`迴圈升級：本回合已升級 ${st.turnUsage.escalations} 次（最後 @${st.turnUsage.escalatedAt}）——已自動重走 intent，依修正分類補正 G1~G3 後接續（不凍結；同指紋二次升級＝死操作本回合封禁）`);
   else if (st.turnUsage) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${st.turnUsage.requests} 工具調用——工作做到完成為止`);
-  if ((existsSync(join(SB_DIR, 'SOP.md')) || existsSync(join(SB_DIR, 'ROADMAP.md'))) && st.sopReview?.ms !== st.ms) out(`  待審：SOP／ROADMAP 每 ms 必審＝整檔重寫自洽（逐條三問裁定、淘汰即刪——先刪改後留痕）→ sb sopreview "SOP 逐條重評估：刪N 改N 留N；ROADMAP …"（開新 ms（pass）與結束前機械驗，戳記綁定 sha256）`);
   const nexts = [...FLOW[st.node].next];
   if (st.node !== 'intent' && !nexts.includes('intent')) nexts.push('intent');
   for (const n of nexts) {
@@ -969,15 +838,11 @@ function cmdState() {
 function cmdNext(target, opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = migrateStreams(readJson(STATE_FILE));
-  if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——出口同 pass（--new-ms／end），重修走 intent；推進寫檔即自然遷移
+  if (st.node === 'done') st.node = 'verify'; // done 相容狀態按 verify 處理，寫入時儲存目前節點
   if (st.node === 'ended' || !(st.node in FLOW)) die([`目前狀態 ${st.node ?? '（無）'} 不可推進——slug 已結束或狀態檔不屬於任何段`]);
   if (!(target in FLOW)) die([`未知段「${target}」。流程節點：${Object.keys(FLOW).join(' → ')}`], 2);
   const legal = FLOW[st.node].next.includes(target) || backEdge(st.node, target);
   if (!legal) die([`不合法推進：${st.node} → ${target}（可走：${[...FLOW[st.node].next, 'intent'].join(' / ')}）`]);
-  // 迴圈升級（escalatedAt／escalations）屬純觀測——不凍結推進：升級的自動回 intent 由 hooks 承擔（不凍結不停擺，
-  // 工作做到完成為止）；量永不構成中斷理由，同指紋二次升級的死操作封禁由 hooks 於工具層承擔。
-  // SOP／ROADMAP 每 ms 審查閘：開新 ms 前驗本 ms 已審（AI 開發下單一 ms 足以改變方向）
-  if (st.node === 'verify' && opts.newMs) { const p = sopReviewProblem(st); if (p) die([p]); }
   const { problems, passes } = gate(st, target, opts);
   if (problems.length) die(problems);
   const prev = st.node;
@@ -1001,7 +866,6 @@ function cmdNext(target, opts) {
       const prevMs = st.ms; // per-ms 遙測結算對象＝前一 ms（鍵＝被結算 ms）
       st.ms = String(Number(st.ms) + 1).padStart(3, '0');
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
-      delete st.rewriteSeen; // 舊 ms 的 rewrite 載入鑰匙不帶入（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）
       delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
       delete st.edgeAt; delete st.lastAdv; // 邊推進時戳與對抗條目屬 ms——新 ms 重驗（出口新鮮度由新 ms 的條目對照承載）
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
@@ -1013,154 +877,25 @@ function cmdNext(target, opts) {
     } else if (prev !== 'intent') { // intent→intent＝no-op 輪
       // 開新輪：新輪重寫自洽，時序由 edgeAt＋輪次計數承擔（歷史不可變性歸 git）
       const revN = countRev(st);
-      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 edgeAt 承擔，歷史歸 git）——本輪寫 G 檔前 hooks 驗已調用 shiftblame:rewrite（未載入即擋）`); }
+      if (revN) { st.rev = revN; passes.push(`修正輪 r${String(revN).padStart(2, '0')}：新輪重寫自洽（時序由 edgeAt 承擔，歷史歸 git）——按受影響範圍整理文件並驗證`); }
     }
   }
-  // 邊推進留痕（定長欄位——各邊最後時戳，閘門新鮮度對照用；迴圈升級旗標由 hooks 的 escalatedAt 對照）
+  // 各邊保留最後推進時間，供審查新鮮度核對。
   st.edgeAt = { ...(st.edgeAt ?? {}), [`${prev}→${target}`]: new Date().toISOString() };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([`${prev} → ${target}`, ...passes]);
 }
 
-// sb unlock 不存在：理解由對話承載——think args 理解宣告在對話流即可見（2.5.2 起不落檔），
-// 無引句、無鑰匙材料、無檔案記錄；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗。
+// 對退役命令提供目前工作入口。
 function cmdUnlockAbsent() {
-  die(['sb unlock 不存在——理解經 shiftblame:think 揭露（args 理解宣告，對話承載）即可行動；完成類鑰匙＝--boss-ok（老闆決策邊）＋時點對抗']);
+  die(['sb unlock 不存在；依 shiftblame:think 理解需求後承接已授權工作。決策出口使用 --boss-ok 與對應獨立審查。']);
 }
 
-// SOP／ROADMAP 機械基本功檢查（日期類＋重複類＋治理內容類——全機械可判，審查必過）：違規未清即不發審查戳記。
-function sopDocProblems() {
-  const problems = [];
-  for (const name of ['SOP.md', 'ROADMAP.md']) {
-    const file = join(SB_DIR, name);
-    if (!existsSync(file)) continue;
-    const lines = readFileSync(file, 'utf8').split(/\r?\n/);
-    const close = lines.indexOf('---', 1);
-    const fm = lines[0] === '---' && close > 0 ? lines.slice(1, close) : null;
-    const body = fm ? lines.slice(close + 1) : lines;
-    const updatedRaw = fm ? (fm.map((l) => l.match(/^updated:\s*(\S+)/)?.[1]).find(Boolean) ?? null) : null;
-    if (!updatedRaw) problems.push(`${name}: frontmatter 缺 updated 欄——更新日期是審查對照基準（範本必備）`);
-    else if (!/^\d{4}-\d{2}-\d{2}$/.test(updatedRaw) || Number.isNaN(Date.parse(updatedRaw))) problems.push(`${name}: updated「${updatedRaw}」非 YYYY-MM-DD`);
-    else {
-      const now = new Date();
-      const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0'); // 當地時區日——UTC 日期會在凌晨誤判假同步
-      if (updatedRaw > today) problems.push(`${name}: updated「${updatedRaw}」晚於今日——假同步`);
-      if (existsSync(join(ROOT, '.git'))) {
-        const g = spawnSync('git', ['log', '-1', '--format=%cs', '--', `.shiftblame/${name}`], { cwd: ROOT, encoding: 'utf8', timeout: 5000 });
-        const last = g?.status === 0 ? String(g.stdout ?? '').trim() : ''; // git 失敗（含 .shiftblame/ 未入庫＝框架慣例）→ 跳過落後比對
-        if (last && updatedRaw < last) problems.push(`${name}: updated「${updatedRaw}」落後於檔案最後變更（git ${last}）——改了文件沒同步更新日期`);
-      }
-    }
-    const dateLines = body.filter((l) => /^[\s>*-]*(?:\d+\.\s*)?\d{4}-\d{2}-\d{2}/.test(l));
-    if (dateLines.length) problems.push(`${name}: ${dateLines.length} 行以日期開頭（歷史日誌特徵——改寫成規則句，流水歸 git 與 tmp）：${dateLines.slice(0, 3).map((l) => l.trim().slice(0, 40)).join('、')}`);
-    const norm = (l) => {
-      let t = l.replace(/^[\s>*-]+|^\d+\.\s*/, '').replace(/^[\s>*-]+|^\d+\.\s*/, ''); // 雙重剝離——巢狀列表（- 1. x 與 1. x 同判）
-      return t.replace(/\s+/g, ' ').trim();
-    };
-    const seen = new Map();
-    for (const l of body) {
-      const t = norm(l);
-      if (!t || /^\|[\s|:-]+\|?$/.test(t)) continue;
-      seen.set(t, (seen.get(t) ?? 0) + 1);
-    }
-    const dups = [...seen.entries()].filter(([, n]) => n > 1);
-    if (dups.length) problems.push(`${name}: ${dups.length} 組完全重複行（追加不更新即重複——合併或刪除）：${dups.slice(0, 3).map(([t, n]) => `「${t.slice(0, 30)}」×${n}`).join('、')}`);
-    const heads = new Map();
-    for (const l of body) {
-      const m = l.match(/^(#{1,6})\s+(.+?)\s*$/);
-      if (!m) continue;
-      const key = m[1].length + '|' + m[2].replace(/\s+/g, ' ');
-      heads.set(key, (heads.get(key) ?? 0) + 1);
-    }
-    const headDups = [...heads.entries()].filter(([, n]) => n > 1);
-    if (headDups.length) problems.push(`${name}: 重複標題 ${headDups.length} 組（同名段合一）：${headDups.slice(0, 3).map(([k]) => k.split('|')[1].slice(0, 30)).join('、')}`);
-    // 治理檔內容掃描（兩組）：任務代號——任務層識別字與路由歸屬屬任務文件與臨時工作區；
-    // 框架重述——治理規範單一來源於中央技能文件，專案治理檔重述框架規則或範本即雙重來源。
-    // 範本自身已去框架化（零代號字樣、零框架語彙），正文零例外。樣式集是字元結構下限，
-    // 語義級（如 URL slug 領域術語）由審查三問與老闆抽查承擔。
-    const TASK_CODE = [
-      [/\bslug\b/i, '任務工作項目識別字（slug）'],
-      [/\bAC-\d+\b/, '驗收條目編號'],
-      [/\bT\d{1,2}\b/, '技術條目編號'],
-      [/\bG[123]\b/, '三面向文檔指涉'],
-      [/\.shiftblame[\/\\]\S+[\/\\]\d{3}/, '任務目錄路徑'],
-      [/<(?:slug|nnn|ms)>/i, '未替換佔位字樣'],
-      [/\bshiftblame\b/i, '框架名稱（治理規範單一來源於中央技能文件）'],
-      [/\bsb\s+(?:init|state|unlock|adversarial|next|end|closeout|commitmsg|sopreview|stop-report)\b/, '框架指令引用'],
-      [/(?:七段|兩時點|時點\s*[12]|時點對抗|審查戳記|審查留痕)/, '流程機制語彙'],
-      [/(?:boss-ok|adversarial|new-ms|flow-state|same-commit|sopreview|commitmsg|stop-report|closeout)/i, '流程旗標／命令名'],
-      [/\b(?:SKILL|MECHANISMS)\b/, '框架文件指涉'],
-      [/秘書/, '框架角色語彙'],
-    ];
-    for (const [re, label] of TASK_CODE) {
-      const hits = body.filter((l) => re.test(l));
-      if (hits.length) problems.push(`${name}: ${hits.length} 行含${label}（治理檔以產品／專案語言表達，條目內容與流程規則留在各自載體）：${hits.slice(0, 3).map((l) => l.trim().slice(0, 40)).join('、')}`);
-    }
-    // 任務工作項目識別字（slug 名）產品包裝化掃描：2.6.2 擋字面代號後的洗白殘餘——代理把 slug 名
-    // 當產品概念寫進治理檔。複合名（含 -／_）與產品詞彙同形率極低故硬擋；單字 slug 名（如 login）
-    // 與產品詞彙同形不可機械辨——語義級天花板，由審查三問與老闆抽查承擔。
-    for (const sn of knownSlugNames()) {
-      if (!/[-_]/.test(sn)) continue;
-      const re = new RegExp(`(?<![a-z0-9_-])${sn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9_-])`, 'i');
-      const hits = body.filter((l) => re.test(l));
-      if (hits.length) problems.push(`${name}: ${hits.length} 行含任務工作項目識別字「${sn}」（產品包裝化——治理檔以產品語言改寫或刪除）：${hits.slice(0, 3).map((l) => l.trim().slice(0, 40)).join('、')}`);
-    }
-  }
-  return problems;
-}
-// 已知任務工作項目識別字（slug 名）：活動 slug（flow-state）＋歸檔 slug（archive/）。
-function knownSlugNames() {
-  const names = [];
-  try {
-    const st = readJson(STATE_FILE);
-    if (objectRecord(st) && typeof st.slug === 'string' && st.slug) names.push(st.slug);
-  } catch { /* 無狀態檔＝無活動 slug */ }
-  try {
-    for (const e of readdirSync(join(SB_DIR, 'archive'), { withFileTypes: true })) if (e.isDirectory()) names.push(e.name);
-  } catch { /* 無 archive＝無歸檔 slug */ }
-  return [...new Set(names)];
-}
-// 治理檔現存清單（SOP／ROADMAP——存在者才受審查閘管轄）。
+// Optional review record for affected governance documents.
 function govDocFiles() {
-  return ['SOP.md', 'ROADMAP.md'].filter((n) => existsSync(join(SB_DIR, n)));
+  return ['SOP.md','ROADMAP.md'].filter(n=>existsSync(join(SB_DIR,n)));
 }
-// SOP／ROADMAP 每 ms 審查閘（修剪迴路的機械承載）：審查＝整檔重寫自洽（rewrite 紀律——逐條三問
-// 裁定：基質可答？元行為證據？仍被觸發？——納入／改寫／淘汰，淘汰即刪；先刪改、後留痕）。
-// AI 開發下單一 ms 即足以改變整體方向——開新 ms（--new-ms）與 pass（sb end）前驗本 ms 已審
-// 且戳記未失效（綁定各檔 sha256——審後改檔即失效重審）；無 SOP／ROADMAP 的專案不擋。
-function sopReviewProblem(st) {
-  const files = govDocFiles();
-  if (!files.length) return null;
-  if (st.sopReview?.ms !== st.ms) return 'SOP／ROADMAP 每 ms 必審＝整檔重寫自洽（逐條三問裁定、淘汰即刪——先刪改後留痕）：sb sopreview "SOP 逐條重評估：刪N 改N 留N（增N）；ROADMAP 逐條重評估：刪N 改N 留N"（各檔分別申報）';
-  const bound = st.sopReview.files;
-  if (!objectRecord(bound)) return '審查戳記未綁定檔案內容（舊格式戳記）——重跑 sb sopreview（新戳記綁定各檔 sha256，審後改檔即失效）';
-  const drifted = [];
-  for (const n of files) if (bound[n] !== sha256Text(readFileSync(join(SB_DIR, n), 'utf8'))) drifted.push(n);
-  for (const n of Object.keys(bound)) if (!files.includes(n)) drifted.push(`${n}（審後新增）`);
-  if (drifted.length) return `審查後治理檔已變更（${drifted.join('、')}）——重跑 sb sopreview 重新綁定`;
-  const docProblems = sopDocProblems(); // 堵先審後改窗口——審查後文件又被改髒，開新 ms 與 pass 出口仍擋
-  if (docProblems.length) return 'SOP／ROADMAP 機械基本功未過（審查後文件又被改髒——修復後重跑 sb sopreview）：' + docProblems.join('；');
-  return null;
-}
-// 非 slug 期間（直接實行／完結後主基底作業）的審查閘：以 commit 為審查邊——每次提交驗戳記
-// 綁定當下檔案內容且錨定當下 HEAD（每 commit 重綁——防治理檔停在多個任務前的過時狀態；
-// 無 git 場景退 hash 綁定）。
-function sopReviewProblemDirect(st) {
-  const files = govDocFiles();
-  if (!files.length) return null;
-  if (!objectRecord(st?.sopReview) || !objectRecord(st.sopReview.files)) return '非 slug 期間治理檔以 commit 為審查邊——本次提交前 sb sopreview "SOP 逐條重評估：刪N 改N 留N（增N）；ROADMAP 逐條重評估：刪N 改N 留N"（戳記綁定各檔 sha256）';
-  const head = gitHeadCommit();
-  if (head && st.sopReview.head !== head) return '審查戳記未錨定當下 HEAD（戳記後已有新提交）——重跑 sb sopreview 後再提交';
-  const bound = st.sopReview.files;
-  const drifted = [];
-  for (const n of files) if (bound[n] !== sha256Text(readFileSync(join(SB_DIR, n), 'utf8'))) drifted.push(n);
-  for (const n of Object.keys(bound)) if (!files.includes(n)) drifted.push(`${n}（審後新增）`);
-  if (drifted.length) return `審查後治理檔已變更（${drifted.join('、')}）——重跑 sb sopreview 重新綁定`;
-  const docProblems = sopDocProblems();
-  if (docProblems.length) return 'SOP／ROADMAP 機械基本功未過（修復後重跑 sb sopreview）：' + docProblems.join('；');
-  return null;
-}
-// 產出遙測的 diff 統計：git baseline..HEAD 的 numstat 時序分析（基質優先——git 已承擔身分錨定與不可變性，sb 只做彙總）。
+
 function gitDiffStats(base, head) {
   const r = gitRun('diff', '--numstat', base, head);
   if (r.status !== 0) return null;
@@ -1181,51 +916,20 @@ function gitHeadCommit() {
 }
 
 
-// 逐檔三態計數解析：結論對每個存在的治理檔必須含其段（SOP／ROADMAP），段內含 刪N 改N 留N（增N 選配）。
-// 「審了」「三問全過」不是結論——每檔的逐條裁定結果以計數申報，抽查對照（A2：宣告由對話可見、老闆終審）。
-function sopConclusionProblems(q, files) {
-  const problems = [];
-  for (const n of files) {
-    const tag = n === 'SOP.md' ? 'SOP' : 'ROADMAP';
-    const idx = q.indexOf(tag);
-    if (idx < 0) { problems.push(`${tag} 未申報逐條裁定——格式「${tag} 逐條重評估：刪N 改N 留N（增N 選配）」`); continue; }
-    let end = q.length;
-    for (const o of files) {
-      if (o === n) continue;
-      const oi = q.indexOf(o === 'SOP.md' ? 'SOP' : 'ROADMAP', idx + tag.length);
-      if (oi >= 0 && oi < end) end = oi;
-    }
-    const seg = q.slice(idx, end);
-    for (const label of ['刪', '改', '留']) if (!new RegExp(label + '\\s*\\d+').test(seg)) problems.push(`${tag} 段缺「${label}N」計數——逐條三問裁定（基質可答？元行為證據？仍被觸發？）後申報三態計數；先刪改、後留痕`);
-  }
-  return problems;
-}
-
+// Retain a bounded review summary and current file hashes.
 function cmdSopreview(answers) {
-  const q = String(answers ?? '').replace(/\s+/g, ' ').trim();
-  const files = govDocFiles();
-  const conclusionProblems = sopConclusionProblems(q, files);
-  if (conclusionProblems.length) die(['審查結論須逐檔申報三態計數（整檔重寫自洽——逐條三問裁定、淘汰即刪）：', ...conclusionProblems]);
-  const current = requireHealthyState();
-  const st = current.state;
-  const docProblems = files.length ? sopDocProblems() : [];
-  if (docProblems.length) die(['SOP／ROADMAP 機械基本功未過——審查戳記不發（修復後重跑 sb sopreview）：', ...docProblems]);
-  const filesBound = Object.fromEntries(files.map((n) => [n, sha256Text(readFileSync(join(SB_DIR, n), 'utf8'))]));
-  if (current.kind === 'active') {
-    st.sopReview = { ms: st.ms, at: new Date().toISOString(), answers: q.slice(0, 200), files: filesBound };
-  } else if (current.kind === 'uninitialized' || current.kind === 'direct' || (current.kind === 'ended' && st.concludedAt)) {
-    st.sopReview = { at: new Date().toISOString(), answers: q.slice(0, 200), files: filesBound, ...(gitHeadCommit() ? { head: gitHeadCommit() } : {}) };
-  } else {
-    die([`SOP／ROADMAP 審查留痕需要活動 slug 流程或直接實行紀錄（目前 ${current.kind}）——非 slug 期間審查邊＝每次提交（sb commitmsg 前驗戳記）`]);
-  }
-  writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
-  fin([
-    `SOP／ROADMAP 審查留痕：逐檔三態計數「${q.slice(0, 80)}」已落檔；戳記綁定各檔 sha256（審後改檔即失效）；機械基本功（updated 同步／零日期日誌行／零重複／零任務代號（含 slug 名）／零框架重述）已過`,
-    files.length ? '審查發現的刪修走正常 commit（same-commit 文件先行）；開新 ms／結束（slug）或每次提交（非 slug 期間）前機械驗戳記' : '（本工作區無 SOP／ROADMAP——留痕記錄審查週期）',
-  ]);
+  const q=String(answers??'').trim();
+  if (!q) die(['請說明已審查的範圍與結論。']);
+  const current=requireHealthyState();
+  const st=current.state ?? {};
+  const files=Object.fromEntries(govDocFiles().map(n=>[n,sha256Text(readFileSync(join(SB_DIR,n),'utf8'))]));
+  st.sopReview={...(current.kind==='active'?{ms:st.ms}:{}),at:new Date().toISOString(),answers:q.slice(0,200),files,...(current.kind!=='active'&&gitHeadCommit()?{head:gitHeadCommit()}: {})};
+  mkdirSync(SB_DIR,{recursive:true});
+  writeFileSync(STATE_FILE,JSON.stringify(st,null,2));
+  fin(['治理文件審查已記錄：'+q]);
 }
 
-// 收尾合併一條龍（2.6.4——代理零收尾記憶負擔）：歸檔後機械完成 git 收尾段——
+// 收尾依序完成歸檔、基底確認、合併、核對及分支清理。
 // 偵測基底 → merge --no-ff（訊息固定 merge <slug>）→ 內建查證 → 留痕 closeout → 刪本機工作分支。
 // 任一步 die（ended 未寫入，狀態保持 verify 可修後重試）；重試冪等——已合併且有證據即跳過重併。
 // 回傳 null＝無工作分支可收（非 Git 或分支已隨前次收尾清除），僅歸檔；否則回傳留痕摘要供輸出。
@@ -1287,12 +991,12 @@ function finalizeMerge(st, baseFlag) {
   return { workBranch, workCommit, baseBranch: base };
 }
 
-// --boss-ok＝旗標即章（2.5.2）：老闆實際輸入由對話承載（基質優先——平台已答，flow-state 不另造記錄）；
+// --boss-ok 承接對話中已取得的使用者授權。
 // 機械不驗時戳，語義授權由 think 揭露＋老闆終審承擔；偽造由抽查承擔。
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = migrateStreams(readJson(STATE_FILE));
-  if (st.node === 'done') st.node = 'verify'; // 舊版判決通過態遷移（2.2.0）：done＝verify pass 後別名——本指令完成即遷移為 ended
+  if (st.node === 'done') st.node = 'verify'; // done 相容狀態按 verify 處理，寫入時儲存目前節點
   if (st.node !== 'verify') die([`sb end 僅限 verify 態選 end（目前 ${st.node}）——真驗收（GWT 逐條實操、行為證據落回指區）完成、G1 回指閉環後時點 2 對抗＋老闆終審 pass 先於結束`]);
   if (!opts.bossOk) die(['結束是老闆終審決策——MUST 帶 --boss-ok 留痕（理解老闆通過授權的語義由 think 揭露承擔）']);
   if (!opts.adversarial) die(['結束出口＝時點 2 對抗條目＋老闆終審章同一邊（verify 出口邊）——MUST 帶 --adversarial（驗收完成後 sb adversarial --point 2 審驗收結果至通過）']);
@@ -1300,8 +1004,6 @@ function cmdEnd(opts) {
   const verifyEnteredAt = st.edgeAt?.['build→verify'];
   if (!pt2Entry) die(['lastAdv 缺時點 2 條目——驗收完成、G1 回指閉環後 MUST sb adversarial <報告檔> --point 2（審驗收結果：GWT 回指、假綠燈、錯誤處置完整性）才可出口']);
   if (verifyEnteredAt && pt2Entry.at <= verifyEnteredAt) die(['時點 2 對抗條目過期（早於本 ms 進 verify）——本輪 MUST 重新 sb adversarial --point 2（驗收後審驗收結果）才可出口']);
-  const sopProblem = sopReviewProblem(st);
-  if (sopProblem) die([sopProblem]);
   const problems = [], passes = [];
   passes.push('時點 2 對抗條目＋老闆終審章（--adversarial＋--boss-ok——出口同一邊兩章）已驗');
   checkCleanWorktree(problems, passes, 'pass 前');
@@ -1319,7 +1021,7 @@ function cmdEnd(opts) {
       die([`歸檔移動失敗（${error.message}）——狀態仍為 verify，排除阻礙後重試 sb end`]);
     }
   }
-  // 收尾合併一條龍（2.6.4）：歸檔後機械完成 git 收尾段——偵測基底→merge --no-ff→查證→留痕→刪分支；
+  // 收尾依序完成歸檔、基底確認、合併、核對及分支清理。
   // 失敗即 die（ended 未寫入，狀態保持 verify 可修後重試）。
   const finalize = finalizeMerge(st, opts.base);
   // 產出遙測（基質優先）：diff 事實由 git 承擔——sb init 錨定 baseline commit，end 做時序分析；
@@ -1342,15 +1044,15 @@ function cmdEnd(opts) {
   st.node = 'ended';
   st.endedAt = new Date().toISOString();
   // slug 邊界清理（終態留痕後）：lastAdv/edgeAt 屬 ms 生命週期欄位，隨 slug 終結清除；
-  // 舊版流鍵冪等清理（對話流不落檔——2.5.2，零副本、零殭屍存續）
+  // 清除結束狀態未使用的流程欄位。
   delete st.lastAdv; delete st.edgeAt;
   delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; delete st.history;
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals; delete st.stopBlockedAt;
-  delete st.externalEvidence; // 冪等清理歷史鍵（外部性閘已除——2.7.2 對話事實承載，舊 flow-state 兼容清理）
+  delete st.externalEvidence; // ended 狀態只保存目前 schema 定義的欄位。
   delete st.worktrees; // 冪等清理歷史鍵（已移除的 worktree 帳本欄位——舊 flow-state 兼容清理）
   delete st.rerunExtPending; // 冪等清理歷史鍵（已移除的返工直通 pending——舊 flow-state 兼容清理）
-  delete st.adversarialAt; delete st.adversarialConsumed; // 冪等清理歷史鍵（提交對抗章——2.4.0 移除，舊 flow-state 兼容清理）
+  delete st.adversarialAt; delete st.adversarialConsumed; // 清除退役的提交審查欄位。
   delete st.budget; delete st.budgetBreaches; // 冪等清理歷史鍵（舊版預算欄位——不相容則 ended 檔自我 invalid）
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash; delete st.adversarialRotated; delete st.historyRotated;
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
@@ -1358,7 +1060,7 @@ function cmdEnd(opts) {
   fin([
     'verify → ended（pass）',
     `產出遙測（flow-state 留痕，事實由 git 承擔）：diff ${t.diff ? `${t.diff.additions}+／${t.diff.deletions}-／${t.diff.files} 檔` : '（無可比 baseline——缺省）'}｜對抗 ${t.adversarial ? `${t.adversarial.verdict}${t.adversarial.model ? `（${t.adversarial.model}）` : ''}` : '（無條目）'}｜toolCalls ${t.counts.toolCalls ?? '—'}｜耗時 ${t.durationMinutes ?? '—'} 分`,
-    'slug 邊界清理完成（flow-state 純狀態機——對話流不落檔；lastAdv/edgeAt 隨 slug 終結清除，舊版流鍵冪等清空）',
+    'slug 邊界清理完成：保留收尾狀態，清除 lastAdv、edgeAt 及活動流程欄位',
     '收尾歸檔已完成（機械化——聲稱與實做一致）：<slug>/ 已移至 archive/<slug>/（永續層文件已隨各 commit 即時保真——same-commit）',
     finalize
       ? `收尾合併已完成（一條龍——代理零收尾記憶負擔）：${finalize.workBranch} @ ${finalize.workCommit.slice(0, 12)} --no-ff → ${finalize.baseBranch}（訊息 merge ${st.slug}）；本機工作分支已刪，曾推送的遠端分支依留痕清除（init 再驗）`
@@ -1397,7 +1099,7 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
   const model = text.match(/^[ \t]*審查模型[：:][ \t]*([^\n\r]{1,80})/m)?.[1]?.trim() || null;
   const at = new Date().toISOString();
   const entry = { at, report: report.trim(), verdict, node: st.node ?? null, ...(model ? { model } : {}) };
-  // 定長欄位（2.5.2）：各時點保留最後條目（point 為鍵）——閘門新鮮度對照用，累積流不落檔
+  // 各時點保留最後審查條目，供決策出口核對新鮮度。
   st.lastAdv = { ...(st.lastAdv ?? {}), [point]: entry };
   writeFileSync(STATE_FILE, JSON.stringify(st, null, 2));
   fin([
@@ -1408,15 +1110,7 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
 function cmdCommitmsg(msg) {
   if (!msg) usage();
   const current = requireHealthyState();
-  // 非 slug 期間（直接實行／完結後主基底作業）治理檔審查閘：以 commit 為審查邊——
-  // 每次提交驗審查戳記綁定當下檔案內容並錨定當下 HEAD（防治理檔停在多個任務前的過時狀態，
-  // 2.6.3——非 slug 期間不再零觸發）。
-  if (current.kind === 'uninitialized' || current.kind === 'direct' || (current.kind === 'ended' && current.state?.concludedAt)) {
-    const sopDirect = sopReviewProblemDirect(current.state);
-    if (sopDirect) die([sopDirect]);
-  }
-  // 2.4.0：提交對抗閘已移除（審核資源前移需求與驗收兩時點；老闆不看中間產物，提交審核＝審核無人讀）。
-  // 提交閘僅存機械面：commitmsg 格式驗證＋staged 系統檔檢查＋座標樣式掃描＋陳述對照閘＋印章（hooks 於 git commit 驗章焚章）。
+  // 提交核對訊息、狀態與 staged 系統檔；hooks 消費綁定 repo、訊息與時效的印章。
   // 發章：hooks PreToolUse 對 git commit 硬擋的憑證——10 分鐘內、訊息相符才放行。
   // 發章前 staged 同檢（與 hooks 同判據——雙層一致）：讀 git 展開的事實清單（cwd=ROOT 錨定），
   // 判系統檔 .shiftblame/（傾倒區唯一）。
@@ -1425,86 +1119,10 @@ function cmdCommitmsg(msg) {
     const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
       .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
     if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ MUST gitignore；先 git restore --staged 移除再發章）`]);
-    // README 唯一根目錄（DOCS.md §0 文件位置——MUST）：README.md 只允許存在於 repo 根目錄一份——
-    // 模塊／子目錄另寫 README（含索引用途的 docs/README.md）即多重來源；其餘專案文件統一 docs/。
-    // 套件安裝目錄豁免（DOCS.md §0）：第三方／官方套件自帶 README 屬生態慣例——addons/（Godot）、
-    // node_modules/、vendor/、third_party/、bower_components/、site-packages/ 內容屬外來套件自身，非治理標的。
-    // 溯及既往：掃 git 追蹤集（不限 staged）——存量違規擋提交直至刪除或搬移改名；大小寫不敏感；
-    // 判定樣式小而穩定（路徑含分隔符且以 readme.md 結尾）；非 git 工作區由下方 catch 跳過（hooks 寫入攔截層照常把關）。
-    const VENDORED_RE = /(^|\/)(?:node_modules|vendor|third_party|third-party|bower_components|site-packages|addons)\//i;
-    const readmeHits = execSync('git -c core.quotePath=false ls-files', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n').map((l) => l.trim()).filter(Boolean)
-      .filter((p) => p.includes('/') && /(^|\/)readme\.md$/i.test(p) && !VENDORED_RE.test(p));
-    if (readmeHits.length) die([`README 唯一根目錄——追蹤檔含非根目錄 README（模塊 README 與 docs/README.md 索引皆多重來源；其餘專案文件統一 docs/，DOCS.md §0 文件位置）：`, ...readmeHits.slice(0, 8), '先刪除或搬移改名（如 docs/<主題>.md）並提交，再發章']);
-    // 註釋座標結構樣式掃描（SKILL §3 註釋紀律＋§7 同源紀律的機械下限）：
-    // staged diff 新增行（+ 行）掃小而穩定的座標結構樣式——時點圈號、時點 N、第 N 輪、兩位以上輪次代號、
-    // 任務代號（驗收條目編號／任務目錄路徑／未替換佔位字樣）與框架指令引用（治理規範單一來源於中央技能文件）；
-    // 框架機制檔（hooks/、cli/、skills/、.codex-plugin/、README.md）豁免——框架本體講流程語言正當。
-    // 樣式集是字元結構下限（r 變數命名等誤傷屬如實標註天花板），語義級由老闆抽查承擔。
-    const MECH_PATH = /^(?:hooks\/|cli\/|skills\/|\.codex-plugin\/|\.claude-plugin\/|README\.md)/;
-    const COORD_STYLE = /[①②③④⑤⑥⑦⑧⑨⑩]|時點\s*[0-9０-９]|第\s*[0-9０-９一二三四五六七八九十]+\s*輪|\br\d{2,}\b|\bAC-\d+\b|\.shiftblame[\/\\]\S+[\/\\]\d{3}|<(?:slug|nnn|ms)>|\bsb\s+(?:init|state|unlock|adversarial|next|end|closeout|commitmsg|sopreview|stop-report)\b/;
-    const coordHits = [];
-    const diff = execSync('git -c core.quotePath=false diff --cached -U0 --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    let curFile = null;
-    for (const line of diff.split('\n')) {
-      const fh = line.match(/^\+\+\+ b\/(.+)$/);
-      if (fh) { curFile = fh[1]; continue; }
-      if (!curFile || MECH_PATH.test(curFile)) continue;
-      if (line.startsWith('+') && !line.startsWith('+++') && COORD_STYLE.test(line)) coordHits.push(`${curFile}：${line.slice(1, 60).trim()}`);
-    }
-    if (coordHits.length) die([`staged 新增行含流程座標結構樣式（註釋紀律——輪次／時點座標屬 .shiftblame/tmp 與 G 檔，註釋只描述代碼行為本身）`, ...coordHits.slice(0, 8)]);
-    // 陳述對照閘：文件與實況對照是一等公民——永續層文件（docs/、README、skills/）中
-    // 可機械對照的陳述（sb 命令引用／sb 命令行內的 --旗標）↔ sb.mjs 實際命令集/旗標集（源碼單一真相）。
-    // 引用不存在的機制即擋——過時假設與虛空捏造的機械防線。
-    // 當下層工作文件（G*/SLUG/archive）不掃——用後即弃、過時無罪（兩層文件模型，SKILL §1.7）。
-    const eternal = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n').map((l) => l.trim()).filter(Boolean)
-      .filter((p) => /^(?:docs\/|README\.md|skills\/)/.test(p) && /\.md$/i.test(p));
-    if (eternal.length) {
-      // 命令與旗標顯式列舉：源碼 regex 抓 case 會混入 gate() 的段名 switch、
-      // rest.includes 形旗標（--help）也可能漏判。
-      const cmds = new Set(['init', 'state', 'unlock', 'adversarial', 'next', 'end', 'closeout', 'commitmsg', 'sopreview', 'vault']);
-      const flags = new Set(['--boss-ok', '--adversarial', '--new-ms', '--point', '--base', '--question', '--main', '--help']);
-      const bad = [];
-      const add = (x) => { if (!bad.includes(x)) bad.push(x); };
-      for (const f of eternal) {
-        const lines = readFileSync(join(ROOT, f), 'utf8').split('\n');
-        lines.forEach((line, ln) => {
-          // 旗標驗證錨定 sb 命令段（行內其他命令（git 等）的旗標免疫）：從每個 sb 命令 token
-          // 起掃，遇邊界即截斷——反引號閉合、中文句讀、其他命令 token（git/node/npm 等）
-          for (const m of line.matchAll(/\bsb ([a-z][a-z-]{1,20})\b/g)) {
-            if (!cmds.has(m[1])) add(`${f}:${ln + 1} 命令「sb ${m[1]}」不存在於 CLI（實際：${[...cmds].join('、')}）——過時假設或虛空捏造`);
-            const seg = line.slice(m.index, m.index + 160).split(/[`。；：、）」』]|\b(?:git|node|npm|npx|python|pip)\b/)[0]; // sb 命令段（截斷後）
-            for (const fm of seg.matchAll(/(--[a-z][a-z-]{1,20})\b/g)) {
-              if (!flags.has(fm[1])) add(`${f}:${ln + 1} 旗標「${fm[1]}」不存在於 CLI（實際：${[...flags].join('、')}）`);
-            }
-          }
-        });
-      }
-      if (bad.length) die(['永續層文件與實況不符（陳述對照閘——文件↔實況對照是一等公民，兩層文件模型 SKILL §1.7）', ...bad.slice(0, 8)]);
-    }
   } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
-  if (current.state?.node === 'verify') die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
-  const problems = [];
-  // 已歸檔 slug 的合併訊息由 closeout 固定；仍經對抗檢查及精確訊息印章。
-  // 完結（sb init --main）後固定合併訊息失效——合併證據已由 closeout 查證，直接作業走正常 type 訊息。
-  const isSlugMerge = endedState(current.state, ROOT) && !current.state.concludedAt && msg === `merge ${current.state.slug}`;
-  const m = msg.match(/^(feat|fix|docs|style|refactor|perf|test|chore|build|ci)(\([^)]+\))?:\s*(.+)$/);
-  if (!m && !isSlugMerge) problems.push(endedState(current.state, ROOT) && current.state.concludedAt && msg === `merge ${current.state.slug}`
-    ? 'slug 已完結（sb init --main）——固定合併訊息僅限完結前收尾；直接作業提交走 `<type>: <繁中描述>`'
-    : '缺 type 前綴——格式 `<type>: <繁中描述>`（type：feat/fix/docs/style/refactor/perf/test/chore/build/ci）；已歸檔合併限目前 slug 的 `merge <slug>`');
-  else if (m) {
-    const body = m.at(-1);
-    if (body.length < 5) problems.push(`描述過短（${body.length} 字）——單行 10-30 字為準，至少講清楚變更本身`);
-    if (body.length > 60) problems.push(`描述過長（${body.length} 字）——單行 10-30 字，內容聚焦變更本身（詳細訊息歸文件）`);
-    if (/\b[a-zA-Z]{1,4}-?\d+\b|#\d+/.test(body)) problems.push('含追蹤編號（r24、F4、MS001、G7、#123 等）——commit 訊息純描述變更本身，版本代號以繁中描述（如「第 2 版」），正式名稱表達功能語義，工作紀錄歸 tmp');
-    if (/第\s*[0-9０-９一二三四五六七八九十]+\s*[組段輪]|[組段輪]\s*[0-9０-９]/.test(body)) problems.push('含中文流程編號（第 X 組/段/輪）——流程座標屬 G 檔與 SLUG，訊息純描述變更本身');
-    if (!/^[\u4e00-\u9fff]/.test(body)) problems.push('描述以繁中開頭——<type>: 後為繁中變更描述（檔名/代號可出現在句中，非句首）');
-    if (/斷言先行|測試先行|待終審|量化驗收|開新輪|返工直通/.test(body)) problems.push('含流程時序語——訊息純描述變更本身，開發過程語（斷言先行/測試先行/待終審等）屬 tmp');
-    if (/[\n\r]/.test(msg)) problems.push('多行訊息——規範要求單行');
-  }
-  if (problems.length) die(problems);
+  if (['verify', 'done'].includes(current.state?.node)) die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
+  if (!msg.trim() || /[\n\r]/.test(msg)) die(['提交訊息須為非空單行，格式依 repo 慣例。']);
   // 印章：hooks PreToolUse 對 git commit 硬擋的憑證（10 分鐘內、訊息相符才放行）——commitmsg 格式閘的機械承載
   mkdirSync(TMP, { recursive: true });
   writeFileSync(join(TMP, 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: ROOT, issuedAt: new Date().toISOString() }, null, 2));

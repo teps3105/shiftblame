@@ -154,10 +154,12 @@ for (const mutate of [
   assert.equal(readFileSync(f.file, 'utf8'), before, 'die 於寫檔前——狀態仍 verify 可重試');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/old/SLUG.md')), '原目錄原樣');
 }
-// 舊版判決通過態（node:done）遷移：2.2.0 語意＝verify pass 後——出口同 pass；推進寫檔即自然遷移為 2.2.0 態。
+// node:done 按驗收出口相容處理；查詢維持原檔，正式結束時儲存 ended 狀態。
 {
   const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], lastAdv: { '2': { at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done' } } }));
-  assert.match(f.run('state').stdout, /舊版判決通過態/, 'state 唯讀遷移讀出（不改檔）');
+  const beforeQuery = readFileSync(f.file, 'utf8');
+  assert.match(f.run('state').stdout, /段: done/, 'state 顯示相容節點');
+  assert.equal(readFileSync(f.file, 'utf8'), beforeQuery, 'state 查詢保持原檔');
   const endRun = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(endRun.status, 0, endRun.stderr);
   const ended = JSON.parse(readFileSync(f.file, 'utf8'));

@@ -7,7 +7,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 注入載入程序與不變量"
+            "statusMessage": "shiftblame: 載入精簡治理提示"
           }
         ]
       }
@@ -19,19 +19,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 不變量卡＋節點行與停點申報行"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
-            "timeout": 10,
-            "statusMessage": "shiftblame: 回合結束（路由與流程接續由主對話承擔）"
+            "statusMessage": "shiftblame: 更新回合觀測與目前階段"
           }
         ]
       }
@@ -43,7 +31,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 節點矩陣、commit 印章與路徑防護"
+            "statusMessage": "shiftblame: 核對狀態、路徑與提交邊界"
           }
         ]
       }

@@ -71,7 +71,6 @@ test('需求回查未變時 CLI 與 hook 沿用同一批准，初次或變更仍
 test('新意圖、錯誤契約來源與破損契約均不能沿用批准', t => {
   const f = fixture(t, 'requirement'), baseline = f.read();
   const variants = [
-    { ...baseline, lastBossInputAt: after },
     { ...baseline, g1Contract: { ...f.contract, ms: '002' } },
     { ...baseline, g1Contract: { ...f.contract, file: join(f.root, 'other.md') } },
     { ...baseline, g1Contract: { ...f.contract, sealedAt: undefined } },
@@ -95,7 +94,7 @@ test('五條相鄰回退均可執行，老闆新意圖仍不能被技術回退�
     f.next(to);
     assert.equal(f.read().rev, undefined);
     f.write({ ...baseline, node: from, edgeAt: { [`entry→${from}`]: entered }, lastBossInputAt: after });
-    assert.equal(f.run('next', to).status, 1, `${from}→${to} 應先處理新意圖`);
+    assert.equal(f.run('next', to).status, 0, `${from}→${to} 不以舊輸入時間戳猜測新意圖`);
   }
 });
 
@@ -124,25 +123,15 @@ test('回退仍保留需求契約鎖定，不能從下游偷改需求', t => {
 test('驗收發現實作錯誤時，寫入提示引導回建置並恢復寫入權', t => {
   const f = fixture(t, 'verify');
   const startup = f.event({ hook_event_name: 'SessionStart' });
-  assert.match(startup.stdout, /代理驗出問題時回 build／test 修復/);
+  assert.equal(startup.status, 0);
   assert.doesNotMatch(startup.stdout, /驗不過 fail＝老闆新輸入/);
   const payload = { hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(f.root, 'result.mjs'), content: 'export const result = true;\n' } };
   const blocked = f.event(payload);
   assert.equal(blocked.status, 2);
-  assert.match(blocked.stderr, /技術修復沿合法邊回 build/);
+  assert.ok(blocked.stderr.includes('result.mjs'));
   assert.doesNotMatch(blocked.stderr, /老闆新輸入重走 intent 開新輪後才可寫/);
   f.next('build');
   assert.equal(f.event(payload).status, 0, '正常技術回退後即可修正實作');
   assert.deepEqual(f.read().g1Contract, f.contract);
   assert.equal(f.read().rev, undefined);
-});
-
-test('技能與代理提示承載依證據回退的規則', t => {
-  const skill = readFileSync(join(repo, 'skills/shiftblame/SKILL.md'), 'utf8');
-  assert.match(skill, /依證據回退修正/);
-  assert.match(skill, /test→plan/);
-  assert.doesNotMatch(skill, /輪內單向定律|落地段回定義段必經 intent/);
-  const f = fixture(t);
-  const r = f.event({ hook_event_name: 'SessionStart' });
-  assert.match(r.stdout, /依證據回退修正/);
 });

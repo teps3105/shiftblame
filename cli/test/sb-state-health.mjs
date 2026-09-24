@@ -155,12 +155,9 @@ for (const initial of [undefined, { hooksHeartbeat: { at, event: 'PreToolUse' } 
   assert.equal(f.run('init', 'demo').status, 0, '另有開 slug 授權時仍可正常初始化');
   assert.deepEqual(JSON.parse(readFileSync(f.state, 'utf8')).hooksHeartbeat, st.hooksHeartbeat, 'hooks 紀錄接納不重置');
 }
-for (const [node, expected] of [['build', 0], ['verify', 2], ['intent', 2]]) {
+for (const [node, expected] of [['build', 0], ['verify', 2], ['intent', 0]]) {
   const f = fixture({ ...active, node });
   assert.equal(f.run('state').status, 0);
   assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md') }).status, expected);
 }
-const skill = readFileSync(new URL('../../skills/think/SKILL.md', import.meta.url), 'utf8');
-assert.match(skill, /流程接入失敗先修復/);
-assert.match(skill, /接入不等於開 slug/);
 console.log('sb-state-health: pass');

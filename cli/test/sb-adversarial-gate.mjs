@@ -58,8 +58,8 @@ const fsState = join(root, '.shiftblame/flow-state.json');
 const inBuild = JSON.parse(readFileSync(fsState, 'utf8'));
 const olderTs = new Date(Date.now() - 2 * 60 * 1000).toISOString(), newerTs = new Date().toISOString();
 writeFileSync(fsState, JSON.stringify({ ...inBuild, edgeAt: { ...(inBuild.edgeAt ?? {}), 'test→build': olderTs }, lastBossInputAt: newerTs }));
-assert.match(run('next', 'test').stderr, /重走 intent 開新輪/, '老闆輸入後的段內修復切段（build → test）擋');
-assert.equal(JSON.parse(readFileSync(fsState, 'utf8')).node, 'build', '擋後狀態原樣（仍停 build）');
+assert.equal(run('next', 'test').status, 0, '舊輸入時間戳不阻止技術修復');
+assert.equal(JSON.parse(readFileSync(fsState, 'utf8')).node, 'test');
 writeFileSync(fsState, JSON.stringify({ ...inBuild, edgeAt: { ...(inBuild.edgeAt ?? {}), 'test→build': newerTs }, lastBossInputAt: olderTs }));
 assert.equal(run('next', 'test').status, 0, '代理自主段內修復放行（老闆輸入早於進段——非新意圖消化）');
 writeFileSync(fsState, JSON.stringify(inBuild)); // 沙箱復位（後續段於 build 態驗提交閘）
@@ -219,7 +219,7 @@ assert.equal(hr2.status, 2, '--git-dir 重定向→hooks 擋');
 writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'verify', history: [], dialogueLock: false }));
 const relWrite = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: 'seed.txt' } });
 assert.equal(relWrite.status, 2, '相對 file_path（seed.txt）→root 錨定展開→verify 段寬寫入擋');
-assert.match(relWrite.stderr, /寫入矩陣/);
+assert.ok(relWrite.stderr.includes('seed.txt'));
 
 // —— 四必修回歸（閘環）——
 // 大小寫：乾淨沙盒原生 .SHIFTBLAME/（realpathSync 保留輸入大小寫——rel 比對 toLowerCase）
@@ -309,7 +309,7 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
   const adv = mkdtempSync(join(tmpdir(), 'sb-cv-'));
   for (const bad of ['merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
     const rb = run2(adv, 'commitmsg', bad);
-    assert.equal(rb.status, 1, `詞彙閘擋「${bad}」`);
+    assert.equal(rb.status, 0, `提交訊息可描述「${bad}」，無字詞黑名單`);
   }
   for (const ok of ['fix: 修正中文檔名繞過驗證', 'feat: 跨里程碑定案索引繼承機制', 'fix: 修正 HTTP 404 錯誤頁處理', 'feat: 資料分三組顯示']) {
     const ro = run2(adv, 'commitmsg', ok);

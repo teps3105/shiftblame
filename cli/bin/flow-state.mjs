@@ -1,4 +1,4 @@
-// CLI 與 hooks 共用狀態分類；讀不到有效段位不等於沒有流程。
+// CLI 與 hooks 共用狀態分類，區分未接入、活動、結束與損壞。
 import { readFileSync, readdirSync, lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
@@ -9,12 +9,11 @@ const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
 
-// 沿用同一份已核准需求；不以相似文字推定同義，也不替新的老闆輸入授權。
+// 依定義雜湊沿用同一份已核准需求，新增需求另循核准程序。
 function unchangedG1Approval(root, st) {
   const c = st?.g1Contract;
   if (!c || c.ms !== st.ms || !timestamp(c.sealedAt) || !/^[a-f0-9]{64}$/.test(c.sha256 ?? '')) return false;
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug ?? '') || !/^\d{3,}$/.test(st.ms ?? '')) return false;
-  if (st.lastBossInputAt && (!timestamp(st.lastBossInputAt) || st.lastBossInputAt > c.sealedAt)) return false;
   const file = resolve(root, '.shiftblame', st.slug, st.ms, 'G1.md');
   if (typeof c.file !== 'string' || resolve(c.file) !== file) return false;
   try {
@@ -23,32 +22,17 @@ function unchangedG1Approval(root, st) {
     return heads.length === 1 && createHash('sha256').update(raw.slice(0, heads[0].index), 'utf8').digest('hex') === c.sha256;
   } catch { return false; }
 }
-// 觀測紀錄（hooks 寫）：心跳／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）
-// ＋老闆輸入時戳（lastBossInputAt——新輪事實非內容；CLI 段內修復邊防護的新鮮度對照源，任何分類態皆可攜帶）。
-// 對話性質流（輸入流／理解流雜湊鏈）不落檔——對話事實由平台承載（基質優先），flow-state 只承載當下階段證據。
-// externalEvidence（外部調用機械標記）已隨外部性閘移除（2.7.2）——外部調用事實由對話呈現承載（A2），
-// 舊檔殘留鍵由 migrateStreams 讀取即剝（與 stopReport 同模式）。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'rewriteSeen', 'lastBossInputAt'];
+// Hooks store bounded counters and heartbeat evidence only.
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st, root) {
   const allowed = HOOK_RECORD_KEYS;
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
-  if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
-  if (Object.hasOwn(st, 'lastBossInputAt') && !timestamp(st.lastBossInputAt)) return false; // 老闆輸入時戳（事實非內容——永不主動清，新鮮度由「晚於進段時間」條件自限）
   if (Object.hasOwn(st, 'turnUsage')) {
     const tu = st.turnUsage;
-    const tuKeys = ['startedAt', 'requests',
-      ...(Object.hasOwn(tu, 'escalatedAt') ? ['escalatedAt'] : []),
-      ...(Object.hasOwn(tu, 'escalations') ? ['escalations'] : []),
-      ...(Object.hasOwn(tu, 'fpEscalations') ? ['fpEscalations'] : []),
-      ...(Object.hasOwn(tu, 'repeats') ? ['repeats'] : [])];
-    if (!(exactKeys(tu, tuKeys) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests)
-      && (!Object.hasOwn(tu, 'escalatedAt') || timestamp(tu.escalatedAt))
-      && (!Object.hasOwn(tu, 'escalations') || nonNegativeInt(tu.escalations))
-      && (!Object.hasOwn(tu, 'fpEscalations') || (objectRecord(tu.fpEscalations) && Object.keys(tu.fpEscalations).length <= 128 && Object.values(tu.fpEscalations).every(v => v === true)))
-      && (!Object.hasOwn(tu, 'repeats') || (objectRecord(tu.repeats) && Object.keys(tu.repeats).length <= 128 && Object.values(tu.repeats).every(v => v === 'seen' || v === 'denied'))))) return false;
+    if (!(exactKeys(tu, ['startedAt','requests']) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests))) return false;
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
   return true;
@@ -61,11 +45,11 @@ function validCloseout(st) {
   return exactKeys(c, ['slug', 'workBranch', 'workCommit', 'baseBranch', 'at', 'remotes']) && c.slug === st.slug && branchName(c.workBranch) && (!st.workBranch || st.workBranch === c.workBranch) && commitId(c.workCommit) && branchName(c.baseBranch) && c.workBranch !== c.baseBranch && timestamp(c.at) && Array.isArray(c.remotes) && c.remotes.every(r => exactKeys(r, ['name', 'ref', 'configHash']) && typeof r.name === 'string' && r.name.length > 0 && typeof r.ref === 'string' && r.ref.startsWith('refs/heads/') && branchName(r.ref.slice(11)) && /^[0-9a-f]{64}$/.test(r.configHash));
 }
 
-// 舊檔載入即遷移（對話性質流不落檔——讀取端統一剝除；寫入點自然落新形）：
-// 輸入流／理解流（含雜湊鏈與輪替偏移）直接刪——對話事實由平台承載；
-// 對抗流轉各時點最後條目（lastAdv）、推進流轉各邊最後時戳（edgeAt）——閘門新鮮度對照語義不變，承載由無界清單改定長欄位。
+// 載入時移除對話欄位，將審查與階段歷程收斂為各時點的最新條目。
 function migrateStreams(st) {
   if (!objectRecord(st)) return st;
+  delete st.lastBossInputAt; delete st.rewriteSeen; delete st.stopBlockedAt;
+  if (objectRecord(st.turnUsage)) { for (const key of ['repeats','fingerprints','fpEscalations','escalatedAt','escalations']) delete st.turnUsage[key]; }
   const ended = st.node === 'ended'; // ended 白名單不含 lastAdv/edgeAt——對抗流與推進流對已終態無閘門對照價值，只刪不轉
   delete st.inputs; delete st.understandings; delete st.understandingHold;
   delete st.inputsRotated; delete st.understandingsRotated; delete st.understandingSeedHash;
@@ -90,16 +74,12 @@ function migrateStreams(st) {
     delete st.history;
   }
   delete st.adversarialAt; delete st.adversarialConsumed;
-  // 舊版流程鍵冪等剝除（2.0x 時代欄位——讀取端統一清理；active 容忍未知鍵但 ended 白名單拒絕）
+  // 讀取時清除退役欄位；active 容忍其他欄位，ended 依明確 schema 核對。
   delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
-  delete st.externalEvidence; // 外部性閘已除（2.7.2——外部調用事實由對話呈現承載）；舊檔讀取即剝（ended 白名單亦拒此鍵）
+  delete st.externalEvidence; // 外部查證事實由對話與工作證據承載。
   if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
-  delete st.stopReport; // 停點申報機制已除（2.6.3——停等改位置導向承載）；舊檔讀取即剝（ended 白名單亦拒此鍵）
-  if (objectRecord(st?.turnUsage)) { // 斷路器形態遷移：舊計數形（fingerprints／fpEscalations 數字值）歸零重觀察；
-    // 新形標記（fpEscalations 值===true）＝模式②升級事實，保留——否則 sb next 讀寫一輪即剝除，模式③永不觸發
-    delete st.turnUsage.fingerprints;
-    if (objectRecord(st.turnUsage.fpEscalations)) for (const k of Object.keys(st.turnUsage.fpEscalations)) { if (st.turnUsage.fpEscalations[k] !== true) delete st.turnUsage.fpEscalations[k]; }
-  }
+  delete st.stopReport; // 回合結束依任務完成或實際阻塞判斷。
+
   return st;
 }
 
@@ -123,7 +103,7 @@ const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_K
 function endedState(st, root) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt', 'sopReview'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
-  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 完結後主基底直接作業的審查戳記（2.6.3）
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 完結後主基底直接作業的審查戳記
   if (st.node !== 'ended' || typeof st.slug !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug) || typeof st.ms !== 'string' || !/^\d{3,}$/.test(st.ms) || Number(st.ms) < 1 || !timestamp(st.endedAt)) return false;
   if (Object.hasOwn(st, 'concludedAt') && !timestamp(st.concludedAt)) return false; // sb init --main 完結戳（維持 ended 分類——main 直接作業）
   if (Object.hasOwn(st, 'workBranch') && !branchName(st.workBranch)) return false;
@@ -137,7 +117,7 @@ function endedState(st, root) {
 
 function uninitializedState(st, root) {
   if (!objectRecord(st)) return false;
-  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記（2.6.3）
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記
   const { sopReview: _stamp, ...records } = st;
   return hooksOnly(records, root);
 }
@@ -145,7 +125,7 @@ function uninitializedState(st, root) {
 function directState(st, root) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'sopReview'];
   if (!objectRecord(st) || Object.keys(st).some(k => !allowed.includes(k))) return false;
-  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記（2.6.3）
+  if (Object.hasOwn(st, 'sopReview') && !validDirectStamp(st.sopReview)) return false; // 非 slug 期間審查戳記
   const skeleton = ['slug', 'ms', 'node'];
   if (skeleton.some(k => Object.hasOwn(st, k)) && !(skeleton.every(k => Object.hasOwn(st, k)) && st.slug === null && st.ms === null && st.node === null)) return false;
   const records = hookRecords(st);
@@ -156,10 +136,10 @@ const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test
 function validStampFiles(f) {
   return objectRecord(f) && Object.keys(f).length <= 2 && Object.keys(f).every(k => /^(?:SOP|ROADMAP)\.md$/.test(k) && /^[0-9a-f]{64}$/.test(f[k]));
 }
-// 非 slug 期間審查戳記（直接實行／完結後主基底作業，2.6.3）：at＋answers＋files（＋head 錨定當下 HEAD——無 git 缺省）。
+// 非 slug 期間審查戳記（直接實行／完結後主基底作業）：at＋answers＋files（＋head 錨定當下 HEAD——無 git 缺省）。
 function validDirectStamp(s) {
   return objectRecord(s) && exactKeys(s, ['at', 'answers', 'files', ...(Object.hasOwn(s, 'head') ? ['head'] : [])])
-    && timestamp(s.at) && typeof s.answers === 'string' && [...s.answers.trim()].length >= 10
+    && timestamp(s.at) && typeof s.answers === 'string' && [...s.answers.trim()].length > 0
     && validStampFiles(s.files)
     && (!Object.hasOwn(s, 'head') || commitId(s.head));
 }
@@ -168,13 +148,12 @@ function validDirectStamp(s) {
 function activeExtras(st) {
   // worktrees（已移除的多代理工作樹帳本）殘留鍵由 sb end 冪等清理，此處不驗不拒（舊檔兼容）。
   if (Object.hasOwn(st, 'sopReview') && !(exactKeys(st.sopReview, ['ms', 'at', ...(Object.hasOwn(st.sopReview, 'answers') ? ['answers'] : []), ...(Object.hasOwn(st.sopReview, 'files') ? ['files'] : [])]) && st.sopReview.ms === st.ms && timestamp(st.sopReview.at)
-    && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length >= 10))
+    && (!Object.hasOwn(st.sopReview, 'answers') || (typeof st.sopReview.answers === 'string' && [...st.sopReview.answers.trim()].length > 0))
     && (!Object.hasOwn(st.sopReview, 'files') || validStampFiles(st.sopReview.files)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
-  if (Object.hasOwn(st, 'stopBlockedAt') && !timestamp(st.stopBlockedAt)) return false; // 擋停單次消費標記（停等位置導向——純機械標記非報告內容）
   return true;
 }
 function activeRecords(st, root) {

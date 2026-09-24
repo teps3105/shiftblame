@@ -1,132 +1,32 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-
-// README 唯一根目錄（assets/DOCS.md §0 文件位置）：README.md 只允許存在於 repo 根目錄一份——
-// 模塊 README 與 docs/README.md 索引皆多重來源；其餘專案文件統一 docs/。
-// 機械面：hooks 寫入攔截（寫入非根 README.md 即擋；刪除類放行＝清理通道）＋
-// sb commitmsg 掃 git 追蹤集（存量違規擋提交直至清理——規範溯及既往；大小寫不敏感）。
-const here = dirname(fileURLToPath(import.meta.url));
-const cli = resolve(here, '../bin/sb.mjs');
-const hookBin = resolve(here, '../../hooks/shiftblame-guard.mjs');
-const roots = [];
-process.on('exit', () => { for (const r of roots) rmSync(r, { recursive: true, force: true }); });
-
-const sandbox = () => {
-  const root = mkdtempSync(join(tmpdir(), 'sb-readme-'));
-  roots.push(root);
-  mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
-  writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
-  const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  assert.equal(git('init').status, 0);
-  assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '--allow-empty', '-m', 'test: 初始提交').status, 0);
-  return { root, git };
-};
-const run = (root, ...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
-const commitmsg = (root, msg = 'feat: 文件位置規則的機械驗證') => run(root, 'commitmsg', msg);
-const hookRun = (root, tool, toolInput) => spawnSync(process.execPath, [hookBin], {
-  input: JSON.stringify({ cwd: root, hook_event_name: 'PreToolUse', tool_name: tool, tool_input: toolInput }),
-  encoding: 'utf8',
-});
-const stdout = (r) => `${r.stdout}\n${r.stderr}`;
-
-// —— 1. sb commitmsg：追蹤集掃描（溯及既往——存量違規擋提交，不限 staged）——
-{
-  const { root } = sandbox();
-  mkdirSync(join(root, 'docs'), { recursive: true });
-  mkdirSync(join(root, 'mod'), { recursive: true });
-  writeFileSync(join(root, 'docs', 'README.md'), '# docs 索引（違規）\n');
-  writeFileSync(join(root, 'mod', 'README.md'), '# 模塊說明（違規）\n');
-  writeFileSync(join(root, 'app.txt'), 'base\n');
-  assert.equal(spawnSync('git', ['add', '.'], { cwd: root }).status, 0);
-  assert.equal(spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: 帶存量違規的初始提交'], { cwd: root }).status, 0);
-  // 存量違規未 staged 任何變更也擋——追蹤集掃描（溯及既往）
-  const blocked = commitmsg(root);
-  assert.notEqual(blocked.status, 0, '存量非根 README 擋提交（溯及既往）');
-  assert.match(stdout(blocked), /README 唯一根目錄/);
-  assert.match(stdout(blocked), /docs\/README\.md/);
-  assert.match(stdout(blocked), /mod\/README\.md/);
-  // 清理通道：git rm 移出追蹤集後放行（印章寫入）
-  assert.equal(spawnSync('git', ['rm', '-q', 'docs/README.md', 'mod/README.md'], { cwd: root }).status, 0);
-  const cleared = commitmsg(root);
-  assert.equal(cleared.status, 0, `清理後發章：${stdout(cleared)}`);
-  assert.ok(existsSync(join(root, '.shiftblame/tmp/commit-stamp.json')), '印章已寫入');
+import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const cli=fileURLToPath(new URL('../bin/sb.mjs',import.meta.url)),hook=fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs',import.meta.url));
+const root=mkdtempSync(join(tmpdir(),'sb-docs-'));process.on('exit',()=>rmSync(root,{recursive:true,force:true}));
+const git=(...args)=>spawnSync('git',args,{cwd:root,encoding:'utf8'});
+const run=(...args)=>spawnSync(process.execPath,[cli,...args],{cwd:root,encoding:'utf8'});
+const event=(name,input)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:'PreToolUse',tool_name:name,tool_input:input})});
+mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});
+assert.equal(git('init').status,0);
+assert.equal(run('sopreview','已核對').status,0,'缺少狀態時可寫審查記錄');assert.equal(run('state').status,0);writeFileSync(join(root,'.gitignore'),'.shiftblame/\n');
+for(const path of ['README.md','docs/README.md','module/readme.MD','skills/shiftblame/SKILL.md','hooks/shiftblame-guard.mjs']){
+ mkdirSync(join(root,path,'..'),{recursive:true});writeFileSync(join(root,path),'# Documentation\n');
+ assert.equal(event('Write',{file_path:join(root,path)}).status,0);
 }
-
-// —— 2. sb commitmsg：staged 新增違規與大小寫變體；根目錄 README.md 合法 ——
-{
-  const { root, git } = sandbox();
-  mkdirSync(join(root, 'docs'), { recursive: true });
-  writeFileSync(join(root, 'docs', '主題.md'), '# 系統行為說明（合法）\n');
-  writeFileSync(join(root, 'docs', 'readme.MD'), '# 大小寫變體（違規）\n');
-  writeFileSync(join(root, 'README.md'), '# 根目錄門面（合法）\n');
-  assert.equal(git('add', '.').status, 0);
-  const blocked = commitmsg(root);
-  assert.notEqual(blocked.status, 0, 'staged docs/readme.MD 擋提交（大小寫不敏感）');
-  assert.match(stdout(blocked), /docs\/readme\.MD/);
-  assert.doesNotMatch(stdout(blocked), /主題\.md/, 'docs/ 主題文件非違規項');
-  assert.equal(git('rm', '--cached', '-q', 'docs/readme.MD').status, 0);
-  rmSync(join(root, 'docs', 'readme.MD'));
-  const cleared = commitmsg(root);
-  assert.equal(cleared.status, 0, `根 README 與 docs/ 主題文件放行：${stdout(cleared)}`);
+assert.equal(git('add','.').status,0);
+assert.equal(git('-c','user.name=test','-c','user.email=test@example.invalid','commit','-m','baseline').status,0);
+writeFileSync(join(root,'README.md'),'# Documentation\nNew relevant section\n');
+assert.equal(git('add','README.md').status,0);
+writeFileSync(join(root,'.shiftblame/SOP.md'),'# SOP\npriority: 1\n');
+for(const msg of ['fix: R24 API behavior','x','merge example','測試'.repeat(40)]){
+ assert.equal(run('commitmsg',msg).status,0,msg);
+ assert.equal(event('Bash',{command:'git commit -m "'+msg+'"'}).status,0,'追加文件與訊息風格不擋有效章');
 }
-
-// —— 2b. sb commitmsg：套件安裝目錄豁免（官方套件自帶 README 屬生態慣例——非治理標的）——
-{
-  const { root, git } = sandbox();
-  for (const dir of [join(root, 'addons', 'godot_ai'), join(root, 'node_modules', 'pkg'), join(root, 'vendor', 'lib')]) mkdirSync(dir, { recursive: true });
-  writeFileSync(join(root, 'addons', 'godot_ai', 'README.md'), '# godot-ai 官方插件門面\n');
-  writeFileSync(join(root, 'node_modules', 'pkg', 'README.md'), '# 套件門面\n');
-  writeFileSync(join(root, 'vendor', 'lib', 'readme.md'), '# 小寫變體（同豁免）\n');
-  writeFileSync(join(root, 'app.txt'), 'base\n');
-  assert.equal(git('add', '.').status, 0);
-  assert.equal(spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'test: 帶官方套件的初始提交'], { cwd: root }).status, 0);
-  const passed = commitmsg(root);
-  assert.equal(passed.status, 0, `套件安裝目錄內 README 豁免：${stdout(passed)}`);
-}
-
-// —— 3. hooks 寫入攔截：寫非根 README.md 即擋；刪除類放行；docs/ 主題文件放行 ——
-{
-  const { root } = sandbox();
-  const denyWrite = hookRun(root, 'Write', { file_path: join(root, 'docs', 'README.md'), content: '# 索引\n' });
-  assert.notEqual(denyWrite.status, 0, 'hooks 擋寫 docs/README.md');
-  assert.match(stdout(denyWrite), /README 唯一根目錄/);
-  const denyModule = hookRun(root, 'Write', { file_path: join(root, 'mod', 'readme.md'), content: '# 模塊\n' });
-  assert.notEqual(denyModule.status, 0, 'hooks 擋寫模塊 readme.md（大小寫不敏感）');
-  const denyEdit = hookRun(root, 'Edit', { file_path: join(root, 'src', 'README.MD'), old_string: 'a', new_string: 'b' });
-  assert.notEqual(denyEdit.status, 0, 'hooks 擋 Edit 非根 README.MD');
-  const allowRoot = hookRun(root, 'Write', { file_path: join(root, 'README.md'), content: '# 根目錄門面\n' });
-  assert.equal(allowRoot.status, 0, '根目錄 README.md 放行');
-  const allowDocs = hookRun(root, 'Write', { file_path: join(root, 'docs', '主題.md'), content: '# 行為\n' });
-  assert.equal(allowDocs.status, 0, 'docs/ 主題文件放行');
-  const allowDelete = hookRun(root, 'Delete', { file_path: join(root, 'docs', 'README.md') });
-  assert.equal(allowDelete.status, 0, '刪除類工具放行（存量違規的清理通道）');
-  const allowMoveOut = hookRun(root, 'Move', { path: join(root, 'mod', 'README.md'), destination: join(root, 'docs', '模塊說明.md') });
-  assert.equal(allowMoveOut.status, 0, '搬移類只判落點——搬出違規位置放行');
-  const denyMoveIn = hookRun(root, 'Move', { path: join(root, 'README.md'), destination: join(root, 'docs', 'README.md') });
-  assert.notEqual(denyMoveIn.status, 0, '搬移落點為非根 README.md 擋');
-  const allowAddon = hookRun(root, 'Write', { file_path: join(root, 'addons', 'godot_ai', 'README.md'), content: '# 官方插件門面\n' });
-  assert.equal(allowAddon.status, 0, '套件安裝目錄（addons/）內 README 豁免——官方套件自帶 README 屬生態慣例');
-  const allowVendor = hookRun(root, 'Edit', { file_path: join(root, 'node_modules', 'pkg', 'README.md'), old_string: 'a', new_string: 'b' });
-  assert.equal(allowVendor.status, 0, 'node_modules/ 內 README 豁免');
-  const outside = hookRun(root, 'Write', { file_path: join(tmpdir(), 'outside-readme', 'README.md'), content: '# 專案外\n' });
-  assert.equal(outside.status, 0, '專案外路徑不歸此規則管');
-}
-
-// —— 4. 文件陳述錨（SKILL §1 A9：MUST 級機制的行為測試 MUST 附文件陳述錨——機制拆除時測試與錨同拆）——
-const skill = readFileSync(resolve(here, '../../skills/shiftblame/SKILL.md'), 'utf8');
-const docs = readFileSync(resolve(here, '../../skills/shiftblame/assets/DOCS.md'), 'utf8');
-const readme = readFileSync(resolve(here, '../../README.md'), 'utf8');
-assert.match(skill, /README 唯一根目錄.*?docs\/（含索引）保持無 README/, '陳述錨：主 SKILL A9 仍述 README 唯一根目錄與機械承載');
-assert.match(skill, /assets\/DOCS\.md 文件位置節/, '陳述錨：主 SKILL 指路 DOCS.md 文件位置節');
-assert.match(docs, /文件位置（README 唯一根目錄/, '陳述錨：DOCS.md §0 文件位置節仍在');
-assert.match(docs, /README\.md 僅允許存在於 repo 根目錄一份/, '陳述錨：DOCS.md 位置規則條文仍在');
-assert.match(docs, /docs\/ 內保持無 README/, '陳述錨：DOCS.md 禁 README 索引條文仍在');
-assert.match(docs, /套件安裝目錄.*?生態慣例.*?位置規則對其放行/s, '陳述錨：DOCS.md 套件安裝目錄豁免條文仍在（官方套件自帶 README 非治理標的）');
-assert.match(docs, /追蹤集.*?溯及既往|溯及既往.*?追蹤集/s, '陳述錨：DOCS.md 述 commitmsg 追蹤集掃描與溯及既往');
-assert.match(readme, /README 唯一根目錄/, '陳述錨：框架 README 仍述位置硬規則');
-
-console.log('sb-readme-placement：README 唯一根目錄機械驗證全數通過');
+for(const msg of ['','   ','fix: a\nb'])assert.notEqual(run('commitmsg',msg).status,0);
+assert.equal(run('sopreview','已核對').status,0);assert.equal(run('state').status,0);
+writeFileSync(join(root,'.shiftblame/SOP.md'),'# Changed config\n');assert.equal(run('commitmsg','docs: updated').status,0,'SOP修改不迫使重發審查戳');
+assert.equal(git('add','-f','.shiftblame/SOP.md').status,0);assert.equal(run('commitmsg','docs: unsafe staged').status,1,'形式限制移除仍保護實際 staged 系統檔');
+console.log('sb-readme-placement: pass');

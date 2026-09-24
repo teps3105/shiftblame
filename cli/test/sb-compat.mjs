@@ -95,41 +95,10 @@ classify({
   const read = readFlowState(root);
   assert.equal(read.kind, 'active', 'stopReport 舊鍵不影響分類（讀取即剝）');
   assert.equal(read.state.stopReport, undefined, 'stopReport 舊鍵由 migrateStreams 剝除（停點申報機制已除——2.6.3）');
-  assert.equal(read.state.stopBlockedAt, at, 'stopBlockedAt 保留（位置導向擋停標記——非報告內容）');
+  assert.equal(read.state.stopBlockedAt, undefined, '舊攔停標記移除，不改變階段');
 }
 
-// —— 3. 十專案實機回歸：分類與 2.5.2 重整後基準一致（流不落檔——各 repo 已主動遷移新形） ——
-// 基準＝2.5.2 重整（migrateStreams 全套＋老鍵剝除）當下量測的分類快照（隨實機流程演進於升級時重新量測——active→ended 漂移屬正常）；
-// Varellune_Document 的 ms-done 髒節點已歸位（2.3x 舊版里程碑完成態 → 2.5.2 七段圓環 intent——差異宣言同批收斂）。
-// 2.6.3 升版重新量測：wsxt 於 2.5.2 後完成 slug（wsxt-rebase ended）——active→ended 漂移如註解預期。
-// 2.6.4 升版重新量測：dnd-prototype 於 2.6.3 後完成 slug——active→ended 漂移如註解預期。
-// 2.7.0 升版重新量測：dnd-prototype 開新 slug（character-item-data-foundation）ended→active；
-// wsxt flow-state 已重置（node 空）ended→uninitialized。
-// 2.7.0 後續重新量測（檔案總管過濾輪）：wsxt 已開新 slug——uninitialized→active。
-// 2.7.2 升版重新量測：Trickster-Web 於 2.7.1 後完成 slug（active→ended）；Varellune 完成 slug（active→ended）；
-// ro-server 的 flow-state 已移除（active→missing）；wsxt flow-state 重置為紀錄態（active→direct）。
-const TEN_PROJECT_BASELINE = {
-  'CF-Simulator-Godot': 'ended',
-  'Trickster-Web': 'ended',
-  Varellune: 'ended',
-  'Varellune_Document': 'active',
-  'dnd-prototype': 'active',
-  'gpt-image-mcp': 'uninitialized',
-  'moffee-pos': 'invalid',
-  'palserver-gui': 'ended',
-  'ro-server': 'missing',
-  shiftblame: 'uninitialized',
-  wsxt: 'direct',
-};
-let scanned = 0;
-for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {
-  const dir = join('D:/', name);
-  if (!existsSync(dir)) { console.log(`  （略）${name} 不在本機——fixture 承擔格式相容`); continue; }
-  const result = readFlowState(dir);
-  assert.equal(result.kind, expected, `${name} 分類與升級前一致（${expected}）`);
-  scanned += 1;
-}
-assert.ok(scanned >= 1, '至少完成一個實機專案的回歸');
+// Compatibility is exercised with isolated state fixtures, independent of live project progress.
 
 // —— 4. 缺失自動創建：老闆清理 json 後，sb 命令重建觀測檔且狀態判定不受影響 ——
 {
@@ -147,4 +116,4 @@ assert.ok(scanned >= 1, '至少完成一個實機專案的回歸');
   spawnSync(process.execPath, [cli, 'state'], { cwd: root, encoding: 'utf8' });
   assert.ok(existsSync(usage), '清理後再調用自動重建');
 }
-console.log(`sb-compat: pass（實機回歸 ${scanned}/${Object.keys(TEN_PROJECT_BASELINE).length} 專案——其餘目錄不存在略過）`);
+console.log('sb-compat: pass');

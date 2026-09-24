@@ -1,366 +1,86 @@
-// sb-hooks：對話承載（流不落檔——回合邊界＋零內容寫入）＋外部證據不落檔＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
-import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
 import assert from 'node:assert/strict';
-
-const hook = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'hooks', 'shiftblame-guard.mjs');
-const root = mkdtempSync(join(tmpdir(), 'sb-hooks-'));
-process.on('exit', () => rmSync(root, { recursive: true, force: true }));
-mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
-const run = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
-const state = () => JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8'));
-const setNode = (n) => writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [], ...(n === 'ended' ? { endedAt: new Date().toISOString() } : {}) }));
-
-// —— 1. 對話承載（2.5.2 流不落檔）：UserPromptSubmit＝回合邊界（模式追蹤重置、零內容寫入）；理解宣告由對話承載 ——
-const up = (prompt) => run({ hook_event_name: 'UserPromptSubmit', prompt });
-let r = up('隨便說什麼都行');
-assert.equal(r.status, 0);
-assert.equal(state().inputs, undefined, '輸入不落檔（對話事實由平台承載）');
-assert.equal(state().dialogueLock, undefined, '無對話鎖欄位');
-// 理解宣告：Skill(shiftblame:think) args 於對話揭露——state 不長 understandings
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解：這是對話承載模型的測試輸入序列' } });
-assert.equal(r.status, 0, 'Skill 調用放行');
-assert.equal(state().understandings, undefined, '理解宣告不落檔（對話承載——老闆讀對話即審）');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-think-evil', args: '理解：偽技能名的假理解宣告內容' } });
-assert.equal(r.status, 0, 'Skill 調用一律放行（機械不判定語義——路由紀律由對話曝光承擔）');
-// 外部證據不落檔（2.7.2 機械綁定移除）：外部工具調用零標記——事實由對話呈現承載（A2）
-for (const tool of ['WebSearch', 'mcp__web_reader__webReader', 'Agent']) {
-  r = run({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { query: 'x' } });
-  assert.equal(r.status, 0);
-  assert.equal(state().externalEvidence, undefined, `${tool} 外部調用不標記（機械綁定已移除）`);
+import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const hook=fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs',import.meta.url));
+const root=mkdtempSync(join(tmpdir(),'sb-hooks-'));
+process.on('exit',()=>rmSync(root,{recursive:true,force:true}));
+mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});
+const statePath=join(root,'.shiftblame/flow-state.json');
+const state=()=>JSON.parse(readFileSync(statePath,'utf8'));
+const set=(node,extra={})=>writeFileSync(statePath,JSON.stringify({slug:'demo',ms:'001',node,...extra}));
+const run=(event,tool,input)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:event,tool_name:tool,tool_input:input})});
+const tool=(name,input)=>run('PreToolUse',name,input);
+const git=(...args)=>spawnSync('git',['-C',root,...args],{encoding:'utf8'});
+assert.equal(git('init').status,0);
+writeFileSync(join(root,'.gitignore'),'.shiftblame/\n.cache/\n');
+mkdirSync(join(root,'.cache'));writeFileSync(join(root,'.cache/tracked.txt'),'source');
+assert.equal(git('add','-f','.cache/tracked.txt').status,0);
+set('build');
+let r=run('SessionStart');assert.equal(r.status,0);assert.equal(JSON.parse(r.stdout).hookSpecificOutput.hookEventName,'SessionStart');
+assert.ok(JSON.parse(r.stdout).hookSpecificOutput.additionalContext.length<1200,'啟動提示有界且精簡');
+assert.equal(state().hooksHeartbeat.event,'SessionStart');
+// Prompts are platform conversation data, not a state transition API.
+for(const node of ['intent','requirement','research','plan','test','build','verify']){
+ for(const prompt of ['繼續','繼續。','可以繼續了','目前進度如何','你做到哪裡了','為什麼會失敗','新增付款功能']){
+  set(node,{rev:2});
+  r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:'UserPromptSubmit',prompt})});
+  assert.equal(r.status,0,r.stderr);assert.equal(state().node,node);assert.equal(state().rev,2);
+  assert.equal(state().lastBossInputAt,undefined);assert.equal(state().inputs,undefined);
+ }
+ assert.equal(run('Stop').status,0);assert.equal(state().node,node);
 }
-// hooks 心跳（flow-state hooksHeartbeat 欄位）
-const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat;
-assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
-assert.ok(new Date(hb.at).getTime() > Date.now() - 60000, '心跳時間戳新鮮');
-// inject 格式（hookEventName 歸因防回歸）
-const ssOut = run({ hook_event_name: 'SessionStart', source: 'startup' });
-const ssJson = JSON.parse(ssOut.stdout);
-assert.equal(ssJson.hookSpecificOutput.hookEventName, 'SessionStart', 'SessionStart 注入歸因正確事件名');
-assert.ok(ssJson.hookSpecificOutput.additionalContext.length > 50, 'SessionStart 注入實質內容（載入程序＋不變量卡）');
-const upOut = up('inject 格式驗證輸入');
-const upJson = JSON.parse(upOut.stdout);
-assert.equal(upJson.hookSpecificOutput.hookEventName, 'UserPromptSubmit', 'UserPromptSubmit 注入歸因正確事件名');
-assert.ok(upJson.hookSpecificOutput.additionalContext.includes('[shiftblame 不變量]'), '不變量卡經 additionalContext 真正注入');
-// 心跳守門：無 .shiftblame 的 cwd 不得長出流浪工作區
-const strayRoot = mkdtempSync(join(tmpdir(), 'sb-stray-'));
-process.on('exit', () => rmSync(strayRoot, { recursive: true, force: true }));
-const strayRun = spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: strayRoot, hook_event_name: 'SessionStart', source: 'startup' }), encoding: 'utf8' });
-assert.equal(strayRun.status, 0, '流浪 cwd 下 hooks 靜默放行');
-assert.equal(existsSync(join(strayRoot, '.shiftblame')), false, '不得創建流浪 .shiftblame（框架元規則——findRoot 錨錯根防護）');
-
-// —— 2. 無鎖：一般 Bash／Write 不因對話鎖被擋——段位矩陣與 commit 攔截仍在（節 6-9）——
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'ls' } });
-assert.equal(r.status, 0, '一般 Bash 不攔（無對話鎖）');
-
-// —— 3. 必然曝光已隨理解流拆除（2.5.2 對話承載）：UserPromptSubmit 注入＝不變量卡＋段位——無檔案側理解審視行 ——
-r = up('曝光驗證輸入');
-assert.equal(r.status, 0);
-const upCtx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
-assert.ok(upCtx.includes('[shiftblame 不變量]'), '不變量卡注入');
-assert.ok(!upCtx.includes('理解審視'), '無檔案側曝光行（理解宣告由 think args 於對話揭露——老闆讀對話即審）');
-
-// —— 4. SessionStart 動態狀態卡（壓縮後回流：段位——機械事實；對話過程由平台摘要承載） ——
-setNode('plan');
-const ss2 = run({ hook_event_name: 'SessionStart', source: 'compact' });
-assert.equal(ss2.status, 0);
-assert.ok(ss2.stdout.includes('冷啟動載入'), '靜態卡');
-assert.ok(ss2.stdout.includes('@ plan'), '段位');
-assert.ok(!ss2.stdout.includes('停點申報'), '停點申報行已除（2.6.3——待決由回覆說明承載）');
-
-// —— 4.5 老闆輸入＝新輪機械推回（2.6.3 位置導向）：中鏈段位與對抗未完成的決策邊 → hook 代跑 sb next intent；對抗已完成的決策邊＝裁決通道零推回 ——
-setNode('build');
-const ret = up('老闆新輸入（機械推回驗證）');
-assert.equal(ret.status, 0);
-assert.equal(state().node, 'intent', '老闆新輸入＝新輪——中鏈段位即機械推回 intent（hook 代跑 sb next intent，計返工輪由 CLI 承載）');
-assert.ok(state().lastBossInputAt, '老闆輸入時戳記錄（事實非內容——段內修復邊防護的對照源）');
-assert.ok(JSON.parse(ret.stdout).hookSpecificOutput.additionalContext.includes('[新輪]'), '推回說明注入對話');
-setNode('verify');
-const retV = up('老闆新輸入（verify 對抗未完成推回驗證）');
-assert.equal(retV.status, 0);
-assert.equal(state().node, 'intent', '對抗未完成的決策邊＝機械推回 intent（時點 2 對抗未做——非裁決通道）');
-// 對抗已完成的決策邊＝裁決通道（requirement＋時點1／verify＋時點2——老闆 pass/fail 是唯一剩餘工作，零推回）
-setNode('requirement');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { 'intent→requirement': new Date(Date.now() - 7200000).toISOString() }, lastAdv: { '1': { at: new Date(Date.now() - 3600000).toISOString(), report: '時點 1 對抗報告（fixture）', verdict: '通過', node: 'requirement', point: '1' } } }));
-const adj1 = up('老闆時點 1 裁決回覆（pass）');
-assert.equal(adj1.status, 0);
-assert.equal(state().node, 'requirement', '時點 1 對抗完成＝裁決通道——零推回（pass 走出口推進邊、fail／新意圖由代理重走 intent，CLI 邊承載）');
-setNode('verify');
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { 'build→verify': new Date(Date.now() - 7200000).toISOString() }, lastAdv: { '2': { at: new Date(Date.now() - 3600000).toISOString(), report: '時點 2 對抗報告（fixture）', verdict: '通過', node: 'verify', point: '2' } } }));
-const adj2 = up('老闆時點 2 裁決回覆（pass）');
-assert.equal(adj2.status, 0);
-assert.equal(state().node, 'verify', '時點 2 對抗完成＝裁決通道——零推回（出口邊由 CLI 承載）');
-// 中性續行豁免：「繼續」類詞表精確全等——非新輪（不推回、不記時戳，接續原段）
-writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), lastBossInputAt: undefined, node: 'build' }));
-const cont = up('繼續');
-assert.equal(cont.status, 0);
-assert.equal(state().node, 'build', '中性續行（詞表精確全等）非新輪——不推回，接續原段');
-assert.equal(state().lastBossInputAt, undefined, '中性續行不記老闆輸入時戳（無新意圖——段內修復邊防護不誤觸）');
-assert.ok(JSON.parse(cont.stdout).hookSpecificOutput.additionalContext.includes('[續行]'), '續行說明注入對話');
-// 複合輸入（帶新意圖）不精確匹配＝照常推回
-setNode('build');
-const comp = up('繼續，但改用另一種做法');
-assert.equal(state().node, 'intent', '複合輸入（「繼續，但…」）＝帶新意圖——照常推回 intent');
-// 疑問輸入零流程位移（問題類＝零位移——CARD⑩ commentary 解答後接續）：句尾問號／疑問詞開頭
-setNode('build');
-const qa = up('為什麼這個 API 要這樣設計？');
-assert.equal(qa.status, 0);
-assert.equal(state().node, 'build', '疑問輸入零流程位移——不推回，接續原段');
-assert.equal(state().lastBossInputAt, undefined, '疑問輸入不記老闆輸入時戳（非新意圖——段內修復邊防護不誤觸）');
-assert.ok(JSON.parse(qa.stdout).hookSpecificOutput.additionalContext.includes('[問答]'), '問答說明注入對話');
-setNode('build');
-const qa2 = up('目前進度到哪了嗎');
-assert.equal(state().node, 'build', '句尾「嗎」疑問輸入同零位移');
-
-// —— 5. 回合接續契約在輸入／重啟時注入；Stop 不代改流程或反覆喚醒 ——
-for (const payload of [
-  { hook_event_name: 'SessionStart' },
-  { hook_event_name: 'UserPromptSubmit', prompt: '先解釋這個疑問' },
-]) {
-  const result = run(payload);
-  assert.equal(result.status, 0);
-  const context = JSON.parse(result.stdout).hookSpecificOutput;
-  assert.equal(context.hookEventName, payload.hook_event_name);
-  for (const rule of ['回合結束≠流程完成', 'commentary 解答後接續已授權未完工作', 'sb next intent', 'sb state 查證', '應分發者已分發', '主動 think 停等', '明確暫停／取消', '停等位置導向（防偷懶停）', '回覆說明承載']) {
-    assert.ok(context.additionalContext.includes(rule), `${payload.hook_event_name} 注入接續規則：${rule}`);
-  }
+set('build');
+for(let i=0;i<8;i++)assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0,'輪詢不按本地寫入與否封禁');
+const prefix='x'.repeat(220);
+for(const suffix of ['readA','readB'])assert.equal(tool('functions.exec',{code:prefix+suffix}).status,0);
+assert.equal(state().node,'build');assert.equal(state().turnUsage.requests,10);assert.equal(state().turnUsage.repeats,undefined);
+// Rewriting does not depend on a particular Skill invocation event.
+set('requirement',{rev:3});
+assert.equal(tool('Edit',{file_path:join(root,'.shiftblame/demo/001/G1.md')}).status,0);
+assert.equal(tool('Edit',{file_path:join(root,'.shiftblame/demo/001/G2.md')}).status,0);
+// Structured writes and patch headers share verify protection.
+set('verify');
+assert.equal(tool('Write',{path:'.cache/output.txt'}).status,0,'未追蹤且被忽略的輸出可寫');
+assert.equal(tool('Write',{path:'.cache/tracked.txt'}).status,2,'被追蹤來源即使命中ignore也保持穩定');
+for(const name of ['Edit','mcp__storage__write_target','functions.apply_patch']){
+ const input=name.includes('patch')?'*** Begin Patch\n*** Update File: src/app.js\n@@\n-old\n+new\n*** End Patch':{file_path:'src/app.js'};
+ assert.equal(tool(name,input).status,2,name);
 }
-// Stop＝停等位置導向（2.6.3）：中鏈段位與對抗未完成的決策邊＝擋停一次（條件式、單次消費式、不代做路由）；
-// intent／對抗已完成的決策邊／stop_hook_active／done／ended／無流程放行——待決由回覆說明承載；放行即消費自限標記。
-for (const node of ['plan', 'build', 'verify']) {
-  setNode(node);
-  const before = state();
-  delete before.hooksHeartbeat; // 心跳隨每次 hook 執行更新——比對事實面時排除
-  const blocked = run({ hook_event_name: 'Stop', last_assistant_message: '先停在這' });
-  assert.equal(blocked.status, 2, node + '：中鏈段位／對抗未完成的決策邊擋停一次（停等位置導向）');
-  assert.match(blocked.stderr, /停等位置導向/, '擋停訊息要求續行至最近決策邊（時點對抗後）');
-  assert.equal(state().stopBlockedAt !== undefined, true, '擋停寫自限標記（本回合至多擋一次）');
-  const pass2 = run({ hook_event_name: 'Stop', last_assistant_message: '再停一次' });
-  assert.equal(pass2.status, 0, node + '：第二次停走自限放行（單次——真外部阻塞逃生口，不無限循環擋停）');
-  assert.equal(state().stopBlockedAt, undefined, node + '：放行即消費——標記一次性，不跨回合殘留');
-  const st2 = state();
-  delete st2.hooksHeartbeat; delete st2.stopBlockedAt;
-  assert.deepEqual(st2, before, 'Stop 不改流程節點與狀態事實（不代做路由）');
-  const blocked3 = run({ hook_event_name: 'Stop', last_assistant_message: '第三次停（模擬新回合重閘——僅消費保證）' });
-  assert.equal(blocked3.status, 2, node + '：消費後再停重新擋（新回合重閘由回合邊刪除＋放行消費雙路徑保證）');
-  // stop_hook_active：放行（平台自限雙保險——ZCode 無此欄位時由消費式標記承擔單次語義）
-  const stH = state();
-  delete stH.stopBlockedAt;
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(stH));
-  const hookActive = run({ hook_event_name: 'Stop', stop_hook_active: true, last_assistant_message: '平台已擋過一次' });
-  assert.equal(hookActive.status, 0, node + '：stop_hook_active 放行');
-}
-// 合法停等＝位置承載：intent（意圖沉澱）恆可停；對抗已完成的決策邊停等正當；對抗未完成或時序顛倒從嚴擋
-setNode('intent');
-assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '意圖沉澱停等' }).status, 0, 'intent：決策邊停等正當（放行）');
-const edgeOld = new Date(Date.now() - 7200000).toISOString();
-for (const [node, advKey, edgeKey] of [['requirement', '1', 'intent→requirement'], ['verify', '2', 'build→verify']]) {
-  setNode(node);
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { [edgeKey]: edgeOld }, lastAdv: { [advKey]: { at: new Date(Date.now() - 3600000).toISOString(), report: '時點對抗報告（fixture）', verdict: '通過', node, point: advKey } } }));
-  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '決策邊停等老闆判定' }).status, 0, node + '＋時點對抗完成＝決策邊停等正當（只剩老闆 pass/fail——放行）');
-  setNode(node);
-  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '對抗未完成就停' }).status, 2, node + ' 無時點對抗紀錄：對抗未完成的決策邊零停靠（擋停一次）');
-  setNode(node);
-  writeFileSync(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify({ ...state(), edgeAt: { [edgeKey]: edgeOld }, lastAdv: { [advKey]: { at: new Date(Date.now() - 10800000).toISOString(), report: '舊對抗（進段前）', verdict: '通過', node, point: advKey } } }));
-  assert.equal(run({ hook_event_name: 'Stop', last_assistant_message: '舊對抗重複消費' }).status, 2, node + '：對抗條目早於進段時間＝未完成（edgeAt 對照從嚴——擋停）');
-}
-for (const node of ['done', 'ended']) {
-  setNode(node);
-  const result = run({ hook_event_name: 'Stop', last_assistant_message: '完成態停' });
-  assert.equal(result.status, 0, node + '：done／ended 停等本就合法放行');
-}
-setNode('ended');
-r = run({ hook_event_name: 'Stop', last_message: '方案〔待確認〕' });
-assert.equal(r.status, 0, 'Stop 放行（ended——非活動流程不偵測）');
-assert.equal(state().dialogueLock, undefined, '無上鎖動作（撤鎖）');
-
-// —— 6. 段-檔寫入矩陣 ——
-const W = (node, tool, target) => {
-  setNode(node);
-  return run({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { file_path: target } });
-};
-assert.equal(W('verify', 'Edit', 'src/app.js').status, 2, 'verify 段 repo 唯讀');
-assert.equal(W('verify', 'Edit', join(root, '.shiftblame', 'demo', 'SLUG.md')).status, 0, '.shiftblame 永遠可寫');
-assert.equal(W('build', 'Edit', 'src/app.js').status, 0, 'build 段寫實作');
-assert.equal(W('ended', 'Edit', 'docs/guide.md').status, 0, 'ended 收尾歸檔');
-assert.equal(W('test', 'Edit', 'test/app.test.js').status, 0, 'test 段寫測試碼');
-assert.equal(W('build', 'Edit', 'test/app.test.js').status, 0, 'build 段寫測試碼放行（測試碼寫入權 test＋build——隨功能實作同 commit 定稿）');
-assert.equal(W('plan', 'Edit', 'test/app.test.js').status, 2, '測試碼寫入權屬 test＋build 段（實作層）——定義層擋');
-
-// —— 7. 層間停靠雙重鎖：requirement 段 sb next research 缺 --boss-ok 即擋（hooks 同判據——時點 1 對抗在前老闆判定在後）——
-setNode('requirement');
-const st1 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next research --adversarial' } });
-assert.equal(st1.status, 2);
-assert.match(st1.stderr, /老闆決策邊/);
-const st2 = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next research --boss-ok --adversarial' } });
-assert.equal(st2.status, 0, '帶 --boss-ok 放行');
-// build→verify＝中鏈機械推進零停靠：hook 零攔（時點 2 在 verify 出口邊由 CLI 驗；working tree 乾淨由 CLI 驗）——無旗標即推進
-setNode('build');
-const midChain = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb next verify' } });
-assert.equal(midChain.status, 0, 'build→verify 中鏈機械推進零停靠——hook 零攔（殘留第三邊定義＝錯鎖死路：無旗標被 hook 擋、帶旗標被 CLI 擋）');
-
-// —— 8. commit 印章閘（hooks 端：驗章焚章——印章唯一憑證）——
-setNode('build');
-const noStamp = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
-assert.equal(noStamp.status, 2);
-assert.match(noStamp.stderr, /缺少 commit 印章/);
-writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: x', cwd: root, issuedAt: new Date().toISOString() }));
-// 發章＝寫入類流程命令（SHELL_WRITE_HINT_RE 含 sb 子命令）：斷路器模式追蹤全清——被擋的 commit 重跑有了新基礎
-run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb commitmsg "feat: x"' } });
-const ok = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: x"' } });
-assert.equal(ok.status, 0, '發章後同命令 commit 放行（寫入清表——真實流程「擋→發章→commit」不被模式①誤擋）');
-assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '驗章後焚章——印章一次性');
-
-// —— 8.5 文件鐵律：框架 repo 的 .md 純追加（零刪改）不得 commit；實質重寫（有刪有改）與新增檔放行 ——
-{
-  mkdirSync(join(root, 'skills', 'shiftblame'), { recursive: true });
-  mkdirSync(join(root, 'hooks'), { recursive: true });
-  writeFileSync(join(root, 'skills', 'shiftblame', 'SKILL.md'), '# framework\n');
-  writeFileSync(join(root, 'hooks', 'shiftblame-guard.mjs'), '// anchor\n'); // 文件鐵律雙錨定
-  writeFileSync(join(root, 'README.md'), '# 專案\n說明。\n');
-  spawnSync('git', ['init'], { cwd: root });
-  writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
-  spawnSync('git', ['add', '.'], { cwd: root });
-  spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'init'], { cwd: root });
-  const issue = (msg) => writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: root, issuedAt: new Date().toISOString() }));
-  // 純追加：擋（README.md 已在 HEAD——修改檔新增＞0 刪除＝0；且不消費印章——擋截在印章驗證前）
-  writeFileSync(join(root, 'README.md'), '# 專案\n說明。\n追加段（未理順舊文）。\n');
-  spawnSync('git', ['add', 'README.md'], { cwd: root });
-  issue('feat: 測試文件鐵律');
-  const blocked = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律"' } });
-  assert.equal(blocked.status, 2, '框架 repo 的 .md 純追加 commit 擋下');
-  assert.match(blocked.stderr, /文件鐵律/, '擋截訊息要求理順邏輯實質重寫');
-  assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), true, '擋停在印章驗證前——印章不消費');
-  // 實質重寫（有刪有改）：放行（印章一併消費；發章＝寫入類命令清斷路器模式表——同命令 commit 為新基礎）
-  writeFileSync(join(root, 'README.md'), '# 專案（理順後）\n說明改寫。\n');
-  spawnSync('git', ['add', 'README.md'], { cwd: root });
-  issue('feat: 測試文件鐵律');
-  run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'sb commitmsg "feat: 測試文件鐵律"' } });
-  const rewritten = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律"' } });
-  assert.equal(rewritten.status, 0, '實質重寫（有刪有改）放行');
-  assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '印章已消費');
-  // 新增檔豁免：放行（skills 下新 .md——HEAD 無此檔）
-  writeFileSync(join(root, 'skills', 'shiftblame', 'new-doc.md'), '# 新文件\n全新內容。\n');
-  spawnSync('git', ['add', 'new-doc.md'], { cwd: root });
-  issue('feat: 測試文件鐵律新增檔');
-  const added = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git commit -m "feat: 測試文件鐵律新增檔"' } });
-  assert.equal(added.status, 0, '新增檔（HEAD 無此檔）豁免——放行');
-  // 清理：移除框架錨定與 git，還原共享沙箱
-  rmSync(join(root, 'skills'), { recursive: true, force: true });
-  rmSync(join(root, '.git'), { recursive: true, force: true });
-  rmSync(join(root, 'README.md'), { force: true });
-}
-
-// —— 9. 破壞性命令：相對路徑＋重定向截斷 ——
-const bad = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo hi > out.txt' } });
-assert.equal(bad.status, 2);
-assert.match(bad.stderr, /破壞性操作/);
-
-// —— 10. 主動觸發停等已隨理解流拆除（2.5.2 對話承載）：/shiftblame:think 輸入＝回合邊界如常——機械零凍結，寫入回到段位矩陣判定；停等紀律由對話層（think 揭露＋老闆終審——待決由回覆說明承載）承擔 ——
-setNode('build');
-const activeSlash = up('/shiftblame:think 幫我做理解呈現');
-assert.equal(activeSlash.status, 0, '主動觸發輸入照常處理');
-assert.equal(state().node, 'intent', 'think 輸入＝老闆輸入——中段機械推回 intent 開新輪（2.5.5）');
-assert.equal(state().understandingHold, undefined, '零機械凍結（understandingHold 已拆——對話承載）');
-setNode('build'); // 沙箱直寫重設段位（隔離驗證寫入矩陣——非流程切段）
-const holdEdit = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, 'src/a.js'), old_string: 'a', new_string: 'b' } });
-assert.equal(holdEdit.status, 0, '寫入由段位矩陣判定（build 段放行——think 輸入後零殘留凍結）');
-const holdSb = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'node cli/bin/sb.mjs state' } });
-assert.equal(holdSb.status, 0, 'sb state 唯讀照常放行');
-// —— 11. G 檔寫入矩陣（RAM/ROM 分區） ——
-mkdirSync(join(root, '.shiftblame', 'demo', '001'), { recursive: true });
-const setNode2 = (n) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: n, history: [], ...(n === 'ended' ? { endedAt: new Date().toISOString() } : {}) }));
-// requirement 段 Read repo 檔不寫任何標記（零殘留行為驗證）
-mkdirSync(join(root, 'src'), { recursive: true });
-setNode2('requirement');
-const beforeRead = readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8');
-run({ hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: join(root, 'src/a.js') } });
-run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git log --oneline -3' } });
-// hooksHeartbeat／回合計數（turnUsage／usageTotals）寫入 flow-state 是獲准的觀測狀態寫入；剝除後必須零殘留
-const stripHb = (raw) => { const o = JSON.parse(raw); delete o.hooksHeartbeat; delete o.turnUsage; delete o.usageTotals; return JSON.stringify(o); };
-assert.equal(stripHb(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')), stripHb(beforeRead), '查證動作不寫狀態（RAM/ROM）');
-const hbAfter = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8')).hooksHeartbeat;
-assert.ok(hbAfter && hbAfter.at && hbAfter.event, 'hooksHeartbeat 落 flow-state（at＋event）');
-// G 寫入矩陣：定義邊寫、落地邊唯讀
-setNode2('requirement');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'requirement 段寫 G1 放行（定義邊）');
-const gKidnap = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), old_string: 'a', new_string: 'b' } });
-assert.equal(gKidnap.status, 2, 'requirement 段寫 G2 擋（G2 寫入權屬 research）');
-assert.match(gKidnap.stderr, /G2|寫入權屬|無寫入權/, '綁架訊息指向重走 intent 開新輪');
-setNode2('research');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G2.md'), content: 'x' } }).status, 0, 'research 段寫 G2 放行');
-setNode2('test');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'test 段寫 G3 回指區放行（RAM/ROM：落地段獲回指區寫入權）');
-setNode2('requirement');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/g2.md'), old_string: 'a', new_string: 'b' } }).status, 2, '小寫 g2.md 繞過死路（Windows 大小寫不敏感 FS：requirement 對 G2 無寫入權）');
-setNode2('plan');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/G3.md'), content: 'x' } }).status, 0, 'plan 段寫 G3 放行');
-setNode2('verify');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, 'verify 段寫 G1 回指區放行（AC 判定收斂寫入；定義區由 CLI 分區 hash 兜底）');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, 'src/b.js'), content: 'x' } }).status, 2, 'verify 段寫 repo 實作檔仍由寫入矩陣攔（G 矩陣不影響既有矩陣）');
-// ROM 區雜檔閘：<slug>/<nnn>/ 僅承載 G1~G3.md
-const romJunk = run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/001/intent.md'), content: 'x' } });
-assert.equal(romJunk.status, 2, 'ROM 區雜檔（intent.md）擋——中間產物一律 tmp');
-assert.match(romJunk.stderr, /ROM 區|tmp/);
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/archive/demo/001/notes.md'), content: 'x' } }).status, 2, 'archive 區雜檔同擋');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/evidence.md'), content: 'x' } }).status, 0, 'tmp 傾倒放行');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/tmp/x/y.md'), content: 'x' } }).status, 0, 'tmp 巢狀子目錄放行（RAM 區格式不做規範）');
-assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md（<slug>/ 層）放行');
-// —— 11b. 返工輪 rewrite 載入閘：修正輪（rev 有值）寫 G 前必須本輪已調用 shiftblame:rewrite ——
-// 文件陳述錨（SKILL §1：MUST 級機制的行為測試 MUST 附文件陳述錨——機制拆除時測試與錨同拆）
-assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'skills', 'shiftblame', 'SKILL.md'), 'utf8').includes('返工輪 rewrite 載入閘'), '陳述錨：主 SKILL §1.7 仍述 rewrite 載入閘');
-assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'README.md'), 'utf8').includes('返工輪（rev 有值）hooks 驗本輪已調用本技能'), '陳述錨：README 技能條目仍述機械承載');
-{
-  const setRev = (n, extra = {}) => writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'requirement', history: [], ...(n != null ? { rev: n } : {}), ...extra }));
-  setRev(null);
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '首輪（無 rev）寫 G1 放行——全新定義無堆疊風險');
-  setRev(1);
-  const blocked = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } });
-  assert.equal(blocked.status, 2, '修正輪 r1 未載入 rewrite 寫 G1 擋');
-  assert.match(blocked.stderr, /shiftblame:rewrite/, '擋訊息指向調用 shiftblame:rewrite');
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/demo/SLUG.md'), content: 'x' } }).status, 0, 'SLUG.md 不在 rewrite 載入閘（秘書層恆可寫——SLUG 紀律由技能承載）');
-  for (const bad of ['rewrite', 'Rewrite', 'Shiftblame:Rewrite', 'shiftblame:rewrite-evil', 'xx_rewrite_yy', 'shiftblame:rerite']) {
-    run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: bad } });
-    assert.equal(state().rewriteSeen, undefined, `偽名／裸名／大小寫變體 ${bad} 不落 rewriteSeen（閘鑰匙全名大小寫敏感錨定）`);
-  }
-  run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:rewrite' } });
-  assert.equal(state().rewriteSeen.rev, 1, '全名調用落 rewriteSeen（rev 對齊當前輪）');
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 0, '載入後本輪寫 G1 放行（同輪已載入即放行，免雙重設防）');
-  setRev(2);
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } }).status, 2, '再返工（r2）須重新載入——每輪重驗');
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(root, '.shiftblame/archive/demo/001/G1.md'), content: 'x' } }).status, 0, '真歸檔形（.shiftblame/archive/<slug>/<ms>/G1.md——4 段）不匹配 G_FILE_RE／不在 rewrite 閘（路徑形不匹配即放行）');
-  assert.equal(run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `echo x > "${join(root, '.shiftblame/demo/001/G1.md')}"` } }).status, 0, 'Bash 直寫不在此層（既有殘餘面，如實標註）');
-  writeFileSync(join(root, '.shiftblame/flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'research', rev: 2, history: [] }));
-  const kidnapRw = run({ hook_event_name: 'PreToolUse', tool_name: 'Edit', tool_input: { file_path: join(root, '.shiftblame/demo/001/G1.md'), old_string: 'a', new_string: 'b' } });
-  assert.equal(kidnapRw.status, 2);
-  assert.match(kidnapRw.stderr, /寫入權/, '段位違規優先報（G 矩陣在前、rewrite 閘在後）');
-}
-// —— 12. 接入異常模式：修復自由＋封閉面（git 寫入／sb 流程命令；唯讀白名單已除——修復是異常模式的目的）——
-{
-  const brokenRoot = mkdtempSync(join(tmpdir(), 'sb-health-'));
-  process.on('exit', () => rmSync(brokenRoot, { recursive: true, force: true }));
-  mkdirSync(join(brokenRoot, '.shiftblame', 'tmp'), { recursive: true });
-  // 2.4.0 directState 放寬：{slug:null,node:null} 屬合法直接實行態（非異常）——異常面改用未知節點 fixture。
-  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ node: 'mystery', history: [] }));
-  const hr = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: brokenRoot, ...payload }), encoding: 'utf8' });
-  const bash = (command) => hr({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } });
-  assert.equal(bash('node repair-state.mjs').status, 0, '修復腳本放行');
-  assert.equal(bash('rg -n "a|b|c" .').status, 0, '唯讀查證放行（正則 alternation 的管線字元在引號內——舊白名單誤擋實例）');
-  assert.equal(bash('git status --porcelain').status, 0, 'git 唯讀診斷放行');
-  const addDenied = bash('git add x.txt');
-  assert.equal(addDenied.status, 2, 'git 寫入封閉');
-  assert.match(addDenied.stderr, /接入異常/);
-  assert.equal(bash('git -c user.name=t commit -m "x"').status, 2, '提交封閉');
-  assert.equal(bash('node sb.mjs adversarial r.md --point 1').status, 2, 'sb 對抗宣告封閉（流程寫入——異常模式封閉）');
-  assert.equal(bash('node sb.mjs state').status, 0, 'sb state 診斷放行');
-  assert.equal(bash('sb init demo').status, 2, 'sb 流程命令（init）同封閉');
-  assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, '.shiftblame', 'flow-state.json'), content: '{"hooksHeartbeat":{"at":"2026-09-11T00:00:00.000Z","event":"SessionStart"}}' } }).status, 0, '寫入工具對 flow-state 修復放行');
-  assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, 'README.md'), content: 'x' } }).status, 2, '寫入工具對正式文件封閉');
-  writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));
-  assert.equal(bash('git add x.txt').status, 0, '修復完成（狀態可辨識）後 git 寫入恢復');
-}
+assert.equal(tool('mcp__storage__get_object',{path:'src/app.js'}).status,0);
+assert.equal(tool('Write',{path:join(root,'.shiftblame/tmp/evidence.md')}).status,0);
+set('build');assert.equal(tool('Write',{path:'src/app.js'}).status,0);
+// Invalid state preserves the original and allows only observable recovery writes.
+writeFileSync(statePath,'{broken');
+assert.equal(tool('mcp__storage__write_target',{path:'src/app.js'}).status,2);
+assert.equal(tool('apply_patch','*** Begin Patch\n*** Update File: src/app.js\n@@\n-a\n+b\n*** End Patch').status,2);
+assert.equal(readFileSync(statePath,'utf8'),'{broken');
+assert.equal(tool('Write',{file_path:statePath}).status,0);
+assert.equal(tool('Bash',{command:'git add app.js'}).status,2);
+assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0);
+set('requirement');
+assert.equal(tool('Bash',{command:'sb next research --adversarial'}).status,2);
+assert.equal(tool('Bash',{command:'sb next research --adversarial --boss-ok'}).status,0);
+set('done');assert.equal(tool('Write',{path:'src/app.js'}).status,2,'done 是 verify 的舊狀態');
+set('build');
+assert.equal(tool('Bash',{command:'git config --get-regexp alias.'}).status,0,'唯讀診斷不是alias設定');
+assert.equal(tool('Bash',{command:'git config alias.ci commit'}).status,2,'alias寫入仍需保護提交入口');
+assert.equal(tool('Bash',{command:'git config alias.demo "!echo --get ok"'}).status,2,'alias值內的唯讀字詞不是選項');
+assert.equal(tool('Bash',{command:'git config alias.demo status # --get'}).status,2,'註解中的唯讀字詞不是選項');
+writeFileSync(join(root,'check.mjs'),'export const ok = true;\n');
+for(const script of ['check.mjs','missing.mjs'])assert.equal(tool('Bash',{command:'node '+script+' && git commit -m "fix: x"'}).status,2,'腳本掃描不得跳過提交檢查');
+writeFileSync(join(root,'cleanup.mjs'),'import fs from "node:fs"; fs.rmSync("C:/known-fixture", {recursive:true});\n');
+assert.equal(tool('Bash',{command:'node cleanup.mjs && git commit -m "fix: x"'}).status,2,'提示不能跳過缺印章拒絕');
+assert.equal(tool('Bash',{command:'echo hi > out.txt'}).status,2);
+assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
+const stamp=join(root,'.shiftblame/tmp/commit-stamp.json');
+writeFileSync(stamp,JSON.stringify({message:'fix: x',cwd:root,issuedAt:new Date().toISOString()}));
+assert.equal(tool('Bash',{command:'git commit -m "fix: y"'}).status,2);assert.ok(existsSync(stamp));
+assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,0);assert.ok(!existsSync(stamp));
+assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
+const stray=join(root,'outside');mkdirSync(stray);
+r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:stray,hook_event_name:'SessionStart'})});
+assert.equal(r.status,0);assert.ok(!existsSync(join(stray,'.shiftblame')));
 console.log('sb-hooks: pass');

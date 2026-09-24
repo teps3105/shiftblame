@@ -7,8 +7,6 @@ import { fileURLToPath } from 'node:url';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
 const hook = fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs', import.meta.url));
-const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
-assert.match(readme, /僅在合法 ended 狀態接受目前 slug 的精確 `merge <slug>`/);
 const root = mkdtempSync(join(tmpdir(), 'sb-closeout-'));
 process.on('exit', () => { assert.ok(resolve(root).startsWith(resolve(tmpdir()) + sep)); rmSync(root, { recursive: true, force: true }); });
 const cwd = join(root, 'repo');
@@ -51,9 +49,9 @@ ok(git('config', '--add', 'remote.published.push', ':obsolete'));
 // 以下報告與狀態只屬隔離 fixture；驗證格式例外不延伸至未歸檔工作。
 const report = join(cwd, '.shiftblame/tmp/merge-review.md');
 writeFileSync(report, '# 隔離測試報告\n此為合併提交閘的合成測試資料，不代表真實外部檢閱或產品驗收。\n對抗判定：通過\n');
-assert.equal(run('commitmsg', 'merge old').status, 1, 'intent 不接受合併格式');
+assert.equal(run('commitmsg', 'merge old').status, 0, '訊息不創造合併授權；intent 可發一般提交章');
 save({ ...state(), node: 'done' });
-assert.equal(run('commitmsg', 'merge old').status, 1, 'done 尚未歸檔不接受合併格式');
+assert.equal(run('commitmsg', 'merge old').status, 1, 'legacy done 保持驗收來源穩定');
 exitFixture();
 // —— sb end 一條龍收尾：歸檔→偵測基底→--no-ff 合併（訊息固定 merge <slug>）→內建查證→留痕→刪本機分支——
 ok(run('end', '--adversarial', '--boss-ok'));
@@ -72,8 +70,8 @@ assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/push-only'));
 assert.equal(state().closeout.remotes.some(r => r.ref === 'refs/heads/obsolete'), false, '無關刪除refspec不是舊工作清理目標');
 assert.match(run('closeout', '--base', 'trunk').stderr, /收尾已完成留痕/, '收尾已完成的 slug 不再收 closeout（事後查證工具）');
 ok(run('commitmsg', 'merge old')); // 2.4.0：ended 接受固定合併訊息——提交審核已移除，僅格式＋印章
-for (const message of ['merge other', 'merge: old', 'merge old extra', 'merge old\n', 'merge old\r']) {
-  assert.equal(run('commitmsg', message).status, 1, `拒絕非精確合併訊息 ${JSON.stringify(message)}`);
+for (const message of ['', 'merge old\n', 'merge old\r']) {
+  assert.notEqual(run('commitmsg', message).status, 0, `拒絕空白或多行訊息 ${JSON.stringify(message)}`);
 }
 ok(run('commitmsg', 'merge old'));
 const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
@@ -134,8 +132,7 @@ assert.match(run('state').stdout, /ended＋已完結/, 'state 讀出完結態');
 assert.equal(run('init', '--main').status, 1, '重複完結即拒');
 assert.match(run('init', '--main').stderr, /已完結/);
 // 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 end 內建查證留痕）；正常 type 訊息走格式閘＋發章。
-assert.equal(run('commitmsg', 'merge old').status, 1, '完結後固定合併訊息失效');
-assert.match(run('commitmsg', 'merge old').stderr, /已完結/);
+assert.equal(run('commitmsg', 'merge old').status, 0, '完結後仍可發一般提交章，訊息不替代合併證據');
 assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
 assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
 assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
@@ -214,7 +211,7 @@ const valid = state();
 save({ ...valid, closeout: { ...valid.closeout, slug: 'different' } });
 rejectInit(/接入異常/); // 不屬於同一 slug 的 closeout 在統一狀態檢查即拒絕。
 save(valid);
-// 当前停在其他功能分支也只能從查證的基底出發。
+// 當前停在其他功能分支也只能從查證的基底出發。
 ok(git('checkout', '-b', 'unrelated', initial));
 ok(run('init', 'next', 'feat'));
 assert.equal(tip(), git('rev-parse', 'trunk').stdout.trim());
