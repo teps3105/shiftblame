@@ -12,6 +12,7 @@ import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:pat
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
+import { runHandoff } from './handoff.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -61,6 +62,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
+  console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
   console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type]                 建立已授權 slug；type 預設 feat\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查非空單行、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊\n  sb --help\n\nslug：intent → requirement → research → plan → test → build → verify\n技術問題可回相鄰責任段修正；明確的新需求以 next intent 開新輪。\nintent→requirement 用 --boss-ok 承接既有開工授權。\n時點 1 在 requirement→research，時點 2 在 verify 出口；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext intent --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
@@ -796,6 +798,7 @@ function cmdState() {
   if (['missing', 'uninitialized', 'direct'].includes(kind)) {
     out(kind === 'direct' ? '直接實行：合法無段位紀錄；沒有 slug。' : '尚未初始化：沒有已接入的 slug；既有 hooks 紀錄保持原值。');
     out('經 shiftblame:think 依老闆授權路由：不開 slug 可直接實行；明確開 slug 才執行 sb init <slug>。狀態可辨識不等於批准。');
+    out('直接作業交接：sb handoff list；選定具名工作後以 sb handoff show <task> 讀取，不自動載入。');
     return;
   }
   if (st?.node === 'ended') {
@@ -803,6 +806,7 @@ function cmdState() {
     if (st.concludedAt) {
       out(`slug: ${st.slug}   狀態：ended＋已完結（${st.concludedAt}）——base 分支直接作業中（直接實行語意）`);
       out('  提交走 sb commitmsg（正常 type 訊息）；開新工作：經 shiftblame:think 對齊後 sb init <新slug>');
+      out('  直接作業交接：sb handoff list；選定具名工作後以 sb handoff show <task> 讀取，不自動載入。');
       return;
     }
     out(`slug: ${st.slug}   狀態：ended（已 pass 結束，${st.endedAt}）`);
@@ -1132,6 +1136,12 @@ function cmdCommitmsg(msg) {
 // ———— main ————
 
 const [cmd, ...rest] = process.argv.slice(2);
+// handoff 自行由 Git 錨定 canonical repo；安全檢查前不得由既有遙測寫入任何目錄。
+if (cmd === 'handoff') {
+  if (rest.includes('--help')) usage(0);
+  try { process.exitCode = runHandoff(rest); }
+  catch (error) { console.error(`FAIL\n  ✗ ${error.message}`); process.exitCode = 1; }
+} else {
 // sb usage 事件：每次調用（子命令＋參數摘要）落 tmp JSONL——sb 呼叫頻譜的機械觀測層
 // （老闆可隨時清理該檔；缺檔自動重建；觀測失敗靜默——遙測失效不影響本命令執行）。
 try {
@@ -1165,4 +1175,5 @@ switch (cmd) {
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   case 'vault': cmdVault(); break;
   default: usage();
+}
 }

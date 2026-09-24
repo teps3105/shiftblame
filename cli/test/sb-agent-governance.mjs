@@ -5,7 +5,7 @@ import {join,dirname,resolve} from 'node:path';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const json=p=>JSON.parse(readFileSync(join(root,p),'utf8'));
 const manifest=json('.codex-plugin/plugin.json');
-assert.equal(manifest.version,'2.7.3');
+assert.equal(manifest.version,'2.8.0');
 for(const p of ['package.json','cli/package.json'])assert.equal(json(p).version,manifest.version);
 assert.equal(json('package.json').bin.sb,'cli/bin/sb.mjs');
 const hooks=json('hooks/hooks.json').hooks;

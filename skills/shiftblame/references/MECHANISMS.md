@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.7.3
+revision: 2.8.0
 ---
 # 執行介面與界線
 
@@ -20,6 +20,7 @@ flow-state 記錄節點、需求契約、審查邊及有限觀測欄位；對話
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb end --adversarial --boss-ok 在 verify 及使用者終審後歸檔並整合。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。sb vault 僅在使用者要求管理 Obsidian 顯示時使用。
+- sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
 
 ## Hooks
 

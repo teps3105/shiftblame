@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 2.7.3
+revision: 2.8.0
 ---
 # 核對真正結果
 

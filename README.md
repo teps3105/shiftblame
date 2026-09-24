@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.7.3**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.8.0**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -12,6 +12,24 @@ slug 有兩個使用者決策時點：G1 需求完成後，以及 verify 驗收�
 - [理解意圖](skills/think/SKILL.md)、[整理文件](skills/rewrite/SKILL.md)、[保存](skills/save/SKILL.md)、[恢復](skills/resume/SKILL.md)、[丟棄](skills/dice/SKILL.md)。
 - [CLI 與 hooks](skills/shiftblame/references/MECHANISMS.md)：狀態、契約與攔截邊界。
 - [SLUG 與 G1–G3 模板](skills/shiftblame/assets/SLUG.md)、[SOP](skills/shiftblame/assets/SOP.md)、[ROADMAP](skills/shiftblame/assets/ROADMAP.md)。
+
+階段內依實際問題取用方法：難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，功能按[完整行為片段與依賴](skills/shiftblame/references/PLAN.md)推進，[測試](skills/shiftblame/references/TEST.md)使用可觀察介面與獨立預期值，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質。技術選擇可透過[決策依賴與原型](skills/shiftblame/references/RESEARCH.md)取證，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
+
+[治理詞彙](skills/shiftblame/references/GLOSSARY.md)提供概念定義；[文件方法](skills/shiftblame/assets/DOCS.md)說明按需讀取入口、領域詞彙與長期決策理由。這些方法依情境使用，技術工作沿用既有授權。[方法來源](skills/shiftblame/references/SOURCES.md)列出借鑑依據。
+
+## main 模式交接
+
+在目前已授權分支直接工作，不需要建立 slug；main 模式也適用於名為 trunk 等其他分支。保存時先寫好 Markdown 交接，記錄目標與授權來源、已完成／未完成、使用者既有變更、證據及下一步，再執行：
+
+```sh
+sb handoff save release-280 .shiftblame/tmp/release-280-notes.md
+sb handoff list
+sb handoff show release-280
+```
+
+每個具名工作保存於 `.shiftblame/tmp/main/<task>/handoff.json`；快照包含交接文字、repo、分支、HEAD 及索引／工作樹指紋，允許未提交變更。重存同名工作採原子更新，其他工作互不覆蓋；恢復時明確選工作並核對差異。命令不切分支、不還原產品檔案、不更改 flow-state；快照用於定位，授權與驗收仍回到原始來源。
+
+`sb init --main` 是已結束 slug 的收束操作，不是開始直接工作的必要步驟。活動 slug 仍使用 SLUG 交接回指。完整保存／恢復與例外處理見 [main 交接機制](skills/shiftblame/references/HANDOFF.md)、[save](skills/save/SKILL.md)、[resume](skills/resume/SKILL.md)。
 
 ## 安裝與更新
 
@@ -59,4 +77,4 @@ npm test --prefix cli
 node cli/bin/sb.mjs state
 ```
 
-測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交與 hook 事件。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。
+測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件，以及具名交接保存、完整性與 Git 差異辨識。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。

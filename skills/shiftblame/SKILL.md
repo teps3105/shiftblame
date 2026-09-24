@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.7.3"
+  version: "2.8.0"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；依工作規模使用直接實作或既有 slug 流程。
 ---
 # Shiftblame
@@ -20,6 +20,8 @@ description: 以明確授權、需求契約、獨立審查與真實驗收管理�
 
 直接實作：理解範圍 → 修改與適當驗證 → 檢閱結果 → 提交與交付。保護使用者既有變更，文件依維護與交付需要建立。
 
+main 模式是在已授權分支直接作業，不要求分支一定名為 main，也不必建立 slug。需要跨回合或交接時，依 [save](../save/SKILL.md) 保存具名工作，再由 [resume](../resume/SKILL.md) 核對接續；交接不改變工作模式或授權。
+
 slug 以 intent → requirement → research → plan → test → build → verify 記錄目前責任，使用 sb next 切段。G1 定義需求，G2 記技術決策，G3 記實作與驗收安排；內容依需求複雜度縮放。
 
 - 時點 1：G1 完成後，獨立檢閱需求是否忠於意圖；修正必修項，再由使用者判定，requirement → research 帶 --adversarial 與 --boss-ok。
@@ -27,7 +29,7 @@ slug 以 intent → requirement → research → plan → test → build → ver
 - 旗標只記錄已取得的真實授權。G1 定義區於時點 1 封存；契約變更重新核准。未變且仍在原授權內的契約可沿用。
 - 中鏈工作由代理自主推進。技術證據推翻方案時，回責任階段修正受影響成果，再驗證續行。只有實質改變需求或授權才重走 intent；續行、進度詢問與技術補充沿用目前需求。
 
-審查方法見 [AUDIT](references/AUDIT.md)。審查意見由主代理核對並負責，追加獨立意見依未解爭議或證據缺口決定。
+審查時依 [AUDIT](references/AUDIT.md) 分開核對需求符合度與工程品質。審查意見由主代理核對並負責，追加獨立意見依未解爭議或證據缺口決定。
 
 ## 分工、進度與完成
 
@@ -59,10 +61,11 @@ G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆�
 
 啟動先確認目標 repo、分支、工作樹與 sb state；存在活動流程時載入其 SLUG 與當前需要的 G 檔。SOP／ROADMAP 及過往決策依任務相關性讀取。恢復時用檔案和 git 核對關鍵狀態，摘要用於定位，正式來源用於核對；依相關性及變更範圍選擇讀取內容。
 
-- 需求：[REQUIREMENT](references/REQUIREMENT.md)
-- 技術研究：[RESEARCH](references/RESEARCH.md)
-- 實作及驗收計畫：[PLAN](references/PLAN.md)
-- 測試、實作、驗收：[TEST](references/TEST.md)、[BUILD](references/BUILD.md)、[VERIFY](references/VERIFY.md)
-- CLI、hooks 與契約邊界：[MECHANISMS](references/MECHANISMS.md)
-- 跨模組結構變更：[STRUCTURE](references/STRUCTURE.md)
-- 文件與模板：[DOCS](assets/DOCS.md)、[SLUG](assets/SLUG.md)、[SOP](assets/SOP.md)、[ROADMAP](assets/ROADMAP.md)
+- 翻譯需求、釐清範圍或定義可觀察結果：[REQUIREMENT](references/REQUIREMENT.md)；治理詞義有歧義時查 [GLOSSARY](references/GLOSSARY.md)。
+- 選型、待決問題或需用原型取證：[RESEARCH](references/RESEARCH.md)。
+- 安排片段、依賴與驗收：[PLAN](references/PLAN.md)；建立 slug 文件時使用 [SLUG](assets/SLUG.md)。
+- 選擇測試介面及斷言：[TEST](references/TEST.md)；整合與提交：[BUILD](references/BUILD.md)；核對交付結果：[VERIFY](references/VERIFY.md)。
+- 難定位、反覆修補或原症狀未消失：[DEBUG](references/DEBUG.md)。
+- CLI 操作及保護邊界：[MECHANISMS](references/MECHANISMS.md)；main 保存或恢復：[HANDOFF](references/HANDOFF.md)。
+- 模組邊界、介面選擇或跨模組重構：[STRUCTURE](references/STRUCTURE.md)。
+- 編修方法、術語或長期決策文件：[DOCS](assets/DOCS.md)；建立專案操作或方向文件：[SOP](assets/SOP.md)、[ROADMAP](assets/ROADMAP.md)。
