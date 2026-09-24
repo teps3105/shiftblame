@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"/>
   <img src="https://img.shields.io/badge/Made%20with-Markdown-1a1a1a.svg" alt="Made with Markdown"/>
   <img src="https://img.shields.io/badge/RFC-2119-6f42c1.svg" alt="RFC 2119"/>
-  <img src="https://img.shields.io/badge/version-2.7.1-2ea44f.svg" alt="version 2.7.1"/>
+  <img src="https://img.shields.io/badge/version-2.7.2-2ea44f.svg" alt="version 2.7.2"/>
 </p>
 
 ---
@@ -28,7 +28,7 @@ shiftblame 用一張人類可讀的向量拓樸，約束 Agent 如何調控時�
 - **A2 對話由平台承載** — 對話事實（老闆輸入時序與理解授權）由平台 session 承載，對話流零落檔、零雜湊綁定；agent 經 shiftblame:think 路由理解，調用 args＝**理解宣告**於對話直接揭露（理解有誤即越權——老闆當場看到，終審承擔）；--boss-ok 旗標即章（機械驗對抗條目新鮮度）；對話摘要不作數。
 - **A3 意圖先於行動** — 所有老闆輸入第一步路由回 shiftblame:think，不字面執行；理解以 args 於對話揭露，未理解就行動由對話可見性＋老闆終審承擔。
 - **A4 七段圓環與旗標切段** — intent 承載意圖；requirement→research→plan 定義需求、技術與計畫，test→build→verify 落地並檢驗。**依證據回退修正**：相鄰工作段雙向連通（包含 test→plan），代理依問題歸屬選擇工作段，修正後重驗受影響成果再前進。技術修正保留已核准的 G1、不計返工輪；需求或授權變更依 A3 重走 intent。段間仍以 sb next 同步寫入責任。
-- **A5 審核兩時點** — 時點 1 對抗（requirement→research 邊——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈、錯誤處置完整性；出口＝時點 2 對抗條目＋老闆終審章同一邊）；對抗在前、老闆判定在後，對抗 MUST 外部唯讀子代理（無自代介面）；中鏈零審核（build→verify 機械推進：E2E 全綠＋working tree 乾淨即過），段內提交僅 sb commitmsg 機械格式閘；研究／返工以外部調用打底（外部性閘——externalEvidence 機械驗，大型研究 MUST 外部唯讀子代理承擔）。
+- **A5 審核兩時點** — 時點 1 對抗（requirement→research 邊——G1 準則建立後審意圖→需求翻譯）與時點 2 對抗（verify 出口邊——真驗收完成、G1 回指閉環後審驗收結果：GWT 回指、假綠燈、錯誤處置完整性；出口＝時點 2 對抗條目＋老闆終審章同一邊）；對抗在前、老闆判定在後，對抗 MUST 外部唯讀子代理（無自代介面）；中鏈零審核（build→verify 機械推進：E2E 全綠＋working tree 乾淨即過），段內提交僅 sb commitmsg 機械格式閘；研究／返工以外部調用打底（事實由對話呈現承載——2.7.2 機械閘已除，外部證據機械綁定與真實使用脫鉤；大型研究 MUST 外部唯讀子代理承擔）。
 - **A6 行為證據（真驗收）** — 驗收依據＝行為是否真的發生，不是測試燈號；verify 把 G1 每條 GWT 當驗收劇本實際操作與觀察，行為證據（節錄快照）落回指區；假測試（無斷言、測實作細節、mock 過度、規模溢出）判返工。
 - **A7 寫入分區（RAM/ROM）** — G1~G3／SLUG＝ROM（定義區綁定義邊、回指區綁落地邊，時點 1 邊 hash 封存 G1 契約）；tmp＋flow-state＝RAM；commit 由秘書獨佔、必過 sb commitmsg（hooks 驗章焚章）；.shiftblame/ 經 .gitignore 排除。
 - **A8 曝光制衡與停等** — **迴圈斷路器**擋行為模式而非數量（無變更重跑即擋；擋後逐字重發＝升級自動回 intent 補正 G 檔；升級後仍逐字重發＝本回合封禁；寫入一出現即全清）；停等位置導向（中鏈段位與對抗未完成的決策邊＝擋停一次——intent 與對抗已完成的決策邊停等正當，待決由回覆說明承載）；觀測落 sb-usage.jsonl（計數純觀測零干預）——工作做到完成為止，老闆沉默不停。
@@ -151,7 +151,7 @@ shiftblame 是一個通用 skills plugin 套件，所有 skill 定義位於 [`sk
 - `git commit` 驗留痕；`sb` CLI 一律錨定專案根。閘門只讀 git 事實與 flow-state.json——`.shiftblame/tmp/` 是唯一自由傾倒區，流程零依賴。
 - **hooks 為單一 `command` 型配置，多平台相容**（ZCode 與 Codex 的 hooks schema 交集：`command` 型＋`${CLAUDE_PLUGIN_ROOT}`（兩端皆展開）＋秒級 `timeout`）——同一份 hooks.json 兩端生效，不為個別平台綁專屬配置。
   - ZCode 安裝 plugin 後 hooks 直接生效；Codex（0.149+，hooks 已 stable 預設啟用）安裝或更新 plugin 後須在 CLI 內以 `/hooks` 審閱並信任一次（信任綁定 hook 檔 hash，hook 變更後需重新信任——未信任時 hooks 不跑，CLI 閘擋時會附 hooks 健康警示）。
-- **hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體）——CLI 的外部證據閘被擋時對照心跳區分「老闆未授權」（心跳新鮮）與「hooks 故障／未信任」（心跳停滯或無記錄——記錄缺失≠授權缺失，修 hooks 而非繞閘；fail-closed 不變，診斷只揭露不降級）。
+- **hooks 心跳**：每次 hooks 成功執行更新 `flow-state.json` 的 `hooksHeartbeat` 欄位（運行狀態單一載體——hooks 健康對照源）。
 - hooks 故障時靜默放行，不阻斷工作。
 
 **安裝來源（開發與發布隔離）**
@@ -292,10 +292,5 @@ MIT License. 不接受外部貢獻。
   - 只有確定未忽略才補一行，沿用原換行格式；Git 查詢失敗則提示並保留原檔。
   - 非 Git 目錄採有限的直接規則辨識，接受 LF／CRLF 與根目錄前綴。
   - 忽略規則檢查不改動已追蹤檔案的索引，staged 系統檔仍由提交閘門攔截。
-- 外部查證辨識＝跨平台通用結構：hooks 標記、CLI 閘門與狀態驗證共用同一份判準（`cli/bin/external-tools.mjs` 單一事實來源）＝內建精確名單＋repo 設定擴充。
-  - 內建名單涵蓋各平台已查證的註冊事件名（ZCode `WebSearch`／`WebFetch`／`Agent`、Codex 實際事件名 `webrun`、`collaborationspawn_agent`、`collaborationfollowup_task` 與介面名 `web.run`／`web__run`／`functions.web__run`／`spawn_agent` 族、`mcp__web_reader__webReader` 等）——精確全等，大小寫／相近名／內嵌字串不計。
-  - 設定擴充 `.shiftblame/external-tools.json`：`{ "tools": ["精確工具名", "mcp__server__"] }`——新平台或新 MCP server 免改框架碼即可登錄；僅 git 追蹤且工作樹乾淨時生效（設定內容經提交審查面，agent 未提交的自寫設定不生效——防自肥外部性閘）；`mcp__` 開頭且 `__` 結尾的條目以 server 為信任單位承接其全部工具（以 `__` 字面分段——裸 `mcp__` 整份視為格式無效）。
-  - 設定檔的提交路徑：`.shiftblame/` 受系統檔不入庫閘約束，agent 的 staged 會被擋——登錄＝由老闆在 hooks 外手動 `git add -f`＋提交（被 gitignore 但強制追蹤，兩性質並存）。
-  - 設定失效的後果：externalEvidence 已記錄設定工具名後，設定轉為未追蹤／未提交變更或被刪除時，當前 flow-state 分類即轉 invalid（接入異常封閉，fail-closed）——恢復＝還原或提交該設定檔。
-  - 不把 `functions.exec` 的程式碼文字或未登錄的 MCP 名稱當成外部證據，包裝器須由平台發出實際內層工具事件。
+- 外部查證辨識已隨外部性閘移除（2.7.2）：機械事實（工具名白名單比對＋`.shiftblame/external-tools.json` 設定擴充）與真實使用脫鉤——閘在真實流程中不觸發、只生誤擋。外部調用事實改由對話呈現承載（A2）：調用工具、查證對象與證據落點於對話揭露，G2 落證據本身；偽造抽查承擔。舊 flow-state 的 外部證據殘留鍵讀取即剝（migrateStreams 兼容清理）。
 - 初始化保留既有紀錄：純 hooks 紀錄與已歸檔的合法 ended 可初始化，進行中或異常流程保持原樣；狀態診斷提示下一個入口。

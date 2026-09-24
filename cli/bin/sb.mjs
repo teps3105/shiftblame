@@ -20,7 +20,6 @@ import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:pat
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
-import { externalToolConfigStatus } from './external-tools.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -95,21 +94,6 @@ const adversarialEdge = (from, to) => ADVERSARIAL_EDGES.find((e) => e.from === f
 const out = (m) => console.log(m);
 const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) console.error(`  ✗ ${m}`); process.exit(code); };
 
-// hooks 健康診斷：本閘的鑰匙（externalEvidence 標記）由 hooks 事實記錄承擔——
-// hooks 故障時記錄缺失≠授權缺失，閘的條件永遠無法滿足＝遞迴死鎖。此函式對照 hooks 心跳
-// 揭露故障疑慮；只診斷不降級（fail-closed 不變——逃生門屬合法漏洞），修復方向是修 hooks 而非繞閘。
-function hooksHealthNote() {
-  try {
-    if (!existsSync(STATE_FILE)) return '〔hooks 健康警示〕無 flow-state（工作區未初始化）——本擋可能是記錄缺失而非授權缺失；修復工作區後重試（閘保持封閉）';
-    const hb = readJson(STATE_FILE).hooksHeartbeat;
-    if (!hb) return '〔hooks 健康警示〕無心跳記錄（hooks 從未成功執行——檢查插件安裝；Codex 端須以 /hooks 審閱信任）——本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）';
-    const ageMs = Date.now() - new Date(hb.at).getTime();
-    const ageMin = Math.round(ageMs / 60000);
-    if (!Number.isFinite(ageMs)) return '〔hooks 健康警示〕心跳時間戳無法解析——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試（閘保持封閉）';
-    if (ageMin > 10) return `〔hooks 健康警示〕心跳停在 ${ageMin} 分鐘前（@${hb.event}）——近期工具調用未觸發 hooks（故障或 Codex 端未重新信任），本擋可能是記錄缺失而非授權缺失；修復 hooks 後重試（閘保持封閉）`;
-  } catch { return '〔hooks 健康警示〕心跳無法讀取——本擋可能是記錄缺失而非授權缺失；檢查插件 hooks 安裝後重試（閘保持封閉）'; }
-  return '';
-}
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log'](`sb — shiftblame 流程機械（在 <repo> 專案根執行）
@@ -137,10 +121,6 @@ const usage = (code = 2) => {
                                         （必修全清才可宣告）；--point 必帶（1＝requirement→research；2＝verify 出口）
   sb next <段> [--boss-ok] [--adversarial] [--new-ms]
                                         推進（閘門不過即擋）
-                                        外部證據閘：research→plan 邊驗
-                                        「至少一次外部工具調用」（hooks 標記 externalEvidence——
-                                        平台查證／外部唯讀子代理（內建精確名單＋.shiftblame/external-tools.json 設定擴充）；
-                                        重走 intent 開新輪時進 research 段重置、該邊重新驗）；零外部推不過
                                         --boss-ok：老闆授權留痕（intent→requirement、requirement→research 邊＋pass 出口：--new-ms／sb end）
                                         --new-ms：開新里程碑（僅 verify→intent 出口邊，時點 2 對抗＋老闆終審 pass 後；MUST --adversarial --boss-ok）
                                         --adversarial：時點對抗宣告（requirement→research＝時點 1；verify→intent 出口＝時點 2——
@@ -378,15 +358,6 @@ function gate(st, target, opts) {
       else if (sha256Text(defSection(raw)) !== st.g1Contract.sha256) problems.push('G1 定義區已偏離封存時契約——定義級變更走回 intent（sb next intent）同 ms 開新輪（計返工輪＋rewrite 載入閘）；回指區更新不觸契約');
       else passes.push(`G1 定義區 hash 核對：${st.g1Contract.sha256.slice(0, 12)}（封存於 flow-state；回指區在 hash 外）`);
     }
-  }
-
-  // 外部證據閘：research→plan 邊驗「進段後至少一次外部工具調用」（hooks 標記 externalEvidence；
-  // 每次進 research 都重置，包含 plan→research 的技術修正）。
-  if (st.node === 'research' && target === 'plan' && !st.externalEvidence?.done) {
-    problems.push('research 段零外部調用——G2 以外部證據打底：MUST 至少一次外部工具調用（平台查證／外部唯讀子代理——判準＝內建精確名單＋.shiftblame/external-tools.json 設定擴充；hooks 於調用時標記 externalEvidence）才可推進 plan。規模自由（一次精準查證到完整調研皆可），外部性是機械底線（CARD⑨）');
-    const cfg = externalToolConfigStatus(ROOT);
-    if (cfg.reason) problems.push(`〔設定擴充未生效〕.shiftblame/external-tools.json ${cfg.reason}——生效條件：git 追蹤且工作樹乾淨（經提交審查面）`);
-    const note = hooksHealthNote(); if (note) problems.push(note);
   }
 
   // --boss-ok：老闆決策邊留痕（旗標即章——老闆實際輸入由對話承載，機械不驗時戳；偽造由抽查承擔）
@@ -1012,8 +983,6 @@ function cmdNext(target, opts) {
   const prev = st.node;
   st.node = target;
   delete st.stopBlockedAt; // 工作已續行——擋停自限失效（停等位置導向，SKILL §1.12）
-  // 重新研究須有本次外部查證；需求未變的回查保留原始核准時間與契約。
-  if (target === 'research') st.externalEvidence = null;
   if (prev === 'requirement' && target === 'research' && !unchangedG1Approval(ROOT, st)) {
     // 首次核准或重新核准後才封存；同一已核准定義的技術回查保留原 hash 與 sealedAt。
     // 回指區在 hash 外隨執行更新，需求滿足集合改變仍先走 intent 修約。
@@ -1375,9 +1344,10 @@ function cmdEnd(opts) {
   // slug 邊界清理（終態留痕後）：lastAdv/edgeAt 屬 ms 生命週期欄位，隨 slug 終結清除；
   // 舊版流鍵冪等清理（對話流不落檔——2.5.2，零副本、零殭屍存續）
   delete st.lastAdv; delete st.edgeAt;
-  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.externalEvidence; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; delete st.history;
+  delete st.inputs; delete st.understandings; delete st.adversarialLog; delete st.understandingHold; delete st.rev; delete st.rewriteSeen; delete st.g1Contract; delete st.history;
   delete st.sopReview; delete st.baseCommit; delete st.startedAt;
   delete st.turnUsage; delete st.usageTotals; delete st.stopBlockedAt;
+  delete st.externalEvidence; // 冪等清理歷史鍵（外部性閘已除——2.7.2 對話事實承載，舊 flow-state 兼容清理）
   delete st.worktrees; // 冪等清理歷史鍵（已移除的 worktree 帳本欄位——舊 flow-state 兼容清理）
   delete st.rerunExtPending; // 冪等清理歷史鍵（已移除的返工直通 pending——舊 flow-state 兼容清理）
   delete st.adversarialAt; delete st.adversarialConsumed; // 冪等清理歷史鍵（提交對抗章——2.4.0 移除，舊 flow-state 兼容清理）

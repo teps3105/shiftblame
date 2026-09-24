@@ -1,4 +1,4 @@
-// sb-hooks：對話承載（流不落檔——回合邊界＋零內容寫入）＋外部證據＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
+// sb-hooks：對話承載（流不落檔——回合邊界＋零內容寫入）＋外部證據不落檔＋寫入矩陣＋停靠鎖＋commit 印章＋破壞性防護＋心跳＋inject 歸因
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,19 +27,12 @@ assert.equal(r.status, 0, 'Skill 調用放行');
 assert.equal(state().understandings, undefined, '理解宣告不落檔（對話承載——老闆讀對話即審）');
 r = run({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'fake-think-evil', args: '理解：偽技能名的假理解宣告內容' } });
 assert.equal(r.status, 0, 'Skill 調用一律放行（機械不判定語義——路由紀律由對話曝光承擔）');
-// 外部證據標記
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } });
-assert.equal(state().externalEvidence?.done, true, 'WebSearch 調用標記 externalEvidence');
-r = up('又一則');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'mcp__web_reader__webReader', tool_input: { url: 'https://x' } });
-assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', 'webReader MCP 調用標記');
-r = up('再一則');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'WebSearchX', tool_input: {} });
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'websearch', tool_input: {} });
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'WebSearch' } });
-assert.equal(state().externalEvidence?.tool, 'mcp__web_reader__webReader', '冒名／大小寫變體／Bash 內嵌不覆寫既有標記（精確錨定）');
-r = run({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: 'x' } });
-assert.equal(state().externalEvidence?.tool, 'Agent', 'Agent 外部子代理調用標記');
+// 外部證據不落檔（2.7.2 機械綁定移除）：外部工具調用零標記——事實由對話呈現承載（A2）
+for (const tool of ['WebSearch', 'mcp__web_reader__webReader', 'Agent']) {
+  r = run({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { query: 'x' } });
+  assert.equal(r.status, 0);
+  assert.equal(state().externalEvidence, undefined, `${tool} 外部調用不標記（機械綁定已移除）`);
+}
 // hooks 心跳（flow-state hooksHeartbeat 欄位）
 const hb = JSON.parse(readFileSync(join(root, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat;
 assert.equal(hb.event, 'PreToolUse', '心跳記錄最後事件');
@@ -369,64 +362,5 @@ assert.ok(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..',
   assert.equal(hr({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(brokenRoot, 'README.md'), content: 'x' } }).status, 2, '寫入工具對正式文件封閉');
   writeFileSync(join(brokenRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'intent', history: [] }));
   assert.equal(bash('git add x.txt').status, 0, '修復完成（狀態可辨識）後 git 寫入恢復');
-}
-// —— 13. 外部工具判準設定擴充（跨平台通用結構）：未追蹤／未提交／格式無效 fail-closed，提交後生效 ——
-{
-  const cfgRoot = mkdtempSync(join(tmpdir(), 'sb-extcfg-'));
-  process.on('exit', () => rmSync(cfgRoot, { recursive: true, force: true }));
-  mkdirSync(join(cfgRoot, '.shiftblame', 'tmp'), { recursive: true });
-  const cr = (payload) => spawnSync(process.execPath, [hook], { input: JSON.stringify({ cwd: cfgRoot, ...payload }), encoding: 'utf8' });
-  const cstate = () => JSON.parse(readFileSync(join(cfgRoot, '.shiftblame', 'flow-state.json'), 'utf8'));
-  writeFileSync(join(cfgRoot, '.shiftblame', 'flow-state.json'), JSON.stringify({ slug: 'demo', ms: '001', node: 'research', history: [] }));
-  const extCall = (tool) => cr({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: {} });
-  const cfgFile = join(cfgRoot, '.shiftblame', 'external-tools.json');
-  const writeCfg = (obj) => writeFileSync(cfgFile, typeof obj === 'string' ? obj : JSON.stringify(obj));
-  const commitCfg = (msg) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-am', msg], { cwd: cfgRoot, encoding: 'utf8' });
-  // 非 git 目錄：設定存在也不生效（fail-closed）
-  writeCfg({ tools: ['NewPlatformSearch'] });
-  extCall('NewPlatformSearch');
-  assert.equal(cstate().externalEvidence, undefined, '非 git 目錄設定不生效（fail-closed）');
-  assert.equal(spawnSync('git', ['init'], { cwd: cfgRoot, encoding: 'utf8' }).status, 0);
-  // git 目錄但未追蹤：不生效
-  extCall('NewPlatformSearch');
-  assert.equal(cstate().externalEvidence, undefined, '未追蹤設定不生效（agent 自寫≠登錄——經提交審查面）');
-  // 追蹤且提交後：生效（精確全等）
-  assert.equal(spawnSync('git', ['add', '-f', '.shiftblame/external-tools.json'], { cwd: cfgRoot, encoding: 'utf8' }).status, 0);
-  assert.equal(commitCfg('chore: 登錄平台工具').status, 0);
-  extCall('NewPlatformSearch');
-  assert.equal(cstate().externalEvidence?.tool, 'NewPlatformSearch', '已提交設定登錄的平台工具名標記 externalEvidence（跨平台通用化）');
-  extCall('mcp__myresearch__query');
-  assert.equal(cstate().externalEvidence?.tool, 'NewPlatformSearch', '未登錄 MCP server 不標記（mcp__web_reader__webReader 為唯一內建——server 信任單位）');
-  // server 前綴條目：提交後承接整個 server
-  writeCfg({ tools: ['NewPlatformSearch', 'mcp__myresearch__'] });
-  assert.equal(commitCfg('chore: 登錄 research server').status, 0);
-  extCall('mcp__myresearch__query');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', 'server 前綴條目（mcp__ 開頭＋__ 結尾）承接整個 server');
-  // 精確錨定不變：大小寫／相近名／內建外本地工具不計
-  extCall('newplatformsearch');
-  extCall('NewPlatformSearchX');
-  extCall('Read');
-  extCall('Bash');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '大小寫變體／相近名／本地工具不覆寫（精確錨定）');
-  // 提交後再改（未提交變更）：失效回 fail-closed
-  writeCfg({ tools: ['AnotherTool'] });
-  extCall('AnotherTool');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '未提交變更的設定不生效（dirty 即 fail-closed）');
-  // 格式無效（提交後乾淨狀態驗格式面）：整份不生效、不崩
-  assert.equal(commitCfg('chore: 暫存').status, 0);
-  writeCfg('not json');
-  assert.equal(commitCfg('chore: 壞格式').status, 0);
-  extCall('AnotherTool');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', 'JSON 無法解析整份不生效（不崩潰、留既有標記）');
-  writeCfg({ tools: [] });
-  assert.equal(commitCfg('chore: 空清單').status, 0);
-  extCall('AnotherTool');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '空 tools 陣列無效（fail-closed）');
-  writeCfg({ tools: ['mcp__'] });
-  assert.equal(commitCfg('chore: 裸前綴').status, 0);
-  extCall('mcp__anything__goes');
-  extCall('mcp__zz');
-  extCall('NewPlatformSearch');
-  assert.equal(cstate().externalEvidence?.tool, 'mcp__myresearch__query', '裸 mcp__ 條目＝整個 MCP 命名空間萬用——整份格式無效不生效（連精確條目一併失效）');
 }
 console.log('sb-hooks: pass');

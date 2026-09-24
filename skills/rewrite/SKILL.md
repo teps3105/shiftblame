@@ -8,7 +8,7 @@ description: 返工重寫紀律——G1~G3／SLUG／SOP／ROADMAP 是當下事�
 
 G1~G3 與 SLUG 的讀者是**下一輪的 agent 與老闆**：讀到的必須是「現在有效的契約與狀態」，不是「曾經發生過什麼」。返工後逐步追加條目、並列新舊版本、留下歷史標記，會讓治理文件淪為補釘串接、前令壓後令——每次返工都讓文件更長、更難讀、更無法辨識當下事實。時序（哪一輪改了什麼）由 flow-state history＋輪次計數承擔；回退修正依主技能 A4 決定工作段，本技能承載成果如何保持當下自洽。
 
-**機械承載（hooks 載入閘——不靠自發）**：修正輪（`sb next intent` 後 rev 有值）寫 G1~G3.md 時，hooks 機械驗證本輪已調用過 `shiftblame:rewrite`（Skill 調用記 `rewriteSeen.rev`，比對當前 rev）——未載入即擋寫入並要求先調用；載入一次後本輪全放行，下一輪重新驗。`sb next intent` 的修正輪訊息會同步提示。天花板如實：閘面＝整檔（hooks 無檔內分區粒度）、非 archive；SLUG.md 不在此閘（秘書層恆可寫——SLUG 收斂紀律由技能承載）；Bash 內直寫 G 檔不在此層（同寫入矩陣殘餘面）；自調 hooks 偽造調用事件可自鑰匙、調用≠消化（同 externalEvidence 天花板——抽查承擔）。
+**機械承載（hooks 載入閘——不靠自發）**：修正輪（`sb next intent` 後 rev 有值）寫 G1~G3.md 時，hooks 機械驗證本輪已調用過 `shiftblame:rewrite`（Skill 調用記 `rewriteSeen.rev`，比對當前 rev）——未載入即擋寫入並要求先調用；載入一次後本輪全放行，下一輪重新驗。`sb next intent` 的修正輪訊息會同步提示。天花板如實：閘面＝整檔（hooks 無檔內分區粒度）、非 archive；SLUG.md 不在此閘（秘書層恆可寫——SLUG 收斂紀律由技能承載）；Bash 內直寫 G 檔不在此層（同寫入矩陣殘餘面）；自調 hooks 偽造調用事件可自鑰匙、調用≠消化（同外部證據標記天花板——抽查承擔）。
 
 先 `load skill: shiftblame`，主對話秘書執行：
 

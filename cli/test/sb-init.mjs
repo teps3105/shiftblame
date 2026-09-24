@@ -22,9 +22,8 @@ function fixture(raw) {
 const at = '2026-09-07T05:20:59.219Z';
 const record = {
   hooksHeartbeat: { at, event: 'SessionStart' },
-  externalEvidence: { done: true, at, tool: 'Agent' },
 };
-for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, record]) {
+for (const initial of [undefined, record]) {
   const f = fixture(initial === undefined ? undefined : JSON.stringify(initial));
   if (initial) {
     const before = readFileSync(f.file, 'utf8');
@@ -48,12 +47,14 @@ for (const initial of [undefined, { hooksHeartbeat: record.hooksHeartbeat }, rec
   assert.equal(f.run('init', 'other').status, 1);
   assert.equal(readFileSync(f.file, 'utf8'), before);
 }
-// hooks 相容工具紀錄皆可由 init 保留。
-for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']) {
-  const initial = { ...record, externalEvidence: { done: true, at, tool } };
+// 殘留 externalEvidence（外部性閘已除——2.7.2）隨 init 寫回剝除，hooks 紀錄本體保留。
+{
+  const initial = { ...record, externalEvidence: { done: true, at, tool: 'Agent' } };
   const f = fixture(JSON.stringify(initial));
-  assert.equal(f.run('init', 'demo').status, 0, tool);
-  assert.deepEqual(JSON.parse(readFileSync(f.file, 'utf8')).externalEvidence, initial.externalEvidence);
+  assert.equal(f.run('init', 'demo').status, 0);
+  const st = JSON.parse(readFileSync(f.file, 'utf8'));
+  assert.equal(st.externalEvidence, undefined, '殘留外部證據鍵隨 init 剝除（機械綁定已移除）');
+  assert.deepEqual(st.hooksHeartbeat, initial.hooksHeartbeat, 'hooks 紀錄本體由 init 保留');
 }
 // 純紀錄檔含 2.0x 老流鍵（stamps／unlockLog）——讀取端 migrateStreams 剝除後歸 direct 態：init 成功、寫回即瘦身（舊鍵零殘留）。
 {
@@ -65,12 +66,10 @@ for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__
   assert.equal(st.slug, 'demo');
 }
 const invalid = [
-  { ...record, externalEvidence: { done: true, at, tool: 'functions.exec' } },
-  { ...record, externalEvidence: { done: true, at, tool: 'web.runX' } }, null, [], { slug: null }, { node: 'mystery' },
+  null, [], { slug: null }, { node: 'mystery' },
   { ...record, unknown: true }, { hooksHeartbeat: {} }, { turnUsage: 'bad' },
   { turnUsage: { startedAt: 'bad' } },
   { hooksHeartbeat: { at: '2026-02-30T05:20:59.219Z', event: 'SessionStart' } },
-  { ...record, externalEvidence: { done: false, at, tool: 'Agent' } },
   { slug: 'old', ms: '001', node: 'intent' },
   { slug: 'old', ms: '001', node: 'ended' }];
 for (const raw of [...invalid.map(x => JSON.stringify(x)), '{broken']) {

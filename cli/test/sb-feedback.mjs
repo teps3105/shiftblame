@@ -44,11 +44,10 @@ test('測試揭露計畫錯誤後能回計畫與研究，修正再向前且保�
   assert.equal(f.read().node, 'plan');
   assert.equal(f.event({ hook_event_name: 'PreToolUse', tool_name: 'Write', tool_input: { file_path: join(f.ms, 'G3.md'), content: g3 } }).status, 0, '回計畫後取得 G3 寫入權');
   f.next('research');
-  assert.equal(f.read().externalEvidence, null, '重新研究不能沿用前次外部查證標記');
-  assert.equal(f.run('next', 'plan').status, 1, '缺本次研究證據時先完成研究');
-  writeFileSync(join(f.ms, 'G2.md'), g2 + '\n採用已驗證的輸入邊界處理。');
-  f.event({ hook_event_name: 'PreToolUse', tool_name: 'Agent', tool_input: { prompt: '測試夾具：外部查證事件' } });
-  f.next('plan'); writeFileSync(join(f.ms, 'G3.md'), g3); f.next('test');
+  assert.equal(f.read().externalEvidence, undefined, '外部證據欄位已隨機制移除（2.7.2——殘留讀取即剝，零殘留）');
+  writeFileSync(join(f.ms, 'G2.md'), g2);
+  f.next('plan');
+  writeFileSync(join(f.ms, 'G3.md'), g3); f.next('test');
   assert.deepEqual(f.read().g1Contract, f.contract, '純技術回退完整保留需求封存');
   assert.equal(f.read().rev, undefined, '純技術回退不開新輪');
   assert.equal(readFileSync(join(f.root, 'result.test.mjs'), 'utf8').includes('前提'), true, '回退可保留未完成測試，不強迫先提交');

@@ -106,18 +106,20 @@ classify({
 // 2.7.0 升版重新量測：dnd-prototype 開新 slug（character-item-data-foundation）ended→active；
 // wsxt flow-state 已重置（node 空）ended→uninitialized。
 // 2.7.0 後續重新量測（檔案總管過濾輪）：wsxt 已開新 slug——uninitialized→active。
+// 2.7.2 升版重新量測：Trickster-Web 於 2.7.1 後完成 slug（active→ended）；Varellune 完成 slug（active→ended）；
+// ro-server 的 flow-state 已移除（active→missing）；wsxt flow-state 重置為紀錄態（active→direct）。
 const TEN_PROJECT_BASELINE = {
   'CF-Simulator-Godot': 'ended',
-  'Trickster-Web': 'active',
-  Varellune: 'active',
+  'Trickster-Web': 'ended',
+  Varellune: 'ended',
   'Varellune_Document': 'active',
   'dnd-prototype': 'active',
   'gpt-image-mcp': 'uninitialized',
   'moffee-pos': 'invalid',
   'palserver-gui': 'ended',
-  'ro-server': 'active',
+  'ro-server': 'missing',
   shiftblame: 'uninitialized',
-  wsxt: 'active',
+  wsxt: 'direct',
 };
 let scanned = 0;
 for (const [name, expected] of Object.entries(TEN_PROJECT_BASELINE)) {

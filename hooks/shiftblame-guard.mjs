@@ -20,7 +20,6 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
-import { isExternalResearchTool } from '../cli/bin/external-tools.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
 
@@ -70,7 +69,7 @@ const CARD = [ // 核心不變量＝主 SKILL §0 十條公理的運行時壓縮
   '⑥行為證據（A6）：verify＝真驗收執行——GWT 逐條劇本（Given 實際建立→When 實際操作→Then 觀察真實行為）、證據落回指區；驗收依據＝行為是否發生，非測試燈號；未跑必標「未驗」。',
   '⑦寫入分區（A7）：G/SLUG＝ROM（定義區綁定義邊、回指區綁落地邊；返工輪寫 G 前 hooks 驗本輪已調 shiftblame:rewrite）；tmp＋flow-state＝RAM（對話、工作過程與交接文件一律 .shiftblame/tmp/——自由傾倒區）；子代理零 repo 寫入權；staged 系統檔不入庫；路徑 root 錨定絕對展開、git 重定向／alias 攔截；命名與註釋可離開對話辨識、規範溯及既往。',
   '⑧提交（A7）：commit 必過 sb commitmsg（格式＋staged 檢查＋印章；hooks 驗章焚章——審核承載於兩時點）；測試碼＋實作碼同 commit——單功能單提交。',
-  '⑨外部性閘：research→plan 邊與返工首推進邊驗至少一次外部調用（每次進 research 與返工時重置 externalEvidence）；大型研究 MUST 外部唯讀子代理；偽造抽查承擔。',
+  '⑨外部性閘：research 段至少一次外部調用（平台查證／外部唯讀子代理——治理要求，大型研究 MUST 外部唯讀子代理）——事實由對話呈現承載（A2：調用工具、查證對象與證據落點於對話揭露），不作 CLI 機械閘；偽造抽查承擔。',
   '⑩曝光與停等（A8）：對抗—修復—再對抗閉環至零必修項；錯誤逐項顯式處置（錨定當下交付）。迴圈斷路器常開（行為模式判定，非數量閾值——重複次數不是違規，無變化才是：無變更重跑（同操作再現且期間無寫入）即擋；擋後逐字重發＝升級自動重走 intent 補正續行；升級後仍逐字重發＝本回合封禁；寫入後重跑＝新基礎正當放行；非停等期＝互動式迭代——改一點看一點，不一次改完）。停等位置導向（防偷懶停）：中鏈段位（research／plan／test／build）與對抗未完成的決策邊零停靠——擋停一次（單次消費式——放行即焚攔停標記、不代做路由；真外部阻塞再停一次即放行）；intent 與對抗已完成的決策邊（只剩老闆判定）停等正當。回合結束≠流程完成——插入疑問以 commentary 解答後接續已授權未完工作；final 前確認應回退者已回退、應分發者已分發；合法停點＝整體完成／純問答／決策邊待老闆判定／主動 think 停等／明確暫停／取消／實際阻塞（待決由回覆說明承載——對話 A2）；狀態異常修復後重跑 sb state 查證。',
   '⑪基質與修剪（A9）：基質優先——git／平台已答的另造即拆；規則由元行為證據錨定、修剪而非堆疊；SOP／ROADMAP 每 ms 必審（sb sopreview 逐檔三態計數（刪／改／留）＋hash 綁定留痕——開新 ms 前擋；非 slug 期間由 sb commitmsg 每 commit 驗戳記）。',
   '⑫摘要不作數（A2）：壓縮摘要與 context 既有敘述不作規範或現狀來源；規範與現狀以外部實體檔案為唯一權威，引用以當次實際讀檔為據，不一致一律以檔案為準；任務起手與恢復接續（含壓縮後）重載對應檔案。',
@@ -98,9 +97,7 @@ function nodeLine(root) {
     if (st.node === 'requirement') hint = unchangedG1Approval(root, st)
       ? '——回查後 G1 與本 ms 已核准契約完全相同，且無封存後的新意圖；可沿用核准 sb next research'
       : '——G1 定義邊：經查證的現況事實＋BDD 七鍵；初次核准或定義變更後，時點 1 對抗（sb adversarial --point 1）＋老闆 pass（--boss-ok）才進 research';
-    if (st.node === 'research') hint = st.externalEvidence?.done
-      ? `——外部證據已記（@${st.externalEvidence.tool}）；依證據檢驗 G1 前提與 G2 結論，需求疑義回 requirement 查證`
-      : '——外部證據未調用：推進 plan 前 MUST 至少一次外部工具（平台查證／外部唯讀子代理——判準＝內建精確名單＋.shiftblame/external-tools.json 設定擴充（git 追蹤且乾淨才生效））——零外部推不過（CARD⑨）';
+    if (st.node === 'research') hint = '——G2 以外部證據打底：至少一次外部工具調用（平台查證／外部唯讀子代理；大型研究 MUST 外部唯讀子代理）——事實於對話呈現（工具、查證對象與證據落點；A2），不作機械閘；依證據檢驗 G1 前提與 G2 結論，需求疑義回 requirement 查證';
     if (st.node === 'plan') hint = '——G3 定義邊：驗收排程＋實作計畫；研究前提不成立回 research 修正，計畫成立並核對一致後進 test';
     if (st.node === 'test') hint = '——將 G3 寫成可執行測試；計畫操作、依賴或可測性不成立時 sb next plan 修正，保留需求契約與輪次';
     if (st.node === 'verify') hint = '——真驗收執行：G1 GWT 逐條＝驗收劇本（Given 實際建立→When 實際操作→Then 觀察真實行為→證據落回指區；驗收依據＝行為是否發生，非測試燈號）；代理驗出問題時回 build／test 修復，依根因可續退 plan／research；老闆判 fail 或需求修約才重走 intent；驗收完成、G1 回指閉環後時點 2 對抗（sb adversarial --point 2——審驗收結果：GWT 回指、假綠燈）＋老闆終審 pass 出口 next（--new-ms --adversarial --boss-ok）或 end（--adversarial --boss-ok）';
@@ -306,22 +303,9 @@ function recordRewriteSeen(root, tool, toolInput) {
   } catch { /* 狀態異常靜默 */ }
 }
 
-// 外部證據標記：PreToolUse 偵測外部工具調用（外部查證與外部唯讀子代理）。判準由共用模組承擔（單一事實來源）：
-// 內建各平台精確名單＋repo 設定擴充（.shiftblame/external-tools.json——git 追蹤且乾淨才生效）；
-// 精確錨定工具名（冒名、內嵌字串、相近名不標記——平台註冊名是事實）；
-// 記錄 {done, at, tool}。重置由 CLI 承擔（每次進 research 與返工時清）——hooks 只記事實不重置。
-function markExternalEvidence(root, tool) {
-  if (!root) return;
-  const name = String(tool ?? '');
-  if (!isExternalResearchTool(name, root)) return;
-  try {
-    const statePath = join(root, '.shiftblame', 'flow-state.json');
-    if (!existsSync(statePath)) return;
-    const st = JSON.parse(readFileSync(statePath, 'utf8'));
-    st.externalEvidence = { done: true, at: new Date().toISOString(), tool: name };
-    writeFileSync(statePath, JSON.stringify(st, null, 2));
-  } catch { /* 狀態異常靜默 */ }
-}
+// 外部證據標記已隨外部性閘移除（2.7.2）：機械事實（工具名白名單比對）與真實使用脫鉤——閘在真實流程中
+// 不觸發、只生誤擋。外部調用事實改由對話呈現承載（A2——對話承載、抽查承擔）：調用工具、查證對象與
+// 證據落點於對話揭露，G2 落證據本身；治理要求（至少一次外部調用、大型研究 MUST 外部唯讀子代理）留文件層。
 
 // 停點申報曝光行已隨停點申報機制拆除（2.6.3）：待決事項由回覆說明承載（對話承載 A2）——
 // 不落檔、無報告橡皮章；老闆直接讀對話終審（真待決 or 偷懶）。
@@ -396,7 +380,7 @@ function checkGFileMatrix(root, toolInput) {
 // 語義：G1~G3 是當下事實的單一權威——返工輪重寫紀律（定義區整檔重寫、回指區同鍵覆寫，skills/rewrite）不靠自發，
 // 機械驗 rewriteSeen.rev === 當前 rev（每輪重新載入一次，載入後本輪全放行）。閘面＝整檔（hooks 無檔內分區粒度），
 // 非 archive；SLUG.md 不在此閘（秘書層恆可寫——SLUG 收斂紀律由技能承載）。殘餘與天花板（如實）：
-// Bash 內直寫 G 檔不在此層（同寫入矩陣殘餘面）；自調 hooks 偽造 PreToolUse 可自鑰匙（同 externalEvidence 天花板——抽查承擔）；
+// Bash 內直寫 G 檔不在此層（同寫入矩陣殘餘面）；自調 hooks 偽造 PreToolUse 可自寫狀態（同各機械標記天花板——抽查承擔）；
 // 調用≠消化——機械只驗調用事實，重寫品質由 verify 驗收與老闆抽查承擔。
 function checkRewriteGate(root, toolInput) {
   if (!root) return null;
@@ -847,7 +831,6 @@ try {
     const healthError = checkStateHealth(root, tool, cmd, input.tool_input ?? {});
     if (healthError) deny(healthError);
     if (healthy) recordRewriteSeen(root, tool, input.tool_input);
-    if (healthy) markExternalEvidence(root, tool);
     // 回合計數（元行為觀測，零干預）＋迴圈斷路器（行為模式判定——無變更重跑才擋；寫入後重跑＝新基礎正當放行）
     const usage = healthy ? countUsage(root, tool, cmd, input.tool_input ?? {}) : null;
     if (usage?.loopDeny) deny(usage.loopDeny);

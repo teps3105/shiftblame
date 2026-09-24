@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.7.1
+revision: 2.7.2
 ---
 
 # 機制細節（主 SKILL 骨架的下沉承載）
@@ -21,7 +21,7 @@ revision: 2.7.1
 
 ## 3. 如實天花板（通道層，不防刻意偽造）
 
-對話事實由平台 session 承載——框架零落檔即零偽造面：抽查面＝理解宣告（對話中的 Skill args）對照對話實蹟與後續行動（理解是真是假、有無越權，由老闆終審＋抽查承擔），平台不保存對話的平台由平台自身遺跡承擔天花板。手改 flow-state（含 lastAdv／edgeAt／externalEvidence、偽造 edgeAt 條目與 ms 欄）機械不防——抽查面＝對照 git 實蹟與對話實蹟；自調 hooks 偽造 PreToolUse 外部工具事件（餵 WebSearch／Agent 假調用標記 externalEvidence）不防，且 externalEvidence 是單值覆寫欄位（無唯增日誌、重置即失）——外部性閘的抽查面＝G2 記錄的外部證據來源與其結論，對照對話實蹟與工具調用實蹟（老闆抽查承擔）；rewrite 載入閘同屬通道層——自調 hooks 偽造 Skill(shiftblame:rewrite) 調用可自寫 rewriteSeen 開鎖，且調用≠消化（機械只驗調用事實，重寫品質由 verify 驗收與抽查承擔）；對抗宣告無 TTL 且跨老闆輸入存活——sb adversarial 宣告後（無 TTL）舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度由 CLI 對抗邊機械驗（條目晚於基準），報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。理解宣告自身的天花板：理解宣告是無約束的 agent 文本（Skill args），機械不驗——「理解是假的」（老闆說疑問句卻宣告行動許可）對話照樣揭露，語義真假只能靠對話完整展示理解宣告、由老闆終審。此為通道層結構限制，非流程可封閉。寫入攔截的通道層殘餘：agent 以 Bash 行內直譯（python/node 落檔）或直跑腳本檔可繞寫入工具攔截（同寫入矩陣殘餘面，verify 邊樹檢查兜底）。
+對話事實由平台 session 承載——框架零落檔即零偽造面：抽查面＝理解宣告（對話中的 Skill args）對照對話實蹟與後續行動（理解是真是假、有無越權，由老闆終審＋抽查承擔），平台不保存對話的平台由平台自身遺跡承擔天花板。手改 flow-state（含 lastAdv／edgeAt、偽造 edgeAt 條目與 ms 欄）機械不防——抽查面＝對照 git 實蹟與對話實蹟；外部調用事實由對話呈現承載（2.7.2——外部證據機械標記已除：機械事實與真實使用脫鉤，閘在真實流程中不觸發）——抽查面＝G2 記錄的外部證據來源與其結論，對照對話實蹟與工具調用實蹟（老闆抽查承擔）；rewrite 載入閘同屬通道層——自調 hooks 偽造 Skill(shiftblame:rewrite) 調用可自寫 rewriteSeen 開鎖，且調用≠消化（機械只驗調用事實，重寫品質由 verify 驗收與抽查承擔）；對抗宣告無 TTL 且跨老闆輸入存活——sb adversarial 宣告後（無 TTL）舊宣告可為後續未對抗變更發章，且**自寫或重用報告檔**（偽造「對抗判定：通過」、同份報告反覆引用）機械不防——宣告新鮮度由 CLI 對抗邊機械驗（條目晚於基準），報告真實性由老闆抽查 adversarialLog（report 路徑＋verdict）對照 commit 序列與子代理實蹟承擔。理解宣告自身的天花板：理解宣告是無約束的 agent 文本（Skill args），機械不驗——「理解是假的」（老闆說疑問句卻宣告行動許可）對話照樣揭露，語義真假只能靠對話完整展示理解宣告、由老闆終審。此為通道層結構限制，非流程可封閉。寫入攔截的通道層殘餘：agent 以 Bash 行內直譯（python/node 落檔）或直跑腳本檔可繞寫入工具攔截（同寫入矩陣殘餘面，verify 邊樹檢查兜底）。
 
 ## 4. 技術修正與顯式修約（判定圖與開發期間意圖路由）
 
@@ -198,7 +198,7 @@ sequenceDiagram
 
 ## 16. hooks 機械注入（§9 反偏移細節）
 
-plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同步治理事件沿用相同介面）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝外部證據標記與攔停留痕缺失，CLI 閘擋時附 hooks 健康警示——同步治理 hooks 成功執行寫心跳，閘擋對照心跳區分「未授權」與「hooks 故障／未信任」：記錄缺失≠授權缺失，修 hooks 而非繞閘）。同步治理事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（§1——2.6.3 位置導向：中性續行／疑問零位移；新意圖記 lastBossInputAt＋中鏈段位與對抗未完成的決策邊機械推回 intent，對抗已完成的決策邊＝裁決通道零推回）；`PreToolUse` 外部證據標記（判準由 `cli/bin/external-tools.mjs` 單一事實來源承擔：內建各平台精確名單（WebSearch／WebFetch／Agent；web.run（web__run）；Codex 事件實名 webrun／collaborationspawn_agent／collaborationfollowup_task；mcp__web_reader__webReader）＋repo 設定擴充 `.shiftblame/external-tools.json`——僅 git 追蹤且乾淨時生效（經提交審查面，agent 未提交的自寫設定不生效；登錄＝老闆在 hooks 外手動 `git add -f`＋提交——`.shiftblame/` 系統檔閘擋 agent 的 staged；externalEvidence 已記錄設定工具名後設定轉 dirty／被刪，當前 flow-state 即轉 invalid，還原或提交該檔恢復）；`mcp__` 開頭且 `__` 結尾條目以 server 為信任單位（`__` 字面分段，裸 `mcp__` 整份格式無效））、回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停等位置導向（§13——中鏈段位與對抗未完成的決策邊擋停一次（單次消費式）；決策邊（對抗完成）／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
+plugin 內建 `hooks/hooks.json`（`hooks/shiftblame-guard.mjs`；單一 `command` 型配置多平台相容——ZCode 與 Codex 的 hooks schema 交集，同步治理事件沿用相同介面）。ZCode plugin hooks 直接生效；Codex（0.149+）安裝或更新 plugin 後須以 `/hooks` 審閱**信任一次**（hash 綁定，變更後重新信任；未信任＝hooks 不跑＝攔停留痕缺失——同步治理 hooks 成功執行寫心跳，心跳是運行狀態對照源）。同步治理事件職責：`SessionStart` 注入載入程序＋不變量卡＋節點行（壓縮後自動回流）；`UserPromptSubmit` 回合邊界——斷路器模式追蹤重置＋舊版流鍵冪等剝除＋老闆輸入三類分流（§1——2.6.3 位置導向：中性續行／疑問零位移；新意圖記 lastBossInputAt＋中鏈段位與對抗未完成的決策邊機械推回 intent，對抗已完成的決策邊＝裁決通道零推回）；`PreToolUse` 回合計數與迴圈斷路器（§11——計數純觀測零干預；無變更重跑即擋、忽視回饋升級自動重走 intent 補正 G1~G3 續行，不凍結；外部證據標記已隨外部性閘移除——2.7.2 對話事實承載）、破壞性命令防護（遞迴刪除／覆蓋配相對路徑擋）、`git commit` 驗 `sb commitmsg` 留痕（staged 系統檔不入庫；含 `-C` 絕對目標的跨 repo 錨定——§7）、寫入矩陣（測試碼 test＋build 段、實作碼限 build／ended、G 檔分區——定義區綁定義邊 G1→requirement／G2→research／G3→plan，回指區綁落地段 G1←verify／G2←build／G3←test；跨區由 CLI 分區 hash 兜底）、層間停靠與 git 重定向／alias 防護；`Stop` 事件執行停等位置導向（§13——中鏈段位與對抗未完成的決策邊擋停一次（單次消費式）；決策邊（對抗完成）／ended／無流程放行；不代做路由）。hooks 對話遺漏時回到文件層：不變量卡與 CLI 閘門仍然完備；hooks 與 CLI 兩層 MUST 共用同一 repo root 判定（路徑展開元規則）——若 hooks 的 cwd 判定與 repo root 不一致，一律以錨定 repo root 為準（如 git 命令必以 `-C <絕對路徑root>`，且禁 GIT_DIR、`--git-dir`、`--work-tree` 等重定向繞過）。
 
 ## 17. 圖表使用判準
 

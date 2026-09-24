@@ -1,5 +1,6 @@
-// sb-external-gate：研究外部性閘——externalEvidence 標記（真實 hooks）、
-// research→plan 邊驗（零外部推不過）、重走 intent 開新輪（老闆決策邊）＋進 research 段重置（每次重走重新驗）
+// sb-external-gate：外部性閘機械綁定已移除（2.7.2）——機械事實（工具名白名單標記）與真實使用脫鉤，
+// 閘在真實流程中不觸發、只生誤擋。外部調用事實改由對話呈現承載（A2——對話承載、抽查承擔）：
+// research→plan 邊零機械驗、hooks 不再標記、舊檔殘留鍵讀取即剝。
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -13,7 +14,6 @@ const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
 const hookBin = resolve(dirname(fileURLToPath(import.meta.url)), '../../hooks/shiftblame-guard.mjs');
 const ms = join(root, '.shiftblame/demo/001');
 mkdirSync(join(root, '.shiftblame/tmp'), { recursive: true });
-// 流程目錄由 init 建立；接入前只準備 tmp。
 const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
 const hookRun = (payload) => spawnSync(process.execPath, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
@@ -33,92 +33,45 @@ writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴與新抽象層。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 實作步驟\n沿用既有入口並驗證輸出。');
 
-// —— 1. requirement→research 進段重置：預塞舊證據 → 進段即清（fail-closed，舊查證不沿用）——
-// （requirement→research＝時點 1 邊——2.4.0 審意圖→需求翻譯，推進需 --boss-ok＋--adversarial＋point 1 條目）
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆輸入新鮮度（intent→requirement 邊）
+// —— 1. hooks 不再標記：外部工具調用不寫 externalEvidence 欄位（對話事實承載）——
+extCall('WebSearch');
+extCall('Agent');
+extCall('mcp__web_reader__webReader');
+assert.equal(state().externalEvidence, undefined, '外部工具調用零標記（機械綁定已移除）');
+assert.ok(state().hooksHeartbeat, '心跳等其他紀錄不受影響');
+
+// —— 2. research→plan 零機械驗：無外部調用紀錄也直接過（閘不觸發）——
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' });
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
-setState((st) => { st.externalEvidence = { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'WebSearch' }; });
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '時點 1 對抗宣告');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆輸入（requirement＋對抗完成＝決策邊裁決通道——零推回；2.4.2——晚於本次對抗條目）
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' });
 assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊');
-assert.equal(state().externalEvidence, null, 'requirement→research 進段重置');
-
-// —— 2. research→plan 零外部推不過 ——
 let r = run('next', 'plan');
-assert.equal(r.status, 1, '零外部調用推 plan→擋');
-assert.match(r.stderr, /零外部調用/);
+assert.equal(r.status, 0, '零外部調用紀錄推 plan 直接過（機械閘已除——外部性由對話事實承載）');
+assert.doesNotMatch(r.stderr || '', /零外部調用/);
 
-// —— 3. 冒名不標記：相近名、大小寫變體、非外部工具、Bash 內嵌字串 ——
-extCall('WebSearchX');
-extCall('websearch');
-extCall('mcp__x__WebSearch');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'WebSearch' } });
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'Agent' } });
-assert.equal(state().externalEvidence, null, '冒名／相近名／Bash 內嵌／Skill 夾帶皆不標記（精確錨定工具名）');
-
-// —— 3.5 設定擴充（跨平台通用結構）：未提交不生效 → 經提交審查面後登錄生效過閘 ——
-const beforeCfg = readFileSync(statePath, 'utf8');
-writeFileSync(join(root, '.shiftblame', 'external-tools.json'), JSON.stringify({ tools: ['NewPlatformSearch'] }));
-extCall('NewPlatformSearch');
-assert.equal(state().externalEvidence, null, '未追蹤設定不標記（agent 自寫≠登錄——經提交審查面）');
+// —— 3. 舊檔殘留鍵讀取即剝（migrateStreams 兼容）：帶舊 externalEvidence 的 active state 正常分類與推進 ——
+setState((st) => { st.node = 'research'; st.externalEvidence = { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'WebSearch' }; });
+assert.equal(run('state').status, 0, '殘留鍵不擋查詢');
 r = run('next', 'plan');
-assert.equal(r.status, 1, '未登錄的平台工具零外部調用仍擋');
-assert.match(r.stderr, /設定擴充未生效/, '閘擋附設定未生效原因提示');
-assert.equal(git('add', '-f', '.shiftblame/external-tools.json').status, 0);
-assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'chore: 登錄平台外部工具').status, 0);
-// 測試直跑 git 不經 hook——第二次以不同輸入成新指紋，避免迴圈斷路器模式①（無變更重跑）誤傷本驗證。
-const logged = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'NewPlatformSearch', tool_input: { query: '登錄後驗證' } });
-assert.equal(logged.status, 0, logged.stderr);
-assert.equal(state().externalEvidence?.tool, 'NewPlatformSearch', '已提交設定登錄的平台工具標記 externalEvidence');
-r = run('next', 'plan');
-assert.equal(r.status, 0, '設定登錄的平台工具查證後可推進 plan（免改框架碼）');
-writeFileSync(statePath, beforeCfg);
+assert.equal(r.status, 0, '殘留鍵不擋推進');
+assert.equal(state().externalEvidence, undefined, '推進寫回即剝（舊鍵零殘留）');
 
-// Codex 平台事件：實際跑 hook → CLI 推進；近似名稱及包裝器不算。
-for (const tool of ['web.runX', 'webrunX', 'mcp__x__webrun', 'collaborationspawn_agentX', 'collaborationfollowup_taskX', 'collaborationwait_agent', 'mcp__unknown__web__run', 'collaboration.wait_agent', 'functions.exec']) {
-  hookRun({ hook_event_name: 'PreToolUse', tool_name: tool, tool_input: { code: 'await tools.web__run({search_query:[{q:"x"}]})' } });
-  assert.equal(state().externalEvidence, null, `${tool} 不得誤記外部證據`);
-  assert.equal(run('next', 'plan').status, 1);
-}
-for (const tool of ['WebSearch', 'WebFetch', 'Agent', 'Task', 'mcp__web_reader__webReader', 'web.run', 'web__run', 'functions.web__run', 'spawn_agent', 'collaboration.spawn_agent', 'functions.spawn_agent', 'webrun', 'collaborationspawn_agent', 'collaborationfollowup_task']) {
-  const before = state();
-  assert.equal(extCall(tool).status, 0);
-  assert.equal(state().externalEvidence?.tool, tool, `${tool} 的真實事件名稱必須留痕`);
-  assert.equal(run('next', 'plan').status, 0, `${tool} 查證後可推進 plan`);
-  writeFileSync(statePath, JSON.stringify(before));
+// —— 4. 殘留異形值同樣剝除（原 schema 驗證的三形失效樣本——機制移除後不再是 invalid）——
+for (const v of [
+  { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'functions.exec' },
+  { done: true, at: '2020-01-01T00:00:00.000Z', tool: 'web.runX' },
+  { done: false, at: '2020-01-01T00:00:00.000Z', tool: 'Agent' },
+]) {
+  setState((st) => { st.node = 'research'; st.externalEvidence = v; });
+  assert.equal(run('state').status, 0, `異形殘留 ${v.tool ?? JSON.stringify(v)} 讀取即剝不擋`);
+  assert.equal(run('next', 'plan').status, 0, '殘留異形值不擋推進');
+  assert.equal(state().externalEvidence, undefined, '寫回即剝');
 }
 
-// —— 4. 真外部調用標記後推進過 ——
-assert.equal(extCall('WebSearch').status, 0);
-assert.equal(state().externalEvidence.done, true, 'hooks 標記 externalEvidence');
-assert.equal(state().externalEvidence.tool, 'WebSearch');
-r = run('next', 'plan');
-assert.equal(r.status, 0, '外部調用後 research→plan 過（規模自由：一次即底線）');
-
-// —— 5. 重走（老闆新輸入重走 intent→定義級同 ms 開新輪）：重走＝老闆決策邊 --boss-ok ——
+// —— 5. 重走 intent 循環照常：機制移除不影響其餘閘（老闆決策邊 --boss-ok 照擋）——
 setState((st) => { st.node = 'intent'; });
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆輸入新鮮度（intent→requirement 決策邊——晚於上次同邊推進）
-r = run('next', 'requirement', '--boss-ok');
-assert.equal(r.status, 0, '重走：老闆決策邊 --boss-ok（重走必經 intent 環首）');
-assert.equal(run('next', 'research', '--rerun', 'impl').status, 2, '已退役旗標被解析器 usage 擋（退役驗證——旗標本身須存在才能證明已死）');
-
-// —— 6. 重走後外部證據重新驗（進 research 段重置——每次重走重新計次；時點 1 重過＝新鮮條目）——
-assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
-assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '重走後新鮮時點 1 條目');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆輸入（requirement＋對抗完成＝決策邊裁決通道——零推回；晚於本次對抗條目）
-assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '進 research——外部證據閘進段重置');
-r = run('next', 'plan');
-assert.equal(r.status, 1, '重走後零外部調用→擋（不得閉門自我檢驗）');
-assert.match(r.stderr, /零外部調用/);
-assert.equal(state().node, 'research', '未推進（擋於 research→plan 邊）');
-
-// —— 7. 外部協助後過 ——
-assert.equal(extCall('Agent').status, 0);
-r = run('next', 'plan');
-assert.equal(r.status, 0, '外部協助後重走推進過');
-
-// —— 8. 回 intent 中止：回頭邊免外部驗——重置責任在再進 research 的進段邊 ——
-r = run('next', 'intent');
-assert.equal(r.status, 0, '重走 intent 免外部驗（回頭邊）');
-assert.equal(run('next', 'requirement').status, 1, 'intent→requirement 決策邊缺 --boss-ok 擋');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' });
+assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
+assert.equal(run('next', 'requirement').status, 1, '決策邊缺 --boss-ok 仍擋（其餘閘不變）');
 console.log('sb-external-gate: pass');

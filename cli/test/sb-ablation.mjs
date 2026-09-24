@@ -18,8 +18,6 @@ const GUARD = join(repo, 'hooks', 'shiftblame-guard.mjs');
 const SB = join(repo, 'cli', 'bin', 'sb.mjs');
 
 const BDD_G1 = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n';
-const G2 = '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據，不引入新依賴。';
-const G3 = '# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。';
 
 function mkSandbox({ state = {}, files = {}, git = false, flow = true } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'sb-abl-'));
@@ -54,8 +52,7 @@ process.on('exit', () => { for (const d of NEU_DIRS) rmSync(d, { recursive: true
 
 function relocateShared(text) {
   return text
-    .replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${new URL('../../cli/bin/flow-state.mjs', import.meta.url).href}'`)
-    .replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)external-tools\.mjs['"]/g, `from '${new URL('../../cli/bin/external-tools.mjs', import.meta.url).href}'`);
+    .replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${new URL('../../cli/bin/flow-state.mjs', import.meta.url).href}'`);
 }
 
 function neutralize(srcPath, pairs) {
@@ -70,11 +67,9 @@ function neutralize(srcPath, pairs) {
   const dir = mkdtempSync(join(tmpdir(), 'sb-neu-'));
   NEU_DIRS.push(dir);
   const out = join(dir, 'ablated.mjs');
-  // 消融檔在隔離目錄執行，仍指向同一份狀態分類與外部工具判準實作。
+  // 消融檔在隔離目錄執行，仍指向同一份狀態分類實作。
   const shared = new URL('../../cli/bin/flow-state.mjs', import.meta.url).href;
-  const sharedExt = new URL('../../cli/bin/external-tools.mjs', import.meta.url).href;
   t = t.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)flow-state\.mjs['"]/g, `from '${shared}'`);
-  t = t.replace(/from ['"](?:\.\/|\.\.\/cli\/bin\/)external-tools\.mjs['"]/g, `from '${sharedExt}'`);
   writeFileSync(out, t);
   return out;
 }
@@ -183,13 +178,6 @@ ablation('回合邊界 recordInput（模式追蹤重置＋舊流鍵冪等剝除�
 });
 
 
-ablation('外部證據標記 markExternalEvidence（外部性閘鑰匙）', () => {
-  const neu = neutralize(GUARD, [['function markExternalEvidence(root, tool) {\n  if (!root) return;', 'function markExternalEvidence(root, tool) {\n  return; // ABLATED\n  if (!root) return;']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'research' } }); hookRun(script, { cwd: r, hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); const d = !!stateOf(r).externalEvidence?.done; rmSync(r, { recursive: true, force: true }); return d; };
-  assert.equal(payload(GUARD), true, 'intact：外部調用標記 externalEvidence');
-  assert.equal(payload(neu), false, 'ablated：拆掉後外部調用不標記（外部性閘鑰匙失效）');
-});
-
 ablation('hooks 心跳 beatHeartbeat（診斷）', () => {
   const neu = neutralize(GUARD, [['function beatHeartbeat(root, event) {\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;', 'function beatHeartbeat(root, event) {\n  return; // ABLATED\n  if (!root || !existsSync(join(root, \'.shiftblame\'))) return;']]);
   const payload = (script) => { const r = mkSandbox(); hookRun(script, { cwd: r, hook_event_name: 'SessionStart', source: 'startup' }); const ok = !!(JSON.parse(readFileSync(join(r, '.shiftblame', 'flow-state.json'), 'utf8')).hooksHeartbeat) && !existsSync(join(r, '.shiftblame/tmp/hooks-heartbeat.json')); rmSync(r, { recursive: true, force: true }); return ok; };
@@ -271,13 +259,6 @@ ablation('時點對抗 point 條目對照（--adversarial 對照源＝lastAdv）
   assert.equal(mk(SB, false), 1, 'intact：lastAdv 無 point 條目即擋（RAM 對照源）');
   assert.equal(mk(SB, true), 0, 'intact：point 條目存在→過（新鮮度：無前次同邊推進）');
   assert.equal(mk(neu, true), 1, 'ablated：拆掉條目對照後仍擋（條目存在卻被當無）');
-});
-
-ablation('外部證據閘（research→plan 邊驗）', () => {
-  const neu = neutralize(SB, [['if (st.node === \'research\' && target === \'plan\' && !st.externalEvidence?.done) {', 'if (false && st.node === \'research\' && target === \'plan\' && !st.externalEvidence?.done) { // ABLATED']]);
-  const payload = (script) => { const r = mkSandbox({ state: { node: 'research' }, files: { '.shiftblame/demo/001/G2.md': G2, '.shiftblame/demo/001/G3.md': G3 } }); const h = cliRun(script, r, 'next', 'plan'); rmSync(r, { recursive: true, force: true }); return h.status; };
-  assert.equal(payload(SB), 1, 'intact：零外部調用推進被擋');
-  assert.equal(payload(neu), 0, 'ablated：拆掉外部性閘後閉門推進放行');
 });
 
 ablation('BDD 行為規格閘 validateG1Acceptance（消融鍵）', () => {

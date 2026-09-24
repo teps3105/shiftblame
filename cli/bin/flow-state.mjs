@@ -3,7 +3,6 @@ import { readFileSync, readdirSync, lstatSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { isExternalResearchTool } from './external-tools.mjs';
 
 const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
@@ -24,19 +23,18 @@ function unchangedG1Approval(root, st) {
     return heads.length === 1 && createHash('sha256').update(raw.slice(0, heads[0].index), 'utf8').digest('hex') === c.sha256;
   } catch { return false; }
 }
-// 觀測紀錄（hooks 寫）：心跳／外部證據／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）
+// 觀測紀錄（hooks 寫）：心跳／rewrite 載入鑰匙＋回合計數（turnUsage／usageTotals）
 // ＋老闆輸入時戳（lastBossInputAt——新輪事實非內容；CLI 段內修復邊防護的新鮮度對照源，任何分類態皆可攜帶）。
 // 對話性質流（輸入流／理解流雜湊鏈）不落檔——對話事實由平台承載（基質優先），flow-state 只承載當下階段證據。
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'externalEvidence', 'turnUsage', 'usageTotals', 'rewriteSeen', 'lastBossInputAt'];
+// externalEvidence（外部調用機械標記）已隨外部性閘移除（2.7.2）——外部調用事實由對話呈現承載（A2），
+// 舊檔殘留鍵由 migrateStreams 讀取即剝（與 stopReport 同模式）。
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'rewriteSeen', 'lastBossInputAt'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
-// externalEvidence.tool 成員資格由共用判準驗（內建名單＋repo 設定擴充——root 缺省時設定側不生效，
-// 內建名仍驗）：紀錄只能來自 hooks 真實標記——非判準內工具名＝不可能的紀錄＝無效狀態。
 function hooksOnly(st, root) {
   const allowed = HOOK_RECORD_KEYS;
   if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !allowed.includes(k))) return false;
   if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
-  if (Object.hasOwn(st, 'externalEvidence') && !(exactKeys(st.externalEvidence, ['done', 'at', 'tool']) && st.externalEvidence.done === true && timestamp(st.externalEvidence.at) && isExternalResearchTool(st.externalEvidence.tool, root))) return false;
   if (Object.hasOwn(st, 'rewriteSeen') && !(exactKeys(st.rewriteSeen, ['rev', 'at']) && nonNegativeInt(st.rewriteSeen.rev) && timestamp(st.rewriteSeen.at))) return false; // shiftblame:rewrite 本輪載入事實（返工輪寫 G 閘的鑰匙）
   if (Object.hasOwn(st, 'lastBossInputAt') && !timestamp(st.lastBossInputAt)) return false; // 老闆輸入時戳（事實非內容——永不主動清，新鮮度由「晚於進段時間」條件自限）
   if (Object.hasOwn(st, 'turnUsage')) {
@@ -94,6 +92,7 @@ function migrateStreams(st) {
   delete st.adversarialAt; delete st.adversarialConsumed;
   // 舊版流程鍵冪等剝除（2.0x 時代欄位——讀取端統一清理；active 容忍未知鍵但 ended 白名單拒絕）
   delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
+  delete st.externalEvidence; // 外部性閘已除（2.7.2——外部調用事實由對話呈現承載）；舊檔讀取即剝（ended 白名單亦拒此鍵）
   if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
   delete st.stopReport; // 停點申報機制已除（2.6.3——停等改位置導向承載）；舊檔讀取即剝（ended 白名單亦拒此鍵）
   if (objectRecord(st?.turnUsage)) { // 斷路器形態遷移：舊計數形（fingerprints／fpEscalations 數字值）歸零重觀察；
@@ -180,8 +179,6 @@ function activeExtras(st) {
 }
 function activeRecords(st, root) {
   const records = hookRecords(st);
-  // research／返工進段以 null 重置外部證據，屬正常流程產物。
-  if (records.externalEvidence === null) delete records.externalEvidence;
   if (Object.keys(records).length && !hooksOnly(records, root)) return false;
   if (Object.hasOwn(st, 'lastAdv') && !(objectRecord(st.lastAdv) && Object.entries(st.lastAdv).every(([k, v]) => ['1', '2'].includes(k) && ADV_ENTRY_SHAPE(v, v.node)))) return false;
   if (Object.hasOwn(st, 'edgeAt') && !(objectRecord(st.edgeAt) && Object.values(st.edgeAt).every(timestamp))) return false;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,13 +13,13 @@ const manifest = JSON.parse(read('.codex-plugin', 'plugin.json'));
 const cliPackage = JSON.parse(read('cli', 'package.json'));
 
 // 版號一致（含根殼 package.json——npm install -g github:teps3105/shiftblame 的市集安裝載體）
-assert.equal(manifest.version, '2.7.1');
+assert.equal(manifest.version, '2.7.2');
 assert.equal(cliPackage.version, manifest.version);
 const rootShell = JSON.parse(read('package.json'));
 assert.equal(rootShell.version, manifest.version);
 assert.equal(rootShell.bin.sb, 'cli/bin/sb.mjs');
 readFileSync(join(repo, rootShell.bin.sb), 'utf8');
-assert.match(skill, /version: "2.7.1"/);
+assert.match(skill, /version: "2.7.2"/);
 
 // 輸出形狀（人話契約）與時點條目對照錨定本次對抗條目
 assert.match(think, /輸出形狀（人話契約）/, 'think SKILL 承載輸出形狀節（對老闆輸出＝人話非公文）');
@@ -47,10 +47,8 @@ assert.match(guardSrc, /HOOK_EVENTS\.includes\(event\)/, 'inject 函數層防護
 assert.match(guardSrc, /inject\((?:[^)]*)'(?:SessionStart|UserPromptSubmit|PreToolUse|PermissionRequest|PostToolUse|PostToolUseFailure|Stop)'\)/s, '每個 inject 調用帶事件字面值');
 assert.match(guardSrc, /beatHeartbeat[\s\S]{0,200}existsSync\(join\(root, '\.shiftblame'\)\)/, '心跳僅寫既有工作區（禁止流浪 cwd 長出 .shiftblame）');
 
-// hooks 心跳＋CLI 健康診斷：hooks 死亡/未信任時閘擋附「記錄缺失≠授權缺失」警示（只診斷不降級——逃生門屬合法漏洞已否決）
+// hooks 心跳：hooks 死亡/未信任的診斷由對話與文件層承載（2.7.2——hooksHealthNote 只服務已移除的外部證據閘，隨之拆除）
 assert.match(guardSrc, /beatHeartbeat/, 'hooks 每次成功執行寫心跳');
-assert.match(read('cli', 'bin', 'sb.mjs'), /hooksHealthNote/, 'CLI 閘擋對照心跳輸出 hooks 健康診斷');
-assert.match(read('cli', 'bin', 'sb.mjs'), /閘保持封閉/, '診斷只揭露不降級（閘保持封閉）');
 
 // 七段圓環詞彙落地（意圖揭露＋圓環主鏈——intent 環首＝環尾；verify 判決出 fail／pass 兩種邊——done 節點已除名）
 assert.match(skill, /intent→requirement→research→plan→test→build→verify/);
@@ -79,15 +77,12 @@ assert.match(skill, /旗標即章/);
 assert.match(skill, /理解宣告/);
 assert.match(skill, /對話實蹟/, 'SKILL 記載抽查面（對話實蹟對照）');
 assert.match(skill, /外部證據打底/, 'SKILL 記載 G2 外部證據打底');
-assert.match(skill, /externalEvidence/, 'SKILL 記載 externalEvidence 閘');
+assert.doesNotMatch(skill, /externalEvidence/, 'SKILL 不再記載 externalEvidence 機械閘（2.7.2——對話事實承載）');
 assert.match(skill, /大型研究.*MUST 外部唯讀子代理/s, 'SKILL 記載大型研究 MUST 子代理承擔');
 assert.match(readme, /對話由平台承載/);
 assert.match(readme, /理解宣告/);
-assert.match(readme, /外部性/, 'README 記載研究／返工外部性閘');
-assert.match(read('cli', 'bin', 'external-tools.mjs'), /BUILTIN_EXTERNAL_TOOLS/, '外部工具判準共用模組存在（單一事實來源）');
-assert.match(read('hooks', 'shiftblame-guard.mjs'), /external-tools\.mjs/, 'hooks 標記側接入共用判準');
-assert.match(read('cli', 'bin', 'sb.mjs'), /external-tools\.mjs/, 'CLI 閘門接入共用判準');
-assert.match(read('cli', 'bin', 'flow-state.mjs'), /isExternalResearchTool/, '狀態驗證側接入共用判準（紀錄只能來自 hooks——與標記側同源）');
+assert.match(readme, /外部性/, 'README 記載研究／返工外部性（對話事實承載）');
+assert.equal(existsSync(join(repo, 'cli', 'bin', 'external-tools.mjs')), false, '外部工具判準模組已隨機械綁定移除（2.7.2）');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /⑨/, 'CARD⑨ 外部性閘條');
 assert.ok(!read('hooks', 'shiftblame-guard.mjs').includes('isUnlockCmd'), '解鎖單體通道已撤');
 assert.match(read('hooks', 'shiftblame-guard.mjs'), /recordInput/, 'hooks 回合邊界處理（模式追蹤重置＋舊流鍵冪等剝除）');
@@ -215,7 +210,6 @@ for (const [dir, file] of [
 }
 
 // 技能清單：4 個功能型存在；文件類技能已退役（流程與寫入矩陣直接承載）；9 個已退役
-import { existsSync } from 'node:fs';
 for (const k of ['think', 'save', 'resume', 'dice', 'shiftblame']) {
   assert.ok(existsSync(join(repo, 'skills', k, 'SKILL.md')), `技能 ${k} 應存在`);
 }
