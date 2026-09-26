@@ -326,7 +326,7 @@ writeFileSync(join(root, 'seed.txt'), 'v2\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
 // —— build→verify 機械推進（E2E 全綠＋working tree 乾淨即過，中鏈零審核——無老闆停靠、無對抗）——
-assert.match(run('next', 'verify', '--boss-ok').stderr, /不是老闆決策邊/, 'build→verify 機械推進——--boss-ok 留給老闆決策邊');
+assert.match(run('next', 'verify', '--boss-ok').stderr, /不是使用者決策邊/, 'build→verify 機械推進——--boss-ok 留給使用者決策邊');
 assert.match(run('next', 'verify', '--adversarial').stderr, /不是對抗邊/, 'build→verify 非對抗邊——時點 2 在 verify 出口邊');
 assert.equal(run('next', 'verify').status, 0, 'build→verify 裸推進（機械推進——樹淨即過）');
 

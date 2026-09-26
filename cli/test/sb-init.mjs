@@ -32,8 +32,9 @@ for (const initial of [undefined, record]) {
     assert.match(diagnostic.stdout, /尚未初始化/);
     assert.equal(readFileSync(f.file, 'utf8'), before);
   }
-  const r = f.run('init', 'demo');
+  const r = f.run('init', 'demo', '--no-git');
   assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /非 Git 模式（--no-git）/);
   const initialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt, baseCommit, ...rest } = initialized;
   assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent' });
@@ -51,7 +52,7 @@ for (const initial of [undefined, record]) {
 {
   const initial = { ...record, externalEvidence: { done: true, at, tool: 'Agent' } };
   const f = fixture(JSON.stringify(initial));
-  assert.equal(f.run('init', 'demo').status, 0);
+  assert.equal(f.run('init', 'demo', '--no-git').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.externalEvidence, undefined, '殘留外部證據鍵隨 init 剝除（機械綁定已移除）');
   assert.deepEqual(st.hooksHeartbeat, initial.hooksHeartbeat, 'hooks 紀錄本體由 init 保留');
@@ -59,7 +60,7 @@ for (const initial of [undefined, record]) {
 // 純紀錄檔含 2.0x 老流鍵（stamps／unlockLog）——讀取端 migrateStreams 剝除後歸 direct 態：init 成功、寫回即瘦身（舊鍵零殘留）。
 {
   const f = fixture(JSON.stringify({ slug: null, ms: null, node: null, stamps: {}, unlockLog: [] }));
-  assert.equal(f.run('init', 'demo').status, 0);
+  assert.equal(f.run('init', 'demo', '--no-git').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   assert.equal(st.stamps, undefined, 'stamps 隨 init 剝除');
   assert.equal(st.unlockLog, undefined, 'unlockLog 隨 init 剝除');
@@ -84,7 +85,7 @@ for (const raw of [...invalid.map(x => JSON.stringify(x)), '{broken']) {
 // 真實 end → 歸檔 → init 閉環，保留結束後的新紀錄而非整包繼承舊流程。
 function endedFixture() {
   const f = fixture();
-  assert.equal(f.run('init', 'old').status, 0);
+  assert.equal(f.run('init', 'old', '--no-git').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
   // 出口時序：時點 2 對抗條目（lastAdv 定長欄位）＋--boss-ok 旗標即章（2.5.2——機械不驗時戳，語義由對話揭露＋老闆終審承擔）
   const t0 = Date.parse(st.startedAt);
@@ -112,7 +113,7 @@ function endedFixture() {
   mkdirSync(join(f.cwd, '.shiftblame/taken'));
   assert.equal(f.run('init', 'taken').status, 1, '工作路徑碰撞拒絕');
   assert.equal(readFileSync(f.file, 'utf8'), before);
-  const r = f.run('init', 'next', 'fix');
+  const r = f.run('init', 'next', 'fix', '--no-git');
   assert.equal(r.status, 0, r.stderr);
   const reinitialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt: reStartedAt, ...reRest } = reinitialized;
@@ -204,6 +205,8 @@ for (const spec of [
   const f = fixture();
   const git = (...args) => spawnSync('git', ['-C', f.cwd, ...args], { encoding: 'utf8' });
   assert.equal(git('init').status, 0);
+  assert.equal(git('config', 'user.name', 'fixture').status, 0);
+  assert.equal(git('config', 'user.email', 'fixture@example.invalid').status, 0);
   const excludes = join(f.cwd, 'global-ignore');
   writeFileSync(excludes, spec.global ?? '');
   assert.equal(git('config', 'core.excludesFile', excludes).status, 0);
@@ -216,12 +219,15 @@ for (const spec of [
   if (expected === undefined) assert.equal(existsSync(gi), false, spec.name);
   else assert.deepEqual(readFileSync(gi), Buffer.from(expected), spec.name);
   assert.equal(git('check-ignore', '--quiet', '--', '.shiftblame/').status, 0, spec.name);
+  assert.equal(git('branch', '--show-current').stdout.trim(), 'feat/demo', spec.name + '：unborn repo 補起始提交後建立工作分支');
 }
 // Git 失敗不能冒充未忽略；已追蹤檔案的索引也不由 init 改動。
 for (const broken of [false, true]) {
   const f = fixture();
   const git = (...args) => spawnSync('git', ['-C', f.cwd, ...args], { encoding: 'utf8' });
   assert.equal(git('init').status, 0);
+  assert.equal(git('config', 'user.name', 'fixture').status, 0);
+  assert.equal(git('config', 'user.email', 'fixture@example.invalid').status, 0);
   const gi = join(f.cwd, '.gitignore');
   const original = broken ? '# keep\r\n' : '.shiftblame/\r\n';
   writeFileSync(gi, original);
@@ -239,7 +245,7 @@ for (const broken of [false, true]) {
 for (const original of ['.shiftblame/\r\n', '/.shiftblame/\n', '# rules\r\n.shiftblame/']) {
   const f = fixture();
   writeFileSync(join(f.cwd, '.gitignore'), original);
-  assert.equal(f.run('init', 'demo').status, 0);
+  assert.equal(f.run('init', 'demo', '--no-git').status, 0);
   assert.deepEqual(readFileSync(join(f.cwd, '.gitignore')), Buffer.from(original));
 }
 console.log('sb-init: 初始化閉環、拒絕邊界、Git 忽略來源與原檔保留通過');

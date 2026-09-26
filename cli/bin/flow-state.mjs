@@ -38,7 +38,17 @@ function hooksOnly(st, root) {
   return true;
 }
 
-const branchName = (name) => typeof name === 'string' && name.length > 0 && spawnSync('git', ['check-ref-format', `refs/heads/${name}`], { encoding: 'utf8', timeout: 5000 }).status === 0;
+// 常見分支名以字元規則直接判定，其餘交給 git check-ref-format；結果按名稱快取（hook 每次呼叫都會讀狀態）。
+const SIMPLE_BRANCH = /^[A-Za-z0-9](?:[A-Za-z0-9._/-]*[A-Za-z0-9_-])?$/;
+const branchCache = new Map();
+function branchName(name) {
+  if (typeof name !== 'string' || !name.length) return false;
+  if (branchCache.has(name)) return branchCache.get(name);
+  const simple = SIMPLE_BRANCH.test(name) && !/\.\.|\/\/|@\{|\.\/|(?:^|\/)\.|\.lock(?:\/|$)/.test(name);
+  const ok = simple || spawnSync('git', ['check-ref-format', `refs/heads/${name}`], { encoding: 'utf8', timeout: 5000 }).status === 0;
+  branchCache.set(name, ok);
+  return ok;
+}
 const commitId = (id) => typeof id === 'string' && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(id);
 function validCloseout(st) {
   const c = st.closeout;

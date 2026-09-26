@@ -43,8 +43,8 @@ assert.equal(run('init', 'demo').status, 1, '既有工作區重跑 init 擋（�
 assert.equal(state().node, 'intent');
 
 // 老闆新輸入重走 intent：intent 自身不可回（無意義），其他段可。先走圓環主鏈——
-// intent→requirement：--boss-ok 邊（老闆決策邊 MUST 留痕）
-assert.match(run('next', 'requirement').stderr, /MUST 帶 --boss-ok/);
+// intent→requirement：--boss-ok 邊（使用者決策邊須留痕）
+assert.match(run('next', 'requirement').stderr, /須帶 --boss-ok/);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆決策邊輸入（對話承載——旗標即章）
 assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 {
@@ -58,7 +58,7 @@ assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
 writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 現狀：現行畫面對不合法資料靜默無反應\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
 writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。');
 writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-assert.match(run('next', 'research').stderr, /MUST 帶 --boss-ok/);
+assert.match(run('next', 'research').stderr, /須帶 --boss-ok[\s\S]*先行研究/, '時點 1 等待判定期間可先行研究');
 assert.match(run('next', 'research', '--boss-ok').stderr, /需時點 1 對抗/);
 assert.equal(pt('1').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯正確，推進研究' }); // 時點 1 老闆 pass 輸入（requirement＋對抗完成＝決策邊裁決通道——零推回，對話承載）

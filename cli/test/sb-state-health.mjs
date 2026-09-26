@@ -152,7 +152,7 @@ for (const initial of [undefined, { hooksHeartbeat: { at, event: 'PreToolUse' } 
   st.hooksHeartbeat = { at, event: 'SessionStart' };
   mkdirSync(join(f.cwd, '.shiftblame'), { recursive: true });
   writeFileSync(stPath, JSON.stringify(st));
-  assert.equal(f.run('init', 'demo').status, 0, '另有開 slug 授權時仍可正常初始化');
+  assert.equal(f.run('init', 'demo', '--no-git').status, 0, '另有開 slug 授權時仍可正常初始化');
   assert.deepEqual(JSON.parse(readFileSync(f.state, 'utf8')).hooksHeartbeat, st.hooksHeartbeat, 'hooks 紀錄接納不重置');
 }
 for (const [node, expected] of [['build', 0], ['verify', 2], ['intent', 0]]) {

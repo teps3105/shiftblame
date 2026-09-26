@@ -1,6 +1,6 @@
 ---
 name: 驗收
-revision: 2.8.0
+revision: 2.8.1
 ---
 # 核對真正結果
 
@@ -10,4 +10,4 @@ revision: 2.8.0
 
 受驗來源保持穩定；驗收所需資料、可丟棄快取及輸出可在明確範圍準備。發現來源問題先回責任段修正，再重驗受影響部分。
 
-必修項修復並驗證後，取得時點 2 的獨立驗收檢閱，主代理核對其證據與範圍。揭露實際完成、殘餘與未驗項，交使用者終審。使用者 pass 後，sb next intent --new-ms --adversarial --boss-ok 或 sb end --adversarial --boss-ok 承接授權。正式出口以使用者決策為準。
+必修項修復並驗證後，取得時點 2 的獨立驗收檢閱，主代理核對其證據與範圍。揭露實際完成、殘餘與未驗項，交使用者終審。使用者 pass 後，sb next intent --new-ms --adversarial --boss-ok 或 sb end --adversarial --boss-ok 承接授權。正式出口以使用者決策為準。審查與終審期間可依 [RESEARCH](RESEARCH.md) 先行研究，受驗來源保持不變。
