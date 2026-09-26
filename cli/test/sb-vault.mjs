@@ -146,4 +146,35 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   assert.equal(readFileSync(f.appearanceJsonPath, 'utf8'), '也不是 JSON', '毀損 appearance.json 原樣');
 }
 
+// —— 7. 預設註冊表位置依平台：win32 %APPDATA%\obsidian（缺省 ~\AppData\Roaming）、darwin ~/Library/Application Support/obsidian、
+// 其他 $XDG_CONFIG_HOME/obsidian（缺省 ~/.config/obsidian）；以假家目錄隔離，不碰真實 Obsidian 註冊表 ——
+{
+  const f = fixture();
+  const home = join(root, `home-${serial}`);
+  mkdirSync(home, { recursive: true });
+  // Windows 的環境變數不分大小寫：先刪同名鍵再設，避免子程序拿到兩個大小寫不同的值。
+  const setEnv = (env, key, value) => {
+    for (const k of Object.keys(env)) if (k.toUpperCase() === key) delete env[k];
+    if (value !== undefined) env[key] = value;
+  };
+  const cases = process.platform === 'win32'
+    ? [[{ APPDATA: join(home, 'Roaming') }, join(home, 'Roaming', 'obsidian', 'obsidian.json')],
+      [{ APPDATA: undefined }, join(home, 'AppData', 'Roaming', 'obsidian', 'obsidian.json')]]
+    : process.platform === 'darwin'
+      ? [[{}, join(home, 'Library', 'Application Support', 'obsidian', 'obsidian.json')]]
+      : [[{ XDG_CONFIG_HOME: join(home, 'xdg') }, join(home, 'xdg', 'obsidian', 'obsidian.json')],
+        [{ XDG_CONFIG_HOME: undefined }, join(home, '.config', 'obsidian', 'obsidian.json')]];
+  for (const [extra, regPath] of cases) {
+    const env = { ...process.env };
+    setEnv(env, 'SB_OBSIDIAN_GLOBAL', undefined);
+    setEnv(env, 'HOME', home);
+    setEnv(env, 'USERPROFILE', home);
+    for (const [k, v] of Object.entries(extra)) setEnv(env, k, v);
+    const r = spawnSync(process.execPath, [cli, 'vault'], { cwd: f.cwd, encoding: 'utf8', env });
+    assert.equal(r.status, 0, r.stderr);
+    const reg = JSON.parse(readFileSync(regPath, 'utf8'));
+    assert.deepEqual(Object.values(reg.vaults).map((v) => v.path), [f.cwd], `預設註冊表位置：${regPath}`);
+  }
+}
+
 console.log('sb-vault: 全部場景通過');

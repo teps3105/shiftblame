@@ -1,11 +1,12 @@
 // sb-understanding-flow：對話承載（流不落檔）——回合邊界重置與舊流鍵冪等剝除、理解宣告由 Skill args 於對話揭露（零檔案寫入）、
 // sb unlock 不存在命令處理、--new-ms 開新里程碑（老形 fixture 經讀取端遷移為 lastAdv／edgeAt 判定）。
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { readFlowState } from '../bin/flow-state.mjs';
 
 const sb = process.execPath;
 const sbBin = join(dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'sb.mjs');
@@ -14,44 +15,41 @@ const root = mkdtempSync(join(tmpdir(), 'sb-flow-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 mkdirSync(join(root, '.shiftblame'), { recursive: true });
 const statePath = join(root, '.shiftblame', 'flow-state.json');
+const recordsPath = join(root, '.shiftblame', 'tmp', 'hook-records.json');
 const state = () => JSON.parse(readFileSync(statePath, 'utf8'));
+const records = () => JSON.parse(readFileSync(recordsPath, 'utf8'));
 const hookRun = (payload) => spawnSync(sb, [hookBin], { input: JSON.stringify({ cwd: root, ...payload }), encoding: 'utf8' });
 // 真實 hooks 串接：UserPromptSubmit＝回合邊界（零內容寫入）；Skill(shiftblame:think)+args＝對話揭露的理解宣告
-const boss = (prompt) => { hookRun({ hook_event_name: 'UserPromptSubmit', prompt }); return state(); };
+const boss = (prompt) => hookRun({ hook_event_name: 'UserPromptSubmit', prompt });
 const think = (as) => hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: as } });
 
 // —— 1. 流不落檔：連續三則輸入零內容寫入（對話事實由平台承載——唯增流與雜湊鏈已拆） ——
 boss('你去想吧');
 boss('另外注意路徑展開');
 boss('就這樣做');
-const st1 = state();
-assert.equal(st1.inputs, undefined, '輸入不落檔');
-assert.equal(st1.understandings, undefined, '理解流不存在');
-assert.equal(st1.dialogueLock, undefined, '無對話鎖欄位');
-assert.equal(st1.thinkRouted, undefined, '無 thinkRouted');
+assert.equal(existsSync(statePath), false, 'hooks 不建立 flow-state');
+assert.deepEqual(Object.keys(records()), ['hooksHeartbeat'], '輸入不落檔：hooks 紀錄只有心跳');
 
 // —— 2. 理解宣告＝對話揭露：Skill(shiftblame:think) args 放行且零檔案寫入 ——
-const before = JSON.parse(readFileSync(statePath, 'utf8'));
-delete before.hooksHeartbeat;
 let r = think('理解：授權以對話承載模型落地，理解宣告於對話流揭露');
 assert.equal(r.status, 0, 'Skill 調用放行');
-const after = JSON.parse(readFileSync(statePath, 'utf8'));
-delete after.hooksHeartbeat;
-delete after.turnUsage; delete after.usageTotals; // PreToolUse 觀測計數屬合法狀態寫入（剝除後比對事實面）
-assert.deepEqual(after, before, '理解宣告零檔案寫入（無落檔、無雜湊、無曝光標記——老闆讀對話即審）');
+assert.equal(existsSync(statePath), false, '理解宣告零檔案寫入（無落檔、無雜湊、無曝光標記——老闆讀對話即審）');
+assert.deepEqual(Object.keys(records()).sort(), ['hooksHeartbeat', 'turnUsage', 'usageTotals'], 'PreToolUse 只留觀測計數');
 
-// —— 3. 回合邊界：模式追蹤重置＋舊版流鍵冪等剝除（舊檔升級即瘦身——與 migrateStreams 老鍵清單對齊） ——
+// —— 3. 回合邊界：hooks 只重置自己的回合計數，不改寫 flow-state；舊版流鍵由讀取端剝除（與 migrateStreams 老鍵清單對齊），下次 sb 寫入即瘦身 ——
 writeFileSync(statePath, JSON.stringify({
-  ...after, slug: 'demo', ms: '001', node: 'verify',
+  slug: 'demo', ms: '001', node: 'verify',
   inputs: [{ at: '2026-09-07T00:00:00.000Z', text: '舊輸入' }],
   understandings: [{ at: '2026-09-07T00:00:00.000Z', uptoInput: 0, as: '舊理解', reviewed: true, hash: 'x' }],
   understandingHold: { at: '2026-09-07T00:00:00.000Z' }, dialogueLock: true, thinkRouted: true,
   stamps: {}, unlockLog: [],
   turnUsage: { startedAt: '2026-09-07T00:00:00.000Z', requests: 9, repeats: { x: 'denied' } },
 }));
+const legacyRaw = readFileSync(statePath, 'utf8');
 boss('帶舊鍵的回合');
-const st2 = state();
-delete st2.hooksHeartbeat;
+assert.equal(readFileSync(statePath, 'utf8'), legacyRaw, 'hooks 不改寫 flow-state');
+assert.equal(records().turnUsage, undefined, '回合邊界重置 hooks 的回合計數');
+const st2 = readFlowState(root).state;
 assert.equal(st2.inputs, undefined, 'inputs 冪等剝除');
 assert.equal(st2.understandings, undefined, 'understandings 冪等剝除');
 assert.equal(st2.understandingHold, undefined, 'understandingHold 冪等剝除（停等凍結已拆）');
@@ -59,7 +57,7 @@ assert.equal(st2.dialogueLock, undefined, 'dialogueLock 冪等剝除');
 assert.equal(st2.thinkRouted, undefined, 'thinkRouted 冪等剝除');
 assert.equal(st2.stamps, undefined, 'stamps 冪等剝除（2.0x 舊鍵）');
 assert.equal(st2.unlockLog, undefined, 'unlockLog 冪等剝除');
-assert.equal(st2.turnUsage, undefined, '回合邊界重置模式追蹤（repeats／fpEscalations 清）');
+assert.deepEqual(Object.keys(st2.turnUsage).sort(), ['requests', 'startedAt'], '舊回合計數的模式追蹤欄位（repeats／fpEscalations）讀取即剝');
 assert.equal(st2.slug, 'demo', '流程欄位保留（只剝流鍵，不動流程狀態）');
 
 // —— 4. sb unlock：明確 die——

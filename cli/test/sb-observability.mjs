@@ -66,7 +66,11 @@ assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈�
 // Identical external observations remain legal and count only as attempts.
 for(let i=0;i<5;i++) assert.equal(hookRun({hook_event_name:'PreToolUse',tool_name:'Bash',tool_input:{command:'git status --porcelain'}}).status,0);
 assert.equal(state().node,'test');
-assert.equal(state().turnUsage.repeats,undefined);
+{
+  const records = JSON.parse(readFileSync(join(root, '.shiftblame/tmp/hook-records.json'), 'utf8'));
+  assert.ok(records.turnUsage.requests >= 5, '重複的外部觀測只計數');
+  assert.equal(records.turnUsage.repeats, undefined);
+}
 assert.equal(run('next','intent').status,0);
 
 // —— 4. 重走（老闆新輸入重走 intent→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——

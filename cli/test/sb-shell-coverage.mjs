@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,rmSync} from 'node:fs';
-import {join} from 'node:path';
-import {tmpdir} from 'node:os';
+import {dirname,join} from 'node:path';
+import {homedir,tmpdir} from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 // Shell 防護依命令結構判斷：PowerShell 與巢狀 shell 納入，引號內文字與運算子不當成命令。
@@ -73,6 +73,36 @@ r=sh('rm -rf /');assert.equal(r.status,2);assert.match(r.stderr,/根目錄/);
 for(const command of ['rm -rf /tmp/abs/build','rm -rf /tmp/$x','rm build.log',"find /tmp/abs -name '*.tmp' -delete","find /tmp/abs -name '*.tmp' -print0 | xargs -0 rm -f",'git -C /tmp/abs clean -fdx'])
  assert.equal(sh(command).status,0,command);
 
+// 丟棄未提交變更或刪除分支的 git 操作：須以 -C <絕對路徑> 錨定 repo；只取消暫存、切換分支與安全刪除照常。
+for(const command of ['git checkout -- .','git checkout -- sub/app.js','git checkout .','git checkout -f','git checkout --force main','git restore .','git restore -W sub',
+ 'git restore -SW .','git restore --source HEAD~1 sub','git switch --discard-changes main','git switch -f main','git stash drop','git stash clear',
+ 'git branch -D topic','git branch --delete --force topic','git branch -df topic']){
+ r=sh(command);assert.equal(r.status,2,command);assert.match(r.stderr,/未以 -C <絕對路徑> 錨定/,command);
+ assert.equal(sh(command.replace(/^git /,'git -C /tmp/abs ')).status,0,`${command}（-C 絕對路徑）`);
+}
+assert.equal(ps('git checkout -- .').status,2,'PowerShell 同樣檢查');
+for(const command of ['git restore --staged .','git restore -S sub/app.js','git checkout main','git checkout -b topic','git switch topic','git stash','git stash pop','git branch -d topic','git branch topic'])
+ assert.equal(sh(command).status,0,command);
+// rsync --delete：本機目的地須以絕對路徑錨定；遠端目的地與不刪除的同步照常。
+const slash=(p)=>p.replace(/\\/g,'/');
+for(const command of ['rsync -a --delete src/ dst/','rsync -av --delete-after -e ssh src/ backup','echo x | rsync -a --del src/ "$DEST"'])
+ assert.equal(sh(command).status,2,command);
+for(const command of ['rsync -a --delete src/ /tmp/abs/dst/','rsync -a --delete src/ user@host:/srv/app','rsync -a --delete src/ rsync://host/mod','rsync -a src/ dst/'])
+ assert.equal(sh(command).status,0,command);
+
+// 根目錄、家目錄、專案根、它們的上層與系統頂層目錄：即使是絕對路徑也不可整個刪除或清空。
+const home=homedir();
+const sysTop=process.platform==='win32'?`${process.env.SystemDrive||'C:'}\\Windows`:'/usr';
+for(const [fn,command,kind] of [[sh,`rm -rf ${slash(home)}`,'家目錄'],[sh,`rm -rf ${slash(dirname(home))}`,'家目錄的上層'],[sh,`rm -rf ${slash(root)}`,'專案根'],
+ [sh,`rm -rf ${slash(root)}/*`,'專案根'],[sh,`rm -rf ${slash(root)}/`,'專案根'],[sh,`rm -rf ${slash(dirname(root))}`,'專案根的上層'],[sh,'rm -rf /usr','系統頂層目錄'],
+ [ps,`Remove-Item -Recurse -Force '${home}'`,'家目錄'],[ps,`Remove-Item -Recurse -Force '${sysTop}'`,'系統頂層目錄'],[sh,`find ${slash(home)} -delete`,'家目錄'],
+ [sh,`find ${slash(root)} -print0 | xargs -0 rm -rf`,'專案根'],[ps,`robocopy C:\\empty '${home}' /MIR`,'家目錄'],[sh,`rsync -a --delete /tmp/abs/src/ ${slash(root)}/`,'專案根']]){
+ r=fn(command);assert.equal(r.status,2,command);assert.match(r.stderr,new RegExp(`目標是${kind}（`),command);
+}
+for(const [fn,command] of [[sh,`find ${slash(home)} -name '*.tmp' -delete`],[sh,`rm -rf ${slash(root)}/build`],[sh,`rm -rf ${slash(join(home,'proj-x','build'))}`],
+ [ps,`Remove-Item -Recurse -Force '${join(root,'build')}'`],[sh,`find ${slash(root)} -name '*.log' -print0 | xargs -0 rm -f`]])
+ assert.equal(fn(command).status,0,command);
+
 // git alias 與路徑重定向。
 for(const command of ['git -c alias.x=commit x -m y','GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.x GIT_CONFIG_VALUE_0=commit git x']){r=sh(command);assert.equal(r.status,2);assert.match(r.stderr,/git alias 定義攔截/);}
 r=ps('$env:GIT_DIR="C:/x/.git"; git status');assert.equal(r.status,2);assert.match(r.stderr,/路徑重定向攔截/);
@@ -85,9 +115,11 @@ for(const [node,expect] of [['requirement',true],['verify',true],['build',false]
 set('requirement');r=sh('sb next research --adversarial');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
 
 // 只有已註冊的事件寫紀錄；PowerShell 呼叫同樣計數。
-set('build');const before=readFileSync(statePath,'utf8');
-assert.equal(run('Notification').status,0);assert.equal(readFileSync(statePath,'utf8'),before,'未知事件不寫狀態');
-assert.equal(ps('Get-Date').status,0);assert.equal(JSON.parse(readFileSync(statePath,'utf8')).turnUsage.requests,1);
+set('build');const records=join(root,'.shiftblame/tmp/hook-records.json');const before=readFileSync(records,'utf8');
+assert.equal(run('Notification').status,0);assert.equal(readFileSync(records,'utf8'),before,'未知事件不寫紀錄');
+const turnCount=()=>JSON.parse(readFileSync(records,'utf8')).turnUsage?.requests??0;const count0=turnCount();
+assert.equal(ps('Get-Date').status,0);assert.equal(turnCount(),count0+1);
+assert.equal(JSON.parse(readFileSync(statePath,'utf8')).turnUsage,undefined,'hooks 不寫 flow-state');
 
 // 驗收段的相對路徑以工具 cwd 展開。
 set('verify');r=tool('Write',{file_path:'app.js'},join(root,'sub'));assert.equal(r.status,2);assert.match(r.stderr,/sub\/app\.js/);

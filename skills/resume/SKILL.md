@@ -6,6 +6,8 @@ description: 恢復 slug 或 main 具名工作，核對交接、Git 差異與既
 
 依 [主技能](../shiftblame/SKILL.md) 與 `sb state` 核對 repo、工作模式、分支及工作樹。使用者已指定工作就接續；插入問題、進度詢問與續行沿用原目標及有效授權。
 
+接續前先完成本對話的產品訪談：新對話寫第一輪，恢復舊對話在同一紀錄末尾追加一輪（觸發寫「恢復對話」）。把交接中的目標、範圍與驗收交使用者重新確認，差異記入該輪；壓縮續接沿用原紀錄，不需重訪。
+
 ## main／直接實作
 
 按 [HANDOFF](../shiftblame/references/HANDOFF.md) 執行 `sb handoff list` 定位具名工作，再以 `sb handoff show <task>` 讀取快照及現況差異。已有明確 task 時直接 show；多個候選才依使用者目標與交接內容選擇，無法辨識時只問必要的目標差異，不以時間最新者冒充正確工作。

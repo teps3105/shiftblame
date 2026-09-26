@@ -36,8 +36,9 @@ for (const initial of [undefined, record]) {
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /非 Git 模式（--no-git）/);
   const initialized = JSON.parse(readFileSync(f.file, 'utf8'));
-  const { startedAt, baseCommit, ...rest } = initialized;
+  const { startedAt, baseCommit, usageBase, ...rest } = initialized;
   assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent' });
+  assert.equal(usageBase, 0, '尚無 hooks 計數時，開 slug 的呼叫計數基準為 0');
   assert.match(startedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, 'init 錨定流程起始時間（遙測耗時基準）');
   assert.equal(baseCommit, null, '非 git 工作區 baseline 記 null（遙測 diff 缺省）');
   assert.ok(existsSync(join(f.cwd, '.shiftblame/demo/SLUG.md')));
@@ -117,7 +118,7 @@ function endedFixture() {
   assert.equal(r.status, 0, r.stderr);
   const reinitialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt: reStartedAt, ...reRest } = reinitialized;
-  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', baseCommit: null });
+  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', baseCommit: null, usageBase: 0 });
   assert.match(reStartedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8'), oldDoc);
   assert.equal(existsSync(join(f.cwd, '.shiftblame/archive/INDEX.md')), false, '歸檔清單機制已除——archive 僅承載 slug 目錄');

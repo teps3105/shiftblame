@@ -104,11 +104,15 @@ function validTelemetry(t) {
   if (!(t.durationMinutes === null || (typeof t.durationMinutes === 'number' && t.durationMinutes >= 0))) return false;
   return true;
 }
-// 對抗條目鍵集：point（時點條目）與 model（審查模型——報告內含「審查模型：」行則記，缺省無鍵）皆可選。
-const ADV_ENTRY_KEYS = (x) => ['at', 'report', 'verdict', 'node', ...(Object.hasOwn(x, 'point') ? ['point'] : []), ...(Object.hasOwn(x, 'model') ? ['model'] : [])];
+// 對抗條目鍵集：point（時點條目）與 model（審查模型——報告內含「審查模型：」行則記，缺省無鍵）皆可選；
+// g1（時點 1 審查時的 G1 定義區 hash）與 head（時點 2 受驗提交）綁定審查對象，舊版條目沒有這兩鍵。
+const ADV_OPTIONAL_KEYS = ['point', 'model', 'g1', 'head'];
+const ADV_ENTRY_KEYS = (x) => ['at', 'report', 'verdict', 'node', ...ADV_OPTIONAL_KEYS.filter((k) => Object.hasOwn(x, k))];
 const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_KEYS(x)) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === node
   && (!Object.hasOwn(x, 'point') || ['1', '2'].includes(x.point))
-  && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0));
+  && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0))
+  && (!Object.hasOwn(x, 'g1') || (typeof x.g1 === 'string' && /^[0-9a-f]{64}$/.test(x.g1)))
+  && (!Object.hasOwn(x, 'head') || commitId(x.head));
 
 function endedState(st, root) {
   const allowed = [...HOOK_RECORD_KEYS, 'slug', 'ms', 'node', 'endedAt', 'workBranch', 'closeout', 'telemetry', 'msBaseline', 'msTelemetry', 'concludedAt', 'sopReview'];
@@ -162,6 +166,7 @@ function activeExtras(st) {
     && (!Object.hasOwn(st.sopReview, 'files') || validStampFiles(st.sopReview.files)))) return false;
   if (Object.hasOwn(st, 'baseCommit') && !(st.baseCommit === null || commitId(st.baseCommit))) return false;
   if (Object.hasOwn(st, 'startedAt') && !timestamp(st.startedAt)) return false;
+  if (Object.hasOwn(st, 'usageBase') && !nonNegativeInt(st.usageBase)) return false; // init 時的工具呼叫累計，供 end 計算本 slug 用量
   if (Object.hasOwn(st, 'msBaseline') && !(st.msBaseline === null || commitId(st.msBaseline))) return false; // per-ms 遙測基準
   if (Object.hasOwn(st, 'msTelemetry') && !(objectRecord(st.msTelemetry) && Object.entries(st.msTelemetry).every(([k, v]) => /^\d{3,}$/.test(k) && objectRecord(v) && exactKeys(v, ['diff', 'settledAt']) && v.diff !== null && exactKeys(v.diff, ['additions', 'deletions', 'files']) && [v.diff.additions, v.diff.deletions, v.diff.files].every(nonNegativeInt) && timestamp(v.settledAt)))) return false;
   return true;

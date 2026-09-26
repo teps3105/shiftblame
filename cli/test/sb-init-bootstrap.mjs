@@ -184,7 +184,7 @@ const absent = (f, ...names) => { for (const n of names) assert.equal(existsSync
   const hash = createHash('sha256').update('# 需求\n定義內容\n', 'utf8').digest('hex');
   assert.match(f.run('state').stdout, new RegExp(`G1 定義區 hash（目前）：${hash}`));
   f.setState({ ...st, node: 'verify' });
-  assert.match(f.run('state').stdout, new RegExp(`受驗提交（HEAD）：${f.git('rev-parse', 'HEAD').stdout.trim()}`));
+  assert.match(f.run('state').stdout, new RegExp(`受驗提交：${f.git('rev-parse', 'HEAD').stdout.trim()}`));
   f.setState({ ...st, node: 'build' });
   assert.doesNotMatch(f.run('state').stdout, /先行研究筆記/, '其他段不印比對基準');
   // 上層已有進行中流程時，空子資料夾同樣先得到錨定提示，而不是上層的狀態錯誤。

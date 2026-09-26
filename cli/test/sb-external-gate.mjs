@@ -38,7 +38,7 @@ extCall('WebSearch');
 extCall('Agent');
 extCall('mcp__web_reader__webReader');
 assert.equal(state().externalEvidence, undefined, '外部工具調用零標記（機械綁定已移除）');
-assert.ok(state().hooksHeartbeat, '心跳等其他紀錄不受影響');
+assert.ok(JSON.parse(readFileSync(join(root, '.shiftblame/tmp/hook-records.json'), 'utf8')).hooksHeartbeat, '心跳等其他紀錄不受影響（另存 tmp）');
 
 // —— 2. research→plan 零機械驗：無外部調用紀錄也直接過（閘不觸發）——
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' });

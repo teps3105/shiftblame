@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.8.1**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.8.2**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -16,6 +16,12 @@ slug 有兩個使用者決策時點：G1 需求完成後，以及 verify 驗收�
 階段內依實際問題取用方法：難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，功能按[完整行為片段與依賴](skills/shiftblame/references/PLAN.md)推進，[測試](skills/shiftblame/references/TEST.md)使用可觀察介面與獨立預期值，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質。技術選擇可透過[決策依賴與原型](skills/shiftblame/references/RESEARCH.md)取證，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
 
 [治理詞彙](skills/shiftblame/references/GLOSSARY.md)提供概念定義；[文件方法](skills/shiftblame/assets/DOCS.md)說明按需讀取入口、領域詞彙與長期決策理由。這些方法依情境使用，技術工作沿用既有授權。[方法來源](skills/shiftblame/references/SOURCES.md)列出借鑑依據。
+
+## 產品訪談
+
+每個對話開始都先做一輪產品訪談，不論輸入是新需求、續行或恢復舊對話：與使用者對齊目標、範圍、限制與授權及驗收，確認後寫入 `.shiftblame/tmp/interview-<代號>.md`，格式見 [INTERVIEW](skills/shiftblame/assets/INTERVIEW.md)。輸入已經明確時，一輪可以只是理解摘要加上使用者確認；壓縮續接沿用原紀錄。開發中目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認，在同一紀錄追加一輪。
+
+紀錄完成前，hook 擋下專案檔案寫入、git commit／push 與 sb 流程命令，唯讀查證與 tmp 筆記照常；寫入紀錄時由使用者在權限提示中確認。對話第一次在專案中觸發 hook 時，自動建立 `.shiftblame/`、`.shiftblame/tmp/` 與忽略全部內容的 `.shiftblame/.gitignore`，不需先執行 `sb init`；家目錄、其上層與系統頂層目錄不建立。適用範圍與未涵蓋項見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
 
 ## main 模式交接
 
@@ -41,7 +47,7 @@ npm install -g github:teps3105/shiftblame
 
 開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks；執行中的對話可能仍保留舊指令。
 
-插件包含六個技能及 command hooks。SessionStart 注入精簡規則；UserPromptSubmit 更新觀測和階段提示；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、破壞性目標、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋。回合結束依任務完成或實際阻塞判斷。
+插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示；UserPromptSubmit 更新觀測和階段提示；PreToolUse 檢查產品訪談，並解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋。帶 `--boss-ok` 的 `sb next`／`sb end` 與寫入訪談紀錄，由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
 
 ## CLI
 
@@ -68,7 +74,7 @@ sb end --adversarial --boss-ok
 
 ## 保護與限制
 
-G1 的定義區在需求批准後以 hash 封存；回指記錄保存驗收證據。時點審查仍檢查新鮮度，提交仍檢查 repo、訊息印章及 staged `.shiftblame/`。verify 期間保持被驗來源穩定，修正來源先回 build；hook 覆蓋範圍限於平台提供且可辨識的操作事件，未涵蓋項目列於 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+G1 的定義區在需求批准後以 hash 封存；回指記錄保存驗收證據。時點審查檢查新鮮度與審查對象（時點 1 的 G1 定義區 hash、時點 2 的受驗提交），審查後再改須重審；提交仍檢查 repo、訊息印章及 staged `.shiftblame/`。flow-state 以排他鎖與原子寫入更新，hooks 的觀測另存 tmp，並行的命令不會互相覆蓋。verify 期間保持被驗來源穩定，修正來源先回 build；hook 覆蓋範圍限於平台提供且可辨識的操作事件，未涵蓋項目列於 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
 
 任務語義、文件品質與工具重試由代理依目標及證據判斷。未知事實依需要查證，測試依變更風險安排，視覺與互動結果可以使用實際操作證據。未驗證的結果明確標示。
 
@@ -79,4 +85,4 @@ npm test --prefix cli
 node cli/bin/sb.mjs state
 ```
 
-測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化，以及具名交接保存、完整性與 Git 差異辨識。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。
+測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。

@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 // Workflow hooks validate concrete boundaries; semantic decisions remain with the agent.
 
-import { existsSync, readFileSync, realpathSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { objectRecord, readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
+import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
+import { interviewStatus, markSessionStart } from '../cli/bin/interview.mjs';
 import { analyzeCommand, baseName, findRoots, gitInvocation, MAX_DEPTH } from './shell-scan.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -58,27 +62,19 @@ function nodeLine(health) {
   return health.kind === 'active' ? '\n[段] ' + st.slug + '/' + st.ms + ' @ ' + st.node + (EARLY_RESEARCH[st.node] ?? '') : '\n[接入] ' + health.kind + '；依既有授權工作。';
 }
 
-// ———— 紀錄：心跳與使用計數（只寫 hooks 自己的欄位；異常原檔保持原樣） ————
+// ———— 紀錄：心跳與使用計數（另存 tmp/hook-records.json，不寫 sb 管理的 flow-state） ————
 
 const RECORD_EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop']);
-// 先寫同目錄暫存檔再改名，讀取端不會讀到寫到一半的狀態；改名失敗（檔案被鎖）時退回直接寫入。
-function writeAtomic(file, text) {
-  const tmp = `${file}.${process.pid}.tmp`;
-  try {
-    writeFileSync(tmp, text);
-    renameSync(tmp, file);
-  } catch {
-    try { unlinkSync(tmp); } catch { /* 暫存檔可能未建立 */ }
-    writeFileSync(file, text);
-  }
-}
 // Counts record attempted calls only. They never infer progress or prohibit retries.
+// 讀改寫以排他鎖串行，並行的工具呼叫各自計數、不互相覆蓋；短時間等不到鎖就略過這次紀錄。
 function record(root, event) {
   if (!root || !RECORD_EVENTS.has(event) || !existsSync(join(root, '.shiftblame'))) return; // 流浪 cwd 不建工作區
+  mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+  const file = hookRecordsPath(root);
+  const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
+  if (!release) return;
   try {
-    const health = readFlowState(root); // 決策後重讀，縮小與並行寫入者的競爭窗口
-    if (health.kind === 'invalid') return;
-    const st = objectRecord(health.state) ? health.state : {};
+    const st = readHookRecords(root);
     const now = new Date().toISOString();
     st.hooksHeartbeat = { at: now, event };
     if (event === 'UserPromptSubmit') delete st.turnUsage;
@@ -86,8 +82,17 @@ function record(root, event) {
       st.turnUsage = { startedAt: st.turnUsage?.startedAt ?? now, requests: (st.turnUsage?.requests ?? 0) + 1 };
       st.usageTotals = { firstAt: st.usageTotals?.firstAt ?? now, requests: (st.usageTotals?.requests ?? 0) + 1 };
     }
-    writeAtomic(join(root, '.shiftblame', 'flow-state.json'), JSON.stringify(st, null, 2));
-  } catch { /* Observability must not block work. */ }
+    writeAtomic(file, JSON.stringify(st, null, 2));
+  } finally { release(); }
+}
+// 防護失敗時放行工作，但留下紀錄供查證（只寫既有工作區）。
+function logError(root, event, where, error) {
+  try {
+    if (!root || !existsSync(join(root, '.shiftblame'))) return;
+    mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+    const line = { at: new Date().toISOString(), event: event || null, where, message: String(error?.stack ?? error).slice(0, 2000) };
+    appendFileSync(join(root, '.shiftblame', 'tmp', 'hook-errors.jsonl'), JSON.stringify(line) + '\n');
+  } catch { /* 記錄失敗不影響工作 */ }
 }
 
 // ———— 路徑 ————
@@ -127,6 +132,40 @@ const literalHead = (w) => (w.dynamic ? w.value.split(/[$`]|%[A-Za-z_]/)[0] : w.
 const anchoredWord = (w) => isAbs(literalHead(w));
 const rootLikeWord = (w) => !w.dynamic && ROOT_LIKE.test(w.value.trim());
 
+// ———— 保護目錄與工作區 ————
+
+const HOME_DIR = (() => { try { const h = homedir(); return h ? normPath(h, h) : null; } catch { return null; } })();
+const SYSTEM_DRIVE = fold(process.env.SystemDrive || 'C:');
+// 系統頂層目錄：POSIX 的第一層（/usr、/etc、/home…）與 Windows 系統磁碟的第一層（C:\Windows、C:\Users…）。
+function topLevelSystemDir(abs) {
+  if (WIN) { const m = abs.match(/^([a-z]:)[\\/]+[^\\/]+[\\/]*$/i); return !!m && fold(m[1]) === SYSTEM_DRIVE; }
+  return /^\/[^/]+\/*$/.test(abs);
+}
+const within = (inner, outer) => { const r = relative(outer, inner); return r === '' || (!r.startsWith('..') && !isAbsolute(r)); };
+// 不可整個刪除或清空的目錄：根目錄、家目錄、專案根、這些目錄的上層，以及系統頂層目錄。abs 須為 normPath 結果。
+function protectedDir(ctx, abs) {
+  if (dirname(abs) === abs) return '根目錄';
+  if (HOME_DIR && abs === HOME_DIR) return '家目錄';
+  if (HOME_DIR && within(HOME_DIR, abs)) return '家目錄的上層';
+  const root = ctx.root ? normPath(ctx.root, ctx.root) : null;
+  if (root && abs === root) return '專案根';
+  if (root && within(root, abs)) return '專案根的上層';
+  return topLevelSystemDir(abs) ? '系統頂層目錄' : null;
+}
+// 可自動建立工作區的專案根：不是根目錄、家目錄或其上層，也不是系統頂層目錄。
+function safeWorkspaceRoot(root) {
+  const abs = normPath(root, root);
+  if (dirname(abs) === abs || topLevelSystemDir(abs)) return false;
+  return !(HOME_DIR && within(HOME_DIR, abs));
+}
+// 自動初始化只建 .shiftblame/、.shiftblame/tmp/ 與忽略全部內容的 .shiftblame/.gitignore，不寫 flow-state。
+function ensureWorkspace(root) {
+  const dir = join(root, '.shiftblame');
+  mkdirSync(join(dir, 'tmp'), { recursive: true });
+  const ignore = join(dir, '.gitignore');
+  if (!existsSync(ignore)) writeFileSync(ignore, '*\n');
+}
+
 // ———— 狀態與寫入矩陣 ————
 
 // Tool capabilities are classified by the final action, never provider substrings.
@@ -142,6 +181,14 @@ function healthWriteTargets(input) {
   const patch = typeof input === 'string' ? input : input?.patch ?? input?.input;
   if (typeof patch === 'string') for (const m of patch.matchAll(/^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gm)) targets.push(m[1].trim());
   return targets;
+}
+// 本機寫入目標：帶遠端定位欄位（owner、repo、bucket…）的工具寫的是遠端資源，path 不是本機路徑；
+// URI（https://、s3://…）同理排除。
+const REMOTE_LOCATOR_KEYS = ['owner', 'repo', 'repository', 'repo_id', 'project_id', 'bucket'];
+const URI_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+function localWriteTargets(input) {
+  if (objectRecord(input) && REMOTE_LOCATOR_KEYS.some((k) => typeof input[k] === 'string' && input[k].trim())) return [];
+  return healthWriteTargets(input).filter((t) => !URI_SCHEME.test(t));
 }
 function recoveryTarget(ctx, target) {
   const rel = fold(relTo(ctx.root, absPath(ctx.cwd, target)));
@@ -170,16 +217,16 @@ function checkStateHealth(ctx, tool, input, scan) {
     return null;
   }
   if (isWriteTool(tool)) {
-    const targets = healthWriteTargets(input);
-    return targets.length && targets.every((p) => recoveryTarget(ctx, p)) ? null : HEALTH_BLOCKED;
+    // 沒有本機路徑的寫入工具（待辦清單、遠端 API）不會惡化本機狀態。
+    const targets = localWriteTargets(input);
+    return targets.every((p) => recoveryTarget(ctx, p)) ? null : HEALTH_BLOCKED;
   }
   return null;
 }
 
 function checkStateWriteMatrix(ctx, toolInput) {
   if (!['verify', 'done'].includes(ctx.health?.state?.node)) return null;
-  for (const target of healthWriteTargets(toolInput)) {
-    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(target)) continue;
+  for (const target of localWriteTargets(toolInput)) {
     const rel = relTo(ctx.root, absPath(ctx.cwd, target));
     if (!rel || rel === '..' || rel.startsWith('../') || isAbsolute(rel) || systemRel(rel)) continue;
     // Untracked ignored outputs are outside the versioned acceptance source.
@@ -229,6 +276,94 @@ function checkLayerStopover(ctx, entry) {
   if (st.node === 'intent') return '使用者決策邊（intent→requirement）：使用者確認意圖後，帶 --boss-ok 推進。';
   return '使用者決策邊（requirement→research＝時點 1）：獨立審查通過且使用者判定後，帶 --adversarial --boss-ok 推進。等待期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G1、不提交；判定前的研究結果不餵給審查者。';
 }
+// --boss-ok 由代理代填：帶此旗標的 sb next／sb end 交給使用者在權限提示中確認（平台不支援詢問時放行）。
+function bossOkAsk(entry) {
+  const sb = sbSub(entry);
+  if (!sb || !['next', 'end'].includes(sb.sub) || !sb.all.some((w) => w.value === '--boss-ok')) return null;
+  if (sb.sub === 'end') return 'sb end 帶 --boss-ok：表示你已完成時點 2 終審並同意結束這個 slug。屬實再允許。';
+  const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value ?? '（未指明）';
+  const newMs = sb.all.some((w) => w.value === '--new-ms') ? '，並開新里程碑' : '';
+  return `sb next ${target} 帶 --boss-ok：表示你已在對話中判定通過這次推進${newMs}。屬實再允許。`;
+}
+
+// ———— 產品訪談閘 ————
+
+// 每個對話（含恢復舊對話）先完成一輪產品訪談並寫入紀錄；完成前擋下專案檔案寫入、git commit／push 與 sb 流程命令。
+// 唯讀查證、.shiftblame/tmp 筆記與訪談紀錄本身照常；經 shell 的其他寫入與專案根以外的寫入不在涵蓋範圍。
+const INTERVIEW_TEMPLATE = fileURLToPath(new URL('../skills/shiftblame/assets/INTERVIEW.md', import.meta.url));
+const INTERVIEW_SB_SUBS = new Set([...HOLD_SB_SUBS, 'vault']);
+const INTERVIEW_OVERFLOW_RE = [/\bgit(?:\.exe)?\b[\s\S]*\b(?:commit|push)\b/i, /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout|vault)\b/];
+const interviewRel = (ctx) => relTo(ctx.root, absPath(ctx.root, ctx.interview.path));
+function interviewNeed(iv) {
+  if (!iv.exists) return '紀錄尚未建立';
+  const last = iv.rounds.at(-1);
+  if (last?.missing.length) return `第 ${last.n} 輪缺少：${last.missing.join('、')}`;
+  if (iv.base > 0) return `恢復的對話須在紀錄末尾追加新的一輪（開場時已完成 ${iv.base} 輪）`;
+  return '紀錄中沒有「## 第 N 輪」段落';
+}
+const INTERVIEW_DENY = (ctx, what) =>
+  `產品訪談尚未完成（${interviewRel(ctx)}：${interviewNeed(ctx.interview)}）——${what}暫停。先與使用者對齊目標、範圍、限制與驗收，經使用者確認後寫入紀錄（範本：${INTERVIEW_TEMPLATE}）；唯讀查證與 .shiftblame/tmp 筆記照常。`;
+const INTERVIEW_ASK = (rel) => `寫入本對話的產品訪談紀錄（${rel}）：請核對內容與你的回答一致，「使用者確認」欄須是你本人的確認，再允許寫入。`;
+const INTERVIEW_MARKER_DENY = '訪談開場標記由 hook 維護，不可直接寫入——恢復的對話請在訪談紀錄追加新的一輪。';
+const interviewFiles = (ctx) => ({ record: normPath(ctx.root, ctx.interview.path), marker: normPath(ctx.root, ctx.interview.path.replace(/\.md$/, '.json')) });
+function checkInterviewWrite(ctx, tool, input) {
+  if (!ctx.interview || ctx.interview.open || !isWriteTool(tool)) return null;
+  const files = interviewFiles(ctx);
+  let ask = null;
+  for (const target of localWriteTargets(input)) {
+    const abs = normPath(ctx.cwd ?? ctx.root, target);
+    if (abs === files.record) { ask = INTERVIEW_ASK(interviewRel(ctx)); continue; }
+    if (abs === files.marker) return { deny: INTERVIEW_MARKER_DENY };
+    const rel = fold(relTo(ctx.root, absPath(ctx.cwd ?? ctx.root, target)));
+    if (rel === '..' || rel.startsWith('../') || isAbsolute(rel)) continue; // 專案根以外不在涵蓋範圍
+    if (rel === '.shiftblame/tmp' || rel.startsWith('.shiftblame/tmp/')) continue;
+    return { deny: INTERVIEW_DENY(ctx, '專案檔案寫入') };
+  }
+  return ask ? { ask } : null;
+}
+// shell 寫入只辨識重定向與 tee／Set-Content 類命令的字面目標，用來讓寫紀錄同樣經使用者確認、寫開場標記同樣拒絕。
+const SHELL_WRITE_OPS = new Set(['>', '>>', '>|', '&>', '&>>']);
+const SHELL_WRITERS = new Set(['tee', 'tee-object', 'set-content', 'add-content', 'out-file']);
+function shellWriteWords(e) {
+  const words = e.cmd.redirects.filter((r) => !r.dup && r.target && SHELL_WRITE_OPS.has(r.op)).map((r) => r.target);
+  if (SHELL_WRITERS.has(e.name ?? '')) words.push(...e.args.filter((w) => !w.value.startsWith('-')));
+  return words.filter((w) => !w.dynamic);
+}
+function checkInterviewShell(ctx, scan) {
+  if (!ctx.interview || ctx.interview.open) return null;
+  const files = interviewFiles(ctx);
+  let ask = null;
+  for (const e of scan.entries) {
+    if (e.query) continue;
+    if (e.name === 'git') {
+      const g = gitInvocation(e.args);
+      if (g.sub?.dynamic) return { deny: INTERVIEW_DENY(ctx, '無法確認的 git 子命令') };
+      const sub = g.sub?.value.toLowerCase();
+      if (sub === 'commit' || sub === 'push') return { deny: INTERVIEW_DENY(ctx, `git ${sub}`) };
+    } else if (!e.name && e.nameWord?.dynamic && e.args.some((w) => ['commit', 'push'].includes(w.value))) {
+      return { deny: INTERVIEW_DENY(ctx, '以變數組成的 git 提交或推送') };
+    }
+    const sb = sbSub(e);
+    if (sb && INTERVIEW_SB_SUBS.has(sb.sub)) return { deny: INTERVIEW_DENY(ctx, `sb ${sb.sub}`) };
+    for (const w of shellWriteWords(e)) {
+      const abs = normPath(ctx.cwd ?? ctx.root, w.value);
+      if (abs === files.marker) return { deny: INTERVIEW_MARKER_DENY };
+      if (abs === files.record) ask = INTERVIEW_ASK(interviewRel(ctx));
+    }
+  }
+  if (scan.overflow.some((t) => INTERVIEW_OVERFLOW_RE.some((re) => re.test(t)))) return { deny: INTERVIEW_DENY(ctx, '無法展開的巢狀命令（含提交、推送或 sb 流程命令）') };
+  return ask ? { ask } : null;
+}
+// 開場與每次輸入的訪談提示。
+function interviewLine(ctx, event) {
+  const iv = ctx.interview;
+  if (!iv) return '';
+  const rel = interviewRel(ctx);
+  if (iv.open) return event === 'SessionStart' ? `\n[訪談] 本對話紀錄 ${rel} 已完成 ${iv.complete} 輪；目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認時，在同一紀錄追加一輪。` : '';
+  const resume = iv.base > 0 ? '恢復的對話：在同一紀錄末尾追加新的一輪。' : '';
+  if (event === 'UserPromptSubmit') return `\n[訪談] 本對話尚未完成產品訪談（${rel}：${interviewNeed(iv)}）——先對齊需求並寫入紀錄。${resume}`;
+  return `\n[訪談] 先做產品訪談：與使用者對齊目標、範圍、限制與驗收，確認後寫入 ${rel}（範本：${INTERVIEW_TEMPLATE}）。${resume}完成前 hook 擋下專案檔案寫入、git commit／push 與 sb 流程命令；唯讀查證與 .shiftblame/tmp 筆記照常。`;
+}
 
 // ———— git 設定與路徑重定向 ————
 
@@ -264,22 +399,108 @@ function checkGitRedirect(entries, text, overflow) {
 const DENY_RELATIVE = (what, target) =>
   `破壞性操作（${what}）的目標未以絕對路徑錨定（${target}）——相對路徑或變數會隨執行當下的工作目錄漂移；請改寫為絕對路徑後重試`;
 const DENY_ROOT = (target) => `破壞性操作的目標是根目錄（${target}）——一律拒絕；請指明確切的絕對子路徑`;
+const DENY_PROTECTED = (kind, target) => `破壞性操作的目標是${kind}（${target}）——一律拒絕；請指明確切的絕對子路徑`;
 const targetLabel = (w) => (w ? w.raw || w.value : '未指明');
-function checkTargets(what, targets, entry) {
+// 只解析靜態字詞；結尾的純萬用段（/*、/.*）等同清空其上層目錄。
+function protectedTarget(ctx, w) {
+  if (!w || w.dynamic || !ctx.cwd) return null;
+  let v = w.value.trim().replace(/[\\/]+\.?\*+$/, '');
+  if (!v || /[*?[\]{}]/.test(v)) return null;
+  if (/^[A-Za-z]:$/.test(v)) v += '\\';
+  const kind = protectedDir(ctx, normPath(ctx.cwd, v));
+  return kind ? DENY_PROTECTED(kind, targetLabel(w)) : null;
+}
+// find 沒有篩選條件時，刪除範圍就是整個搜尋根。
+const FIND_TEST = /^-(?:i?name|i?path|i?wholename|i?regex|i?lname|type|xtype|newer\S*|[acm](?:time|min|newer)|used|size|perm|user|group|nouser|nogroup|uid|gid|empty|links|inum|samefile|readable|writable|executable|fstype|context)$/;
+function protectedFindRoot(ctx, roots, words) {
+  if (words.some((w) => FIND_TEST.test(w.value))) return null;
+  for (const r of roots) { const reason = protectedTarget(ctx, r); if (reason) return reason; }
+  return null;
+}
+function checkTargets(ctx, what, targets, entry) {
   if (!targets.length) return DENY_RELATIVE(what, '未指明，來自管線或預設目錄');
   for (const t of targets) {
     if (entry?.findExec && t.value.includes('{}')) {
       const bad = entry.findRoots.length ? entry.findRoots.find((r) => !anchoredWord(r)) : { raw: '.' };
       if (bad) return DENY_RELATIVE(`find -exec ${what}`, `搜尋根 ${targetLabel(bad)}`);
+      const guarded = protectedFindRoot(ctx, entry.findRoots, entry.cmd.words);
+      if (guarded) return guarded;
       continue;
     }
     if (rootLikeWord(t)) return DENY_ROOT(t.value);
     if (!anchoredWord(t)) return DENY_RELATIVE(what, targetLabel(t));
+    const guarded = protectedTarget(ctx, t);
+    if (guarded) return guarded;
   }
   return null;
 }
+// 會丟棄未提交變更或刪除分支的 git 操作；回傳操作名稱，其他情況回傳 null。
+function gitDiscard(sub, subArgs) {
+  const vals = subArgs.map((w) => w.value);
+  const short = (re) => vals.some((v) => /^-[A-Za-z]+$/.test(v) && re.test(v.slice(1)));
+  const firstWord = vals.find((v) => !v.startsWith('-'));
+  switch (sub) {
+    case 'clean': return vals.includes('--force') || short(/f/) ? 'clean -f' : null;
+    case 'reset': return vals.includes('--hard') ? 'reset --hard' : null;
+    case 'checkout': {
+      if (vals.includes('--force') || short(/f/)) return 'checkout -f';
+      const k = vals.indexOf('--');
+      if (k >= 0 && k < vals.length - 1) return 'checkout -- <路徑>';
+      return vals.some((v) => /^(?:\.|\.[\\/].*|:\/.*|:\(.*)$/.test(v)) ? 'checkout <路徑>' : null;
+    }
+    case 'restore': {
+      let staged = false, worktree = false, paths = false;
+      for (let i = 0; i < vals.length; i++) {
+        const v = vals[i];
+        if (v === '--') { paths ||= i < vals.length - 1; break; }
+        if (v === '--staged') staged = true;
+        else if (v === '--worktree') worktree = true;
+        else if (v === '--source') i++;
+        else if (v.startsWith('--pathspec-from-file')) paths = true;
+        else if (/^-[A-Za-z]+$/.test(v)) { if (v.includes('S')) staged = true; if (v.includes('W')) worktree = true; if (v.endsWith('s')) i++; }
+        else if (!v.startsWith('-')) paths = true;
+      }
+      // 只有 --staged 是取消暫存，不動工作樹。
+      return paths && (!staged || worktree) ? 'restore' : null;
+    }
+    case 'switch': return vals.includes('--discard-changes') || vals.includes('--force') || short(/f/) ? 'switch --discard-changes' : null;
+    case 'stash': return ['drop', 'clear'].includes(firstWord) ? `stash ${firstWord}` : null;
+    case 'branch': {
+      const del = vals.includes('--delete') || short(/d/);
+      const force = vals.includes('--force') || short(/f/);
+      return short(/D/) || (del && force) ? 'branch -D' : null;
+    }
+    default: return null;
+  }
+}
+// rsync --delete 會刪除目的地中來源沒有的檔案：本機目的地須以絕對路徑錨定。
+const RSYNC_DELETE = /^--(?:del|delete(?:-(?:before|during|delay|after|excluded|missing-args))?)$/;
+const RSYNC_VALUE = new Set(['-e', '--rsh', '--rsync-path', '-f', '--filter', '--exclude', '--include', '--exclude-from', '--include-from', '--files-from', '-T', '--temp-dir', '--compare-dest', '--copy-dest', '--link-dest', '-B', '--block-size', '--backup-dir', '--suffix', '--chmod', '--chown', '--usermap', '--groupmap', '--timeout', '--contimeout', '--port', '--sockopts', '--password-file', '--log-file', '--log-file-format', '--out-format', '--bwlimit', '--max-size', '--min-size', '--max-delete', '--partial-dir', '--modify-window', '--iconv', '--checksum-choice', '--compress-choice', '--compress-level', '--skip-compress', '--info', '--debug', '--stop-after', '--stop-at', '--write-batch', '--only-write-batch', '--read-batch', '--protocol', '-M', '--remote-option', '--outbuf', '--address', '--config', '--dparam', '--early-input']);
+const RSYNC_REMOTE = /^(?:rsync:\/\/|(?:[^@\s\\/:]+@)?[^\s\\/:]{2,}:)/;
+function rsyncDelete(args) {
+  const positional = [];
+  let del = false, options = true;
+  for (let i = 0; i < args.length; i++) {
+    const v = args[i].value;
+    if (options && v === '--') { options = false; continue; }
+    if (options && v.startsWith('--')) {
+      const name = v.replace(/=.*$/, '');
+      if (RSYNC_DELETE.test(name)) del = true;
+      if (!v.includes('=') && RSYNC_VALUE.has(name)) i++;
+      continue;
+    }
+    if (options && /^-[A-Za-z0-9]/.test(v)) {
+      const k = v.slice(1).search(/[efTBM]/);
+      if (k >= 0 && k === v.length - 2) i++;
+      continue;
+    }
+    positional.push(args[i]);
+  }
+  return del && positional.length >= 2 ? positional.at(-1) : null;
+}
 const PS_REMOVE = new Set(['remove-item', 'ri', 'rm', 'del', 'erase', 'rd', 'rmdir']);
-const WIN_SWITCH = /^\/[A-Za-z?]+(?::.*)?$/;
+// cmd 風格開關（/s、/q、/MIR）只存在於 Windows；POSIX 上 /usr 這類單層字詞是絕對路徑，不可濾掉。
+const WIN_SWITCH = WIN ? /^\/[A-Za-z?]+(?::.*)?$/ : /(?!)/;
 const PS_PATH_PARAM = /^-(?:p|pa|pat|path|pspath|lp|l|li|lit|lite|liter|litera|literal|literalp|literalpa|literalpat|literalpath)$/i;
 const PS_VALUE_PARAM = /^-(?:filter|include|exclude|credential|stream|f|fi|fil|filt|filte|i|in|inc|incl|inclu|includ|e|ex|exc|excl|exclu|exclud|c|cr|cre|cred|crede|creden|credent|credenti|credentia|s|st|str|stre|strea)$/i;
 function psRemoveTargets(args) {
@@ -300,7 +521,7 @@ function psRemoveTargets(args) {
   return { recursive, targets };
 }
 const RM_LIKE = new Set(['rm', 'rmdir', 'shred', 'unlink']);
-function destructiveReason(entry, entries) {
+function destructiveReason(ctx, entry, entries) {
   const { name, args, dialect } = entry;
   if (!name) return null;
   // xargs rm：刪除對象來自管線，只接受同一管線中較早、由絕對根出發的 find。
@@ -310,6 +531,7 @@ function destructiveReason(entry, entries) {
     const roots = finds.flatMap((f) => { const r = findRoots(f); return r.length ? r : [{ raw: '.', value: '.' }]; });
     const bad = !finds.length ? { raw: '管線上游不是 find' } : roots.find((r) => !anchoredWord(r) || rootLikeWord(r));
     if (bad) return DENY_RELATIVE(`xargs ${name}`, `來源：${targetLabel(bad)}`);
+    for (const f of finds) { const guarded = protectedFindRoot(ctx, findRoots(f), f.args); if (guarded) return guarded; }
   }
   if (name === 'rm' && dialect !== 'ps') {
     let recursive = false, options = true;
@@ -321,17 +543,17 @@ function destructiveReason(entry, entries) {
       targets.push(w);
     }
     if (!recursive || (entry.stdinArgs && !targets.length)) return null;
-    return checkTargets('rm -r', targets, entry);
+    return checkTargets(ctx, 'rm -r', targets, entry);
   }
   if (name === 'remove-item' || name === 'ri' || (dialect === 'ps' && PS_REMOVE.has(name))) {
     const { recursive, targets } = psRemoveTargets(args);
     if (recursive) {
-      const reason = checkTargets(`${entry.nameWord.value} -Recurse`, targets.filter((w) => !WIN_SWITCH.test(w.value)), entry);
+      const reason = checkTargets(ctx, `${entry.nameWord.value} -Recurse`, targets.filter((w) => !WIN_SWITCH.test(w.value)), entry);
       if (reason) return reason;
     }
   }
   if (['del', 'erase', 'rd', 'rmdir'].includes(name) && args.some((w) => /^\/s$/i.test(w.value))) {
-    return checkTargets(`${name} /s`, args.filter((w) => !WIN_SWITCH.test(w.value)), entry);
+    return checkTargets(ctx, `${name} /s`, args.filter((w) => !WIN_SWITCH.test(w.value)), entry);
   }
   if (name === 'find' && args.some((w) => w.value === '-delete' || (/^-(?:exec|execdir|ok|okdir)$/.test(w.value)))) {
     const execRm = args.some((w, i) => /^-(?:exec|execdir|ok|okdir)$/.test(w.value) && ['rm', 'rmdir', 'shred', 'unlink'].includes(baseName(args[i + 1]?.value ?? '')));
@@ -340,20 +562,23 @@ function destructiveReason(entry, entries) {
       if (!roots.length) return DENY_RELATIVE('find 遞迴刪除', '未指明搜尋根，預設為 .');
       const bad = roots.find((r) => !anchoredWord(r) || rootLikeWord(r));
       if (bad) return rootLikeWord(bad) ? DENY_ROOT(bad.value) : DENY_RELATIVE('find 遞迴刪除', `搜尋根 ${targetLabel(bad)}`);
+      const guarded = protectedFindRoot(ctx, roots, args);
+      if (guarded) return guarded;
     }
   }
   if (name === 'robocopy' && args.some((w) => /^\/(?:mir|purge)$/i.test(w.value))) {
-    const positional = args.filter((w) => !WIN_SWITCH.test(w.value));
-    const dest = positional[1];
-    if (!dest || !anchoredWord(dest)) return DENY_RELATIVE('robocopy /MIR', `目標 ${targetLabel(dest)}`);
+    const dest = args.filter((w) => !WIN_SWITCH.test(w.value))[1];
+    return dest ? checkTargets(ctx, 'robocopy /MIR', [dest], entry) : DENY_RELATIVE('robocopy /MIR', '目標 未指明');
+  }
+  if (name === 'rsync') {
+    const dest = rsyncDelete(args);
+    if (dest && !(!dest.dynamic && RSYNC_REMOTE.test(dest.value))) return checkTargets(ctx, 'rsync --delete', [dest], entry);
   }
   if (name === 'git') {
     const g = gitInvocation(args);
-    const sub = g.sub?.value;
-    const force = sub === 'clean' && g.subArgs.some((w) => w.value === '--force' || /^-[A-Za-z]*f/.test(w.value));
-    const hard = sub === 'reset' && g.subArgs.some((w) => w.value === '--hard');
-    if ((force || hard) && !(g.C.length && g.C.every((w) => w && anchoredWord(w)))) {
-      return 'git 破壞性操作（clean -f／reset --hard）未以 -C <絕對路徑> 錨定目標 repo——工作目錄漂移就會清掉錯誤的專案；請加上 -C <絕對路徑> 後重試';
+    const op = g.sub && !g.sub.dynamic ? gitDiscard(g.sub.value.toLowerCase(), g.subArgs) : null;
+    if (op && !(g.C.length && g.C.every((w) => w && anchoredWord(w)))) {
+      return `git 破壞性操作（${op}）未以 -C <絕對路徑> 錨定目標 repo——會丟棄未提交變更或刪除分支，工作目錄漂移就會作用在錯誤的專案；請加上 -C <絕對路徑> 後重試`;
     }
   }
   return null;
@@ -490,11 +715,15 @@ function checkCommit(ctx, entry, seen) {
 // ———— 決策 ————
 
 const deny = (reason) => ({ deny: reason });
+// 無法展開的巢狀內容：出現遞迴刪除、丟棄變更或同步刪除的字樣即拒絕。
+const OVERFLOW_DESTRUCTIVE = /\brm\s+-[A-Za-z]*[rR]|Remove-Item|\b(?:rd|rmdir|del)\s+\/s\b|rmtree|recursive|\bclean\s+-[A-Za-z]*f|reset\s+--hard|\bcheckout\s+(?:-f\b|--force|--\s)|\brestore\s|\bswitch\s[\s\S]*(?:--discard-changes|--force)|\bstash\s+(?:drop|clear)\b|\bbranch\s[\s\S]*(?:-[A-Za-z]*D\b|--delete)|\brsync\b[\s\S]*--del/i;
 function shellDecision(ctx, tool, text) {
   const dialect = /powershell|pwsh/i.test(tool) ? 'ps' : 'posix';
   const scan = analyzeCommand(text, dialect);
   const health = checkStateHealth(ctx, tool, null, scan);
   if (health) return deny(health);
+  const interview = checkInterviewShell(ctx, scan);
+  if (interview?.deny) return deny(interview.deny);
   const { entries, overflow } = scan;
   for (const e of entries) {
     const stop = checkLayerStopover(ctx, e);
@@ -504,13 +733,13 @@ function shellDecision(ctx, tool, text) {
   if (alias) return deny(alias);
   const redirect = checkGitRedirect(entries, text, overflow);
   if (redirect) return deny(redirect);
-  if (overflow.some((t) => /\bgit\b[\s\S]*\bcommit\b/i.test(t) || /\brm\s+-[A-Za-z]*[rR]|Remove-Item|\b(?:rd|rmdir|del)\s+\/s\b|rmtree|recursive|\bclean\s+-[A-Za-z]*f|reset\s+--hard/i.test(t))) {
+  if (overflow.some((t) => /\bgit\b[\s\S]*\bcommit\b/i.test(t) || OVERFLOW_DESTRUCTIVE.test(t))) {
     return deny(`巢狀 shell 超過 ${MAX_DEPTH} 層或內容過多，無法確認其中的提交或刪除——請直接執行內層命令`);
   }
   let warn = null;
   for (const e of entries) {
     if (e.query) continue;
-    const reason = destructiveReason(e, entries) ?? redirectReason(e);
+    const reason = destructiveReason(ctx, e, entries) ?? redirectReason(e);
     if (reason) return deny(reason);
   }
   if (entries.some((e) => INTERPRETER_RE.test(e.name ?? ''))) {
@@ -532,11 +761,12 @@ function shellDecision(ctx, tool, text) {
       return deny('提交命令須以字面 git 呼叫——變數或命令替換組成的命令無法套用提交檢查');
     }
   }
-  return { context: warn };
+  const asks = [...new Set([interview?.ask, ...entries.filter((e) => !e.query).map(bossOkAsk)].filter(Boolean))];
+  return asks.length ? { ask: asks.join('\n'), context: warn } : { context: warn };
 }
 function decide(event, input, ctx) {
-  if (event === 'SessionStart') return { context: CARD + nodeLine(ctx.health) };
-  if (event === 'UserPromptSubmit') return { context: nodeLine(ctx.health) };
+  if (event === 'SessionStart') return { context: CARD + nodeLine(ctx.health) + interviewLine(ctx, event) };
+  if (event === 'UserPromptSubmit') return { context: nodeLine(ctx.health) + interviewLine(ctx, event) };
   if (event !== 'PreToolUse') return {};
   const tool = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input ?? {};
@@ -547,30 +777,58 @@ function decide(event, input, ctx) {
   }
   const health = checkStateHealth(ctx, tool, toolInput, null);
   if (health) return deny(health);
+  const interview = checkInterviewWrite(ctx, tool, toolInput);
+  if (interview?.deny) return interview;
   if (isWriteTool(tool)) {
     const matrix = checkStateWriteMatrix(ctx, toolInput);
     if (matrix) return deny(matrix);
   }
-  return {};
+  return interview ?? {};
 }
 
-// 先算決策，再記錄，最後輸出；記錄前重讀狀態，異常時保持原檔。
+// 平台對話代號；ZCode 子代理（sess_subagent_…）不帶上層代號，不另做訪談。
+function sessionOf(input) {
+  const id = [input.session_id, input.sessionId].find((v) => typeof v === 'string' && v.trim());
+  return id ? id.trim() : null;
+}
+const interviewApplies = (root, sessionId) => !!(sessionId && root && !/^sess_subagent_/.test(sessionId) && safeWorkspaceRoot(root) && existsSync(join(root, '.shiftblame', 'tmp')));
+
+// 先算決策，再記錄，最後輸出。防護本身出錯時放行，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 let result = {};
+let root = null, event = '';
 try {
   const raw = await readStdin();
   const input = raw.trim() ? JSON.parse(raw) : {};
-  const event = input.hook_event_name || input.hookEventName || '';
+  event = input.hook_event_name || input.hookEventName || '';
   const cwd = inputCwd(input);
-  const root = cwd ? findProjectRoot(cwd) : null;
+  root = cwd ? findProjectRoot(cwd) : null;
+  const sessionId = sessionOf(input);
+  // 有對話代號的平台工作階段：在可安全放置的專案根自動建立工作區，供產品訪談紀錄使用。
+  if (sessionId && root && RECORD_EVENTS.has(event) && safeWorkspaceRoot(root)) {
+    try { ensureWorkspace(root); } catch (error) { logError(root, event, 'workspace', error); }
+  }
   let health = root ? readFlowState(root) : null;
   if (health?.kind === 'invalid') health = readFlowState(root); // 並行寫入瞬間可能讀到半寫檔：再讀一次才判定
-  const ctx = { cwd, root, health };
-  try { result = decide(event, input, ctx); } catch { result = {}; }
-  if (health?.kind !== 'invalid') record(root, event);
+  let interview = null;
+  if (interviewApplies(root, sessionId)) {
+    try {
+      if (event === 'SessionStart') markSessionStart(root, sessionId, input.source);
+      interview = interviewStatus(root, sessionId);
+    } catch (error) { logError(root, event, 'interview', error); }
+  }
+  const ctx = { cwd, root, health, interview };
+  try { result = decide(event, input, ctx); } catch (error) { result = {}; logError(root, event, 'decide', error); }
+  try { record(root, event); } catch (error) { logError(root, event, 'record', error); }
   if (result.deny) {
     process.stderr.write(`[shiftblame] ${result.deny}\n`);
     process.exit(2);
   }
+  if (result.ask && event === 'PreToolUse') {
+    const out = { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: `[shiftblame] ${result.ask}` };
+    if (result.context) out.additionalContext = result.context;
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: out }));
+    process.exit(0);
+  }
   emit(result.context, event);
-} catch { /* 防護損壞時保持工作暢通 */ }
+} catch (error) { logError(root, event, 'main', error); }
 process.exit(0);

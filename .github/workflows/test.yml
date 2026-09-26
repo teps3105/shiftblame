@@ -1,0 +1,32 @@
+# 三平台測試：ubuntu／macos／windows 各跑一次完整測試（Node LTS）。
+name: test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      # 測試會在暫存 repo 中合併與提交：先設好身分；關閉換行轉換，讓 Windows 取出的檔案與其他平台一致。
+      - name: 設定 git
+        run: |
+          git config --global core.autocrlf false
+          git config --global init.defaultBranch main
+          git config --global user.name "shiftblame-ci"
+          git config --global user.email "ci@shiftblame.invalid"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - name: 測試
+        run: npm test --prefix cli
