@@ -1256,6 +1256,17 @@ function cmdEnd(opts) {
 // 子代理工具不可用＝流程阻塞等待至可用（自代無合法介面）；報告真實性由對話與抽查承擔。
 // --point 必帶——時點 1（requirement→research：審意圖→需求翻譯）／時點 2（verify 出口：驗收完成後審驗收結果）；段內提交對抗章（無 point）已移除
 // （審核資源前移需求與驗收兩接縫；提交閘僅存 commitmsg 格式驗證＋印章，審核不在提交時點）。
+// 同一 repo 根可有不同寫法（macOS 的 /var 即 /private/var、Windows 短檔名）：由上而下第一個實際指向 ROOT 的祖先
+// 換回 ROOT 的寫法，其下各段照字面保留——只容許根的別名，repo 內的連結仍依字面判定落點。
+function rootSpelled(file) {
+  const root = realpathSync.native(ROOT);
+  const chain = [];
+  for (let p = file; ; p = dirname(p)) { chain.unshift(p); if (dirname(p) === p) break; }
+  for (const p of chain) {
+    try { if (realpathSync.native(p) === root) return join(ROOT, relative(p, file)); } catch { /* 不存在的段照字面 */ }
+  }
+  return file;
+}
 function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（RAM）
   if (!report || !report.trim()) die(['缺報告檔——sb adversarial <子代理對抗報告檔> --point 1|2（.shiftblame/tmp/review-*.md；須由外部唯讀子代理審查，報告原文落檔後引用）']);
   if (!point) die(['--point 必帶——sb adversarial <報告檔> --point 1|2（1＝requirement→research 時點 1：審意圖→需求翻譯；2＝verify 出口時點 2：驗收完成後審驗收結果）；段內提交對抗章已移除（審核資源前移需求與驗收兩時點）']);
@@ -1265,9 +1276,12 @@ function cmdAdversarial(report, point) { // --point 1|2＝時點對抗條目（R
   const st = current.state ?? {};
   const file = resolve(ROOT, report.trim());
   // 工作報告的可見路徑與實體位置都須在 tmp 內；連結不改變落點規範。
-  const rel = relative(TMP, file);
-  const realRel = existsSync(file) ? relative(realpathSync(TMP), realpathSync(file)) : '..';
-  const inside = [rel, realRel].every((p) => p !== '' && !p.startsWith('..') && !isAbsolute(p));
+  let inside = false;
+  try {
+    const rel = relative(TMP, rootSpelled(file));
+    const realRel = existsSync(file) ? relative(realpathSync.native(TMP), realpathSync.native(file)) : '..';
+    inside = [rel, realRel].every((p) => p !== '' && !p.startsWith('..') && !isAbsolute(p));
+  } catch { /* 無法解析即不在 tmp 內 */ }
   if (!inside || !existsSync(file) || !statSync(file).isFile()) die([`報告檔不存在、非檔案或不在 .shiftblame/tmp 內：${report}——子代理審查報告原文移入 tmp 並讀回後引用（審查須由外部唯讀子代理執行）`]);
   const text = readFileSync(file, 'utf8');
   const verdicts = [...text.matchAll(/對抗判定[：:]\s*(通過|不通過)/g)].map((m) => m[1]);

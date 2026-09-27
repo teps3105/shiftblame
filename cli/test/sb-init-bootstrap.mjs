@@ -204,7 +204,8 @@ const absent = (f, ...names) => { for (const n of names) assert.equal(existsSync
   const identityFile = join(root, 'identity.gitconfig');
   writeFileSync(identityFile, '[user]\n\tname = conditional\n\temail = conditional@example.invalid\n');
   env.GIT_CONFIG_GLOBAL = join(root, 'conditional-global.gitconfig');
-  writeFileSync(env.GIT_CONFIG_GLOBAL, `[includeIf "gitdir/i:${slash(realpathSync(f.cwd))}/"]\n\tpath = ${slash(identityFile)}\n`);
+  // Git 以展開短檔名、解析連結後的實際路徑比對 gitdir 條件。
+  writeFileSync(env.GIT_CONFIG_GLOBAL, `[includeIf "gitdir/i:${slash(realpathSync.native(f.cwd))}/"]\n\tpath = ${slash(identityFile)}\n`);
   const r = f.run('init', 'demo');
   assert.equal(r.status, 0, r.stderr);
   assert.equal(f.git('log', '-1', '--format=%an', 'trunk').stdout.trim(), 'conditional', '起始提交採用條件設定的身分');

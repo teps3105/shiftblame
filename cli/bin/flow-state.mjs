@@ -1,5 +1,5 @@
 // CLI 與 hooks 共用狀態分類，區分未接入、活動、結束與損壞。
-import { readFileSync, readdirSync, lstatSync } from 'node:fs';
+import { readFileSync, readdirSync, lstatSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -8,6 +8,8 @@ const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArra
 const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
 const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
 const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
+// 同一位置可經符號連結或短檔名有不同寫法（macOS 的 /var 即 /private/var、Windows 的 RUNNER~1）：字面不同時比對實際路徑。
+const samePath = (a, b) => { if (resolve(a) === resolve(b)) return true; try { return realpathSync.native(a) === realpathSync.native(b); } catch { return false; } };
 
 // 依定義雜湊沿用同一份已核准需求，新增需求另循核准程序。
 function unchangedG1Approval(root, st) {
@@ -15,7 +17,7 @@ function unchangedG1Approval(root, st) {
   if (!c || c.ms !== st.ms || !timestamp(c.sealedAt) || !/^[a-f0-9]{64}$/.test(c.sha256 ?? '')) return false;
   if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(st.slug ?? '') || !/^\d{3,}$/.test(st.ms ?? '')) return false;
   const file = resolve(root, '.shiftblame', st.slug, st.ms, 'G1.md');
-  if (typeof c.file !== 'string' || resolve(c.file) !== file) return false;
+  if (typeof c.file !== 'string' || !samePath(c.file, file)) return false;
   try {
     const raw = readFileSync(file, 'utf8');
     const heads = [...raw.matchAll(/^## 回指記錄$/gm)];
@@ -224,5 +226,5 @@ function hasFlowArtifacts(root) {
   }
   return false;
 }
-export { objectRecord, exactKeys, timestamp, unchangedG1Approval, hookRecords, hooksOnly, migrateStreams, uninitializedState, directState,
+export { objectRecord, exactKeys, timestamp, samePath, unchangedG1Approval, hookRecords, hooksOnly, migrateStreams, uninitializedState, directState,
   endedState, validCloseout, classifyState, readFlowState };

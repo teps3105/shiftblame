@@ -59,7 +59,7 @@ test('fresh unborn roundtrip：原樣 notes、null HEAD、無 flow-state／索�
   t.diagnostic(f.save('全新工作').stdout);
   const snapshot = f.read('全新工作');
   assert.equal(snapshot.schema, 1);
-  assert.equal(snapshot.repoRoot, realpathSync(f.root));
+  assert.equal(snapshot.repoRoot, realpathSync.native(f.root));
   assert.equal(snapshot.branch, 'main'); assert.equal(snapshot.head, null);
   assert.equal(snapshot.notes, readFileSync(f.notes, 'utf8'));
   assert.equal(snapshot.notesSha256, hash(readFileSync(f.notes)));
@@ -299,7 +299,7 @@ test('子目錄內有 .shiftblame 仍由 Git 定位 canonical repo，notes 相�
   writeFileSync(join(sub, 'notes.md'), '子目錄來源\n');
   const index = indexBytes(f);
   ok(f.runAt(sub, 'handoff', 'save', 'alpha', 'notes.md'));
-  assert.equal(f.read('alpha').repoRoot, realpathSync(f.root));
+  assert.equal(f.read('alpha').repoRoot, realpathSync.native(f.root));
   assert.equal(f.read('alpha').notes, '子目錄來源\n');
   assert.equal(existsSync(join(sub, '.shiftblame/tmp')), false);
   ok(f.runAt(sub, 'handoff', 'show', 'alpha')); ok(f.runAt(sub, 'handoff', 'list'));
@@ -321,7 +321,7 @@ test('繼承的 Git repo／index 環境覆寫不混用其他工作的事實', t 
     const task = lower ? 'lowercase-env' : 'uppercase-env';
     ok(spawnSync(process.execPath, [cli, 'handoff', 'save', task, f.notes], { cwd: f.root, env, encoding: 'utf8' }));
     const snapshot = f.read(task);
-    assert.equal(snapshot.repoRoot, realpathSync(f.root));
+    assert.equal(snapshot.repoRoot, realpathSync.native(f.root));
     assert.equal(snapshot.branch, 'main'); assert.equal(snapshot.head, expected);
     assert.equal(snapshot.index.entries.some(entry => entry.path === 'foreign.txt'), false);
     assert.equal(existsSync(other.path(task)), false);

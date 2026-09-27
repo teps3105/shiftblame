@@ -1,6 +1,6 @@
 ---
 name: 診斷
-revision: 2.8.2
+revision: 2.8.3
 ---
 # 以原症狀診斷
 

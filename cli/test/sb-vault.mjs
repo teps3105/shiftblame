@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,7 +50,8 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   const reg = JSON.parse(readFileSync(f.regPath, 'utf8'));
   const entries = Object.values(reg.vaults);
   assert.equal(entries.length, 1, '補掛一條 vault');
-  assert.equal(entries[0].path, f.cwd, '註冊路徑＝sandbox repo 根');
+  // 暫存根可經符號連結或短檔名有不同寫法，比對實際位置。
+  assert.equal(realpathSync.native(entries[0].path), realpathSync.native(f.cwd), '註冊路徑＝sandbox repo 根');
   assert.match(r.stdout, /已補掛全域註冊表/);
   assert.match(r.stdout, /已生成並啟用/);
   assert.match(readFileSync(join(f.cwd, '.gitignore'), 'utf8'), /\.obsidian\//, '.gitignore 補忽略 .obsidian/');
@@ -123,7 +124,7 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   assert.equal(Object.keys(reg.vaults).length, 2, '既有條目保留＋補掛一條');
   assert.equal(reg.vaults.aaaa000000000000.path, 'D:\\其他專案', '既有 vault 條目不動');
   const mine = Object.entries(reg.vaults).find(([id]) => id !== 'aaaa000000000000')[1];
-  assert.equal(mine.path, f.cwd);
+  assert.equal(realpathSync.native(mine.path), realpathSync.native(f.cwd));
   f.run();
   const regAfter = JSON.parse(readFileSync(f.regPath, 'utf8'));
   assert.equal(Object.keys(regAfter.vaults).length, 2, '重跑不新增條目');
@@ -173,7 +174,7 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
     const r = spawnSync(process.execPath, [cli, 'vault'], { cwd: f.cwd, encoding: 'utf8', env });
     assert.equal(r.status, 0, r.stderr);
     const reg = JSON.parse(readFileSync(regPath, 'utf8'));
-    assert.deepEqual(Object.values(reg.vaults).map((v) => v.path), [f.cwd], `預設註冊表位置：${regPath}`);
+    assert.deepEqual(Object.values(reg.vaults).map((v) => realpathSync.native(v.path)), [realpathSync.native(f.cwd)], `預設註冊表位置：${regPath}`);
   }
 }
 

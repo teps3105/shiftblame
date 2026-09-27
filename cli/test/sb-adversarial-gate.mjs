@@ -101,6 +101,18 @@ const nestedReport = join(tmpDir, 'reviews', 'report.md');
 mkdirSync(dirname(nestedReport), { recursive: true });
 writeFileSync(nestedReport, '對抗判定：通過\n');
 assert.equal(run('adversarial', nestedReport, '--point', '1').status, 0, 'tmp 內巢狀報告仍可宣告');
+// repo 根可有別名（macOS 的 /var 即 /private/var、Windows 短檔名）：經根的別名引用 tmp 內報告仍可宣告；
+// 經 repo 內連結進入 tmp 的可見路徑不在 tmp 內，仍拒絕。
+const rootAlias = `${root}-alias`;
+symlinkSync(root, rootAlias, process.platform === 'win32' ? 'junction' : 'dir');
+process.on('exit', () => rmSync(rootAlias, { force: true }));
+assert.equal(run('adversarial', join(rootAlias, '.shiftblame/tmp/reviews/report.md'), '--point', '1').status, 0, '經 repo 根別名引用 tmp 內報告可宣告');
+const tmpViaLink = join(root, 'docs-link');
+symlinkSync(tmpDir, tmpViaLink, process.platform === 'win32' ? 'junction' : 'dir');
+const viaLink = run('adversarial', join(tmpViaLink, 'reviews', 'report.md'), '--point', '1');
+assert.equal(viaLink.status, 1, '可見路徑在 tmp 外的連結拒絕');
+assert.match(viaLink.stderr, /不在 .shiftblame\/tmp 內/);
+rmSync(tmpViaLink, { force: true }); // 只移除連結本身，後續乾淨工作樹檢查不受影響
 // 報告指向目錄擋（非檔案）
 r = run('adversarial', '.shiftblame/tmp');
 assert.equal(r.status, 1, '目錄非報告檔擋');

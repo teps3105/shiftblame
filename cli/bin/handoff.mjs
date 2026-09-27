@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readlinkSync,
   realpathSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { exactKeys, readFlowState, timestamp } from './flow-state.mjs';
+import { exactKeys, readFlowState, samePath, timestamp } from './flow-state.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = value => hash(JSON.stringify(value));
@@ -201,7 +201,7 @@ function save(root, task, source) {
     const previous = snapshotBytes(root, task, true);
     if (previous) parse(previous, root, task);
     const sourcePath = realpathSync(resolve(process.cwd(), source));
-    if (sourcePath === join(dir, 'handoff.json')) fail('notes 來源不可與輸出 snapshot 相同；保留來源原稿。');
+    if (samePath(sourcePath, join(dir, 'handoff.json'))) fail('notes 來源不可與輸出 snapshot 相同；保留來源原稿。');
     const notes = decode(readFileSync(sourcePath));
     if (!notes.trim()) fail('notes Markdown 不可為空；舊 snapshot 保持原樣。');
     const facts = capture(root, true);
