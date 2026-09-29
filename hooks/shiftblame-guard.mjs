@@ -7,6 +7,7 @@ import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
+import { commitMessageIssue } from '../cli/bin/commit-format.mjs';
 import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
 import { interviewStatus, markSessionStart } from '../cli/bin/interview.mjs';
 import { analyzeCommand, baseName, findRoots, gitInvocation, MAX_DEPTH } from './shell-scan.mjs';
@@ -677,6 +678,10 @@ function checkStaged(anchor) {
   return null;
 }
 function checkCommitStamp(anchor, msg) {
+  // 格式與 sb commitmsg 同判據（commit-format.mjs 單一來源）：印章檔在可寫的 tmp、可被手寫，
+  // 來源不因此受信——格式由 hook 端獨立複驗，手寫章不豁免。
+  const issue = commitMessageIssue(msg);
+  if (issue) return `${issue}——hook 與 sb commitmsg 同判據，印章不豁免格式；以合格訊息重跑 sb commitmsg 後再提交`;
   const health = readFlowState(anchor);
   if (health.kind === 'invalid') return '流程接入異常——修復並以 sb state 查證後才可提交；既有印章不代表狀態有效';
   const stampPath = join(anchor, '.shiftblame', 'tmp', 'commit-stamp.json');
@@ -697,6 +702,8 @@ function checkCommitStamp(anchor, msg) {
 function checkCommit(ctx, entry, seen) {
   const g = gitInvocation(entry.args);
   if (g.sub?.dynamic) return 'git 子命令須為字面值——變數或命令替換組成的子命令無法確認是否為提交';
+  // 管線造提交繞過提交閘（不經 -m 訊息格式與印章）：受治理工作區一律擋，提交走 git commit。
+  if (['commit-tree', 'am'].includes(g.sub?.value)) return `git ${g.sub.value} 繞過提交閘——提交一律走 git commit（訊息先過 sb commitmsg）`;
   if (g.sub?.value !== 'commit') return null;
   if (g.C.some((w) => !w || w.dynamic || !anchoredWord(w))) return 'git -C 須用絕對路徑——相對或變數 -C 會展開到非預期資料夾';
   const lastC = g.C.at(-1);

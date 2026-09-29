@@ -179,6 +179,33 @@ assert.equal(r.status, 0, '非系統位置 staged →放行（禁入僅系統檔
 // 清空 staged
 assert.equal(git('restore', '--staged', 'tmp/junk.txt').status, 0);
 
+// —— commitmsg 格式閘（2.8.4：「type: 一句話」——無 type、冒號後無空格、未知 type、空主題、超長、多行都擋）——
+{
+  const adv = mkdtempSync(join(tmpdir(), 'sb-cf-'));
+  for (const bad of ['feat:無空格即長文', '沒有type前綴的訊息', 'wip: 非流程詞彙', 'Feat: 大寫類型', 'feat:', 'feat: ']) {
+    const rb = run2(adv, 'commitmsg', bad);
+    assert.equal(rb.status, 1, `格式不合格即擋「${bad}」`);
+  }
+  assert.match(run2(adv, 'commitmsg', 'feat:無空格').stderr, /type: 一句話/);
+  assert.equal(run2(adv, 'commitmsg', 'feat: 多行\n訊息').status, 1, '多行訊息擋');
+  const max = 'feat: ' + '字'.repeat(114); // 6＋114＝120 字元
+  assert.equal(run2(adv, 'commitmsg', max).status, 0, '一句話上限內（120 字元）放行');
+  assert.equal(run2(adv, 'commitmsg', `${max}x`).status, 1, '超過一句話上限（121 字元）即擋');
+  rmSync(adv, { recursive: true, force: true });
+}
+
+// —— 手寫印章不豁免格式＋管線造提交（2.8.4：印章檔在可寫的 tmp、可被手寫，格式由 hook 端以同判據獨立驗）——
+writeFileSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: '沒有type前綴的手寫章', cwd: root, issuedAt: new Date().toISOString() }));
+const hfmt = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "沒有type前綴的手寫章"` } });
+assert.equal(hfmt.status, 2, '手寫章＋無 type 訊息→hooks 擋（印章不豁免格式）');
+assert.match(hfmt.stderr, /type: 一句話/);
+const hpipe1 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit-tree -m "feat: 管線繞過" HEAD` } });
+assert.equal(hpipe1.status, 2, 'commit-tree（管線造提交）→hooks 擋');
+assert.match(hpipe1.stderr, /繞過提交閘/);
+const hpipe2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} am patch.mbox` } });
+assert.equal(hpipe2.status, 2, 'am（信件造提交）→hooks 擋');
+assert.match(hpipe2.stderr, /繞過提交閘/);
+
 
 // —— 攻擊面回歸 ——
 // -a 提交期繞過：已追蹤檔修改不 add，commit -a——hooks 擋（diff --cached 看不見提交期展開）
@@ -316,10 +343,10 @@ assert.equal(hr8.status, 2, 'env GIT\\_DIR=（名稱內反斜線）→hooks 擋'
 const hr9 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `MY_GIT_DIR=${root}/.git git -C ${root} status` } });
 assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
 
-// —— commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）——
+// —— commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）——描述自由不設黑名單；格式另由「type: 一句話」閘驗（樣本均帶合法 type）
 {
   const adv = mkdtempSync(join(tmpdir(), 'sb-cv-'));
-  for (const bad of ['merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
+  for (const bad of ['chore: merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
     const rb = run2(adv, 'commitmsg', bad);
     assert.equal(rb.status, 0, `提交訊息可描述「${bad}」，無字詞黑名單`);
   }

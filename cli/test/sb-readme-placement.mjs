@@ -21,11 +21,11 @@ assert.equal(git('-c','user.name=test','-c','user.email=test@example.invalid','c
 writeFileSync(join(root,'README.md'),'# Documentation\nNew relevant section\n');
 assert.equal(git('add','README.md').status,0);
 writeFileSync(join(root,'.shiftblame/SOP.md'),'# SOP\npriority: 1\n');
-for(const msg of ['fix: R24 API behavior','x','merge example','測試'.repeat(40)]){
+for(const msg of ['fix: R24 API behavior','fix: x','chore: merge example','feat: '+'測試'.repeat(57)]){
  assert.equal(run('commitmsg',msg).status,0,msg);
  assert.equal(event('Bash',{command:'git commit -m "'+msg+'"'}).status,0,'追加文件與訊息風格不擋有效章');
 }
-for(const msg of ['','   ','fix: a\nb'])assert.notEqual(run('commitmsg',msg).status,0);
+for(const msg of ['','   ','fix: a\nb','no type here','feat:無空格'])assert.notEqual(run('commitmsg',msg).status,0,'格式閘（type: 一句話）擋下 '+JSON.stringify(msg));
 assert.equal(run('sopreview','已核對').status,0);assert.equal(run('state').status,0);
 writeFileSync(join(root,'.shiftblame/SOP.md'),'# Changed config\n');assert.equal(run('commitmsg','docs: updated').status,0,'SOP修改不迫使重發審查戳');
 assert.equal(git('add','-f','.shiftblame/SOP.md').status,0);assert.equal(run('commitmsg','docs: unsafe staged').status,1,'形式限制移除仍保護實際 staged 系統檔');

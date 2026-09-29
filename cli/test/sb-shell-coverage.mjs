@@ -32,9 +32,9 @@ assert.equal(ps('rm -r build').status,2,'PowerShell 的 rm 是 Remove-Item');
 assert.equal(ps('Get-Date > out.txt').status,2);
 for(const command of ['Get-Date > $null','npm test 2>&1','Write-Host "git commit -m x"',"Select-String -Pattern '=>' -Path src\\*.js"])assert.equal(ps(command).status,0,command);
 assert.equal(ps('cmd /c "rd /s /q build"').status,2);
-assert.equal(ps(`pwsh -NoProfile -Command "git commit -m 'x'"`).status,2);
-assert.equal(ps(`pwsh -EncodedCommand ${Buffer.from("git commit -m 'x'",'utf16le').toString('base64')}`).status,2);
-assert.equal(ps('iex "git commit -m x"').status,2);
+assert.equal(ps(`pwsh -NoProfile -Command "git commit -m 'fix: x'"`).status,2);
+assert.equal(ps(`pwsh -EncodedCommand ${Buffer.from("git commit -m 'fix: x'",'utf16le').toString('base64')}`).status,2);
+assert.equal(ps(`iex "git commit -m 'fix: x'"`).status,2);
 r=ps('$m = "x"; git commit -m $m');assert.equal(r.status,2);assert.match(r.stderr,/字面值/);
 
 // 引號內文字、運算子與唯讀查詢不是提交或覆寫。
@@ -42,8 +42,8 @@ for(const command of ['node -e "[1].map(x=>x)"',"echo 'git commit -m x'",'git lo
  `printf '%s\\n' "a > b"`,"awk 'NR>=20' file.txt",'grep ">=" src/app.js','git rev-parse --git-dir && echo ok','command -v git','echo hi >> out.txt','make > /dev/null 2>&1'])
  assert.equal(sh(command).status,0,command);
 
-// 巢狀 shell 內的提交同樣要印章；無法展開的巢狀一律拒絕。
-for(const command of [`bash -c "git commit -m 'x'"`,"sh -c 'git commit -m x'",'echo "git commit -m x" | bash','bash <<EOF\ngit commit -m x\nEOF','eval "git commit -m x"','echo $(git commit -m x)','\\git commit -m x']){
+// 巢狀 shell 內的提交同樣要印章（訊息樣本帶合法 type——格式閘先於印章層，勿混入本段判準）；無法展開的巢狀一律拒絕。
+for(const command of [`bash -c "git commit -m 'fix: x'"`,"sh -c 'git commit -m \"fix: x\"'",`echo "git commit -m 'fix: x'" | bash`,"bash <<EOF\ngit commit -m 'fix: x'\nEOF",`eval "git commit -m 'fix: x'"`,'echo $(git commit -m "fix: x")',`\\git commit -m 'fix: x'`]){
  r=sh(command);assert.equal(r.status,2,command);assert.match(r.stderr,/缺少 commit 印章/,command);
 }
 for(const command of ['bash -c "git commit -m $msg"','git commit -m "$msg"']){r=sh(command);assert.equal(r.status,2);assert.match(r.stderr,/字面值/);}

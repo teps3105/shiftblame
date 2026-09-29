@@ -12,6 +12,7 @@ import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:pat
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
+import { COMMIT_TYPES as TYPES, commitMessageIssue } from './commit-format.mjs';
 import { runHandoff } from './handoff.mjs';
 import { acquireLock, readHookRecords, writeAtomic } from './state-io.mjs';
 
@@ -66,7 +67,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查非空單行、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊\n  sb --help\n\nslug：intent → requirement → research → plan → test → build → verify\n技術問題可回相鄰責任段修正；明確的新需求以 next intent 開新輪。\nintent→requirement 用 --boss-ok 承接既有開工授權。\n時點 1 在 requirement→research，時點 2 在 verify 出口；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext intent --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊\n  sb --help\n\nslug：intent → requirement → research → plan → test → build → verify\n技術問題可回相鄰責任段修正；明確的新需求以 next intent 開新輪。\nintent→requirement 用 --boss-ok 承接既有開工授權。\n時點 1 在 requirement→research，時點 2 在 verify 出口；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext intent --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -389,8 +390,7 @@ function gate(st, target, opts) {
 }
 
 // ———— 指令 ————
-
-const TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore', 'build', 'ci'];
+// TYPES（提交 type 詞彙）由 commit-format.mjs 提供——與 hooks 提交閘同一來源。
 function readStartupState() {
   try { return migrateStreams(readJson(STATE_FILE)); }
   catch { die([`flow-state 無法解析：${STATE_FILE}——保留原檔，查明損壞原因後修復`]); }
@@ -1326,7 +1326,9 @@ function cmdCommitmsg(msg) {
   } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   if (['verify', 'done'].includes(current.state?.node)) die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 test／build（或任意→intent）後進行']);
-  if (!msg.trim() || /[\n\r]/.test(msg)) die(['提交訊息須為非空單行，格式依 repo 慣例。']);
+  // 格式「type: 一句話」：與 hooks 提交閘同一判準（commit-format.mjs）——無 type、冒號後無空格、段落式長文都在此擋下
+  const issue = commitMessageIssue(msg);
+  if (issue) die([issue]);
   // 印章：hooks PreToolUse 對 git commit 硬擋的憑證（10 分鐘內、訊息相符才放行）——commitmsg 格式閘的機械承載
   mkdirSync(TMP, { recursive: true });
   writeFileSync(join(TMP, 'commit-stamp.json'), JSON.stringify({ message: msg, cwd: ROOT, issuedAt: new Date().toISOString() }, null, 2));

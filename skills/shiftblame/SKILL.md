@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.8.3"
+  version: "2.8.4"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；依工作規模使用直接實作或既有 slug 流程。
 ---
 # Shiftblame
@@ -64,7 +64,7 @@ G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆�
 
 工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存；工作帳本只在跨回合或交接確有需要時維護。保存／恢復見 [save](../save/SKILL.md)、[resume](../resume/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
 
-提交聚焦一個可檢閱的變更，包含相關測試與文件；使用 sb commitmsg 驗證訊息與 staged 邊界，再提交。訊息清楚描述變更並遵循 repo 慣例。保護無關檔案及使用者修改。
+提交聚焦一個可檢閱的變更，包含相關測試與文件；使用 sb commitmsg 驗證訊息與 staged 邊界，再提交。訊息為「type: 一句話」（type 屬流程詞彙，單行 ≤120 字元），hooks 端以同一判準複驗。保護無關檔案及使用者修改。
 
 ## 需要時再讀
 

@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.8.3
+revision: 2.8.4
 ---
 # 執行介面與界線
 
@@ -25,7 +25,7 @@ requirement 與 verify 段的 sb state 另印先行研究的比對基準：時�
 - sb next <node> 沿流程切換責任段。符合契約的回查與技術修復可自主執行；使用者指出驗收未通過時，依差異回責任段修復，實質需求或授權變更才回 intent。
 - requirement → research 封存 G1 定義區；## 回指記錄 是證據分隔。已核准、相同且仍適用的契約可重用。契約變更需本次時點 1 審查與使用者授權。
 - sb adversarial <報告> --point 1|2 記錄對應審查並綁定審查對象：時點 1 記 G1 定義區 hash（G1 不存在或回指標題不是恰好一次時拒絕記錄），時點 2 記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 與 --boss-ok 承接真實審查與使用者判定，CLI 核對條目新鮮度與審查對象：審查後修改 G1 定義區或再提交，須重新審查；只更新回指區不受影響。2.8.1 以前的條目沒有審查對象，只核對新鮮度。
-- sb commitmsg <訊息> 檢查非空單行訊息、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。repo 自身格式依其政策執行。
+- sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb end --adversarial --boss-ok 在 verify 及使用者終審後歸檔並整合：歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。
@@ -54,7 +54,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 
 Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫、heredoc、管線、命令替換，以及 bash -c、cmd /c、pwsh -Command、-EncodedCommand、iex 等巢狀層，最多 4 層，超過或內容過多即拒絕。只核對實際執行的命令，字串、註解與參數中的相同字樣不會誤擋。
 
-- 提交：字面 git commit 須有相符印章；git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
+- 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免；commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
 - 破壞性刪除：rm -r、Remove-Item -Recurse、rd /s、find -delete 或 -exec rm、xargs rm、robocopy /MIR、rsync --delete 的本機目標須為絕對路徑。xargs 刪除的來源須是同一管線中、搜尋根為絕對路徑的 find；rsync 的遠端目的地（host:、user@host:、rsync://）不在此限。
 - 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。
 - 丟棄變更：git clean -f、reset --hard、checkout -f、checkout -- <路徑>、checkout .、restore（只有 --staged 除外）、switch --discard-changes 或 -f、stash drop／clear、branch -D 須以 git -C <絕對路徑> 錨定 repo。
@@ -69,7 +69,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 
 - cd 之後的相對路徑追蹤；直譯器內嵌程式與腳本檔內的提交（遞迴刪除 API 只提示）。
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
-- merge、cherry-pick、revert、rebase、am、commit-tree 等其他產生提交的 git 子命令；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式。
+- merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 產品訪談閘：訪談紀錄以外經 shell 的寫入、專案根以外的寫入、ZCode 的 js 工具（Node REPL）；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
 
 這些由代理依授權自律，交付時如實揭露。

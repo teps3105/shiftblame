@@ -46,12 +46,12 @@ ok(git('push', 'published'));
 ok(git('push', 'published', `${initial}:refs/heads/obsolete`));
 ok(git('config', '--add', 'remote.published.push', 'refs/tags/*:refs/tags/*'));
 ok(git('config', '--add', 'remote.published.push', ':obsolete'));
-// 以下報告與狀態只屬隔離 fixture；驗證格式例外不延伸至未歸檔工作。
+// 以下報告與狀態只屬隔離 fixture；驗證收尾留痕不延伸至未歸檔工作。
 const report = join(cwd, '.shiftblame/tmp/merge-review.md');
 writeFileSync(report, '# 隔離測試報告\n此為合併提交閘的合成測試資料，不代表真實外部檢閱或產品驗收。\n對抗判定：通過\n');
-assert.equal(run('commitmsg', 'merge old').status, 0, '訊息不創造合併授權；intent 可發一般提交章');
+assert.equal(run('commitmsg', 'chore: merge old').status, 0, '訊息不創造合併授權；intent 可發一般提交章');
 save({ ...state(), node: 'done' });
-assert.equal(run('commitmsg', 'merge old').status, 1, 'legacy done 保持驗收來源穩定');
+assert.equal(run('commitmsg', 'chore: merge old').status, 1, 'legacy done 保持驗收來源穩定');
 exitFixture();
 // —— sb end 一條龍收尾：歸檔→偵測基底→--no-ff 合併（訊息固定 merge <slug>）→內建查證→留痕→刪本機分支——
 ok(run('end', '--adversarial', '--boss-ok'));
@@ -69,17 +69,17 @@ assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/review/old'))
 assert.ok(state().closeout.remotes.some(r => r.ref === 'refs/heads/push-only'));
 assert.equal(state().closeout.remotes.some(r => r.ref === 'refs/heads/obsolete'), false, '無關刪除refspec不是舊工作清理目標');
 assert.match(run('closeout', '--base', 'trunk').stderr, /收尾已完成留痕/, '收尾已完成的 slug 不再收 closeout（事後查證工具）');
-ok(run('commitmsg', 'merge old')); // 2.4.0：ended 接受固定合併訊息——提交審核已移除，僅格式＋印章
+ok(run('commitmsg', 'chore: merge old')); // 2.8.4：ended 只接受「type: 一句話」——merge <slug> 由 git merge 產生、由 closeout 自驗，不經 commitmsg 格式閘
 for (const message of ['', 'merge old\n', 'merge old\r']) {
   assert.notEqual(run('commitmsg', message).status, 0, `拒絕空白或多行訊息 ${JSON.stringify(message)}`);
 }
-ok(run('commitmsg', 'merge old'));
+ok(run('commitmsg', 'chore: merge old'));
 const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
-assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'merge old');
-assert.equal(commitHook('merge other').status, 2, '實際提交仍須匹配訊息印章');
-ok(commitHook('merge old'));
+assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'chore: merge old');
+assert.equal(commitHook('chore: merge other').status, 2, '實際提交仍須匹配訊息印章');
+ok(commitHook('chore: merge old'));
 assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
-ok(run('commitmsg', 'merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
+ok(run('commitmsg', 'chore: merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();
@@ -132,7 +132,8 @@ assert.match(run('state').stdout, /ended＋已完結/, 'state 讀出完結態');
 assert.equal(run('init', '--main').status, 1, '重複完結即拒');
 assert.match(run('init', '--main').stderr, /已完結/);
 // 完結後提交紀律：merge <slug> 固定訊息失效（合併證據已由 end 內建查證留痕）；正常 type 訊息走格式閘＋發章。
-assert.equal(run('commitmsg', 'merge old').status, 0, '完結後仍可發一般提交章，訊息不替代合併證據');
+assert.equal(run('commitmsg', 'chore: 完結後續提交').status, 0, '完結後仍可發一般提交章，訊息不替代合併證據');
+assert.equal(run('commitmsg', 'merge old').status, 1, '完結後無 type 的固定合併訊息不再發章（2.8.4 格式閘）');
 assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
 assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
 assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
