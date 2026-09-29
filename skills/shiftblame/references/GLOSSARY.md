@@ -1,6 +1,6 @@
 ---
 name: 治理詞彙
-revision: 2.8.4
+revision: 2.8.5
 ---
 # 治理詞彙
 

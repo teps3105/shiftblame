@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.8.4
+revision: 2.8.5
 ---
 # 執行介面與界線
 
@@ -41,14 +41,14 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 ### 產品訪談閘
 
 - 適用範圍：帶對話代號（session_id）的事件。專案根是 cwd 向上第一個含 .git 或 .shiftblame 的目錄，都沒有時為 cwd。專案根不是根目錄、家目錄或其上層、系統頂層目錄時，hook 自動建立 .shiftblame/、.shiftblame/tmp/ 與內容為 * 的 .shiftblame/.gitignore，不寫 flow-state。非 Git 資料夾同樣建立，其下的子資料夾之後以它為專案根。
-- 紀錄：.shiftblame/tmp/interview-<代號>.md，代號是對話代號 sha256 的前 12 碼，格式見 [INTERVIEW](../assets/INTERVIEW.md)。「## 第 N 輪」段落的觸發、目標、範圍、驗收、使用者確認都有實際內容，該輪才算完成。
-- 開場標記 interview-<代號>.json 記下開場時已完成的輪數：startup 在沒有標記時建立；resume 與 clear 以目前完成輪數重設，須再完成新的一輪；compact 沿用。標記由 hook 維護，寫入工具或 shell 重定向寫它一律拒絕。
-- 閘關閉時擋下：專案根內、.shiftblame/tmp 以外的寫入工具目標；git commit／push 與無法確認的 git 子命令；sb init、next、end、adversarial、commitmsg、sopreview、closeout、vault；含這些字樣但無法展開的巢狀命令。寫入訪談紀錄本身（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）改為詢問使用者。唯讀查證、tmp 筆記與專案根以外的寫入照常。
+- 紀錄：.shiftblame/tmp/interview-<代號>.md，代號是對話代號 sha256 的前 12 碼，格式見 [INTERVIEW](../assets/INTERVIEW.md)。「## 第 N 輪」段落的觸發、提問、目標、範圍、驗收、使用者確認都有實際內容，該輪才算完成。
+- 開場標記 interview-<代號>.json 記下開場時已完成的輪數（base）與上一輪完成後的提問工具呼叫數（asks）：startup 在沒有標記時建立；resume 與 clear 以目前完成輪數重設並歸零計數，須再完成新的一輪；compact 沿用。紀錄出現新的完成輪時，hook 在其後的事件推進基準並歸零計數，下一輪須新證據。標記由 hook 維護，寫入工具或 shell 重定向寫它一律拒絕。
+- 寫入訪談紀錄（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）須有提問證據：本輪自上一輪完成（或對話開始）後至少一次提問工具呼叫（名稱以 ask 開頭，如 AskUserQuestion），未提問即拒絕；有證據則直接放行。專案檔案寫入、git commit／push 與 sb 流程命令不因訪談未完成而受阻；唯讀查證、tmp 筆記與專案根以外的寫入照常。
 - 不設閘：沒有對話代號的呼叫，以及 ZCode 子代理（代號以 sess_subagent_ 開頭）。Claude Code 與 Codex 的子代理和父代理共用對話代號，也共用同一份紀錄。
 
 ### 使用者確認
 
-帶 --boss-ok 的 sb next 與 sb end，以及閘關閉時寫入訪談紀錄，由 hook 回傳 permissionDecision: ask，在權限提示中交使用者確認。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。
+帶 --boss-ok 的 sb next 與 sb end 由 hook 回傳 permissionDecision: ask，在權限提示中交使用者確認。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。訪談紀錄的寫入不再逐一詢問使用者；「使用者確認」欄的真實性由提問證據（寫入前的提問工具呼叫）與代理自律承擔。
 
 ### Shell 命令
 
@@ -70,7 +70,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - cd 之後的相對路徑追蹤；直譯器內嵌程式與腳本檔內的提交（遞迴刪除 API 只提示）。
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
-- 產品訪談閘：訪談紀錄以外經 shell 的寫入、專案根以外的寫入、ZCode 的 js 工具（Node REPL）；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
+- 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
 
 這些由代理依授權自律，交付時如實揭露。
 

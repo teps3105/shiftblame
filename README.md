@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.8.4**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.8.5**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -19,9 +19,9 @@ slug 有兩個使用者決策時點：G1 需求完成後，以及 verify 驗收�
 
 ## 產品訪談
 
-每個對話開始都先做一輪產品訪談，不論輸入是新需求、續行或恢復舊對話：與使用者對齊目標、範圍、限制與授權及驗收，確認後寫入 `.shiftblame/tmp/interview-<代號>.md`，格式見 [INTERVIEW](skills/shiftblame/assets/INTERVIEW.md)。輸入已經明確時，一輪可以只是理解摘要加上使用者確認；壓縮續接沿用原紀錄。開發中目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認，在同一紀錄追加一輪。
+每個對話開始都先做一輪產品訪談，不論輸入是新需求、續行或恢復舊對話：先以 AskUserQuestion 向使用者實際提問並取得回答，對齊目標、範圍、限制與授權及驗收後，寫入 `.shiftblame/tmp/interview-<代號>.md`，格式見 [INTERVIEW](skills/shiftblame/assets/INTERVIEW.md)。輸入已經明確時，一輪可以只問最少的確認問題，但不得跳過提問；壓縮續接沿用原紀錄。開發中目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認，在同一紀錄追加一輪；每一輪寫入前都要先提問。
 
-紀錄完成前，hook 擋下專案檔案寫入、git commit／push 與 sb 流程命令，唯讀查證與 tmp 筆記照常；寫入紀錄時由使用者在權限提示中確認。對話第一次在專案中觸發 hook 時，自動建立 `.shiftblame/`、`.shiftblame/tmp/` 與忽略全部內容的 `.shiftblame/.gitignore`，不需先執行 `sb init`；家目錄、其上層與系統頂層目錄不建立。適用範圍與未涵蓋項見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+訪談不封鎖其他工作：hook 只在寫入紀錄本身時把關——每一輪自上一輪完成（或對話開始）後須有至少一次 AskUserQuestion 呼叫，未提問即拒絕，有提問證據則直接放行。對話第一次在專案中觸發 hook 時，自動建立 `.shiftblame/`、`.shiftblame/tmp/` 與忽略全部內容的 `.shiftblame/.gitignore`，不需先執行 `sb init`；家目錄、其上層與系統頂層目錄不建立。適用範圍與未涵蓋項見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
 
 ## main 模式交接
 
@@ -47,7 +47,7 @@ npm install -g github:teps3105/shiftblame
 
 開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks；執行中的對話可能仍保留舊指令。
 
-插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示；UserPromptSubmit 更新觀測和階段提示；PreToolUse 檢查產品訪談，並解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋。帶 `--boss-ok` 的 `sb next`／`sb end` 與寫入訪談紀錄，由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
+插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示；UserPromptSubmit 更新觀測和階段提示；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、repo 邊界、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋；寫入訪談紀錄時核對提問證據——每一輪自上一輪完成後須有至少一次 AskUserQuestion，未提問即拒絕。帶 `--boss-ok` 的 `sb next`／`sb end` 由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
 
 ## CLI
 

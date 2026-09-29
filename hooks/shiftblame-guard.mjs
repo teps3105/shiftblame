@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { objectRecord, readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
 import { commitMessageIssue } from '../cli/bin/commit-format.mjs';
 import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
-import { interviewStatus, markSessionStart } from '../cli/bin/interview.mjs';
+import { interviewStatus, markSessionStart, recordInterviewEvent } from '../cli/bin/interview.mjs';
 import { analyzeCommand, baseName, findRoots, gitInvocation, MAX_DEPTH } from './shell-scan.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -289,40 +289,34 @@ function bossOkAsk(entry) {
 
 // ———— 產品訪談閘 ————
 
-// 每個對話（含恢復舊對話）先完成一輪產品訪談並寫入紀錄；完成前擋下專案檔案寫入、git commit／push 與 sb 流程命令。
-// 唯讀查證、.shiftblame/tmp 筆記與訪談紀錄本身照常；經 shell 的其他寫入與專案根以外的寫入不在涵蓋範圍。
+// 寫入訪談紀錄的每一輪前，須自上一輪完成（或對話開始）後以提問工具實際提問；未提問即拒絕寫紀錄本身，
+// 有提問證據則直接放行。專案檔案寫入、git commit／push 與 sb 流程命令不因訪談未完成而受阻；
+// 唯讀查證與 .shiftblame/tmp 筆記照常。經 shell 的寫入只辨識重定向與 tee／Set-Content 類的字面目標。
 const INTERVIEW_TEMPLATE = fileURLToPath(new URL('../skills/shiftblame/assets/INTERVIEW.md', import.meta.url));
-const INTERVIEW_SB_SUBS = new Set([...HOLD_SB_SUBS, 'vault']);
-const INTERVIEW_OVERFLOW_RE = [/\bgit(?:\.exe)?\b[\s\S]*\b(?:commit|push)\b/i, /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout|vault)\b/];
 const interviewRel = (ctx) => relTo(ctx.root, absPath(ctx.root, ctx.interview.path));
+// 已對齊（紀錄有完整輪且非恢復待辦）回傳 null；否則回傳缺少什麼。
 function interviewNeed(iv) {
   if (!iv.exists) return '紀錄尚未建立';
   const last = iv.rounds.at(-1);
   if (last?.missing.length) return `第 ${last.n} 輪缺少：${last.missing.join('、')}`;
-  if (iv.base > 0) return `恢復的對話須在紀錄末尾追加新的一輪（開場時已完成 ${iv.base} 輪）`;
-  return '紀錄中沒有「## 第 N 輪」段落';
+  if (iv.pending && iv.complete <= iv.base) return `恢復的對話須在紀錄末尾追加新的一輪（開場時已完成 ${iv.base} 輪）`;
+  if (!iv.complete) return '紀錄中沒有「## 第 N 輪」段落';
+  return null;
 }
-const INTERVIEW_DENY = (ctx, what) =>
-  `產品訪談尚未完成（${interviewRel(ctx)}：${interviewNeed(ctx.interview)}）——${what}暫停。先與使用者對齊目標、範圍、限制與驗收，經使用者確認後寫入紀錄（範本：${INTERVIEW_TEMPLATE}）；唯讀查證與 .shiftblame/tmp 筆記照常。`;
-const INTERVIEW_ASK = (rel) => `寫入本對話的產品訪談紀錄（${rel}）：請核對內容與你的回答一致，「使用者確認」欄須是你本人的確認，再允許寫入。`;
 const INTERVIEW_MARKER_DENY = '訪談開場標記由 hook 維護，不可直接寫入——恢復的對話請在訪談紀錄追加新的一輪。';
+const interviewEvidenceDeny = (ctx) =>
+  `寫入產品訪談紀錄前須先向使用者提問——自上一輪完成後尚無提問工具（AskUserQuestion）呼叫。先以 AskUserQuestion 提問並取得回答，再寫入 ${interviewRel(ctx)}；「使用者確認」欄須來自真實回答。`;
 const interviewFiles = (ctx) => ({ record: normPath(ctx.root, ctx.interview.path), marker: normPath(ctx.root, ctx.interview.path.replace(/\.md$/, '.json')) });
 function checkInterviewWrite(ctx, tool, input) {
-  if (!ctx.interview || ctx.interview.open || !isWriteTool(tool)) return null;
+  if (!ctx.interview || !isWriteTool(tool)) return null;
   const files = interviewFiles(ctx);
-  let ask = null;
   for (const target of localWriteTargets(input)) {
     const abs = normPath(ctx.cwd ?? ctx.root, target);
-    if (abs === files.record) { ask = INTERVIEW_ASK(interviewRel(ctx)); continue; }
     if (abs === files.marker) return { deny: INTERVIEW_MARKER_DENY };
-    const rel = fold(relTo(ctx.root, absPath(ctx.cwd ?? ctx.root, target)));
-    if (rel === '..' || rel.startsWith('../') || isAbsolute(rel)) continue; // 專案根以外不在涵蓋範圍
-    if (rel === '.shiftblame/tmp' || rel.startsWith('.shiftblame/tmp/')) continue;
-    return { deny: INTERVIEW_DENY(ctx, '專案檔案寫入') };
+    if (abs === files.record && !ctx.interview.questioned) return { deny: interviewEvidenceDeny(ctx) };
   }
-  return ask ? { ask } : null;
+  return null;
 }
-// shell 寫入只辨識重定向與 tee／Set-Content 類命令的字面目標，用來讓寫紀錄同樣經使用者確認、寫開場標記同樣拒絕。
 const SHELL_WRITE_OPS = new Set(['>', '>>', '>|', '&>', '&>>']);
 const SHELL_WRITERS = new Set(['tee', 'tee-object', 'set-content', 'add-content', 'out-file']);
 function shellWriteWords(e) {
@@ -331,39 +325,28 @@ function shellWriteWords(e) {
   return words.filter((w) => !w.dynamic);
 }
 function checkInterviewShell(ctx, scan) {
-  if (!ctx.interview || ctx.interview.open) return null;
+  if (!ctx.interview) return null;
   const files = interviewFiles(ctx);
-  let ask = null;
   for (const e of scan.entries) {
     if (e.query) continue;
-    if (e.name === 'git') {
-      const g = gitInvocation(e.args);
-      if (g.sub?.dynamic) return { deny: INTERVIEW_DENY(ctx, '無法確認的 git 子命令') };
-      const sub = g.sub?.value.toLowerCase();
-      if (sub === 'commit' || sub === 'push') return { deny: INTERVIEW_DENY(ctx, `git ${sub}`) };
-    } else if (!e.name && e.nameWord?.dynamic && e.args.some((w) => ['commit', 'push'].includes(w.value))) {
-      return { deny: INTERVIEW_DENY(ctx, '以變數組成的 git 提交或推送') };
-    }
-    const sb = sbSub(e);
-    if (sb && INTERVIEW_SB_SUBS.has(sb.sub)) return { deny: INTERVIEW_DENY(ctx, `sb ${sb.sub}`) };
     for (const w of shellWriteWords(e)) {
       const abs = normPath(ctx.cwd ?? ctx.root, w.value);
       if (abs === files.marker) return { deny: INTERVIEW_MARKER_DENY };
-      if (abs === files.record) ask = INTERVIEW_ASK(interviewRel(ctx));
+      if (abs === files.record && !ctx.interview.questioned) return { deny: interviewEvidenceDeny(ctx) };
     }
   }
-  if (scan.overflow.some((t) => INTERVIEW_OVERFLOW_RE.some((re) => re.test(t)))) return { deny: INTERVIEW_DENY(ctx, '無法展開的巢狀命令（含提交、推送或 sb 流程命令）') };
-  return ask ? { ask } : null;
+  return null;
 }
 // 開場與每次輸入的訪談提示。
 function interviewLine(ctx, event) {
   const iv = ctx.interview;
   if (!iv) return '';
   const rel = interviewRel(ctx);
-  if (iv.open) return event === 'SessionStart' ? `\n[訪談] 本對話紀錄 ${rel} 已完成 ${iv.complete} 輪；目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認時，在同一紀錄追加一輪。` : '';
+  const need = interviewNeed(iv);
+  if (!need) return event === 'SessionStart' ? `\n[訪談] 本對話紀錄 ${rel} 已完成 ${iv.complete} 輪；目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認時，在同一紀錄追加一輪——每一輪寫入前先以 AskUserQuestion 提問。` : '';
   const resume = iv.base > 0 ? '恢復的對話：在同一紀錄末尾追加新的一輪。' : '';
-  if (event === 'UserPromptSubmit') return `\n[訪談] 本對話尚未完成產品訪談（${rel}：${interviewNeed(iv)}）——先對齊需求並寫入紀錄。${resume}`;
-  return `\n[訪談] 先做產品訪談：與使用者對齊目標、範圍、限制與驗收，確認後寫入 ${rel}（範本：${INTERVIEW_TEMPLATE}）。${resume}完成前 hook 擋下專案檔案寫入、git commit／push 與 sb 流程命令；唯讀查證與 .shiftblame/tmp 筆記照常。`;
+  if (event === 'UserPromptSubmit') return `\n[訪談] 本對話訪談未完成（${rel}：${need}）——先以 AskUserQuestion 提問，取得回答後寫入紀錄。${resume}`;
+  return `\n[訪談] 先做產品訪談：與使用者對齊目標、範圍、限制與驗收——先以 AskUserQuestion 提問並取得回答，再寫入 ${rel}（範本：${INTERVIEW_TEMPLATE}）；未提問就寫入會被擋。${resume}`;
 }
 
 // ———— git 設定與路徑重定向 ————
@@ -768,7 +751,7 @@ function shellDecision(ctx, tool, text) {
       return deny('提交命令須以字面 git 呼叫——變數或命令替換組成的命令無法套用提交檢查');
     }
   }
-  const asks = [...new Set([interview?.ask, ...entries.filter((e) => !e.query).map(bossOkAsk)].filter(Boolean))];
+  const asks = [...new Set([...entries.filter((e) => !e.query).map(bossOkAsk)].filter(Boolean))];
   return asks.length ? { ask: asks.join('\n'), context: warn } : { context: warn };
 }
 function decide(event, input, ctx) {
@@ -820,6 +803,11 @@ try {
   if (interviewApplies(root, sessionId)) {
     try {
       if (event === 'SessionStart') markSessionStart(root, sessionId, input.source);
+      else if (event === 'UserPromptSubmit' || event === 'PreToolUse') {
+        // 提問工具（名稱以 ask 開頭，如 AskUserQuestion）的呼叫累計為本輪提問證據；其餘事件只推進基準。
+        const ask = event === 'PreToolUse' && /^ask/i.test(String(input.tool_name ?? input.toolName ?? '').split(/__|\./).at(-1) ?? '');
+        recordInterviewEvent(root, sessionId, ask ? 'ask' : null);
+      }
       interview = interviewStatus(root, sessionId);
     } catch (error) { logError(root, event, 'interview', error); }
   }
