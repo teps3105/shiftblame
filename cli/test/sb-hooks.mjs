@@ -26,7 +26,7 @@ assert.ok(JSON.parse(r.stdout).hookSpecificOutput.additionalContext.length<1200,
 assert.equal(records().hooksHeartbeat.event,'SessionStart');
 assert.equal(state().hooksHeartbeat,undefined,'hooks 不改寫 flow-state');
 // Prompts are platform conversation data, not a state transition API.
-for(const node of ['intent','requirement','research','plan','test','build','verify']){
+for(const node of ['requirement','research','plan','quality','build','verify']){
  for(const prompt of ['繼續','繼續。','可以繼續了','目前進度如何','你做到哪裡了','為什麼會失敗','新增付款功能']){
   set(node,{rev:2});
   r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:'UserPromptSubmit',prompt})});
@@ -71,10 +71,10 @@ for(const [name,input] of [['TodoWrite',{todos:[{content:'x',status:'pending'}]}
 assert.equal(tool('Write',{file_path:statePath}).status,0);
 assert.equal(tool('Bash',{command:'git add app.js'}).status,2);
 assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0);
-set('requirement');
-assert.equal(tool('Bash',{command:'sb next research --adversarial'}).status,2);
+set('research');
+assert.equal(tool('Bash',{command:'sb next plan --adversarial'}).status,2);
 // --boss-ok 由代理代填：推進與結束交給使用者在權限提示中確認。
-for(const command of ['sb next research --adversarial --boss-ok','sb end --adversarial --boss-ok','sb next intent --new-ms --adversarial --boss-ok']){
+for(const command of ['sb next plan --adversarial --boss-ok','sb next build --adversarial --boss-ok','sb end --adversarial --boss-ok','sb next requirement --new-ms --adversarial --boss-ok']){
  r=tool('Bash',{command});assert.equal(r.status,0,command);
  const out=JSON.parse(r.stdout).hookSpecificOutput;
  assert.equal(out.permissionDecision,'ask',command);assert.match(out.permissionDecisionReason,/--boss-ok/,command);

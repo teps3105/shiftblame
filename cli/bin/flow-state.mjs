@@ -69,7 +69,7 @@ function migrateStreams(st) {
   if (Array.isArray(st.adversarialLog)) {
     if (!ended) {
       const lastAdv = st.lastAdv ?? {};
-      for (const p of ['1', '2']) {
+      for (const p of ['1', '2', '3']) {
         const e = st.adversarialLog.filter((x) => x?.point === p).at(-1);
         if (e && !objectRecord(lastAdv[p])) lastAdv[p] = { at: e.at, report: e.report, verdict: e.verdict, node: e.node, ...(e.model ? { model: e.model } : {}) };
       }
@@ -77,6 +77,14 @@ function migrateStreams(st) {
     }
     delete st.adversarialLog;
   }
+  // 舊版時點語義遷移：2.8.x 的時點 2 在 verify 出口（綁受驗提交或無綁定）＝現行時點 3；現行時點 2 恆綁 G2——無 g2 鍵即屬舊條目。
+  if (objectRecord(st.lastAdv) && objectRecord(st.lastAdv['2']) && !Object.hasOwn(st.lastAdv['2'], 'g2')) {
+    if (!objectRecord(st.lastAdv['3'])) st.lastAdv['3'] = st.lastAdv['2'];
+    delete st.lastAdv['2'];
+  }
+  // 舊節點遷移：intent 已泛化為訪談（落 requirement）、test 段改名 quality。
+  if (st.node === 'intent') st.node = 'requirement';
+  else if (st.node === 'test') st.node = 'quality';
   if (Array.isArray(st.history)) {
     if (!ended) {
       const edgeAt = st.edgeAt ?? {};
@@ -90,6 +98,7 @@ function migrateStreams(st) {
   delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
   delete st.externalEvidence; // 外部查證事實由對話與工作證據承載。
   if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
+  if (ended) delete st.g2Contract;
   delete st.stopReport; // 回合結束依任務完成或實際阻塞判斷。
 
   return st;
@@ -107,13 +116,14 @@ function validTelemetry(t) {
   return true;
 }
 // 對抗條目鍵集：point（時點條目）與 model（審查模型——報告內含「審查模型：」行則記，缺省無鍵）皆可選；
-// g1（時點 1 審查時的 G1 定義區 hash）與 head（時點 2 受驗提交）綁定審查對象，舊版條目沒有這兩鍵。
-const ADV_OPTIONAL_KEYS = ['point', 'model', 'g1', 'head'];
+// g1（時點 1 審查時的 G1 定義區 hash）、g2（時點 2 的 G2 定義區 hash）與 head（時點 3 受驗提交）綁定審查對象，舊版條目沒有這幾鍵。
+const ADV_OPTIONAL_KEYS = ['point', 'model', 'g1', 'g2', 'head'];
 const ADV_ENTRY_KEYS = (x) => ['at', 'report', 'verdict', 'node', ...ADV_OPTIONAL_KEYS.filter((k) => Object.hasOwn(x, k))];
 const ADV_ENTRY_SHAPE = (x, node) => objectRecord(x) && exactKeys(x, ADV_ENTRY_KEYS(x)) && timestamp(x.at) && typeof x.report === 'string' && x.report.trim() && x.verdict === '通過' && x.node === node
-  && (!Object.hasOwn(x, 'point') || ['1', '2'].includes(x.point))
+  && (!Object.hasOwn(x, 'point') || ['1', '2', '3'].includes(x.point))
   && (!Object.hasOwn(x, 'model') || (typeof x.model === 'string' && x.model.trim().length > 0))
-  && (!Object.hasOwn(x, 'g1') || (typeof x.g1 === 'string' && /^[0-9a-f]{64}$/.test(x.g1)))
+  && (!Object.hasOwn(x, 'g1') || (typeof x.g1 === 'string' && /^[a-f0-9]{64}$/.test(x.g1)))
+  && (!Object.hasOwn(x, 'g2') || (typeof x.g2 === 'string' && /^[a-f0-9]{64}$/.test(x.g2)))
   && (!Object.hasOwn(x, 'head') || commitId(x.head));
 
 function endedState(st, root) {
@@ -147,7 +157,7 @@ function directState(st, root) {
   const records = hookRecords(st);
   return !Object.keys(records).length || hooksOnly(records, root);
 }
-const ACTIVE_NODES = new Set(['intent', 'requirement', 'research', 'plan', 'test', 'build', 'verify', 'done']);
+const ACTIVE_NODES = new Set(['requirement', 'research', 'plan', 'quality', 'build', 'verify', 'done']);
 // SOP／ROADMAP 審查戳記的綁定清單（各檔 sha256）——鍵集限 SOP.md／ROADMAP.md。
 function validStampFiles(f) {
   return objectRecord(f) && Object.keys(f).length <= 2 && Object.keys(f).every(k => /^(?:SOP|ROADMAP)\.md$/.test(k) && /^[0-9a-f]{64}$/.test(f[k]));
@@ -176,7 +186,7 @@ function activeExtras(st) {
 function activeRecords(st, root) {
   const records = hookRecords(st);
   if (Object.keys(records).length && !hooksOnly(records, root)) return false;
-  if (Object.hasOwn(st, 'lastAdv') && !(objectRecord(st.lastAdv) && Object.entries(st.lastAdv).every(([k, v]) => ['1', '2'].includes(k) && ADV_ENTRY_SHAPE(v, v.node)))) return false;
+  if (Object.hasOwn(st, 'lastAdv') && !(objectRecord(st.lastAdv) && Object.entries(st.lastAdv).every(([k, v]) => ['1', '2', '3'].includes(k) && ADV_ENTRY_SHAPE(v, v.node)))) return false;
   if (Object.hasOwn(st, 'edgeAt') && !(objectRecord(st.edgeAt) && Object.values(st.edgeAt).every(timestamp))) return false;
   return activeExtras(st);
 }

@@ -1,19 +1,28 @@
 # Shiftblame
 
-版本 **2.8.6**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.8.7**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
-小型、可回復且範圍明確的工作可在目前已授權分支直接完成。需要跨里程碑管理的工作使用 slug，以 `intent → requirement → research → plan → test → build → verify` 記錄責任，透過 `sb next` 切段。技術問題可以回到相鄰責任階段修正，契約變更才重新核准。
+小型、可回復且範圍明確的工作可在目前已授權分支直接完成。需要跨里程碑管理的工作使用 slug，以 `requirement → research → plan → quality → build → verify` 記錄責任，透過 `sb next` 切段；意圖確認由產品訪談承載，任何新意圖先訪談對齊，再回 requirement 重入。技術問題可以回到相鄰責任階段修正，契約變更才重新核准。
 
-slug 有兩個使用者決策時點：G1 需求完成後，以及 verify 驗收完成後。兩者都是獨立審查、修正必修項，再由使用者決定。旗標記錄使用者已明確給予的授權。審查與判定期間，代理可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交，判定後只重查受影響部分。
+G1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收。文件結構是三區循環模型：每區兩個責任段對應一份 G 檔，區間以時點關卡銜接；回指為三角循環，通過後由後區指向前區，不是線性鏈：
+
+```
+G1（需求＋研究）◀────── G2（計畫＋品質）
+   │                       ▲
+   ▼                       │
+G3（實作＋驗收）───────────┘
+```
+
+G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3（時點 3 後閉環）。slug 有三個使用者決策時點：時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 驗收完成後（審驗收結果）。三者都是獨立審查、修正必修項，再由使用者決定。旗標記錄使用者已明確給予的授權。審查與判定期間，代理可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交，判定後只重查受影響部分。
 
 - [主技能](skills/shiftblame/SKILL.md)：授權、分工、驗證及文件原則。
 - [理解意圖](skills/think/SKILL.md)、[整理文件](skills/rewrite/SKILL.md)、[保存](skills/save/SKILL.md)、[恢復](skills/resume/SKILL.md)、[丟棄](skills/dice/SKILL.md)。
 - [CLI 與 hooks](skills/shiftblame/references/MECHANISMS.md)：狀態、契約與攔截邊界。
 - [SLUG 與 G1–G3 模板](skills/shiftblame/assets/SLUG.md)、[SOP](skills/shiftblame/assets/SOP.md)、[ROADMAP](skills/shiftblame/assets/ROADMAP.md)。
 
-階段內依實際問題取用方法：難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，功能按[完整行為片段與依賴](skills/shiftblame/references/PLAN.md)推進，[測試](skills/shiftblame/references/TEST.md)使用可觀察介面與獨立預期值，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質。技術選擇可透過[決策依賴與原型](skills/shiftblame/references/RESEARCH.md)取證，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
+階段內依實際問題取用方法：難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，功能按[完整行為片段與依賴](skills/shiftblame/references/PLAN.md)推進，[品質標準與驗證方式](skills/shiftblame/references/QUALITY.md)使用可觀察介面與獨立預期值，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質。技術選擇可透過[決策依賴與原型](skills/shiftblame/references/RESEARCH.md)取證，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
 
 [治理詞彙](skills/shiftblame/references/GLOSSARY.md)提供概念定義；[文件方法](skills/shiftblame/assets/DOCS.md)說明按需讀取入口、領域詞彙與長期決策理由。這些方法依情境使用，技術工作沿用既有授權。[方法來源](skills/shiftblame/references/SOURCES.md)列出借鑑依據。
 
@@ -54,17 +63,17 @@ npm install -g github:teps3105/shiftblame
 ```sh
 sb state
 sb init example feat
-sb next requirement --boss-ok
-sb adversarial .shiftblame/tmp/review-1.md --point 1
-sb next research --adversarial --boss-ok
+sb next research
 sb next plan
-sb next test
-sb next build
+sb adversarial .shiftblame/tmp/review-1.md --point 1
+sb next quality --adversarial --boss-ok
+sb adversarial .shiftblame/tmp/review-2.md --point 2
+sb next build --adversarial --boss-ok
 sb commitmsg "fix: correct the requested behavior"
 # 使用同一訊息提交相關實作、測試及文件
 sb next verify
 # 真驗收、獨立檢閱及使用者終審完成後：
-sb adversarial .shiftblame/tmp/review-2.md --point 2
+sb adversarial .shiftblame/tmp/review-3.md --point 3
 sb end --adversarial --boss-ok
 ```
 
@@ -74,7 +83,7 @@ sb end --adversarial --boss-ok
 
 ## 保護與限制
 
-G1 的定義區在需求批准後以 hash 封存；回指記錄保存驗收證據。時點審查檢查新鮮度與審查對象（時點 1 的 G1 定義區 hash、時點 2 的受驗提交），審查後再改須重審；提交仍檢查 repo、訊息印章及 staged `.shiftblame/`。flow-state 以排他鎖與原子寫入更新，hooks 的觀測另存 tmp，並行的命令不會互相覆蓋。verify 期間保持被驗來源穩定，修正來源先回 build；hook 覆蓋範圍限於平台提供且可辨識的操作事件，未涵蓋項目列於 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+G1 的定義區在時點 1 核准後以 hash 封存，G2 於時點 2 封存；回指記錄保存執行證據與三角回指。時點審查檢查新鮮度與審查對象（時點 1 的 G1 定義區 hash、時點 2 的 G2 定義區 hash、時點 3 的受驗提交），審查後再改須重審；提交仍檢查 repo、訊息印章及 staged `.shiftblame/`。flow-state 以排他鎖與原子寫入更新，hooks 的觀測另存 tmp，並行的命令不會互相覆蓋。verify 期間保持被驗來源穩定，修正來源先回 build；hook 覆蓋範圍限於平台提供且可辨識的操作事件，未涵蓋項目列於 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
 
 任務語義、文件品質與工具重試由代理依目標及證據判斷。未知事實依需要查證，測試依變更風險安排，視覺與互動結果可以使用實際操作證據。未驗證的結果明確標示。
 

@@ -37,7 +37,7 @@ for (const initial of [undefined, record]) {
   assert.match(r.stdout, /非 Git 模式（--no-git）/);
   const initialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt, baseCommit, usageBase, ...rest } = initialized;
-  assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'intent' });
+  assert.deepEqual(rest, { ...initial, slug: 'demo', ms: '001', node: 'requirement' });
   assert.equal(usageBase, 0, '尚無 hooks 計數時，開 slug 的呼叫計數基準為 0');
   assert.match(startedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, 'init 錨定流程起始時間（遙測耗時基準）');
   assert.equal(baseCommit, null, '非 git 工作區 baseline 記 null（遙測 diff 缺省）');
@@ -72,7 +72,7 @@ const invalid = [
   { ...record, unknown: true }, { hooksHeartbeat: {} }, { turnUsage: 'bad' },
   { turnUsage: { startedAt: 'bad' } },
   { hooksHeartbeat: { at: '2026-02-30T05:20:59.219Z', event: 'SessionStart' } },
-  { slug: 'old', ms: '001', node: 'intent' },
+  { slug: 'old', ms: '001', node: 'paused' },
   { slug: 'old', ms: '001', node: 'ended' }];
 for (const raw of [...invalid.map(x => JSON.stringify(x)), '{broken']) {
   const f = fixture(raw);
@@ -88,10 +88,10 @@ function endedFixture() {
   const f = fixture();
   assert.equal(f.run('init', 'old', '--no-git').status, 0);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
-  // 出口時序：時點 2 對抗條目（lastAdv 定長欄位）＋--boss-ok 旗標即章（2.5.2——機械不驗時戳，語義由對話揭露＋老闆終審承擔）
+  // 出口時序：時點 3 對抗條目（lastAdv 定長欄位）＋--boss-ok 旗標即章（機械不驗時戳，語義由對話揭露＋老闆終審承擔）
   const t0 = Date.parse(st.startedAt);
   const advAt = new Date(t0 + 60_000).toISOString();
-  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', lastAdv: { '2': { at: advAt, report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
+  writeFileSync(f.file, JSON.stringify({ ...st, node: 'verify', lastAdv: { '3': { at: advAt, report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
   const end = f.run('end', '--adversarial', '--boss-ok');
   assert.equal(end.status, 0, end.stderr);
   return f;
@@ -104,7 +104,7 @@ function endedFixture() {
   const oldDoc = readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8');
   const review = join(f.cwd, '.shiftblame/tmp/review.md');
   writeFileSync(review, '對抗判定：通過\n');
-  assert.equal(f.run('adversarial', review).status, 1, 'ended 不再收新對抗條目（時點屬七段圓環流程——slug 已結束）');
+  assert.equal(f.run('adversarial', review).status, 1, 'ended 不再收新對抗條目（時點屬六段圓環流程——slug 已結束）');
   // end 已清空舊流，模擬其後由 hooks 寫入的新紀錄。
   writeFileSync(f.file, JSON.stringify({ ...JSON.parse(readFileSync(f.file, 'utf8')), ...record }));
   const before = readFileSync(f.file, 'utf8');
@@ -118,7 +118,7 @@ function endedFixture() {
   assert.equal(r.status, 0, r.stderr);
   const reinitialized = JSON.parse(readFileSync(f.file, 'utf8'));
   const { startedAt: reStartedAt, ...reRest } = reinitialized;
-  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'intent', baseCommit: null, usageBase: 0 });
+  assert.deepEqual(reRest, { ...record, slug: 'next', ms: '001', node: 'requirement', baseCommit: null, usageBase: 0 });
   assert.match(reStartedAt, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   assert.equal(readFileSync(join(f.cwd, '.shiftblame/archive/old/SLUG.md'), 'utf8'), oldDoc);
   assert.equal(existsSync(join(f.cwd, '.shiftblame/archive/INDEX.md')), false, '歸檔清單機制已除——archive 僅承載 slug 目錄');
@@ -145,7 +145,7 @@ for (const mutate of [
 }
 // 歸檔目標占用：die 於寫檔前——狀態仍 verify、雙方目錄原樣（可重試）。
 {
-  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', lastAdv: { '2': { at: '2026-09-07T05:20:59.219Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
+  const f = fixture(JSON.stringify({ slug: 'old', ms: '001', node: 'verify', lastAdv: { '3': { at: '2026-09-07T05:20:59.219Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'verify' } } }));
   mkdirSync(join(f.cwd, '.shiftblame/old'), { recursive: true });
   writeFileSync(join(f.cwd, '.shiftblame/old/SLUG.md'), 'doc\n');
   mkdirSync(join(f.cwd, '.shiftblame/archive/old'), { recursive: true });
@@ -158,7 +158,7 @@ for (const mutate of [
 }
 // node:done 按驗收出口相容處理；查詢維持原檔，正式結束時儲存 ended 狀態。
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], lastAdv: { '2': { at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done' } } }));
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [{ from: 'build', to: 'verify', at, ms: '001' }, { from: 'verify', to: 'done', at, ms: '001' }], lastAdv: { '3': { at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done' } } }));
   const beforeQuery = readFileSync(f.file, 'utf8');
   assert.match(f.run('state').stdout, /段: done/, 'state 顯示相容節點');
   assert.equal(readFileSync(f.file, 'utf8'), beforeQuery, 'state 查詢保持原檔');
@@ -169,13 +169,13 @@ for (const mutate of [
   assert.ok(existsSync(join(f.cwd, '.shiftblame/archive/legacy/SLUG.md')) === false, '無 slug 目錄時跳過歸檔移動');
 }
 {
-  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: '2026-09-07T05:21:01.000Z', text: '老闆：開下一里程碑' }], adversarialLog: [{ at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '2' }], rewriteSeen: { rev: 1, at: '2026-09-07T05:21:01.000Z' } }));
-  const r = f.run('next', 'intent', '--new-ms', '--adversarial', '--boss-ok');
+  const f = fixture(JSON.stringify({ slug: 'legacy', ms: '001', node: 'done', history: [], inputs: [{ at: '2026-09-07T05:21:01.000Z', text: '老闆：開下一里程碑' }], adversarialLog: [{ at: '2026-09-07T05:21:00.000Z', report: '.shiftblame/tmp/r3.md', verdict: '通過', node: 'done', point: '3' }], rewriteSeen: { rev: 1, at: '2026-09-07T05:21:01.000Z' } }));
+  const r = f.run('next', 'requirement', '--new-ms', '--adversarial', '--boss-ok');
   assert.equal(r.status, 0, r.stderr);
   const st = JSON.parse(readFileSync(f.file, 'utf8'));
-  assert.equal(st.node, 'intent');
+  assert.equal(st.node, 'requirement');
   assert.equal(st.ms, '002', '舊 done 態經 --new-ms 開新 ms');
-  assert.deepEqual(Object.keys(st.edgeAt ?? {}), ['verify→intent'], '新 ms 邊時戳淨空重計——舊 ms 邊不帶入，只留本推進邊');
+  assert.deepEqual(Object.keys(st.edgeAt ?? {}), ['verify→requirement'], '新 ms 邊時戳淨空重計——舊 ms 邊不帶入，只留本推進邊');
   assert.equal(st.rewriteSeen, undefined, '新 ms 不帶入舊 ms 的 rewrite 載入鑰匙（rev per-ms 從 1 重算——殘留 seen 會自動解鎖新 ms 首個修正輪）');
 }
 // 僅刪除舊目錄而沒有歸檔，不會被當作已收尾。

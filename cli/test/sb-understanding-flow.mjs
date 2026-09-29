@@ -67,7 +67,7 @@ assert.match(r.stderr, /sb unlock 不存在/);
 r = spawnSync(sb, [sbBin, 'unlock', '--quoted', '你去想吧', '--as', 'x'], { cwd: root, encoding: 'utf8' });
 assert.equal(r.status, 2, '舊旗標形（--quoted/--as 已撤）→usage 擋');
 
-// —— 5. pass 出口鑰匙：時點 2 對抗條目＋--boss-ok 旗標即章同一邊；老形 fixture（adversarialLog／history）經讀取端遷移判定 ——
+// —— 5. pass 出口鑰匙：時點 3 對抗條目＋--boss-ok 旗標即章同一邊；老形 fixture（adversarialLog／history）經讀取端遷移判定 ——
 mkdirSync(join(root, '.shiftblame', 'demo'), { recursive: true });
 writeFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), `---\nslug: demo\n---\n\n# demo\n`);
 writeFileSync(statePath, JSON.stringify({
@@ -76,15 +76,15 @@ writeFileSync(statePath, JSON.stringify({
   adversarialLog: [{ at: '2026-09-07T05:20:00.000Z', report: '.shiftblame/tmp/r.md', verdict: '通過', node: 'verify', point: '2' }],
 }));
 mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
-r = spawnSync(sb, [sbBin, 'next', 'intent', '--new-ms', '--adversarial', '--boss-ok'], { cwd: root, encoding: 'utf8' });
-assert.equal(r.status, 0, 'pass 出口一：verify→intent --new-ms（時點 2 對抗條件＋旗標即章——老形條目經 migrateStreams 轉 lastAdv 後判定新鮮）');
+r = spawnSync(sb, [sbBin, 'next', 'requirement', '--new-ms', '--adversarial', '--boss-ok'], { cwd: root, encoding: 'utf8' });
+assert.equal(r.status, 0, 'pass 出口一：verify→requirement --new-ms（時點 3 對抗條件＋旗標即章——老形條目（舊時點 2＝verify 出口）經 migrateStreams 轉 lastAdv 3 後判定新鮮）');
 const stExit = JSON.parse(readFileSync(statePath, 'utf8'));
 assert.equal(stExit.ms, '002', 'ms++');
 assert.equal(stExit.adversarialLog, undefined, '寫回即新形（adversarialLog 已轉 lastAdv）');
 assert.equal(stExit.history, undefined, '寫回即新形（history 已轉 edgeAt）');
 writeFileSync(statePath, JSON.stringify({ ...state(), node: 'test' }));
 r = spawnSync(sb, [sbBin, 'next', 'build', '--new-ms'], { cwd: root, encoding: 'utf8' });
-assert.equal(r.status, 1, '--new-ms 誤用（非 verify→intent pass 出口）擋');
-assert.match(r.stderr, /僅限 verify→intent/);
+assert.equal(r.status, 1, '--new-ms 誤用（非 verify→requirement pass 出口）擋');
+assert.match(r.stderr, /僅限 verify→requirement/);
 
 console.log('sb-understanding-flow: pass');

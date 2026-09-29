@@ -50,46 +50,50 @@ assert.equal(run('init', 'demo').status, 0);
 assert.equal(state().baseCommit, baseline, 'init 錨定 git baseline（進入需求層前的時序錨點）');
 assert.match(state().startedAt, /^\d{4}-\d\d-\d\dT/, 'init 記起始時間（耗時基準）');
 
-// —— 2. 七段圓環快走到執行段（test）——
-writeFileSync(join(ms, 'G1.md'), '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n## 回指記錄\n');
-writeFileSync(join(ms, 'G2.md'), '# 技術\n使用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。');
-writeFileSync(join(ms, 'G3.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認意圖，推進 requirement' }); // 老闆決策邊輸入（對話承載——旗標即章）
-assert.equal(run('next', 'requirement', '--boss-ok').status, 0);
+// —— 2. 六段圓環快走到執行段（build）——
+const G1_BODY = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n# 技術研究\n沿用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。\n';
+writeFileSync(join(ms, 'G1.md'), G1_BODY + '## 回指記錄\n');
+assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進');
 assert.equal(pt('1').status, 0, '時點 1 對抗宣告');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯確認，推進研究' }); // 時點 1 老闆 pass 輸入（requirement＋對抗完成＝決策邊裁決通道——零推回，對話承載）
-assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審意圖→需求翻譯）');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據（research→plan 邊驗）
-assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 時點 1 老闆 pass 輸入（research＋對抗完成＝決策邊裁決通道——零推回，對話承載）
+assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審 G1 需求與研究——G1 契約封存）');
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據
+const g1Hash = state().g1Contract.sha256;
+writeFileSync(join(ms, 'G2.md'), `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
+assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（中鏈零審核）');
+assert.equal(pt('2').status, 0, '時點 2 對抗宣告（quality 內）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });
+assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（G2 契約封存）');
+writeFileSync(join(ms, 'G3.md'), `回指 G2：${state().g2Contract.sha256}\n# 實作紀錄\n沿用既有入口完成送出與錯誤邊界。\n## 回指記錄\n`);
 
 // Identical external observations remain legal and count only as attempts.
 for(let i=0;i<5;i++) assert.equal(hookRun({hook_event_name:'PreToolUse',tool_name:'Bash',tool_input:{command:'git status --porcelain'}}).status,0);
-assert.equal(state().node,'test');
+assert.equal(state().node,'build');
 {
   const records = JSON.parse(readFileSync(join(root, '.shiftblame/tmp/hook-records.json'), 'utf8'));
   assert.ok(records.turnUsage.requests >= 5, '重複的外部觀測只計數');
   assert.equal(records.turnUsage.repeats, undefined);
 }
-assert.equal(run('next','intent').status,0);
+assert.equal(run('next','requirement').status,0);
 
-// —— 4. 重走（老闆新輸入重走 intent→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // 老闆決策邊輸入（對話承載——旗標即章）
-assert.equal(run('next', 'requirement', '--boss-ok').status, 0, '重走：老闆決策邊 --boss-ok');
-assert.match(run('next', 'research', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+// —— 4. 重走（老闆新輸入經訪談回 requirement→定義級同 ms 開新輪）至 verify，途中寫真實 commit 供遙測 diff ——
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' }); // fail 回走（對話承載——零旗標）
+assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進（重走輪）');
+assert.match(run('next', 'plan', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(pt('1', 'r2').status, 0, '時點 1 條目重審（舊條目已隨重走過期）');
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求翻譯修正確認，推進研究' }); // 時點 1 老闆 pass 輸入（requirement＋對抗完成＝決策邊裁決通道——零推回，對話承載）
-assert.equal(run('next', 'research', '--boss-ok', '--adversarial').status, 0, '時點 1 重過（G1 重封存）');
-hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（research→plan 邊驗——重走進段重置後重新驗）
-assert.equal(run('next', 'plan').status, 0);
-assert.equal(run('next', 'test').status, 0, 'plan→test 機械推進（中鏈零審核——2.4.0 取消老闆放行）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究修正確認，推進計畫' }); // 時點 1 老闆 pass 輸入（對話承載）
+assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '時點 1 重過（G1 重封存）');
+hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'y' } }); // 外部證據（重走進段重置後重新驗）
+assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（中鏈零審核）');
+assert.equal(pt('2', 'r2').status, 0, '時點 2 條目重審（重走輪新鮮條目）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質修正確認，進入實作' });
+assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 重過（G2 重封存——內容未變，G3 回指仍有效）');
 writeFileSync(join(root, 'test-1.mjs'), 'import assert from "node:assert/strict";\nassert.equal(1, 1);\n');
 commit('test-1.mjs', 'test: cover acceptance');
-assert.equal(run('next', 'build').status, 0);
 writeFileSync(join(root, 'seed.txt'), 'seed with feature\n');
 commit('seed.txt', 'feat: deliver feature');
-assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（中鏈零審核——樹淨即過）');
-assert.equal(pt('2').status, 0, '時點 2 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
+assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（G3 回指＋樹淨即過）');
+assert.equal(pt('3').status, 0, '時點 3 宣告（verify 內——驗收完成、G1 回指閉環後審驗收結果）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：驗收通過，準備收尾' }); // 老闆終審輸入（verify＋對抗完成＝決策邊裁決通道——零推回，對話承載）
 
 // Optional review records do not block an otherwise valid exit.

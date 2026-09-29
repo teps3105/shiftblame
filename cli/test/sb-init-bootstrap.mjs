@@ -174,15 +174,19 @@ const absent = (f, ...names) => { for (const n of names) assert.equal(existsSync
   assert.equal(f.git('branch', '--show-current').stdout.trim(), 'feat/demo');
 }
 
-// 10. sb state 印出先行研究的比對基準：requirement 為 G1 定義區 hash，verify 為受驗 HEAD。
+// 10. sb state 印出先行研究的比對基準：research 為 G1 定義區 hash、quality 為 G2 hash，verify 為受驗 HEAD。
 {
   const f = fixture();
   assert.equal(f.run('init', 'demo').status, 0);
   writeFileSync(join(f.cwd, '.shiftblame/demo/001/G1.md'), '# 需求\n定義內容\n## 回指記錄\n');
+  writeFileSync(join(f.cwd, '.shiftblame/demo/001/G2.md'), '# 計畫\n安排內容\n## 回指記錄\n');
   const st = f.state();
-  f.setState({ ...st, node: 'requirement' });
+  f.setState({ ...st, node: 'research' });
   const hash = createHash('sha256').update('# 需求\n定義內容\n', 'utf8').digest('hex');
   assert.match(f.run('state').stdout, new RegExp(`G1 定義區 hash（目前）：${hash}`));
+  f.setState({ ...st, node: 'quality' });
+  const hash2 = createHash('sha256').update('# 計畫\n安排內容\n', 'utf8').digest('hex');
+  assert.match(f.run('state').stdout, new RegExp(`G2 定義區 hash（目前）：${hash2}`));
   f.setState({ ...st, node: 'verify' });
   assert.match(f.run('state').stdout, new RegExp(`受驗提交：${f.git('rev-parse', 'HEAD').stdout.trim()}`));
   f.setState({ ...st, node: 'build' });

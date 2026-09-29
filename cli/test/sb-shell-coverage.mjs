@@ -108,11 +108,11 @@ for(const command of ['git -c alias.x=commit x -m y','GIT_CONFIG_COUNT=1 GIT_CON
 r=ps('$env:GIT_DIR="C:/x/.git"; git status');assert.equal(r.status,2);assert.match(r.stderr,/路徑重定向攔截/);
 
 // 時點 1、2 的審查與判定期間可先行研究；提示與停靠訊息都說明範圍。
-for(const [node,expect] of [['requirement',true],['verify',true],['build',false]]){
+for(const [node,expect] of [['research',true],['quality',true],['verify',true],['build',false]]){
  set(node);r=run('SessionStart');assert.equal(r.status,0);
  assert.equal(/先行研究/.test(JSON.parse(r.stdout).hookSpecificOutput.additionalContext),expect,node);
 }
-set('requirement');r=sh('sb next research --adversarial');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
+set('research');r=sh('sb next plan --adversarial');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
 
 // 只有已註冊的事件寫紀錄；PowerShell 呼叫同樣計數。
 set('build');const records=join(root,'.shiftblame/tmp/hook-records.json');const before=readFileSync(records,'utf8');
