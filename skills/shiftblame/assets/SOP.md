@@ -1,7 +1,7 @@
 ---
 title: SOP
 role: sop
-revision: 2.8.5
+revision: 2.8.6
 ---
 # 專案操作規範
 

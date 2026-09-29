@@ -1,6 +1,6 @@
 ---
 name: 研究
-revision: 2.8.5
+revision: 2.8.6
 ---
 # 技術決策
 

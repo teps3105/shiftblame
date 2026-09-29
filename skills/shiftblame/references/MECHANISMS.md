@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.8.5
+revision: 2.8.6
 ---
 # 執行介面與界線
 
@@ -68,6 +68,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 ### 未涵蓋
 
 - cd 之後的相對路徑追蹤；直譯器內嵌程式與腳本檔內的提交（遞迴刪除 API 只提示）。
+- 背景任務與長時間程序啟動後的持續寫入——防護只在啟動當下的呼叫核對。
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
