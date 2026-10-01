@@ -3,7 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 last_save:
-revision: 2.8.7
+revision: 2.9.0
 ---
 # SLUG — <slug>
 
@@ -108,7 +108,7 @@ build → verify
 | S1 | AC-01 | （填一條可展示的完整路徑） | 無 | （填） |
 
 # 品質
-（quality 段填入：品質標準、驗證方式與通過判準——什麼算合格、用什麼方式證明；測試介面與獨立預期值見 QUALITY。）
+（quality 段填入：品質標準、驗證方式與通過判準——什麼算合格、用什麼方式證明；測試介面與獨立預期值見 G2。）
 
 ## 回指記錄
 （實作位置及與計畫、品質安排的對照。）

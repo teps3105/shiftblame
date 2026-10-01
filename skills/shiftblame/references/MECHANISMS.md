@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.8.7
+revision: 2.9.0
 ---
 # 執行介面與界線
 
@@ -29,7 +29,8 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb end --adversarial --boss-ok 在 verify 及使用者終審後歸檔並整合：歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。
-- sb vault 僅在使用者要求管理 Obsidian 顯示時使用。全域註冊表位於 Windows 的 %APPDATA%\obsidian、macOS 的 ~/Library/Application Support/obsidian、其他平台的 $XDG_CONFIG_HOME/obsidian（預設 ~/.config/obsidian），SB_OBSIDIAN_GLOBAL 可覆寫。
+- sb vault 設定本專案的 Obsidian 顯示與註冊：以 repo 根為 vault，顯示規定集＝docs/＋README.md，配置後讀回自驗；sb vault verify 唯讀複查同一判準，缺口列出未過濾條目並以非零退出。僅在使用者要求管理 Obsidian 顯示時使用。全域註冊表位於 Windows 的 %APPDATA%\obsidian、macOS 的 ~/Library/Application Support/obsidian、其他平台的 $XDG_CONFIG_HOME/obsidian（預設 ~/.config/obsidian），SB_OBSIDIAN_GLOBAL 可覆寫。
+- sb docs 檢查 docs/ 文件集結構：非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄；只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)。
 - sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
 
 ## Hooks
@@ -82,5 +83,3 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 文件與執行行為保持一致，測試驗證實際風險與正常操作。以代表任務的完成結果、誤擋、返工及失誤衡量治理效益。.github/workflows/test.yml 在 ubuntu、macOS 與 Windows 各執行一次 npm test --prefix cli。
 
 開發 repo 與消費端分離；插件與全域 CLI 從已發布的 GitHub 來源更新為獨立快照。版本、發布與外部變更依使用者授權。
-
-2.8.1 以前的 sb end 先刪工作分支再寫狀態，中途中斷或狀態被覆蓋後重跑，會回報工作分支不存在。復原方式：以合併提交的第二個父提交重建工作分支（git branch <工作分支> <合併提交>^2），再重跑 sb end；重跑會辨識既有的 --no-ff 合併，不會重併。

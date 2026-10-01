@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.8.7**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.9.0**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -22,9 +22,9 @@ G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3�
 - [CLI 與 hooks](skills/shiftblame/references/MECHANISMS.md)：狀態、契約與攔截邊界。
 - [SLUG 與 G1–G3 模板](skills/shiftblame/assets/SLUG.md)、[SOP](skills/shiftblame/assets/SOP.md)、[ROADMAP](skills/shiftblame/assets/ROADMAP.md)。
 
-階段內依實際問題取用方法：難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，功能按[完整行為片段與依賴](skills/shiftblame/references/PLAN.md)推進，[品質標準與驗證方式](skills/shiftblame/references/QUALITY.md)使用可觀察介面與獨立預期值，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質。技術選擇可透過[決策依賴與原型](skills/shiftblame/references/RESEARCH.md)取證，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
+階段內依實際問題取用方法：需求翻譯與技術取證依 [G1](skills/shiftblame/references/G1.md)，計畫與品質依 [G2](skills/shiftblame/references/G2.md) 按完整行為片段推進、以可觀察介面與獨立預期值驗證，整合與核對依 [G3](skills/shiftblame/references/G3.md)；難定位錯誤先建立[原症狀重現](skills/shiftblame/references/DEBUG.md)，[審查](skills/shiftblame/references/AUDIT.md)分開核對需求與工程品質，再以[介面負擔及變更集中度](skills/shiftblame/references/STRUCTURE.md)比較方案。
 
-[治理詞彙](skills/shiftblame/references/GLOSSARY.md)提供概念定義；[文件方法](skills/shiftblame/assets/DOCS.md)說明按需讀取入口、領域詞彙與長期決策理由。這些方法依情境使用，技術工作沿用既有授權。[方法來源](skills/shiftblame/references/SOURCES.md)列出借鑑依據。
+[治理詞彙](skills/shiftblame/references/GLOSSARY.md)提供概念定義；[文件方法](skills/shiftblame/assets/DOCS.md)說明撰寫規範——同構合併、當下自洽、單一描述、人可讀與 docs/ 編號結構——及領域詞彙與長期決策理由。這些方法依情境使用，技術工作沿用既有授權。[方法來源](skills/shiftblame/references/SOURCES.md)列出借鑑依據。
 
 ## 產品訪談
 
@@ -77,7 +77,7 @@ sb adversarial .shiftblame/tmp/review-3.md --point 3
 sb end --adversarial --boss-ok
 ```
 
-先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。
+先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。採用 docs/ 文件集與 Obsidian 顯示管理時，`sb docs` 檢查 docs/ 結構，`sb vault` 設定並自驗顯示規定集、`sb vault verify` 唯讀複查。
 
 新專案可在空資料夾直接 `sb init <slug>`：自動建立 Git 儲存庫及只含 `.gitignore` 的起始提交，再切到工作分支。已有 repo 但尚無提交時補一個空樹起始提交，不動既有暫存。已有內容的非 Git 資料夾須先 `git init` 並提交，或以 `sb init <slug> --no-git` 不用 Git（收尾只歸檔）。
 
@@ -94,4 +94,4 @@ npm test --prefix cli
 node cli/bin/sb.mjs state
 ```
 
-測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。
+測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定、Obsidian vault 顯示規定集自驗與 docs/ 結構檢查，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。

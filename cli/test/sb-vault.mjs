@@ -24,13 +24,15 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
     writeFileSync(join(cwd, '.obsidian', 'community-plugins.json'), '["hidden-folders-access"]\n');
   }
   const globalDir = join(cwd, '..', 'global', String(serial));
-  const run = () => spawnSync(process.execPath, [cli, 'vault'], { cwd, encoding: 'utf8', env: { ...process.env, SB_OBSIDIAN_GLOBAL: globalDir } });
+  const env = () => ({ ...process.env, SB_OBSIDIAN_GLOBAL: globalDir });
+  const run = () => spawnSync(process.execPath, [cli, 'vault'], { cwd, encoding: 'utf8', env: env() });
+  const verify = () => spawnSync(process.execPath, [cli, 'vault', 'verify'], { cwd, encoding: 'utf8', env: env() });
   return {
     cwd, globalDir, regPath: join(globalDir, 'obsidian.json'),
     appJsonPath: join(cwd, '.obsidian', 'app.json'),
     appearanceJsonPath: join(cwd, '.obsidian', 'appearance.json'),
     snippetPath: join(cwd, '.obsidian', 'snippets', 'sb-vault-filter.css'),
-    run,
+    run, verify,
   };
 }
 
@@ -54,7 +56,11 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   assert.equal(realpathSync.native(entries[0].path), realpathSync.native(f.cwd), '註冊路徑＝sandbox repo 根');
   assert.match(r.stdout, /已補掛全域註冊表/);
   assert.match(r.stdout, /已生成並啟用/);
+  assert.match(r.stdout, /自驗通過：頂層有效可見＝docs＋README\.md/, '配置後讀回自驗');
   assert.match(readFileSync(join(f.cwd, '.gitignore'), 'utf8'), /\.obsidian\//, '.gitignore 補忽略 .obsidian/');
+  const vr = f.verify();
+  assert.equal(vr.status, 0, vr.stderr + vr.stdout);
+  assert.match(vr.stdout, /頂層有效可見＝docs＋README\.md/, 'verify 唯讀複查同一判準');
 }
 
 // —— 2. 冪等：重跑零新增（過濾器無漂移、snippet 不重寫、註冊不重寫） ——
@@ -130,7 +136,7 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   assert.equal(Object.keys(regAfter.vaults).length, 2, '重跑不新增條目');
 }
 
-// —— 6. 註冊表毀損：重建空表後註冊；app.json／appearance.json 毀損保持原樣不擋 ——
+// —— 6. 註冊表毀損：重建空表後註冊；app.json／appearance.json 毀損保持原樣，自驗擋下不假裝已設定 ——
 {
   const f = fixture();
   mkdirSync(f.globalDir, { recursive: true });
@@ -139,11 +145,12 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
   writeFileSync(f.appJsonPath, '也不是 JSON');
   writeFileSync(f.appearanceJsonPath, '也不是 JSON');
   const r = f.run();
-  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.status, 1, '設定毀損時自驗失敗——不假裝已配置');
   const reg = JSON.parse(readFileSync(f.regPath, 'utf8'));
   assert.equal(Object.values(reg.vaults).length, 1, '毀損註冊表重建後補掛');
-  assert.match(r.stdout, /非 JSON——保持原樣/, 'app.json 毀損不擋命令，揭露未設定');
-  assert.match(r.stdout, /appearance\.json 非 JSON/, 'appearance.json 毀損不擋命令，揭露 snippet 未啟用');
+  assert.match(r.stderr, /配置後自驗未通過/, '以 verify 同判準擋下');
+  assert.match(r.stderr, /app\.json 非 JSON/, '查詢層過濾無法核對的原因');
+  assert.match(r.stderr, /appearance\.json 非 JSON/, 'snippet 啟用無法核對的原因');
   assert.equal(readFileSync(f.appearanceJsonPath, 'utf8'), '也不是 JSON', '毀損 appearance.json 原樣');
 }
 
@@ -176,6 +183,29 @@ function fixture({ withGit = true, stalePlugin = false } = {}) {
     const reg = JSON.parse(readFileSync(regPath, 'utf8'));
     assert.deepEqual(Object.values(reg.vaults).map((v) => realpathSync.native(v.path)), [realpathSync.native(f.cwd)], `預設註冊表位置：${regPath}`);
   }
+}
+
+// —— 8. 自驗與 verify 抓漂移：新增頂層條目未過濾 → verify 非零並列條目；重跑 vault 對齊 → 通過；
+// 規定集被自己過濾（userIgnoreFilters 含 docs/）同樣判失敗 ——
+{
+  const f = fixture();
+  f.run();
+  mkdirSync(join(f.cwd, 'extra'), { recursive: true });
+  let vr = f.verify();
+  assert.equal(vr.status, 1, '新增頂層條目未過濾時 verify 失敗');
+  assert.match(vr.stderr, /頂層未過濾條目：extra\//, '列出未過濾的具體條目');
+  const r = f.run();
+  assert.equal(r.status, 0, r.stderr);
+  const cfg = JSON.parse(readFileSync(f.appJsonPath, 'utf8'));
+  assert.deepEqual(cfg.userIgnoreFilters, ['extra/', 'package.json', 'skills/'], '重跑補列新條目');
+  vr = f.verify();
+  assert.equal(vr.status, 0, vr.stderr);
+  writeFileSync(f.appJsonPath, JSON.stringify({ userIgnoreFilters: ['docs/', 'skills/'] }));
+  vr = f.verify();
+  assert.equal(vr.status, 1, '規定集被自己過濾時 verify 失敗');
+  assert.match(vr.stderr, /規定集條目「docs」/);
+  vr = f.verify();
+  assert.match(vr.stderr, /頂層未過濾條目：.*package\.json/, '漏列的條目一併指出');
 }
 
 console.log('sb-vault: 全部場景通過');

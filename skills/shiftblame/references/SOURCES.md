@@ -1,3 +1,7 @@
+---
+name: 方法來源
+revision: 2.9.0
+---
 # 方法來源
 
 本套方法參考 Matt Pocock 的 [skills](https://github.com/mattpocock/skills/tree/c55ee46073ed923f86ce59a5eb3b6d895095d1b7)，依 Shiftblame 的授權、契約、證據與工作模式重新編寫。下列來源用於核對設計依據，日常操作以本套當下方法為準；外部技能的核准要求、發布操作與平台設定不直接形成執行授權。

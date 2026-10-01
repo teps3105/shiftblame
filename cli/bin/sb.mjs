@@ -67,7 +67,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊，配置後讀回自驗\n  sb vault verify                      唯讀核對 Obsidian 顯示規定集（頂層可見＝docs/＋README.md）\n  sb docs                              檢查 docs/ 結構：全 md、編號最多兩層、索引對帳與編號連續\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -723,7 +723,59 @@ function vaultFilterCss() {
   return css.join('\n');
 }
 
-function cmdVault() {
+// 讀回實際設定並核對頂層有效可見集＝規定集（docs/＋README.md）。唯讀，不改任何檔：
+// sb vault 配置後自驗與 sb vault verify 共用同一判準，缺口列出未過濾的具體條目。
+function vaultVerify() {
+  const issues = [], notes = [];
+  const whitelist = new Set([...VAULT_SNIPPET_WHITELIST.folders, ...VAULT_SNIPPET_WHITELIST.files]);
+  const appJsonPath = join(ROOT, '.obsidian', 'app.json');
+  let filters = null;
+  if (!existsSync(appJsonPath)) issues.push('.obsidian/app.json 不存在——查詢層過濾未設定（執行 sb vault 配置）');
+  else {
+    try {
+      const cfg = JSON.parse(readFileSync(appJsonPath, 'utf8'));
+      filters = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters : null;
+      if (!filters) issues.push('app.json 沒有 userIgnoreFilters 陣列——查詢層過濾未設定（執行 sb vault 配置）');
+    } catch { issues.push('.obsidian/app.json 非 JSON——查詢層過濾無法核對（修復或刪除後重跑 sb vault）'); }
+  }
+  const cssPath = join(ROOT, '.obsidian', 'snippets', VAULT_SNIPPET_NAME + '.css');
+  if (!existsSync(cssPath)) issues.push(`snippet ${VAULT_SNIPPET_NAME}.css 不存在——檔案總管過濾未設定（執行 sb vault 配置）`);
+  else if (readFileSync(cssPath, 'utf8') !== vaultFilterCss()) issues.push(`snippet ${VAULT_SNIPPET_NAME}.css 內容漂移——檔案總管過濾可能失效（重跑 sb vault）`);
+  const appearancePath = join(ROOT, '.obsidian', 'appearance.json');
+  if (!existsSync(appearancePath)) issues.push('.obsidian/appearance.json 不存在——snippet 未啟用（執行 sb vault 配置）');
+  else {
+    try {
+      const appearance = JSON.parse(readFileSync(appearancePath, 'utf8'));
+      const enabled = Array.isArray(appearance.enabledCssSnippets) ? appearance.enabledCssSnippets : [];
+      if (!enabled.includes(VAULT_SNIPPET_NAME)) issues.push(`snippet ${VAULT_SNIPPET_NAME} 未啟用——檔案總管過濾失效（重跑 sb vault）`);
+    } catch { issues.push('.obsidian/appearance.json 非 JSON——snippet 啟用狀態無法核對'); }
+  }
+  if (filters) {
+    for (const name of whitelist) {
+      if (filters.includes(name) || filters.includes(name + '/')) issues.push(`userIgnoreFilters 含規定集條目「${name}」——規定集被自己過濾（重跑 sb vault 對齊）`);
+    }
+    const visible = [];
+    let entries = [];
+    try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { issues.push('無法讀取專案根——可見集無法核對'); }
+    for (const e of entries) {
+      if (e.name.startsWith('.')) continue; // dot 項核心不索引、不列
+      const key = e.isDirectory() ? e.name + '/' : e.name;
+      if (whitelist.has(e.name)) continue;
+      if (!filters.includes(e.name) && !filters.includes(key)) visible.push(key);
+    }
+    if (visible.length) issues.push('頂層未過濾條目：' + visible.join('、') + '——可見集超出規定集（重跑 sb vault 對齊）');
+  }
+  if (!existsSync(join(ROOT, 'docs'))) notes.push('docs/ 不存在——顯示規定集僅 README.md 有可見內容（建立 docs/ 後重跑 sb vault 補齊過濾）');
+  return { issues, notes };
+}
+
+function cmdVault(sub) {
+  if (sub === 'verify') {
+    const v = vaultVerify();
+    if (v.issues.length) die([`Obsidian 顯示規定集核對失敗（頂層可見應＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}）`, ...v.issues, '執行 sb vault 重新對齊']);
+    fin([`頂層有效可見＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}（讀回核對通過）`, ...v.notes]);
+  }
+  if (sub) usage();
   const created = [];
   const obsidianDir = join(ROOT, '.obsidian');
   if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('.obsidian/'); }
@@ -786,6 +838,9 @@ function cmdVault() {
   let ignoreNote;
   try { ignoreNote = ensureObsidianIgnored(); } catch { ignoreNote = '無法讀寫 .gitignore——請手動確認 .obsidian/ 忽略設定'; }
   const reg = ensureVaultRegistration();
+  // 配置後讀回自驗：以與 sb vault verify 相同的判準核對實際生效的設定，缺口即失敗。
+  const v = vaultVerify();
+  if (v.issues.length) die([`配置後自驗未通過——顯示規定集可能未生效（${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}）`, ...v.issues]);
   fin([
     `vault 根＝${ROOT}——Obsidian 開啟此儲存庫即以 repo 根為 vault（無外掛）`,
     created.length ? `建立：${created.join('、')}` : '結構已存在，零新增（冪等）',
@@ -794,9 +849,102 @@ function cmdVault() {
     explorerNote,
     ignoreNote,
     `全域註冊表：${reg.note}`,
+    `自驗通過：頂層有效可見＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}（設定讀回核對；爾後以 sb vault verify 複查）`,
+    ...v.notes,
     '顯示規定集＝docs/＋README.md（查詢層：userIgnoreFilters 生效於圖譜／搜尋／快速切換／屬性；檔案總管：CSS snippet ' + VAULT_SNIPPET_NAME + ' 隱藏白名單外頂層條目；索引器掃描範圍仍為全樹——查詢結果已被過濾）',
     'Obsidian 執行中退出會把全域註冊表與設定寫回覆蓋——建議關閉 Obsidian 後執行本命令，再開啟 Obsidian 載入；漂移重跑即對齊',
   ]);
+}
+
+// sb docs——docs/ 文件集的機械結構檢查（規範見 assets/DOCS.md）：
+// 非 md 檔不得入 docs/；除索引.md 外全編號（頂層 N-大節／文件、節內 N.M-文件）；
+// 編號最多兩層（N.M，檔名與標題皆不出現 N.M.K）；H1 帶與檔名一致的編號；
+// 大節與節內編號連續（插入或移除後全域重排）；索引.md 對帳（連結存在且逐檔收錄）。
+// 只證明結構形式；可理解性與單一描述由 rewrite 回讀與審查把關。
+function cmdDocs() {
+  const docsDir = join(ROOT, 'docs');
+  if (!existsSync(docsDir)) fin(['無 docs/——文件結構檢查不適用（採用 docs/ 文件集時的規範見 Shiftblame DOCS 資產）']);
+  const bad = [];
+  const mdFiles = [];
+  const folderNames = [];
+  const rootNums = [];
+  const seqByFolder = new Map();
+  const walk = (dir, rel) => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { bad.push(`docs/${rel}——無法讀取`); return; }
+    for (const e of entries) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (rel !== '') { bad.push(`docs/${r}/——大節內不設子資料夾（結構最多兩層：N-大節／N.M-文件）`); continue; }
+        const m = e.name.match(/^(\d+)-(.+)/);
+        if (!m) { bad.push(`docs/${r}/——頂層資料夾未編號（應為 N-名稱）`); continue; }
+        folderNames.push({ num: Number(m[1]), name: e.name });
+        walk(join(dir, e.name), r);
+      } else if (!/\.md$/i.test(e.name)) {
+        bad.push(`docs/${r}——非 md 檔不得置於 docs/`);
+      } else if (rel === '' && e.name === '索引.md') {
+        continue;
+      } else if (rel === '') {
+        const m = e.name.match(/^(\d+)-.+/);
+        if (!m) { bad.push(`docs/${r}——頂層文件未編號（應為 N-名稱.md，或移入 N-大節/）`); continue; }
+        rootNums.push(Number(m[1]));
+        mdFiles.push(r);
+      } else {
+        const folderNum = rel.match(/^(\d+)-/)[1];
+        if (/^\d+\.\d+\.\d+-/.test(e.name)) { bad.push(`docs/${r}——檔名出現三層編號（最多 N.M）`); continue; }
+        const m = e.name.match(/^(\d+)\.(\d+)-(.+)\.md$/i);
+        if (!m) { bad.push(`docs/${r}——節內文件未編號（應為 ${folderNum}.M-名稱.md）`); continue; }
+        if (m[1] !== folderNum) bad.push(`docs/${r}——檔名編號 ${m[1]}.${m[2]} 與大節 ${folderNum} 不符`);
+        if (!seqByFolder.has(rel)) seqByFolder.set(rel, []);
+        seqByFolder.get(rel).push(Number(m[2]));
+        mdFiles.push(r);
+      }
+    }
+  };
+  walk(docsDir, '');
+  const topNums = [...new Set([...folderNames.map((f) => f.num), ...rootNums])].sort((a, b) => a - b);
+  topNums.forEach((n, i) => { if (n !== i + 1) bad.push(`大節編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除大節後應全域重排`); });
+  const dupFolders = folderNames.filter((f, i) => folderNames.findIndex((o) => o.num === f.num) !== i);
+  for (const f of new Map(dupFolders.map((f) => [f.num, f])).values()) bad.push(`大節編號重複：${f.name}（${f.num}）——一個號一個大節`);
+  for (const [dir, seqs] of seqByFolder) {
+    const sorted = [...new Set(seqs)].sort((a, b) => a - b);
+    sorted.forEach((n, i) => { if (n !== i + 1) bad.push(`docs/${dir}——文件編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除文件後應重排`); });
+    const dup = seqs.find((n, i) => seqs.indexOf(n) !== i);
+    if (dup !== undefined) bad.push(`docs/${dir}——文件編號重複：${dup}——一個號一份文件`);
+  }
+  for (const f of mdFiles) {
+    const seg = f.split('/').pop();
+    const fm = seg.match(/^(\d+)\.(\d+)-/);
+    if (!fm) continue; // 頂層 N- 檔不做 H1 編號對應
+    let content;
+    try { content = readFileSync(join(docsDir, f), 'utf8'); } catch { continue; }
+    const lines = visibleText(content).split(/\r?\n/);
+    lines.forEach((l, i) => { if (/^\s*#{1,6}\s+\d+\.\d+\.\d+/.test(l)) bad.push(`docs/${f} 第 ${i + 1} 行——標題出現三層編號（最多 N.M）`); });
+    const want = `${fm[1]}.${fm[2]}`;
+    const h1 = lines.find((l) => /^#\s/.test(l));
+    if (!h1) continue;
+    // H1 不強制帶號；一旦以編號開頭，就必須與檔名一致（抓複製貼上的漂移，如檔名 5.1 標題 6.1）。
+    const hm = h1.match(/^#\s+(\d+(?:\.\d+)?)/);
+    if (hm && hm[1] !== want) bad.push(`docs/${f}——H1 編號 ${hm[1]} 與檔名 ${want} 不符`);
+  }
+  if (!existsSync(join(docsDir, '索引.md'))) bad.push('缺少 docs/索引.md——文件集以索引為入口');
+  else {
+    const idx = readFileSync(join(docsDir, '索引.md'), 'utf8');
+    const targets = new Set();
+    for (const m of idx.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+      let t = m[1].trim();
+      if (/^(https?:)?\/\//.test(t) || t.startsWith('#') || t.startsWith('mailto:')) continue;
+      t = t.split('#')[0];
+      if (!t) continue;
+      let decoded = t;
+      try { decoded = decodeURIComponent(t); } catch { /* 非法編碼保留原樣 */ }
+      targets.add(decoded.replace(/^\.\//, ''));
+      if (!existsSync(join(docsDir, decoded))) bad.push(`索引連結不存在：${t}`);
+    }
+    for (const f of mdFiles) if (!targets.has(f)) bad.push(`索引未收錄：docs/${f}`);
+  }
+  if (bad.length) die([`docs/ 結構檢查未通過（${bad.length} 項）`, ...bad]);
+  fin([`docs/ 結構檢查通過：${folderNames.length} 個大節、${mdFiles.length} 份文件，編號連續、層級不超過 N.M、索引逐檔收錄`]);
 }
 // —— 初始化的 Git 基線 ——
 // 工作分支要能合併回有提交的基底：空資料夾建庫、unborn repo 補空樹起始提交；
@@ -1465,7 +1613,8 @@ switch (cmd) {
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
-  case 'vault': cmdVault(); break;
+  case 'vault': cmdVault(pos[0]); break;
+  case 'docs': cmdDocs(); break;
   default: usage();
 }
 }
