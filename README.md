@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.9.0**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.9.1**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -77,7 +77,7 @@ sb adversarial .shiftblame/tmp/review-3.md --point 3
 sb end --adversarial --boss-ok
 ```
 
-先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。採用 docs/ 文件集與 Obsidian 顯示管理時，`sb docs` 檢查 docs/ 結構，`sb vault` 設定並自驗顯示規定集、`sb vault verify` 唯讀複查。
+先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。參照型文件（README、docs/、SOP、ROADMAP）的編輯統一入口是 `sb rewrite`：快照文件集後檢查結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符），提交動到這些檔案時提交閘執行同一判準；`sb vault` 設定並自驗 Obsidian 顯示規定集、`sb vault verify` 唯讀複查。
 
 新專案可在空資料夾直接 `sb init <slug>`：自動建立 Git 儲存庫及只含 `.gitignore` 的起始提交，再切到工作分支。已有 repo 但尚無提交時補一個空樹起始提交，不動既有暫存。已有內容的非 Git 資料夾須先 `git init` 並提交，或以 `sb init <slug> --no-git` 不用 Git（收尾只歸檔）。
 
@@ -94,4 +94,4 @@ npm test --prefix cli
 node cli/bin/sb.mjs state
 ```
 
-測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定、Obsidian vault 顯示規定集自驗與 docs/ 結構檢查，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。
+測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定、Obsidian vault 顯示規定集自驗、文件編輯入口（sb rewrite）的結構與可讀性判準及提交／收尾文件閘，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。

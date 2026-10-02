@@ -88,7 +88,7 @@ for (const initial of [undefined, { rewriteSeen: { rev: 0, at } }, { slug: null,
   assert.equal(f.gate('Write', { file_path: join(f.cwd, 'README.md' )}).status, 0, '對話承載：無機械凍結');
   assert.equal(f.git('init').status, 0);
   writeFileSync(join(f.cwd, '.gitignore'), '.shiftblame/\n');
-  writeFileSync(join(f.cwd, 'README.md'), 'direct execution\n');
+  writeFileSync(join(f.cwd, 'README.md'), '# Demo\n\nDemo project verifies that direct execution commits pass the document gate with readable entry text.\n\ndirect execution\n');
   assert.equal(f.git('add', '.').status, 0);
   const msg = 'fix: 驗證合法直接實行';
   const stamp = f.run('commitmsg', msg);

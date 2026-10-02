@@ -12,14 +12,14 @@ const event=(name,input)=>spawnSync(process.execPath,[hook],{encoding:'utf8',inp
 mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});
 assert.equal(git('init').status,0);
 assert.equal(run('sopreview','已核對').status,0,'缺少狀態時可寫審查記錄');assert.equal(run('state').status,0);writeFileSync(join(root,'.gitignore'),'.shiftblame/\n');
-for(const path of ['README.md','docs/README.md','module/readme.MD','skills/shiftblame/SKILL.md','hooks/shiftblame-guard.mjs']){
- mkdirSync(join(root,path,'..'),{recursive:true});writeFileSync(join(root,path),'# Documentation\n');
+const LEAD='Documentation files live beside the code they describe; this project verifies placement rules and the root README as the entry.\n';
+for(const path of ['README.md','docs/索引.md','docs/1-說明/1.1-放置.md','module/readme.MD','skills/shiftblame/SKILL.md','hooks/shiftblame-guard.mjs']){
+ mkdirSync(join(root,path,'..'),{recursive:true});writeFileSync(join(root,path),path==='docs/索引.md'?'# 索引\n\n- [1.1 放置](1-說明/1.1-放置.md)：說明。\n':'# Documentation\n\n'+LEAD+'\n');
  assert.equal(event('Write',{file_path:join(root,path)}).status,0);
 }
 assert.equal(git('add','.').status,0);
 assert.equal(git('-c','user.name=test','-c','user.email=test@example.invalid','commit','-m','baseline').status,0);
-writeFileSync(join(root,'README.md'),'# Documentation\nNew relevant section\n');
-assert.equal(git('add','README.md').status,0);
+writeFileSync(join(root,'README.md'),'# Documentation\n\n'+LEAD+'\nNew relevant section\n');assert.equal(git('add','README.md').status,0);
 writeFileSync(join(root,'.shiftblame/SOP.md'),'# SOP\npriority: 1\n');
 for(const msg of ['fix: R24 API behavior','fix: x','chore: merge example','feat: '+'測試'.repeat(57)]){
  assert.equal(run('commitmsg',msg).status,0,msg);

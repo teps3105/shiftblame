@@ -6,7 +6,7 @@
 // exit：0 = 通過，1 = 條件不符，2 = 用法錯誤。
 
 import { createHash, randomBytes } from 'node:crypto';
-import { appendFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync, readdirSync, rmSync } from 'node:fs';
+import { appendFileSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync, readdirSync, rmSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
@@ -67,7 +67,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊，配置後讀回自驗\n  sb vault verify                      唯讀核對 Obsidian 顯示規定集（頂層可見＝docs/＋README.md）\n  sb docs                              檢查 docs/ 結構：全 md、編號最多兩層、索引對帳與編號連續\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊，配置後讀回自驗\n  sb vault verify                      唯讀核對 Obsidian 顯示規定集（頂層可見＝docs/＋README.md）\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -856,95 +856,278 @@ function cmdVault(sub) {
   ]);
 }
 
-// sb docs——docs/ 文件集的機械結構檢查（規範見 assets/DOCS.md）：
-// 非 md 檔不得入 docs/；除索引.md 外全編號（頂層 N-大節／文件、節內 N.M-文件）；
-// 編號最多兩層（N.M，檔名與標題皆不出現 N.M.K）；H1 帶與檔名一致的編號；
-// 大節與節內編號連續（插入或移除後全域重排）；索引.md 對帳（連結存在且逐檔收錄）。
-// 只證明結構形式；可理解性與單一描述由 rewrite 回讀與審查把關。
-function cmdDocs() {
-  const docsDir = join(ROOT, 'docs');
-  if (!existsSync(docsDir)) fin(['無 docs/——文件結構檢查不適用（採用 docs/ 文件集時的規範見 Shiftblame DOCS 資產）']);
+// —— 參照型文件可讀性信號（README／docs／SOP／ROADMAP）——
+// 治理文件的累積式寫法（定義區、封存、回指）外溢到參照型文件會長成流水帳：
+// 開頭無當下摘要、以補丁追加變更、治理暗語混入。三個機械判準由 sb rewrite 與
+// 提交閘／收尾閘執行同一套判準，逼出整檔重寫而非追加；豁免以 frontmatter 明示
+// （lead-allow／length-allow／jargon-allow）。
+const DOC_ROOT_FILES = ['README.md', 'SOP.md', 'ROADMAP.md'];
+const DOC_LEAD_MIN_HAN = 20; // 重點前置：H1 後摘要段的最少中文字數
+const DOC_LEAD_MIN_WORDS = 15; // 或最少英文詞數（中英混排任一達標即過）
+const DOC_LENGTH_BUDGET = 300; // 長度預算：可見行數上限，超過須 length-allow 聲明權威長參照
+const DOC_PROSE_SENTENCE_MIN = 5; // 純散文段：連續達此句數且零具體內容即為黑話宿主
+const JARGON = [
+  ['時點 1／2／3', /時點\s*[1-3]/],
+  ['G 檔治理搭配詞', /\bG[1-3]\s*(?:契約|檔|定義區|封存|回指|審查)|\bG\s*檔\b/],
+  ['sb 命令', /\bsb\s+(?:init|next|end|rewrite|vault|commitmsg|sopreview|closeout|adversarial|handoff)\b/],
+  ['.shiftblame 路徑', /\.shiftblame\//i],
+  ['流程術語', /回指記錄|定義區|六段圓環|三時點|時點審查/],
+];
+const isDocPath = (p) => { const pl = String(p).trim().toLowerCase(); return DOC_ROOT_FILES.some((f) => f.toLowerCase() === pl) || pl.startsWith('docs/'); };
+function docFlags(text) {
+  const flags = {};
+  const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!m) return flags;
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z][A-Za-z-]*)\s*:\s*(.*?)\s*$/);
+    if (kv) flags[kv[1].toLowerCase()] = kv[2];
+  }
+  return flags;
+}
+function leadProblem(lines) {
+  const h1 = lines.findIndex((l) => /^#\s/.test(l));
+  if (h1 < 0) return '缺 H1 標題——文件以可讀標題為入口';
+  const prose = [];
+  for (let i = h1 + 1; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t) continue;
+    if (/^#{1,6}\s/.test(t)) break; // 第一個後續標題＝摘要區結束
+    if (/^\[!\[/.test(t) || /^</.test(t) || /^>/.test(t) || /^\|/.test(t)) continue; // 徽章／HTML／引用／表格
+    if (/^[-*+]\s/.test(t) || /^\d+[.)]\s/.test(t)) continue; // 清單
+    if (/^\[[^\]]*\]\([^)]*\)$/.test(t)) continue; // 單行純連結
+    prose.push(t);
+  }
+  const joined = prose.join('');
+  const han = (joined.match(/\p{Script=Han}/gu) ?? []).length;
+  const words = (joined.toLowerCase().match(/[a-z][a-z0-9'-]*/g) ?? []).length;
+  if (han < DOC_LEAD_MIN_HAN && words < DOC_LEAD_MIN_WORDS) return `H1 後第一個標題前沒有一段當下摘要（至少 ${DOC_LEAD_MIN_HAN} 個中文字或 ${DOC_LEAD_MIN_WORDS} 個英文詞）——以 sb rewrite 整檔重寫，開頭即現況、用途與入口`;
+  return null;
+}
+
+// sb rewrite——文件編輯的唯一入口：備份文件集至 tmp 後跑結構＋可讀性判準，代理依報告
+// 整檔重寫至 pass。檢查核心 docsFindings 為唯讀，由本命令與提交閘（cmdCommitmsg）、
+// 收尾閘（cmdEnd）共用同一判準。結構檢查（docs/ 文件集）：非 md 檔不得入 docs/；
+// 除索引.md 外全編號（頂層 N-大節／文件、節內 N.M-文件）；編號最多兩層（N.M，檔名與
+// 標題皆不出現 N.M.K）；H1 帶與檔名一致的編號；大節與節內編號連續；索引.md 對帳。
+function docsFindings() {
   const bad = [];
+  const docsDir = join(ROOT, 'docs');
   const mdFiles = [];
   const folderNames = [];
   const rootNums = [];
   const seqByFolder = new Map();
-  const walk = (dir, rel) => {
-    let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { bad.push(`docs/${rel}——無法讀取`); return; }
-    for (const e of entries) {
-      const r = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) {
-        if (rel !== '') { bad.push(`docs/${r}/——大節內不設子資料夾（結構最多兩層：N-大節／N.M-文件）`); continue; }
-        const m = e.name.match(/^(\d+)-(.+)/);
-        if (!m) { bad.push(`docs/${r}/——頂層資料夾未編號（應為 N-名稱）`); continue; }
-        folderNames.push({ num: Number(m[1]), name: e.name });
-        walk(join(dir, e.name), r);
-      } else if (!/\.md$/i.test(e.name)) {
-        bad.push(`docs/${r}——非 md 檔不得置於 docs/`);
-      } else if (rel === '' && e.name === '索引.md') {
-        continue;
-      } else if (rel === '') {
-        const m = e.name.match(/^(\d+)-.+/);
-        if (!m) { bad.push(`docs/${r}——頂層文件未編號（應為 N-名稱.md，或移入 N-大節/）`); continue; }
-        rootNums.push(Number(m[1]));
-        mdFiles.push(r);
-      } else {
-        const folderNum = rel.match(/^(\d+)-/)[1];
-        if (/^\d+\.\d+\.\d+-/.test(e.name)) { bad.push(`docs/${r}——檔名出現三層編號（最多 N.M）`); continue; }
-        const m = e.name.match(/^(\d+)\.(\d+)-(.+)\.md$/i);
-        if (!m) { bad.push(`docs/${r}——節內文件未編號（應為 ${folderNum}.M-名稱.md）`); continue; }
-        if (m[1] !== folderNum) bad.push(`docs/${r}——檔名編號 ${m[1]}.${m[2]} 與大節 ${folderNum} 不符`);
-        if (!seqByFolder.has(rel)) seqByFolder.set(rel, []);
-        seqByFolder.get(rel).push(Number(m[2]));
-        mdFiles.push(r);
+  if (existsSync(docsDir)) {
+    const walk = (dir, rel) => {
+      let entries;
+      try { entries = readdirSync(dir, { withFileTypes: true }); } catch { bad.push(`docs/${rel}——無法讀取`); return; }
+      for (const e of entries) {
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          if (rel !== '') { bad.push(`docs/${r}/——大節內不設子資料夾（結構最多兩層：N-大節／N.M-文件）`); continue; }
+          const m = e.name.match(/^(\d+)-(.+)/);
+          if (!m) { bad.push(`docs/${r}/——頂層資料夾未編號（應為 N-名稱）`); continue; }
+          folderNames.push({ num: Number(m[1]), name: e.name });
+          walk(join(dir, e.name), r);
+        } else if (!/\.md$/i.test(e.name)) {
+          bad.push(`docs/${r}——非 md 檔不得置於 docs/`);
+        } else if (rel === '' && e.name === '索引.md') {
+          mdFiles.push(r);
+        } else if (rel === '') {
+          const m = e.name.match(/^(\d+)-.+/);
+          if (!m) { bad.push(`docs/${r}——頂層文件未編號（應為 N-名稱.md，或移入 N-大節/）`); continue; }
+          rootNums.push(Number(m[1]));
+          mdFiles.push(r);
+        } else {
+          const folderNum = rel.match(/^(\d+)-/)[1];
+          if (/^\d+\.\d+\.\d+-/.test(e.name)) { bad.push(`docs/${r}——檔名出現三層編號（最多 N.M）`); continue; }
+          const m = e.name.match(/^(\d+)\.(\d+)-(.+)\.md$/i);
+          if (!m) { bad.push(`docs/${r}——節內文件未編號（應為 ${folderNum}.M-名稱.md）`); continue; }
+          if (m[1] !== folderNum) bad.push(`docs/${r}——檔名編號 ${m[1]}.${m[2]} 與大節 ${folderNum} 不符`);
+          if (!seqByFolder.has(rel)) seqByFolder.set(rel, []);
+          seqByFolder.get(rel).push(Number(m[2]));
+          mdFiles.push(r);
+        }
+      }
+    };
+    walk(docsDir, '');
+    const topNums = [...new Set([...folderNames.map((f) => f.num), ...rootNums])].sort((a, b) => a - b);
+    topNums.forEach((n, i) => { if (n !== i + 1) bad.push(`大節編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除大節後應全域重排`); });
+    const dupFolders = folderNames.filter((f, i) => folderNames.findIndex((o) => o.num === f.num) !== i);
+    for (const f of new Map(dupFolders.map((f) => [f.num, f])).values()) bad.push(`大節編號重複：${f.name}（${f.num}）——一個號一個大節`);
+    for (const [dir, seqs] of seqByFolder) {
+      const sorted = [...new Set(seqs)].sort((a, b) => a - b);
+      sorted.forEach((n, i) => { if (n !== i + 1) bad.push(`docs/${dir}——文件編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除文件後應重排`); });
+      const dup = seqs.find((n, i) => seqs.indexOf(n) !== i);
+      if (dup !== undefined) bad.push(`docs/${dir}——文件編號重複：${dup}——一個號一份文件`);
+    }
+    for (const f of mdFiles) {
+      const seg = f.split('/').pop();
+      const fm = seg.match(/^(\d+)\.(\d+)-/);
+      if (!fm) continue; // 頂層 N- 檔不做 H1 編號對應
+      let content;
+      try { content = readFileSync(join(docsDir, f), 'utf8'); } catch { continue; }
+      const lines = visibleText(content).split(/\r?\n/);
+      lines.forEach((l, i) => { if (/^\s*#{1,6}\s+\d+\.\d+\.\d+/.test(l)) bad.push(`docs/${f} 第 ${i + 1} 行——標題出現三層編號（最多 N.M）`); });
+      const want = `${fm[1]}.${fm[2]}`;
+      const h1 = lines.find((l) => /^#\s/.test(l));
+      if (!h1) continue;
+      // H1 不強制帶號；一旦以編號開頭，就必須與檔名一致（抓複製貼上的漂移，如檔名 5.1 標題 6.1）。
+      const hm = h1.match(/^#\s+(\d+(?:\.\d+)?)/);
+      if (hm && hm[1] !== want) bad.push(`docs/${f}——H1 編號 ${hm[1]} 與檔名 ${want} 不符`);
+    }
+    if (!existsSync(join(docsDir, '索引.md'))) bad.push('缺少 docs/索引.md——文件集以索引為入口');
+    else {
+      const idx = readFileSync(join(docsDir, '索引.md'), 'utf8');
+      const targets = new Set();
+      for (const m of idx.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+        let t = m[1].trim();
+        if (/^(https?:)?\/\//.test(t) || t.startsWith('#') || t.startsWith('mailto:')) continue;
+        t = t.split('#')[0];
+        if (!t) continue;
+        let decoded = t;
+        try { decoded = decodeURIComponent(t); } catch { /* 非法編碼保留原樣 */ }
+        targets.add(decoded.replace(/^\.\//, ''));
+        if (!existsSync(join(docsDir, decoded))) bad.push(`索引連結不存在：${t}`);
+      }
+      for (const f of mdFiles) if (f !== '索引.md' && !targets.has(f)) bad.push(`索引未收錄：docs/${f}`);
+    }
+  }
+  // —— 可讀性三判準：docs/ 每份 md（索引.md 豁免重點前置與暗語）＋根檔 README／SOP／ROADMAP ——
+  const auditFile = (label, abs, { lead = true, jargon = false } = {}) => {
+    let text;
+    try { text = readFileSync(abs, 'utf8'); } catch { return; }
+    const flags = docFlags(text);
+    const lines = visibleText(text).split('\n');
+    if (lead && flags['lead-allow'] !== 'true') {
+      const p = leadProblem(lines);
+      if (p) bad.push(`${label}——${p}`);
+    }
+    if (flags['length-allow'] !== 'true' && lines.length > DOC_LENGTH_BUDGET) {
+      bad.push(`${label}——可見 ${lines.length} 行超過長度預算 ${DOC_LENGTH_BUDGET}：同構合併或拆分；權威長參照以 frontmatter length-allow: true 聲明`);
+    }
+    if (jargon && flags['jargon-allow'] !== 'true') {
+      lines.forEach((l, i) => {
+        for (const [name, re] of JARGON) {
+          if (re.test(l)) { bad.push(`${label} 第 ${i + 1} 行——治理暗語（${name}）：${l.trim().slice(0, 60)}`); break; }
+        }
+      });
+      // 純散文段：連續 ≥5 句且零具體內容（命令、路徑、數值）＝黑話的宿主結構。
+      // 腔調不靠詞表——在結構上要求敘事掛得住具體內容，寫不出具體值的段落依「當下自洽」改欄位或刪除。
+      for (const [start, joined] of proseParagraphs(lines)) {
+        const sents = joined.split(/[。！？!?]+/).filter((s) => s.trim());
+        if (sents.length >= DOC_PROSE_SENTENCE_MIN && !/[`\d]|[/\\]|\.(?:md|json|ts|js|mjs|py|sh|toml|ya?ml)/.test(joined)) {
+          bad.push(`${label} 第 ${start + 1} 行起——連續 ${sents.length} 句純散文且無任何具體內容（命令、路徑、數值）：追問這段的命令、觸發條件與預期結果，填不出的內容刪除或移 tmp`);
+          break; // 每檔報第一處，重寫後自然暴露下一處
+        }
       }
     }
+    // 佔位符殘留＝文件未完成（模板提示、TODO、待補）——完成度獨立於文風，不受文風豁免
+    lines.forEach((l, i) => {
+      if (/（填|（待填|（待實|TODO[:：）]|待補[:：）]/.test(l)) bad.push(`${label} 第 ${i + 1} 行——佔位符殘留（文件未完成）：${l.trim().slice(0, 40)}`);
+    });
   };
-  walk(docsDir, '');
-  const topNums = [...new Set([...folderNames.map((f) => f.num), ...rootNums])].sort((a, b) => a - b);
-  topNums.forEach((n, i) => { if (n !== i + 1) bad.push(`大節編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除大節後應全域重排`); });
-  const dupFolders = folderNames.filter((f, i) => folderNames.findIndex((o) => o.num === f.num) !== i);
-  for (const f of new Map(dupFolders.map((f) => [f.num, f])).values()) bad.push(`大節編號重複：${f.name}（${f.num}）——一個號一個大節`);
-  for (const [dir, seqs] of seqByFolder) {
-    const sorted = [...new Set(seqs)].sort((a, b) => a - b);
-    sorted.forEach((n, i) => { if (n !== i + 1) bad.push(`docs/${dir}——文件編號不連續：出現 ${n}，缺 ${i + 1}——插入或移除文件後應重排`); });
-    const dup = seqs.find((n, i) => seqs.indexOf(n) !== i);
-    if (dup !== undefined) bad.push(`docs/${dir}——文件編號重複：${dup}——一個號一份文件`);
-  }
   for (const f of mdFiles) {
-    const seg = f.split('/').pop();
-    const fm = seg.match(/^(\d+)\.(\d+)-/);
-    if (!fm) continue; // 頂層 N- 檔不做 H1 編號對應
-    let content;
-    try { content = readFileSync(join(docsDir, f), 'utf8'); } catch { continue; }
-    const lines = visibleText(content).split(/\r?\n/);
-    lines.forEach((l, i) => { if (/^\s*#{1,6}\s+\d+\.\d+\.\d+/.test(l)) bad.push(`docs/${f} 第 ${i + 1} 行——標題出現三層編號（最多 N.M）`); });
-    const want = `${fm[1]}.${fm[2]}`;
-    const h1 = lines.find((l) => /^#\s/.test(l));
-    if (!h1) continue;
-    // H1 不強制帶號；一旦以編號開頭，就必須與檔名一致（抓複製貼上的漂移，如檔名 5.1 標題 6.1）。
-    const hm = h1.match(/^#\s+(\d+(?:\.\d+)?)/);
-    if (hm && hm[1] !== want) bad.push(`docs/${f}——H1 編號 ${hm[1]} 與檔名 ${want} 不符`);
+    const isIndex = f === '索引.md';
+    auditFile(`docs/${f}`, join(docsDir, f), { lead: !isIndex, jargon: !isIndex });
   }
-  if (!existsSync(join(docsDir, '索引.md'))) bad.push('缺少 docs/索引.md——文件集以索引為入口');
-  else {
-    const idx = readFileSync(join(docsDir, '索引.md'), 'utf8');
-    const targets = new Set();
-    for (const m of idx.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-      let t = m[1].trim();
-      if (/^(https?:)?\/\//.test(t) || t.startsWith('#') || t.startsWith('mailto:')) continue;
-      t = t.split('#')[0];
-      if (!t) continue;
-      let decoded = t;
-      try { decoded = decodeURIComponent(t); } catch { /* 非法編碼保留原樣 */ }
-      targets.add(decoded.replace(/^\.\//, ''));
-      if (!existsSync(join(docsDir, decoded))) bad.push(`索引連結不存在：${t}`);
+  const rootEntries = (() => { try { return readdirSync(ROOT); } catch { return []; } })();
+  for (const name of DOC_ROOT_FILES) {
+    const actual = rootEntries.find((e) => e.toLowerCase() === name.toLowerCase());
+    if (actual) auditFile(actual, join(ROOT, actual));
+  }
+  return bad;
+}
+function cmdRewrite() {
+  // 機械起點：文件集原稿快照至 tmp（rewrite-backup/<時間戳>/），重寫自快照後整檔從零撰寫，
+  // 不在原檔上補丁；歷史由 git 承載，tmp 快照供重寫時對照需要保留的契約與證據。
+  // 結構零變化檢查：與上一份快照比對標題序列——完全相同＝沿舊目錄逐節翻寫（抄錄）。
+  // sb rewrite 的語義是架構必變的整檔重寫；小幅修正直接編輯檔案（提交閘驗三判準）。
+  const docsDir = join(ROOT, 'docs');
+  const rootEntries = (() => { try { return readdirSync(ROOT); } catch { return []; } })();
+  const roots = DOC_ROOT_FILES.map((name) => rootEntries.find((e) => e.toLowerCase() === name.toLowerCase())).filter(Boolean);
+  const hasDocs = existsSync(docsDir);
+  if (!hasDocs && !roots.length) fin(['無 README／docs／SOP／ROADMAP——文件檢查不適用（文件集建立後 sb rewrite 為唯一編輯入口）']);
+  const backupRoot = join(TMP, 'rewrite-backup');
+  const rels = listDocRels(docsDir, hasDocs);
+  // 上一份快照＝結構比對基準；本命令新建立的快照不參與（重寫確認輪的基準是重寫前的版本）。
+  let prev = null;
+  try {
+    const stamps = readdirSync(backupRoot).filter((d) => /^\d{4}-/.test(d)).sort();
+    if (stamps.length) prev = join(backupRoot, stamps[stamps.length - 1]);
+  } catch { /* 無既有快照——首次執行不檢查結構變化 */ }
+  const stale = [];
+  if (prev) {
+    for (const rel of rels) {
+      const curAbs = join(ROOT, rel);
+      const oldAbs = join(prev, rel);
+      if (!existsSync(oldAbs) || !existsSync(curAbs)) continue;
+      let curText, oldText;
+      try { curText = readFileSync(curAbs, 'utf8'); oldText = readFileSync(oldAbs, 'utf8'); } catch { continue; }
+      const seq = headingSeq(curText);
+      if (seq.length && seq === headingSeq(oldText)) stale.push(rel);
     }
-    for (const f of mdFiles) if (!targets.has(f)) bad.push(`索引未收錄：docs/${f}`);
   }
-  if (bad.length) die([`docs/ 結構檢查未通過（${bad.length} 項）`, ...bad]);
-  fin([`docs/ 結構檢查通過：${folderNames.length} 個大節、${mdFiles.length} 份文件，編號連續、層級不超過 N.M、索引逐檔收錄`]);
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupDir = join(backupRoot, stamp);
+  mkdirSync(backupDir, { recursive: true });
+  if (hasDocs) cpSync(docsDir, join(backupDir, 'docs'), { recursive: true });
+  for (const name of roots) cpSync(join(ROOT, name), join(backupDir, name));
+  const bad = docsFindings();
+  for (const rel of stale) bad.push(`${rel}——重寫後標題序列與上一份快照完全相同：沿舊目錄逐節翻寫是抄錄——先從讀者任務重新推導章節再落筆；小幅修正直接編輯檔案即可（不走 sb rewrite）`);
+  if (bad.length) die([
+    `文件檢查未通過（${bad.length} 項）——依 rewrite 整檔重寫至 pass（原稿快照：${backupDir}）`,
+    ...bad,
+  ]);
+  fin([
+    `文件檢查通過${prev ? '（結構相對上一份快照有變化）' : '（首次執行——下一輪起比對結構變化）'}${hasDocs ? `：docs/ ${folderCount(docsDir)} 節、${mdCount(docsDir)} 份` : ''}${roots.length ? `；根檔：${roots.join('、')}` : ''}`,
+    `原稿快照：${backupDir}`,
+    '參照型文件以整檔重寫維護——不在原檔上補丁；提交與收尾閘執行同一判準',
+  ]);
+}
+function listDocRels(docsDir, hasDocs) {
+  // 回傳 ROOT 相對路徑（docs/ 前綴＋根檔名）——快照佈局與 ROOT 佈局同構，直接 join 比對
+  const rels = [];
+  if (hasDocs) {
+    const walk = (dir, rel) => {
+      let entries;
+      try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) walk(join(dir, e.name), r);
+        else if (/\.md$/i.test(e.name) && r !== '索引.md') rels.push(`docs/${r}`);
+      }
+    };
+    walk(docsDir, '');
+  }
+  const rootEntries = (() => { try { return readdirSync(ROOT); } catch { return []; } })();
+  for (const name of DOC_ROOT_FILES) {
+    const actual = rootEntries.find((e) => e.toLowerCase() === name.toLowerCase());
+    if (actual) rels.push(actual);
+  }
+  return rels;
+}
+function proseParagraphs(lines) {
+  // 敘事段落（排除標題、清單、表格、引用）；回傳 [起始行號, 拼接文字]
+  const out = [];
+  let cur = [], start = 0;
+  const flush = () => { if (cur.length) { out.push([start, cur.join('')]); cur = []; } };
+  lines.forEach((l, i) => {
+    const t = l.trim();
+    const isProse = t && !/^#{1,6}\s/.test(t) && !/^[-*+]\s/.test(t) && !/^\d+[.)]\s/.test(t) && !/^>/.test(t) && !/^\|/.test(t);
+    if (isProse) { if (!cur.length) start = i; cur.push(t); } else flush();
+  });
+  flush();
+  return out;
+}
+function headingSeq(text) {
+  const src = text.replace(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/, ''); // 去 frontmatter——豁免旗標不屬於結構
+  return visibleText(src).split('\n').map((l) => l.trim()).filter((l) => /^#{1,6}\s/.test(l)).join('\n');
+}
+function folderCount(dir) {
+  try { return readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).length; } catch { return 0; }
+}
+function mdCount(dir) {
+  try { return readdirSync(dir, { withFileTypes: true }).filter((e) => e.isFile() && /\.md$/i.test(e.name)).length; } catch { return 0; }
 }
 // —— 初始化的 Git 基線 ——
 // 工作分支要能合併回有提交的基底：空資料夾建庫、unborn repo 補空樹起始提交；
@@ -1401,6 +1584,19 @@ function cmdEnd(opts) {
   const bound = bindingProblem('3', pt3Entry, st);
   if (bound) die([bound]);
   const problems = [], passes = [];
+  // 收尾文件閘：本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準——
+  // 收尾出口強制整檔重寫落實；無 git 或無基準提交（--no-git／非 Git 工作區）無 diff 事實，跳過。
+  if (st.baseCommit) {
+    const touched = gitRun('diff', '--name-only', `${st.baseCommit}..HEAD`);
+    const files = touched.status === 0 ? touched.stdout.split('\n').filter(isDocPath) : [];
+    if (files.length) {
+      const bad = docsFindings();
+      if (bad.length) die([
+        `收尾文件閘未過（本 slug 動過：${files.slice(0, 5).join('、')}${files.length > 5 ? ` 等 ${files.length} 檔` : ''}）——先以 sb rewrite 整檔重寫至 pass 再收尾：`,
+        ...bad,
+      ]);
+    }
+  }
   passes.push(`時點 3 審查條目與使用者終審（--adversarial＋--boss-ok）已核對${Object.hasOwn(pt3Entry, 'head') ? '；受驗提交與審查時一致' : ''}`);
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
@@ -1542,8 +1738,19 @@ function cmdCommitmsg(msg) {
   // quotePath=false 防引號逃逸＋--diff-filter 排除純刪除——清理通道放行；非 git 工作區跳過
   try {
     const staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
-    if (staged.length) die([`系統檔不入庫——staged 含 ${staged.slice(0, 5).join('、')}${staged.length > 5 ? ` 等 ${staged.length} 檔` : ''}（.shiftblame/ 須列入 .gitignore；先 git restore --staged 移除再發章）`]);
+      .split('\n').map((l) => l.trim()).filter(Boolean);
+    const sys = staged.filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
+    if (sys.length) die([`系統檔不入庫——staged 含 ${sys.slice(0, 5).join('、')}${sys.length > 5 ? ` 等 ${sys.length} 檔` : ''}（.shiftblame/ 須列入 .gitignore；先 git restore --staged 移除再發章）`]);
+    // 文件閘：staged 動到參照型文件（README／docs／SOP／ROADMAP）時，文件集須先過 sb rewrite 判準——
+    // 整檔重寫而非補丁的機械承載。hooks 對無章提交硬擋，本閘因此覆蓋所有動文件的提交。
+    const docHits = staged.filter(isDocPath);
+    if (docHits.length) {
+      const bad = docsFindings();
+      if (bad.length) die([
+        `文件閘未過（staged 動到參照型文件：${docHits.slice(0, 5).join('、')}${docHits.length > 5 ? ` 等 ${docHits.length} 檔` : ''}）——先以 sb rewrite 整檔重寫至 pass 再發章：`,
+        ...bad,
+      ]);
+    }
   } catch { /* 非 git 工作區：無事實清單可查，跳過（hooks 層照常把關） */ }
   // 驗收段對 repo 唯讀——防「驗收中偷改＋偷 commit」的洗白鏈；重修回 test／build 才可存檔
   if (['verify', 'done'].includes(current.state?.node)) die(['驗收段對 repo 唯讀（寫入矩陣）——存檔回 quality／build（或任意→requirement）後進行']);
@@ -1614,7 +1821,7 @@ switch (cmd) {
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
   case 'vault': cmdVault(pos[0]); break;
-  case 'docs': cmdDocs(); break;
+  case 'rewrite': cmdRewrite(); break;
   default: usage();
 }
 }

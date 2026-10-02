@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.9.0"
+  version: "2.9.1"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；依工作規模使用直接實作或既有 slug 流程。
 ---
 # Shiftblame
@@ -59,9 +59,9 @@ Given／When／Then 是驗收描述工具。測試通過、檔案存在或工具
 
 ## 文件與提交
 
-正式文件依 [DOCS](assets/DOCS.md) 撰寫：同構合併、當下自洽、單一機制單一描述、人可讀；採用 docs/ 文件集時全檔編號、層級最多 N.M，以 `sb docs` 機械檢查結構。改動影響到描述時與實作同批更新；同一事實指定權威來源並引用，文件品質以正確性、可理解性與操作用途判定。
+正式文件依 [DOCS](assets/DOCS.md) 撰寫：參照型（README、docs/、SOP、ROADMAP）與契約型（G 檔、SLUG）分型維護；同構合併、當下自洽、單一機制單一描述、人可讀。參照型文件的實質變更與實作同批整檔重寫，常駐於 main 與 slug 所有模式，義務在提交前——提交閘（sb commitmsg）對 staged 動到文件的提交先驗文件判準，未過不發章；小幅修正可直接編輯。同一事實指定權威來源並引用，文件品質以正確性、可理解性與操作用途判定。
 
-G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP／ROADMAP 依受影響範圍更新，重大治理變更才完整重審。整理方法見 [rewrite](../rewrite/SKILL.md)。
+G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP／ROADMAP 屬參照型，依 rewrite 整檔重寫；重大治理變更才逐條全審。整理方法見 [rewrite](../rewrite/SKILL.md)。
 
 工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存；工作帳本只在跨回合或交接確有需要時維護。保存／恢復見 [save](../save/SKILL.md)、[resume](../resume/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
 
