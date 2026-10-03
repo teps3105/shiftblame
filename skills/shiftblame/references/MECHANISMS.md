@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.1
+revision: 2.9.2
 ---
 # 執行介面與界線
 
@@ -29,7 +29,6 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb end --adversarial --boss-ok 在 verify 及使用者終審後歸檔並整合：收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。
-- sb vault 設定本專案的 Obsidian 顯示與註冊：以 repo 根為 vault，顯示規定集＝docs/＋README.md，配置後讀回自驗；sb vault verify 唯讀複查同一判準，缺口列出未過濾條目並以非零退出。僅在使用者要求管理 Obsidian 顯示時使用。全域註冊表位於 Windows 的 %APPDATA%\obsidian、macOS 的 ~/Library/Application Support/obsidian、其他平台的 $XDG_CONFIG_HOME/obsidian（預設 ~/.config/obsidian），SB_OBSIDIAN_GLOBAL 可覆寫。
 - sb rewrite 文件編輯的唯一入口：把文件集（README、docs/、SOP、ROADMAP 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查 docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（時點、G 檔搭配詞、sb 命令、.shiftblame/ 路徑不得入 docs/；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心由提交閘與收尾閘共用。
 - sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
 

@@ -5,9 +5,8 @@
 // 使用 Node 內建模組；狀態與工作記錄存於 <repo>/.shiftblame/。
 // exit：0 = 通過，1 = 條件不符，2 = 用法錯誤。
 
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { appendFileSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync, renameSync, readdirSync, rmSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, basename } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -67,7 +66,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb vault                             設定本專案 Obsidian 顯示與註冊，配置後讀回自驗\n  sb vault verify                      唯讀核對 Obsidian 顯示規定集（頂層可見＝docs/＋README.md）\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -645,216 +644,6 @@ function ensureWorkspaceIgnored() {
   const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
 }
-// sb vault 以 repo 根註冊 Obsidian vault；顯示範圍為 docs/ 與 README.md。
-// 查詢使用 userIgnoreFilters；檔案總管使用 data-path 與原生 CSS snippet。
-// snippets 放於 configDir/snippets，以 appearance.json enabledCssSnippets 啟用。
-// 退役的 docs-vault 設定由此入口清理。
-// 全域 obsidian.json 於 Obsidian 關閉時更新，避免與應用程式退出寫入衝突。
-// 位置依平台：Windows %APPDATA%\obsidian、macOS ~/Library/Application Support/obsidian、
-// 其他 $XDG_CONFIG_HOME/obsidian（預設 ~/.config/obsidian）；SB_OBSIDIAN_GLOBAL 可覆寫。
-function obsidianGlobalDir() {
-  if (process.env.SB_OBSIDIAN_GLOBAL) return process.env.SB_OBSIDIAN_GLOBAL;
-  if (process.platform === 'win32') return join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'obsidian');
-  if (process.platform === 'darwin') return join(homedir(), 'Library', 'Application Support', 'obsidian');
-  return join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'obsidian');
-}
-const OBSIDIAN_GLOBAL_DIR = obsidianGlobalDir();
-function vaultIgnoreFilters() {
-  // 顯示規定集＝docs/＋README.md——頂層其餘非 dot 項目一律隱藏（dot 項核心不索引，不列）。
-  const filters = [];
-  let entries = [];
-  try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { return []; }
-  for (const e of entries) {
-    if (e.name.startsWith('.') || e.name === 'docs' || e.name === 'README.md') continue;
-    filters.push(e.isDirectory() ? `${e.name}/` : e.name);
-  }
-  return filters.sort();
-}
-function ensureVaultRegistration() {
-  const regPath = join(OBSIDIAN_GLOBAL_DIR, 'obsidian.json');
-  let reg = { vaults: {} };
-  if (existsSync(regPath)) {
-    try {
-      const parsed = JSON.parse(readFileSync(regPath, 'utf8'));
-      if (parsed && typeof parsed === 'object' && parsed.vaults && typeof parsed.vaults === 'object' && !Array.isArray(parsed.vaults)) reg = parsed;
-    } catch { /* 註冊表毀損——重建空表 */ }
-  }
-  for (const [id, entry] of Object.entries(reg.vaults)) {
-    if (entry && entry.path === ROOT) return { regPath, note: `已註冊（${id}）——不動`, changed: false };
-  }
-  const id = randomBytes(8).toString('hex');
-  reg.vaults[id] = { path: ROOT, ts: Date.now() };
-  try { mkdirSync(OBSIDIAN_GLOBAL_DIR, { recursive: true }); writeFileSync(regPath, JSON.stringify(reg) + '\n'); } catch { return { regPath, note: '無法寫入全域註冊表——未註冊（Obsidian 執行中或權限不足）', changed: false, failed: true }; }
-  return { regPath, note: `已補掛全域註冊表（${id}）`, changed: true };
-}
-function ensureObsidianIgnored() {
-  // .obsidian/ 是本機 Obsidian 設定與快取（workspace 等），不入庫——冪等補忽略。
-  const giPath = join(ROOT, '.gitignore');
-  let gi = existsSync(giPath) ? readFileSync(giPath, 'utf8') : '';
-  if (hasGitMetadata()) {
-    const check = spawnSync('git', ['-C', ROOT, 'check-ignore', '--quiet', '--no-index', '--', '.obsidian/'], { encoding: 'utf8' });
-    if (check.status === 0) return '.obsidian/ 已被忽略規則涵蓋（.gitignore 原樣）';
-    if (check.status !== 0 && check.status !== 1) return 'Git 忽略查詢失敗——請手動確認 .obsidian/ 忽略設定';
-  } else {
-    const direct = [...gi.matchAll(/^(\!?)\/?\.obsidian\/?[ \t]*(?:\r?$)/gm)].at(-1);
-    if (direct && direct[1] !== '!') return '.obsidian/ 已有忽略規則（非 Git 工作區，直接規則判定）';
-  }
-  const eol = gi.match(/\r?\n/)?.[0] ?? '\n';
-  appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.obsidian/' + eol);
-  return '.gitignore 已補一行：.obsidian/';
-}
-const VAULT_SNIPPET_NAME = 'sb-vault-filter';
-const VAULT_SNIPPET_WHITELIST = { folders: ['docs'], files: ['README.md'] };
-function vaultFilterCss() {
-  // 檔案總管顯示規定集反白名單：頂層條目（data-path 不含 /）白名單之外一律 display:none；
-  // 子層條目 data-path 含 /（如 docs/ 下內容）不受影響。選擇器綁 nav class（檔案總管條目專屬，
-  // asar 實證 setAttr('data-path', ...) 位於 nav-folder-title／nav-file-title），不誤擊其他面板。
-  const css = [
-    `/* sb vault 生成：檔案總管顯示規定集——頂層僅顯示 ${VAULT_SNIPPET_WHITELIST.folders.join('、')} 與 ${VAULT_SNIPPET_WHITELIST.files.join('、')}，其餘一律隱藏。 */`,
-  ];
-  for (const name of VAULT_SNIPPET_WHITELIST.folders) {
-    css.push(`.nav-folder-title:not([data-path*="/"]):not([data-path="${name}"]),`);
-  }
-  for (const name of VAULT_SNIPPET_WHITELIST.files) {
-    css.push(`.nav-file-title:not([data-path*="/"]):not([data-path="${name}"]),`);
-  }
-  css[css.length - 1] = css[css.length - 1].replace(/,$/, ' {');
-  css.push('  display: none !important;', '}', '');
-  return css.join('\n');
-}
-
-// 讀回實際設定並核對頂層有效可見集＝規定集（docs/＋README.md）。唯讀，不改任何檔：
-// sb vault 配置後自驗與 sb vault verify 共用同一判準，缺口列出未過濾的具體條目。
-function vaultVerify() {
-  const issues = [], notes = [];
-  const whitelist = new Set([...VAULT_SNIPPET_WHITELIST.folders, ...VAULT_SNIPPET_WHITELIST.files]);
-  const appJsonPath = join(ROOT, '.obsidian', 'app.json');
-  let filters = null;
-  if (!existsSync(appJsonPath)) issues.push('.obsidian/app.json 不存在——查詢層過濾未設定（執行 sb vault 配置）');
-  else {
-    try {
-      const cfg = JSON.parse(readFileSync(appJsonPath, 'utf8'));
-      filters = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters : null;
-      if (!filters) issues.push('app.json 沒有 userIgnoreFilters 陣列——查詢層過濾未設定（執行 sb vault 配置）');
-    } catch { issues.push('.obsidian/app.json 非 JSON——查詢層過濾無法核對（修復或刪除後重跑 sb vault）'); }
-  }
-  const cssPath = join(ROOT, '.obsidian', 'snippets', VAULT_SNIPPET_NAME + '.css');
-  if (!existsSync(cssPath)) issues.push(`snippet ${VAULT_SNIPPET_NAME}.css 不存在——檔案總管過濾未設定（執行 sb vault 配置）`);
-  else if (readFileSync(cssPath, 'utf8') !== vaultFilterCss()) issues.push(`snippet ${VAULT_SNIPPET_NAME}.css 內容漂移——檔案總管過濾可能失效（重跑 sb vault）`);
-  const appearancePath = join(ROOT, '.obsidian', 'appearance.json');
-  if (!existsSync(appearancePath)) issues.push('.obsidian/appearance.json 不存在——snippet 未啟用（執行 sb vault 配置）');
-  else {
-    try {
-      const appearance = JSON.parse(readFileSync(appearancePath, 'utf8'));
-      const enabled = Array.isArray(appearance.enabledCssSnippets) ? appearance.enabledCssSnippets : [];
-      if (!enabled.includes(VAULT_SNIPPET_NAME)) issues.push(`snippet ${VAULT_SNIPPET_NAME} 未啟用——檔案總管過濾失效（重跑 sb vault）`);
-    } catch { issues.push('.obsidian/appearance.json 非 JSON——snippet 啟用狀態無法核對'); }
-  }
-  if (filters) {
-    for (const name of whitelist) {
-      if (filters.includes(name) || filters.includes(name + '/')) issues.push(`userIgnoreFilters 含規定集條目「${name}」——規定集被自己過濾（重跑 sb vault 對齊）`);
-    }
-    const visible = [];
-    let entries = [];
-    try { entries = readdirSync(ROOT, { withFileTypes: true }); } catch { issues.push('無法讀取專案根——可見集無法核對'); }
-    for (const e of entries) {
-      if (e.name.startsWith('.')) continue; // dot 項核心不索引、不列
-      const key = e.isDirectory() ? e.name + '/' : e.name;
-      if (whitelist.has(e.name)) continue;
-      if (!filters.includes(e.name) && !filters.includes(key)) visible.push(key);
-    }
-    if (visible.length) issues.push('頂層未過濾條目：' + visible.join('、') + '——可見集超出規定集（重跑 sb vault 對齊）');
-  }
-  if (!existsSync(join(ROOT, 'docs'))) notes.push('docs/ 不存在——顯示規定集僅 README.md 有可見內容（建立 docs/ 後重跑 sb vault 補齊過濾）');
-  return { issues, notes };
-}
-
-function cmdVault(sub) {
-  if (sub === 'verify') {
-    const v = vaultVerify();
-    if (v.issues.length) die([`Obsidian 顯示規定集核對失敗（頂層可見應＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}）`, ...v.issues, '執行 sb vault 重新對齊']);
-    fin([`頂層有效可見＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}（讀回核對通過）`, ...v.notes]);
-  }
-  if (sub) usage();
-  const created = [];
-  const obsidianDir = join(ROOT, '.obsidian');
-  if (!existsSync(obsidianDir)) { mkdirSync(obsidianDir, { recursive: true }); created.push('.obsidian/'); }
-  // 清理退役的外掛設定，統一使用原生 vault 設定。
-  const staleNotes = [];
-  const stalePlugin = join(obsidianDir, 'plugins', 'hidden-folders-access');
-  if (existsSync(stalePlugin)) { try { rmSync(stalePlugin, { recursive: true, force: true }); staleNotes.push('已移除舊外掛殘留 hidden-folders-access'); } catch { staleNotes.push('無法移除 .obsidian/plugins/hidden-folders-access——請手動刪除'); } }
-  const staleCp = join(obsidianDir, 'community-plugins.json');
-  if (existsSync(staleCp)) { try { rmSync(staleCp, { force: true }); staleNotes.push('已移除舊 community-plugins.json'); } catch { staleNotes.push('無法移除 community-plugins.json——請手動刪除'); } }
-  const pluginsDir = join(obsidianDir, 'plugins');
-  if (existsSync(pluginsDir)) { try { if (readdirSync(pluginsDir).length === 0) rmSync(pluginsDir, { force: true }); } catch { /* 留空目錄無害 */ } }
-  let filterChanged = false;
-  const filterNote = (() => {
-    const appJsonPath = join(obsidianDir, 'app.json');
-    let cfg = {};
-    if (existsSync(appJsonPath)) {
-      try { cfg = JSON.parse(readFileSync(appJsonPath, 'utf8')); } catch { return '.obsidian/app.json 非 JSON——保持原樣，過濾器未設定（修復或刪除後重跑）'; }
-      if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return '.obsidian/app.json 結構非物件——保持原樣，過濾器未設定';
-    }
-    // 強制接管：userIgnoreFilters 每次配置都對齊規定集（顯示＝docs/＋README.md）；漂移重寫，無漂移不動檔。
-    const prev = Array.isArray(cfg.userIgnoreFilters) ? cfg.userIgnoreFilters : [];
-    const required = vaultIgnoreFilters();
-    const drift = required.length !== prev.length || required.some((f, i) => prev[i] !== f);
-    if (!drift) return `userIgnoreFilters 已對齊規定集（${required.length} 條，無漂移）`;
-    cfg.userIgnoreFilters = required;
-    try { writeFileSync(appJsonPath, JSON.stringify(cfg, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/app.json——過濾器未設定'; }
-    filterChanged = true;
-    return `userIgnoreFilters 已強制設定 ${required.length} 條——顯示規定集＝docs/＋README.md，其餘一律隱藏`;
-  })();
-  if (filterChanged) created.push('.obsidian/app.json 過濾器');
-  let explorerChanged = false;
-  const explorerNote = (() => {
-    // 檔案總管過濾（asar 實證：檔案總管原生不讀過濾設定）——原生 CSS snippet 機制補上顯示面：
-    // snippet 檔內容漂移重寫；appearance.json enabledCssSnippets 確保包含本 snippet（不整表接管，
-    // 使用者自裝 snippet 不屬規定集管轄；停用本 snippet 視為漂移，重跑即恢復）。
-    const snippetsDir = join(obsidianDir, 'snippets');
-    const cssPath = join(snippetsDir, VAULT_SNIPPET_NAME + '.css');
-    let snippetWritten = false;
-    try {
-      mkdirSync(snippetsDir, { recursive: true });
-      const css = vaultFilterCss();
-      if (!existsSync(cssPath) || readFileSync(cssPath, 'utf8') !== css) { writeFileSync(cssPath, css); snippetWritten = true; explorerChanged = true; }
-    } catch { return '無法寫入 .obsidian/snippets/——檔案總管過濾未設定'; }
-    const appearancePath = join(obsidianDir, 'appearance.json');
-    let appearance = {};
-    if (existsSync(appearancePath)) {
-      try { appearance = JSON.parse(readFileSync(appearancePath, 'utf8')); } catch { return '.obsidian/appearance.json 非 JSON——snippet 未啟用（修復或刪除後重跑）'; }
-      if (typeof appearance !== 'object' || appearance === null || Array.isArray(appearance)) return '.obsidian/appearance.json 結構非物件——snippet 未啟用';
-    }
-    const prev = Array.isArray(appearance.enabledCssSnippets) ? appearance.enabledCssSnippets : [];
-    if (prev.includes(VAULT_SNIPPET_NAME)) {
-      return snippetWritten ? `檔案總管過濾：snippet ${VAULT_SNIPPET_NAME} 內容已更新（啟用中）` : `檔案總管過濾已生效（snippet ${VAULT_SNIPPET_NAME}，無漂移）`;
-    }
-    appearance.enabledCssSnippets = [...prev, VAULT_SNIPPET_NAME];
-    try { writeFileSync(appearancePath, JSON.stringify(appearance, null, 2) + '\n'); } catch { return '無法寫入 .obsidian/appearance.json——snippet 未啟用'; }
-    explorerChanged = true;
-    return `檔案總管過濾：snippet ${VAULT_SNIPPET_NAME} 已生成並啟用——頂層僅顯示 docs 與 README.md，其餘一律隱藏`;
-  })();
-  if (explorerChanged) created.push('.obsidian 檔案總管過濾');
-  let ignoreNote;
-  try { ignoreNote = ensureObsidianIgnored(); } catch { ignoreNote = '無法讀寫 .gitignore——請手動確認 .obsidian/ 忽略設定'; }
-  const reg = ensureVaultRegistration();
-  // 配置後讀回自驗：以與 sb vault verify 相同的判準核對實際生效的設定，缺口即失敗。
-  const v = vaultVerify();
-  if (v.issues.length) die([`配置後自驗未通過——顯示規定集可能未生效（${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}）`, ...v.issues]);
-  fin([
-    `vault 根＝${ROOT}——Obsidian 開啟此儲存庫即以 repo 根為 vault（無外掛）`,
-    created.length ? `建立：${created.join('、')}` : '結構已存在，零新增（冪等）',
-    ...staleNotes,
-    filterNote,
-    explorerNote,
-    ignoreNote,
-    `全域註冊表：${reg.note}`,
-    `自驗通過：頂層有效可見＝${VAULT_SNIPPET_WHITELIST.folders.join('/')}＋${VAULT_SNIPPET_WHITELIST.files.join('、')}（設定讀回核對；爾後以 sb vault verify 複查）`,
-    ...v.notes,
-    '顯示規定集＝docs/＋README.md（查詢層：userIgnoreFilters 生效於圖譜／搜尋／快速切換／屬性；檔案總管：CSS snippet ' + VAULT_SNIPPET_NAME + ' 隱藏白名單外頂層條目；索引器掃描範圍仍為全樹——查詢結果已被過濾）',
-    'Obsidian 執行中退出會把全域註冊表與設定寫回覆蓋——建議關閉 Obsidian 後執行本命令，再開啟 Obsidian 載入；漂移重跑即對齊',
-  ]);
-}
 
 // —— 參照型文件可讀性信號（README／docs／SOP／ROADMAP）——
 // 治理文件的累積式寫法（定義區、封存、回指）外溢到參照型文件會長成流水帳：
@@ -869,7 +658,7 @@ const DOC_PROSE_SENTENCE_MIN = 5; // 純散文段：連續達此句數且零具�
 const JARGON = [
   ['時點 1／2／3', /時點\s*[1-3]/],
   ['G 檔治理搭配詞', /\bG[1-3]\s*(?:契約|檔|定義區|封存|回指|審查)|\bG\s*檔\b/],
-  ['sb 命令', /\bsb\s+(?:init|next|end|rewrite|vault|commitmsg|sopreview|closeout|adversarial|handoff)\b/],
+  ['sb 命令', /\bsb\s+(?:init|next|end|rewrite|commitmsg|sopreview|closeout|adversarial|handoff)\b/],
   ['.shiftblame 路徑', /\.shiftblame\//i],
   ['流程術語', /回指記錄|定義區|六段圓環|三時點|時點審查/],
 ];
@@ -1820,7 +1609,6 @@ switch (cmd) {
   case 'closeout': cmdCloseout(flags.base); break;
   case 'sopreview': cmdSopreview(pos.join(' ')); break;
   case 'commitmsg': cmdCommitmsg(pos.join(' ')); break;
-  case 'vault': cmdVault(pos[0]); break;
   case 'rewrite': cmdRewrite(); break;
   default: usage();
 }
