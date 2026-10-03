@@ -22,4 +22,4 @@ description: 理解使用者目標與授權，釐清會影響結果的差異，�
 
 狀態損壞先查證及修復，保持提交與正式流程推進封閉；修復後用 sb state 核對。記錄須有真實來源，操作須在既有授權內。
 
-分發至 [主技能](../shiftblame/SKILL.md)、[保存](../save/SKILL.md)、[恢復](../resume/SKILL.md)、[整理](../rewrite/SKILL.md) 或 [丟棄](../dice/SKILL.md)。只有尚有必須由使用者決定的事（可先行的研究告一段落後）、實際阻塞、明示暫停／取消或整體完成時結束回合。
+分發至 [主技能](../shiftblame/SKILL.md)、[保存](../save/SKILL.md)、[恢復](../load/SKILL.md)、[整理](../rewrite/SKILL.md) 或 [丟棄](../dice/SKILL.md)。只有尚有必須由使用者決定的事（可先行的研究告一段落後）、實際阻塞、明示暫停／取消或整體完成時結束回合。

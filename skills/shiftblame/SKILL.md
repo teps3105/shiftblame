@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.9.2"
+  version: "2.9.3"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；依工作規模使用直接實作或既有 slug 流程。
 ---
 # Shiftblame
@@ -28,7 +28,7 @@ description: 以明確授權、需求契約、獨立審查與真實驗收管理�
 
 直接實作：理解範圍 → 修改與適當驗證 → 檢閱結果 → 提交與交付。保護使用者既有變更，文件依維護與交付需要建立。
 
-main 模式是在已授權分支直接作業，不要求分支一定名為 main，也不必建立 slug。需要跨回合或交接時，依 [save](../save/SKILL.md) 保存具名工作，再由 [resume](../resume/SKILL.md) 核對接續；交接不改變工作模式或授權。
+main 模式是在已授權分支直接作業，不要求分支一定名為 main，也不必建立 slug。需要跨回合或交接時，依 [save](../save/SKILL.md) 保存具名工作，再由 [load](../load/SKILL.md) 核對接續；交接不改變工作模式或授權。
 
 slug 以 requirement → research → plan → quality → build → verify 記錄目前責任，使用 sb next 切段；sb init 直接落 requirement，開工授權由 slug 建立與訪談紀錄承載。三段兩兩成區，對應三區循環模型：一區 G1 寫需求與研究（requirement／research 段，方法見 [G1](references/G1.md)），二區 G2 寫計畫與品質（plan／quality 段，見 [G2](references/G2.md)），三區 G3 寫實作與驗收（build／verify 段，見 [G3](references/G3.md)），區間以時點關卡銜接；內容依需求複雜度縮放。回指為三角循環——通過後由後區指向前區：G2 回指 G1、G3 回指 G2、G1 回指 G3，構成 G1→G3→G2→G1 閉環；各回指於對應時點審查完畢後寫入，模型圖示見 [SLUG](assets/SLUG.md)。
 
@@ -63,7 +63,7 @@ Given／When／Then 是驗收描述工具。測試通過、檔案存在或工具
 
 G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP／ROADMAP 屬參照型，依 rewrite 整檔重寫；重大治理變更才逐條全審。整理方法見 [rewrite](../rewrite/SKILL.md)。
 
-工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存；工作帳本只在跨回合或交接確有需要時維護。保存／恢復見 [save](../save/SKILL.md)、[resume](../resume/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
+工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存；工作帳本只在跨回合或交接確有需要時維護。保存／恢復見 [save](../save/SKILL.md)、[load](../load/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
 
 提交聚焦一個可檢閱的變更，包含相關測試與文件；使用 sb commitmsg 驗證訊息與 staged 邊界，再提交。訊息為「type: 一句話」（type 屬流程詞彙，單行 ≤120 字元），hooks 端以同一判準複驗。保護無關檔案及使用者修改。
 

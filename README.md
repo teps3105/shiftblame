@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.9.2**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.9.3**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -18,7 +18,7 @@ G3（實作＋驗收）───────────┘
 G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3（時點 3 後閉環）。slug 有三個使用者決策時點：時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 驗收完成後（審驗收結果）。三者都是獨立審查、修正必修項，再由使用者決定。旗標記錄使用者已明確給予的授權。審查與判定期間，代理可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交，判定後只重查受影響部分。
 
 - [主技能](skills/shiftblame/SKILL.md)：授權、分工、驗證及文件原則。
-- [理解意圖](skills/think/SKILL.md)、[整理文件](skills/rewrite/SKILL.md)、[保存](skills/save/SKILL.md)、[恢復](skills/resume/SKILL.md)、[丟棄](skills/dice/SKILL.md)。
+- [理解意圖](skills/think/SKILL.md)、[整理文件](skills/rewrite/SKILL.md)、[保存](skills/save/SKILL.md)、[恢復](skills/load/SKILL.md)、[丟棄](skills/dice/SKILL.md)。
 - [CLI 與 hooks](skills/shiftblame/references/MECHANISMS.md)：狀態、契約與攔截邊界。
 - [SLUG 與 G1–G3 模板](skills/shiftblame/assets/SLUG.md)、[SOP](skills/shiftblame/assets/SOP.md)、[ROADMAP](skills/shiftblame/assets/ROADMAP.md)。
 
@@ -44,7 +44,7 @@ sb handoff show release-280
 
 每個具名工作保存於 `.shiftblame/tmp/main/<task>/handoff.json`；快照包含交接文字、repo、分支、HEAD 及索引／工作樹指紋，允許未提交變更。重存同名工作採原子更新，其他工作互不覆蓋；恢復時明確選工作並核對差異。命令不切分支、不還原產品檔案、不更改 flow-state；快照用於定位，授權與驗收仍回到原始來源。
 
-`sb init --main` 是已結束 slug 的收束操作，不是開始直接工作的必要步驟。活動 slug 仍使用 SLUG 交接回指。完整保存／恢復與例外處理見 [main 交接機制](skills/shiftblame/references/HANDOFF.md)、[save](skills/save/SKILL.md)、[resume](skills/resume/SKILL.md)。
+`sb init --main` 是已結束 slug 的收束操作，不是開始直接工作的必要步驟。活動 slug 仍使用 SLUG 交接回指。完整保存／恢復與例外處理見 [main 交接機制](skills/shiftblame/references/HANDOFF.md)、[save](skills/save/SKILL.md)、[load](skills/load/SKILL.md)。
 
 ## 安裝與更新
 

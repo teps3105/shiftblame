@@ -1,5 +1,5 @@
 ---
-name: resume
+name: load
 description: 恢復 slug 或 main 具名工作，核對交接、Git 差異與既有授權後接續未完成部分。
 ---
 # 恢復工作
