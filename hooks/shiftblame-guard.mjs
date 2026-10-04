@@ -284,7 +284,7 @@ function checkLayerStopover(ctx, entry) {
 function bossOkAsk(entry) {
   const sb = sbSub(entry);
   if (!sb || !['next', 'end'].includes(sb.sub) || !sb.all.some((w) => w.value === '--boss-ok')) return null;
-  if (sb.sub === 'end') return 'sb end 帶 --boss-ok：表示你已完成時點 3 終審並同意結束這個 slug。屬實再允許。';
+  if (sb.sub === 'end') return 'sb end 帶 --boss-ok：表示你已完成時點 3 終審，並同意結束整個 slug——歸檔、合併回基底、刪除本機工作分支。只是目前里程碑通過、後面還有里程碑要做，請拒絕並改用 sb next requirement --new-ms。屬實再允許。';
   const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value ?? '（未指明）';
   const newMs = sb.all.some((w) => w.value === '--new-ms') ? '，並開新里程碑' : '';
   return `sb next ${target} 帶 --boss-ok：表示你已在對話中判定通過這次推進${newMs}。屬實再允許。`;

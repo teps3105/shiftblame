@@ -39,6 +39,7 @@ commit('.gitignore', 'test: initial');
 const originalBase = git('branch', '--show-current').stdout.trim();
 assert.equal(run('init', 'demo').status, 0);
 assert.ok(existsSync(join(root, '.shiftblame', 'demo', 'SLUG.md')), 'init 建 SLUG.md（範本複製）');
+assert.match(readFileSync(join(root, '.shiftblame', 'demo', 'SLUG.md'), 'utf8'), /^### 里程碑清單$[\s\S]*^\| 001 \| .* \| 未完成 \|$/m, 'SLUG 範本帶里程碑清單（sb end 里程碑閘的資料來源）');
 assert.ok(existsSync(join(root, '.shiftblame', 'demo', '001')), 'init 建 <slug>/001/ 目錄');
 assert.ok(existsSync(join(root, '.shiftblame', 'archive')), 'init 建 archive/ 目錄');
 assert.equal(spawnSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8' }).stdout.trim(), 'feat/demo', 'init 建 <type>/<slug> 分支並切換');
@@ -173,7 +174,28 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：整體完成，
 assert.match(run('end').stderr, /--boss-ok|終審決策/, 'end 缺 --boss-ok 終審章即擋');
 assert.match(run('end', '--adversarial').stderr, /--boss-ok|終審決策/, 'end 缺 --boss-ok 即擋');
 assert.match(run('end', '--boss-ok').stderr, /--adversarial/, 'end 缺對抗宣告即擋（出口同一邊兩章）');
-assert.equal(run('end', '--adversarial', '--boss-ok').status, 0, '出口＝時點 3 對抗條目＋老闆終審章同一邊');
+// 里程碑閘：end 是 slug 層級出口——目前 ms（002）之後還有未完成里程碑即擋；已走過的 ms 由 flow-state 承擔，不看手填狀態
+const slugDoc = join(slugDir, 'SLUG.md');
+const msList = (...rows) => writeFileSync(slugDoc, `---\nslug: demo\n---\n\n# demo\n\n## 4. 目前段與進度\n\n### 里程碑清單\n\n| ms | 交付結果 | 狀態 |\n|---|---|---|\n${rows.join('\n')}\n\n### 定案索引\n\n| 問題或決策 | 狀態 |\n|---|---|\n| 取捨 | 待查待決 |\n`);
+msList('| 001 | 送出資料 | 未完成 |', '| 002 | 錯誤邊界 | 未完成 |', '| 003 | 匯出 | 未完成 |', '| 004 | 報表 | 未完成 |');
+{
+  const blocked = run('end', '--adversarial', '--boss-ok');
+  assert.equal(blocked.status, 1, '後續里程碑未完成——end 擋');
+  assert.match(blocked.stderr, /後續未完成里程碑：003、004——[\s\S]*sb next requirement --new-ms/, '擋下訊息只列目前 ms 之後的列（已走過的 ms 與清單以外的表格不計）並指向里程碑出口');
+  assert.equal(state().node, 'verify', '擋下後狀態仍為 verify');
+  assert.ok(existsSync(slugDoc), '擋下時未歸檔');
+  assert.equal(git('branch', '--show-current').stdout.trim(), 'feat/demo', '擋下時未合併、工作分支仍在');
+  assert.match(run('state').stdout, /里程碑清單：後續未完成 003、004——sb end 會擋/, 'sb state 的出口提示列出後續未完成里程碑');
+}
+msList('| 002 | 錯誤邊界 | 未完成 |', '| 第三 | 匯出 | 未完成 |');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /無法辨識的列/, 'ms 欄無法辨識即擋——無法核對不放行');
+assert.equal(state().node, 'verify');
+// 狀態取表頭名為「狀態」的欄——其後另有欄位時不誤判
+writeFileSync(slugDoc, '# demo\n\n### 里程碑清單\n\n| ms | 交付結果 | 狀態 | 備註 |\n|---|---|---|---|\n| 003 | 匯出 | 取消 | 使用者決定不做 |\n| 004 | 報表 | 未完成 | 尚未開工 |\n');
+assert.match(run('end', '--adversarial', '--boss-ok').stderr, /後續未完成里程碑：004——/, '狀態欄後另有欄位：003 取消不計、004 未完成仍擋');
+msList('| 001 | 送出資料 | 完成 |', '| 002 | 錯誤邊界 | 未完成 |', '| 003 | 匯出 | 已完成 |', '| 004 | 報表 | 取消（使用者決定提前結束） |');
+assert.match(run('state').stdout, /目前 ms 之後沒有未完成里程碑/, '剩餘列完成或取消——出口提示放行');
+assert.equal(run('end', '--adversarial', '--boss-ok').status, 0, '出口＝時點 3 對抗條目＋老闆終審章同一邊；剩餘里程碑已完成或取消即放行');
 {
   const stEnd = JSON.parse(readFileSync(join(root, '.shiftblame/flow-state.json'), 'utf8'));
   assert.equal(stEnd.node, 'ended', 'pass 後 ended 態');

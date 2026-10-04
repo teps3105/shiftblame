@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.3
+revision: 2.9.4
 ---
 # 執行介面與界線
 
@@ -27,7 +27,8 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 - sb adversarial <報告> --point 1|2|3 記錄對應審查並綁定審查對象：時點 1（research→plan）記 G1 定義區 hash，時點 2（quality→build）記 G2 定義區 hash（G 檔不存在或回指標題不是恰好一次時拒絕記錄），時點 3（verify 出口）記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 與 --boss-ok 承接真實審查與使用者判定，CLI 核對條目新鮮度與審查對象：審查後修改 G1／G2 定義區或再提交，須重新審查；只更新回指區不受影響。舊版條目沒有審查對象，只核對新鮮度；2.8.x 的時點 2（verify 出口）條目載入時遷移為時點 3。
 - sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。staged 動到參照型文件（README、docs/、SOP、ROADMAP）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交（main 與 slug 模式皆然）。
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
-- sb end --adversarial --boss-ok 在 verify 及使用者終審後歸檔並整合：收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
+- sb next requirement --new-ms --adversarial --boss-ok 是里程碑出口：時點 3 終審後結束目前里程碑，ms 加一並回 requirement；slug 與工作分支保留。
+- sb end --adversarial --boss-ok 是 slug 出口：在 verify 及使用者終審後結束整個 slug，歸檔並整合。依序為里程碑閘（SLUG 里程碑清單中目前 ms 之後的列不是「完成」或「取消」即擋，指向 --new-ms；使用者決定提前結束時先把剩餘列改為「取消」；ms 欄無法辨識也擋；SLUG 沒有清單則不核對）、收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。
 - sb rewrite 文件編輯的唯一入口：把文件集（README、docs/、SOP、ROADMAP 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查 docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（時點、G 檔搭配詞、sb 命令、.shiftblame/ 路徑不得入 docs/；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心由提交閘與收尾閘共用。
 - sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
@@ -48,7 +49,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 
 ### 使用者確認
 
-帶 --boss-ok 的 sb next 與 sb end 由 hook 回傳 permissionDecision: ask，在權限提示中交使用者確認。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。訪談紀錄的寫入不再逐一詢問使用者；「使用者確認」欄的真實性由提問證據（寫入前的提問工具呼叫）與代理自律承擔。
+帶 --boss-ok 的 sb next 與 sb end 由 hook 回傳 permissionDecision: ask，在權限提示中交使用者確認；sb end 的提示寫明會歸檔、合併回基底並刪除本機工作分支，還有里程碑要做時改用 --new-ms。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。訪談紀錄的寫入不再逐一詢問使用者；「使用者確認」欄的真實性由提問證據（寫入前的提問工具呼叫）與代理自律承擔。
 
 ### Shell 命令
 
@@ -71,6 +72,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - 背景任務與長時間程序啟動後的持續寫入——防護只在啟動當下的呼叫核對。
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
+- 里程碑閘：sb end 只核對 SLUG 里程碑清單寫下的內容；清單漏列的後續里程碑，以及沒有清單的 slug，不會被擋。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
 
 這些由代理依授權自律，交付時如實揭露。

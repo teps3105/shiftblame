@@ -1,6 +1,6 @@
 # Shiftblame
 
-版本 **2.9.3**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+版本 **2.9.4**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 使用方式
 
@@ -74,10 +74,13 @@ sb commitmsg "fix: correct the requested behavior"
 sb next verify
 # 真驗收、獨立檢閱及使用者終審完成後：
 sb adversarial .shiftblame/tmp/review-3.md --point 3
+# slug 還有里程碑：開下一里程碑，slug 與工作分支保留
+sb next requirement --new-ms --adversarial --boss-ok
+# 整個 slug 完成：歸檔、合併回基底、刪除本機工作分支
 sb end --adversarial --boss-ok
 ```
 
-先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。參照型文件（README、docs/、SOP、ROADMAP）的編輯統一入口是 `sb rewrite`：快照文件集後檢查結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符），提交動到這些檔案時提交閘執行同一判準。
+先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。`sb end` 結束整個 slug：SLUG 里程碑清單中目前 ms 之後還有未完成里程碑時會擋下，改用 `--new-ms` 開下一里程碑。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。參照型文件（README、docs/、SOP、ROADMAP）的編輯統一入口是 `sb rewrite`：快照文件集後檢查結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符），提交動到這些檔案時提交閘執行同一判準。
 
 新專案可在空資料夾直接 `sb init <slug>`：自動建立 Git 儲存庫及只含 `.gitignore` 的起始提交，再切到工作分支。已有 repo 但尚無提交時補一個空樹起始提交，不動既有暫存。已有內容的非 Git 資料夾須先 `git init` 並提交，或以 `sb init <slug> --no-git` 不用 Git（收尾只歸檔）。
 

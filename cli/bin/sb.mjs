@@ -41,7 +41,7 @@ const FLOW = {
   plan:    { next: ['quality', 'research'], desc: 'G2 實作計畫與驗收映射；必要時回 research 修正依據' },
   quality: { next: ['build', 'plan'], desc: 'G2 品質標準與驗證方式；必要時回 plan 修正計畫；時點 2 獨立審查與使用者判定後進 build' },
   build:   { next: ['verify', 'quality'], desc: 'G3 實作、整合與提交；必要時回 quality 修正品質安排，受驗工作樹乾淨後進入 verify' },
-  verify:  { next: ['requirement', 'quality', 'build'], desc: 'G3 執行真實驗收並回指 G1；時點 3 獨立審查及使用者終審後回 requirement 開下一里程碑或結束，技術問題回 quality 或 build 修復' },
+  verify:  { next: ['requirement', 'quality', 'build'], desc: 'G3 執行真實驗收並回指 G1；時點 3 獨立審查及使用者終審後，slug 還有里程碑則回 requirement 開下一里程碑，整個 slug 完成才結束；技術問題回 quality 或 build 修復' },
 };
 
 // 任何新意圖先經產品訪談對齊，再回 requirement 重入（同 ms 開新輪）；已完成驗收的出口以 --new-ms 或 end 承接。
@@ -66,7 +66,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 歸檔並合併回基底，刪本機工作分支；推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 出口（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 結束整個 slug：歸檔並合併回基底，刪本機工作分支；SLUG 里程碑清單還有後續未完成里程碑時擋下。推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑，slug 與工作分支保留。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -183,6 +183,43 @@ function verifiedCommit(st) {
   if (st.closeout?.slug === st.slug && st.closeout.workCommit) return st.closeout.workCommit;
   const branches = st.workBranch ? [st.workBranch] : TYPES.map((type) => `${type}/${st.slug}`).filter((name) => branchTip(name));
   return (branches.length === 1 && branchTip(branches[0])) || gitHeadCommit();
+}
+
+// 里程碑清單：SLUG.md「里程碑清單」標題下的表格，首欄 ms，狀態取表頭名為「狀態」的欄（沒有則取末欄）。
+// 已走過的 ms 由 flow-state 的 ms 計數承擔，不靠手填狀態；只有目前 ms 之後的列看狀態欄——
+// 不是「完成／取消」即為後續未完成里程碑。回傳 null＝沒有清單（既有 slug 相容，不核對）。
+function milestonePlan(st) {
+  if (typeof st.slug !== 'string' || !st.slug) return null;
+  const raw = mdOf(join(SB_DIR, st.slug, 'SLUG.md'));
+  const body = raw === null ? null : section(raw, '里程碑清單');
+  if (body === null) return null;
+  const pending = [], unreadable = [];
+  let head = null, inRows = false; // 分隔列之前是表頭，之後才是資料列
+  for (const line of body.split('\n')) {
+    if (!/^\s*\|/.test(line)) continue;
+    const cells = line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+    if (cells.every((c) => /^:?-+:?$/.test(c))) { inRows = true; continue; }
+    if (!inRows) { head = cells; continue; }
+    const n = cells[0].match(/^(?:ms)?\s*(\d{1,3})$/i);
+    if (!n || cells.length < 2) { unreadable.push(line.trim()); continue; }
+    const ms = n[1].padStart(3, '0');
+    const status = cells[head?.indexOf('狀態') ?? -1] ?? cells.at(-1);
+    if (Number(ms) > Number(st.ms) && !/^已?(?:完成|取消)/.test(status)) pending.push(ms);
+  }
+  return { pending, unreadable };
+}
+// verify 的兩個出口層級不同：--new-ms 只結束目前里程碑，end 結束整個 slug。sb state 與 done 相容狀態共用。
+function exitLines(st) {
+  const plan = milestonePlan(st);
+  const listed = plan === null ? 'SLUG 沒有里程碑清單——sb end 不核對後續里程碑，選出口前自行核對待辦'
+    : plan.unreadable.length ? `里程碑清單有無法辨識的列（${plan.unreadable.length} 列）——sb end 會擋，先修正 ms 欄`
+    : plan.pending.length ? `里程碑清單：後續未完成 ${plan.pending.join('、')}——sb end 會擋`
+    : '里程碑清單：目前 ms 之後沒有未完成里程碑';
+  return [
+    '    目前里程碑通過、slug 還有里程碑 → sb next requirement --new-ms --adversarial --boss-ok（回 requirement 開下一 ms；slug 與工作分支保留）',
+    '    整個 slug 完成 → sb end --adversarial --boss-ok（歸檔、合併回基底、刪除本機工作分支）',
+    `    ${listed}`,
+  ];
 }
 
 function acRows(text) {
@@ -1067,7 +1104,7 @@ function cmdInit(slug, type = 'feat', noGit = false) {
     const templatePath = fileURLToPath(new URL('../../skills/shiftblame/assets/SLUG.md', import.meta.url));
     let content = null;
     try { if (existsSync(templatePath)) content = readFileSync(templatePath, 'utf8'); } catch { /* 範本不可讀 → 最小種子 */ }
-    if (!content) content = `---\nslug: ${slug}\ncreated: ${new Date().toISOString().slice(0, 10)}\n---\n\n# ${slug}\n\n（最小種子——由主代理依範本補全結構：§3 待辦／§4 段表＋定案索引／三面向範本節）\n`;
+    if (!content) content = `---\nslug: ${slug}\ncreated: ${new Date().toISOString().slice(0, 10)}\n---\n\n# ${slug}\n\n（最小種子——由主代理依範本補全結構：§3 待辦／§4 段表＋里程碑清單＋定案索引／三面向範本節）\n`;
     else content = content.replaceAll('<slug>', slug).replaceAll('<YYYY-MM-DD>', new Date().toISOString().slice(0, 10));
     writeFileSync(slugPath, content);
   }
@@ -1142,7 +1179,9 @@ function cmdState() {
   }
   if (st.node === 'done') { // done 相容狀態：依驗收出口處理，查詢保持來源原樣
     out(`slug: ${st.slug}   ms: ${st.ms}   段: done（相容狀態，對應 verify 驗收出口）`);
-    out('  出口同 pass：sb next requirement --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；重修＝使用者新輸入先經訪談對齊再回 requirement 開新輪');
+    out('  pass 後的出口分兩層，由使用者決定：');
+    for (const line of exitLines(st)) out(line);
+    out('  重修＝使用者新輸入先經訪談對齊再回 requirement 開新輪');
     return;
   }
   if (!objectRecord(st) || typeof st.slug !== 'string' || !st.slug || typeof st.ms !== 'string' || !(Object.hasOwn(FLOW, st.node) || st.node === 'ended')) die(['flow-state 狀態不完整或未知——保留原檔，查明原因後修復；未執行任何狀態變更']);
@@ -1176,7 +1215,11 @@ function cmdState() {
     for (const p of passes) out(`      ✓ ${p}`);
     for (const p of problems) out(`      ✗ ${p}`);
   }
-  if (st.node === 'verify') out('  時點 3 審查＋使用者終審通過的出口（真驗收完成、G1 回指閉環——GWT 逐條行為證據在回指區）：sb next requirement --new-ms --adversarial --boss-ok（下一 ms）或 sb end --adversarial --boss-ok（結束 slug）；fail＝使用者新輸入先經訪談對齊再回 requirement');
+  if (st.node === 'verify') {
+    out('  時點 3 審查＋使用者終審通過後的出口（真驗收完成、G1 回指閉環——GWT 逐條行為證據在回指區）分兩層，由使用者決定：');
+    for (const line of exitLines(st)) out(line);
+    out('  fail＝使用者新輸入先經訪談對齊再回 requirement');
+  }
 }
 
 function cmdNext(target, opts) {
@@ -1373,6 +1416,18 @@ function cmdEnd(opts) {
   const bound = bindingProblem('3', pt3Entry, st);
   if (bound) die([bound]);
   const problems = [], passes = [];
+  // 里程碑閘：end 是 slug 層級的出口（歸檔＋合併＋刪分支），目前 ms 之後還有未完成里程碑即擋——
+  // 時點 3 pass 只代表目前里程碑通過。清單已隨前次收尾歸檔（重試）或 slug 沒有清單時不核對。
+  const plan = milestonePlan(st);
+  if (plan?.unreadable.length) die([
+    `SLUG 里程碑清單有無法辨識的列（ms 欄須為編號，如 002）：${plan.unreadable.slice(0, 3).join('；')}——修正 ${join(SB_DIR, st.slug, 'SLUG.md')} 後重試 sb end（狀態仍為 verify）`,
+  ]);
+  if (plan?.pending.length) die([
+    `SLUG 里程碑清單還有後續未完成里程碑：${plan.pending.join('、')}——sb end 結束整個 slug（歸檔、合併回基底、刪除本機工作分支），不是結束目前里程碑 ${st.ms}`,
+    '繼續下一個里程碑：sb next requirement --new-ms --adversarial --boss-ok',
+    `使用者決定提前結束 slug：把這些列的狀態改為「取消」後重試 sb end（${join(SB_DIR, st.slug, 'SLUG.md')}；狀態仍為 verify）`,
+  ]);
+  if (plan) passes.push('里程碑清單已核對：目前 ms 之後沒有未完成里程碑');
   // 收尾文件閘：本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準——
   // 收尾出口強制整檔重寫落實；無 git 或無基準提交（--no-git／非 Git 工作區）無 diff 事實，跳過。
   if (st.baseCommit) {
