@@ -1,6 +1,18 @@
 # Shiftblame
 
-版本 **2.9.4**。供 AI agent 使用的開發工作方法與 CLI：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+供 AI agent 使用的開發工作方法與 CLI，版本 **2.9.5**：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+
+## 安裝與更新
+
+插件從 [GitHub 市集](https://github.com/teps3105/shiftblame) 安裝或更新，全域 CLI 使用：
+
+```sh
+npm install -g github:teps3105/shiftblame
+```
+
+開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks；執行中的對話可能仍保留舊指令。
+
+插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示，壓縮續接時另注入工作帳本路徑與末 30 行；UserPromptSubmit 更新觀測與階段提示，上下文用量過窗口 80% 時注入一次帳本提醒；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、repo 邊界、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋；寫入訪談紀錄時核對提問證據——每一輪自上一輪完成後須有至少一次 AskUserQuestion，未提問即拒絕。帶 `--boss-ok` 的 `sb next`／`sb end` 由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
 
 ## 使用方式
 
@@ -32,9 +44,11 @@ G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3�
 
 訪談不封鎖其他工作：hook 只在寫入紀錄本身時把關——每一輪自上一輪完成（或對話開始）後須有至少一次 AskUserQuestion 呼叫，未提問即拒絕，有提問證據則直接放行。對話第一次在專案中觸發 hook 時，自動建立 `.shiftblame/`、`.shiftblame/tmp/` 與忽略全部內容的 `.shiftblame/.gitignore`，不需先執行 `sb init`；家目錄、其上層與系統頂層目錄不建立。適用範圍與未涵蓋項見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
 
-## main 模式交接
+## 跨回合與壓縮
 
-在目前已授權分支直接工作，不需要建立 slug；main 模式也適用於名為 trunk 等其他分支。保存時先寫好 Markdown 交接，記錄目標與授權來源、已完成／未完成、使用者既有變更、證據及下一步，再執行：
+自動壓縮會丟掉沒寫進檔案的過程內容。工作帳本補這個缺口：上下文用量過窗口 80%（hook 會注入提醒）起，事件發生當下一條一行追加——[否決] 方案與原因、[修正] 使用者原話、[證據] 驗證結果與證據位置、[未決] 待解事項。壓縮續接時 hook 注入帳本路徑與末 30 行，代理據此重讀正式來源接續。活動 slug 寫 `.shiftblame/tmp/<slug>/ledger.md`，`sb next` 切段時列出未決事項提醒收帳；main 寫 `.shiftblame/tmp/main/<task>/ledger.md`。用量估計與注入的機制細節見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+
+main 模式在目前已授權分支直接工作，不需要建立 slug；main 模式也適用於名為 trunk 等其他分支。需要跨回合或交接時，先寫好 Markdown 交接草稿，記錄目標與授權來源、已完成／未完成、否決方案與原因、使用者原話修正、證據及下一步，再執行：
 
 ```sh
 sb handoff save release-280 .shiftblame/tmp/release-280-notes.md
@@ -42,21 +56,7 @@ sb handoff list
 sb handoff show release-280
 ```
 
-每個具名工作保存於 `.shiftblame/tmp/main/<task>/handoff.json`；快照包含交接文字、repo、分支、HEAD 及索引／工作樹指紋，允許未提交變更。重存同名工作採原子更新，其他工作互不覆蓋；恢復時明確選工作並核對差異。命令不切分支、不還原產品檔案、不更改 flow-state；快照用於定位，授權與驗收仍回到原始來源。
-
-`sb init --main` 是已結束 slug 的收束操作，不是開始直接工作的必要步驟。活動 slug 仍使用 SLUG 交接回指。完整保存／恢復與例外處理見 [main 交接機制](skills/shiftblame/references/HANDOFF.md)、[save](skills/save/SKILL.md)、[load](skills/load/SKILL.md)。
-
-## 安裝與更新
-
-插件從 [GitHub 市集](https://github.com/teps3105/shiftblame) 安裝或更新，全域 CLI 使用：
-
-```sh
-npm install -g github:teps3105/shiftblame
-```
-
-開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks；執行中的對話可能仍保留舊指令。
-
-插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示；UserPromptSubmit 更新觀測和階段提示；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、repo 邊界、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋；寫入訪談紀錄時核對提問證據——每一輪自上一輪完成後須有至少一次 AskUserQuestion，未提問即拒絕。帶 `--boss-ok` 的 `sb next`／`sb end` 由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
+每個具名工作保存於 `.shiftblame/tmp/main/<task>/handoff.json`；快照包含交接文字、repo、分支、HEAD 及索引／工作樹指紋，允許未提交變更。重存同名工作採原子更新，其他工作互不覆蓋；恢復時明確選工作並核對差異。命令不切分支、不還原產品檔案、不更改 flow-state；快照用於定位，授權與驗收仍回到原始來源。`sb init --main` 是已結束 slug 的收束操作，不是開始直接工作的必要步驟。活動 slug 仍使用 SLUG 交接回指。完整保存／恢復與例外處理見 [main 交接機制](skills/shiftblame/references/HANDOFF.md)、[save](skills/save/SKILL.md)、[load](skills/load/SKILL.md)。
 
 ## CLI
 
@@ -97,4 +97,4 @@ npm test --prefix cli
 node cli/bin/sb.mjs state
 ```
 
-測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、空專案初始化、產品訪談閘、並行寫入、審查對象綁定、文件編輯入口（sb rewrite）的結構與可讀性判準及提交／收尾文件閘，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。
+測試在臨時 repo 驗證狀態遷移、契約核准、驗收、提交、hook 事件與 shell 命令解析、帳本提醒與壓縮續接注入、空專案初始化、產品訪談閘、並行寫入、審查對象綁定、文件編輯入口（sb rewrite）的結構與可讀性判準及提交／收尾文件閘，以及具名交接保存、完整性與 Git 差異辨識。[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套測試。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。授權與語義品質仍需由人及代理依實際上下文判斷。

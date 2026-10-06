@@ -3,7 +3,7 @@ slug: <slug>
 status: in_progress
 created: <YYYY-MM-DD>
 last_save:
-revision: 2.9.4
+revision: 2.9.5
 ---
 # SLUG — <slug>
 
@@ -48,7 +48,7 @@ revision: 2.9.4
 （如有已授權的暫時例外，記範圍與解除條件；否則省略。）
 
 ## 8. 交接回指
-（tmp/<slug>/handoff.md；記下一步操作與預期觀察，已存在的文件與證據用回指。）
+（tmp/<slug>/handoff.md；記下一步操作與預期觀察，已存在的文件與證據用回指。帳本 ledger.md 的未決事項落 G 檔或交接後原行改標 [已解]。）
 
 ## 三面向範本
 

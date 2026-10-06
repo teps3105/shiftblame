@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.9.4"
+  version: "2.9.5"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；依工作規模使用直接實作或既有 slug 流程。
 ---
 # Shiftblame
@@ -63,7 +63,7 @@ Given／When／Then 是驗收描述工具。測試通過、檔案存在或工具
 
 G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP／ROADMAP 屬參照型，依 rewrite 整檔重寫；重大治理變更才逐條全審。整理方法見 [rewrite](../rewrite/SKILL.md)。
 
-工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存；工作帳本只在跨回合或交接確有需要時維護。保存／恢復見 [save](../save/SKILL.md)、[load](../load/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
+工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存。工作帳本防自動壓縮丟訊息：上下文過窗口 80%（hook 會注入提醒）起，事件發生當下即時追加一條一行——[否決] 方案與原因、[修正] 使用者原話、[證據] 驗證結果與證據位置、[未決] 待解事項；活動 slug 寫 .shiftblame/tmp/<slug>/ledger.md，main 寫 .shiftblame/tmp/main/<task>/ledger.md。壓縮續接時 hook 注入帳本路徑與末 30 行，據此重讀正式來源接續；未決事項已落 G 檔或交接的原行改標 [已解]，slug 切段時 sb next 會列出未決清單。保存／恢復見 [save](../save/SKILL.md)、[load](../load/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
 
 提交聚焦一個可檢閱的變更，包含相關測試與文件；使用 sb commitmsg 驗證訊息與 staged 邊界，再提交。訊息為「type: 一句話」（type 屬流程詞彙，單行 ≤120 字元），hooks 端以同一判準複驗。保護無關檔案及使用者修改。
 

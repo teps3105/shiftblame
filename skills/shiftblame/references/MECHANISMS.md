@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.4
+revision: 2.9.5
 ---
 # 執行介面與界線
 
@@ -35,7 +35,7 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 
 ## Hooks
 
-SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。
+SessionStart 注入簡短的授權與驗收原則及訪談提示，壓縮續接（source=compact）另注入帳本路徑與末 30 行；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒，上下文用量過窗口 80% 時注入一次帳本提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。
 
 工具嘗試次數用於觀測，操作結果另以實際輸出核對。重試與非同步輪詢依進展決定；技能以當前平台的讀取能力使用。
 
@@ -62,9 +62,15 @@ Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫�
 - 截斷重定向（>、>|、&>）須以絕對路徑為目標；丟棄輸出用 /dev/null 或 $null，追加用 >>。
 - 寫入工具的目標使用共同路徑解析（含 Git Bash 的 /c/ 路徑、符號連結，以及 Windows 忽略的段尾點與空白）；verify 段擋下受驗來源的修改，被忽略且未追蹤的輸出與 .shiftblame/ 不受限。帶 owner、repo、bucket 等遠端定位欄位或以 URI 為目標的工具寫的是遠端資源，不視為本機寫入。狀態損壞時只放行 flow-state 與 tmp 的修復寫入；沒有本機寫入目標的工具（如待辦清單）不受影響。
 
+### 工作帳本
+
+帳本防自動壓縮丟訊息：事件發生當下追加一條一行，記四類——[否決] 方案與原因、[修正] 使用者原話、[證據] 驗證結果與證據位置、[未決] 待解事項；已落 G 檔或交接的未決事項原行改標 [已解] 並回指落點。活動 slug 在 .shiftblame/tmp/<slug>/ledger.md，main 在 .shiftblame/tmp/main/<task>/ledger.md。帳本留 tmp、不入庫；sb end 的歸檔範圍是 SLUG 與 G 檔，帳本不隨之歸檔，與 handoff 同屬 tmp 的生命週期。
+
+用量門檻（與模式無關）：UserPromptSubmit 自 hook 輸入的 transcript 讀最後一筆 usage 估上下文——蛇形欄位（Claude Code）的 input_tokens 不含快取，相加 cache_creation 與 cache_read；駝峰欄位（ZCode）的 inputTokens 已含 cacheReadTokens，只補 cacheWriteTokens，相加會重複計入。transcript 缺席時掃 rollout 的 model-io-sess_<代號>.jsonl，取最後一筆 response.usage。過窗口 80% 注入一次帳本提醒（路徑依模式），同對話同輪壓縮循環只提醒一次，用量回落即解除、下一輪循環重新武裝；狀態存 hook-records.json 的 compactNudge。窗口以 SB_WINDOW_TOKENS 環境變數設定，預設 300000。壓縮續接：SessionStart(source=compact) 注入帳本路徑與末 30 行（逾 6000 字截尾），活動 slug 另帶一行 slug／ms／段並指向重讀 SLUG 與當前 G 檔；沒有帳本不注入也不報錯，有活動 slug 時不退注入 main 的 task 帳本。sb next 推進後列出帳本 [未決] 行提醒收帳，不阻擋推進。
+
 ### 紀錄與錯誤
 
-hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數，以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
+hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數及帳本提醒狀態（compactNudge），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 
 ### 未涵蓋
 
@@ -73,6 +79,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 里程碑閘：sb end 只核對 SLUG 里程碑清單寫下的內容；清單漏列的後續里程碑，以及沒有清單的 slug，不會被擋。
+- 壓縮防丟：平台沒有 PreCompact 事件，壓縮前的動作靠 80% 門檻提醒承擔；transcript 與 rollout 紀錄都缺席時不提醒。窗口預設 300000 是本機實測值，其他環境須以 SB_WINDOW_TOKENS 設定；門檻只核對用量，帳本是否真的寫入由代理承擔。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
 
 這些由代理依授權自律，交付時如實揭露。
