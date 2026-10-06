@@ -121,7 +121,7 @@ function absPath(base, p) {
     dir = up;
   }
 }
-const relTo = (root, abs) => relative(absPath(root, root), abs).replace(/\\/g, '/');
+const relTo = (root, abs) => relative(absPath(root, root), absPath(root, abs)).replace(/\\/g, '/');
 const normPath = (base, p) => { try { return fold(absPath(base, String(p))); } catch { return fold(String(p)); } };
 const systemRel = (rel) => { const r = fold(rel); return r === '.shiftblame' || r.startsWith('.shiftblame/'); };
 
