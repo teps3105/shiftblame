@@ -761,9 +761,13 @@ function currentUsageTokens(input, root) {
   return usageTokensFrom(null, join(homedir(), '.zcode', 'cli', 'rollout', `model-io-${session}.jsonl`));
 }
 const COMPACT_AT = 0.8;
+// 窗口來源優先序：顯式覆寫 > 平台自己的自動壓縮設定（Claude Code 由 settings.env 注入、hook 繼承）> 300000（ZCode 以模型上下文窗口觸發壓縮的本機實測值）。
 function windowTokens() {
-  const v = Number(process.env.SB_WINDOW_TOKENS);
-  return Number.isFinite(v) && v > 0 ? v : 300000;
+  for (const name of ['SB_WINDOW_TOKENS', 'CLAUDE_CODE_AUTO_COMPACT_WINDOW']) {
+    const v = Number(process.env[name]);
+    if (Number.isFinite(v) && v > 0) return v;
+  }
+  return 300000;
 }
 function slugLedgerPath(root, health) {
   const st = health?.kind === 'active' ? health.state : null;

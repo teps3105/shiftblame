@@ -71,6 +71,13 @@ r = run('UserPromptSubmit', { session_id: 'sess-other' });
 assert.equal(r.status, 0);
 assert.ok(!ctxOf(r).includes('[帳本]'));
 
+// 窗口來源：未設 SB_WINDOW_TOKENS 時接平台的自動壓縮設定（Claude Code 經 settings.env 注入），顯式覆寫仍優先。
+const snake170 = usageFile([snake(170)]);
+r = run('UserPromptSubmit', { session_id: 'sess-win', transcriptPath: snake170 }, { SB_WINDOW_TOKENS: '', CLAUDE_CODE_AUTO_COMPACT_WINDOW: '200' });
+assert.ok(ctxOf(r).includes('[帳本]'), '平台自動壓縮設定當窗口（170>=200*0.8）');
+r = run('UserPromptSubmit', { session_id: 'sess-win2', transcriptPath: snake170 }, { SB_WINDOW_TOKENS: '1000', CLAUDE_CODE_AUTO_COMPACT_WINDOW: '200' });
+assert.ok(!ctxOf(r).includes('[帳本]'), '顯式覆寫優先（170<1000*0.8）');
+
 // ———— 壓縮續接：SessionStart(source=compact) 注入帳本路徑與末 30 行 ————
 const ledger40 = (dir) => {
   mkdirSync(dir, { recursive: true });
