@@ -78,6 +78,15 @@ assert.ok(ctxOf(r).includes('[帳本]'), '平台自動壓縮設定當窗口（17
 r = run('UserPromptSubmit', { session_id: 'sess-win2', transcriptPath: snake170 }, { SB_WINDOW_TOKENS: '1000', CLAUDE_CODE_AUTO_COMPACT_WINDOW: '200' });
 assert.ok(!ctxOf(r).includes('[帳本]'), '顯式覆寫優先（170<1000*0.8）');
 
+// Codex rollout 的 token_count 事件：input_tokens 已含 cached_input_tokens（相加會重複計入），窗口取同一事件的 model_context_window。
+const codex = (usage, window) => usageFile([{ type: 'event_msg', payload: { type: 'token_count', info: { last_token_usage: usage, model_context_window: window } } }]);
+f = codex({ input_tokens: 150, cached_input_tokens: 100, cache_write_input_tokens: 0 }, 258);
+r = run('UserPromptSubmit', { session_id: 'sess-codex', transcriptPath: f });
+assert.ok(!ctxOf(r).includes('[帳本]'), 'Codex 不重複相加（150<258*0.8；誤加 cached 會算 250 過門檻）');
+f = codex({ input_tokens: 220, cached_input_tokens: 210, cache_write_input_tokens: 6 }, 258);
+r = run('UserPromptSubmit', { session_id: 'sess-codex2', transcriptPath: f }, { SB_WINDOW_TOKENS: '1000' });
+assert.ok(ctxOf(r).includes('[帳本]'), 'Codex 窗口取 rollout 的 model_context_window（226>=258*0.8；退 env 1000 則不過）');
+
 // ———— 壓縮續接：SessionStart(source=compact) 注入帳本路徑與末 30 行 ————
 const ledger40 = (dir) => {
   mkdirSync(dir, { recursive: true });

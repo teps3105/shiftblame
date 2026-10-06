@@ -709,14 +709,17 @@ function checkCommit(ctx, entry, seen) {
 
 // 帳本：活動 slug 在 tmp/<slug>/ledger.md，main 在 tmp/main/<task>/ledger.md；事件發生當下追加，一條一行。
 // 蛇形欄位（Claude Code transcript）input_tokens 不含快取，上下文須加 cache_creation／cache_read；
-// 駝峰欄位（ZCode）inputTokens 已含 cacheReadTokens，只補 cacheWriteTokens——相加會重複計入。
+// 駝峰欄位（ZCode）inputTokens 已含 cacheReadTokens，只補 cacheWriteTokens——相加會重複計入；
+// Codex rollout 的 token_count 事件 input_tokens 已含 cached_input_tokens，只補 cache_write_input_tokens。
 function contextTokens(u) {
   if (!objectRecord(u)) return null;
+  if (Number.isFinite(u.cached_input_tokens)) return u.input_tokens + (u.cache_write_input_tokens ?? 0);
   if (Number.isFinite(u.input_tokens)) return u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
   if (Number.isFinite(u.inputTokens)) return u.inputTokens + (u.cacheWriteTokens ?? 0);
   return null;
 }
 // 只讀檔尾找最後一筆 usage；模型請求紀錄單行可達數 MB，視窗截到半行時先丟掉首段再由後往前解析。
+// Codex rollout 行為 {payload:{info:{last_token_usage, model_context_window}}}——窗口與用量同一事件，一併回傳。
 function tailUsageTokens(filePath) {
   let text, truncated = false;
   try {
@@ -740,8 +743,11 @@ function tailUsageTokens(filePath) {
     if (!lines[i].includes('usage')) continue;
     let rec = null;
     try { rec = JSON.parse(lines[i]); } catch { continue; }
-    const tokens = contextTokens(rec?.message?.usage ?? rec?.response?.usage ?? rec?.usage);
-    if (tokens !== null) return tokens;
+    const info = rec?.payload?.info;
+    const tokens = contextTokens(rec?.message?.usage ?? rec?.response?.usage ?? rec?.usage ?? info?.last_token_usage);
+    if (tokens === null) continue;
+    const window = Number.isFinite(info?.model_context_window) ? info.model_context_window : null;
+    return { tokens, window };
   }
   return null;
 }
@@ -761,8 +767,9 @@ function currentUsageTokens(input, root) {
   return usageTokensFrom(null, join(homedir(), '.zcode', 'cli', 'rollout', `model-io-${session}.jsonl`));
 }
 const COMPACT_AT = 0.8;
-// 窗口來源優先序：顯式覆寫 > 平台自己的自動壓縮設定（Claude Code 由 settings.env 注入、hook 繼承）> 300000（ZCode 以模型上下文窗口觸發壓縮的本機實測值）。
-function windowTokens() {
+// 窗口來源優先序：transcript 自帶的 model_context_window（Codex）> 顯式覆寫 > 平台的自動壓縮設定（Claude Code 由 settings.env 注入、hook 繼承）> 300000（ZCode 以模型上下文窗口觸發壓縮的本機實測值）。
+function windowTokens(fromTranscript) {
+  if (Number.isFinite(fromTranscript) && fromTranscript > 0) return fromTranscript;
   for (const name of ['SB_WINDOW_TOKENS', 'CLAUDE_CODE_AUTO_COMPACT_WINDOW']) {
     const v = Number(process.env[name]);
     if (Number.isFinite(v) && v > 0) return v;
@@ -810,22 +817,23 @@ function compactLedgerLine(ctx) {
 // 用量過窗口 80% 時提醒寫帳本；同對話同輪壓縮循環只提醒一次，用量回落即解除、下輪循環重新武裝。
 function compactNudgeLine(root, input, ctx) {
   if (!root || !existsSync(join(root, '.shiftblame'))) return '';
-  const tokens = currentUsageTokens(input, root);
-  if (tokens === null) return '';
+  const usage = currentUsageTokens(input, root);
+  if (!usage) return '';
   const file = hookRecordsPath(root);
   const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
   if (!release) return '';
   try {
     const st = readHookRecords(root);
     const session = sessionOf(input) ?? 'default';
-    if (tokens >= windowTokens() * COMPACT_AT) {
+    const window = windowTokens(usage.window);
+    if (usage.tokens >= window * COMPACT_AT) {
       if (st.compactNudge?.session === session) return '';
       st.compactNudge = { session, at: new Date().toISOString() };
       writeAtomic(file, JSON.stringify(st, null, 2));
       const target = slugLedgerPath(root, ctx.health)
         ? relTo(root, slugLedgerPath(root, ctx.health))
         : '.shiftblame/tmp/main/<task>/ledger.md（task 未命名時由你命名）';
-      return `\n[帳本] 上下文已過窗口 80%（約 ${Math.round(tokens / 1000)}k／${Math.round(windowTokens() / 1000)}k），接近自動壓縮——把尚未記錄的否決方案與原因、使用者原話修正、驗證結果與證據位置、未決事項即時追加進 ${target}（一條一行：[否決]／[修正]／[證據]／[未決]）。`;
+      return `\n[帳本] 上下文已過窗口 80%（約 ${Math.round(usage.tokens / 1000)}k／${Math.round(window / 1000)}k），接近自動壓縮——把尚未記錄的否決方案與原因、使用者原話修正、驗證結果與證據位置、未決事項即時追加進 ${target}（一條一行：[否決]／[修正]／[證據]／[未決]）。`;
     }
     if (st.compactNudge) {
       delete st.compactNudge;
