@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.9.10"
+  version: "2.9.11"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；slug 流程承接使用者提出的具體需求，main 模式由代理訪談意圖後自行規劃迭代。
 ---
 # Shiftblame

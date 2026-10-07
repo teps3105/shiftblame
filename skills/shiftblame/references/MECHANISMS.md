@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.10
+revision: 2.9.11
 ---
 # 執行介面與界線
 
@@ -24,7 +24,7 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
   - HEAD 無法解析的損壞 repo 只建骨架，不建分支、不動索引，修復後以 sb state 查證。
 - sb next <node> 沿流程切換責任段。符合契約的回查與技術修復可自主執行；使用者指出驗收未通過時，依差異回責任段修復，實質需求或授權變更先經訪談回 requirement。
 - research → plan 封存 G1 定義區、quality → build 封存 G2 定義區；## 回指記錄 是證據分隔。已核准、相同且仍適用的契約可重用。契約變更需對應時點審查與使用者授權。
-- sb adversarial <報告> --point 1|2|3 記錄對應審查並綁定審查對象：時點 1（research→plan）記 G1 定義區 hash，時點 2（quality→build）記 G2 定義區 hash（G 檔不存在或回指標題不是恰好一次時拒絕記錄），時點 3（verify 出口）記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 與 --boss-ok 承接真實審查與使用者判定，CLI 核對條目新鮮度與審查對象：審查後修改 G1／G2 定義區或再提交，須重新審查；只更新回指區不受影響。舊版條目沒有審查對象，只核對新鮮度；2.8.x 的時點 2（verify 出口）條目載入時遷移為時點 3。
+- sb adversarial <報告> --point 1|2|3 記錄對應審查並綁定審查對象：時點 1（research→plan）記 G1 定義區 hash，時點 2（quality→build）記 G2 定義區 hash（G 檔不存在或回指標題不是恰好一次時拒絕記錄），時點 3（verify 驗收完成後，出口閘查驗）記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 與 --boss-ok 承接真實審查與使用者判定，CLI 核對條目新鮮度與審查對象：審查後修改 G1／G2 定義區或再提交，須重新審查；只更新回指區不受影響。舊版條目沒有審查對象，只核對新鮮度；2.8.x 的時點 2（verify 出口）條目載入時遷移為時點 3。
 - sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。staged 動到參照型文件（README、docs/、SOP、ROADMAP）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交（main 與 slug 模式皆然）。
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb next requirement --new-ms --adversarial --boss-ok 是里程碑出口：時點 3 終審後結束目前里程碑，ms 加一並回 requirement；slug 與工作分支保留。
