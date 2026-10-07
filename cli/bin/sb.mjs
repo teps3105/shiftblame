@@ -1434,6 +1434,30 @@ function toolCallCount(st) {
 
 // --boss-ok 承接對話中已取得的使用者授權。
 // 機械不驗時戳，語義授權由 think 揭露與使用者終審承擔。
+// 收尾整併閘：工作分支歷史線性（自基底分叉後無 merge 提交）——帶混亂合併回基底前先整理；
+// 收尾合併本身保留 --no-ff。改寫歷史是破壞性操作，框架只擋並指示，由代理整理後重試。
+function checkLinearHistory(st, problems, passes) {
+  if (!st.baseCommit) return; // 無基底錨點（--no-git／非 Git）無 git 事實，不檢查
+  const branch = st.workBranch || 'HEAD'; // 檢查工作分支本身——重跑收尾（刪分支失敗留痕）時 HEAD 已在基底，基底上的收尾合併不是分支內混亂
+  const mb = gitRun('merge-base', st.baseCommit, branch);
+  if (mb.status !== 0) return; // 無共同祖先——finalizeMerge／closeout 另行擋
+  const merges = gitRun('rev-list', '--merges', `${mb.stdout.trim()}..${branch}`);
+  if (merges.status !== 0) return;
+  const lines = merges.stdout.trim().split('\n').filter(Boolean);
+  if (!lines.length) { passes.push('工作分支歷史線性（分叉後無 merge 提交）'); return; }
+  const list = lines.slice(0, 4).map(l => l.slice(0, 7)).join('、');
+  problems.push(`工作分支歷史非線性（分叉後有 ${lines.length} 個 merge 提交：${list}${lines.length > 4 ? ' 等' : ''}）——把分支整理成線性再收尾：以 git rebase（或 rebase -i 壓整分支內的合併）整理後重試 sb end；收尾合併本身保留 --no-ff`);
+}
+// 子代理隔離工作區（git worktree）收尾前須清除——殘留掛載會妨礙分支刪除並留下混亂。
+function checkWorktreesCleared(problems, passes) {
+  const wt = gitRun('worktree', 'list', '--porcelain');
+  if (wt.status !== 0) return; // 舊版 git 或非 git 環境
+  const tops = wt.stdout.split(/\r?\n/).filter(l => l.startsWith('worktree ')).map(l => l.slice(9).trim());
+  const extra = tops.slice(1); // porcelain 第一筆為主工作樹
+  if (!extra.length) { passes.push('無殘留 worktree 掛載'); return; }
+  problems.push(`收尾前須清理殘留的 worktree 掛載（子代理隔離工作區）：${extra.join('、')}——確認內容已整併後 git worktree remove <路徑>（內容確定捨棄加 --force），清完重試 sb end`);
+}
+
 function cmdEnd(opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = migrateStreams(readJson(STATE_FILE));
@@ -1474,6 +1498,8 @@ function cmdEnd(opts) {
     }
   }
   passes.push(`時點 3 審查條目與使用者終審（--adversarial＋--boss-ok）已核對${Object.hasOwn(pt3Entry, 'head') ? '；受驗提交與審查時一致' : ''}`);
+  checkLinearHistory(st, problems, passes);
+  checkWorktreesCleared(problems, passes);
   checkCleanWorktree(problems, passes, 'pass 前');
   if (problems.length) die(problems);
   mkdirSync(join(SB_DIR, 'archive'), { recursive: true });

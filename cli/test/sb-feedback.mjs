@@ -191,3 +191,37 @@ test('換段重置連續計數；計畫段失敗標記時點 1，品質段不標
   assert.ok(pThird.stdout.includes('sb next research'), '計畫段引導回研究');
   assert.ok(records(f.root).suspect?.['1'], '計畫段連續失敗標記時點 1 待重審');
 });
+
+test('收尾整併閘：分支非線性與 worktree 殘留擋下，整理後照常收尾', t => {
+  const f = fixture(t, 'verify');
+  const report = join(f.root, '.shiftblame/tmp/review3.md');
+  writeFileSync(report, '審查模型：x\n通過\n');
+  f.write({ ...f.read(), baseCommit: spawnSync('git', ['rev-list', '--max-parents=0', 'HEAD'], { cwd: f.root, encoding: 'utf8' }).stdout.trim(), lastAdv: { '3': { at: new Date().toISOString(), report, verdict: '通過', node: 'verify' } } });
+  const end = () => f.run('end', '--adversarial', '--boss-ok');
+  const gitOut = (...args) => spawnSync('git', args, { cwd: f.root, encoding: 'utf8' }).stdout.trim();
+
+  // 非線性：分支歷史含 merge 提交
+  f.git('checkout', '-b', 'side');
+  writeFileSync(join(f.root, 'side.txt'), 'side\n');
+  f.git('add', 'side.txt'); f.git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'side');
+  f.git('checkout', 'main');
+  f.git('merge', '--no-ff', 'side', '-m', 'merge side');
+  const nonlinear = end();
+  assert.equal(nonlinear.status, 1, nonlinear.stderr || nonlinear.stdout);
+  assert.ok(nonlinear.stderr.includes('非線性') && nonlinear.stderr.includes('--no-ff'), '非線性擋下並指示整理方式');
+
+  // 整理回線性後 worktree 殘留擋下
+  f.git('reset', '--hard', gitOut('rev-list', '--max-parents=0', 'HEAD'));
+  const wtPath = join(dirname(f.root), 'sb-wt');
+  f.git('worktree', 'add', wtPath, 'side');
+  const dirtyWt = end();
+  assert.equal(dirtyWt.status, 1, dirtyWt.stderr || dirtyWt.stdout);
+  assert.ok(dirtyWt.stderr.includes('worktree'), 'worktree 殘留擋下並列出路徑');
+
+  // 清乾淨後照常收尾（線性＋無 worktree＋工作樹乾淨）
+  f.git('worktree', 'remove', '--force', wtPath);
+  const done = end();
+  assert.equal(done.status, 0, done.stderr || done.stdout);
+  assert.ok(done.stdout.includes('工作分支歷史線性'), '通過訊息載明線性核對');
+  assert.equal(f.read().node, 'ended');
+});

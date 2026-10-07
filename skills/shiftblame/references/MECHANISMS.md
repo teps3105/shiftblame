@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.9
+revision: 2.9.10
 ---
 # 執行介面與界線
 
@@ -28,7 +28,7 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 - sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。staged 動到參照型文件（README、docs/、SOP、ROADMAP）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交（main 與 slug 模式皆然）。
 - sb sopreview <範圍與結論> 選用記錄已進行的治理文件審查範圍與結論；審查依治理變更需要執行。
 - sb next requirement --new-ms --adversarial --boss-ok 是里程碑出口：時點 3 終審後結束目前里程碑，ms 加一並回 requirement；slug 與工作分支保留。
-- sb end --adversarial --boss-ok 是 slug 出口：在 verify 及使用者終審後結束整個 slug，歸檔並整合。依序為里程碑閘（SLUG 里程碑清單中目前 ms 之後的列不是「完成」或「取消」即擋，指向 --new-ms；使用者決定提前結束時先把剩餘列改為「取消」；ms 欄無法辨識也擋；SLUG 沒有清單則不核對）、收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
+- sb end --adversarial --boss-ok 是 slug 出口：在 verify 及使用者終審後結束整個 slug，歸檔並整合。依序為里程碑閘（SLUG 里程碑清單中目前 ms 之後的列不是「完成」或「取消」即擋，指向 --new-ms；使用者決定提前結束時先把剩餘列改為「取消」；ms 欄無法辨識也擋；SLUG 沒有清單則不核對）、收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、收尾整併閘（工作分支自基底分叉後的歷史須線性——分支內有 merge 提交即擋並指示以 git rebase 整理；子代理隔離工作區的 worktree 掛載須先清除，殘留即擋並列出路徑；整理與清除由代理完成後重試，收尾合併本身保留 --no-ff；無 git 基準或舊版 git 跳過）、working tree 乾淨檢查、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
 - sb closeout --base <分支> 核對收尾整合事實。
 - sb rewrite 文件編輯的唯一入口：把文件集（README、docs/、SOP、ROADMAP 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查 docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（時點、G 檔搭配詞、sb 命令、.shiftblame/ 路徑不得入 docs/；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心由提交閘與收尾閘共用。
 - sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
