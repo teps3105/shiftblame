@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { objectRecord, hookRecords, uninitializedState, directState, endedState, validCloseout, readFlowState, migrateStreams, unchangedG1Approval } from './flow-state.mjs';
 import { COMMIT_TYPES as TYPES, commitMessageIssue } from './commit-format.mjs';
 import { runHandoff } from './handoff.mjs';
-import { acquireLock, readHookRecords, writeAtomic } from './state-io.mjs';
+import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from './state-io.mjs';
 
 // 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
@@ -1272,6 +1272,14 @@ function cmdNext(target, opts) {
       delete st.rev; // 新 ms 乾淨輪次——舊 ms 輪號不帶入
       delete st.sopReview; // 審查戳記屬 ms——新 ms 重跑三問後重新留痕
       delete st.edgeAt; delete st.lastAdv; // 邊推進時戳與對抗條目屬 ms——新 ms 重驗（出口新鮮度由新 ms 的條目對照承載）
+      // 待重審標記屬 ms——新 ms 乾淨開場，不帶入上一 ms 的暫時性通過疑慮。
+      const release = acquireLock(hookRecordsPath(ROOT), { waitMs: 2000, staleMs: 10000 });
+      if (release) {
+        try {
+          const rec = readHookRecords(ROOT);
+          if (rec.suspect) { delete rec.suspect; writeAtomic(hookRecordsPath(ROOT), JSON.stringify(rec, null, 2)); }
+        } finally { release(); }
+      }
       passes.push(`新里程碑：${st.ms}（--new-ms）`);
       if (existsSync(join(ROOT, '.git')) && (st.msBaseline || st.baseCommit)) {
         const d = gitDiffStats(st.msBaseline || st.baseCommit, gitHeadCommit());
@@ -1285,7 +1293,22 @@ function cmdNext(target, opts) {
     }
   }
   // 各邊保留最後推進時間，供審查新鮮度核對。
+  const prevEdgeAt = st.edgeAt?.[`${prev}→${target}`];
   st.edgeAt = { ...(st.edgeAt ?? {}), [`${prev}→${target}`]: new Date().toISOString() };
+  // 時點通過是暫時性的：下游連續失敗曾把封存邊標記待重審（hooks 寫 tmp/hook-records.json），該邊再次推進即重審通過。
+  const susp = readHookRecords(ROOT).suspect;
+  const point = susp ? Object.keys(susp).find((p) => ({ '1': 'research→plan', '2': 'quality→build' })[p] === `${prev}→${target}`) : null;
+  if (point && susp[point] && (!prevEdgeAt || prevEdgeAt < susp[point])) {
+    passes.push(`時點 ${point} 重審通過——待重審標記解除（該次通過曾被下游連續失敗動搖，本次重新推進即重審）`);
+    delete susp[point];
+    const release = acquireLock(hookRecordsPath(ROOT), { waitMs: 2000, staleMs: 10000 });
+    if (release) {
+      try {
+        const rec = readHookRecords(ROOT);
+        if (rec.suspect) { delete rec.suspect[point]; if (!Object.keys(rec.suspect).length) delete rec.suspect; writeAtomic(hookRecordsPath(ROOT), JSON.stringify(rec, null, 2)); }
+      } finally { release(); }
+    }
+  }
   writeState(st);
   const openLedger = ledgerOpenLines(st.slug);
   if (openLedger.length) passes.push(`帳本未決 ${openLedger.length} 筆——已寫進對應 G 檔或交接的，把該行 [未決] 原地改標 [已解] 並回指落點：\n  ${openLedger.join('\n  ')}`);

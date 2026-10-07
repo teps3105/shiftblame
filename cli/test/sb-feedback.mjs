@@ -135,3 +135,59 @@ test('驗收發現實作錯誤時，寫入提示引導回建置並恢復寫入�
   assert.deepEqual(f.read().g1Contract, f.contract);
   assert.equal(f.read().rev, undefined);
 });
+
+const records = (root) => { try { return JSON.parse(readFileSync(join(root, '.shiftblame/tmp/hook-records.json'), 'utf8')); } catch { return {}; } };
+
+test('連續失敗引導回退並標記時點待重審，重審推進解除', t => {
+  const f = fixture(t, 'build');
+  const fail = () => f.event({ hook_event_name: 'PostToolUseFailure', tool_name: 'Bash', session_id: 's1' });
+  assert.equal(fail().stdout, '', '未達閾值不注入');
+  assert.equal(fail().stdout, '');
+  const third = fail();
+  assert.ok(third.stdout.includes('回退引導') && third.stdout.includes('sb next quality'), '閾值注入回退引導');
+  assert.ok(records(f.root).failureNudge?.count === 3 && records(f.root).suspect?.['2'], '計數與待重審標記落 tmp/hook-records.json');
+  const ss = f.event({ hook_event_name: 'SessionStart', session_id: 's1', source: 'startup' });
+  assert.ok(ss.stdout.includes('時點待重審') && ss.stdout.includes('quality→build'), '段注入顯示待重審與重審邊');
+  f.event({ hook_event_name: 'PostToolUse', tool_name: 'Bash', session_id: 's1' });
+  assert.equal(records(f.root).failureNudge, undefined, '工具成功歸零連續計數');
+  assert.ok(records(f.root).suspect?.['2'], '標記不隨成功清除——解除靠時點重審');
+  // 時點 2 重審：quality→build 再次推進（G2 未變——契約沿用，對抗條目重新留痕；帶 g2 鍵避免舊語義遷移）
+  const report = join(f.root, '.shiftblame/tmp/review2.md');
+  writeFileSync(report, '審查模型：重審\n通過\n');
+  const g2Hash = createHash('sha256').update(g2.split('## 回指記錄')[0]).digest('hex');
+  f.write({ ...f.read(), node: 'quality', lastAdv: { '2': { at: new Date().toISOString(), report, verdict: '通過', node: 'quality', g2: g2Hash } } });
+  const r = f.run('next', 'build', '--adversarial', '--boss-ok');
+  assert.equal(r.status, 0, r.stderr || r.stdout);
+  assert.ok(r.stdout.includes('時點 2 重審通過'), '推進訊息載明重審通過');
+  assert.equal(records(f.root).suspect, undefined, '重審通過後待重審標記清除');
+});
+
+test('失敗升級裁示：改動前先問老闆一次，唯讀不受閘', t => {
+  const f = fixture(t, 'build');
+  for (let i = 0; i < 6; i++) f.event({ hook_event_name: 'PostToolUseFailure', tool_name: 'Bash', session_id: 's1' });
+  const warn = f.event({ hook_event_name: 'PostToolUseFailure', tool_name: 'Bash', session_id: 's1' });
+  assert.ok(warn.stdout.includes('回退裁示') && warn.stdout.includes('AskUserQuestion'), '閾值二注入裁示要求問老闆');
+  const edit = { hook_event_name: 'PreToolUse', tool_name: 'Edit', session_id: 's1', tool_input: { file_path: join(f.root, 'a.js'), content: 'x' } };
+  const asked = f.event(edit);
+  assert.ok(asked.stdout.includes('permissionDecision'), '改動觸發 ask');
+  assert.ok(records(f.root).failureNudge?.askedAt, 'askedAt 落檔——同一輪升級只問一次');
+  assert.equal(f.event(edit).stdout.includes('permissionDecision'), false, '已問過不再 ask');
+  assert.equal(f.event({ hook_event_name: 'PreToolUse', tool_name: 'Read', session_id: 's1', tool_input: { file_path: join(f.root, 'a.js') } }).status, 0, '唯讀查證不受閘');
+});
+
+test('換段重置連續計數；計畫段失敗標記時點 1，品質段不標', t => {
+  const f = fixture(t, 'build');
+  const fail = () => f.event({ hook_event_name: 'PostToolUseFailure', tool_name: 'Bash', session_id: 's1' });
+  fail(); fail();
+  f.write({ ...f.read(), node: 'quality', edgeAt: { 'plan→quality': entered } });
+  fail();
+  assert.ok(records(f.root).failureNudge?.count === 1 && records(f.root).failureNudge?.node === 'quality', '換段計數重置');
+  fail(); fail();
+  const qThird = fail();
+  assert.ok(qThird.stdout.includes('sb next plan') && records(f.root).suspect?.['1'] === undefined, '品質段引導回計畫且不標上游時點');
+  f.write({ ...f.read(), node: 'plan', edgeAt: { 'research→plan': entered } });
+  fail(); fail();
+  const pThird = fail();
+  assert.ok(pThird.stdout.includes('sb next research'), '計畫段引導回研究');
+  assert.ok(records(f.root).suspect?.['1'], '計畫段連續失敗標記時點 1 待重審');
+});

@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 2.9.5
+revision: 2.9.9
 ---
 # 執行介面與界線
 
@@ -37,6 +37,8 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 
 SessionStart 注入簡短的授權與驗收原則及訪談提示，壓縮續接（source=compact）另注入帳本路徑與末 30 行；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒，上下文用量過窗口 80% 時注入一次帳本提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。
 
+失敗信號回退引導：時點通過是暫時性的。PostToolUseFailure 以同對話同段累計連續失敗（PostToolUse 的工具成功把計數歸零，換段重置）：達三次起每次失敗注入回退引導——依段指出回退去處與根因層級（build 失敗先想回 quality／research，品質安排寫不出回 plan，驗收失敗回 build 或 quality，不在當前段硬修）——並把該段依賴的上游時點標記待重審（plan 失敗標時點 1、build 與 verify 失敗標時點 2）；達六次起注入改為裁示，要求以 AskUserQuestion 取得老闆「回退重審或留在本段」的決定，且改動類工具（寫入或 shell）回傳 ask 一次。段注入在活動 slug 顯示「時點待重審」；該時點的封存邊（research→plan、quality→build）再次推進即重審通過、標記解除（sb next 以邊時戳對標記時戳判斷，訊息載明重審通過）；開新里程碑（--new-ms）把標記整批清除。
+
 工具嘗試次數用於觀測，操作結果另以實際輸出核對。重試與非同步輪詢依進展決定；技能以當前平台的讀取能力使用。
 
 ### 產品訪談閘
@@ -70,7 +72,7 @@ Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫�
 
 ### 紀錄與錯誤
 
-hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數及帳本提醒狀態（compactNudge），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
+hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數、帳本提醒狀態（compactNudge）、失敗連續計數（failureNudge，含 session／node／count／askedAt）與時點待重審標記（suspect，時點→標記時戳），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 
 ### 未涵蓋
 
@@ -81,6 +83,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - 里程碑閘：sb end 只核對 SLUG 里程碑清單寫下的內容；清單漏列的後續里程碑，以及沒有清單的 slug，不會被擋。
 - 壓縮防丟：平台沒有 PreCompact 事件，壓縮前的動作靠 80% 門檻提醒承擔；transcript 與 rollout 紀錄都缺席時不提醒。窗口預設 300000 與三平台自動壓縮觸發點的對齊依 platform-runtime-facts.md（見用量門檻段的回指），都不對時以 SB_WINDOW_TOKENS 設定。門檻只核對用量，帳本是否真的寫入由代理承擔。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
+- 失敗信號：平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔，askedAt 不因裁示內容重置。
 
 這些由代理依授權自律，交付時如實揭露。
 

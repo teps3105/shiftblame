@@ -57,11 +57,81 @@ const EARLY_RESEARCH = {
   quality: '｜時點 2 審查／判定期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G2、不提交',
   verify: '｜時點 3 審查／判定期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改受驗來源、不提交',
 };
-function nodeLine(health) {
+function nodeLine(health, root) {
   if (!health) return '';
   if (health.kind === 'invalid') return '\n[接入異常] 保留原資料，修復後執行 sb state；提交及流程推進保持封閉。';
   const st = health.state;
-  return health.kind === 'active' ? '\n[段] ' + st.slug + '/' + st.ms + ' @ ' + st.node + (EARLY_RESEARCH[st.node] ?? '') : '\n[接入] ' + health.kind + '；依既有授權工作。';
+  let line = health.kind === 'active' ? '\n[段] ' + st.slug + '/' + st.ms + ' @ ' + st.node + (EARLY_RESEARCH[st.node] ?? '') : '\n[接入] ' + health.kind + '；依既有授權工作。';
+  const points = suspectPoints(root, health); // 下游連續失敗動搖過的上游時點（時點通過是暫時性的）
+  if (points.length) line += '\n[時點待重審] 時點 ' + points.join('、') + ' 的通過已被下游連續失敗動搖——回退重審（' + points.map((p) => SUSPECT_EDGE[p] + ' 再次推進').join('；') + '）後解除。';
+  return line;
+}
+
+// ———— 失敗信號回退引導：工具連續失敗時引導回上游段，時點通過視為暫時性 ————
+
+const FAIL_NUDGE_AT = 3, FAIL_ASK_AT = 6;
+// 各段連續失敗時的回退去處（與 FLOW 相鄰回退邊一致）；requirement 段沒有更上游，不引導。
+const FAIL_GUIDE = {
+  research: '`sb next requirement` 回需求釐清契約，或確認研究範圍後續行',
+  plan: '`sb next research` 回研究——計畫依據被推翻時，時點 1 待重審',
+  quality: '`sb next plan` 回計畫——品質安排寫不出，通常是計畫片段與驗收條件的映射不成立',
+  build: '`sb next quality` 回區 2 改品質安排（時點 2 待重審）；研究結論被推翻則 `sb next research`（時點 1 待重審）；確認純屬實作失誤才留在本段修',
+  verify: '`sb next build` 修實作，或 `sb next quality` 改判準（時點 2 待重審）——驗收失敗不直接通過，也不在本段反覆重跑',
+};
+// 該段連續失敗時應標記待重審的上游時點：plan 依賴研究（時點 1）、build／verify 依賴品質安排（時點 2）。
+const FAIL_SUSPECT = { plan: '1', build: '2', verify: '2' };
+// 時點→封存邊：標記後該邊再次推進即重審通過、待重審解除（以 flow-state 的 edgeAt 時序判斷，不需清除寫入）。
+const SUSPECT_EDGE = { '1': 'research→plan', '2': 'quality→build' };
+function suspectPoints(root, health) {
+  if (!root || health?.kind !== 'active') return [];
+  const st = health.state;
+  const susp = readHookRecords(root).suspect;
+  if (!susp) return [];
+  return Object.keys(susp).filter((p) => {
+    const passedAt = st.edgeAt?.[SUSPECT_EDGE[p]];
+    return !passedAt || passedAt < susp[p];
+  });
+}
+
+// PostToolUseFailure 累計同對話同段的連續失敗；PostToolUse（成功）把同段計數歸零。
+// 達 N1 起把當前段依賴的上游時點標記待重審（下游反覆失敗＝上游的暫時性通過失效）。
+function bumpFailure(root, sessionId, node, ok) {
+  if (!root || !sessionId || !node || !existsSync(join(root, '.shiftblame'))) return null;
+  mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
+  const file = hookRecordsPath(root);
+  const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
+  if (!release) return null;
+  try {
+    const st = readHookRecords(root);
+    const fn = st.failureNudge;
+    if (ok) {
+      if (fn?.node === node) { delete st.failureNudge; writeAtomic(file, JSON.stringify(st, null, 2)); }
+      return null;
+    }
+    const next = fn && fn.session === sessionId && fn.node === node
+      ? { ...fn, count: fn.count + 1, at: new Date().toISOString() }
+      : { session: sessionId, node, count: 1, at: new Date().toISOString() };
+    st.failureNudge = next;
+    const point = FAIL_SUSPECT[node];
+    if (point && next.count >= FAIL_NUDGE_AT) st.suspect = { ...(st.suspect ?? {}), [point]: next.at };
+    writeAtomic(file, JSON.stringify(st, null, 2));
+    return next;
+  } finally { release(); }
+}
+function failureLine(fn, node, tool) {
+  if (!fn || fn.node !== node || fn.count < FAIL_NUDGE_AT) return '';
+  const guide = FAIL_GUIDE[node] ?? '';
+  if (fn.count >= FAIL_ASK_AT) {
+    return `\n[回退裁示] ${node} 段已連續失敗 ${fn.count} 次` + (tool ? `（${tool}）` : '') + `——先以 AskUserQuestion 向老闆取得「回退重審」或「留在本段續行」的明確決定，未取得前不重試同類操作。回退去處：${guide}。時點通過是暫時性的。`;
+  }
+  return `\n[回退引導] ${node} 段已連續失敗 ${fn.count} 次` + (tool ? `（${tool}）` : '') + `——先判斷根因層級再決定去處，不在本段反覆硬修：${guide}。受影響的上游時點已標記待重審，回退重審再次推進後自動解除。`;
+}
+// 失敗裁示閘：連續失敗達 ask 閾值且未取得老闆決定時，任何工具呼叫先問一次（askedAt 記錄已問過，只問一次）。
+function failureAskGate(root, input, ctx) {
+  if (!root || ctx.health?.kind !== 'active') return null;
+  const fn = readHookRecords(root).failureNudge;
+  if (!fn || fn.session !== sessionOf(input) || fn.node !== ctx.health.state.node || fn.count < FAIL_ASK_AT || fn.askedAt) return null;
+  return fn;
 }
 
 // ———— 紀錄：心跳與使用計數（另存 tmp/hook-records.json，不寫 sb 管理的 flow-state） ————
@@ -896,10 +966,17 @@ function shellDecision(ctx, tool, text) {
   return asks.length ? { ask: asks.join('\n'), context: warn } : { context: warn };
 }
 function decide(event, input, ctx) {
-  if (event === 'SessionStart') return { context: CARD + nodeLine(ctx.health) + interviewLine(ctx, event) + compactLedgerLine(ctx) };
-  if (event === 'UserPromptSubmit') return { context: nodeLine(ctx.health) + interviewLine(ctx, event) };
+  if (event === 'SessionStart') return { context: CARD + nodeLine(ctx.health, ctx.root) + interviewLine(ctx, event) + compactLedgerLine(ctx) };
+  if (event === 'UserPromptSubmit') return { context: nodeLine(ctx.health, ctx.root) + interviewLine(ctx, event) };
+  if (event === 'PostToolUseFailure') return { context: failureLine(ctx.failure, ctx.health?.state.node, String(input.tool_name ?? input.toolName ?? '')) };
   if (event !== 'PreToolUse') return {};
   const tool = input.tool_name || input.toolName || '';
+  // 失敗裁示閘：連續失敗達 ask 閾值且未取得老闆決定時，改動類工具先問一次（唯讀查證不受閘）。
+  const gate = failureAskGate(ctx.root, input, ctx);
+  if (gate && (isWriteTool(tool) || SHELL_TOOL_RE.test(tool))) {
+    markFailureAsked(ctx.root, gate.session, gate.node);
+    return { ask: `${gate.node} 段已連續失敗 ${gate.count} 次——先以 AskUserQuestion 向老闆取得「回退重審」或「留在本段續行」的決定，再繼續改動。回退去處：${FAIL_GUIDE[gate.node] ?? '同段內換做法'}` };
+  }
   const toolInput = input.tool_input ?? {};
   if (SHELL_TOOL_RE.test(tool)) {
     let command = toolInput.command ?? toolInput.cmd ?? '';
@@ -923,6 +1000,21 @@ function sessionOf(input) {
   return id ? id.trim() : null;
 }
 const interviewApplies = (root, sessionId) => !!(sessionId && root && !/^sess_subagent_/.test(sessionId) && safeWorkspaceRoot(root) && existsSync(join(root, '.shiftblame', 'tmp')));
+
+// 失敗裁示閘發出 ask 時記錄已問過（askedAt），同一輪升級只問一次。
+function markFailureAsked(root, sessionId, node) {
+  if (!root || !sessionId || !node) return;
+  const file = hookRecordsPath(root);
+  const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
+  if (!release) return;
+  try {
+    const st = readHookRecords(root);
+    if (st.failureNudge?.session === sessionId && st.failureNudge?.node === node) {
+      st.failureNudge.askedAt = new Date().toISOString();
+      writeAtomic(file, JSON.stringify(st, null, 2));
+    }
+  } finally { release(); }
+}
 
 // 先算決策，再記錄，最後輸出。防護本身出錯時放行，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 let result = {};
@@ -952,7 +1044,11 @@ try {
       interview = interviewStatus(root, sessionId);
     } catch (error) { logError(root, event, 'interview', error); }
   }
-  const ctx = { cwd, root, health, interview, source: typeof input.source === 'string' ? input.source : null };
+  let failure = null; // PostToolUseFailure 累計、PostToolUse 歸零——結果交給 decide 注入回退引導
+  if ((event === 'PostToolUseFailure' || event === 'PostToolUse') && health?.kind === 'active') {
+    try { failure = bumpFailure(root, sessionId, health.state.node, event === 'PostToolUse'); } catch (error) { logError(root, event, 'failure', error); }
+  }
+  const ctx = { cwd, root, health, interview, failure, source: typeof input.source === 'string' ? input.source : null };
   try { result = decide(event, input, ctx); } catch (error) { result = {}; logError(root, event, 'decide', error); }
   try { record(root, event); } catch (error) { logError(root, event, 'record', error); }
   if (event === 'UserPromptSubmit') {

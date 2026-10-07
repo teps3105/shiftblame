@@ -25,7 +25,7 @@ function unchangedG1Approval(root, st) {
   } catch { return false; }
 }
 // Hooks store bounded counters and heartbeat evidence only.
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'compactNudge'];
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'compactNudge', 'failureNudge', 'suspect'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st, root) {
@@ -38,6 +38,11 @@ function hooksOnly(st, root) {
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
   if (Object.hasOwn(st, 'compactNudge') && !(exactKeys(st.compactNudge, ['session', 'at']) && typeof st.compactNudge.session === 'string' && st.compactNudge.session.length > 0 && timestamp(st.compactNudge.at))) return false;
+  if (Object.hasOwn(st, 'failureNudge')) {
+    const fn = st.failureNudge;
+    if (!(exactKeys(fn, ['session', 'node', 'count', 'at', ...(Object.hasOwn(fn, 'askedAt') ? ['askedAt'] : [])]) && typeof fn.session === 'string' && fn.session.length > 0 && typeof fn.node === 'string' && fn.node.length > 0 && nonNegativeInt(fn.count) && timestamp(fn.at) && (!Object.hasOwn(fn, 'askedAt') || timestamp(fn.askedAt)))) return false;
+  }
+  if (Object.hasOwn(st, 'suspect') && !(objectRecord(st.suspect) && Object.entries(st.suspect).every(([k, v]) => ['1', '2', '3'].includes(k) && timestamp(v)))) return false;
   return true;
 }
 
