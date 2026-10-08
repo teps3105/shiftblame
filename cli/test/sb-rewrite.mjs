@@ -37,7 +37,7 @@ const fail = (files, patterns) => {
 {
   const r = fixture({ withDocs: false }).run('rewrite');
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /無 README／docs／SOP／ROADMAP——文件檢查不適用/);
+  assert.match(r.stdout, /無 README／docs／\.shiftblame\/SOP／ROADMAP——文件檢查不適用/);
   const empty = fixture().run('rewrite');
   assert.equal(empty.status, 1, 'docs/ 存在即適用檢查');
   assert.match(empty.stderr, /缺少 docs\/索引\.md/);
@@ -126,7 +126,7 @@ const fail = (files, patterns) => {
   fail({ '索引.md': IDX('1-核心/1.1-a.md'), '1-核心/1.1-a.md': doc('1.1 a') + '\nTODO：補上驗證指令。\n' }, [/佔位符殘留/]);
 }
 
-// —— 7. 根檔 README：存在即查重點前置與長度（不查暗語——SOP 記載 sb 操作合法）＋結構零變化 ——
+// —— 7. 根檔 README：形象文件全套三判準（重點前置＋長度＋治理暗語——形象文件不得承載治理與規範職能）＋結構零變化 ——
 {
   const f = fixture({ withDocs: false });
   const r1 = (() => { write(join(f.cwd, 'README.md'), '# 專案\n\n安裝：`npm i`。\n'); return f.run('rewrite'); })();
@@ -140,6 +140,24 @@ const fail = (files, patterns) => {
   assert.equal(r3.status, 1);
   assert.match(r3.stderr, /重寫後標題序列與上一份快照完全相同/);
   assert.match(r3.stderr, /小幅修正直接編輯檔案即可/);
+  // README 治理暗語擋：形象文件寫成治理／規範文件的機械信號；jargon-allow 豁免可用
+  const g = fixture({ withDocs: false });
+  write(join(g.cwd, 'README.md'), `# 專案\n\n${LEAD}\n\n## 流程\n\n提交前先跑 sb commitmsg 發章。\n`);
+  const r4 = g.run('rewrite');
+  assert.equal(r4.status, 1, 'README 暗語擋');
+  assert.match(r4.stderr, /README\.md.*治理暗語（sb 命令）/);
+  write(join(g.cwd, 'README.md'), `---\njargon-allow: true\n---\n# 專案\n\n${LEAD}\n\n## 發章流程\n\n提交前先跑 sb commitmsg 發章。\n`);
+  assert.equal(g.run('rewrite').status, 0, 'jargon-allow 豁免 README 暗語');
+}
+
+// —— 7c. README 唯一性：根目錄大小寫變體並存擋（形象文件全專案唯一）——NTFS 大小寫不敏感，僅非 Windows 可建兩檔
+if (process.platform !== 'win32') {
+  const f = fixture({ withDocs: false });
+  write(join(f.cwd, 'README.md'), `# 專案\n\n${LEAD}\n`);
+  write(join(f.cwd, 'readme.md'), `# 專案\n\n${LEAD}\n`);
+  const r = f.run('rewrite');
+  assert.equal(r.status, 1, 'README 變體並存擋');
+  assert.match(r.stderr, /README 位置違例：根目錄大小寫變體並存/);
 }
 
 // —— 7b. 結構零變化：docs/ 檔案同判準；首次執行無快照不檢查結構變化 ——
@@ -204,6 +222,17 @@ fail({ '索引.md': IDX('2-開發/1.1-x.md'), '2-開發/1.1-x.md': '# x\n' }, [/
   write(join(f.docs, '1-核心/1.1-a.md'), doc('1.1 a'));
   git('add', 'docs');
   assert.equal(f.run('commitmsg', 'docs: 整檔重寫補重點前置').status, 0);
+  // 位置違例：staged 的 SOP.md 任一位置皆擋（權威位置 .shiftblame/ 不入庫）
+  write(join(f.cwd, 'SOP.md'), `# 操作規範\n\n${LEAD}\n`);
+  git('add', 'SOP.md');
+  const misplaced = f.run('commitmsg', 'docs: 加入操作規範');
+  assert.equal(misplaced.status, 1, 'staged 根目錄 SOP.md 擋：' + misplaced.stdout);
+  assert.match(misplaced.stderr, /位置違例——staged 含 SOP／ROADMAP/);
+  write(join(f.docs, 'SOP.md'), `# 操作規範\n\n${LEAD}\n`);
+  git('add', 'docs/SOP.md');
+  const misplacedDocs = f.run('commitmsg', 'docs: 加入 docs 操作規範');
+  assert.equal(misplacedDocs.status, 1, 'staged docs/SOP.md 擋');
+  assert.match(misplacedDocs.stderr, /docs\/SOP\.md/);
 }
 
 // —— 11. 收尾閘：slug 期間動過文件時，end 前須過同一判準 ——
@@ -230,6 +259,48 @@ fail({ '索引.md': IDX('2-開發/1.1-x.md'), '2-開發/1.1-x.md': '# x\n' }, [/
   write(join(f.cwd, 'README.md'), `# 專案\n\n${LEAD}\n\n安裝：\`npm i\`。\n`);
   git('add', '.'); git('commit', '-m', 'docs: 整檔重寫');
   assert.equal(f.run('end', '--adversarial', '--boss-ok').status, 0);
+}
+
+// —— 12. SOP／ROADMAP 位置違例與 .shiftblame/ 三判準：根目錄／docs/ 皆擋；權威位置 .shiftblame/ 全套判準＋快照 ——
+{
+  // 根目錄 SOP.md／ROADMAP.md：位置違例
+  {
+    const f = fixture({ withDocs: false });
+    write(join(f.cwd, 'SOP.md'), `# 專案操作規範\n\n${LEAD}\n`);
+    write(join(f.cwd, 'ROADMAP.md'), `# 產品方向\n\n${LEAD}\n`);
+    const r = f.run('rewrite');
+    assert.equal(r.status, 1, '根目錄 SOP／ROADMAP 位置違例擋');
+    assert.match(r.stderr, /SOP\.md——位置違例：SOP／ROADMAP 的權威位置是 \.shiftblame\/SOP\.md/);
+    assert.match(r.stderr, /ROADMAP\.md——位置違例：SOP／ROADMAP 的權威位置是 \.shiftblame\/ROADMAP\.md/);
+  }
+  // docs/ 下的 SOP.md：位置違例（不落編號規則的訊息，直接指出權威位置）
+  {
+    const f = fixture();
+    write(join(f.docs, '索引.md'), IDX('1-核心/1.1-a.md'));
+    write(join(f.docs, '1-核心/1.1-a.md'), doc('1.1 a'));
+    write(join(f.docs, '1-核心/SOP.md'), `# 操作規範\n\n${LEAD}\n`);
+    const r = f.run('rewrite');
+    assert.equal(r.status, 1, 'docs/ 內 SOP.md 位置違例擋');
+    assert.match(r.stderr, /docs\/1-核心\/SOP\.md——位置違例：SOP／ROADMAP 的權威位置是 \.shiftblame\//);
+  }
+  // 權威位置 .shiftblame/SOP.md：三判準全套（缺 lead 擋、治理暗語擋）＋過關時納入快照
+  {
+    const f = fixture({ withDocs: false });
+    write(join(f.cwd, '.shiftblame', 'SOP.md'), '# 專案操作規範\n\n## 環境\n\n（填環境。）\n');
+    const r1 = f.run('rewrite');
+    assert.equal(r1.status, 1, '.shiftblame/SOP.md 缺 lead 擋');
+    assert.match(r1.stderr, /\.shiftblame\/SOP\.md——H1 後第一個標題前沒有一段當下摘要/);
+    assert.match(r1.stderr, /佔位符殘留/);
+    write(join(f.cwd, '.shiftblame', 'SOP.md'), `# 專案操作規範\n\n${LEAD}\n\n## 發章\n\n提交前跑 sb commitmsg 發章。\n`);
+    const r2 = f.run('rewrite');
+    assert.equal(r2.status, 1, '.shiftblame/SOP.md 治理暗語擋');
+    assert.match(r2.stderr, /\.shiftblame\/SOP\.md.*治理暗語（sb 命令）/);
+    write(join(f.cwd, '.shiftblame', 'SOP.md'), `# 專案操作規範\n\n${LEAD}\n\n## 發章與撤章\n\n提交前以提交印章發章。\n`);
+    assert.equal(f.run('rewrite').status, 0, '.shiftblame/SOP.md 過三判準（無 docs 無 README 亦適用）');
+    const backupRoot = join(f.cwd, '.shiftblame', 'tmp', 'rewrite-backup');
+    const stamp = readdirSync(backupRoot)[0];
+    assert.ok(existsSync(join(backupRoot, stamp, '.shiftblame', 'SOP.md')), '.shiftblame/SOP.md 納入快照');
+  }
 }
 
 console.log('sb-rewrite: 全部場景通過');

@@ -59,9 +59,9 @@ Given／When／Then 是驗收描述工具。測試通過、檔案存在或工具
 
 ## 文件與提交
 
-正式文件依 [DOCS](assets/DOCS.md) 撰寫：參照型（README、docs/、SOP、ROADMAP）與契約型（G 檔、SLUG）分型維護；同構合併、當下自洽、單一機制單一描述、人可讀。參照型文件的實質變更與實作同批整檔重寫，常駐於 main 與 slug 所有模式，義務在提交前——提交閘（sb commitmsg）對 staged 動到文件的提交先驗文件判準，未過不發章；小幅修正可直接編輯。同一事實指定權威來源並引用，文件品質以正確性、可理解性與操作用途判定。
+正式文件依 [DOCS](assets/DOCS.md) 撰寫：參照型（根 README、docs/、.shiftblame/SOP.md、.shiftblame/ROADMAP.md）與契約型（G 檔、SLUG，住 <slug> 與 archive/<slug>）分型維護；同構合併、當下自洽、單一機制單一描述、人可讀。參照型文件的實質變更與實作同批整檔重寫，常駐於 main 與 slug 所有模式，義務在提交前——提交閘（sb commitmsg）對 staged 動到文件的提交先驗文件判準，未過不發章；小幅修正可直接編輯。同一事實指定權威來源並引用，文件品質以正確性、可理解性與操作用途判定。
 
-G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP／ROADMAP 屬參照型，依 rewrite 整檔重寫；重大治理變更才逐條全審。整理方法見 [rewrite](../rewrite/SKILL.md)。
+G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆疊互相衝突的版本。SOP（規範）與 ROADMAP（路線）屬參照型非治理文件，權威位置 .shiftblame/SOP.md 與 .shiftblame/ROADMAP.md——根目錄或 docs/ 的同名檔是位置違例；依 rewrite 整檔重寫；重大治理變更才逐條全審。整理方法見 [rewrite](../rewrite/SKILL.md)。
 
 工作過程、診斷、審計報告及交接放在 <repo>/.shiftblame/tmp/；.shiftblame/ 不入庫。對話授權由平台保存。工作帳本防自動壓縮丟訊息：上下文過窗口 80%（hook 會注入提醒）起，事件發生當下即時追加一條一行——[否決] 方案與原因、[修正] 使用者原話、[證據] 驗證結果與證據位置、[未決] 待解事項；活動 slug 寫 .shiftblame/tmp/<slug>/ledger.md，main 寫 .shiftblame/tmp/main/<task>/ledger.md。壓縮續接時 hook 注入帳本路徑與末 30 行，據此重讀正式來源接續；未決事項已落 G 檔或交接的原行改標 [已解]，slug 切段時 sb next 會列出未決清單。保存／恢復見 [save](../save/SKILL.md)、[load](../load/SKILL.md)，丟棄見 [dice](../dice/SKILL.md)。
 
@@ -69,7 +69,7 @@ G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆�
 
 ## 需要時再讀
 
-啟動先確認目標 repo、分支、工作樹與 sb state；存在活動流程時載入其 SLUG 與當前需要的 G 檔。SOP／ROADMAP 及過往決策依任務相關性讀取。恢復時用檔案和 git 核對關鍵狀態，摘要用於定位，正式來源用於核對；依相關性及變更範圍選擇讀取內容。
+啟動先確認目標 repo、分支、工作樹與 sb state；存在活動流程時載入其 SLUG 與當前需要的 G 檔。.shiftblame/SOP.md、.shiftblame/ROADMAP.md 及過往決策依任務相關性讀取——SOP 與 ROADMAP 指的就是 .shiftblame/ 下這兩份，不往根目錄找。恢復時用檔案和 git 核對關鍵狀態，摘要用於定位，正式來源用於核對；依相關性及變更範圍選擇讀取內容。
 
 - 產品訪談紀錄格式：[INTERVIEW](assets/INTERVIEW.md)。
 - 翻譯需求、研究技術、定義可觀察結果：[G1](references/G1.md)；治理詞義有歧義時查 [GLOSSARY](references/GLOSSARY.md)。
@@ -78,4 +78,4 @@ G1 的正式契約與執行證據分區；更新對應 AC／技術項，不堆�
 - 難定位、反覆修補或原症狀未消失：[DEBUG](references/DEBUG.md)。
 - CLI 操作及保護邊界：[MECHANISMS](references/MECHANISMS.md)；main 保存或恢復：[HANDOFF](references/HANDOFF.md)。
 - 模組邊界、介面選擇或跨模組重構：[STRUCTURE](references/STRUCTURE.md)。
-- 編修方法、術語或長期決策文件：[DOCS](assets/DOCS.md)；建立專案操作或方向文件：[SOP](assets/SOP.md)、[ROADMAP](assets/ROADMAP.md)。
+- 編修方法、術語或長期決策文件：[DOCS](assets/DOCS.md)；建立專案操作或方向文件：把 [SOP](assets/SOP.md)、[ROADMAP](assets/ROADMAP.md) 範本複製到 .shiftblame/SOP.md、.shiftblame/ROADMAP.md（權威位置，不入庫）。

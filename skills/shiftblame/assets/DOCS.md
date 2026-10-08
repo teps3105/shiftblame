@@ -8,7 +8,20 @@ revision: 2.9.3
 
 ## 文件分型
 
-治理文件（.shiftblame 流程內的 G 檔與 SLUG）是契約型——定義區、封存與回指承載可追溯性，寫法僅限流程文件。README、docs/、SOP 與 ROADMAP 是參照型——當下自洽、以整檔重寫維護、重點前置；治理文件的累積式寫法不得套用到參照型文件。編修參照型文件一律走 [rewrite](../../rewrite/SKILL.md) 的機械流程，主要承載在每次提交前（提交閘），不在收尾才查。
+每種文件一種職能，位置與規範隨職能而定——一個職能一份文件，不混寫：
+
+| 型別 | 位置 | 性質與規範核心 |
+| --- | --- | --- |
+| 治理文件 | `.shiftblame/<slug>/` | 契約型：G 檔與 SLUG，定義區、封存與回指承載可追溯性，寫法僅限流程文件。 |
+| 歸檔治理文件 | `.shiftblame/archive/<slug>/` | 契約型歸檔：收尾後凍結的 G 檔與 SLUG，供對照。 |
+| 規範文件 SOP | `.shiftblame/SOP.md` | 參照型：持續適用的環境、入口與操作方法，欄位制，每項掛命令、路徑或可觀察結果。 |
+| 路線文件 ROADMAP | `.shiftblame/ROADMAP.md` | 參照型：已採用方向、限制與未完成計畫，建議與已批准分開。 |
+| 專案文件 | `docs/` | 參照型：編號文件集，索引為入口，每份一種讀者任務。 |
+| 形象文件 README | 根目錄，全專案唯一（子專案的 README 不在根目錄） | 參照型：專案是什麼、給誰用、怎麼開始。 |
+
+治理文件的累積式寫法不得套用到參照型文件——治理語彙（時點、G 檔、sb 命令、`.shiftblame/` 路徑）入參照型文件即違例，確需引用以 frontmatter `jargon-allow` 聲明。SOP 與 ROADMAP 不是治理文件：治理語意不擴張到它們，住 `.shiftblame/` 是位置約定，不是身分改變。參照型文件當下自洽、以整檔重寫維護、重點前置；編修一律走 [rewrite](../../rewrite/SKILL.md) 的機械流程，主要承載在每次提交前（提交閘），不在收尾才查。
+
+README 的形象職能是入口：讓讀者很快知道專案是什麼、給誰用、怎麼開始。它不是規範文件（操作規範歸 SOP）、不是治理文件（流程與授權歸 G 檔與 SLUG）、也不是專案文件（細節歸 docs/）——越界內容以回指交給權威位置，README 只留形象與入口。根目錄或 docs/ 出現 SOP.md／ROADMAP.md 是位置違例：正確位置的檔案才有資格被檢查。
 
 ## 撰寫規範
 
@@ -31,6 +44,6 @@ revision: 2.9.3
 
 ## 驗證
 
-`sb rewrite` 機械檢查：docs/ 結構（編號、層級、索引對帳、結構零變化）與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符殘留）；豁免以 frontmatter 聲明（`lead-allow`／`length-allow`／`jargon-allow`）。提交閘（`sb commitmsg` 於 staged 動到參照型文件時）與收尾閘（`sb end` 於 slug 期間動過文件時）執行同一判準——未過檔先重寫。
+`sb rewrite` 機械檢查：位置違例（根目錄／docs/ 的 SOP.md 與 ROADMAP.md、根目錄 README 大小寫變體並存）、docs/ 結構（編號、層級、索引對帳、結構零變化）與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符殘留）——涵蓋 README、docs/ 與 `.shiftblame/SOP.md`、`.shiftblame/ROADMAP.md`；豁免以 frontmatter 聲明（`lead-allow`／`length-allow`／`jargon-allow`）。提交閘（`sb commitmsg` 於 staged 動到參照型文件時；staged 的 SOP／ROADMAP 任一位置皆擋）與收尾閘（`sb end` 於 slug 期間動過文件時）執行同一判準——未過檔先重寫。
 
 機械檢查只證明結構形式：可理解性、單一描述、描述與實況一致，由 rewrite 回讀與時點審查以「離開當前對話的讀者」身分核對。方法大幅調整時，以代表任務檢查應觸發與不應觸發的情境；刪改規則依實際問題及執行結果，避免把單次成功宣稱為普遍效益。

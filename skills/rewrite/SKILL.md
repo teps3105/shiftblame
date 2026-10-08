@@ -1,6 +1,6 @@
 ---
 name: rewrite
-description: 參照型文件（README、docs、SOP、ROADMAP）的唯一編輯入口——以 sb rewrite 快照後整檔重寫為當下自洽內容；提交動文件前與收尾前的必經整理。
+description: 參照型文件（根 README、docs/、.shiftblame/SOP.md、.shiftblame/ROADMAP.md）的唯一編輯入口——以 sb rewrite 快照後整檔重寫為當下自洽內容；提交動文件前與收尾前的必經整理。
 ---
 # 重寫參照型文件
 
@@ -10,7 +10,7 @@ description: 參照型文件（README、docs、SOP、ROADMAP）的唯一編輯�
 
 常駐於所有工作模式——main 直接作業與 slug 流程都適用，義務在提交前不在收尾：
 
-- 變更影響到 README、docs/、SOP 或 ROADMAP 的描述時，與實作同批。
+- 變更影響到根 README、docs/、`.shiftblame/SOP.md` 或 `.shiftblame/ROADMAP.md` 的描述時，與實作同批。SOP 與 ROADMAP 的權威位置是 `.shiftblame/`——根目錄或 docs/ 的同名檔是位置違例，`sb rewrite` 會擋。
 - 提交動到參照型文件——提交閘（sb commitmsg）先驗文件判準，未過不發章；實質內容變更（功能、行為、方向）須先整檔重寫再提交，錯字與路徑等小幅修正可直接編輯。
 - slug 收尾（sb end）前，本 slug 期間動過的文件須過同一判準（保險——正常情況在提交時已過）。
 
@@ -25,7 +25,7 @@ description: 參照型文件（README、docs、SOP、ROADMAP）的唯一編輯�
 
 G1 已封存的契約改義須重新核准。G2／G3 的技術修正只更新受影響內容；執行證據依穩定 AC／技術項更新，避免同一事項留下矛盾版本。需要保留對照且來源不在 git 時，先保留必要原稿至 tmp，並保護使用者材料。
 
-SLUG 更新原有狀態與索引，保留需求來源、未完工作與有效技術債。SOP／ROADMAP 屬參照型文件，依本節機械流程整檔重寫；sb sopreview 可記錄治理審查範圍與結論，重審由規則及方向的實際變更觸發。
+SLUG 更新原有狀態與索引，保留需求來源、未完工作與有效技術債。SOP（規範文件）與 ROADMAP（路線文件）屬參照型而非治理文件——治理語意不擴張到它們，治理文件是 `<slug>` 與 `archive/<slug>` 下的 G 檔與 SLUG；兩者住 `.shiftblame/`（SOP.md、ROADMAP.md），依本節機械流程整檔重寫；sb sopreview 可記錄審查範圍與結論，重審由規則及方向的實際變更觸發。
 
 回讀改動及直接依賴，確認引用、契約與實況一致；依 [DOCS](../shiftblame/assets/DOCS.md) 的撰寫規範核對——同構合併、當下自洽、單一機制單一描述、人可讀；`sb rewrite` 同時檢查 docs/ 結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符殘留）。
 

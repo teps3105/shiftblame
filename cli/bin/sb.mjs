@@ -66,7 +66,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1）、時點 2 在 quality→build（審 G2）——獨立審查通過即推進（--adversarial），不等使用者判定；時點 3 在 verify 驗收完成後（審驗收結果）——獨立審查加使用者終審。\n--adversarial 記錄已完成的真實審查；--boss-ok 只屬於時點 3 出口（--new-ms／end），承接使用者終審。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 結束整個 slug：歸檔並合併回基底，刪本機工作分支；SLUG 里程碑清單還有後續未完成里程碑時擋下。推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑，slug 與工作分支保留。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到參照型文件 README／docs/ 時須先過文件閘；staged 的 SOP／ROADMAP 任一位置皆違例——權威位置 .shiftblame/）\n  sb sopreview \"<範圍與結論>\"           選用的規範／路線文件（.shiftblame/SOP.md、ROADMAP.md）審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （位置違例＋docs/ 結構＋README／docs／.shiftblame/SOP／ROADMAP 三判準）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1）、時點 2 在 quality→build（審 G2）——獨立審查通過即推進（--adversarial），不等使用者判定；時點 3 在 verify 驗收完成後（審驗收結果）——獨立審查加使用者終審。\n--adversarial 記錄已完成的真實審查；--boss-ok 只屬於時點 3 出口（--new-ms／end），承接使用者終審。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 結束整個 slug：歸檔並合併回基底，刪本機工作分支；SLUG 里程碑清單還有後續未完成里程碑時擋下。推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑，slug 與工作分支保留。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -682,12 +682,17 @@ function ensureWorkspaceIgnored() {
   appendFileSync(giPath, (gi && !gi.endsWith('\n') ? eol : '') + '.shiftblame/' + eol);
 }
 
-// —— 參照型文件可讀性信號（README／docs／SOP／ROADMAP）——
+// —— 參照型文件可讀性信號（形象 README／專案 docs/／規範 SOP／路線 ROADMAP）——
 // 治理文件的累積式寫法（定義區、封存、回指）外溢到參照型文件會長成流水帳：
 // 開頭無當下摘要、以補丁追加變更、治理暗語混入。三個機械判準由 sb rewrite 與
 // 提交閘／收尾閘執行同一套判準，逼出整檔重寫而非追加；豁免以 frontmatter 明示
 // （lead-allow／length-allow／jargon-allow）。
-const DOC_ROOT_FILES = ['README.md', 'SOP.md', 'ROADMAP.md'];
+// 文件分型與權威位置：治理文件＝.shiftblame/<slug>/（歸檔 archive/<slug>/，契約型）；
+// 形象文件 README＝根目錄全專案唯一（子專案的 README 不在根目錄）；專案文件＝docs/；
+// 規範文件 SOP 與路線文件 ROADMAP＝.shiftblame/ 下——根目錄或 docs/ 出現
+// SOP.md／ROADMAP.md 即位置違例（正確位置的檔案才有資格被檢查）。
+const DOC_ROOT_FILES = ['README.md'];
+const SB_REF_DOCS = ['SOP.md', 'ROADMAP.md']; // 規範／路線文件：權威位置 .shiftblame/
 const DOC_LEAD_MIN_HAN = 20; // 重點前置：H1 後摘要段的最少中文字數
 const DOC_LEAD_MIN_WORDS = 15; // 或最少英文詞數（中英混排任一達標即過）
 const DOC_LENGTH_BUDGET = 300; // 長度預算：可見行數上限，超過須 length-allow 聲明權威長參照
@@ -730,7 +735,7 @@ function leadProblem(lines) {
   return null;
 }
 
-// sb rewrite——文件編輯的唯一入口：備份文件集至 tmp 後跑結構＋可讀性判準，代理依報告
+// sb rewrite——文件編輯的唯一入口：備份文件集至 tmp 後跑位置違例＋結構＋可讀性判準，代理依報告
 // 整檔重寫至 pass。檢查核心 docsFindings 為唯讀，由本命令與提交閘（cmdCommitmsg）、
 // 收尾閘（cmdEnd）共用同一判準。結構檢查（docs/ 文件集）：非 md 檔不得入 docs/；
 // 除索引.md 外全編號（頂層 N-大節／文件、節內 N.M-文件）；編號最多兩層（N.M，檔名與
@@ -756,6 +761,8 @@ function docsFindings() {
           walk(join(dir, e.name), r);
         } else if (!/\.md$/i.test(e.name)) {
           bad.push(`docs/${r}——非 md 檔不得置於 docs/`);
+        } else if (SB_REF_DOCS.some((n) => n.toLowerCase() === e.name.toLowerCase())) {
+          bad.push(`docs/${r}——位置違例：SOP／ROADMAP 的權威位置是 .shiftblame/（規範／路線文件不進 docs/；搬移內容後刪除本檔）`);
         } else if (rel === '' && e.name === '索引.md') {
           mdFiles.push(r);
         } else if (rel === '') {
@@ -818,7 +825,8 @@ function docsFindings() {
       for (const f of mdFiles) if (f !== '索引.md' && !targets.has(f)) bad.push(`索引未收錄：docs/${f}`);
     }
   }
-  // —— 可讀性三判準：docs/ 每份 md（索引.md 豁免重點前置與暗語）＋根檔 README／SOP／ROADMAP ——
+  // —— 可讀性三判準：docs/ 每份 md（索引.md 豁免重點前置與暗語）＋根檔 README＋.shiftblame/SOP／ROADMAP ——
+  // 全套 lead／length／jargon（豁免走 frontmatter）；README 查暗語＝形象文件不得承載治理與規範職能的機械面。
   const auditFile = (label, abs, { lead = true, jargon = false } = {}) => {
     let text;
     try { text = readFileSync(abs, 'utf8'); } catch { return; }
@@ -856,10 +864,20 @@ function docsFindings() {
     const isIndex = f === '索引.md';
     auditFile(`docs/${f}`, join(docsDir, f), { lead: !isIndex, jargon: !isIndex });
   }
+  for (const name of SB_REF_DOCS) {
+    const sbPath = join(SB_DIR, name);
+    if (existsSync(sbPath)) auditFile(`.shiftblame/${name}`, sbPath, { lead: true, jargon: true });
+  }
   const rootEntries = (() => { try { return readdirSync(ROOT); } catch { return []; } })();
+  const readmes = rootEntries.filter((e) => /^readme\.md$/i.test(e));
+  if (readmes.length > 1) bad.push(`README 位置違例：根目錄大小寫變體並存（${readmes.join('、')}）——形象文件全專案唯一（子專案的 README 不在根目錄）`);
+  for (const name of SB_REF_DOCS) {
+    const misplaced = rootEntries.find((e) => e.toLowerCase() === name.toLowerCase());
+    if (misplaced) bad.push(`${misplaced}——位置違例：SOP／ROADMAP 的權威位置是 .shiftblame/${name}（規範／路線文件不住根目錄；搬移內容後刪除本檔，.shiftblame/ 不入庫）`);
+  }
   for (const name of DOC_ROOT_FILES) {
     const actual = rootEntries.find((e) => e.toLowerCase() === name.toLowerCase());
-    if (actual) auditFile(actual, join(ROOT, actual));
+    if (actual) auditFile(actual, join(ROOT, actual), { lead: true, jargon: true });
   }
   return bad;
 }
@@ -871,10 +889,13 @@ function cmdRewrite() {
   const docsDir = join(ROOT, 'docs');
   const rootEntries = (() => { try { return readdirSync(ROOT); } catch { return []; } })();
   const roots = DOC_ROOT_FILES.map((name) => rootEntries.find((e) => e.toLowerCase() === name.toLowerCase())).filter(Boolean);
+  const sbDocs = SB_REF_DOCS.filter((name) => existsSync(join(SB_DIR, name)));
+  const misplacedRoots = SB_REF_DOCS.filter((name) => rootEntries.some((e) => e.toLowerCase() === name.toLowerCase()));
   const hasDocs = existsSync(docsDir);
-  if (!hasDocs && !roots.length) fin(['無 README／docs／SOP／ROADMAP——文件檢查不適用（文件集建立後 sb rewrite 為唯一編輯入口）']);
+  // 位置違例（根目錄的 SOP／ROADMAP）不構成「無文件集」——即使其餘全空也要進檢查報違例。
+  if (!hasDocs && !roots.length && !sbDocs.length && !misplacedRoots.length) fin(['無 README／docs／.shiftblame/SOP／ROADMAP——文件檢查不適用（文件集建立後 sb rewrite 為唯一編輯入口）']);
   const backupRoot = join(TMP, 'rewrite-backup');
-  const rels = listDocRels(docsDir, hasDocs);
+  const rels = listDocRels(docsDir, hasDocs).concat(sbDocs.map((name) => `.shiftblame/${name}`));
   // 上一份快照＝結構比對基準；本命令新建立的快照不參與（重寫確認輪的基準是重寫前的版本）。
   let prev = null;
   try {
@@ -898,6 +919,10 @@ function cmdRewrite() {
   mkdirSync(backupDir, { recursive: true });
   if (hasDocs) cpSync(docsDir, join(backupDir, 'docs'), { recursive: true });
   for (const name of roots) cpSync(join(ROOT, name), join(backupDir, name));
+  for (const name of sbDocs) {
+    mkdirSync(join(backupDir, '.shiftblame'), { recursive: true });
+    cpSync(join(SB_DIR, name), join(backupDir, '.shiftblame', name));
+  }
   const bad = docsFindings();
   for (const rel of stale) bad.push(`${rel}——重寫後標題序列與上一份快照完全相同：沿舊目錄逐節翻寫是抄錄——先從讀者任務重新推導章節再落筆；小幅修正直接編輯檔案即可（不走 sb rewrite）`);
   if (bad.length) die([
@@ -905,7 +930,7 @@ function cmdRewrite() {
     ...bad,
   ]);
   fin([
-    `文件檢查通過${prev ? '（結構相對上一份快照有變化）' : '（首次執行——下一輪起比對結構變化）'}${hasDocs ? `：docs/ ${folderCount(docsDir)} 節、${mdCount(docsDir)} 份` : ''}${roots.length ? `；根檔：${roots.join('、')}` : ''}`,
+    `文件檢查通過${prev ? '（結構相對上一份快照有變化）' : '（首次執行——下一輪起比對結構變化）'}${hasDocs ? `：docs/ ${folderCount(docsDir)} 節、${mdCount(docsDir)} 份` : ''}${roots.length ? `；根檔：${roots.join('、')}` : ''}${sbDocs.length ? `；.shiftblame/：${sbDocs.join('、')}` : ''}`,
     `原稿快照：${backupDir}`,
     '參照型文件以整檔重寫維護——不在原檔上補丁；提交與收尾閘執行同一判準',
   ]);
@@ -1320,9 +1345,10 @@ function cmdUnlockAbsent() {
   die(['sb unlock 不存在；依 shiftblame:think 理解需求後承接已授權工作。決策出口使用 --boss-ok 與對應獨立審查。']);
 }
 
-// Optional review record for affected governance documents.
-function govDocFiles() {
-  return ['SOP.md','ROADMAP.md'].filter(n=>existsSync(join(SB_DIR,n)));
+// 規範／路線文件（SOP／ROADMAP）的現存清單——權威位置 .shiftblame/，屬參照型非治理文件
+// （治理文件＝<slug>／archive/<slug> 下的 G 檔與 SLUG）。
+function refDocFiles() {
+  return SB_REF_DOCS.filter((n) => existsSync(join(SB_DIR, n)));
 }
 
 function gitDiffStats(base, head) {
@@ -1351,11 +1377,11 @@ function cmdSopreview(answers) {
   if (!q) die(['請說明已審查的範圍與結論。']);
   const current=requireHealthyState();
   const st=current.state ?? {};
-  const files=Object.fromEntries(govDocFiles().map(n=>[n,sha256Text(readFileSync(join(SB_DIR,n),'utf8'))]));
+  const files=Object.fromEntries(refDocFiles().map(n=>[n,sha256Text(readFileSync(join(SB_DIR,n),'utf8'))]));
   st.sopReview={...(current.kind==='active'?{ms:st.ms}:{}),at:new Date().toISOString(),answers:q.slice(0,200),files,...(current.kind!=='active'&&gitHeadCommit()?{head:gitHeadCommit()}: {})};
   mkdirSync(SB_DIR,{recursive:true});
   writeState(st);
-  fin(['治理文件審查已記錄：'+q]);
+  fin(['規範／路線文件審查已記錄：'+q]);
 }
 
 // 收尾依序完成歸檔、基底確認、合併、核對及分支清理。
@@ -1643,7 +1669,11 @@ function cmdCommitmsg(msg) {
       .split('\n').map((l) => l.trim()).filter(Boolean);
     const sys = staged.filter((p) => /^\.shiftblame(?:\/|$)/i.test(p));
     if (sys.length) die([`系統檔不入庫——staged 含 ${sys.slice(0, 5).join('、')}${sys.length > 5 ? ` 等 ${sys.length} 檔` : ''}（.shiftblame/ 須列入 .gitignore；先 git restore --staged 移除再發章）`]);
-    // 文件閘：staged 動到參照型文件（README／docs／SOP／ROADMAP）時，文件集須先過 sb rewrite 判準——
+    // 位置違例：SOP／ROADMAP 的權威位置是 .shiftblame/（不入庫）——任何位置的 staged 同名檔
+    // 都是把違例位置合法化，直接擋下；規範／路線內容搬 .shiftblame/ 後 restore --staged 移除。
+    const misplacedDocs = staged.filter((p) => SB_REF_DOCS.some((n) => n.toLowerCase() === p.split('/').pop().toLowerCase()));
+    if (misplacedDocs.length) die([`位置違例——staged 含 SOP／ROADMAP（權威位置 .shiftblame/，不入庫）：${misplacedDocs.slice(0, 5).join('、')}${misplacedDocs.length > 5 ? ` 等 ${misplacedDocs.length} 檔` : ''}——規範／路線內容搬 .shiftblame/ 後 git restore --staged 移除再發章；撞名的專案文件請改名`]);
+    // 文件閘：staged 動到參照型文件（根 README／docs/）時，文件集須先過 sb rewrite 判準——
     // 整檔重寫而非補丁的機械承載。hooks 對無章提交硬擋，本閘因此覆蓋所有動文件的提交。
     const docHits = staged.filter(isDocPath);
     if (docHits.length) {
