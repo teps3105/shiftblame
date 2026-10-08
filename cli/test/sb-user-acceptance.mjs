@@ -47,8 +47,8 @@ assert.equal(run('init', 'demo').status, 1, '既有工作區重跑 init 擋（�
 
 assert.equal(state().node, 'requirement', 'init 直接落 requirement（開工授權由 slug 建立與訪談紀錄承載）');
 
-// 非決策邊誤用旗標即擋；requirement→research 機械推進（假需求閘查 G1 AC）
-assert.match(run('next', 'research', '--boss-ok').stderr, /不是使用者決策邊/);
+// 非出口誤用旗標即擋；requirement→research 機械推進（假需求閘查 G1 AC）
+assert.match(run('next', 'research', '--boss-ok').stderr, /不是使用者終審出口/);
 writeFileSync(join(ms, 'G1.md'), G1_BODY + '## 回指記錄\n');
 assert.equal(run('next', 'research').status, 0);
 {
@@ -60,11 +60,11 @@ assert.equal(run('next', 'research').status, 0);
 
 // research→plan：時點 1 邊（審 G1 需求與研究——假研究閘＋對抗＋老闆 pass；過邊即 G1 契約封存）
 writeFileSync(join(ms, 'G2.md'), '# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。');
-assert.match(run('next', 'plan').stderr, /須帶 --boss-ok[\s\S]*先行研究/, '時點 1 等待判定期間可先行研究');
-assert.match(run('next', 'plan', '--boss-ok').stderr, /需時點 1 對抗/);
+assert.match(run('next', 'plan').stderr, /需時點 1 對抗/, '時點 1 缺獨立審查即擋——自主推進仍須審查條目');
+assert.match(run('next', 'plan', '--adversarial', '--boss-ok').stderr, /不是使用者終審出口/, '時點 1 帶使用者章即擋——--boss-ok 只屬時點 3 出口');
 assert.equal(pt('1').status, 0);
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 時點 1 老闆 pass 輸入（research＋對抗完成＝決策邊裁決通道——零推回，對話承載）
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0);
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 時點 1 對抗完成（自主推進——零推回，對話承載）
+assert.equal(run('next', 'plan', '--adversarial').status, 0);
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記
 const g1Hash = state().g1Contract.sha256;
 // plan→quality：機械推進（G2 計畫部分——驗收映射屬機械結構閘）
@@ -85,10 +85,10 @@ assert.equal(run('next', 'requirement').status, 0); // 回 requirement 同 ms �
 writeFileSync(join(ms, 'G1.md'), G1_BODY + '## 回指記錄\n');
 // 重走（老闆新輸入回 requirement 開新輪）：時點 1 重過＋G1 重封存
 assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進（重走輪）');
-assert.match(run('next', 'plan', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
+assert.match(run('next', 'plan', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
 assert.equal(pt('1', 'r2').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究修正確認，推進計畫' });
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '時點 1 重過＋G1 重封存');
+assert.equal(run('next', 'plan', '--adversarial').status, 0, '時點 1 重過＋G1 重封存');
 assert.match(run('next', 'quality', '--adversarial').stderr, /不是對抗邊/, 'plan→quality 機械推進——對抗宣告屬誤用');
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進');
 
@@ -96,7 +96,7 @@ assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進');
 assert.match(run('next', 'build').stderr, /需時點 2 對抗/, 'quality→build＝時點 2 邊——缺對抗即擋');
 assert.equal(pt('2').status, 0, '時點 2 宣告（quality 內——G2 定稿後審計畫與品質）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });
-assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊——G2 契約封存');
+assert.equal(run('next', 'build', '--adversarial').status, 0, '時點 2 過邊——G2 契約封存');
 const g2Hash = state().g2Contract.sha256;
 assert.match(g2Hash, /^[a-f0-9]{64}$/);
 assert.match(run('next', 'verify').stderr, /G3 不存在/, 'G3 未建立即擋（build 段建立實作紀錄）');
@@ -121,16 +121,16 @@ assert.equal(state().ms, '001', 'fail 回走同 ms 開新輪');
 assert.equal(state().rev, 2, '第二次回 requirement 輪次遞增（時序可對照）');
 // 重整後重走：時點 1 重過＋G1 重封存
 assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進（重整輪）');
-assert.match(run('next', 'plan', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
+assert.match(run('next', 'plan', '--adversarial').stderr, /過期|早於同邊/, '舊 1 條目過期即擋（新鮮度核心防護）');
 assert.equal(pt('1', 'r3').status, 0, '重走後新鮮 1 條目（晚於上次同邊推進）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究重整確認，推進計畫' });
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'plan', '--adversarial').status, 0);
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（重走輪）');
 assert.equal(pt('2', 'r3').status, 0, '重走輪新鮮 2 條目（晚於本 ms 進 quality）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質重整確認，進入實作' });
 writeFileSync(join(root, 'seed.txt'), 'seed after rework fix\n');
 commit('seed.txt', 'fix: touch for loop');
-assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 重過（重走輪）');
+assert.equal(run('next', 'build', '--adversarial').status, 0, '時點 2 重過（重走輪）');
 assert.equal(run('next', 'verify').status, 0, 'build→verify 機械推進（重走輪——G3 回指未變的 G2＋樹淨即過）');
 
 // pass 出口一：next --new-ms（出口＝時點 3 對抗條件＋--boss-ok 旗標即章同一邊——時點 3 條目新鮮度機械驗）
@@ -158,13 +158,13 @@ assert.equal(run('next', 'research').status, 0);
 // 時點 1 全套：對抗＋老闆 pass
 assert.equal(pt('1', 'ms2').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' });
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0);
+assert.equal(run('next', 'plan', '--adversarial').status, 0);
 const ms2G1Hash = state().g1Contract.sha256;
 writeFileSync(join(ms2, 'G2.md'), `回指 G1：${ms2G1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=o | 通過判準=r | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，這是真實的失敗點描述。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以實際輸出為通過判準。\n## 回指記錄\n`);
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（ms002）');
 assert.equal(pt('2', 'ms2').status, 0, '時點 2 宣告（ms002）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });
-assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊（ms002——G2 契約封存）');
+assert.equal(run('next', 'build', '--adversarial').status, 0, '時點 2 過邊（ms002——G2 契約封存）');
 writeFileSync(join(ms2, 'G3.md'), g3Of(state().g2Contract.sha256));
 writeFileSync(join(root, 'seed.txt'), 'seed for second ms feature\n');
 commit('seed.txt', 'feat: second ms');

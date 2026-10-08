@@ -72,14 +72,16 @@ assert.equal(tool('Write',{file_path:statePath}).status,0);
 assert.equal(tool('Bash',{command:'git add app.js'}).status,2);
 assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0);
 set('research');
-assert.equal(tool('Bash',{command:'sb next plan --adversarial'}).status,2);
-// --boss-ok 由代理代填：推進與結束交給使用者在權限提示中確認。
-for(const command of ['sb next plan --adversarial --boss-ok','sb next build --adversarial --boss-ok','sb end --adversarial --boss-ok','sb next requirement --new-ms --adversarial --boss-ok']){
+// 時點 1 缺 --adversarial 停靠提醒；帶審查旗標即放行（自主推進）。
+assert.equal(tool('Bash',{command:'sb next plan'}).status,2,'時點 1 缺 --adversarial 停靠');
+assert.equal(tool('Bash',{command:'sb next plan --adversarial'}).status,0,'時點 1 帶審查旗標放行');
+// --boss-ok 是終審章：僅出口（sb end／sb next --new-ms）交給使用者在權限提示中確認。
+for(const command of ['sb end --adversarial --boss-ok','sb next requirement --new-ms --adversarial --boss-ok']){
  r=tool('Bash',{command});assert.equal(r.status,0,command);
  const out=JSON.parse(r.stdout).hookSpecificOutput;
  assert.equal(out.permissionDecision,'ask',command);assert.match(out.permissionDecisionReason,/--boss-ok/,command);
 }
-assert.equal(tool('Bash',{command:'sb next plan'}).stdout,'','不帶 --boss-ok 的推進不詢問');
+assert.equal(tool('Bash',{command:'sb next plan --adversarial --boss-ok'}).stdout,'','時點 1 誤帶 --boss-ok 不詢問（CLI 擋）');
 set('done');assert.equal(tool('Write',{path:'src/app.js'}).status,2,'done 是 verify 的舊狀態');
 set('build');
 assert.equal(tool('Bash',{command:'git config --get-regexp alias.'}).status,0,'唯讀診斷不是alias設定');

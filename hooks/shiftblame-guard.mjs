@@ -48,14 +48,14 @@ const inputCwd = (input) => {
 const CARD = [
   '[shiftblame]',
   '依使用者目標與既有授權完成工作；只有實質需求或授權差異才確認。',
-  '活動 slug 保留 G1／G2 契約、三時點獨立審查與使用者判定；技術修復自主續行。',
+  '活動 slug 保留 G1／G2 契約與時點獨立審查（時點 3 終審由使用者判定）；技術修復自主續行。',
   '保護使用者變更，以真實結果驗收；未驗如實揭露。細節按需讀取主技能。',
 ].join('\n');
-// 三時點的獨立審查與使用者判定進行時，代理可先行研究；判定不等研究，研究也不推進流程。
+// 時點審查與終審進行時，代理可先行研究；判定不等研究，研究也不推進流程。
 const EARLY_RESEARCH = {
-  research: '｜時點 1 審查／判定期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G1、不提交',
-  quality: '｜時點 2 審查／判定期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G2、不提交',
-  verify: '｜時點 3 審查／判定期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改受驗來源、不提交',
+  research: '｜時點 1 審查期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G1、不提交',
+  quality: '｜時點 2 審查期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G2、不提交',
+  verify: '｜時點 3 審查與終審期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改受驗來源、不提交',
 };
 function nodeLine(health, root) {
   if (!health) return '';
@@ -334,30 +334,31 @@ function sbSub(entry) {
   const k = args.findIndex((w) => !w.value.startsWith('-'));
   return k < 0 ? null : { sub: args[k].value, rest: args.slice(k + 1), all: args };
 }
-// 使用者決策邊（research→plan＝時點 1、quality→build＝時點 2、verify→requirement 出口＝時點 3）：`sb next` 需帶旗標；
+// 時點關卡停靠提醒：時點 1／2 缺 --adversarial 時停靠（獨立審查通過即自主推進）；時點 3 出口另需 --boss-ok（--new-ms）。
 // 契約已核准且未變時沿用原核准。旗標由 CLI 驗證，hook 提供停靠提醒。
 function checkLayerStopover(ctx, entry) {
   const sb = sbSub(entry);
   if (!sb || sb.sub !== 'next' || ctx.health?.kind !== 'active') return null;
   const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value;
-  if (!['plan', 'build', 'requirement'].includes(target) || sb.all.some((w) => w.value === '--boss-ok')) return null;
+  if (!['plan', 'build', 'requirement'].includes(target)) return null;
+  if (sb.all.some((w) => w.value === '--adversarial')) return null; // 審查旗標在即放行——時點 1／2 自主推進；出口章由 CLI 驗
   const st = ctx.health.state;
   const edge = { research: 'plan', quality: 'build', verify: 'requirement' }[st.node];
   if (edge !== target) return null;
   if (st.node === 'research' && unchangedG1Approval(ctx.root, st)) return null;
   if (st.node === 'verify' && !sb.all.some((w) => w.value === '--new-ms')) return null; // fail＝新輸入經訪談回 requirement，零旗標
-  if (st.node === 'research') return '使用者決策邊（research→plan＝時點 1）：獨立審查通過且使用者判定後，帶 --adversarial --boss-ok 推進。等待期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G1、不提交；判定前的研究結果不餵給審查者。';
-  if (st.node === 'quality') return '使用者決策邊（quality→build＝時點 2）：獨立審查通過且使用者判定後，帶 --adversarial --boss-ok 推進。等待期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G2、不提交；判定前的研究結果不餵給審查者。';
-  return '使用者決策邊（verify→requirement＝時點 3 出口）：獨立驗收審查通過且使用者終審後，帶 --adversarial --boss-ok --new-ms 推進。';
+  if (st.node === 'research') return '時點 1（research→plan）停靠：須先取得獨立審查並帶 --adversarial 推進——代理自主推進，不等使用者判定（使用者終審在時點 3 出口）。審查期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G1、不提交；審查前的研究結果不餵給審查者。';
+  if (st.node === 'quality') return '時點 2（quality→build）停靠：須先取得獨立審查並帶 --adversarial 推進——代理自主推進，不等使用者判定（使用者終審在時點 3 出口）。審查期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G2、不提交；審查前的研究結果不餵給審查者。';
+  return '時點 3 出口（verify→requirement --new-ms）停靠：獨立驗收審查通過且使用者終審後，帶 --adversarial --boss-ok --new-ms 推進。';
 }
-// --boss-ok 由代理代填：帶此旗標的 sb next／sb end 交給使用者在權限提示中確認（平台不支援詢問時放行）。
+// --boss-ok 是使用者終審章：僅 sb end 與 sb next --new-ms（出口）帶旗標時交給使用者在權限提示中確認（平台不支援詢問時放行）。
 function bossOkAsk(entry) {
   const sb = sbSub(entry);
   if (!sb || !['next', 'end'].includes(sb.sub) || !sb.all.some((w) => w.value === '--boss-ok')) return null;
   if (sb.sub === 'end') return 'sb end 帶 --boss-ok：表示你已完成時點 3 終審，並同意結束整個 slug——歸檔、合併回基底、刪除本機工作分支。只是目前里程碑通過、後面還有里程碑要做，請拒絕並改用 sb next requirement --new-ms。屬實再允許。';
+  if (!sb.all.some((w) => w.value === '--new-ms')) return null; // --boss-ok 只屬於出口；時點 1／2 誤帶由 CLI 擋，不問使用者
   const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value ?? '（未指明）';
-  const newMs = sb.all.some((w) => w.value === '--new-ms') ? '，並開新里程碑' : '';
-  return `sb next ${target} 帶 --boss-ok：表示你已在對話中判定通過這次推進${newMs}。屬實再允許。`;
+  return `sb next ${target} --new-ms 帶 --boss-ok：表示你已完成時點 3 終審並同意開新里程碑（回 requirement）。屬實再允許。`;
 }
 
 // ———— 產品訪談閘 ————

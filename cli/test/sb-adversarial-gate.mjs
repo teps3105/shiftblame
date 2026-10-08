@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗（時點屬六段圓環流程）：時點 1＝research→plan 邊（審 G1 需求與研究，--point 1）；時點 2＝quality→build 邊（審 G2 計畫與品質，--point 2）；時點 3＝verify 出口邊（驗收完成、G1 回指閉環後審驗收結果，--point 3）；中鏈（requirement→research→plan→quality 之機械邊與 build→verify）零審核（build→verify 裸推進——G3 回指＋樹淨即過）；出口（next --new-ms／end）＝時點 3 對抗條目＋--boss-ok 旗標即章（機械不驗老闆輸入時戳，語義由對話揭露＋老闆終審承擔；條目新鮮度仍機械驗——晚於本 ms 進 verify）；fail＝老闆新輸入經訪談回 requirement 零旗標（對抗義務僅限出口）；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
+// 時點對抗（時點屬六段圓環流程）：時點 1＝research→plan 邊（審 G1 需求與研究，--point 1；審查通過即自主推進，不帶使用者章）；時點 2＝quality→build 邊（審 G2 計畫與品質，--point 2；同上）；時點 3＝verify 出口邊（驗收完成、G1 回指閉環後審驗收結果，--point 3）；中鏈（requirement→research→plan→quality 之機械邊與 build→verify）零審核（build→verify 裸推進——G3 回指＋樹淨即過）；出口（next --new-ms／end）＝時點 3 對抗條目＋--boss-ok 旗標即章（機械不驗老闆輸入時戳，語義由對話揭露＋老闆終審承擔；條目新鮮度仍機械驗——晚於本 ms 進 verify）；fail＝老闆新輸入經訪談回 requirement 零旗標（對抗義務僅限出口）；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -33,13 +33,14 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：確認需求，
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Skill', tool_input: { skill: 'shiftblame:think', args: '理解宣告：老闆確認需求與推進授權——定義層規劃循環起走' } }); // 理解宣告（對話承載——理解流不落檔，此處僅模擬流程節奏）
 assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進（假需求閘查 G1 AC）');
 // 1. 時點 1 邊（research→plan）：缺 --adversarial／缺時點 1 條目即擋（RAM/ROM：對照源＝point 條目）
-assert.match(run('next', 'plan', '--boss-ok').stderr, /需時點 1 對抗/);
-assert.match(run('next', 'plan', '--boss-ok', '--adversarial').stderr, /缺時點 1 條目/);
+assert.match(run('next', 'plan').stderr, /需時點 1 對抗/);
+assert.match(run('next', 'plan', '--adversarial', '--boss-ok').stderr, /不是使用者終審出口/, '時點 1 帶使用者章即擋——--boss-ok 只屬時點 3 出口');
+assert.match(run('next', 'plan', '--adversarial').stderr, /缺時點 1 條目/);
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 assert.equal(state().adversarialConsumed, undefined, '--point 條目僅屬 RAM 對照（無 commit 章分流）');
 // 時點 1 決策邊停靠（位置導向——research＋對抗完成＝裁決通道）：老闆回覆零推回，待決由回覆說明承載
-hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 回合邊界模擬（裁決通道——research＋新鮮時點 1 條目零推回；旗標即章——時點 1 邊由 --boss-ok 承載）
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（審 G1 需求與研究——G1 契約封存）');
+hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 回合邊界模擬（裁決通道——research＋新鮮時點 1 條目零推回；時點 1 邊僅驗對抗條目——自主推進）
+assert.equal(run('next', 'plan', '--adversarial').status, 0, '時點 1 過邊（審 G1 需求與研究——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據標記
 const g1Hash = state().g1Contract.sha256;
 writeFileSync(join(ms, 'G2.md'), `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
@@ -55,7 +56,7 @@ assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 't
 assert.match(run('next', 'build').stderr, /需時點 2 對抗/, 'quality→build＝時點 2 邊——缺對抗即擋');
 assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '時點 2 宣告（quality 內——G2 定稿後審計畫與品質）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });
-assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 過邊——G2 契約封存');
+assert.equal(run('next', 'build', '--adversarial').status, 0, '時點 2 過邊——G2 契約封存');
 writeFileSync(join(ms, 'G3.md'), `回指 G2：${state().g2Contract.sha256}\n# 實作紀錄\n沿用既有入口完成送出與錯誤邊界。\n## 回指記錄\n`);
 // —— 段內修復邊防護：老闆輸入時戳晚於進段時間的切段＝走私新意圖——CLI 擋（hook 機械推回的第二道防線：推回失敗／繞過時的殘局）；代理自主段內修復（老闆輸入早於進段）放行 ——
 const fsState = join(root, '.shiftblame/flow-state.json');
@@ -369,7 +370,7 @@ writeFileSync(join(root, 'seed.txt'), 'v2\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: deliver').status, 0);
 // —— build→verify 機械推進（G3 回指 G2＋working tree 乾淨即過，中鏈零審核——無老闆停靠、無對抗）——
-assert.match(run('next', 'verify', '--boss-ok').stderr, /不是使用者決策邊/, 'build→verify 機械推進——--boss-ok 留給使用者決策邊');
+assert.match(run('next', 'verify', '--boss-ok').stderr, /不是使用者終審出口/, 'build→verify 機械推進——--boss-ok 只屬時點 3 出口');
 assert.match(run('next', 'verify', '--adversarial').stderr, /不是對抗邊/, 'build→verify 非對抗邊——時點 3 在 verify 出口邊');
 assert.equal(run('next', 'verify').status, 0, 'build→verify 裸推進（機械推進——G3 回指＋樹淨即過）');
 
@@ -383,15 +384,15 @@ assert.equal(run('adversarial', ptReport('3'), '--point', '3').status, 0, '時�
 assert.equal(run('next', 'requirement').status, 0, 'fail＝老闆新輸入經訪談回 requirement（零旗標——出口對抗義務不擋 fail 回走）');
 assert.equal(state().ms, '001');
 assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進（重走輪）');
-assert.match(run('next', 'plan', '--boss-ok', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
+assert.match(run('next', 'plan', '--adversarial').stderr, /過期|早於同邊/, '舊時點 1 條目過期即擋（新鮮度）');
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究重走確認，推進計畫' });
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '重走時點 1 重過（G1 重封存）');
+assert.equal(run('next', 'plan', '--adversarial').status, 0, '重走時點 1 重過（G1 重封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（中鏈零審核）');
 assert.equal(run('adversarial', ptReport('2'), '--point', '2').status, 0, '重走輪新鮮時點 2 條目（晚於本 ms 進 quality）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質重走確認，進入實作' });
-assert.equal(run('next', 'build', '--boss-ok', '--adversarial').status, 0, '時點 2 重過（重走輪——G2 重封存）');
+assert.equal(run('next', 'build', '--adversarial').status, 0, '時點 2 重過（重走輪——G2 重封存）');
 writeFileSync(join(root, 'seed.txt'), 'v3\n');
 assert.equal(git('add', 'seed.txt').status, 0);
 assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '-m', 'feat: second').status, 0);

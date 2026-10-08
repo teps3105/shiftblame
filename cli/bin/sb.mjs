@@ -37,9 +37,9 @@ const writeState = (st) => writeAtomic(STATE_FILE, JSON.stringify(st, null, 2));
 // G2＝計畫＋品質（plan／quality 段撰寫）、G3＝實作＋驗收（build／verify 段撰寫）。
 const FLOW = {
   requirement: { next: ['research'], desc: 'G1 需求定義與驗收契約（AC）；實質新需求先訪談對齊，在同一里程碑開新輪' },
-  research:{ next: ['plan', 'requirement'], desc: 'G1 技術研究與證據；必要時回 requirement 釐清契約；完成後時點 1 獨立審查與使用者判定' },
+  research:{ next: ['plan', 'requirement'], desc: 'G1 技術研究與證據；必要時回 requirement 釐清契約；完成後時點 1 獨立審查（通過即推進）' },
   plan:    { next: ['quality', 'research'], desc: 'G2 實作計畫與驗收映射；必要時回 research 修正依據' },
-  quality: { next: ['build', 'plan'], desc: 'G2 品質標準與驗證方式；必要時回 plan 修正計畫；時點 2 獨立審查與使用者判定後進 build' },
+  quality: { next: ['build', 'plan'], desc: 'G2 品質標準與驗證方式；必要時回 plan 修正計畫；時點 2 獨立審查後進 build' },
   build:   { next: ['verify', 'quality'], desc: 'G3 實作、整合與提交；必要時回 quality 修正品質安排，受驗工作樹乾淨後進入 verify' },
   verify:  { next: ['requirement', 'quality', 'build'], desc: 'G3 執行真實驗收並回指 G1；時點 3 獨立審查及使用者終審後，slug 還有里程碑則回 requirement 開下一里程碑，整個 slug 完成才結束；技術問題回 quality 或 build 修復' },
 };
@@ -48,7 +48,7 @@ const FLOW = {
 const backEdge = (from, to) => to === 'requirement';
 
 // 階段前提由正式文件、契約封存與對應審查／授權旗標共同核對。
-// 三時點皆為完整時點：獨立審查（--adversarial）＋使用者判定（--boss-ok）。
+// 時點 1／2：獨立審查（--adversarial）通過即自主推進，不帶使用者旗標；時點 3：獨立審查＋使用者終審（--boss-ok，僅出口）。
 // 開工授權由 slug 建立（sb init）與訪談紀錄承載，不再另設決策邊。
 const ADVERSARIAL_EDGES = [
   { from: 'research', to: 'plan', point: '1' },
@@ -66,7 +66,7 @@ const die = (msgs, code = 1) => { console.error('FAIL'); for (const m of msgs) c
 const fin = (msgs) => { console.log('pass'); for (const m of msgs) console.log(`  ✓ ${m}`); process.exit(0); };
 const usage = (code = 2) => {
   console[code ? 'error' : 'log']('直接作業交接：\n  sb handoff save <task> <notes.md>     保存具名工作的機械快照\n  sb handoff list                       列出具名工作及損壞診斷\n  sb handoff show <task>                讀取指定交接並核對目前差異\n');
-  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 驗收完成後（審驗收結果）；皆先獨立審查再由使用者判定。\n--adversarial 與 --boss-ok 記錄已完成的真實審查及已取得的使用者授權。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 結束整個 slug：歸檔並合併回基底，刪本機工作分支；SLUG 里程碑清單還有後續未完成里程碑時擋下。推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑，slug 與工作分支保留。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
+  console[code ? "error" : "log"]("sb — Shiftblame 工作狀態與契約檢查\n\n用法：\n  sb state\n  sb init <slug> [type] [--no-git]      建立已授權 slug；type 預設 feat\n                                        空資料夾自動建 Git 庫並補起始提交；--no-git 不用 Git\n  sb init --main                       完結已整合的 ended 流程，留在基底分支\n  sb next <段> [--boss-ok] [--adversarial] [--new-ms]\n  sb adversarial <報告檔> --point 1|2|3  記錄 tmp 內的獨立審查報告\n  sb end [--base <分支>] --adversarial --boss-ok\n  sb closeout --base <分支>             核對收尾整合事實\n  sb commitmsg \"<訊息>\"                 檢查「type: 一句話」格式、狀態與 staged 系統檔，發提交章\n                                        （staged 動到 README／docs／SOP／ROADMAP 時須先過文件閘）\n  sb sopreview \"<範圍與結論>\"           選用的治理文件審查記錄\n  sb rewrite                           文件編輯唯一入口：快照文件集至 tmp 後檢查\n                                        （docs/ 結構＋重點前置、長度預算、治理暗語）\n  sb --help\n\nslug：requirement → research → plan → quality → build → verify（六段圓環）\nG1 寫需求與研究、G2 寫計畫與品質、G3 寫實作與驗收；回指為三角循環（G2 回指 G1、G3 回指 G2、G1 回指 G3——時點 3 後閉環）。\n技術問題可回相鄰責任段修正；任何新意圖先經產品訪談對齊，再回 requirement 同 ms 開新輪。\nsb init 直接落 requirement——開工授權由 slug 建立與訪談紀錄承載。\n時點 1 在 research→plan（審 G1）、時點 2 在 quality→build（審 G2）——獨立審查通過即推進（--adversarial），不等使用者判定；時點 3 在 verify 驗收完成後（審驗收結果）——獨立審查加使用者終審。\n--adversarial 記錄已完成的真實審查；--boss-ok 只屬於時點 3 出口（--new-ms／end），承接使用者終審。\n未變且有效的 G1／G2 契約可沿用核准；定義變更需重新核准。\nend 結束整個 slug：歸檔並合併回基底，刪本機工作分支；SLUG 里程碑清單還有後續未完成里程碑時擋下。推送依另有的發布授權。\nnext requirement --new-ms 在驗收及終審完成後開下一里程碑，slug 與工作分支保留。\n驗收使用真實行為證據，來源修正後重驗受影響範圍；未驗如實標示。");
   process.exit(code);
 };
 
@@ -342,16 +342,16 @@ function gate(st, target, opts) {
     }
   }
 
-  // --boss-ok：使用者決策邊留痕（旗標承接對話中已取得的使用者判定；機械不驗時戳，語義由對話承載）
-  // verify→requirement 兼作 fail 回走（零旗標——新輸入經訪談回 requirement）——僅出口（--new-ms）要求使用者判定章。
+  // --boss-ok：使用者終審章，只屬於時點 3 出口（--new-ms；sb end 由 cmdEnd 驗）。
+  // 時點 1／2 由獨立審查把關、代理自主推進；verify→requirement 兼作 fail 回走（零旗標——新輸入經訪談回 requirement）。
   const adv = adversarialEdge(st.node, target);
-  const bossEdge = !!adv && (adv.point !== '3' || opts.newMs);
-  if (opts.bossOk && !bossEdge && !opts.newMs) {
-    problems.push(`「${st.node} → ${target}」不是使用者決策邊——--boss-ok 留給使用者決策邊；段內旗標切段與回頭邊不帶，工作邊沿用既有授權`);
+  const bossEdge = !!adv && adv.point === '3' && opts.newMs;
+  if (opts.bossOk && !bossEdge) {
+    problems.push(`「${st.node} → ${target}」不是使用者終審出口——--boss-ok 只屬於時點 3 出口（--new-ms／sb end）；時點 1／2 由獨立審查把關、代理自主推進，段內旗標切段與回頭邊不帶使用者旗標`);
   } else if (bossEdge && !reuseApproval && !opts.bossOk) {
-    problems.push(`「${st.node} → ${target}」是使用者決策邊——須帶 --boss-ok 留痕（使用者授權的語義由 think 揭露承擔）；時點審查在前、使用者判定在後——通過才推進；等待判定期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交`);
+    problems.push(`「${st.node} → ${target}」是使用者終審出口——須帶 --boss-ok 留痕（使用者授權的語義由 think 揭露承擔）；時點審查在前、終審在後——通過才推進；等待終審期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交`);
   } else if (opts.bossOk) {
-    passes.push('使用者授權留痕（--boss-ok——旗標承接對話中的使用者判定）');
+    passes.push('使用者終審留痕（--boss-ok——旗標承接出口終審）');
   }
 
   // --new-ms：時點 3 審查條目與使用者終審同一邊——verify→requirement 出口邊＝時點 3 對抗邊：
@@ -367,7 +367,7 @@ function gate(st, target, opts) {
   // （fail 本身是時點 3 對抗／終審的產物——不通過即回走證據；sb end 出口另由 cmdEnd 手動驗雙章）
   const advGate = adv && !reuseApproval && (adv.point !== '3' || opts.newMs);
   if (advGate) {
-    if (!opts.adversarial) problems.push(`「${st.node} → ${target}」需時點 ${adv.point} 對抗——須帶 --adversarial 宣告（審查在前、使用者判定在後——通過才推進）`);
+    if (!opts.adversarial) problems.push(`「${st.node} → ${target}」需時點 ${adv.point} 對抗——須帶 --adversarial 宣告（獨立審查通過即推進；使用者終審在時點 3 出口）`);
     else {
       const lastEdgeAt = adv.point === '2' ? st.edgeAt?.['plan→quality'] : adv.point === '3' ? st.edgeAt?.['build→verify'] : st.edgeAt?.[`${st.node}→${target}`];
       const entry = st.lastAdv?.[adv.point];
@@ -1152,7 +1152,7 @@ function cmdInitMain(slugArg) {
 }
 
 
-// （hooks Stop：決策邊＝合法停等零申報；中鏈與對抗未完成＝擋停一次強制續行，真外部阻塞第二次放行，
+// （hooks Stop：時點邊＝合法停等零申報；中鏈與對抗未完成＝擋停一次強制續行，真外部阻塞第二次放行，
 // 待決於回覆說明——對話承載 A2）。flow-state 舊 stopReport 鍵由 migrateStreams 讀取即剝。
 
 function cmdState() {
@@ -1192,16 +1192,16 @@ function cmdState() {
     const turn = readHookRecords(ROOT).turnUsage ?? st.turnUsage;
     if (turn) out(`回合觀測（純量測，無預算無上限）：本回合迄今 ${turn.requests} 工具調用——工作做到完成為止`);
   }
-  // 先行研究的比對基準：審查與判定期間的 tmp 筆記記下此值，判定後只重查受影響部分。
+  // 先行研究的比對基準：審查與終審期間的 tmp 筆記記下此值，審查後只重查受影響部分。
   if (st.node === 'research') {
     const g1 = g1DefHash(st);
-    if (g1) out(`G1 定義區 hash（目前）：${g1}——時點 1 審查期間的先行研究筆記記錄此值，判定後核對`);
+    if (g1) out(`G1 定義區 hash（目前）：${g1}——時點 1 審查期間的先行研究筆記記錄此值，審查後核對`);
   } else if (st.node === 'quality') {
     const g2 = g2DefHash(st);
-    if (g2) out(`G2 定義區 hash（目前）：${g2}——時點 2 審查期間的先行研究筆記記錄此值，判定後核對`);
+    if (g2) out(`G2 定義區 hash（目前）：${g2}——時點 2 審查期間的先行研究筆記記錄此值，審查後核對`);
   } else if (st.node === 'verify') {
     const head = verifiedCommit(st); // 與時點 3 條目綁定的比對同一來源
-    if (head) out(`受驗提交：${head}——時點 3 審查期間的先行研究筆記記錄此值，判定後核對`);
+    if (head) out(`受驗提交：${head}——時點 3 審查期間的先行研究筆記記錄此值，審查後核對`);
   }
   const nexts = [...FLOW[st.node].next];
   if (st.node !== 'requirement' && !nexts.includes('requirement')) nexts.push('requirement');

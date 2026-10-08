@@ -43,7 +43,7 @@ assert.ok(JSON.parse(readFileSync(join(root, '.shiftblame/tmp/hook-records.json'
 assert.equal(run('next', 'research').status, 0, 'requirement→research 機械推進');
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '時點 1 對抗宣告');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' });
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '時點 1 過邊（G1 契約封存）');
+assert.equal(run('next', 'plan', '--adversarial').status, 0, '時點 1 過邊（G1 契約封存）');
 const g1Hash = state().g1Contract.sha256;
 writeFileSync(join(ms, 'G2.md'), `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
 let r = run('next', 'quality');
@@ -74,5 +74,5 @@ setState((st) => { st.node = 'research'; delete st.g1Contract; delete st.g2Contr
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：定義級修正，重新確認需求' });
 assert.equal(run('next', 'plan').status, 1, '無契約：決策邊缺旗標仍擋（其餘閘不變）');
 assert.equal(run('adversarial', ptReport('1'), '--point', '1').status, 0, '新鮮時點 1 條目');
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0, '決策邊全套放行（時點 1 重過——外部性機制移除不影響）');
+assert.equal(run('next', 'plan', '--adversarial').status, 0, '決策邊全套放行（時點 1 重過——外部性機制移除不影響）');
 console.log('sb-external-gate: pass');

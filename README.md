@@ -1,6 +1,6 @@
 # Shiftblame
 
-供 AI agent 使用的開發工作方法與 CLI，版本 **2.9.11**：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
+供 AI agent 使用的開發工作方法與 CLI，版本 **3.0.0**：承接使用者授權，保留需求契約，以獨立審查與真實行為證據交付。
 
 ## 安裝與更新
 
@@ -12,7 +12,7 @@ npm install -g github:teps3105/shiftblame
 
 開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks；執行中的對話可能仍保留舊指令。
 
-插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示，壓縮續接時另注入工作帳本路徑與末 30 行；UserPromptSubmit 更新觀測與階段提示，上下文用量過窗口 80% 時注入一次帳本提醒；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、repo 邊界、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋；寫入訪談紀錄時核對提問證據——每一輪自上一輪完成後須有至少一次 AskUserQuestion，未提問即拒絕。帶 `--boss-ok` 的 `sb next`／`sb end` 由 hook 在權限提示中交使用者確認；Codex 不支援權限詢問，這些操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
+插件包含六個技能及 command hooks。SessionStart 注入精簡規則與訪談提示，壓縮續接時另注入工作帳本路徑與末 30 行；UserPromptSubmit 更新觀測與階段提示，上下文用量過窗口 80% 時注入一次帳本提醒；PreToolUse 解析 Bash 與 PowerShell 命令（含巢狀 shell），檢查狀態、repo 邊界、破壞性目標（含丟棄未提交變更的 git 操作與保護目錄）、截斷重定向及提交邊界，字串與參數中的相同字樣不誤擋；寫入訪談紀錄時核對提問證據——每一輪自上一輪完成後須有至少一次 AskUserQuestion，未提問即拒絕。時點 1／2 由獨立審查把關、代理自主推進；帶 `--boss-ok` 的出口命令（`sb end`、`sb next --new-ms`）由 hook 在權限提示中交使用者終審確認；Codex 不支援權限詢問，出口操作在 Codex 直接放行。回合結束依任務完成或實際阻塞判斷。
 
 ## 使用方式
 
@@ -27,7 +27,7 @@ G1（需求＋研究）◀────── G2（計畫＋品質）
 G3（實作＋驗收）───────────┘
 ```
 
-G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3（時點 3 後閉環）。slug 有三個使用者決策時點：時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2），時點 3 在 verify 驗收完成後（審驗收結果）。三者都是獨立審查、修正必修項，再由使用者決定。旗標記錄使用者已明確給予的授權。審查與判定期間，代理可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交，判定後只重查受影響部分。
+G2 回指 G1（時點 1 後）、G3 回指 G2（時點 2 後）、G1 回指 G3（時點 3 後閉環）。slug 有三個時點關卡：時點 1 在 research→plan（審 G1），時點 2 在 quality→build（審 G2）——獨立審查、修正必修項後代理即自主推進；時點 3 在 verify 驗收完成後（審驗收結果）——獨立審查後停下交使用者終審，由使用者決定返工、開下一里程碑或結束 slug。旗標記錄已成立的授權。審查與終審期間，代理可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改受審來源、不提交，審查後只重查受影響部分。
 
 - [主技能](skills/shiftblame/SKILL.md)：授權、分工、驗證及文件原則。
 - [理解意圖](skills/think/SKILL.md)、[整理文件](skills/rewrite/SKILL.md)、[保存](skills/save/SKILL.md)、[恢復](skills/load/SKILL.md)、[丟棄](skills/dice/SKILL.md)。
@@ -64,11 +64,13 @@ sb handoff show release-280
 sb state
 sb init example feat
 sb next research
-sb next plan
 sb adversarial .shiftblame/tmp/review-1.md --point 1
-sb next quality --adversarial --boss-ok
+sb next plan --adversarial
+# 時點 1：獨立審查通過即自主推進
+sb next quality
 sb adversarial .shiftblame/tmp/review-2.md --point 2
-sb next build --adversarial --boss-ok
+sb next build --adversarial
+# 時點 2：獨立審查通過即自主推進
 sb commitmsg "fix: correct the requested behavior"
 # 使用同一訊息提交相關實作、測試及文件
 sb next verify
@@ -80,7 +82,7 @@ sb next requirement --new-ms --adversarial --boss-ok
 sb end --adversarial --boss-ok
 ```
 
-先將對應的實際審查報告保存於上述 tmp 路徑；旗標只在審查及使用者授權已成立時使用。`sb end` 結束整個 slug：SLUG 里程碑清單中目前 ms 之後還有未完成里程碑時會擋下，改用 `--new-ms` 開下一里程碑。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。參照型文件（README、docs/、SOP、ROADMAP）的編輯統一入口是 `sb rewrite`：快照文件集後檢查結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符），提交動到這些檔案時提交閘執行同一判準。
+先將對應的實際審查報告保存於上述 tmp 路徑；`--adversarial` 只在獨立審查已成立時使用，`--boss-ok` 只在使用者終審已完成時使用（僅時點 3 出口）。`sb end` 結束整個 slug：SLUG 里程碑清單中目前 ms 之後還有未完成里程碑時會擋下，改用 `--new-ms` 開下一里程碑。更多命令與參數見 `sb --help`；`sb sopreview "<範圍與結論>"` 可選用記錄治理文件審查。參照型文件（README、docs/、SOP、ROADMAP）的編輯統一入口是 `sb rewrite`：快照文件集後檢查結構與可讀性信號（重點前置、長度預算、治理暗語、純散文段、佔位符），提交動到這些檔案時提交閘執行同一判準。
 
 新專案可在空資料夾直接 `sb init <slug>`：自動建立 Git 儲存庫及只含 `.gitignore` 的起始提交，再切到工作分支。已有 repo 但尚無提交時補一個空樹起始提交，不動既有暫存。已有內容的非 Git 資料夾須先 `git init` 並提交，或以 `sb init <slug> --no-git` 不用 Git（收尾只歸檔）。
 

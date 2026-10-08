@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "2.9.11"
+  version: "3.0.0"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；slug 流程承接使用者提出的具體需求，main 模式由代理訪談意圖後自行規劃迭代。
 ---
 # Shiftblame
@@ -32,11 +32,11 @@ main 模式由代理對使用者意圖的訪談驅動，由代理自行規劃、
 
 slug 以 requirement → research → plan → quality → build → verify 記錄目前責任，使用 sb next 切段；sb init 直接落 requirement，開工授權由 slug 建立與訪談紀錄承載。三段兩兩成區，對應三區循環模型：一區 G1 寫需求與研究（requirement／research 段，方法見 [G1](references/G1.md)），二區 G2 寫計畫與品質（plan／quality 段，見 [G2](references/G2.md)），三區 G3 寫實作與驗收（build／verify 段，見 [G3](references/G3.md)），區間以時點關卡銜接；內容依需求複雜度縮放。回指為三角循環——通過後由後區指向前區：G2 回指 G1、G3 回指 G2、G1 回指 G3，構成 G1→G3→G2→G1 閉環；各回指於對應時點審查完畢後寫入，模型圖示見 [SLUG](assets/SLUG.md)。
 
-- 時點 1：research 完成後（research → plan 邊），獨立檢閱 G1（需求與研究）是否忠於意圖且有據；修正必修項，再由使用者判定，帶 --adversarial 與 --boss-ok，推進時封存 G1 定義區。
-- 時點 2：quality 完成後（quality → build 邊），獨立檢閱 G2（計畫與品質安排）；修正必修項，再由使用者判定，帶同一組旗標，推進時封存 G2 定義區；G2 須回指已封存的 G1。
+- 時點 1：research 完成後（research → plan 邊），獨立檢閱 G1（需求與研究）是否忠於意圖且有據；修正必修項後帶 --adversarial 自主推進（不等使用者判定），推進時封存 G1 定義區。
+- 時點 2：quality 完成後（quality → build 邊），獨立檢閱 G2（計畫與品質安排）；修正必修項後帶 --adversarial 自主推進，推進時封存 G2 定義區；G2 須回指已封存的 G1。
 - 時點 3：verify 已取得必填需求的行為證據後，獨立檢閱驗收結果；修正必修項，再由使用者終審。pass 後的出口分兩層，帶同一組旗標：slug 還有未完成里程碑時開下一里程碑（verify → requirement，--new-ms），整個 slug 完成才以 sb end 結束（歸檔、合併、刪除本機工作分支）。選出口前核對 SLUG 的里程碑清單，見 [G3](references/G3.md)。
 - 旗標只記錄已取得的真實授權。G1 定義區於時點 1 封存、G2 定義區於時點 2 封存；定義變更回 requirement 重新核准。未變且仍在原授權內的契約可沿用。
-- 審查與判定期間可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），範圍、比對基準與邊界見 [AUDIT](references/AUDIT.md)；審查結果與待判定內容照常即時交給使用者。
+- 審查與終審期間可非同步先行研究（唯讀查證、tmp 筆記、隔離原型），範圍、比對基準與邊界見 [AUDIT](references/AUDIT.md)；審查結果與時點 3 待終審內容照常即時交給使用者。
 - 中鏈工作由代理自主推進。任何新意圖（補充、重修、追加子需求、修約）先經產品訪談對齊，再回 requirement 同 ms 開新輪；技術證據推翻方案時，回責任階段修正受影響成果，再驗證續行。只有實質改變需求或授權才重走訪談修約；續行、進度詢問與技術補充沿用目前需求。
 
 審查時依 [AUDIT](references/AUDIT.md) 分開核對需求符合度與工程品質。審查意見由主代理核對並負責，追加獨立意見依未解爭議或證據缺口決定。

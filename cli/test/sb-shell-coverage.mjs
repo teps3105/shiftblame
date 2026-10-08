@@ -107,12 +107,12 @@ for(const [fn,command] of [[sh,`find ${slash(home)} -name '*.tmp' -delete`],[sh,
 for(const command of ['git -c alias.x=commit x -m y','GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.x GIT_CONFIG_VALUE_0=commit git x']){r=sh(command);assert.equal(r.status,2);assert.match(r.stderr,/git alias 定義攔截/);}
 r=ps('$env:GIT_DIR="C:/x/.git"; git status');assert.equal(r.status,2);assert.match(r.stderr,/路徑重定向攔截/);
 
-// 時點 1、2 的審查與判定期間可先行研究；提示與停靠訊息都說明範圍。
+// 時點 1、2 的審查期間可先行研究；提示與停靠訊息都說明範圍。
 for(const [node,expect] of [['research',true],['quality',true],['verify',true],['build',false]]){
  set(node);r=run('SessionStart');assert.equal(r.status,0);
  assert.equal(/先行研究/.test(JSON.parse(r.stdout).hookSpecificOutput.additionalContext),expect,node);
 }
-set('research');r=sh('sb next plan --adversarial');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
+set('research');r=sh('sb next plan');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
 
 // 只有已註冊的事件寫紀錄；PowerShell 呼叫同樣計數。
 set('build');const records=join(root,'.shiftblame/tmp/hook-records.json');const before=readFileSync(records,'utf8');

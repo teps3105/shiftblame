@@ -33,7 +33,7 @@ writeFileSync(join(root, '.shiftblame/tmp/pt1.md'), '# 時點 1 對抗\n外部�
 assert.equal(run('next', 'research').status, 0); // requirement→research 機械推進（假需求閘查 G1 AC）
 assert.equal(run('adversarial', join(root, '.shiftblame/tmp/pt1.md'), '--point', '1').status, 0); // 時點 1 對抗（research→plan 邊——審 G1 需求與研究）
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' }); // 老闆輸入新鮮度（research＋對抗完成＝決策邊裁決通道——零推回，對話承載）
-assert.equal(run('next', 'plan', '--boss-ok', '--adversarial').status, 0); // 時點 1 邊——G1 契約封存（自進 plan 起全鏈凍結）
+assert.equal(run('next', 'plan', '--adversarial').status, 0); // 時點 1 邊——G1 契約封存（自進 plan 起全鏈凍結）
 const sealed = state();
 assert.match(sealed.g1Contract.sha256, /^[a-f0-9]{64}$/);
 assert.equal(sealed.g1Contract.snapshot, undefined);

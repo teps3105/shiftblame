@@ -156,7 +156,7 @@ test('連續失敗引導回退並標記時點待重審，重審推進解除', t 
   writeFileSync(report, '審查模型：重審\n通過\n');
   const g2Hash = createHash('sha256').update(g2.split('## 回指記錄')[0]).digest('hex');
   f.write({ ...f.read(), node: 'quality', lastAdv: { '2': { at: new Date().toISOString(), report, verdict: '通過', node: 'quality', g2: g2Hash } } });
-  const r = f.run('next', 'build', '--adversarial', '--boss-ok');
+  const r = f.run('next', 'build', '--adversarial');
   assert.equal(r.status, 0, r.stderr || r.stdout);
   assert.ok(r.stdout.includes('時點 2 重審通過'), '推進訊息載明重審通過');
   assert.equal(records(f.root).suspect, undefined, '重審通過後待重審標記清除');
