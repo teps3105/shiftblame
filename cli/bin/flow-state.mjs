@@ -25,7 +25,7 @@ function unchangedG1Approval(root, st) {
   } catch { return false; }
 }
 // Hooks store bounded counters and heartbeat evidence only.
-const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'compactNudge', 'failureNudge', 'suspect'];
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'failureNudge', 'suspect'];
 const hookRecords = (st) => Object.fromEntries(HOOK_RECORD_KEYS.filter(k => Object.hasOwn(st, k)).map(k => [k, st[k]]));
 // 只接納 hooks 寫出的純紀錄；任一流程欄位（即使 null）或未知欄位都拒絕。
 function hooksOnly(st, root) {
@@ -37,7 +37,6 @@ function hooksOnly(st, root) {
     if (!(exactKeys(tu, ['startedAt','requests']) && timestamp(tu.startedAt) && nonNegativeInt(tu.requests))) return false;
   }
   if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
-  if (Object.hasOwn(st, 'compactNudge') && !(exactKeys(st.compactNudge, ['session', 'at']) && typeof st.compactNudge.session === 'string' && st.compactNudge.session.length > 0 && timestamp(st.compactNudge.at))) return false;
   if (Object.hasOwn(st, 'failureNudge')) {
     const fn = st.failureNudge;
     if (!(exactKeys(fn, ['session', 'node', 'count', 'at', ...(Object.hasOwn(fn, 'askedAt') ? ['askedAt'] : [])]) && typeof fn.session === 'string' && fn.session.length > 0 && typeof fn.node === 'string' && fn.node.length > 0 && nonNegativeInt(fn.count) && timestamp(fn.at) && (!Object.hasOwn(fn, 'askedAt') || timestamp(fn.askedAt)))) return false;
@@ -102,6 +101,7 @@ function migrateStreams(st) {
   delete st.adversarialAt; delete st.adversarialConsumed;
   // 讀取時清除退役欄位；active 容忍其他欄位，ended 依明確 schema 核對。
   delete st.stamps; delete st.unlockLog; delete st.thinkRouted; delete st.dialogueLock; delete st.input; delete st.testBaseline; delete st.rerunExtPending;
+  delete st.compactNudge; // 已移除的壓縮帳本提醒狀態——舊檔讀取即剝（hook-records 由 readHookRecords 同步剝除）。
   delete st.externalEvidence; // 外部查證事實由對話與工作證據承載。
   if (ended) delete st.g1Contract; // 契約屬活動流程欄位（cmdEnd 冪等清理承載）——舊 ended 檔未經新 cmdEnd，此處補剝
   if (ended) delete st.g2Contract;

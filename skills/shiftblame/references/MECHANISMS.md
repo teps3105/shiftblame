@@ -35,7 +35,7 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
 
 ## Hooks
 
-SessionStart 注入簡短的授權與驗收原則及訪談提示，壓縮續接（source=compact）另注入帳本路徑與末 30 行；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒，上下文用量過窗口 80% 時注入一次帳本提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。
+SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。平台自動壓縮不設前置介入：跨對話狀態由 save／load 承載，壓縮續接後依 SessionStart 狀態卡重讀 <slug>/SLUG.md 與當前段 G 檔。
 
 失敗信號回退引導：時點通過是暫時性的。PostToolUseFailure 以同對話同段累計連續失敗（PostToolUse 的工具成功把計數歸零，換段重置）：達三次起每次失敗注入回退引導——依段指出回退去處與根因層級（build 失敗先想回 quality／research，品質安排寫不出回 plan，驗收失敗回 build 或 quality，不在當前段硬修）——並把該段依賴的上游時點標記待重審（plan 失敗標時點 1、build 與 verify 失敗標時點 2）；達六次起注入改為裁示，要求以 AskUserQuestion 取得老闆「回退重審或留在本段」的決定，且改動類工具（寫入或 shell）回傳 ask 一次。段注入在活動 slug 顯示「時點待重審」；該時點的封存邊（research→plan、quality→build）再次推進即重審通過、標記解除（sb next 以邊時戳對標記時戳判斷，訊息載明重審通過）；開新里程碑（--new-ms）把標記整批清除。
 
@@ -64,15 +64,9 @@ Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫�
 - 截斷重定向（>、>|、&>）須以絕對路徑為目標；丟棄輸出用 /dev/null 或 $null，追加用 >>。
 - 寫入工具的目標使用共同路徑解析（含 Git Bash 的 /c/ 路徑、符號連結，以及 Windows 忽略的段尾點與空白）；verify 段擋下受驗來源的修改，被忽略且未追蹤的輸出與 .shiftblame/ 不受限。帶 owner、repo、bucket 等遠端定位欄位或以 URI 為目標的工具寫的是遠端資源，不視為本機寫入。狀態損壞時只放行 flow-state 與 tmp 的修復寫入；沒有本機寫入目標的工具（如待辦清單）不受影響。
 
-### 工作帳本
-
-帳本防自動壓縮丟訊息：事件發生當下追加一條一行，記四類——[否決] 方案與原因、[修正] 使用者原話、[證據] 驗證結果與證據位置、[未決] 待解事項；已落 G 檔或交接的未決事項原行改標 [已解] 並回指落點。活動 slug 在 .shiftblame/tmp/<slug>/ledger.md，main 在 .shiftblame/tmp/main/<task>/ledger.md。帳本留 tmp、不入庫；sb end 的歸檔範圍是 SLUG 與 G 檔，帳本不隨之歸檔，與 handoff 同屬 tmp 的生命週期。
-
-用量門檻（與模式無關）：UserPromptSubmit 自 hook 輸入的 transcript 讀最後一筆 usage 估上下文；三平台的 usage 欄位語意各異，hook 以鍵名判別後相加——`cached_input_tokens` 在場（Codex 格式）取 input＋cache_write，蛇形 input_tokens 取 input＋cache_creation＋cache_read，駝峰 inputTokens 取 inputTokens＋cacheWrite。transcript 缺席時掃平台的 rollout 紀錄取最後一筆 usage。過窗口 80% 注入一次帳本提醒（路徑依模式），同對話同輪壓縮循環只提醒一次，用量回落即解除、下一輪循環重新武裝；狀態存 hook-records.json 的 compactNudge。窗口來源依序：transcript 自帶的 model_context_window > SB_WINDOW_TOKENS 覆寫 > CLAUDE_CODE_AUTO_COMPACT_WINDOW > 預設 300000。壓縮續接：SessionStart(source=compact) 注入帳本路徑與末 30 行（逾 6000 字截尾），活動 slug 另帶一行 slug／ms／段並指向重讀 SLUG 與當前 G 檔；沒有帳本不注入也不報錯，有活動 slug 時不退注入 main 的 task 帳本；Codex 的 session_start 走同一 source 判斷。sb next 推進後列出帳本 [未決] 行提醒收帳，不阻擋推進。三平台紀錄位置、欄位全名、壓縮觸發機制與 source 枚舉等平台事實的權威源：agent-env-workflow 技能的 references/platform-runtime-facts.md，本檔不複述。
-
 ### 紀錄與錯誤
 
-hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數、帳本提醒狀態（compactNudge）、失敗連續計數（failureNudge，含 session／node／count／askedAt）與時點待重審標記（suspect，時點→標記時戳），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
+hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數、失敗連續計數（failureNudge，含 session／node／count／askedAt）與時點待重審標記（suspect，時點→標記時戳），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 
 ### 未涵蓋
 
@@ -81,7 +75,6 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 里程碑閘：sb end 只核對 SLUG 里程碑清單寫下的內容；清單漏列的後續里程碑，以及沒有清單的 slug，不會被擋。
-- 壓縮防丟：平台沒有 PreCompact 事件，壓縮前的動作靠 80% 門檻提醒承擔；transcript 與 rollout 紀錄都缺席時不提醒。窗口預設 300000 與三平台自動壓縮觸發點的對齊依 platform-runtime-facts.md（見用量門檻段的回指），都不對時以 SB_WINDOW_TOKENS 設定。門檻只核對用量，帳本是否真的寫入由代理承擔。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
 - 失敗信號：平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔，askedAt 不因裁示內容重置。
 

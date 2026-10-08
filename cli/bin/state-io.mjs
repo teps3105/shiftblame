@@ -85,6 +85,7 @@ export const hookRecordsPath = (root) => join(root, '.shiftblame', 'tmp', 'hook-
 export function readHookRecords(root) {
   try {
     const st = JSON.parse(readFileSync(hookRecordsPath(root), 'utf8'));
+    delete st.compactNudge; // 已移除的壓縮帳本提醒狀態——舊檔讀取即剝，寫回時不再帶出。
     return hooksOnly(st) ? st : {};
   } catch { return {}; }
 }

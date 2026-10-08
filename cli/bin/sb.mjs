@@ -1247,13 +1247,6 @@ function cmdState() {
   }
 }
 
-// 帳本收帳（不阻擋）：切段時列出 tmp/<slug>/ledger.md 的 [未決] 行，已落 G 檔或交接的由代理原行改標 [已解] 並回指落點。
-function ledgerOpenLines(slug) {
-  let raw;
-  try { raw = readFileSync(join(SB_DIR, 'tmp', slug, 'ledger.md'), 'utf8'); } catch { return []; }
-  return raw.replace(/\r\n?/g, '\n').split('\n').filter((l) => /^\s*-\s+(?:\S+\s+)?\[未決\]/.test(l));
-}
-
 function cmdNext(target, opts) {
   if (!existsSync(STATE_FILE)) die([`${STATE_FILE} 不存在——先跑 sb init <slug>`]);
   const st = migrateStreams(readJson(STATE_FILE));
@@ -1335,8 +1328,6 @@ function cmdNext(target, opts) {
     }
   }
   writeState(st);
-  const openLedger = ledgerOpenLines(st.slug);
-  if (openLedger.length) passes.push(`帳本未決 ${openLedger.length} 筆——已寫進對應 G 檔或交接的，把該行 [未決] 原地改標 [已解] 並回指落點：\n  ${openLedger.join('\n  ')}`);
   fin([`${prev} → ${target}`, ...passes]);
 }
 
