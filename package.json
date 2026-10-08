@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "shiftblame — 時序制衡的 agent 協作框架（全域 CLI：sb）",
   "license": "MIT",
   "repository": {
