@@ -150,8 +150,16 @@ const fail = (files, patterns) => {
   assert.equal(g.run('rewrite').status, 0, 'jargon-allow 豁免 README 暗語');
 }
 
-// —— 7c. README 唯一性：根目錄大小寫變體並存擋（形象文件全專案唯一）——NTFS 大小寫不敏感，僅非 Windows 可建兩檔
-if (process.platform !== 'win32') {
+// —— 7c. README 唯一性：根目錄大小寫變體並存擋（形象文件全專案唯一）——
+// 前提是兩個大小寫變體可並存：Windows NTFS 與 macOS APFS 預設不分大小寫，第二個變體會塌進第一個檔。
+// 以實際檔案系統探測取代平台判斷：寫入大寫檔名後以小寫查詢存在，查得到＝不敏感＝案例不可建，跳過。
+const caseSensitive = (() => {
+  const probe = join(root, '.fs-probe-CASECHK');
+  writeFileSync(probe, 'x');
+  try { return !existsSync(join(root, '.fs-probe-casechk')); }
+  finally { rmSync(probe, { force: true }); }
+})();
+if (caseSensitive) {
   const f = fixture({ withDocs: false });
   write(join(f.cwd, 'README.md'), `# 專案\n\n${LEAD}\n`);
   write(join(f.cwd, 'readme.md'), `# 專案\n\n${LEAD}\n`);

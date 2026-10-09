@@ -102,4 +102,25 @@ assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
 const stray=join(root,'outside');mkdirSync(stray);
 r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:stray,hook_event_name:'SessionStart'})});
 assert.equal(r.status,0);assert.ok(!existsSync(join(stray,'.shiftblame')));
+// —— main 模式最低機制（TDD→BDD→SDD 依意圖定檔）：行為碼提交無測試同批 → ask 自證檔位；
+// 有測試同批、純非程式碼、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。印章在拒絕檢查路徑即消費——每場景重新發章。
+const cli=fileURLToPath(new URL('../bin/sb.mjs',import.meta.url));
+const mint=(msg)=>spawnSync(process.execPath,[cli,'commitmsg',msg],{cwd:root,encoding:'utf8'});
+rmSync(statePath); // 無 slug＝main 模式
+writeFileSync(join(root,'app.js'),'export const main=1;\n');
+assert.equal(git('add','app.js').status,0);
+assert.equal(mint('feat: main 最低機制驗證').status,0,'發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "feat: main 最低機制驗證"`});
+assert.ok(r.stdout.includes('permissionDecision')&&r.stdout.includes('main 最低機制'),'行為碼無測試同批→ask 自證檔位');
+writeFileSync(join(root,'app.test.js'),'assert.ok(true);\n');
+assert.equal(git('add','app.test.js').status,0);
+assert.equal(mint('feat: main 最低機制驗證').status,0,'重發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "feat: main 最低機制驗證"`});
+assert.equal(r.status,0,r.stderr);assert.ok(!r.stdout.includes('permissionDecision'),'測試同批→不攔');
+set('build'); // slug 活動中
+writeFileSync(join(root,'app2.js'),'export const two=2;\n');
+assert.equal(git('add','app2.js').status,0);
+assert.equal(mint('fix: slug 活動中不攔').status,0,'發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "fix: slug 活動中不攔"`});
+assert.ok(!r.stdout.includes('permissionDecision'),'slug 活動中→main 攔截不適用（CLI 時點閘承載）');
 console.log('sb-hooks: pass');

@@ -12,7 +12,7 @@ const cli = join(repo, 'cli/bin/sb.mjs'), hook = join(repo, 'hooks/shiftblame-gu
 const before = '2020-01-01T00:00:00.000Z', sealedAt = '2020-01-02T00:00:00.000Z';
 const entered = '2020-01-03T00:00:00.000Z', after = '2020-01-04T00:00:00.000Z';
 const g1 = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n# 技術研究\n沿用既有送出入口，錯誤邊界以真實輸出驗證。\n## 回指記錄\n';
-const g2 = '回指 G1：' + createHash('sha256').update(g1.split('## 回指記錄')[0]).digest('hex') + '\n# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=result.test.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以送出後的實際畫面輸出為通過判準，驗證以真實輸出為依據。\n## 回指記錄\n';
+const g2 = '回指 G1：' + createHash('sha256').update(g1.split('## 回指記錄')[0]).digest('hex') + '\n# 驗收條件\n- AC-01 | 驗收操作=送出資料 | 通過判準=畫面顯示完整結果 | 需要的證據=實際輸出 | 測試=result.test.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以送出後的實際畫面輸出為通過判準，驗證以真實輸出為依據。\n測試入口：node -p 1\n## 回指記錄\n';
 const g3 = '回指 G2：pending\n# 實作紀錄\n沿用既有入口完成送出並保留錯誤邊界。\n## 回指記錄\n';
 // 各段進入邊：fixture 依 node 記錄「上一邊」時戳，供回退／重進情境使用。
 const ENTRY = { requirement: null, research: 'requirement→research', plan: 'research→plan', quality: 'plan→quality', build: 'quality→build', verify: 'build→verify' };

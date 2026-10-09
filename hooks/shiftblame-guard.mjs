@@ -776,6 +776,32 @@ function checkCommit(ctx, entry, seen) {
   return reason;
 }
 
+// ———— main 模式最低機制（TDD→BDD→SDD 依意圖定檔）：提交閘補測試同批攔截 ————
+// slug 的紅→綠由 CLI 時點閘承載（G2 測試入口封存記錄紅／綠、進 verify 綠燈硬閘）；
+// 此攔截只對無活動 slug 的 main 工作生效：staged 含行為碼而無測試同批 → ask（不擋死——
+// 意圖檔位自證或老闆確認放行；文件、設定與非程式碼變更不攔）。
+const BATCH_CODE_FILE_RE = /\.(?:mjs|cjs|js|jsx|ts|tsx|mts|cts|py|gd|gdshader|cs|go|rs|java|kt|rb|php|c|h|cpp|hpp|cc|swift|sh|bash|ps1|lua|sql)$/i;
+const BATCH_TEST_FILE_RE = /(?:^|[/\\])(?:tests?|specs?|__tests__|__snapshots__)(?:[/\\]|$)|[._-](?:test|spec)\.[^.]+$|\.test\.|\.spec\./i;
+function mainTestBatchAsk(anchor) {
+  const health = readFlowState(anchor);
+  if (health.kind === 'invalid') return null; // 狀態異常已由其他閘擋
+  const node = health.state?.node;
+  if (node && node !== 'ended') return null; // slug 活動中——紅→綠由 CLI 時點閘承載
+  let staged;
+  try {
+    staged = execFileSync('git', ['-C', anchor, '-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUB'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch { return null; } // git 不可用（非 git repo）→ 不猜測
+  let code = 0, test = 0;
+  for (const f of staged.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const rel = (() => { try { return relTo(anchor, absPath(anchor, f)); } catch { return f; } })();
+    if (systemRel(rel.toLowerCase())) continue; // 系統檔另由 staged 閘擋
+    if (BATCH_TEST_FILE_RE.test(rel)) { test++; continue; }
+    if (BATCH_CODE_FILE_RE.test(rel)) code++;
+  }
+  if (!code || test) return null; // 無行為碼，或已有測試同批
+  return '[shiftblame] main 最低機制（TDD→BDD→SDD 依意圖定檔）：本批 staged 含行為碼、無測試同批——行為修補須重現測試先行（TDD；文件層同判準：先讓 sb rewrite 判準跑出紅燈再改）、可觀察行為須場景先行（BDD）、介面與結構變更須設計層規格先行可查核（SDD——與 slug G1 的產品需求契約是兩回事）。補測試或規格同批；確認屬前述檔位的例外（既有測試已覆蓋、設定級變更）則放行';
+}
+
 // ———— 決策 ————
 
 const deny = (reason) => ({ deny: reason });
@@ -826,6 +852,21 @@ function shellDecision(ctx, tool, text) {
     }
   }
   const asks = [...new Set([...entries.filter((e) => !e.query).map(bossOkAsk)].filter(Boolean))];
+  // main 模式最低機制：行為碼提交無測試同批 → ask 一次（per anchor 去重；slug 活動時不攔）
+  {
+    const batchAnchors = new Set();
+    for (const e of entries) {
+      if (e.query || e.name !== 'git') continue;
+      const g = gitInvocation(e.args);
+      if (g.sub?.value !== 'commit') continue;
+      const lastC = g.C.at(-1);
+      const anchor = lastC ? findProjectRoot(absPath(lastC.value, lastC.value)) : ctx.root;
+      if (!anchor || batchAnchors.has(anchor)) continue;
+      batchAnchors.add(anchor);
+      const ask = mainTestBatchAsk(anchor);
+      if (ask) asks.push(ask);
+    }
+  }
   return asks.length ? { ask: asks.join('\n'), context: warn } : { context: warn };
 }
 function decide(event, input, ctx) {

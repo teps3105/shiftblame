@@ -302,6 +302,19 @@ function unchangedG2Approval(st) {
   const cur = g2DefHash(st);
   return cur !== null && cur === c.sha256;
 }
+// —— 紅→綠機械核對：G2「品質」段以「測試入口：」行載明可執行測試命令（或聲明「無（理由）」）——
+// 時點 2 封存時實際執行一次並把結果記入契約：紅＝新標準對未實作行為失敗，是標準存在的證據；
+// 進 verify 邊重跑同一入口要求綠燈——綠是 build 本份；verify 段只驗行為與整體正確性，不重跑綠燈。
+const TEST_ENTRY_RE = /^測試入口：(.+)$/m;
+function testEntryCmd(g2Text) {
+  const q = section(g2Text, '品質');
+  return q?.match(TEST_ENTRY_RE)?.[1]?.trim() ?? null;
+}
+function runTestEntry(cmd, logName) {
+  const tr = spawnSync(cmd, { shell: true, cwd: ROOT, encoding: 'utf8', timeout: 600000, maxBuffer: 64 * 1024 * 1024 });
+  try { writeFileSync(join(TMP, logName), `${cmd}\n${tr.stdout ?? ''}${tr.stderr ?? ''}`); } catch { /* tmp 不可寫不影響判定 */ }
+  return tr;
+}
 function gate(st, target, opts) {
   const problems = [];
   const passes = [];
@@ -454,6 +467,7 @@ function gate(st, target, opts) {
           if (q === null) problems.push('G2 缺「品質」段——品質標準與驗證方式沒有可查核的安排（時點 2 審查對象不完整）');
           else if (!substantive(q)) problems.push('G2「品質」段敷衍——填入品質標準、驗證方式與通過判準');
           else passes.push('G2 品質安排實質存在');
+          if (q !== null && !TEST_ENTRY_RE.test(q)) problems.push('G2「品質」段缺「測試入口：」行——測試安排須載明可執行入口（命令），或聲明「測試入口：無（理由）」——紅→綠核對的錨點（時點 2 封存記錄紅／綠，進 verify 要求綠燈）');
           const heads = reflectHeads(g2);
           if (heads !== 1) problems.push(`G2 「## 回指記錄」分隔標題出現 ${heads} 次（須恰一次）——時點 2 封存前修正回指區格式（定義區與回指區須以此標題分隔）`);
           const g1seal = st.g1Contract?.ms === st.ms ? st.g1Contract.sha256 : null;
@@ -463,12 +477,20 @@ function gate(st, target, opts) {
       }
       break;
 
-    case 'verify': // 進驗收＝實作已存檔＋G3 回指 G2（三角回指邊：G3 → G2）：working tree 乾淨（git 判定）
+    case 'verify': // 進驗收＝實作已存檔＋G3 回指 G2（三角回指邊：G3 → G2）＋測試入口綠燈（紅→綠核對：綠是 build 本份）：working tree 乾淨（git 判定）
       if (!g3) problems.push('G3 不存在——實作紀錄（G3）於 build 段建立（.shiftblame/<slug>/<ms>/G3.md）');
       else {
         const g2seal = st.g2Contract?.ms === st.ms ? st.g2Contract.sha256 : null;
         if (g2seal && !String(g3).includes(g2seal)) problems.push('G3 未回指 G2——實作與驗收須回指已封存的 G2 定義區 hash（三角回指邊：G3 → G2）');
         else if (g2seal) passes.push('G3 回指 G2 定義區（三角回指邊：G3 → G2）');
+      }
+      {
+        const sealedTests = st.g2Contract?.ms === st.ms ? st.g2Contract.tests : null;
+        if (sealedTests?.cmd && !/^無/.test(sealedTests.cmd)) {
+          const tr = runTestEntry(sealedTests.cmd, 'test-verify.log');
+          if (tr.status !== 0) problems.push(`測試入口紅燈（exit ${tr.status}，輸出 .shiftblame/tmp/test-verify.log）——綠是 build 本份：回 build 轉綠後再進 verify（verify 段驗行為與整體正確性，不重跑綠燈）`);
+          else passes.push('測試入口綠燈（build 本份機械核對——verify 段驗行為與整體正確性）');
+        }
       }
       try {
         const dirty = execSync('git status --porcelain', { encoding: 'utf-8' });
@@ -1273,6 +1295,7 @@ function cmdNext(target, opts) {
   }
   if (prev === 'quality' && target === 'build' && !unchangedG2Approval(st)) {
     // G2（計畫＋品質）於時點 2 封存；回指區在 hash 外隨執行更新。
+    // 紅→綠核對的紅端在此機械落證：封存時執行測試入口一次，紅／綠記入契約（進 verify 邊以同一入口驗綠）。
     const file = gPath(st, 2);
     const raw = mdOf(file) ?? '';
     const heads = reflectHeads(raw);
@@ -1280,6 +1303,17 @@ function cmdNext(target, opts) {
     const reseal = !!st.g2Contract;
     st.g2Contract = { ms: st.ms, file, sha256: sha256Text(defSection(raw)), sealedAt: new Date().toISOString() };
     passes.push(`G2 定義區契約${reseal ? '已重封存（重新核准後凍結）' : '已封存（時點 2——自進 build 起全鏈凍結）'}（flow-state）：${st.g2Contract.sha256.slice(0, 12)}`);
+    const entryCmd = testEntryCmd(raw);
+    if (entryCmd && !/^無/.test(entryCmd)) {
+      const tr = runTestEntry(entryCmd, 'test-seal.log');
+      st.g2Contract.tests = { cmd: entryCmd, red: tr.status !== 0, at: st.g2Contract.sealedAt };
+      passes.push(tr.status !== 0
+        ? `測試入口紅燈已記錄（exit ${tr.status}，輸出 .shiftblame/tmp/test-seal.log）——新標準對未實作行為失敗，是標準存在的證據；build 段完成後轉綠`
+        : `測試入口封存即綠（exit 0，輸出 .shiftblame/tmp/test-seal.log）——確認屬保護既有行為的測試（G2 品質段註明），build 段保持綠`);
+    } else if (entryCmd) {
+      st.g2Contract.tests = { cmd: entryCmd, red: null, at: st.g2Contract.sealedAt };
+      passes.push('測試入口聲明無自動化——紅→綠核對跳過，驗收以檢核程序與實際行為證據承載');
+    }
   }
   if (target === 'requirement') {
     // 回頭邊／出口邊（任何新意圖先經訪談回 requirement）：同 ms 開新輪；--new-ms（出口邊——使用者終審後開新里程碑）→ms++

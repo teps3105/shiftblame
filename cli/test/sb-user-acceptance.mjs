@@ -29,7 +29,7 @@ const commit = (file, message) => {
 };
 
 const G1_BODY = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n\n### AC-02（送出錯誤資料）\n- Given：已輸入不合法資料\n- When：送出資料\n- Then：看到明確錯誤\n- 現狀：現行畫面對不合法資料靜默無反應\n- 使用者：送出錯誤資料的人\n- 失敗邊界：不得誤報成功\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n# 技術研究\n沿用既有入口處理合法與不合法輸入，保留真實輸出作為測試依據。\n';
-const g2Of = (g1Hash) => `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n- AC-02 | 驗收操作=送出不合法資料 | 通過判準=看到明確錯誤 | 需要的證據=實際錯誤輸出 | 測試=test-2.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以真實輸出為通過判準；自動測試覆蓋合法與錯誤路徑。\n## 回指記錄\n`;
+const g2Of = (g1Hash) => `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n- AC-02 | 驗收操作=送出不合法資料 | 通過判準=看到明確錯誤 | 需要的證據=實際錯誤輸出 | 測試=test-2.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果。\n# 實作步驟\n沿用既有入口並驗證輸出。\n# 品質\n以真實輸出為通過判準；自動測試覆蓋合法與錯誤路徑。\n測試入口：node -p 1\n## 回指記錄\n`;
 const g3Of = (g2Hash) => `回指 G2：${g2Hash}\n# 實作紀錄\n沿用既有入口完成送出與錯誤邊界。\n## 回指記錄\n`;
 
 assert.equal(git('init').status, 0);
@@ -160,7 +160,7 @@ assert.equal(pt('1', 'ms2').status, 0);
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究確認，推進計畫' });
 assert.equal(run('next', 'plan', '--adversarial').status, 0);
 const ms2G1Hash = state().g1Contract.sha256;
-writeFileSync(join(ms2, 'G2.md'), `回指 G1：${ms2G1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=o | 通過判準=r | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，這是真實的失敗點描述。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以實際輸出為通過判準。\n## 回指記錄\n`);
+writeFileSync(join(ms2, 'G2.md'), `回指 G1：${ms2G1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=o | 通過判準=r | 需要的證據=實際輸出 | 測試=t.mjs\n# 失敗模式\n輸入邊界漏驗會造成錯誤結果，這是真實的失敗點描述。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以實際輸出為通過判準。\n測試入口：node -p 1\n## 回指記錄\n`);
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（ms002）');
 assert.equal(pt('2', 'ms2').status, 0, '時點 2 宣告（ms002）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });

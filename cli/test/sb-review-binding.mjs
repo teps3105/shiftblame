@@ -28,7 +28,7 @@ const commit = (file, text, message) => {
 };
 const G1_DEF = '# 驗收\n### AC-01（送出資料）\n- Given：已輸入合法資料\n- When：送出資料\n- Then：畫面顯示完整結果\n- 現狀：現行畫面僅顯示部分結果且送出後無回饋\n- 使用者：送出資料的人\n- 失敗邊界：不得顯示部分結果\n- 消融：拿掉則無法送出且看不到結果\n- 證據：BEHAVIOR\n# 技術研究\n沿用既有入口完成需求並保留錯誤邊界，測試以真實輸出為依據。\n';
 const writeG1 = (def = G1_DEF, reflect = '') => writeFileSync(join(ms, 'G1.md'), `${def}## 回指記錄\n${reflect}`);
-const writeG2 = (hash, def = null) => writeFileSync(join(ms, 'G2.md'), def ?? `回指 G1：${hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
+const writeG2 = (hash, def = null) => writeFileSync(join(ms, 'G2.md'), def ?? `回指 G1：${hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n測試入口：node test-1.mjs\n## 回指記錄\n`);
 
 ok(git('init', '-q'), 'git init');
 writeFileSync(join(root, '.gitignore'), '.shiftblame/\n');
@@ -70,7 +70,7 @@ ok(r, '時點 2 審查');
 const g2 = state().lastAdv['2'].g2;
 assert.match(g2, /^[0-9a-f]{64}$/, '條目記下 G2 定義區 hash');
 assert.match(r.stdout, new RegExp(`審查對象：G2 定義區 ${g2.slice(0, 12)}`));
-writeG2(g1, `回指 G1：${g1}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=被改動的判準 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
+writeG2(g1, `回指 G1：${g1}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=被改動的判準 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n測試入口：node test-1.mjs\n## 回指記錄\n`);
 r = run('next', 'build', '--adversarial');
 assert.equal(r.status, 1);
 assert.match(r.stderr, /時點 2 審查後 G2 定義區已變更/);

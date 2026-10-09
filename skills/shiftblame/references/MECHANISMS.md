@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 3.0.2
+revision: 3.0.3
 ---
 # 執行介面與界線
 
@@ -23,6 +23,7 @@ research、quality 與 verify 段的 sb state 另印先行研究的比對基準�
   - 缺少 Git 提交身分時停下並說明設定方式；在空的子資料夾執行而專案根向上錨定時停下，避免在上層專案建立流程。
   - HEAD 無法解析的損壞 repo 只建骨架，不建分支、不動索引，修復後以 sb state 查證。
 - sb next <node> 沿流程切換責任段。符合契約的回查與技術修復可自主執行；使用者指出驗收未通過時，依差異回責任段修復，實質需求或授權變更先經訪談回 requirement。
+- 紅→綠機械核對：G2「品質」段須載明「測試入口：<命令>」行（quality→build 邊檢查，缺行即擋；「測試入口：無（理由）」聲明跳過核對）。時點 2 封存時 sb 實際執行測試入口一次，紅／綠記入 g2Contract.tests（紅＝新標準存在的證據，封存即綠＝保護既有行為的測試）；進 verify 邊重跑同一入口要求綠燈（exit 0），紅燈擋進 verify——轉綠是 build 本份，verify 段驗行為與整體正確性、不重跑綠燈。輸出落 .shiftblame/tmp/test-seal.log 與 test-verify.log。
 - research → plan 封存 G1 定義區、quality → build 封存 G2 定義區；## 回指記錄 是證據分隔。已核准、相同且仍適用的契約可重用。契約變更需對應時點審查與使用者授權。
 - sb adversarial <報告> --point 1|2|3 記錄對應審查並綁定審查對象：時點 1（research→plan）記 G1 定義區 hash，時點 2（quality→build）記 G2 定義區 hash（G 檔不存在或回指標題不是恰好一次時拒絕記錄），時點 3（verify 驗收完成後，出口閘查驗）記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 承接真實審查——時點 1／2 審查通過即自主推進，不帶使用者旗標（誤帶 --boss-ok 即擋）；時點 3 出口另以 --boss-ok 承接使用者終審。CLI 核對條目新鮮度與審查對象：審查後修改 G1／G2 定義區或再提交，須重新審查；只更新回指區不受影響。舊版條目沒有審查對象，只核對新鮮度；2.8.x 的時點 2（verify 出口）條目載入時遷移為時點 3。
 - sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。staged 含 SOP.md／ROADMAP.md（任一位置）即位置違例擋下——權威位置是 .shiftblame/，不入庫。staged 動到參照型文件（根 README、docs/）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交（main 與 slug 模式皆然）。
@@ -58,6 +59,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫、heredoc、管線、命令替換，以及 bash -c、cmd /c、pwsh -Command、-EncodedCommand、iex 等巢狀層，最多 4 層，超過或內容過多即拒絕。只核對實際執行的命令，字串、註解與參數中的相同字樣不會誤擋。
 
 - 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免；commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
+- main 最低機制（TDD→BDD→SDD 依意圖定檔）：無活動 slug（含 ended）時，staged 含行為碼（程式碼副檔名白名單、非測試路徑）而無測試同批，提交回傳 permissionDecision: ask，要求自證意圖檔位或補測試／規格後放行；有測試同批、純文件／設定變更、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。SDD 的規格先行指設計層規格（介面契約、型別、資料結構），與 slug G1 的產品需求契約是兩回事。
 - 破壞性刪除：rm -r、Remove-Item -Recurse、rd /s、find -delete 或 -exec rm、xargs rm、robocopy /MIR、rsync --delete 的本機目標須為絕對路徑。xargs 刪除的來源須是同一管線中、搜尋根為絕對路徑的 find；rsync 的遠端目的地（host:、user@host:、rsync://）不在此限。
 - 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。
 - 丟棄變更：git clean -f、reset --hard、checkout -f、checkout -- <路徑>、checkout .、restore（只有 --staged 除外）、switch --discard-changes 或 -f、stash drop／clear、branch -D 須以 git -C <絕對路徑> 錨定 repo。

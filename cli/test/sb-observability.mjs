@@ -59,7 +59,7 @@ hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：需求與研究
 assert.equal(run('next', 'plan', '--adversarial').status, 0, '時點 1 過邊（審 G1 需求與研究——G1 契約封存）');
 hookRun({ hook_event_name: 'PreToolUse', tool_name: 'WebSearch', tool_input: { query: 'x' } }); // 外部證據
 const g1Hash = state().g1Contract.sha256;
-writeFileSync(join(ms, 'G2.md'), `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n## 回指記錄\n`);
+writeFileSync(join(ms, 'G2.md'), `回指 G1：${g1Hash}\n# 驗收條件\n- AC-01 | 驗收操作=送出合法資料 | 通過判準=看到完整結果 | 需要的證據=實際輸出 | 測試=test-1.mjs\n# 失敗模式\n輸入邊界漏驗造成錯誤結果，真實失敗點。\n# 實作步驟\n沿用既有入口並驗證輸出，逐步執行。\n# 品質\n以真實輸出為通過判準。\n測試入口：node -p 1\n## 回指記錄\n`);
 assert.equal(run('next', 'quality').status, 0, 'plan→quality 機械推進（中鏈零審核）');
 assert.equal(pt('2').status, 0, '時點 2 對抗宣告（quality 內）');
 hookRun({ hook_event_name: 'UserPromptSubmit', prompt: '老闆：計畫與品質確認，進入實作' });
