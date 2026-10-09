@@ -120,7 +120,7 @@ assert.equal(r.status,0,r.stderr);assert.ok(!r.stdout.includes('permissionDecisi
 set('build'); // slug 活動中
 writeFileSync(join(root,'app2.js'),'export const two=2;\n');
 assert.equal(git('add','app2.js').status,0);
-assert.equal(mint('fix: slug 活動中不攔').status,0,'發章');
-r=tool('Bash',{command:`git -C ${root} commit -m "fix: slug 活動中不攔"`});
+assert.equal(mint('fix: 活動中流程不攔').status,0,'發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "fix: 活動中流程不攔"`});
 assert.ok(!r.stdout.includes('permissionDecision'),'slug 活動中→main 攔截不適用（CLI 時點閘承載）');
 console.log('sb-hooks: pass');
