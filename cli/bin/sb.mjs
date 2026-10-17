@@ -14,19 +14,11 @@ import { objectRecord, hookRecords, uninitializedState, directState, endedState,
 import { COMMIT_TYPES as TYPES, commitMessageIssue } from './commit-format.mjs';
 import { runHandoff } from './handoff.mjs';
 import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from './state-io.mjs';
+import { findRoot } from './project-root.mjs';
 
-// 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區）
+// 專案根錨定：從執行目錄向上找 .git／既有 .shiftblame（子目錄執行時錨定到正確工作區；磁碟根與系統頂層目錄不作錨點）
 // （相對路徑展開到錯誤資料夾是破壞與污染的共同來源；所有狀態路徑一律錨定絕對根）
-function findRoot(start) {
-  let dir = resolve(start ?? process.cwd());
-  for (;;) {
-    if (existsSync(join(dir, '.git')) || existsSync(join(dir, '.shiftblame'))) return dir;
-    const parent = dirname(dir);
-    if (parent === dir) return resolve(start ?? process.cwd());
-    dir = parent;
-  }
-}
-const ROOT = findRoot();
+const ROOT = findRoot(process.cwd());
 const SB_DIR = join(ROOT, '.shiftblame');
 const TMP = join(SB_DIR, 'tmp');
 const STATE_FILE = join(SB_DIR, 'flow-state.json');

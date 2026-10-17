@@ -10,6 +10,7 @@ import { objectRecord, readFlowState, unchangedG1Approval } from '../cli/bin/flo
 import { commitMessageIssue } from '../cli/bin/commit-format.mjs';
 import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
 import { interviewStatus, markSessionStart, recordInterviewEvent } from '../cli/bin/interview.mjs';
+import { findRoot as findProjectRoot, topLevelSystemDir } from '../cli/bin/project-root.mjs';
 import { analyzeCommand, baseName, findRoots, gitInvocation, MAX_DEPTH } from './shell-scan.mjs';
 
 const STAMP_TTL_MS = 10 * 60 * 1000;
@@ -31,15 +32,7 @@ const emit = (text, event) => {
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }));
 };
 
-// 專案根：由平台提供的絕對 cwd 往上找 .git 或 .shiftblame（與 sb 的 findRoot 一致）；找不到時以 cwd 本身為根。
-function findProjectRoot(start) {
-  for (let dir = start; ;) {
-    if (existsSync(join(dir, '.git')) || existsSync(join(dir, '.shiftblame'))) return dir;
-    const up = dirname(dir);
-    if (up === dir) return start;
-    dir = up;
-  }
-}
+// 專案根：由平台提供的絕對 cwd 往上找 .git 或 .shiftblame（findProjectRoot 與 sb 共用，磁碟根與系統頂層目錄不作錨點）；找不到時以 cwd 本身為根。
 const inputCwd = (input) => {
   const c = input.cwd;
   return typeof c === 'string' && isAbsolute(c) && existsSync(c) ? c : null;
@@ -207,12 +200,7 @@ const rootLikeWord = (w) => !w.dynamic && ROOT_LIKE.test(w.value.trim());
 // ———— 保護目錄與工作區 ————
 
 const HOME_DIR = (() => { try { const h = homedir(); return h ? normPath(h, h) : null; } catch { return null; } })();
-const SYSTEM_DRIVE = fold(process.env.SystemDrive || 'C:');
-// 系統頂層目錄：POSIX 的第一層（/usr、/etc、/home…）與 Windows 系統磁碟的第一層（C:\Windows、C:\Users…）。
-function topLevelSystemDir(abs) {
-  if (WIN) { const m = abs.match(/^([a-z]:)[\\/]+[^\\/]+[\\/]*$/i); return !!m && fold(m[1]) === SYSTEM_DRIVE; }
-  return /^\/[^/]+\/*$/.test(abs);
-}
+// 系統頂層目錄（topLevelSystemDir）與專案根錨定共用同一判定，見 cli/bin/project-root.mjs。
 const within = (inner, outer) => { const r = relative(outer, inner); return r === '' || (!r.startsWith('..') && !isAbsolute(r)); };
 // 不可整個刪除或清空的目錄：根目錄、家目錄、專案根、這些目錄的上層，以及系統頂層目錄。abs 須為 normPath 結果。
 function protectedDir(ctx, abs) {
@@ -464,11 +452,15 @@ const DENY_RELATIVE = (what, target) =>
 const DENY_ROOT = (target) => `破壞性操作的目標是根目錄（${target}）——一律拒絕；請指明確切的絕對子路徑`;
 const DENY_PROTECTED = (kind, target) => `破壞性操作的目標是${kind}（${target}）——一律拒絕；請指明確切的絕對子路徑`;
 const targetLabel = (w) => (w ? w.raw || w.value : '未指明');
+// Windows 上無磁碟代號的單段 POSIX 絕對路徑（/usr、/etc）在 Git Bash 指 Git 安裝目錄的第一層，不是目前磁碟的同名目錄：
+// 不依 cwd 所在磁碟展開，與 POSIX 同樣視為系統頂層目錄。單一字母（/c）是 MSYS 的磁碟根，由 msysPath 轉換。
+const WIN_POSIX_TOP = /^\/(?![A-Za-z]\/*$)[^\\/]+\/*$/;
 // 只解析靜態字詞；結尾的純萬用段（/*、/.*）等同清空其上層目錄。
 function protectedTarget(ctx, w) {
   if (!w || w.dynamic || !ctx.cwd) return null;
   let v = w.value.trim().replace(/[\\/]+\.?\*+$/, '');
   if (!v || /[*?[\]{}]/.test(v)) return null;
+  if (WIN && WIN_POSIX_TOP.test(v)) return DENY_PROTECTED('系統頂層目錄', targetLabel(w));
   if (/^[A-Za-z]:$/.test(v)) v += '\\';
   const kind = protectedDir(ctx, normPath(ctx.cwd, v));
   return kind ? DENY_PROTECTED(kind, targetLabel(w)) : null;

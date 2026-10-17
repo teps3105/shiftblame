@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { resolve, join, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
 const root = mkdtempSync(join(tmpdir(), 'sb-init-'));
 // 本測試只清理自己建立、位於系統暫存根內的絕對路徑。
-process.on('exit', () => { assert.equal(resolve(root).startsWith(resolve(tmpdir()) + sep), true); rmSync(root, { recursive: true, force: true }); });
+// 只清除暫存目錄之內的路徑；以 relative 判斷，暫存根是磁碟根（TEMP=D:）時同樣成立。
+const inTmp = (p) => { const r = relative(resolve(tmpdir()), resolve(p)); return r !== '' && !r.startsWith('..') && !isAbsolute(r); };
+process.on('exit', () => { assert.equal(inTmp(root), true); rmSync(root, { recursive: true, force: true }); });
 let serial = 0;
 function fixture(raw) {
   const cwd = join(root, String(serial++));

@@ -103,6 +103,15 @@ for(const [fn,command,kind] of [[sh,`rm -rf ${slash(home)}`,'家目錄'],[sh,`rm
 for(const [fn,command] of [[sh,`find ${slash(home)} -name '*.tmp' -delete`],[sh,`rm -rf ${slash(root)}/build`],[sh,`rm -rf ${slash(join(home,'proj-x','build'))}`],
  [ps,`Remove-Item -Recurse -Force '${join(root,'build')}'`],[sh,`find ${slash(root)} -name '*.log' -print0 | xargs -0 rm -f`]])
  assert.equal(fn(command).status,0,command);
+// Windows：無磁碟代號的單段 POSIX 路徑（/usr）在 Git Bash 指 Git 安裝目錄，不依 cwd 所在磁碟展開。
+// 系統磁碟改設為別的代號，使 /usr 依 cwd 展開後不落在系統磁碟第一層（等同暫存目錄在非系統磁碟），仍須擋。
+if(process.platform==='win32'){
+ const other=/^q:/i.test(root)?'R:':'Q:';
+ const shOn=(command)=>spawnSync(process.execPath,[hook],{encoding:'utf8',env:{...process.env,SystemDrive:other},input:JSON.stringify({cwd:root,hook_event_name:'PreToolUse',tool_name:'Bash',tool_input:{command}})});
+ for(const command of ['rm -rf /usr','rm -rf /etc/','rm -rf /usr/*']){r=shOn(command);assert.equal(r.status,2,command);assert.match(r.stderr,/目標是系統頂層目錄（/,command);}
+ r=shOn('rm -rf /c');assert.equal(r.status,2);assert.match(r.stderr,/目標是根目錄/);
+ assert.equal(shOn('rm -rf /usr/local/build').status,0,'多段路徑不視為系統頂層目錄');
+}
 
 // git alias 與路徑重定向。
 for(const command of ['git -c alias.x=commit x -m y','GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.x GIT_CONFIG_VALUE_0=commit git x']){r=sh(command);assert.equal(r.status,2);assert.match(r.stderr,/git alias 定義攔截/);}

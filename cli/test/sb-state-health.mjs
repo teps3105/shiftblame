@@ -2,14 +2,16 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
 const hook = fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs', import.meta.url));
 const root = mkdtempSync(join(tmpdir(), 'sb-health-'));
-process.on('exit', () => { assert.ok(resolve(root).startsWith(resolve(tmpdir()) + sep)); rmSync(root, { recursive: true, force: true }); });
+// 只清除暫存目錄之內的路徑；以 relative 判斷，暫存根是磁碟根（TEMP=D:）時同樣成立。
+const inTmp = (p) => { const r = relative(resolve(tmpdir()), resolve(p)); return r !== '' && !r.startsWith('..') && !isAbsolute(r); };
+process.on('exit', () => { assert.ok(inTmp(root)); rmSync(root, { recursive: true, force: true }); });
 let serial = 0;
 const at = '2026-09-09T00:00:00.000Z';
 function fixture(raw) {

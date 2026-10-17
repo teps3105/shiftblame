@@ -5,15 +5,18 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { anchorable } from '../bin/project-root.mjs';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
 const root = mkdtempSync(join(tmpdir(), 'sb-boot-'));
-process.on('exit', () => { assert.ok(resolve(root).startsWith(resolve(tmpdir()) + sep)); rmSync(root, { recursive: true, force: true }); });
-// 前提：暫存根的上層沒有 .git／.shiftblame，空資料夾才不會向上錨定。
+// 只清除暫存目錄之內的路徑；以 relative 判斷，暫存根是磁碟根（TEMP=D:\）時同樣成立。
+const inTmp = (p) => { const r = relative(resolve(tmpdir()), resolve(p)); return r !== '' && !r.startsWith('..') && !isAbsolute(r); };
+process.on('exit', () => { assert.ok(inTmp(root)); rmSync(root, { recursive: true, force: true }); });
+// 前提：暫存根的上層沒有可作錨點的 .git／.shiftblame（磁碟根與系統頂層目錄不作錨點），空資料夾才不會向上錨定。
 for (let dir = dirname(root); ;) {
-  assert.ok(!existsSync(join(dir, '.git')) && !existsSync(join(dir, '.shiftblame')), `暫存根上層含 Git 或工作區：${dir}`);
+  if (anchorable(dir)) assert.ok(!existsSync(join(dir, '.git')) && !existsSync(join(dir, '.shiftblame')), `暫存根上層含 Git 或工作區：${dir}`);
   const up = dirname(dir);
   if (up === dir) break;
   dir = up;

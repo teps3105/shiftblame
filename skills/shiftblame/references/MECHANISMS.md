@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 3.0.6
+revision: 3.0.7
 ---
 # 執行介面與界線
 
@@ -44,7 +44,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 
 ### 產品訪談閘
 
-- 適用範圍：帶對話代號（session_id）的事件。專案根是 cwd 向上第一個含 .git 或 .shiftblame 的目錄，都沒有時為 cwd。專案根不是根目錄、家目錄或其上層、系統頂層目錄時，hook 自動建立 .shiftblame/、.shiftblame/tmp/ 與內容為 * 的 .shiftblame/.gitignore，不寫 flow-state。非 Git 資料夾同樣建立，其下的子資料夾之後以它為專案根。
+- 適用範圍：帶對話代號（session_id）的事件。專案根是 cwd 向上第一個含 .git 或 .shiftblame 的目錄，都沒有時為 cwd；磁碟根與系統頂層目錄不作錨點（家目錄照常可作），sb 與 hook 用同一判定。專案根不是根目錄、家目錄或其上層、系統頂層目錄時，hook 自動建立 .shiftblame/、.shiftblame/tmp/ 與內容為 * 的 .shiftblame/.gitignore，不寫 flow-state。非 Git 資料夾同樣建立，其下的子資料夾之後以它為專案根。
 - 紀錄：.shiftblame/tmp/interview-<代號>.md，代號是對話代號 sha256 的前 12 碼，格式見 [INTERVIEW](../assets/INTERVIEW.md)。「## 第 N 輪」段落的觸發、提問、目標、範圍、驗收、使用者確認都有實際內容，該輪才算完成。
 - 開場標記 interview-<代號>.json 記下開場時已完成的輪數（base）與上一輪完成後的提問工具呼叫數（asks）：startup 在沒有標記時建立；resume 與 clear 以目前完成輪數重設並歸零計數，須再完成新的一輪；compact 沿用。紀錄出現新的完成輪時，hook 在其後的事件推進基準並歸零計數，下一輪須新證據。標記由 hook 維護，寫入工具或 shell 重定向寫它一律拒絕。
 - 寫入訪談紀錄（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）須有提問證據：本輪自上一輪完成（或對話開始）後至少一次提問工具呼叫（名稱以 ask 開頭，如 AskUserQuestion），未提問即拒絕；有證據則直接放行。專案檔案寫入、git commit／push 與 sb 流程命令不因訪談未完成而受阻；唯讀查證、tmp 筆記與專案根以外的寫入照常。
@@ -62,7 +62,7 @@ Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫�
 - 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免。放行時不刪章，只在印章記下當時的 HEAD；提交落地使 HEAD 前進後此章作廢，同一命令對同一 repo 只放行一次提交——被同命令另一錨定、其他 hook 或權限確認拒絕的呼叫不消耗印章，可直接重試。commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
 - main 最低機制（TDD→BDD→SDD 依意圖定檔）：無活動 slug（含 ended）時，staged 含行為碼（程式碼副檔名白名單、非測試路徑）而無測試同批，提交回傳 permissionDecision: ask，要求自證意圖檔位或補測試／規格後放行；有測試同批、純文件／設定變更、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。SDD 的規格先行指設計層規格（介面契約、型別、資料結構），與 slug G1 的產品需求契約是兩回事。
 - 破壞性刪除：rm -r、Remove-Item -Recurse、rd /s、find -delete 或 -exec rm、xargs rm、robocopy /MIR、rsync --delete 的本機目標須為絕對路徑。xargs 刪除的來源須是同一管線中、搜尋根為絕對路徑的 find；rsync 的遠端目的地（host:、user@host:、rsync://）不在此限。
-- 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。
+- 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層；Windows 上無磁碟代號的單段路徑如 /usr 在 Git Bash 指 Git 安裝目錄，不依 cwd 所在磁碟展開，同樣算），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。
 - 丟棄變更：git clean -f、reset --hard、checkout -f、checkout -- <路徑>、checkout .、restore（只有 --staged 除外）、switch --discard-changes 或 -f、stash drop／clear、branch -D 須以 git -C <絕對路徑> 錨定 repo。
 - 截斷重定向（>、>|、&>）須以絕對路徑為目標；丟棄輸出用 /dev/null 或 $null，追加用 >>。
 - 寫入工具的目標使用共同路徑解析（含 Git Bash 的 /c/ 路徑、符號連結，以及 Windows 忽略的段尾點與空白）；verify 段擋下受驗來源的修改，被忽略且未追蹤的輸出與 .shiftblame/ 不受限。帶 owner、repo、bucket 等遠端定位欄位或以 URI 為目標的工具寫的是遠端資源，不視為本機寫入。狀態損壞時只放行 flow-state 與 tmp 的修復寫入；沒有本機寫入目標的工具（如待辦清單）不受影響。

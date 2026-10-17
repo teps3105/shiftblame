@@ -188,6 +188,7 @@ assert.equal(git('restore', '--staged', 'tmp/junk.txt').status, 0);
 // —— commitmsg 格式閘（2.8.4：「type: 一句話」——無 type、冒號後無空格、未知 type、空主題、超長、多行都擋）——
 {
   const adv = mkdtempSync(join(tmpdir(), 'sb-cf-'));
+  try {
   for (const bad of ['feat:無空格即長文', '沒有type前綴的訊息', 'wip: 非流程詞彙', 'Feat: 大寫類型', 'feat:', 'feat: ']) {
     const rb = run2(adv, 'commitmsg', bad);
     assert.equal(rb.status, 1, `格式不合格即擋「${bad}」`);
@@ -197,7 +198,7 @@ assert.equal(git('restore', '--staged', 'tmp/junk.txt').status, 0);
   const max = 'feat: ' + '字'.repeat(114); // 6＋114＝120 字元
   assert.equal(run2(adv, 'commitmsg', max).status, 0, '一句話上限內（120 字元）放行');
   assert.equal(run2(adv, 'commitmsg', `${max}x`).status, 1, '超過一句話上限（121 字元）即擋');
-  rmSync(adv, { recursive: true, force: true });
+  } finally { rmSync(adv, { recursive: true, force: true }); }
 }
 
 // —— 手寫印章不豁免格式＋管線造提交（2.8.4：印章檔在可寫的 tmp、可被手寫，格式由 hook 端以同判據獨立驗）——
@@ -352,6 +353,7 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
 // —— commitmsg 詞彙閘（追蹤編號／流程時序語／非繁中開頭）——描述自由不設黑名單；格式另由「type: 一句話」閘驗（樣本均帶合法 type）
 {
   const adv = mkdtempSync(join(tmpdir(), 'sb-cv-'));
+  try {
   for (const bad of ['chore: merge old', 'fix: 修正r24殘留問題描述', 'feat: F4 規格同步修正', 'fix: MS001 檔案整理', 'feat: 斷言先行的重寫驗證', 'fix: 第三組資料修正調整', 'feat: spec-rewrite 規格重寫']) {
     const rb = run2(adv, 'commitmsg', bad);
     assert.equal(rb.status, 0, `提交訊息可描述「${bad}」，無字詞黑名單`);
@@ -360,7 +362,7 @@ assert.equal(hr9.status, 0, 'MY_GIT_DIR=（非重定向變數）→放行');
     const ro = run2(adv, 'commitmsg', ok);
     assert.equal(ro.status, 0, `合法訊息過「${ok}」`);
   }
-  rmSync(adv, { recursive: true, force: true });
+  } finally { rmSync(adv, { recursive: true, force: true }); }
 }
 writeFileSync(join(root, ".shiftblame/flow-state.json"), stateSnapshot); // 還原主流程狀態
 assert.equal(git('checkout', '--', 'seed.txt').status, 0, '段內 -a 測試髒汙還原');

@@ -5,7 +5,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync,
   renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const cli = fileURLToPath(new URL('../bin/sb.mjs', import.meta.url));
@@ -13,10 +13,12 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 const at = '2026-09-25T00:00:00.000Z';
 const ok = result => { assert.equal(result.status, 0, result.stderr || result.stdout); return result; };
 const bad = (result, pattern) => { assert.equal(result.status, 1, result.stderr || result.stdout); if (pattern) assert.match(result.stderr, pattern); return result; };
+// 只清除暫存目錄之內的路徑；以 relative 判斷，暫存根是磁碟根（TEMP=D:\）時同樣成立。
+const inTmp = (p) => { const r = relative(resolve(tmpdir()), resolve(p)); return r !== '' && !r.startsWith('..') && !isAbsolute(r); };
 function fixture(t, { initial = true, gitRepo = true } = {}) {
   const temp = mkdtempSync(join(tmpdir(), 'sb-handoff-'));
   t.after(() => {
-    assert.ok(resolve(temp).startsWith(resolve(tmpdir()) + sep));
+    assert.ok(inTmp(temp));
     rmSync(temp, { recursive: true, force: true });
   });
   const root = join(temp, 'repo'); mkdirSync(root);
