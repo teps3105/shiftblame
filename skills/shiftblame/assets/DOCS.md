@@ -1,6 +1,6 @@
 ---
 name: DOCS
-revision: 3.0.4
+revision: 3.0.5
 ---
 # 文件品質
 

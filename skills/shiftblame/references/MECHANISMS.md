@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 3.0.4
+revision: 3.0.5
 ---
 # 執行介面與界線
 
@@ -49,6 +49,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 - 開場標記 interview-<代號>.json 記下開場時已完成的輪數（base）與上一輪完成後的提問工具呼叫數（asks）：startup 在沒有標記時建立；resume 與 clear 以目前完成輪數重設並歸零計數，須再完成新的一輪；compact 沿用。紀錄出現新的完成輪時，hook 在其後的事件推進基準並歸零計數，下一輪須新證據。標記由 hook 維護，寫入工具或 shell 重定向寫它一律拒絕。
 - 寫入訪談紀錄（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）須有提問證據：本輪自上一輪完成（或對話開始）後至少一次提問工具呼叫（名稱以 ask 開頭，如 AskUserQuestion），未提問即拒絕；有證據則直接放行。專案檔案寫入、git commit／push 與 sb 流程命令不因訪談未完成而受阻；唯讀查證、tmp 筆記與專案根以外的寫入照常。
 - 不設閘：沒有對話代號的呼叫，以及 ZCode 子代理（代號以 sess_subagent_ 開頭）。Claude Code 與 Codex 的子代理和父代理共用對話代號，也共用同一份紀錄。
+- 外部顧問問診：主對話以唯讀 CLI 呼叫另一平台的代理（如 `codex exec -s read-only`）時，在啟動該 CLI 的環境帶 `SHIFTBLAME_CONSULT=1`。hook 讀到這個值（只認 1）就不設訪談閘、不建開場標記，開場與每次輸入改注入「[顧問問診] 直接依提問作答」的提示；問診沒有使用者可答，訪談由發起問診的主對話負責。標示只在 CLI 啟動時進入 hook 的環境，對話中執行的命令改不到，一般對話的訪談規則不變。
 
 ### 使用者確認
 

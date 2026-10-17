@@ -1,8 +1,8 @@
 // sb-interview：產品訪談閘——有對話代號的工作階段自動建立 .shiftblame 工作區；訪談不封鎖專案檔案寫入、
 // git commit／push 與 sb 命令，只在寫入紀錄本身時要求提問證據：每一輪自上一輪完成（或對話開始）後
 // 須至少一次提問工具（名稱以 ask 開頭）呼叫，有證據直接放行；開場標記由 hook 維護，紀錄出現新的完成輪
-// 時推進基準並歸零計數；恢復的對話須提問後追加新的一輪，壓縮續接沿用；子代理與無對話代號的呼叫不設閘；
-// 家目錄、其上層不自動建立；防護出錯時放行並記錄。
+// 時推進基準並歸零計數；恢復的對話須提問後追加新的一輪，壓縮續接沿用；子代理、外部顧問問診與無對話代號的
+// 呼叫不設閘；家目錄、其上層不自動建立；防護出錯時放行並記錄。
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -14,10 +14,10 @@ import { interviewPath, interviewToken, parseInterview } from '../bin/interview.
 const hook = fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs', import.meta.url));
 const base = mkdtempSync(join(tmpdir(), 'sb-interview-'));
 process.on('exit', () => rmSync(base, { recursive: true, force: true }));
-// 假家目錄：hook 以 HOME／USERPROFILE 判定家目錄，測試不碰真實家目錄。
+// 假家目錄：hook 以 HOME／USERPROFILE 判定家目錄，測試不碰真實家目錄；外部的問診標示不帶進一般案例。
 const home = join(base, 'home');
 const env = { ...process.env };
-for (const k of Object.keys(env)) if (['HOME', 'USERPROFILE'].includes(k.toUpperCase())) delete env[k];
+for (const k of Object.keys(env)) if (['HOME', 'USERPROFILE', 'SHIFTBLAME_CONSULT'].includes(k.toUpperCase())) delete env[k];
 Object.assign(env, { HOME: home, USERPROFILE: home });
 const repo = (dir) => { mkdirSync(dir, { recursive: true }); assert.equal(spawnSync('git', ['init', '-q', dir]).status, 0); return dir; };
 const proj = repo(join(home, 'proj'));
@@ -169,6 +169,26 @@ const bare = repo(join(home, 'bare'));
 assert.equal(run('SessionStart', { source: 'startup' }, bare).status, 0);
 assert.equal(run('PreToolUse', { tool_name: 'Write', tool_input: { file_path: join(bare, 'a.js') } }, bare).status, 0);
 assert.equal(existsSync(join(bare, '.shiftblame')), false, '沒有對話代號不自動建立工作區');
+// 外部顧問唯讀問診：啟動代理 CLI 時帶 SHIFTBLAME_CONSULT=1，不做訪談、不建標記，改提示直接作答；其他值照常訪談。
+const consult = (value, session_id) => (event, payload = {}) =>
+  spawnSync(process.execPath, [hook], { encoding: 'utf8', env: { ...env, SHIFTBLAME_CONSULT: value }, input: JSON.stringify({ cwd: proj, hook_event_name: event, session_id, ...payload }) });
+const consultSid = 'c0a51e7e-0000-4000-8000-000000000003';
+const consultRun = consult('1', consultSid);
+const consultMarker = interviewPath(proj, interviewToken(consultSid)).replace(/\.md$/, '.json');
+for (const [event, payload] of [['SessionStart', { source: 'startup' }], ['UserPromptSubmit', { prompt: '審查這份差異' }]]) {
+  r = consultRun(event, payload);
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(context(r), /\[訪談\]/, `${event}：問診不提示訪談`);
+  assert.match(context(r), /\[顧問問診\].*直接依提問作答/, `${event}：問診提示直接作答`);
+}
+assert.equal(consultRun('PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions: [] } }).status, 0);
+assert.equal(consultRun('PreToolUse', { tool_name: 'Read', tool_input: { file_path: join(proj, 'src', 'app.js') } }).status, 0);
+assert.equal(existsSync(consultMarker), false, '問診不建立訪談標記');
+const notConsultSid = 'c0a51e7e-0000-4000-8000-000000000004';
+r = consult('0', notConsultSid)('SessionStart', { source: 'startup' });
+assert.match(context(r), /\[訪談\] 先做產品訪談/, '標示值不是 1 時照常訪談');
+assert.doesNotMatch(context(r), /\[顧問問診\]/);
+assert.ok(existsSync(interviewPath(proj, interviewToken(notConsultSid)).replace(/\.md$/, '.json')), '一般對話照常建立標記');
 
 // —— 10. 第一個事件就是工具呼叫：同樣建立工作區；標記在事件中自建，紀錄寫入仍須提問 ——
 const fresh = repo(join(home, 'fresh'));

@@ -411,8 +411,13 @@ function checkInterviewShell(ctx, scan) {
   }
   return null;
 }
+// 外部顧問唯讀問診：呼叫端啟動代理 CLI 時帶 SHIFTBLAME_CONSULT=1。問診沒有使用者可答、多在唯讀沙盒執行，
+// 與子代理同樣不設訪談閘，改提示直接作答；標示只在啟動時給得進 hook 的環境，對話中的命令改不到。
+const CONSULT = process.env.SHIFTBLAME_CONSULT === '1';
+const CONSULT_LINE = '\n[顧問問診] 本工作階段是外部顧問唯讀問診：不做產品訪談、不寫訪談紀錄、不改檔，直接依提問作答。';
 // 開場與每次輸入的訪談提示。
 function interviewLine(ctx, event) {
+  if (CONSULT) return CONSULT_LINE;
   const iv = ctx.interview;
   if (!iv) return '';
   const rel = interviewRel(ctx);
@@ -898,12 +903,12 @@ function decide(event, input, ctx) {
   return interview ?? {};
 }
 
-// 平台對話代號；ZCode 子代理（sess_subagent_…）不帶上層代號，不另做訪談。
+// 平台對話代號；ZCode 子代理（sess_subagent_…）不帶上層代號，與外部顧問問診同樣不另做訪談。
 function sessionOf(input) {
   const id = [input.session_id, input.sessionId].find((v) => typeof v === 'string' && v.trim());
   return id ? id.trim() : null;
 }
-const interviewApplies = (root, sessionId) => !!(sessionId && root && !/^sess_subagent_/.test(sessionId) && safeWorkspaceRoot(root) && existsSync(join(root, '.shiftblame', 'tmp')));
+const interviewApplies = (root, sessionId) => !!(!CONSULT && sessionId && root && !/^sess_subagent_/.test(sessionId) && safeWorkspaceRoot(root) && existsSync(join(root, '.shiftblame', 'tmp')));
 
 // 失敗裁示閘發出 ask 時記錄已問過（askedAt），同一輪升級只問一次。
 function markFailureAsked(root, sessionId, node) {
