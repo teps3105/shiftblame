@@ -97,13 +97,28 @@ assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
 const stamp=join(root,'.shiftblame/tmp/commit-stamp.json');
 writeFileSync(stamp,JSON.stringify({message:'fix: x',cwd:root,issuedAt:new Date().toISOString()}));
 assert.equal(tool('Bash',{command:'git commit -m "fix: y"'}).status,2);assert.ok(existsSync(stamp));
-assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,0);assert.ok(!existsSync(stamp));
+// 放行不刪章：同一呼叫仍可能被同命令另一錨定、其他 hook 或權限確認拒絕，提交未必執行；提交落地（HEAD 前進）才作廢。
+assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,0);assert.ok(existsSync(stamp),'放行不刪章');
+assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,0,'提交未落地前重試不必重簽');
+const elsewhere=mkdtempSync(join(tmpdir(),'sb-hooks-cwd-'));
+process.on('exit',()=>rmSync(elsewhere,{recursive:true,force:true}));
+mkdirSync(join(elsewhere,'.shiftblame/tmp'),{recursive:true});
+assert.equal(spawnSync('git',['-C',elsewhere,'init'],{encoding:'utf8'}).status,0);
+const from=(cwd,command)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd,hook_event_name:'PreToolUse',tool_name:'Bash',tool_input:{command}})});
+r=from(elsewhere,`git -C ${root} commit -m "fix: x" && git commit -m "fix: x"`);
+assert.equal(r.status,2);assert.match(r.stderr,/缺少 commit 印章/);assert.ok(existsSync(stamp),'同命令另一錨定被拒時，已通過錨定的章不消費');
+assert.equal(from(elsewhere,`git -C ${root} commit -m "fix: x"`).status,0,'被拒後以 -C 重試不必重簽');
+r=from(elsewhere,`git -C ${root} commit -m "fix: x" && git -C ${root} commit --amend -m "fix: x"`);
+assert.equal(r.status,2,'同命令對同一 repo 兩次不同提交——一枚章只授權一次提交');assert.ok(existsSync(stamp));
+assert.equal(git('-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-q','-m','fix: x').status,0);
+r=tool('Bash',{command:'git commit -m "fix: x"'});
+assert.equal(r.status,2,'提交落地後同章不可再用');assert.match(r.stderr,/已用於先前的提交/);assert.ok(!existsSync(stamp),'作廢章清除');
 assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
 const stray=join(root,'outside');mkdirSync(stray);
 r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:stray,hook_event_name:'SessionStart'})});
 assert.equal(r.status,0);assert.ok(!existsSync(join(stray,'.shiftblame')));
 // —— main 模式最低機制（TDD→BDD→SDD 依意圖定檔）：行為碼提交無測試同批 → ask 自證檔位；
-// 有測試同批、純非程式碼、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。印章在拒絕檢查路徑即消費——每場景重新發章。
+// 有測試同批、純非程式碼、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。每場景重新發章，避免沿用上一場景的放行標記。
 const cli=fileURLToPath(new URL('../bin/sb.mjs',import.meta.url));
 const mint=(msg)=>spawnSync(process.execPath,[cli,'commitmsg',msg],{cwd:root,encoding:'utf8'});
 rmSync(statePath); // 無 slug＝main 模式

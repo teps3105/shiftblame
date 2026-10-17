@@ -78,8 +78,10 @@ const stampFile = join(cwd, '.shiftblame/tmp/commit-stamp.json');
 assert.equal(JSON.parse(readFileSync(stampFile, 'utf8')).message, 'chore: merge old');
 assert.equal(commitHook('chore: merge other').status, 2, '實際提交仍須匹配訊息印章');
 ok(commitHook('chore: merge old'));
-assert.equal(existsSync(stampFile), false, '提交 hook 焚章');
-ok(run('commitmsg', 'chore: merge old')); // 焚章後可重新發章——印章一次性（2.4.0 無對抗消費概念）。
+const approved = () => Object.hasOwn(JSON.parse(readFileSync(stampFile, 'utf8')), 'approvedHead');
+assert.ok(approved(), '提交 hook 放行時記下 HEAD，提交落地才作廢');
+ok(run('commitmsg', 'chore: merge old')); // 重新發章覆寫放行標記——印章一次性（2.4.0 無對抗消費概念）。
+assert.equal(approved(), false);
 const rejectInit = (pattern) => {
   const before = readFileSync(stateFile);
   const head = tip();
@@ -136,7 +138,7 @@ assert.equal(run('commitmsg', 'chore: 完結後續提交').status, 0, '完結後
 assert.equal(run('commitmsg', 'merge old').status, 1, '完結後無 type 的固定合併訊息不再發章（2.8.4 格式閘）');
 assert.equal(run('commitmsg', 'feat: 完結後直接作業提交').status, 0, '完結後正常 type 訊息可發章');
 assert.equal(commitHook('feat: 完結後直接作業提交').status, 0, '完結後正常訊息 commit 過 hook');
-assert.equal(existsSync(stampFile), false, '完結態 commit 焚章');
+assert.ok(approved(), '完結態 commit 放行並記下 HEAD');
 commit('base.txt', 'base-only commit\n');
 const baseTip = tip();
 assert.notEqual(baseTip, initial);

@@ -97,7 +97,10 @@ for (const initial of [undefined, { rewriteSeen: { rev: 0, at } }, { slug: null,
   assert.equal(gate.status, 0, gate.stderr);
   assert.equal(f.git('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', msg).status, 0);
   assert.equal(f.run('state').status, 0);
-  assert.equal(existsSync(join(f.cwd, '.shiftblame/tmp/commit-stamp.json')), false, '印章於 commit 驗章焚章（一對一）');
+  const spent = f.gate('Bash', { command: `git commit -m "${msg}"` });
+  assert.equal(spent.status, 2, '提交落地後同章不可再用（一對一）');
+  assert.match(spent.stderr, /已用於先前的提交/);
+  assert.equal(existsSync(join(f.cwd, '.shiftblame/tmp/commit-stamp.json')), false, '作廢章清除');
   assert.equal(existsSync(join(f.cwd, '.shiftblame/demo')), false);
 }
 // ended 態容忍 rewriteSeen 殘留（hooks 記錄鍵屬 HOOK_RECORD_KEYS——sb end 冪等清理外的防禦深度，不炸白名單）。

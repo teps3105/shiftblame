@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "3.0.5"
+  version: "3.0.6"
 description: 以明確授權、需求契約、獨立審查與真實驗收管理開發工作；main 模式為預設常態，slug 是需求工程的機械化支架。
 ---
 # Shiftblame

@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 3.0.5
+revision: 3.0.6
 ---
 # 執行介面與界線
 
@@ -59,7 +59,7 @@ SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSub
 
 Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫、heredoc、管線、命令替換，以及 bash -c、cmd /c、pwsh -Command、-EncodedCommand、iex 等巢狀層，最多 4 層，超過或內容過多即拒絕。只核對實際執行的命令，字串、註解與參數中的相同字樣不會誤擋。
 
-- 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免；commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
+- 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免。放行時不刪章，只在印章記下當時的 HEAD；提交落地使 HEAD 前進後此章作廢，同一命令對同一 repo 只放行一次提交——被同命令另一錨定、其他 hook 或權限確認拒絕的呼叫不消耗印章，可直接重試。commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
 - main 最低機制（TDD→BDD→SDD 依意圖定檔）：無活動 slug（含 ended）時，staged 含行為碼（程式碼副檔名白名單、非測試路徑）而無測試同批，提交回傳 permissionDecision: ask，要求自證意圖檔位或補測試／規格後放行；有測試同批、純文件／設定變更、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。SDD 的規格先行指設計層規格（介面契約、型別、資料結構），與 slug G1 的產品需求契約是兩回事。
 - 破壞性刪除：rm -r、Remove-Item -Recurse、rd /s、find -delete 或 -exec rm、xargs rm、robocopy /MIR、rsync --delete 的本機目標須為絕對路徑。xargs 刪除的來源須是同一管線中、搜尋根為絕對路徑的 find；rsync 的遠端目的地（host:、user@host:、rsync://）不在此限。
 - 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。

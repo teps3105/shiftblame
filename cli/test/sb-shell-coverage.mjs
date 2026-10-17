@@ -52,16 +52,17 @@ let deep='git commit -m x';for(let i=0;i<6;i++)deep=`bash -c ${JSON.stringify(de
 r=sh(deep);assert.equal(r.status,2);assert.match(r.stderr,/巢狀 shell 超過/);
 r=tool('Bash',{command:['git','commit','-m','fix: x']});assert.equal(r.status,2,'陣列形式的命令同樣檢查');
 
-// 有印章時巢狀提交放行並消費印章；同一提交的重複候選只核對一次。
-issue('fix: x');assert.equal(sh(`bash -c "git commit -m 'fix: x'"`).status,0);assert.ok(!existsSync(stamp));
-issue('fix: x');assert.equal(sh('echo "git commit -m \'fix: x\'" | bash').status,0);assert.ok(!existsSync(stamp));
-issue('fix: y');assert.equal(ps('git commit -m "fix: y"').status,0);assert.ok(!existsSync(stamp));
+// 有印章時巢狀提交放行，並在印章記下放行當時的 HEAD（提交落地才作廢）；同一提交的重複候選只核對一次。
+const approved=()=>Object.hasOwn(JSON.parse(readFileSync(stamp,'utf8')),'approvedHead');
+issue('fix: x');assert.equal(sh(`bash -c "git commit -m 'fix: x'"`).status,0);assert.ok(approved());
+issue('fix: x');assert.equal(sh('echo "git commit -m \'fix: x\'" | bash').status,0);assert.ok(approved());
+issue('fix: y');assert.equal(ps('git commit -m "fix: y"').status,0);assert.ok(approved());
 // 子目錄 cwd：往上找到專案根，印章與狀態都以專案根為準。
-issue('fix: z');assert.equal(sh('git commit -m "fix: z"',join(root,'sub')).status,0);assert.ok(!existsSync(stamp));
+issue('fix: z');assert.equal(sh('git commit -m "fix: z"',join(root,'sub')).status,0);assert.ok(approved());
 assert.ok(!existsSync(join(root,'sub/.shiftblame')));
 if(process.platform==='win32'){
  const msys='/'+root[0].toLowerCase()+root.slice(2).replace(/\\/g,'/');
- issue('fix: w');assert.equal(sh(`git -C ${msys} commit -m "fix: w"`,tmpdir()).status,0,'Git Bash 的 /c/… 路徑等於 C:/…');assert.ok(!existsSync(stamp));
+ issue('fix: w');assert.equal(sh(`git -C ${msys} commit -m "fix: w"`,tmpdir()).status,0,'Git Bash 的 /c/… 路徑等於 C:/…');assert.ok(approved());
 }
 writeFileSync(stamp,JSON.stringify({message:'fix: n',cwd:root,issuedAt:'not-a-date'}));
 r=sh('git commit -m "fix: n"');assert.equal(r.status,2);assert.match(r.stderr,/逾期|時間無效/);assert.ok(existsSync(stamp));rmSync(stamp);

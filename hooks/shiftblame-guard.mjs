@@ -753,13 +753,28 @@ function checkCommitStamp(anchor, msg) {
   if (!objectRecord(stamp) || !stamp.cwd || !stamp.message || !stamp.issuedAt) return 'commit 印章欄位不全——重跑 sb commitmsg "<訊息>"';
   if (!isAbs(stamp.cwd)) return 'commit 印章 cwd 非絕對——重跑 sb commitmsg（sb 簽發的印章一律記錄絕對專案根）';
   if (normPath(anchor, stamp.cwd) !== normPath(anchor, anchor)) return 'commit 印章屬於其他專案——印章綁定提交的錨定 repo；在本次提交的錨定專案（-C 目標或目前專案）重跑 sb commitmsg';
+  const head = headOf(anchor);
+  if (Object.hasOwn(stamp, 'approvedHead') && stamp.approvedHead !== head) {
+    try { unlinkSync(stampPath); } catch { /* 作廢章留著也只會再被擋，下次 sb commitmsg 覆寫 */ }
+    return 'commit 印章已用於先前的提交（放行後 HEAD 已前進）——一枚印章授權一次提交；重跑 sb commitmsg "<訊息>"';
+  }
   const age = Date.now() - new Date(stamp.issuedAt).getTime();
   if (!Number.isFinite(age) || age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）或時間無效——重跑 sb commitmsg "<訊息>"';
   if (age < -60000) return 'commit 印章時間戳在未來——只接受剛簽發的印章，重跑 sb commitmsg';
   if (stamp.message !== msg) return 'commit 訊息與印章不符——以完全相同的訊息重跑 sb commitmsg 後再提交';
   if (['verify', 'done'].includes(health.state?.node)) return '驗收段對 repo 唯讀——不得提交；需修改時先回實作段';
-  try { unlinkSync(stampPath); } catch { return 'commit 印章無法消費——確認 .shiftblame/tmp 可寫後重跑 sb commitmsg'; }
-  return null; // 一次性消費：一枚印章授權一次提交
+  // 放行不刪章：hook 看不到這次呼叫最後是否執行（同命令另一錨定、其他 hook 或權限確認都可能拒絕）。
+  // 首次放行記下當時 HEAD；提交落地使 HEAD 前進，此章隨即作廢——一枚印章授權一次提交。
+  if (!Object.hasOwn(stamp, 'approvedHead')) {
+    try { writeAtomic(stampPath, JSON.stringify({ ...stamp, approvedHead: head }, null, 2)); } catch { return 'commit 印章無法標記——確認 .shiftblame/tmp 可寫後重跑 sb commitmsg'; }
+  }
+  return null;
+}
+// 未有提交（unborn）或不是 git repo 時為 null；首次提交後 HEAD 出現，同樣視為前進。
+function headOf(anchor) {
+  try {
+    return execFileSync('git', ['-C', anchor, 'rev-parse', '--verify', '-q', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null;
+  } catch { return null; }
 }
 function checkCommit(ctx, entry, seen) {
   const g = gitInvocation(entry.args);
@@ -773,11 +788,13 @@ function checkCommit(ctx, entry, seen) {
   if (!anchor) return null; // 無絕對錨定可用：不猜測
   const parsed = commitMessage(g.subArgs);
   if (parsed.error) return parsed.error;
-  // 管線餵 shell 時同一段文字可能以多個候選腳本展開：完全相同的提交只核對一次，避免第二次因印章已消費而誤擋。
-  const key = `${normPath(anchor, anchor)}\0${g.subArgs.map((w) => w.value).join('\0')}`;
-  if (seen.has(key)) return null;
+  // 管線餵 shell 時同一段文字可能以多個候選腳本展開：完全相同的提交只核對一次。
+  // 印章放行時不刪除，同命令對同一 repo 的第二個不同提交須在此擋下——一枚印章授權一次提交。
+  const repo = normPath(anchor, anchor);
+  const args = g.subArgs.map((w) => w.value).join('\0');
+  if (seen.has(repo)) return seen.get(repo) === args ? null : '同一命令對同一 repo 有多個不同提交——一枚印章授權一次提交；拆成分次提交，每次先跑 sb commitmsg';
   const reason = checkStaged(anchor) ?? checkCommitStamp(anchor, parsed.msg);
-  if (!reason) seen.add(key);
+  if (!reason) seen.set(repo, args);
   return reason;
 }
 
@@ -846,7 +863,7 @@ function shellDecision(ctx, tool, text) {
     if (script?.deny) return deny(script.deny);
     if (script?.warn) warn = script.warn;
   }
-  const seen = new Set();
+  const seen = new Map();
   for (const e of entries) {
     if (e.query) continue;
     if (e.name === 'git') {

@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// 時點對抗（時點屬六段圓環流程）：時點 1＝research→plan 邊（審 G1 需求與研究，--point 1；審查通過即自主推進，不帶使用者章）；時點 2＝quality→build 邊（審 G2 計畫與品質，--point 2；同上）；時點 3＝verify 出口邊（驗收完成、G1 回指閉環後審驗收結果，--point 3）；中鏈（requirement→research→plan→quality 之機械邊與 build→verify）零審核（build→verify 裸推進——G3 回指＋樹淨即過）；出口（next --new-ms／end）＝時點 3 對抗條目＋--boss-ok 旗標即章（機械不驗老闆輸入時戳，語義由對話揭露＋老闆終審承擔；條目新鮮度仍機械驗——晚於本 ms 進 verify）；fail＝老闆新輸入經訪談回 requirement 零旗標（對抗義務僅限出口）；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章焚章）；非對抗邊帶旗標即擋。
+// 時點對抗（時點屬六段圓環流程）：時點 1＝research→plan 邊（審 G1 需求與研究，--point 1；審查通過即自主推進，不帶使用者章）；時點 2＝quality→build 邊（審 G2 計畫與品質，--point 2；同上）；時點 3＝verify 出口邊（驗收完成、G1 回指閉環後審驗收結果，--point 3）；中鏈（requirement→research→plan→quality 之機械邊與 build→verify）零審核（build→verify 裸推進——G3 回指＋樹淨即過）；出口（next --new-ms／end）＝時點 3 對抗條目＋--boss-ok 旗標即章（機械不驗老闆輸入時戳，語義由對話揭露＋老闆終審承擔；條目新鮮度仍機械驗——晚於本 ms 進 verify）；fail＝老闆新輸入經訪談回 requirement 零旗標（對抗義務僅限出口）；段內提交對抗已移除——commitmsg 僅格式閘＋印章（hooks 驗章，提交落地後作廢）；非對抗邊帶旗標即擋。
 const root = mkdtempSync(join(tmpdir(), 'sb-adv-'));
 process.on('exit', () => rmSync(root, { recursive: true, force: true }));
 const cli = resolve(dirname(fileURLToPath(import.meta.url)), '../bin/sb.mjs');
@@ -154,14 +154,15 @@ assert.ok(state().lastAdv['1'].report === reportPath && state().lastAdv['1'].ver
 r = run('commitmsg', 'feat: 對抗閘測試提交');
 assert.equal(r.status, 0, 'commitmsg 與對抗宣告脫鉤——格式合格即發章');
 
-// —— 全鏈串接：commitmsg 發章→hooks commit 驗章焚章（印章一次性）——
+// —— 全鏈串接：commitmsg 發章→hooks commit 驗章放行→提交落地後印章作廢（印章一次性）——
 r = run('commitmsg', 'feat: 全鏈提交驗證訊息');
 assert.equal(r.status, 0, '發章');
 const hc = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
 assert.equal(hc.status, 0, '全鏈：hooks commit 放行——印章一對一');
-assert.equal(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), false, 'hooks 於 commit 時焚章');
+assert.ok(existsSync(join(root, '.shiftblame', 'tmp', 'commit-stamp.json')), '放行不焚章——這次呼叫仍可能被其他 hook 或權限確認拒絕');
+assert.equal(git('-c', 'user.name=t', '-c', 'user.email=t@x', 'commit', '--allow-empty', '-m', 'feat: 全鏈提交驗證訊息').status, 0);
 const hc2 = hookRun({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: `git -C ${root} commit -m "feat: 全鏈提交驗證訊息"` } });
-assert.equal(hc2.status, 2, '印章已焚→再 commit 擋');
+assert.equal(hc2.status, 2, '提交落地→印章作廢，再 commit 擋');
 
 // —— staged 系統檔不入庫（禁入僅系統檔 .shiftblame/——其他位置一律放行）——
 // staged 含 .shiftblame/ → commitmsg 不發章
@@ -312,11 +313,11 @@ assert.match(hf.stderr, /非絕對/);
     const hx = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
     assert.equal(hx.status, 2, '內部 repo 缺章→擋');
     assert.match(hx.stderr, /缺少 commit 印章/);
-    // 內部 repo 有效章→跨 repo commit 放行，並焚內部 repo 的印章（2.4.0 無對抗消費）
+    // 內部 repo 有效章→跨 repo commit 放行，放行標記落在內部 repo 的印章（2.4.0 無對抗消費）
     writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: inner, issuedAt: new Date().toISOString() }));
     const hp = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
     assert.equal(hp.status, 0, '內部 repo 有效章→跨 repo commit 放行');
-    assert.equal(existsSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json')), false, '焚目標 repo 印章');
+    assert.ok(Object.hasOwn(JSON.parse(readFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), 'utf8')), 'approvedHead'), '目標 repo 印章記下放行時的 HEAD');
     // 章綁定其他專案：ext 簽發的章被搬進 inner（偽造面）→擋（章綁定錨點 repo）
     writeFileSync(join(inner, '.shiftblame', 'tmp', 'commit-stamp.json'), JSON.stringify({ message: 'feat: 跨repo提交', cwd: ext, issuedAt: new Date().toISOString() }));
     const hm = hookExt(`git -C ${inner} commit -m "feat: 跨repo提交"`);
