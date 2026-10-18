@@ -401,8 +401,13 @@ function checkInterviewShell(ctx, scan) {
 }
 // 外部顧問唯讀問診：呼叫端啟動代理 CLI 時帶 SHIFTBLAME_CONSULT=1。問診沒有使用者可答、多在唯讀沙盒執行，
 // 與子代理同樣不設訪談閘，改提示直接作答；標示只在啟動時給得進 hook 的環境，對話中的命令改不到。
-const CONSULT = process.env.SHIFTBLAME_CONSULT === '1';
-const CONSULT_LINE = '\n[顧問問診] 本工作階段是外部顧問唯讀問診：不做產品訪談、不寫訪談紀錄、不改檔，直接依提問作答。';
+// 值為 write 時是委派執行：主對話把限定範圍的實作交給另一平台的代理，同樣沒有使用者可答，不設訪談閘，
+// 但不限唯讀；提交章等其他閘門照常。
+const CONSULT_MODE = process.env.SHIFTBLAME_CONSULT;
+const CONSULT = CONSULT_MODE === '1' || CONSULT_MODE === 'write';
+const CONSULT_LINE = CONSULT_MODE === 'write'
+  ? '\n[委派執行] 本工作階段是主對話委派的實作：不做產品訪談、不寫訪談紀錄，依簡報允許的檔案與範圍作業；簡報外的檔案不改，其他閘門照常。'
+  : '\n[顧問問診] 本工作階段是外部顧問唯讀問診：不做產品訪談、不寫訪談紀錄、不改檔，直接依提問作答。';
 // 開場與每次輸入的訪談提示。
 function interviewLine(ctx, event) {
   if (CONSULT) return CONSULT_LINE;

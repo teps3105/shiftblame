@@ -184,6 +184,18 @@ for (const [event, payload] of [['SessionStart', { source: 'startup' }], ['UserP
 assert.equal(consultRun('PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions: [] } }).status, 0);
 assert.equal(consultRun('PreToolUse', { tool_name: 'Read', tool_input: { file_path: join(proj, 'src', 'app.js') } }).status, 0);
 assert.equal(existsSync(consultMarker), false, '問診不建立訪談標記');
+// 委派執行：SHIFTBLAME_CONSULT=write 同樣不做訪談、不建標記，改提示依簡報範圍作業，且不帶唯讀問診的「不改檔」。
+const delegateSid = 'c0a51e7e-0000-4000-8000-000000000005';
+const delegateRun = consult('write', delegateSid);
+for (const [event, payload] of [['SessionStart', { source: 'startup' }], ['UserPromptSubmit', { prompt: '照簡報修正腳本' }]]) {
+  r = delegateRun(event, payload);
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(context(r), /\[訪談\]/, `${event}：委派不提示訪談`);
+  assert.match(context(r), /\[委派執行\].*依簡報允許的檔案與範圍作業/, `${event}：委派提示依簡報作業`);
+  assert.doesNotMatch(context(r), /不改檔/, `${event}：委派不限唯讀`);
+}
+assert.equal(delegateRun('PreToolUse', { tool_name: 'Write', tool_input: { file_path: join(proj, 'src', 'app.js') } }).status, 0, '委派可寫專案檔');
+assert.equal(existsSync(interviewPath(proj, interviewToken(delegateSid)).replace(/\.md$/, '.json')), false, '委派不建立訪談標記');
 const notConsultSid = 'c0a51e7e-0000-4000-8000-000000000004';
 r = consult('0', notConsultSid)('SessionStart', { source: 'startup' });
 assert.match(context(r), /\[訪談\] 先做產品訪談/, '標示值不是 1 時照常訪談');
