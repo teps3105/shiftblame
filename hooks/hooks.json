@@ -35,6 +35,30 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
+            "timeout": 10,
+            "statusMessage": "shiftblame: 成功時歸零失敗計數"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
+            "timeout": 10,
+            "statusMessage": "shiftblame: 累計連續失敗並注入引導"
+          }
+        ]
+      }
     ]
   }
 }

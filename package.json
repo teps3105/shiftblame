@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "shiftblame — 授權、訪談與真實驗收的 agent 開發方法（全域 CLI：sb）",
   "license": "MIT",
   "repository": {

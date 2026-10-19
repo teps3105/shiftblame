@@ -1,6 +1,6 @@
 ---
 name: MECHANISMS
-revision: 4.0.0
+revision: 4.0.1
 ---
 # 執行介面與界線
 
@@ -18,9 +18,9 @@ sb state 印出專案根、.shiftblame/ 工作區是否存在與交接查找方�
 
 ## Hooks
 
-SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSubmit 重置本回合純觀測數據，訪談未完成時附提醒。PreToolUse 檢查產品訪談、repo 邊界、破壞性目標、提交印章與最低品質機制。回合結束依任務完成或實際阻塞判斷。平台自動壓縮不設前置介入：跨對話狀態由 save／load 承載。
+SessionStart 注入簡短的授權與驗收原則及訪談提示；PostToolUse 與 PostToolUseFailure 維護失敗計數；UserPromptSubmit 重置本回合純觀測數據，訪談未完成時附提醒。PreToolUse 檢查產品訪談、repo 邊界、破壞性目標、提交印章與最低品質機制。回合結束依任務完成或實際阻塞判斷。平台自動壓縮不設前置介入：跨對話狀態由 save／load 承載。
 
-失敗信號引導：PostToolUseFailure 以對話代號累計連續失敗，PostToolUse 的工具成功把計數歸零，換對話重新計數。達三次起每次失敗注入「[失敗引導]」——先判斷根因、檢查假設、換方法或回頭修正上游依據，不以相同操作反覆重試；達六次起改為「[失敗裁示]」，要求以 AskUserQuestion 取得使用者「換方向或照目前做法續行」的決定，且下一個改動類工具（寫入或 shell）回傳 ask 一次。計數只在專案已有 .shiftblame/ 時記錄。外掛清單目前只註冊 SessionStart、UserPromptSubmit 與 PreToolUse；平台設定另行註冊這兩個失敗事件時，失敗引導才會生效。
+失敗信號引導：PostToolUseFailure 以對話代號累計連續失敗，PostToolUse 的工具成功把計數歸零，換對話重新計數。達三次起每次失敗注入「[失敗引導]」——先判斷根因、檢查假設、換方法或回頭修正上游依據，不以相同操作反覆重試；達六次起改為「[失敗裁示]」，要求以 AskUserQuestion 取得使用者「換方向或照目前做法續行」的決定，且下一個改動類工具（寫入或 shell）回傳 ask 一次。計數只在專案已有 .shiftblame/ 時記錄。外掛清單註冊 SessionStart、UserPromptSubmit、PreToolUse、PostToolUse 與 PostToolUseFailure；Codex 不發 PostToolUseFailure，那裡只有成功歸零生效，失敗引導不會出現。
 
 工具嘗試次數用於觀測，操作結果另以實際輸出核對。重試與非同步輪詢依進展決定；技能以當前平台的讀取能力使用。
 
@@ -60,7 +60,7 @@ hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的
 - Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入。
 - merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
-- 失敗信號：失敗事件未註冊時不計數；平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔。
+- 失敗信號：平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔。
 
 這些由代理依授權自律，交付時如實揭露。
 
