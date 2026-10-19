@@ -34,6 +34,7 @@ const usage = (code = 2) => {
     '  sb handoff save <task> <notes.md>     保存具名工作的機械快照',
     '  sb handoff list                       列出具名工作及損壞診斷',
     '  sb handoff show <task>                讀取指定交接並核對目前差異',
+    '  sb handoff load [task]                預設載入最新交接，成功後清空本 repo 快照',
     '  sb --help',
   ].join('\n'));
   process.exit(code);
@@ -400,7 +401,7 @@ function mdCount(dir) {
 function cmdState() {
   out(`專案根：${ROOT}`);
   out(`工作區：${existsSync(SB_DIR) ? `${SB_DIR}（不入庫）` : '尚未建立（有對話代號的工作階段會自動建立）'}`);
-  out('直接作業交接：sb handoff list；選定具名工作後以 sb handoff show <task> 讀取，不自動載入。');
+  out('直接作業交接：sb handoff load 自動載入最新交接，成功後清空本 repo 全部交接快照；show <task> 僅供唯讀檢視。');
 }
 
 function cmdCommitmsg(msg) {
@@ -456,7 +457,7 @@ function logUsage() {
 // handoff 自行由 Git 錨定 canonical repo；安全檢查前不得由既有遙測寫入任何目錄。
 if (cmd === 'handoff') {
   if (rest.includes('--help')) usage(0);
-  try { process.exitCode = runHandoff(rest); }
+  try { process.exitCode = await runHandoff(rest); }
   catch (error) { console.error(`FAIL\n  ✗ ${error.message}`); process.exitCode = 1; }
 } else {
 // 只寫入既有工作區或目前所在的 Git 專案根：非 Git 資料夾（如家目錄）不因查詢多出工作區，

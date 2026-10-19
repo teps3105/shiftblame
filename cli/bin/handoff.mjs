@@ -247,8 +247,7 @@ function compareGroup(name, before, after) {
   }
   return true;
 }
-function show(root, task) {
-  const snapshot = parse(snapshotBytes(root, task), root, task);
+function show(root, task, snapshot = parse(snapshotBytes(root, task), root, task)) {
   const current = capture(root);
   console.log(`task: ${task}\nsavedAt: ${snapshot.savedAt}\nrepo: ${root}`);
   console.log(`branch: 保存 ${snapshot.branch} → 目前 ${current.branch ?? 'detached HEAD'}`);
@@ -264,6 +263,82 @@ function show(root, task) {
   process.stdout.write(snapshot.notes);
   if (!snapshot.notes.endsWith('\n')) process.stdout.write('\n');
 }
+// 僅列出正式快照；消耗後留下的草稿目錄不是缺失的交接。
+function tasks(root) {
+  const dir = directory(root, ['.shiftblame', 'tmp', 'main']);
+  return readdirSync(dir).sort(order).filter(task => {
+    if (!validTask(task)) fail(`非法 task 路徑：${quoted(task)}`);
+    const taskDir = directory(root, ['.shiftblame', 'tmp', 'main', task]);
+    return stat(join(taskDir, 'handoff.json')) !== null;
+  });
+}
+async function load(root, requested) {
+  const candidates = tasks(root);
+  if (!candidates.length) fail('沒有具名交接可載入。');
+  const locked = [], staged = [];
+  try {
+    const snapshots = candidates.map(task => {
+      const dir = directory(root, ['.shiftblame', 'tmp', 'main', task]);
+      const lock = join(dir, '.save.lock');
+      try { closeSync(openSync(lock, 'wx', 0o600)); }
+      catch (error) {
+        if (error.code === 'EEXIST') fail(`工作 ${task} 正在保存或存在未清理的 .save.lock；保留全部快照。`);
+        throw error;
+      }
+      locked.push(task);
+      const bytes = snapshotBytes(root, task);
+      return { task, bytes, snapshot: parse(bytes, root, task) };
+    });
+    const selected = requested ? snapshots.find(item => item.task === requested) :
+      [...snapshots].sort((a, b) => Date.parse(b.snapshot.savedAt) - Date.parse(a.snapshot.savedAt) || order(a.task, b.task))[0];
+    if (!selected) fail(`交接快照不存在：${requested}`);
+    // 管線須收到完整交接才可消耗；EPIPE 等輸出錯誤不清理快照。
+    await new Promise((resolveOutput, rejectOutput) => {
+      const onError = error => rejectOutput(error);
+      process.stdout.once('error', onError);
+      try {
+        show(root, selected.task, selected.snapshot);
+        process.stdout.write('', error => {
+          // write callback 早於 error event；失敗時保留 listener，讓 finally 有機會釋放鎖。
+          if (error) rejectOutput(error);
+          else { process.stdout.removeListener('error', onError); resolveOutput(); }
+        });
+      } catch (error) { process.stdout.removeListener('error', onError); rejectOutput(error); }
+    });
+    for (const item of snapshots) {
+      if (!item.bytes.equals(snapshotBytes(root, item.task))) fail('載入期間快照已改動；保留全部快照。');
+    }
+    // 先將整批移離正式入口；任何一步失敗先回復，不產生半批刪除。
+    try {
+      for (const item of snapshots) {
+        const dir = directory(root, ['.shiftblame', 'tmp', 'main', item.task]);
+        const path = join(dir, 'handoff.json'), consumed = join(dir, `.consumed.${randomUUID()}.pending`);
+        renameSync(path, consumed);
+        staged.push({ task: item.task, path, consumed });
+      }
+    } catch (error) {
+      for (const item of [...staged].reverse()) {
+        directory(root, ['.shiftblame', 'tmp', 'main', item.task]);
+        renameSync(item.consumed, item.path);
+      }
+      throw error;
+    }
+    for (const item of staged) {
+      try {
+        directory(root, ['.shiftblame', 'tmp', 'main', item.task]);
+        unlinkSync(item.consumed);
+      } catch (error) { console.error(`警告：交接已載入，但已消耗暫存清理失敗：${item.consumed}（${error.message}）`); }
+    }
+    console.log(`handoff 已載入：${selected.task}；已清空目前 repo 的 ${snapshots.length} 份交接快照。`);
+  } finally {
+    for (const task of locked) {
+      try {
+        const dir = directory(root, ['.shiftblame', 'tmp', 'main', task]);
+        unlinkSync(join(dir, '.save.lock'));
+      } catch (error) { console.error(`警告：載入鎖清理失敗：${task}（${error.message}）`); }
+    }
+  }
+}
 function list(root) {
   const dir = directory(root, ['.shiftblame', 'tmp', 'main']);
   const entries = readdirSync(dir).sort(order);
@@ -272,22 +347,25 @@ function list(root) {
   for (const task of entries) {
     try {
       if (!validTask(task)) fail(`非法 task 路徑：${quoted(task)}`);
+      const taskDir = directory(root, ['.shiftblame', 'tmp', 'main', task]);
+      if (!stat(join(taskDir, 'handoff.json'))) continue;
       const snapshot = parse(snapshotBytes(root, task), root, task);
       console.log(`${task}\t${snapshot.savedAt}\t${snapshot.branch}\t${snapshot.head ?? 'null（初始無提交）'}`);
     } catch (error) { broken = true; console.error(`損壞／缺失：${quoted(task)} — ${error.message}`); }
   }
   return broken ? 1 : 0;
 }
-export function runHandoff(args) {
+export async function runHandoff(args) {
   const [action, task, source] = args;
-  if (!((action === 'save' && args.length === 3) || (action === 'show' && args.length === 2) || (action === 'list' && args.length === 1))) {
-    console.error('用法：sb handoff save <task> <notes.md> | sb handoff list | sb handoff show <task>');
+  if (!((action === 'save' && args.length === 3) || (action === 'show' && args.length === 2) || (action === 'load' && (args.length === 1 || args.length === 2)) || (action === 'list' && args.length === 1))) {
+    console.error('用法：sb handoff save <task> <notes.md> | sb handoff list | sb handoff show <task> | sb handoff load [task]');
     return 2;
   }
-  if (action !== 'list' && !validTask(task)) fail('task 須為具名工作（1–80 個字母、數字、點、底線或連字號；字母／數字起首），不可使用路徑、尾點或 Windows 保留名。');
+  if (action !== 'list' && !(action === 'load' && task === undefined) && !validTask(task)) fail('task 須為具名工作（1–80 個字母、數字、點、底線或連字號；字母／數字起首），不可使用路徑、尾點或 Windows 保留名。');
   const root = repoRoot();
   if (action === 'save') save(root, task, source);
   else if (action === 'show') show(root, task);
+  else if (action === 'load') await load(root, task);
   else return list(root);
   return 0;
 }

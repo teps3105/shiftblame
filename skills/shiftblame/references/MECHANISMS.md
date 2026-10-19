@@ -13,7 +13,7 @@ sb state 印出專案根、.shiftblame/ 工作區是否存在與交接查找方�
 - sb state 顯示專案根與工作區狀態；不帶參數。
 - sb commitmsg <訊息> 檢查「type: 一句話」單行格式、內容及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元；內部文件檔名、任務代號、壓縮術語與流程詞彙擋下。staged 含 .shiftblame/ 內檔案即擋；staged 含 SOP.md／ROADMAP.md（任一位置）即位置違例擋下——權威位置是 .shiftblame/，不入庫。staged 動到參照型文件（根 README、docs/）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交。
 - sb rewrite 文件編輯的唯一入口：把文件集（根 README、docs/、.shiftblame/SOP.md 與 .shiftblame/ROADMAP.md 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查位置違例（根目錄或 docs/ 的 SOP.md／ROADMAP.md、根目錄 README 大小寫變體並存——SOP 與 ROADMAP 的權威位置是 .shiftblame/，README 形象文件全專案唯一）、docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（sb 命令、.shiftblame/ 路徑與舊流程詞彙不得入參照型文件，README 與 .shiftblame/SOP／ROADMAP 一併檢查；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心與提交閘共用。
-- sb handoff save <task> <草稿.md> 保存具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp；完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
+- sb handoff save <task> <草稿.md> 保存具名交接；load [task] 預設自動載入最新，成功後清空目前 repo 全部交接快照；list 與 show <task> 僅供唯讀檢視。資料留 tmp；選取、完整性、清理及差異的處理見 [HANDOFF](HANDOFF.md)。
 - 已移除的舊命令與任何未知命令一律印出用法並以 exit 2 結束。
 
 ## Hooks

@@ -54,6 +54,89 @@ function rehash(snapshot) {
   return snapshot;
 }
 
+test('load 依 savedAt 自動選最新，完整輸出後清空全部快照，保留草稿與產品', t => {
+  const f = fixture(t), other = fixture(t);
+  f.save('z-old'); f.save('a-new'); other.save();
+  for (const [task, savedAt, notes] of [['z-old', at, '舊工作'], ['a-new', '2026-10-19T00:00:00.000Z', '最新交接\n'.repeat(14000)]]) {
+    const s = f.read(task); s.savedAt = savedAt; s.notes = notes; s.notesSha256 = hash(notes);
+    writeFileSync(f.path(task), JSON.stringify(rehash(s)));
+  }
+  const draft = f.put('.shiftblame/tmp/main/z-old/draft.md', '保留草稿');
+  const index = indexBytes(f), product = readFileSync(join(f.root, 'product.txt'));
+  const loaded = ok(f.run('handoff', 'load')).stdout;
+  assert.match(loaded, /task: a-new/);
+  assert.ok(loaded.includes('最新交接\n'.repeat(14000)));
+  assert.equal(existsSync(f.path('z-old')), false); assert.equal(existsSync(f.path('a-new')), false);
+  assert.equal(readFileSync(draft, 'utf8'), '保留草稿');
+  assert.deepEqual(indexBytes(f), index); assert.deepEqual(readFileSync(join(f.root, 'product.txt')), product);
+  assert.equal(existsSync(other.path('alpha')), true);
+  bad(f.run('handoff', 'load'), /沒有具名交接/);
+  f.save('z-old'); ok(f.run('handoff', 'list'));
+});
+
+test('load 可指定工作，但成功後仍清空目前 repo 全部快照', t => {
+  const f = fixture(t); f.save('alpha'); f.save('beta');
+  assert.match(ok(f.run('handoff', 'load', 'alpha')).stdout, /task: alpha/);
+  assert.equal(existsSync(f.path('alpha')), false); assert.equal(existsSync(f.path('beta')), false);
+});
+
+test('load 檢查失敗或保存鎖存在時保留全部快照；show 仍唯讀', t => {
+  const f = fixture(t); f.save('alpha'); f.save('beta');
+  const before = readFileSync(f.path('alpha'));
+  const lock = join(resolve(f.path('beta'), '..'), '.save.lock'); writeFileSync(lock, '');
+  bad(f.run('handoff', 'load'), /save.lock|正在保存/);
+  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(existsSync(f.path('beta')), true);
+  assert.equal(existsSync(join(resolve(f.path('alpha'), '..'), '.save.lock')), false);
+  rmSync(lock); writeFileSync(f.path('beta'), '{broken');
+  bad(f.run('handoff', 'load'), /損壞/);
+  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(readFileSync(f.path('beta'), 'utf8'), '{broken');
+  ok(f.run('handoff', 'show', 'alpha')); assert.deepEqual(readFileSync(f.path('alpha')), before);
+});
+
+test('load 最新時間相同時穩定選名稱首項，指定不存在工作不清理', t => {
+  const f = fixture(t); f.save('beta'); f.save('alpha');
+  for (const task of ['alpha', 'beta']) {
+    const s = f.read(task); s.savedAt = at; writeFileSync(f.path(task), JSON.stringify(rehash(s)));
+  }
+  bad(f.run('handoff', 'load', 'missing'), /不存在/);
+  assert.equal(existsSync(f.path('alpha')), true); assert.equal(existsSync(f.path('beta')), true);
+  assert.match(ok(f.run('handoff', 'load')).stdout, /task: alpha/);
+});
+
+test('load 下游關閉輸出管線時保留全部快照', async t => {
+  const f = fixture(t); writeFileSync(f.notes, '完整交接\n'.repeat(500000)); f.save();
+  const child = spawn(process.execPath, [cli, 'handoff', 'load'], { cwd: f.root, stdio: ['ignore', 'pipe', 'pipe'] });
+  let stderr = ''; child.stderr.on('data', bytes => { stderr += bytes; });
+  child.stdout.once('data', () => child.stdout.destroy());
+  const status = await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', resolve); });
+  assert.notEqual(status, 0, stderr);
+  assert.equal(existsSync(f.path('alpha')), true);
+  assert.equal(existsSync(join(resolve(f.path('alpha'), '..'), '.save.lock')), false);
+});
+
+test('load 整批清理中遇到 Windows 檔案占用時回復已移動快照', { skip: process.platform !== 'win32' }, t => {
+  const f = fixture(t); f.save('alpha'); f.save('beta');
+  const before = readFileSync(f.path('alpha'));
+  const script = `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$held = [System.IO.File]::Open($env:SB_TEST_SNAPSHOT, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+try {
+  $ErrorActionPreference = 'Continue'
+  & $env:SB_TEST_NODE $env:SB_TEST_CLI handoff load 2>&1 | Out-String | Write-Output
+  exit $LASTEXITCODE
+} finally { $held.Dispose() }
+`;
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+    cwd: f.root, env: { ...process.env, SB_TEST_NODE: process.execPath, SB_TEST_CLI: cli, SB_TEST_SNAPSHOT: f.path('beta') },
+    encoding: 'utf8', windowsHide: true, timeout: 15000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout + result.stderr, /EPERM|EACCES|EBUSY/);
+  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(existsSync(f.path('beta')), true);
+  for (const task of ['alpha', 'beta']) assert.deepEqual(readdirSync(resolve(f.path(task), '..')), ['handoff.json']);
+});
+
 test('fresh unborn roundtrip：原樣 notes、null HEAD、無狀態檔／索引寫入', t => {
   const f = fixture(t, { initial: false });
   writeFileSync(f.notes, '\ufeff# 任務\r\n  原樣內容\r\n');
@@ -191,7 +274,7 @@ test('舊版遺留的狀態檔與流程目錄一律忽略：照常保存且不�
     f.setState(state); const bytes = readFileSync(f.state);
     f.save();
     assert.deepEqual(readFileSync(f.state), bytes, '不改動遺留狀態檔');
-    assert.match(ok(f.run('state')).stdout, /sb handoff list/);
+    assert.match(ok(f.run('state')).stdout, /sb handoff load/);
     ok(f.run('handoff', 'show', 'alpha')); ok(f.run('handoff', 'list'));
   }
   f.put('.shiftblame/orphan/001/G1.md', '遺留文件不可碰\n');
@@ -239,7 +322,7 @@ test('snapshot schema、notes/hash、路徑、repo 身份損壞均明確失敗�
   }
   writeFileSync(f.path('alpha'), '{broken'); bad(f.run('handoff', 'show', 'alpha'), /JSON/);
   rmSync(f.path('alpha')); bad(f.run('handoff', 'show', 'alpha'), /不存在/);
-  assert.match(bad(f.run('handoff', 'list'), /alpha/).stdout, /healthy/);
+  assert.match(ok(f.run('handoff', 'list')).stdout, /healthy/);
 });
 
 test('缺失 list／show 不猜最新且不建立觀測目錄；固定用法與 help', t => {
@@ -277,6 +360,7 @@ for (const parts of [['.shiftblame'], ['.shiftblame', 'tmp'], ['.shiftblame', 't
     bad(f.run('handoff', 'save', 'alpha', f.notes), /不安全/);
     bad(f.run('handoff', 'show', 'alpha'), /不安全/);
     bad(f.run('handoff', 'list'), /不安全/);
+    bad(f.run('handoff', 'load'), /不安全/);
     assert.deepEqual(readdirSync(external), [], '包括遙測也不得寫到外部目錄');
   });
 }
