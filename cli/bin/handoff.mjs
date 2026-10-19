@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readlinkSync,
   realpathSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { exactKeys, readFlowState, samePath, timestamp } from './flow-state.mjs';
+import { exactKeys, samePath, timestamp } from './state-io.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = value => hash(JSON.stringify(value));
@@ -71,13 +71,6 @@ function regular(path, optional = false) {
 function saveState(root) {
   // 只檢查已存在的系統目錄；失敗時不製造新狀態。
   if (stat(join(root, '.shiftblame'))) directory(root, ['.shiftblame']);
-  const statePath = join(root, '.shiftblame', 'flow-state.json');
-  if (stat(statePath)) regular(statePath);
-  const current = readFlowState(root);
-  if (!['missing', 'uninitialized', 'direct'].includes(current.kind) &&
-      !(current.kind === 'ended' && current.state.concludedAt)) {
-    fail(`handoff save 拒絕：${current.kind}（活動 slug／損壞狀態／未完結 ended 不可保存直接作業交接）。`);
-  }
 }
 function identity(root, saving) {
   const ref = git(root, ['symbolic-ref', '--quiet', 'HEAD'], [0, 1]);

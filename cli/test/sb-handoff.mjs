@@ -54,7 +54,7 @@ function rehash(snapshot) {
   return snapshot;
 }
 
-test('fresh unborn roundtrip：原樣 notes、null HEAD、無 flow-state／索引寫入', t => {
+test('fresh unborn roundtrip：原樣 notes、null HEAD、無狀態檔／索引寫入', t => {
   const f = fixture(t, { initial: false });
   writeFileSync(f.notes, '\ufeff# 任務\r\n  原樣內容\r\n');
   assert.equal(existsSync(join(f.root, '.shiftblame')), false);
@@ -185,24 +185,18 @@ test('branch／HEAD 漂移顯示但不切回；detached 可診斷而不可 save'
   assert.match(shown, /目前 detached HEAD/); ok(f.run('handoff', 'list'));
 });
 
-test('狀態白名單保存，active／invalid／未完結 ended 拒絕且保護 flow 與舊快照', t => {
+test('舊版遺留的狀態檔與流程目錄一律忽略：照常保存且不改動', t => {
   const f = fixture(t); f.save();
-  const ended = { slug: 'old', ms: '001', node: 'ended', endedAt: at };
-  const allowed = [{ hooksHeartbeat: { at, event: 'SessionStart' } }, {}, { slug: null, ms: null, node: null }, { ...ended, concludedAt: at }];
-  for (const state of allowed) {
-    f.setState(state); const bytes = readFileSync(f.state); f.save();
-    assert.deepEqual(readFileSync(f.state), bytes); assert.match(ok(f.run('state')).stdout, /sb handoff list/);
-  }
-  const original = readFileSync(f.path('alpha'));
-  for (const state of [{ slug: 'demo', ms: '001', node: 'build' }, { ...ended }, { ...ended, concludedAt: 'broken' }, '{broken', { slug: null }]) {
+  for (const state of [{ slug: 'demo', ms: '001', node: 'build' }, { slug: 'old', ms: '001', node: 'ended', endedAt: at }, '{broken', {}]) {
     f.setState(state); const bytes = readFileSync(f.state);
-    bad(f.run('handoff', 'save', 'alpha', f.notes), /拒絕/);
-    assert.deepEqual(readFileSync(f.path('alpha')), original); assert.deepEqual(readFileSync(f.state), bytes);
+    f.save();
+    assert.deepEqual(readFileSync(f.state), bytes, '不改動遺留狀態檔');
+    assert.match(ok(f.run('state')).stdout, /sb handoff list/);
     ok(f.run('handoff', 'show', 'alpha')); ok(f.run('handoff', 'list'));
   }
-  f.setState({}); f.put('.shiftblame/orphan/001/G1.md', '正式需求不可碰\n');
-  bad(f.run('handoff', 'save', 'alpha', f.notes), /invalid/);
-  assert.equal(readFileSync(join(f.root, '.shiftblame/orphan/001/G1.md'), 'utf8'), '正式需求不可碰\n');
+  f.put('.shiftblame/orphan/001/G1.md', '遺留文件不可碰\n');
+  f.save();
+  assert.equal(readFileSync(join(f.root, '.shiftblame/orphan/001/G1.md'), 'utf8'), '遺留文件不可碰\n');
 });
 
 test('空白／缺失／無效 UTF-8 notes 失敗保舊；不強迫 notes 格式', t => {
@@ -421,7 +415,7 @@ try {
   rmSync(lock); f.save();
 });
 
-for (const change of ['active', 'pending']) test(`pending 已落檔後 ${change} 改動：拒絕替換並清理 pending，原快照完整保留`, async t => {
+for (const change of ['pending']) test(`pending 已落檔後 ${change} 改動：拒絕替換並清理 pending，原快照完整保留`, async t => {
   const f = fixture(t); f.save(); const before = readFileSync(f.path('alpha'));
   f.put('large.bin', Buffer.alloc(48 * 1024 * 1024, 8));
   const child = spawn(process.execPath, [cli, 'handoff', 'save', 'alpha', f.notes], { cwd: f.root, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -432,9 +426,8 @@ for (const change of ['active', 'pending']) test(`pending 已落檔後 ${change}
   while (!readdirSync(dir).some(name => name.endsWith('.pending')) && child.exitCode === null && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
   assert.ok(readdirSync(dir).some(name => name.endsWith('.pending')), '已觀察到真實 pending 檔');
   assert.deepEqual(readFileSync(f.path('alpha')), before);
-  if (change === 'active') f.setState({ slug: 'new-work', ms: '001', node: 'build' });
-  else writeFileSync(join(dir, readdirSync(dir).find(name => name.endsWith('.pending'))), '{broken');
-  bad(await completed, /active|pending|快照損壞/);
+  writeFileSync(join(dir, readdirSync(dir).find(name => name.endsWith('.pending'))), '{broken');
+  bad(await completed, /pending|快照損壞/);
   assert.deepEqual(readFileSync(f.path('alpha')), before);
   assert.deepEqual(readdirSync(dir), ['handoff.json']);
 });

@@ -11,7 +11,7 @@ const run=(...args)=>spawnSync(process.execPath,[cli,...args],{cwd:root,encoding
 const event=(name,input)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:'PreToolUse',tool_name:name,tool_input:input})});
 mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});
 assert.equal(git('init').status,0);
-assert.equal(run('sopreview','已核對').status,0,'缺少狀態時可寫審查記錄');assert.equal(run('state').status,0);writeFileSync(join(root,'.gitignore'),'.shiftblame/\n');
+assert.equal(run('state').status,0);writeFileSync(join(root,'.gitignore'),'.shiftblame/\n');
 const LEAD='Documentation files live beside the code they describe; this project verifies placement rules and the root README as the entry.\n';
 for(const path of ['README.md','docs/索引.md','docs/1-說明/1.1-放置.md','module/readme.MD','skills/shiftblame/SKILL.md','hooks/shiftblame-guard.mjs']){
  mkdirSync(join(root,path,'..'),{recursive:true});writeFileSync(join(root,path),path==='docs/索引.md'?'# 索引\n\n- [1.1 放置](1-說明/1.1-放置.md)：說明。\n':'# Documentation\n\n'+LEAD+'\n');
@@ -26,7 +26,7 @@ for(const msg of ['fix: R24 API behavior','fix: x','chore: merge example','feat:
  assert.equal(event('Bash',{command:'git commit -m "'+msg+'"'}).status,0,'追加文件與訊息風格不擋有效章');
 }
 for(const msg of ['','   ','fix: a\nb','no type here','feat:無空格'])assert.notEqual(run('commitmsg',msg).status,0,'格式閘（type: 一句話）擋下 '+JSON.stringify(msg));
-assert.equal(run('sopreview','已核對').status,0);assert.equal(run('state').status,0);
-writeFileSync(join(root,'.shiftblame/SOP.md'),'# Changed config\n\n'+LEAD+'\n');assert.equal(run('commitmsg','docs: updated').status,0,'SOP修改不迫使重發審查戳');
+assert.equal(run('state').status,0);
+writeFileSync(join(root,'.shiftblame/SOP.md'),'# Changed config\n\n'+LEAD+'\n');assert.equal(run('commitmsg','docs: updated').status,0,'SOP 修改不影響發章');
 assert.equal(git('add','-f','.shiftblame/SOP.md').status,0);assert.equal(run('commitmsg','docs: unsafe staged').status,1,'形式限制移除仍保護實際 staged 系統檔');
 console.log('sb-readme-placement: pass');

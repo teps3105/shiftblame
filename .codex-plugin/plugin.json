@@ -1,14 +1,14 @@
 {
   "name": "shiftblame",
-  "version": "3.0.8",
-  "description": "依授權與需求契約推進開發，以獨立審查和真實行為證據驗收；按風險選擇足夠的流程與工具。",
+  "version": "4.0.0",
+  "description": "依授權推進開發：先訪談對齊目標與驗收，依變更意圖定品質底線，以真實行為證據驗收。",
   "author": {
     "name": "teps3105"
   },
   "interface": {
     "displayName": "shiftblame",
-    "shortDescription": "以時序制衡治理 AI agent 開發流程",
-    "longDescription": "依授權與需求契約推進開發，以獨立審查和真實行為證據驗收；按風險選擇足夠的流程與工具。",
+    "shortDescription": "以授權、訪談與真實驗收治理 AI agent 開發",
+    "longDescription": "依授權推進開發：先訪談對齊目標與驗收，依變更意圖定品質底線，以真實行為證據驗收。",
     "developerName": "teps3105",
     "category": "Engineering",
     "capabilities": [
@@ -18,7 +18,7 @@
     "defaultPrompt": [
       "開始一個受 shiftblame 治理的新需求。",
       "繼續目前未完成的 shiftblame 工作。",
-      "檢查目前流程節點與下一步閘門。"
+      "檢查目前工作狀態與交接。"
     ]
   },
   "skills": "./skills/"

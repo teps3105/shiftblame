@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "shiftblame",
-  "description": "shiftblame — 時序制衡的 agent 協作框架",
+  "description": "shiftblame — 授權、訪談與真實驗收的 agent 開發方法",
   "owner": {
     "name": "teps3105",
     "url": "https://github.com/teps3105"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "shiftblame",
-      "description": "依授權與需求契約推進工作，需求與驗收兩時點先獨立審查、再由使用者判定；技術修正沿用有效契約，流程與驗證依工作風險縮放。",
+      "description": "依授權推進開發：先訪談對齊目標與驗收，依變更意圖定品質底線，以真實行為證據驗收。",
       "source": "./",
       "category": "engineering"
     }

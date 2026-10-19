@@ -2,13 +2,12 @@
 // Workflow hooks validate concrete boundaries; semantic decisions remain with the agent.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, unlinkSync, writeFileSync } from 'node:fs';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { objectRecord, readFlowState, unchangedG1Approval } from '../cli/bin/flow-state.mjs';
 import { commitMessageIssue } from '../cli/bin/commit-format.mjs';
-import { acquireLock, hookRecordsPath, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
+import { acquireLock, hookRecordsPath, objectRecord, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
 import { interviewStatus, markSessionStart, recordInterviewEvent } from '../cli/bin/interview.mjs';
 import { findRoot as findProjectRoot, topLevelSystemDir } from '../cli/bin/project-root.mjs';
 import { analyzeCommand, baseName, findRoots, gitInvocation, MAX_DEPTH } from './shell-scan.mjs';
@@ -41,55 +40,15 @@ const inputCwd = (input) => {
 const CARD = [
   '[shiftblame]',
   '依使用者目標與既有授權完成工作；只有實質需求或授權差異才確認。',
-  '活動 slug 保留 G1／G2 契約與時點獨立審查（時點 3 終審由使用者判定）；技術修復自主續行。',
   '保護使用者變更，以真實結果驗收；未驗如實揭露。細節按需讀取主技能。',
 ].join('\n');
-// 時點審查與終審進行時，代理可先行研究；判定不等研究，研究也不推進流程。
-const EARLY_RESEARCH = {
-  research: '｜時點 1 審查期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G1、不提交',
-  quality: '｜時點 2 審查期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改 G2、不提交',
-  verify: '｜時點 3 審查與終審期間可先行研究：唯讀查證、tmp 筆記、隔離原型；不推進、不改受驗來源、不提交',
-};
-function nodeLine(health, root) {
-  if (!health) return '';
-  if (health.kind === 'invalid') return '\n[接入異常] 保留原資料，修復後執行 sb state；提交及流程推進保持封閉。';
-  const st = health.state;
-  let line = health.kind === 'active' ? '\n[段] ' + st.slug + '/' + st.ms + ' @ ' + st.node + (EARLY_RESEARCH[st.node] ?? '') : '\n[接入] ' + health.kind + '；依既有授權工作。';
-  const points = suspectPoints(root, health); // 下游連續失敗動搖過的上游時點（時點通過是暫時性的）
-  if (points.length) line += '\n[時點待重審] 時點 ' + points.join('、') + ' 的通過已被下游連續失敗動搖——回退重審（' + points.map((p) => SUSPECT_EDGE[p] + ' 再次推進').join('；') + '）後解除。';
-  return line;
-}
 
-// ———— 失敗信號回退引導：工具連續失敗時引導回上游段，時點通過視為暫時性 ————
+// ———— 失敗信號引導：工具連續失敗時先換假設或方法，再升級為向使用者取得裁示 ————
 
 const FAIL_NUDGE_AT = 3, FAIL_ASK_AT = 6;
-// 各段連續失敗時的回退去處（與 FLOW 相鄰回退邊一致）；requirement 段沒有更上游，不引導。
-const FAIL_GUIDE = {
-  research: '`sb next requirement` 回需求釐清契約，或確認研究範圍後續行',
-  plan: '`sb next research` 回研究——計畫依據被推翻時，時點 1 待重審',
-  quality: '`sb next plan` 回計畫——品質安排寫不出，通常是計畫片段與驗收條件的映射不成立',
-  build: '`sb next quality` 回區 2 改品質安排（時點 2 待重審）；研究結論被推翻則 `sb next research`（時點 1 待重審）；確認純屬實作失誤才留在本段修',
-  verify: '`sb next build` 修實作，或 `sb next quality` 改判準（時點 2 待重審）——驗收失敗不直接通過，也不在本段反覆重跑',
-};
-// 該段連續失敗時應標記待重審的上游時點：plan 依賴研究（時點 1）、build／verify 依賴品質安排（時點 2）。
-const FAIL_SUSPECT = { plan: '1', build: '2', verify: '2' };
-// 時點→封存邊：標記後該邊再次推進即重審通過、待重審解除（以 flow-state 的 edgeAt 時序判斷，不需清除寫入）。
-const SUSPECT_EDGE = { '1': 'research→plan', '2': 'quality→build' };
-function suspectPoints(root, health) {
-  if (!root || health?.kind !== 'active') return [];
-  const st = health.state;
-  const susp = readHookRecords(root).suspect;
-  if (!susp) return [];
-  return Object.keys(susp).filter((p) => {
-    const passedAt = st.edgeAt?.[SUSPECT_EDGE[p]];
-    return !passedAt || passedAt < susp[p];
-  });
-}
-
-// PostToolUseFailure 累計同對話同段的連續失敗；PostToolUse（成功）把同段計數歸零。
-// 達 N1 起把當前段依賴的上游時點標記待重審（下游反覆失敗＝上游的暫時性通過失效）。
-function bumpFailure(root, sessionId, node, ok) {
-  if (!root || !sessionId || !node || !existsSync(join(root, '.shiftblame'))) return null;
+// PostToolUseFailure 累計同對話的連續失敗；PostToolUse（成功）把計數歸零。
+function bumpFailure(root, sessionId, ok) {
+  if (!root || !sessionId || !existsSync(join(root, '.shiftblame'))) return null;
   mkdirSync(join(root, '.shiftblame', 'tmp'), { recursive: true });
   const file = hookRecordsPath(root);
   const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
@@ -98,36 +57,35 @@ function bumpFailure(root, sessionId, node, ok) {
     const st = readHookRecords(root);
     const fn = st.failureNudge;
     if (ok) {
-      if (fn?.node === node) { delete st.failureNudge; writeAtomic(file, JSON.stringify(st, null, 2)); }
+      if (fn?.session === sessionId) { delete st.failureNudge; writeAtomic(file, JSON.stringify(st, null, 2)); }
       return null;
     }
-    const next = fn && fn.session === sessionId && fn.node === node
+    const next = fn && fn.session === sessionId
       ? { ...fn, count: fn.count + 1, at: new Date().toISOString() }
-      : { session: sessionId, node, count: 1, at: new Date().toISOString() };
+      : { session: sessionId, count: 1, at: new Date().toISOString() };
     st.failureNudge = next;
-    const point = FAIL_SUSPECT[node];
-    if (point && next.count >= FAIL_NUDGE_AT) st.suspect = { ...(st.suspect ?? {}), [point]: next.at };
     writeAtomic(file, JSON.stringify(st, null, 2));
     return next;
   } finally { release(); }
 }
-function failureLine(fn, node, tool) {
-  if (!fn || fn.node !== node || fn.count < FAIL_NUDGE_AT) return '';
-  const guide = FAIL_GUIDE[node] ?? '';
+function failureLine(fn, tool) {
+  if (!fn || fn.count < FAIL_NUDGE_AT) return '';
+  const what = `已連續失敗 ${fn.count} 次` + (tool ? `（${tool}）` : '');
   if (fn.count >= FAIL_ASK_AT) {
-    return `\n[回退裁示] ${node} 段已連續失敗 ${fn.count} 次` + (tool ? `（${tool}）` : '') + `——先以 AskUserQuestion 向老闆取得「回退重審」或「留在本段續行」的明確決定，未取得前不重試同類操作。回退去處：${guide}。時點通過是暫時性的。`;
+    return `\n[失敗裁示] ${what}——先以 AskUserQuestion 向老闆取得「換方向」或「照目前做法續行」的明確決定，未取得前不重試同類操作。`;
   }
-  return `\n[回退引導] ${node} 段已連續失敗 ${fn.count} 次` + (tool ? `（${tool}）` : '') + `——先判斷根因層級再決定去處，不在本段反覆硬修：${guide}。受影響的上游時點已標記待重審，回退重審再次推進後自動解除。`;
+  return `\n[失敗引導] ${what}——先判斷根因再動手：檢查假設是否成立、換方法或回頭修正上游依據，不以相同操作反覆重試。`;
 }
-// 失敗裁示閘：連續失敗達 ask 閾值且未取得老闆決定時，任何工具呼叫先問一次（askedAt 記錄已問過，只問一次）。
-function failureAskGate(root, input, ctx) {
-  if (!root || ctx.health?.kind !== 'active') return null;
+// 失敗裁示閘：連續失敗達 ask 閾值且尚未詢問時，改動類工具先問一次（askedAt 記錄已問過，只問一次）。
+function failureAskGate(root, input) {
+  if (!root) return null;
   const fn = readHookRecords(root).failureNudge;
-  if (!fn || fn.session !== sessionOf(input) || fn.node !== ctx.health.state.node || fn.count < FAIL_ASK_AT || fn.askedAt) return null;
+  if (!fn || fn.session !== sessionOf(input) || fn.count < FAIL_ASK_AT || fn.askedAt) return null;
   return fn;
 }
 
-// ———— 紀錄：心跳與使用計數（另存 tmp/hook-records.json，不寫 sb 管理的 flow-state） ————
+
+// ———— 紀錄：心跳與使用計數（另存 tmp/hook-records.json） ————
 
 const RECORD_EVENTS = new Set(['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop']);
 // Counts record attempted calls only. They never infer progress or prohibit retries.
@@ -218,7 +176,7 @@ function safeWorkspaceRoot(root) {
   if (dirname(abs) === abs || topLevelSystemDir(abs)) return false;
   return !(HOME_DIR && within(HOME_DIR, abs));
 }
-// 自動初始化只建 .shiftblame/、.shiftblame/tmp/ 與忽略全部內容的 .shiftblame/.gitignore，不寫 flow-state。
+// 自動初始化只建 .shiftblame/、.shiftblame/tmp/ 與忽略全部內容的 .shiftblame/.gitignore。
 function ensureWorkspace(root) {
   const dir = join(root, '.shiftblame');
   mkdirSync(join(dir, 'tmp'), { recursive: true });
@@ -226,7 +184,7 @@ function ensureWorkspace(root) {
   if (!existsSync(ignore)) writeFileSync(ignore, '*\n');
 }
 
-// ———— 狀態與寫入矩陣 ————
+// ———— 寫入工具與目標 ————
 
 // Tool capabilities are classified by the final action, never provider substrings.
 const WRITE_TOOL_RE = /write|edit|patch|save|create|apply|delete|remove|move|rename|truncate|put|manage|store|upload|set_|update/i;
@@ -235,7 +193,7 @@ const isWriteTool = (tool) => { const action = String(tool).split(/__|\./).at(-1
 const SHELL_TOOL_RE = /^(?:(?:functions|tools)[._])?(?:bash|shell|powershell|pwsh|execute_bash|execute_bash_command|exec_command)$/i;
 const PATH_KEYS = ['file_path', 'path', 'filename', 'target', 'file', 'filePath', 'notebook_path', 'abs_path', 'destination', 'dest', 'new_path', 'to'];
 
-function healthWriteTargets(input) {
+function writeTargets(input) {
   const targets = PATH_KEYS.map((k) => input?.[k]).filter((v) => typeof v === 'string' && v.trim());
   if (typeof input?.uri === 'string' && /^file:/i.test(input.uri)) targets.push(input.uri.replace(/^file:\/\//i, ''));
   const patch = typeof input === 'string' ? input : input?.patch ?? input?.input;
@@ -248,105 +206,7 @@ const REMOTE_LOCATOR_KEYS = ['owner', 'repo', 'repository', 'repo_id', 'project_
 const URI_SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
 function localWriteTargets(input) {
   if (objectRecord(input) && REMOTE_LOCATOR_KEYS.some((k) => typeof input[k] === 'string' && input[k].trim())) return [];
-  return healthWriteTargets(input).filter((t) => !URI_SCHEME.test(t));
-}
-function recoveryTarget(ctx, target) {
-  const rel = fold(relTo(ctx.root, absPath(ctx.cwd, target)));
-  return rel === '.shiftblame/flow-state.json' || rel.startsWith('.shiftblame/tmp/');
-}
-// 接入異常時封閉會消費或惡化異常狀態的動作：git 寫入與 sb 流程命令；唯讀診斷與狀態修復照常。
-const HOLD_GIT_SUBS = new Set(['add', 'commit', 'restore', 'reset', 'checkout', 'switch', 'clean', 'push', 'pull', 'fetch', 'merge', 'rebase', 'tag', 'rm', 'mv', 'stash', 'cherry-pick', 'revert', 'apply', 'am', 'init', 'branch', 'worktree', 'clone', 'submodule', 'update-ref', 'symbolic-ref', 'filter-branch', 'notes', 'reflog', 'gc', 'prune', 'update-index', 'read-tree', 'write-tree', 'hash-object', 'mktag', 'fast-import']);
-const HOLD_GIT_WRITE_RE = new RegExp(`\\bgit(?:\\.exe)?\\b[\\s\\S]*\\b(?:${[...HOLD_GIT_SUBS].join('|')})\\b`, 'i');
-const HOLD_SB_SUBS = new Set(['init', 'next', 'end', 'adversarial', 'commitmsg', 'sopreview', 'closeout']);
-const HOLD_SB_RE = /\bsb(?:\.mjs)?\s+(?:init|next|end|adversarial|commitmsg|sopreview|closeout)\b/;
-const HEALTH_BLOCKED = '流程接入異常——正式文件與程式碼寫入、審查宣告及提交暫停；保留原檔。可寫狀態修復（flow-state／tmp）與唯讀診斷，修復後重跑 sb state 查證。';
-const HEALTH_HOLD = '流程接入異常——git 寫入與 sb 流程命令暫停（會消費或惡化異常狀態）；唯讀查證、修復腳本與 flow-state／tmp 修復照常，修復後重跑 sb state 查證。';
-
-function checkStateHealth(ctx, tool, input, scan) {
-  if (ctx.health?.kind !== 'invalid') return null;
-  if (scan) {
-    for (const e of scan.entries) {
-      if (e.name === 'git') {
-        const g = gitInvocation(e.args);
-        if (g.sub && (g.sub.dynamic || HOLD_GIT_SUBS.has(g.sub.value.toLowerCase()))) return HEALTH_HOLD;
-      }
-      const sb = sbSub(e);
-      if (sb && HOLD_SB_SUBS.has(sb.sub)) return HEALTH_HOLD;
-    }
-    if (scan.overflow.some((t) => HOLD_GIT_WRITE_RE.test(t) || HOLD_SB_RE.test(t))) return HEALTH_HOLD;
-    return null;
-  }
-  if (isWriteTool(tool)) {
-    // 沒有本機路徑的寫入工具（待辦清單、遠端 API）不會惡化本機狀態。
-    const targets = localWriteTargets(input);
-    return targets.every((p) => recoveryTarget(ctx, p)) ? null : HEALTH_BLOCKED;
-  }
-  return null;
-}
-
-function checkStateWriteMatrix(ctx, toolInput) {
-  if (!['verify', 'done'].includes(ctx.health?.state?.node)) return null;
-  for (const target of localWriteTargets(toolInput)) {
-    const rel = relTo(ctx.root, absPath(ctx.cwd, target));
-    if (!rel || rel === '..' || rel.startsWith('../') || isAbsolute(rel) || systemRel(rel)) continue;
-    // Untracked ignored outputs are outside the versioned acceptance source.
-    // A tracked file remains protected even when an ignore rule matches it.
-    if (!/^\.git(?:\/|$)/i.test(rel)) {
-      const ignored = spawnSync('git', ['-C', ctx.root, 'check-ignore', '-q', '--', rel], { timeout: 5000 });
-      const tracked = spawnSync('git', ['-C', ctx.root, 'ls-files', '--error-unmatch', '--', rel], { timeout: 5000 });
-      if (ignored.status === 0 && tracked.status === 1) continue;
-    }
-    return '驗收來源保持穩定（' + rel + '）；需修改來源時先回實作，再重驗受影響結果。';
-  }
-  return null;
-}
-
-// ———— sb 流程命令 ————
-
-// 辨識 sb、sb.mjs、node …/sb.mjs 與 npx sb；回傳子命令與其後參數。
-function sbSub(entry) {
-  let args = null;
-  if (entry.name === 'sb' || entry.name === 'sb.mjs') args = entry.args;
-  else if (entry.name === 'node' || entry.name === 'bun' || entry.name === 'deno') {
-    for (let i = 0; i < entry.args.length; i++) {
-      const v = entry.args[i].value;
-      if (['-e', '-p', '--eval', '--print'].includes(v)) return null;
-      if (['-r', '--require', '--import', '--loader', '--experimental-loader', '-C', '--conditions'].includes(v)) { i++; continue; }
-      if (v.startsWith('-') || v === 'run') continue;
-      const name = baseName(v);
-      if (name === 'sb' || name === 'sb.mjs') args = entry.args.slice(i + 1);
-      break;
-    }
-  }
-  if (!args) return null;
-  const k = args.findIndex((w) => !w.value.startsWith('-'));
-  return k < 0 ? null : { sub: args[k].value, rest: args.slice(k + 1), all: args };
-}
-// 時點關卡停靠提醒：時點 1／2 缺 --adversarial 時停靠（獨立審查通過即自主推進）；時點 3 出口另需 --boss-ok（--new-ms）。
-// 契約已核准且未變時沿用原核准。旗標由 CLI 驗證，hook 提供停靠提醒。
-function checkLayerStopover(ctx, entry) {
-  const sb = sbSub(entry);
-  if (!sb || sb.sub !== 'next' || ctx.health?.kind !== 'active') return null;
-  const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value;
-  if (!['plan', 'build', 'requirement'].includes(target)) return null;
-  if (sb.all.some((w) => w.value === '--adversarial')) return null; // 審查旗標在即放行——時點 1／2 自主推進；出口章由 CLI 驗
-  const st = ctx.health.state;
-  const edge = { research: 'plan', quality: 'build', verify: 'requirement' }[st.node];
-  if (edge !== target) return null;
-  if (st.node === 'research' && unchangedG1Approval(ctx.root, st)) return null;
-  if (st.node === 'verify' && !sb.all.some((w) => w.value === '--new-ms')) return null; // fail＝新輸入經訪談回 requirement，零旗標
-  if (st.node === 'research') return '時點 1（research→plan）停靠：須先取得獨立審查並帶 --adversarial 推進——代理自主推進，不等使用者判定（使用者終審在時點 3 出口）。審查期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G1、不提交；審查前的研究結果不餵給審查者。';
-  if (st.node === 'quality') return '時點 2（quality→build）停靠：須先取得獨立審查並帶 --adversarial 推進——代理自主推進，不等使用者判定（使用者終審在時點 3 出口）。審查期間可先行研究（唯讀查證、tmp 筆記、隔離原型），不推進、不改 G2、不提交；審查前的研究結果不餵給審查者。';
-  return '時點 3 出口（verify→requirement --new-ms）停靠：獨立驗收審查通過且使用者終審後，帶 --adversarial --boss-ok --new-ms 推進。';
-}
-// --boss-ok 是使用者終審章：僅 sb end 與 sb next --new-ms（出口）帶旗標時交給使用者在權限提示中確認（平台不支援詢問時放行）。
-function bossOkAsk(entry) {
-  const sb = sbSub(entry);
-  if (!sb || !['next', 'end'].includes(sb.sub) || !sb.all.some((w) => w.value === '--boss-ok')) return null;
-  if (sb.sub === 'end') return 'sb end 帶 --boss-ok：表示你已完成時點 3 終審，並同意結束整個 slug——歸檔、合併回基底、刪除本機工作分支。只是目前里程碑通過、後面還有里程碑要做，請拒絕並改用 sb next requirement --new-ms。屬實再允許。';
-  if (!sb.all.some((w) => w.value === '--new-ms')) return null; // --boss-ok 只屬於出口；時點 1／2 誤帶由 CLI 擋，不問使用者
-  const target = sb.rest.find((w) => !w.value.startsWith('-'))?.value ?? '（未指明）';
-  return `sb next ${target} --new-ms 帶 --boss-ok：表示你已完成時點 3 終審並同意開新里程碑（回 requirement）。屬實再允許。`;
+  return writeTargets(input).filter((t) => !URI_SCHEME.test(t));
 }
 
 // ———— 產品訪談閘 ————
@@ -415,7 +275,7 @@ function interviewLine(ctx, event) {
   if (!iv) return '';
   const rel = interviewRel(ctx);
   const need = interviewNeed(iv);
-  if (!need) return event === 'SessionStart' ? `\n[訪談] 本對話紀錄 ${rel} 已完成 ${iv.complete} 輪；目標或範圍改變、證據推翻需求假設、slug 定 G1 前與交付前確認時，在同一紀錄追加一輪——每一輪寫入前先以 AskUserQuestion 提問。` : '';
+  if (!need) return event === 'SessionStart' ? `\n[訪談] 本對話紀錄 ${rel} 已完成 ${iv.complete} 輪；目標或範圍改變、證據推翻需求假設與交付前確認時，在同一紀錄追加一輪——每一輪寫入前先以 AskUserQuestion 提問。` : '';
   const resume = iv.base > 0 ? '恢復的對話：在同一紀錄末尾追加新的一輪。' : '';
   if (event === 'UserPromptSubmit') return `\n[訪談] 本對話訪談未完成（${rel}：${need}）——先以 AskUserQuestion 提問，取得回答後寫入紀錄。${resume}`;
   return `\n[訪談] 先做產品訪談：與使用者對齊目標、範圍、限制與驗收——先以 AskUserQuestion 提問並取得回答，再寫入 ${rel}（範本：${INTERVIEW_TEMPLATE}）；未提問就寫入會被擋。${resume}`;
@@ -741,8 +601,6 @@ function checkCommitStamp(anchor, msg) {
   // 來源不因此受信——格式由 hook 端獨立複驗，手寫章不豁免。
   const issue = commitMessageIssue(msg);
   if (issue) return `${issue}——hook 與 sb commitmsg 同判據，印章不豁免格式；以合格訊息重跑 sb commitmsg 後再提交`;
-  const health = readFlowState(anchor);
-  if (health.kind === 'invalid') return '流程接入異常——修復並以 sb state 查證後才可提交；既有印章不代表狀態有效';
   const stampPath = join(anchor, '.shiftblame', 'tmp', 'commit-stamp.json');
   if (!existsSync(stampPath)) return '缺少 commit 印章——在本次提交的錨定專案（git -C 有目標時＝該目標 repo）執行 sb commitmsg "<訊息>"，再以相同訊息提交';
   let stamp;
@@ -759,7 +617,6 @@ function checkCommitStamp(anchor, msg) {
   if (!Number.isFinite(age) || age > STAMP_TTL_MS) return 'commit 印章已逾期（>10 分鐘）或時間無效——重跑 sb commitmsg "<訊息>"';
   if (age < -60000) return 'commit 印章時間戳在未來——只接受剛簽發的印章，重跑 sb commitmsg';
   if (stamp.message !== msg) return 'commit 訊息與印章不符——以完全相同的訊息重跑 sb commitmsg 後再提交';
-  if (['verify', 'done'].includes(health.state?.node)) return '驗收段對 repo 唯讀——不得提交；需修改時先回實作段';
   // 放行不刪章：hook 看不到這次呼叫最後是否執行（同命令另一錨定、其他 hook 或權限確認都可能拒絕）。
   // 首次放行記下當時 HEAD；提交落地使 HEAD 前進，此章隨即作廢——一枚印章授權一次提交。
   if (!Object.hasOwn(stamp, 'approvedHead')) {
@@ -795,17 +652,11 @@ function checkCommit(ctx, entry, seen) {
   return reason;
 }
 
-// ———— main 模式最低機制（TDD→BDD→SDD 依意圖定檔）：提交閘補測試同批攔截 ————
-// slug 的紅→綠由 CLI 時點閘承載（G2 測試入口封存記錄紅／綠、進 verify 綠燈硬閘）；
-// 此攔截只對無活動 slug 的 main 工作生效：staged 含行為碼而無測試同批 → ask（不擋死——
-// 意圖檔位自證或老闆確認放行；文件、設定與非程式碼變更不攔）。
+// ———— 最低品質機制（TDD→BDD→SDD 依意圖定檔）：提交閘補測試同批攔截 ————
+// staged 含行為碼而無測試同批 → ask（不擋死——意圖檔位自證或老闆確認放行；文件、設定與非程式碼變更不攔）。
 const BATCH_CODE_FILE_RE = /\.(?:mjs|cjs|js|jsx|ts|tsx|mts|cts|py|gd|gdshader|cs|go|rs|java|kt|rb|php|c|h|cpp|hpp|cc|swift|sh|bash|ps1|lua|sql)$/i;
 const BATCH_TEST_FILE_RE = /(?:^|[/\\])(?:tests?|specs?|__tests__|__snapshots__)(?:[/\\]|$)|[._-](?:test|spec)\.[^.]+$|\.test\.|\.spec\./i;
 function mainTestBatchAsk(anchor) {
-  const health = readFlowState(anchor);
-  if (health.kind === 'invalid') return null; // 狀態異常已由其他閘擋
-  const node = health.state?.node;
-  if (node && node !== 'ended') return null; // slug 活動中——紅→綠由 CLI 時點閘承載
   let staged;
   try {
     staged = execFileSync('git', ['-C', anchor, '-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUB'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
@@ -818,7 +669,7 @@ function mainTestBatchAsk(anchor) {
     if (BATCH_CODE_FILE_RE.test(rel)) code++;
   }
   if (!code || test) return null; // 無行為碼，或已有測試同批
-  return '[shiftblame] main 最低機制（TDD→BDD→SDD 依意圖定檔）：本批 staged 含行為碼、無測試同批——行為修補須重現測試先行（TDD；文件層同判準：先讓 sb rewrite 判準跑出紅燈再改）、可觀察行為須場景先行（BDD）、介面與結構變更須設計層規格先行可查核（SDD——與 slug G1 的產品需求契約是兩回事）。補測試或規格同批；確認屬前述檔位的例外（既有測試已覆蓋、設定級變更）則放行';
+  return '[shiftblame] 最低品質機制（TDD→BDD→SDD 依意圖定檔）：本批 staged 含行為碼、無測試同批——行為修補須重現測試先行（TDD；文件層同判準：先讓 sb rewrite 判準跑出紅燈再改）、可觀察行為須場景先行（BDD）、介面與結構變更須設計層規格先行可查核（SDD）。補測試或規格同批；確認屬前述檔位的例外（既有測試已覆蓋、設定級變更）則放行';
 }
 
 // ———— 決策 ————
@@ -829,15 +680,9 @@ const OVERFLOW_DESTRUCTIVE = /\brm\s+-[A-Za-z]*[rR]|Remove-Item|\b(?:rd|rmdir|de
 function shellDecision(ctx, tool, text) {
   const dialect = /powershell|pwsh/i.test(tool) ? 'ps' : 'posix';
   const scan = analyzeCommand(text, dialect);
-  const health = checkStateHealth(ctx, tool, null, scan);
-  if (health) return deny(health);
   const interview = checkInterviewShell(ctx, scan);
   if (interview?.deny) return deny(interview.deny);
   const { entries, overflow } = scan;
-  for (const e of entries) {
-    const stop = checkLayerStopover(ctx, e);
-    if (stop) return deny(stop);
-  }
   const alias = checkGitAlias(entries, text);
   if (alias) return deny(alias);
   const redirect = checkGitRedirect(entries, text, overflow);
@@ -870,8 +715,8 @@ function shellDecision(ctx, tool, text) {
       return deny('提交命令須以字面 git 呼叫——變數或命令替換組成的命令無法套用提交檢查');
     }
   }
-  const asks = [...new Set([...entries.filter((e) => !e.query).map(bossOkAsk)].filter(Boolean))];
-  // main 模式最低機制：行為碼提交無測試同批 → ask 一次（per anchor 去重；slug 活動時不攔）
+  const asks = [];
+  // 最低品質機制：行為碼提交無測試同批 → ask 一次（per anchor 去重）
   {
     const batchAnchors = new Set();
     for (const e of entries) {
@@ -889,16 +734,16 @@ function shellDecision(ctx, tool, text) {
   return asks.length ? { ask: asks.join('\n'), context: warn } : { context: warn };
 }
 function decide(event, input, ctx) {
-  if (event === 'SessionStart') return { context: CARD + nodeLine(ctx.health, ctx.root) + interviewLine(ctx, event) };
-  if (event === 'UserPromptSubmit') return { context: nodeLine(ctx.health, ctx.root) + interviewLine(ctx, event) };
-  if (event === 'PostToolUseFailure') return { context: failureLine(ctx.failure, ctx.health?.state.node, String(input.tool_name ?? input.toolName ?? '')) };
+  if (event === 'SessionStart') return { context: CARD + interviewLine(ctx, event) };
+  if (event === 'UserPromptSubmit') return { context: interviewLine(ctx, event) };
+  if (event === 'PostToolUseFailure') return { context: failureLine(ctx.failure, String(input.tool_name ?? input.toolName ?? '')) };
   if (event !== 'PreToolUse') return {};
   const tool = input.tool_name || input.toolName || '';
   // 失敗裁示閘：連續失敗達 ask 閾值且未取得老闆決定時，改動類工具先問一次（唯讀查證不受閘）。
-  const gate = failureAskGate(ctx.root, input, ctx);
+  const gate = failureAskGate(ctx.root, input);
   if (gate && (isWriteTool(tool) || SHELL_TOOL_RE.test(tool))) {
-    markFailureAsked(ctx.root, gate.session, gate.node);
-    return { ask: `${gate.node} 段已連續失敗 ${gate.count} 次——先以 AskUserQuestion 向老闆取得「回退重審」或「留在本段續行」的決定，再繼續改動。回退去處：${FAIL_GUIDE[gate.node] ?? '同段內換做法'}` };
+    markFailureAsked(ctx.root, gate.session);
+    return { ask: `已連續失敗 ${gate.count} 次——先以 AskUserQuestion 向老闆取得「換方向」或「照目前做法續行」的決定，再繼續改動。` };
   }
   const toolInput = input.tool_input ?? {};
   if (SHELL_TOOL_RE.test(tool)) {
@@ -906,14 +751,8 @@ function decide(event, input, ctx) {
     if (Array.isArray(command)) command = command.map((a) => (/^[\w@%+=:,./-]+$/.test(String(a)) ? String(a) : `'${String(a).replace(/'/g, `'\\''`)}'`)).join(' ');
     return typeof command === 'string' ? shellDecision(ctx, tool, command) : {};
   }
-  const health = checkStateHealth(ctx, tool, toolInput, null);
-  if (health) return deny(health);
   const interview = checkInterviewWrite(ctx, tool, toolInput);
   if (interview?.deny) return interview;
-  if (isWriteTool(tool)) {
-    const matrix = checkStateWriteMatrix(ctx, toolInput);
-    if (matrix) return deny(matrix);
-  }
   return interview ?? {};
 }
 
@@ -925,14 +764,14 @@ function sessionOf(input) {
 const interviewApplies = (root, sessionId) => !!(!CONSULT && sessionId && root && !/^sess_subagent_/.test(sessionId) && safeWorkspaceRoot(root) && existsSync(join(root, '.shiftblame', 'tmp')));
 
 // 失敗裁示閘發出 ask 時記錄已問過（askedAt），同一輪升級只問一次。
-function markFailureAsked(root, sessionId, node) {
-  if (!root || !sessionId || !node) return;
+function markFailureAsked(root, sessionId) {
+  if (!root || !sessionId) return;
   const file = hookRecordsPath(root);
   const release = acquireLock(file, { waitMs: 2000, staleMs: 10000 });
   if (!release) return;
   try {
     const st = readHookRecords(root);
-    if (st.failureNudge?.session === sessionId && st.failureNudge?.node === node) {
+    if (st.failureNudge?.session === sessionId) {
       st.failureNudge.askedAt = new Date().toISOString();
       writeAtomic(file, JSON.stringify(st, null, 2));
     }
@@ -953,8 +792,6 @@ try {
   if (sessionId && root && RECORD_EVENTS.has(event) && safeWorkspaceRoot(root)) {
     try { ensureWorkspace(root); } catch (error) { logError(root, event, 'workspace', error); }
   }
-  let health = root ? readFlowState(root) : null;
-  if (health?.kind === 'invalid') health = readFlowState(root); // 並行寫入瞬間可能讀到半寫檔：再讀一次才判定
   let interview = null;
   if (interviewApplies(root, sessionId)) {
     try {
@@ -968,10 +805,10 @@ try {
     } catch (error) { logError(root, event, 'interview', error); }
   }
   let failure = null; // PostToolUseFailure 累計、PostToolUse 歸零——結果交給 decide 注入回退引導
-  if ((event === 'PostToolUseFailure' || event === 'PostToolUse') && health?.kind === 'active') {
-    try { failure = bumpFailure(root, sessionId, health.state.node, event === 'PostToolUse'); } catch (error) { logError(root, event, 'failure', error); }
+  if (event === 'PostToolUseFailure' || event === 'PostToolUse') {
+    try { failure = bumpFailure(root, sessionId, event === 'PostToolUse'); } catch (error) { logError(root, event, 'failure', error); }
   }
-  const ctx = { cwd, root, health, interview, failure, source: typeof input.source === 'string' ? input.source : null };
+  const ctx = { cwd, root, interview, failure, source: typeof input.source === 'string' ? input.source : null };
   try { result = decide(event, input, ctx); } catch (error) { result = {}; logError(root, event, 'decide', error); }
   try { record(root, event); } catch (error) { logError(root, event, 'record', error); }
   if (result.deny) {

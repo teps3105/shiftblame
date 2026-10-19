@@ -1,8 +1,28 @@
-// flow-state 與 hooks 紀錄的共用寫入：同目錄暫存檔改名，讀取端不會讀到半寫檔；
+// hooks 紀錄與印章的共用讀寫：同目錄暫存檔改名，讀取端不會讀到半寫檔；
 // 讀改寫以排他鎖串行，並行的寫入者不會互相覆蓋。
-import { closeSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync, writeSync } from 'node:fs';
-import { join } from 'node:path';
-import { hooksOnly } from './flow-state.mjs';
+import { closeSync, openSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeFileSync, writeSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+export const objectRecord = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+export const exactKeys = (v, keys) => objectRecord(v) && Object.keys(v).length === keys.length && keys.every(k => Object.hasOwn(v, k));
+export const timestamp = (v) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString() === v;
+const nonNegativeInt = (v) => Number.isInteger(v) && v >= 0;
+// 同一位置可經符號連結或短檔名有不同寫法（macOS 的 /var 即 /private/var、Windows 的 RUNNER~1）：字面不同時比對實際路徑。
+export const samePath = (a, b) => { if (resolve(a) === resolve(b)) return true; try { return realpathSync.native(a) === realpathSync.native(b); } catch { return false; } };
+
+// hooks 只存有界的計數與心跳；任一未知欄位都拒絕。
+const HOOK_RECORD_KEYS = ['hooksHeartbeat', 'turnUsage', 'usageTotals', 'failureNudge'];
+export function hooksOnly(st) {
+  if (!objectRecord(st) || !Object.keys(st).length || Object.keys(st).some(k => !HOOK_RECORD_KEYS.includes(k))) return false;
+  if (Object.hasOwn(st, 'hooksHeartbeat') && !(exactKeys(st.hooksHeartbeat, ['at', 'event']) && timestamp(st.hooksHeartbeat.at) && ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'].includes(st.hooksHeartbeat.event))) return false;
+  if (Object.hasOwn(st, 'turnUsage') && !(exactKeys(st.turnUsage, ['startedAt', 'requests']) && timestamp(st.turnUsage.startedAt) && nonNegativeInt(st.turnUsage.requests))) return false;
+  if (Object.hasOwn(st, 'usageTotals') && !(exactKeys(st.usageTotals, ['firstAt', 'requests']) && timestamp(st.usageTotals.firstAt) && nonNegativeInt(st.usageTotals.requests))) return false;
+  if (Object.hasOwn(st, 'failureNudge')) {
+    const fn = st.failureNudge;
+    if (!(exactKeys(fn, ['session', 'count', 'at', ...(Object.hasOwn(fn, 'askedAt') ? ['askedAt'] : [])]) && typeof fn.session === 'string' && fn.session.length > 0 && nonNegativeInt(fn.count) && timestamp(fn.at) && (!Object.hasOwn(fn, 'askedAt') || timestamp(fn.askedAt)))) return false;
+  }
+  return true;
+}
 
 export function sleepSync(ms) {
   try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
@@ -80,12 +100,14 @@ export function acquireLock(file, { waitMs = 5000, staleMs = 60000 } = {}) {
   }
 }
 
-// hooks 的心跳與工具呼叫計數另存 tmp，與 sb 寫入的 flow-state 分開。
+// hooks 的心跳、工具呼叫計數與連續失敗計數存於 tmp。
 export const hookRecordsPath = (root) => join(root, '.shiftblame', 'tmp', 'hook-records.json');
 export function readHookRecords(root) {
   try {
     const st = JSON.parse(readFileSync(hookRecordsPath(root), 'utf8'));
-    delete st.compactNudge; // 已移除的壓縮帳本提醒狀態——舊檔讀取即剝，寫回時不再帶出。
+    // 舊版欄位讀取即剝，寫回時不再帶出：壓縮提醒、待重審標記、失敗計數的段位。
+    delete st.compactNudge; delete st.suspect;
+    if (objectRecord(st.failureNudge)) delete st.failureNudge.node;
     return hooksOnly(st) ? st : {};
   } catch { return {}; }
 }

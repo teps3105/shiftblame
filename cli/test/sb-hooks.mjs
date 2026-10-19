@@ -8,82 +8,45 @@ const hook=fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs',import.meta.
 const root=mkdtempSync(join(tmpdir(),'sb-hooks-'));
 process.on('exit',()=>rmSync(root,{recursive:true,force:true}));
 mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});
-const statePath=join(root,'.shiftblame/flow-state.json');
-const state=()=>JSON.parse(readFileSync(statePath,'utf8'));
-// hooks 的心跳與計數另存 tmp，不寫 sb 管理的 flow-state。
+// hooks 的心跳與計數存於 tmp/hook-records.json。
 const records=()=>JSON.parse(readFileSync(join(root,'.shiftblame/tmp/hook-records.json'),'utf8'));
-const set=(node,extra={})=>writeFileSync(statePath,JSON.stringify({slug:'demo',ms:'001',node,...extra}));
 const run=(event,tool,input)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:event,tool_name:tool,tool_input:input})});
 const tool=(name,input)=>run('PreToolUse',name,input);
 const git=(...args)=>spawnSync('git',['-C',root,...args],{encoding:'utf8'});
 assert.equal(git('init').status,0);
 writeFileSync(join(root,'.gitignore'),'.shiftblame/\n.cache/\n');
-mkdirSync(join(root,'.cache'));writeFileSync(join(root,'.cache/tracked.txt'),'source');
-assert.equal(git('add','-f','.cache/tracked.txt').status,0);
-set('build');
-let r=run('SessionStart');assert.equal(r.status,0);assert.equal(JSON.parse(r.stdout).hookSpecificOutput.hookEventName,'SessionStart');
-assert.ok(JSON.parse(r.stdout).hookSpecificOutput.additionalContext.length<1200,'啟動提示有界且精簡');
+let r=run('SessionStart');assert.equal(r.status,0);
+const card=JSON.parse(r.stdout).hookSpecificOutput;
+assert.equal(card.hookEventName,'SessionStart');
+assert.ok(card.additionalContext.length<600,'啟動提示有界且精簡');
+assert.doesNotMatch(card.additionalContext,/slug|G1|時點|\[段\]|\[接入\]/,'啟動提示不再帶流程段位');
 assert.equal(records().hooksHeartbeat.event,'SessionStart');
-assert.equal(state().hooksHeartbeat,undefined,'hooks 不改寫 flow-state');
-// Prompts are platform conversation data, not a state transition API.
-for(const node of ['requirement','research','plan','quality','build','verify']){
- for(const prompt of ['繼續','繼續。','可以繼續了','目前進度如何','你做到哪裡了','為什麼會失敗','新增付款功能']){
-  set(node,{rev:2});
-  r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:root,hook_event_name:'UserPromptSubmit',prompt})});
-  assert.equal(r.status,0,r.stderr);assert.equal(state().node,node);assert.equal(state().rev,2);
-  assert.equal(state().lastBossInputAt,undefined);assert.equal(state().inputs,undefined);
- }
- assert.equal(run('Stop').status,0);assert.equal(state().node,node);
+// 遺留的舊版狀態檔一律忽略：不擋寫入、不擋提交、不改寫。
+const legacy=join(root,'.shiftblame/flow-state.json');
+for(const content of [JSON.stringify({slug:'demo',ms:'001',node:'verify'}),'{broken']){
+ writeFileSync(legacy,content);
+ assert.equal(tool('Write',{file_path:join(root,'src/app.js')}).status,0,'遺留狀態不擋寫入：'+content);
+ assert.equal(tool('Bash',{command:'git add app.js'}).status,0,'遺留狀態不擋 git 寫入：'+content);
+ r=run('UserPromptSubmit');assert.equal(r.status,0);assert.doesNotMatch(r.stdout,/段|接入/);
+ assert.equal(readFileSync(legacy,'utf8'),content,'hook 不改寫遺留狀態檔');
 }
-set('build');
+rmSync(legacy);
 for(let i=0;i<8;i++)assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0,'輪詢不按本地寫入與否封禁');
 const prefix='x'.repeat(220);
 for(const suffix of ['readA','readB'])assert.equal(tool('functions.exec',{code:prefix+suffix}).status,0);
-assert.equal(state().node,'build');assert.equal(records().turnUsage.requests,10);assert.equal(records().turnUsage.repeats,undefined);
-// Rewriting does not depend on a particular Skill invocation event.
-set('requirement',{rev:3});
-assert.equal(tool('Edit',{file_path:join(root,'.shiftblame/demo/001/G1.md')}).status,0);
-assert.equal(tool('Edit',{file_path:join(root,'.shiftblame/demo/001/G2.md')}).status,0);
-// Structured writes and patch headers share verify protection.
-set('verify');
-assert.equal(tool('Write',{path:'.cache/output.txt'}).status,0,'未追蹤且被忽略的輸出可寫');
-assert.equal(tool('Write',{path:'.cache/tracked.txt'}).status,2,'被追蹤來源即使命中ignore也保持穩定');
+assert.equal(records().turnUsage.requests,10);assert.equal(records().turnUsage.repeats,undefined);
+// 一般寫入工具、patch 與遠端工具都不受段位限制。
 for(const name of ['Edit','mcp__storage__write_target','functions.apply_patch']){
  const input=name.includes('patch')?'*** Begin Patch\n*** Update File: src/app.js\n@@\n-old\n+new\n*** End Patch':{file_path:'src/app.js'};
- assert.equal(tool(name,input).status,2,name);
+ assert.equal(tool(name,input).status,0,name);
 }
-assert.equal(tool('mcp__storage__get_object',{path:'src/app.js'}).status,0);
-assert.equal(tool('Write',{path:join(root,'.shiftblame/tmp/evidence.md')}).status,0);
-// 寫遠端資源的工具（帶 owner／repo 等定位欄位，或目標是 URI）不是本機驗收來源。
 for(const [name,input] of [['mcp__github__create_or_update_file',{owner:'o',repo:'r',path:'src/app.js',content:'x',message:'m',branch:'main'}],
- ['mcp__s3__put_object',{path:'s3://bucket/src/app.js'}],['mcp__web__upload',{target:'https://example.com/src/app.js'}]])
+ ['mcp__s3__put_object',{path:'s3://bucket/src/app.js'}],['TodoWrite',{todos:[{content:'x',status:'pending'}]}]])
  assert.equal(tool(name,input).status,0,name);
-set('build');assert.equal(tool('Write',{path:'src/app.js'}).status,0);
-// Invalid state preserves the original and allows only observable recovery writes.
-writeFileSync(statePath,'{broken');
-assert.equal(tool('mcp__storage__write_target',{path:'src/app.js'}).status,2);
-assert.equal(tool('apply_patch','*** Begin Patch\n*** Update File: src/app.js\n@@\n-a\n+b\n*** End Patch').status,2);
-assert.equal(readFileSync(statePath,'utf8'),'{broken');
-// 沒有本機寫入目標的工具（待辦清單、只帶識別碼或遠端定位的更新）不受接入異常影響。
-for(const [name,input] of [['TodoWrite',{todos:[{content:'x',status:'pending'}]}],['mcp__tracker__update_issue',{issue_id:'42',title:'x'}],
- ['mcp__github__create_or_update_file',{owner:'o',repo:'r',path:'src/app.js'}]])
- assert.equal(tool(name,input).status,0,name);
-assert.equal(tool('Write',{file_path:statePath}).status,0);
-assert.equal(tool('Bash',{command:'git add app.js'}).status,2);
-assert.equal(tool('Bash',{command:'git status --porcelain'}).status,0);
-set('research');
-// 時點 1 缺 --adversarial 停靠提醒；帶審查旗標即放行（自主推進）。
-assert.equal(tool('Bash',{command:'sb next plan'}).status,2,'時點 1 缺 --adversarial 停靠');
-assert.equal(tool('Bash',{command:'sb next plan --adversarial'}).status,0,'時點 1 帶審查旗標放行');
-// --boss-ok 是終審章：僅出口（sb end／sb next --new-ms）交給使用者在權限提示中確認。
-for(const command of ['sb end --adversarial --boss-ok','sb next requirement --new-ms --adversarial --boss-ok']){
- r=tool('Bash',{command});assert.equal(r.status,0,command);
- const out=JSON.parse(r.stdout).hookSpecificOutput;
- assert.equal(out.permissionDecision,'ask',command);assert.match(out.permissionDecisionReason,/--boss-ok/,command);
+// 已移除的流程命令不再有專屬攔截或詢問。
+for(const command of ['sb next plan','sb end --adversarial --boss-ok']){
+ r=tool('Bash',{command});assert.equal(r.status,0,command);assert.ok(!r.stdout.includes('permissionDecision'),command);
 }
-assert.equal(tool('Bash',{command:'sb next plan --adversarial --boss-ok'}).stdout,'','時點 1 誤帶 --boss-ok 不詢問（CLI 擋）');
-set('done');assert.equal(tool('Write',{path:'src/app.js'}).status,2,'done 是 verify 的舊狀態');
-set('build');
 assert.equal(tool('Bash',{command:'git config --get-regexp alias.'}).status,0,'唯讀診斷不是alias設定');
 assert.equal(tool('Bash',{command:'git config alias.ci commit'}).status,2,'alias寫入仍需保護提交入口');
 assert.equal(tool('Bash',{command:'git config alias.demo "!echo --get ok"'}).status,2,'alias值內的唯讀字詞不是選項');
@@ -110,32 +73,25 @@ assert.equal(r.status,2);assert.match(r.stderr,/缺少 commit 印章/);assert.ok
 assert.equal(from(elsewhere,`git -C ${root} commit -m "fix: x"`).status,0,'被拒後以 -C 重試不必重簽');
 r=from(elsewhere,`git -C ${root} commit -m "fix: x" && git -C ${root} commit --amend -m "fix: x"`);
 assert.equal(r.status,2,'同命令對同一 repo 兩次不同提交——一枚章只授權一次提交');assert.ok(existsSync(stamp));
-assert.equal(git('-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-q','-m','fix: x').status,0);
+assert.equal(git('-c','user.name=fixture','-c','user.email=fixture@example.invalid','commit','-q','--allow-empty','-m','fix: x').status,0);
 r=tool('Bash',{command:'git commit -m "fix: x"'});
 assert.equal(r.status,2,'提交落地後同章不可再用');assert.match(r.stderr,/已用於先前的提交/);assert.ok(!existsSync(stamp),'作廢章清除');
 assert.equal(tool('Bash',{command:'git commit -m "fix: x"'}).status,2);
 const stray=join(root,'outside');mkdirSync(stray);
 r=spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd:stray,hook_event_name:'SessionStart'})});
 assert.equal(r.status,0);assert.ok(!existsSync(join(stray,'.shiftblame')));
-// —— main 模式最低機制（TDD→BDD→SDD 依意圖定檔）：行為碼提交無測試同批 → ask 自證檔位；
-// 有測試同批、純非程式碼、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。每場景重新發章，避免沿用上一場景的放行標記。
+// —— 最低品質機制（TDD→BDD→SDD 依意圖定檔）：行為碼提交無測試同批 → ask 自證檔位；有測試同批或純非程式碼不攔。
+// 每場景重新發章，避免沿用上一場景的放行標記。
 const cli=fileURLToPath(new URL('../bin/sb.mjs',import.meta.url));
 const mint=(msg)=>spawnSync(process.execPath,[cli,'commitmsg',msg],{cwd:root,encoding:'utf8'});
-rmSync(statePath); // 無 slug＝main 模式
 writeFileSync(join(root,'app.js'),'export const main=1;\n');
 assert.equal(git('add','app.js').status,0);
-assert.equal(mint('feat: main 最低機制驗證').status,0,'發章');
-r=tool('Bash',{command:`git -C ${root} commit -m "feat: main 最低機制驗證"`});
-assert.ok(r.stdout.includes('permissionDecision')&&r.stdout.includes('main 最低機制'),'行為碼無測試同批→ask 自證檔位');
+assert.equal(mint('feat: 最低機制驗證').status,0,'發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "feat: 最低機制驗證"`});
+assert.ok(r.stdout.includes('permissionDecision')&&r.stdout.includes('最低品質機制'),'行為碼無測試同批→ask 自證檔位');
 writeFileSync(join(root,'app.test.js'),'assert.ok(true);\n');
 assert.equal(git('add','app.test.js').status,0);
-assert.equal(mint('feat: main 最低機制驗證').status,0,'重發章');
-r=tool('Bash',{command:`git -C ${root} commit -m "feat: main 最低機制驗證"`});
+assert.equal(mint('feat: 最低機制驗證').status,0,'重發章');
+r=tool('Bash',{command:`git -C ${root} commit -m "feat: 最低機制驗證"`});
 assert.equal(r.status,0,r.stderr);assert.ok(!r.stdout.includes('permissionDecision'),'測試同批→不攔');
-set('build'); // slug 活動中
-writeFileSync(join(root,'app2.js'),'export const two=2;\n');
-assert.equal(git('add','app2.js').status,0);
-assert.equal(mint('fix: 活動中流程不攔').status,0,'發章');
-r=tool('Bash',{command:`git -C ${root} commit -m "fix: 活動中流程不攔"`});
-assert.ok(!r.stdout.includes('permissionDecision'),'slug 活動中→main 攔截不適用（CLI 時點閘承載）');
 console.log('sb-hooks: pass');

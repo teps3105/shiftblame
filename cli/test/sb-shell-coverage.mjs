@@ -9,9 +9,7 @@ const hook=fileURLToPath(new URL('../../hooks/shiftblame-guard.mjs',import.meta.
 const root=mkdtempSync(join(tmpdir(),'sb-shell-'));
 process.on('exit',()=>rmSync(root,{recursive:true,force:true}));
 mkdirSync(join(root,'.shiftblame/tmp'),{recursive:true});mkdirSync(join(root,'sub'));
-const statePath=join(root,'.shiftblame/flow-state.json');
 const stamp=join(root,'.shiftblame/tmp/commit-stamp.json');
-const set=(node,extra={})=>writeFileSync(statePath,JSON.stringify({slug:'demo',ms:'001',node,...extra}));
 const run=(event,input={},cwd=root)=>spawnSync(process.execPath,[hook],{encoding:'utf8',input:JSON.stringify({cwd,hook_event_name:event,...input})});
 const tool=(name,tool_input,cwd)=>run('PreToolUse',{tool_name:name,tool_input},cwd);
 const sh=(command,cwd)=>tool('Bash',{command},cwd);
@@ -21,7 +19,6 @@ const git=(...args)=>spawnSync('git',['-C',root,...args],{encoding:'utf8'});
 assert.equal(git('init','-q').status,0);
 writeFileSync(join(root,'.gitignore'),'.shiftblame/\n');writeFileSync(join(root,'sub/app.js'),'x\n');
 assert.equal(git('add','.gitignore','sub/app.js').status,0);
-set('build');
 
 // PowerShell 與 Bash 走同一套判斷。
 let r=ps('git commit -m "fix: x"');assert.equal(r.status,2);assert.match(r.stderr,/缺少 commit 印章/);
@@ -117,29 +114,10 @@ if(process.platform==='win32'){
 for(const command of ['git -c alias.x=commit x -m y','GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.x GIT_CONFIG_VALUE_0=commit git x']){r=sh(command);assert.equal(r.status,2);assert.match(r.stderr,/git alias 定義攔截/);}
 r=ps('$env:GIT_DIR="C:/x/.git"; git status');assert.equal(r.status,2);assert.match(r.stderr,/路徑重定向攔截/);
 
-// 時點 1、2 的審查期間可先行研究；提示與停靠訊息都說明範圍。
-for(const [node,expect] of [['research',true],['quality',true],['verify',true],['build',false]]){
- set(node);r=run('SessionStart');assert.equal(r.status,0);
- assert.equal(/先行研究/.test(JSON.parse(r.stdout).hookSpecificOutput.additionalContext),expect,node);
-}
-set('research');r=sh('sb next plan');assert.equal(r.status,2);assert.match(r.stderr,/先行研究/);assert.match(r.stderr,/不改 G1/);
-
 // 只有已註冊的事件寫紀錄；PowerShell 呼叫同樣計數。
-set('build');const records=join(root,'.shiftblame/tmp/hook-records.json');const before=readFileSync(records,'utf8');
+const records=join(root,'.shiftblame/tmp/hook-records.json');const before=readFileSync(records,'utf8');
 assert.equal(run('Notification').status,0);assert.equal(readFileSync(records,'utf8'),before,'未知事件不寫紀錄');
 const turnCount=()=>JSON.parse(readFileSync(records,'utf8')).turnUsage?.requests??0;const count0=turnCount();
 assert.equal(ps('Get-Date').status,0);assert.equal(turnCount(),count0+1);
-assert.equal(JSON.parse(readFileSync(statePath,'utf8')).turnUsage,undefined,'hooks 不寫 flow-state');
 
-// 驗收段的相對路徑以工具 cwd 展開。
-set('verify');r=tool('Write',{file_path:'app.js'},join(root,'sub'));assert.equal(r.status,2);assert.match(r.stderr,/sub\/app\.js/);
-
-// 接入異常：只放行 flow-state／tmp 修復；`..` 與尾端點不能把正式檔偽裝成修復目標。
-writeFileSync(statePath,'{broken');
-for(const path of ['.shiftblame/tmp/../../src/app.js','.shiftblame/tmp/.. /.. /src/app.js',join(root,'.shiftblame/tmp/../../src/app.js')])
- assert.equal(tool('Write',{file_path:path}).status,2,path);
-for(const path of ['.shiftblame/tmp/notes.md',join(root,'.shiftblame/flow-state.json'),'.shiftblame/tmp/./a/../notes.md'])
- assert.equal(tool('Write',{file_path:path}).status,0,path);
-r=ps('git add .');assert.equal(r.status,2);assert.match(r.stderr,/接入異常/);
-assert.equal(readFileSync(statePath,'utf8'),'{broken');
 console.log('sb-shell-coverage: pass');

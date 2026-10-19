@@ -1,6 +1,6 @@
 // sb-rewrite：文件唯一編輯入口的檢查核心——docs/ 結構（非 md 檔、編號兩層、H1 對應、
 // 編號連續、索引對帳）＋參照型文件可讀性三判準（重點前置、長度預算、治理暗語）＋
-// tmp 快照；提交閘（commitmsg 於 staged 動文件時）與收尾閘（end 於 slug 期間動過文件時）
+// tmp 快照；提交閘（commitmsg 於 staged 動文件時）
 // 執行同一判準；sb docs 已退役（無殘餘入口）。撰寫規範見 skills/shiftblame/assets/DOCS.md。
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -243,33 +243,7 @@ fail({ '索引.md': IDX('2-開發/1.1-x.md'), '2-開發/1.1-x.md': '# x\n' }, [/
   assert.match(misplacedDocs.stderr, /docs\/SOP\.md/);
 }
 
-// —— 11. 收尾閘：slug 期間動過文件時，end 前須過同一判準 ——
-{
-  const f = fixture({ withDocs: false });
-  const git = (...args) => spawnSync('git', ['-C', f.cwd, ...args], { encoding: 'utf8' });
-  spawnSync('git', ['-C', f.cwd, 'init'], { encoding: 'utf8' });
-  git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid');
-  write(join(f.cwd, '.gitignore'), '.shiftblame/\n');
-  git('add', '.gitignore'); git('commit', '-m', 'chore: 初始化');
-  assert.equal(f.run('init', 'docfix', 'docs').status, 0);
-  // slug 期間提交一份壞 docs（缺 lead）——測試內直接 git commit（不經發章）
-  write(join(f.cwd, 'README.md'), '# 專案\n\n安裝：`npm i`。\n');
-  git('add', '.'); git('commit', '-m', 'docs: 加入 README');
-  const stateFile = join(f.cwd, '.shiftblame/flow-state.json');
-  const st = JSON.parse(readFileSync(stateFile, 'utf8'));
-  st.node = 'verify';
-  st.adversarialLog = [{ at: new Date().toISOString(), report: '.shiftblame/tmp/p3.md', verdict: '通過', node: 'verify', point: '2' }];
-  writeFileSync(stateFile, JSON.stringify(st));
-  const blocked = f.run('end', '--adversarial', '--boss-ok');
-  assert.equal(blocked.status, 1, '收尾文件閘未過不歸檔：' + blocked.stdout);
-  assert.match(blocked.stderr, /收尾文件閘未過/);
-  // 整檔重寫補 lead、提交後收尾通過
-  write(join(f.cwd, 'README.md'), `# 專案\n\n${LEAD}\n\n安裝：\`npm i\`。\n`);
-  git('add', '.'); git('commit', '-m', 'docs: 整檔重寫');
-  assert.equal(f.run('end', '--adversarial', '--boss-ok').status, 0);
-}
-
-// —— 12. SOP／ROADMAP 位置違例與 .shiftblame/ 三判準：根目錄／docs/ 皆擋；權威位置 .shiftblame/ 全套判準＋快照 ——
+// —— 11. SOP／ROADMAP 位置違例與 .shiftblame/ 三判準：根目錄／docs/ 皆擋；權威位置 .shiftblame/ 全套判準＋快照 ——
 {
   // 根目錄 SOP.md／ROADMAP.md：位置違例
   {

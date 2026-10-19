@@ -1,89 +1,70 @@
 ---
 name: MECHANISMS
-revision: 3.0.8
+revision: 4.0.0
 ---
 # 執行介面與界線
 
 ## 狀態
 
-sb state 區分未接入、直接實行、活動 slug、已結束及損壞狀態。操作權限以使用者授權為準。損壞時先保留原資料並修復，診斷及 tmp 可用；正式提交與流程推進保持封閉。
-
-flow-state 記錄節點、需求契約、審查邊及有限觀測欄位；對話與授權事實由平台承載。意圖由完整對話理解，完成以實際結果驗證。
-
-flow-state 只由 sb 寫入。寫入狀態的命令（init、next、end、closeout、sopreview、adversarial）先取得 .shiftblame/flow-state.json.lock 排他鎖，再以同目錄暫存檔改名整檔寫入，讀取端不會讀到半寫檔。鎖被占用時等待（預設 30 秒，SB_LOCK_WAIT_MS 可調），逾時即停下並指出鎖檔；持有程序已結束或持有超過 2 分鐘的殘鎖自動清除。hooks 的紀錄另存 tmp，不改寫 flow-state。
-
-research、quality 與 verify 段的 sb state 另印先行研究的比對基準：時點 1 為目前 G1 定義區 hash，時點 2 為 G2 定義區 hash，時點 3 為受驗提交（工作分支末端）。審查與終審期間的筆記記下此值，審查後核對。
+sb state 印出專案根、.shiftblame/ 工作區是否存在與交接查找方式。對話與授權事實由平台承載；意圖由完整對話理解，完成以實際結果驗證。舊版遺留的 .shiftblame/flow-state.json 與其他流程目錄不讀、不寫、也不擋任何操作。
 
 ## CLI
 
-- sb init <slug> [type] 建立使用者已授權的工作骨架與分支，並記下基底提交供收尾合併。
-  - 空資料夾（只忽略 .shiftblame 與 .DS_Store、Thumbs.db、desktop.ini）自動建 Git 庫，起始提交只含 .gitignore；中途失敗時移除本次建立的 .git 與 .gitignore，不留骨架。
-  - 有 repo 但尚無提交時，補一個空樹起始提交於目前分支；索引與工作樹不動，既有暫存保留。
-  - 已有內容的非 Git 資料夾不代為提交：先 git init 並提交既有內容，或以 --no-git 不用 Git（不建分支與基底，收尾只歸檔）。--no-git 在 Git 工作區內為用法錯誤。
-  - 缺少 Git 提交身分時停下並說明設定方式；在空的子資料夾執行而專案根向上錨定時停下，避免在上層專案建立流程。
-  - HEAD 無法解析的損壞 repo 只建骨架，不建分支、不動索引，修復後以 sb state 查證。
-- sb next <node> 沿流程切換責任段。符合契約的回查與技術修復可自主執行；使用者指出驗收未通過時，依差異回責任段修復，實質需求或授權變更先經訪談回 requirement。
-- 紅→綠機械核對：G2「品質」段須載明「測試入口：<命令>」行（quality→build 邊檢查，缺行即擋；「測試入口：無（理由）」聲明跳過核對）。時點 2 封存時 sb 實際執行測試入口一次，紅／綠記入 g2Contract.tests（紅＝新標準存在的證據，封存即綠＝保護既有行為的測試）；進 verify 邊重跑同一入口要求綠燈（exit 0），紅燈擋進 verify——轉綠是 build 本份，verify 段驗行為與整體正確性、不重跑綠燈。輸出落 .shiftblame/tmp/test-seal.log 與 test-verify.log。
-- research → plan 封存 G1 定義區、quality → build 封存 G2 定義區；## 回指記錄 是證據分隔。已核准、相同且仍適用的契約可重用。契約變更需對應時點審查與使用者授權。
-- sb adversarial <報告> --point 1|2|3 記錄對應審查並綁定審查對象：時點 1（research→plan）記 G1 定義區 hash，時點 2（quality→build）記 G2 定義區 hash（G 檔不存在或回指標題不是恰好一次時拒絕記錄），時點 3（verify 驗收完成後，出口閘查驗）記受驗提交（收尾已留痕時取其工作提交；非 Git 工作區不記）。時點邊以 --adversarial 承接真實審查——時點 1／2 審查通過即自主推進，不帶使用者旗標（誤帶 --boss-ok 即擋）；時點 3 出口另以 --boss-ok 承接使用者終審。CLI 核對條目新鮮度與審查對象：審查後修改 G1／G2 定義區或再提交，須重新審查；只更新回指區不受影響。舊版條目沒有審查對象，只核對新鮮度；2.8.x 的時點 2（verify 出口）條目載入時遷移為時點 3。
-- sb commitmsg <訊息> 檢查「type: 一句話」單行格式、狀態及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元。staged 含 SOP.md／ROADMAP.md（任一位置）即位置違例擋下——權威位置是 .shiftblame/，不入庫。staged 動到參照型文件（根 README、docs/）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交（main 與 slug 模式皆然）。
-- sb sopreview <範圍與結論> 選用記錄已進行的規範／路線文件（.shiftblame/SOP.md、ROADMAP.md）審查範圍與結論；SOP 與 ROADMAP 是參照型非治理文件，審查依規則及方向的實際變更執行。
-- sb next requirement --new-ms --adversarial --boss-ok 是里程碑出口：時點 3 終審後結束目前里程碑，ms 加一並回 requirement；slug 與工作分支保留。
-- sb end --adversarial --boss-ok 是 slug 出口：在 verify 及使用者終審後結束整個 slug，歸檔並整合。依序為里程碑閘（SLUG 里程碑清單中目前 ms 之後的列不是「完成」或「取消」即擋，指向 --new-ms；使用者決定提前結束時先把剩餘列改為「取消」；ms 欄無法辨識也擋；SLUG 沒有清單則不核對）、收尾文件閘（本 slug 期間動過參照型文件時，文件集須先過 sb rewrite 判準；無 git 基準則跳過）、收尾整併閘（工作分支自基底分叉後的歷史須線性——分支內有 merge 提交即擋並指示以 git rebase 整理；子代理隔離工作區的 worktree 掛載須先清除，殘留即擋並列出路徑；整理與清除由代理完成後重試，收尾合併本身保留 --no-ff；無 git 基準或舊版 git 跳過）、working tree 乾淨檢查、歸檔、合併、寫下收尾留痕，最後刪除本機工作分支。刪分支失敗時狀態停在 verify 並保留留痕，排除原因後重跑即完成，不會重併。基底有歧義以 --base 明示；外部協作 repo 的發布與整合依其授權。
-- sb closeout --base <分支> 核對收尾整合事實。
-- sb rewrite 文件編輯的唯一入口：把文件集（根 README、docs/、.shiftblame/SOP.md 與 .shiftblame/ROADMAP.md 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查位置違例（根目錄或 docs/ 的 SOP.md／ROADMAP.md、根目錄 README 大小寫變體並存——SOP 與 ROADMAP 的權威位置是 .shiftblame/，README 形象文件全專案唯一）、docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（時點、G 檔搭配詞、sb 命令、.shiftblame/ 路徑不得入參照型文件，README 與 .shiftblame/SOP／ROADMAP 一併檢查；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心由提交閘與收尾閘共用。
-- sb handoff save <task> <草稿.md> 保存 main／直接作業的具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp，不改流程狀態；模式、完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
+- sb state 顯示專案根與工作區狀態；不帶參數。
+- sb commitmsg <訊息> 檢查「type: 一句話」單行格式、內容及 staged 系統檔，產生綁定 repo／訊息／時效的提交印章。type 小寫屬流程詞彙（feat/fix/docs/style/refactor/perf/test/chore/build/ci），冒號後恰一格空格，全訊息 ≤120 字元；內部文件檔名、任務代號、壓縮術語與流程詞彙擋下。staged 含 .shiftblame/ 內檔案即擋；staged 含 SOP.md／ROADMAP.md（任一位置）即位置違例擋下——權威位置是 .shiftblame/，不入庫。staged 動到參照型文件（根 README、docs/）時先過文件閘——文件集須過 sb rewrite 同一判準，未過不發章；hooks 對無章提交硬擋，文件閘因此覆蓋所有動文件的提交。
+- sb rewrite 文件編輯的唯一入口：把文件集（根 README、docs/、.shiftblame/SOP.md 與 .shiftblame/ROADMAP.md 存在者）原稿快照至 .shiftblame/tmp/rewrite-backup/\<時間戳\>/，再檢查位置違例（根目錄或 docs/ 的 SOP.md／ROADMAP.md、根目錄 README 大小寫變體並存——SOP 與 ROADMAP 的權威位置是 .shiftblame/，README 形象文件全專案唯一）、docs/ 結構（非 md 檔不得入 docs/、除索引.md 外全編號（頂層 N-大節、節內 N.M-文件）、層級最多 N.M、編號連續、索引逐檔收錄）與可讀性信號——重點前置（H1 後須有一段當下摘要）、長度預算（超 300 可見行須 length-allow）、治理暗語（sb 命令、.shiftblame/ 路徑與舊流程詞彙不得入參照型文件，README 與 .shiftblame/SOP／ROADMAP 一併檢查；jargon-allow 豁免）、純散文段（連續 ≥5 句且零具體內容）、佔位符殘留（「（填…）」、TODO、待補視為未完成）。重寫後標題序列與上一份快照完全相同即擋（沿舊目錄抄錄）；小修直接編輯檔案不走 sb rewrite。機械檢查只證明結構形式，撰寫規範見 [DOCS](../assets/DOCS.md)；檢查核心與提交閘共用。
+- sb handoff save <task> <草稿.md> 保存具名交接；list 查找、show <task> 核對快照與現況。資料留 tmp；完整性及差異的處理見 [HANDOFF](HANDOFF.md)。
+- 已移除的舊命令與任何未知命令一律印出用法並以 exit 2 結束。
 
 ## Hooks
 
-SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSubmit 重置本回合純觀測數據並提示當前狀態，requirement 與 verify 段附先行研究的範圍，訪談未完成時附提醒；節點由明確的 CLI 操作更新。PreToolUse 檢查可辨識操作的狀態健康、產品訪談、repo 邊界、破壞性目標及提交印章。回合結束依任務完成或實際阻塞判斷。平台自動壓縮不設前置介入：跨對話狀態由 save／load 承載，壓縮續接後依 SessionStart 狀態卡重讀 <slug>/SLUG.md 與當前段 G 檔。
+SessionStart 注入簡短的授權與驗收原則及訪談提示；UserPromptSubmit 重置本回合純觀測數據，訪談未完成時附提醒。PreToolUse 檢查產品訪談、repo 邊界、破壞性目標、提交印章與最低品質機制。回合結束依任務完成或實際阻塞判斷。平台自動壓縮不設前置介入：跨對話狀態由 save／load 承載。
 
-失敗信號回退引導：時點通過是暫時性的。PostToolUseFailure 以同對話同段累計連續失敗（PostToolUse 的工具成功把計數歸零，換段重置）：達三次起每次失敗注入回退引導——依段指出回退去處與根因層級（build 失敗先想回 quality／research，品質安排寫不出回 plan，驗收失敗回 build 或 quality，不在當前段硬修）——並把該段依賴的上游時點標記待重審（plan 失敗標時點 1、build 與 verify 失敗標時點 2）；達六次起注入改為裁示，要求以 AskUserQuestion 取得老闆「回退重審或留在本段」的決定，且改動類工具（寫入或 shell）回傳 ask 一次。段注入在活動 slug 顯示「時點待重審」；該時點的封存邊（research→plan、quality→build）再次推進即重審通過、標記解除（sb next 以邊時戳對標記時戳判斷，訊息載明重審通過）；開新里程碑（--new-ms）把標記整批清除。
+失敗信號引導：PostToolUseFailure 以對話代號累計連續失敗，PostToolUse 的工具成功把計數歸零，換對話重新計數。達三次起每次失敗注入「[失敗引導]」——先判斷根因、檢查假設、換方法或回頭修正上游依據，不以相同操作反覆重試；達六次起改為「[失敗裁示]」，要求以 AskUserQuestion 取得使用者「換方向或照目前做法續行」的決定，且下一個改動類工具（寫入或 shell）回傳 ask 一次。計數只在專案已有 .shiftblame/ 時記錄。外掛清單目前只註冊 SessionStart、UserPromptSubmit 與 PreToolUse；平台設定另行註冊這兩個失敗事件時，失敗引導才會生效。
 
 工具嘗試次數用於觀測，操作結果另以實際輸出核對。重試與非同步輪詢依進展決定；技能以當前平台的讀取能力使用。
 
 ### 產品訪談閘
 
-- 適用範圍：帶對話代號（session_id）的事件。專案根是 cwd 向上第一個含 .git 或 .shiftblame 的目錄，都沒有時為 cwd；磁碟根與系統頂層目錄不作錨點（家目錄照常可作），sb 與 hook 用同一判定。專案根不是根目錄、家目錄或其上層、系統頂層目錄時，hook 自動建立 .shiftblame/、.shiftblame/tmp/ 與內容為 * 的 .shiftblame/.gitignore，不寫 flow-state。非 Git 資料夾同樣建立，其下的子資料夾之後以它為專案根。
+- 適用範圍：帶對話代號（session_id）的事件。專案根是 cwd 向上第一個含 .git 或 .shiftblame 的目錄，都沒有時為 cwd；磁碟根與系統頂層目錄不作錨點（家目錄照常可作），sb 與 hook 用同一判定。專案根不是根目錄、家目錄或其上層、系統頂層目錄時，hook 自動建立 .shiftblame/、.shiftblame/tmp/ 與內容為 * 的 .shiftblame/.gitignore。非 Git 資料夾同樣建立，其下的子資料夾之後以它為專案根。
 - 紀錄：.shiftblame/tmp/interview-<代號>.md，代號是對話代號 sha256 的前 12 碼，格式見 [INTERVIEW](../assets/INTERVIEW.md)。「## 第 N 輪」段落的觸發、提問、目標、範圍、驗收、使用者確認都有實際內容，該輪才算完成。
 - 開場標記 interview-<代號>.json 記下開場時已完成的輪數（base）與上一輪完成後的提問工具呼叫數（asks）：startup 在沒有標記時建立；resume 與 clear 以目前完成輪數重設並歸零計數，須再完成新的一輪；compact 沿用。紀錄出現新的完成輪時，hook 在其後的事件推進基準並歸零計數，下一輪須新證據。標記由 hook 維護，寫入工具或 shell 重定向寫它一律拒絕。
-- 寫入訪談紀錄（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）須有提問證據：本輪自上一輪完成（或對話開始）後至少一次提問工具呼叫（名稱以 ask 開頭，如 AskUserQuestion），未提問即拒絕；有證據則直接放行。專案檔案寫入、git commit／push 與 sb 流程命令不因訪談未完成而受阻；唯讀查證、tmp 筆記與專案根以外的寫入照常。
+- 寫入訪談紀錄（寫入工具、> 與 >>、tee、Set-Content、Add-Content、Out-File）須有提問證據：本輪自上一輪完成（或對話開始）後至少一次提問工具呼叫（名稱以 ask 開頭，如 AskUserQuestion），未提問即拒絕；有證據則直接放行。專案檔案寫入、git commit／push 與 sb 命令不因訪談未完成而受阻；唯讀查證、tmp 筆記與專案根以外的寫入照常。
 - 不設閘：沒有對話代號的呼叫，以及 ZCode 子代理（代號以 sess_subagent_ 開頭）。Claude Code 與 Codex 的子代理和父代理共用對話代號，也共用同一份紀錄。
 - 外部顧問問診：主對話以唯讀 CLI 呼叫另一平台的代理（如 `codex exec -s read-only`）時，在啟動該 CLI 的環境帶 `SHIFTBLAME_CONSULT=1`。hook 讀到這個值（只認 1）就不設訪談閘、不建開場標記，開場與每次輸入改注入「[顧問問診] 直接依提問作答」的提示；問診沒有使用者可答，訪談由發起問診的主對話負責。標示只在 CLI 啟動時進入 hook 的環境，對話中執行的命令改不到，一般對話的訪談規則不變。委派執行：主對話把限定範圍的實作交給另一平台的代理（如 `codex exec -s workspace-write`）時，改帶 `SHIFTBLAME_CONSULT=write`；同樣不設訪談閘、不建開場標記，提示改為「[委派執行] 依簡報允許的檔案與範圍作業」，不限唯讀，提交章等其他閘門照常。
 
 ### 使用者確認
 
-帶 --boss-ok 的出口命令（sb end、sb next --new-ms）由 hook 回傳 permissionDecision: ask，在權限提示中交使用者確認；sb end 的提示寫明會歸檔、合併回基底並刪除本機工作分支，還有里程碑要做時改用 --new-ms。時點 1／2 誤帶 --boss-ok 由 CLI 直接擋，不詢問使用者。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。訪談紀錄的寫入不再逐一詢問使用者；「使用者確認」欄的真實性由提問證據（寫入前的提問工具呼叫）與代理自律承擔。
+hook 以 permissionDecision: ask 在權限提示中交使用者確認的情況：行為碼提交缺測試同批（最低品質機制），以及失敗裁示後的第一個改動類工具。Claude Code 與 ZCode 支援 ask；Codex 不支援，這些操作在 Codex 直接放行。訪談紀錄的寫入不逐一詢問使用者；「使用者確認」欄的真實性由提問證據（寫入前的提問工具呼叫）與代理自律承擔。
 
 ### Shell 命令
 
 Bash 與 PowerShell 工具的命令先做 shell 語法解析：引號、跳脫、heredoc、管線、命令替換，以及 bash -c、cmd /c、pwsh -Command、-EncodedCommand、iex 等巢狀層，最多 4 層，超過或內容過多即拒絕。只核對實際執行的命令，字串、註解與參數中的相同字樣不會誤擋。
 
 - 提交：字面 git commit 須有相符印章，訊息並以 sb commitmsg 的同一判準複驗格式——印章檔存於可寫的 tmp、可被手寫，格式不因印章來源豁免。放行時不刪章，只在印章記下當時的 HEAD；提交落地使 HEAD 前進後此章作廢，同一命令對同一 repo 只放行一次提交——被同命令另一錨定、其他 hook 或權限確認拒絕的呼叫不消耗印章，可直接重試。commit-tree 與 am 等繞過 -m 訊息閘的管線提交一律擋。git -C 須為絕對路徑。子命令、訊息或命令名稱由變數或命令替換組成時拒絕；git alias 定義與 GIT_DIR 類路徑重定向一併攔截。
-- main 最低機制（TDD→BDD→SDD 依意圖定檔）：無活動 slug（含 ended）時，staged 含行為碼（程式碼副檔名白名單、非測試路徑）而無測試同批，提交回傳 permissionDecision: ask，要求自證意圖檔位或補測試／規格後放行；有測試同批、純文件／設定變更、或 slug 活動中（紅→綠由 CLI 時點閘承載）不攔。SDD 的規格先行指設計層規格（介面契約、型別、資料結構），與 slug G1 的產品需求契約是兩回事。
+- 最低品質機制（TDD→BDD→SDD 依意圖定檔）：staged 含行為碼（程式碼副檔名白名單、非測試路徑）而無測試同批，提交回傳 permissionDecision: ask，要求自證意圖檔位或補測試／規格後放行；有測試同批或純文件／設定變更不攔。SDD 的規格先行指設計層規格（介面契約、型別、資料結構）。
 - 破壞性刪除：rm -r、Remove-Item -Recurse、rd /s、find -delete 或 -exec rm、xargs rm、robocopy /MIR、rsync --delete 的本機目標須為絕對路徑。xargs 刪除的來源須是同一管線中、搜尋根為絕對路徑的 find；rsync 的遠端目的地（host:、user@host:、rsync://）不在此限。
 - 保護目錄：根目錄、家目錄、專案根、它們的上層，以及系統頂層目錄（POSIX 的第一層、Windows 系統磁碟的第一層；Windows 上無磁碟代號的單段路徑如 /usr 在 Git Bash 指 Git 安裝目錄，不依 cwd 所在磁碟展開，同樣算），即使以絕對路徑指定也不可整個刪除或清空（含 <目錄>/*）；find 沒有篩選條件時以搜尋根判斷。
 - 丟棄變更：git clean -f、reset --hard、checkout -f、checkout -- <路徑>、checkout .、restore（只有 --staged 除外）、switch --discard-changes 或 -f、stash drop／clear、branch -D 須以 git -C <絕對路徑> 錨定 repo。
 - 截斷重定向（>、>|、&>）須以絕對路徑為目標；丟棄輸出用 /dev/null 或 $null，追加用 >>。
-- 寫入工具的目標使用共同路徑解析（含 Git Bash 的 /c/ 路徑、符號連結，以及 Windows 忽略的段尾點與空白）；verify 段擋下受驗來源的修改，被忽略且未追蹤的輸出與 .shiftblame/ 不受限。帶 owner、repo、bucket 等遠端定位欄位或以 URI 為目標的工具寫的是遠端資源，不視為本機寫入。狀態損壞時只放行 flow-state 與 tmp 的修復寫入；沒有本機寫入目標的工具（如待辦清單）不受影響。
+- 寫入工具的目標使用共同路徑解析（含 Git Bash 的 /c/ 路徑、符號連結，以及 Windows 忽略的段尾點與空白）。帶 owner、repo、bucket 等遠端定位欄位或以 URI 為目標的工具寫的是遠端資源，不視為本機寫入；沒有本機寫入目標的工具（如待辦清單）不受影響。
 
 ### 紀錄與錯誤
 
-hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數、失敗連續計數（failureNudge，含 session／node／count／askedAt）與時點待重審標記（suspect，時點→標記時戳），以排他鎖串行；sb end 以累計值減去開 slug 時的基準，得到本 slug 的呼叫數。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
+hooks 在 .shiftblame/tmp/hook-records.json 記錄心跳、本回合與累計的工具呼叫數及失敗連續計數（failureNudge，含 session／count／at／askedAt），以排他鎖串行；舊版紀錄的多餘欄位讀取時剝除。工作區不存在時不寫，等鎖逾時就略過該次紀錄。防護本身出錯時放行工作，錯誤寫入 .shiftblame/tmp/hook-errors.jsonl。
 
 ### 未涵蓋
 
 - cd 之後的相對路徑追蹤；直譯器內嵌程式與腳本檔內的提交（遞迴刪除 API 只提示）。
 - 背景任務與長時間程序啟動後的持續寫入——防護只在啟動當下的呼叫核對。
-- Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入；verify 段經 shell 的寫入。
-- merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令（收尾合併的固定訊息 merge <slug> 由 sb end／closeout 自驗）；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
-- 里程碑閘：sb end 只核對 SLUG 里程碑清單寫下的內容；清單漏列的後續里程碑，以及沒有清單的 slug，不會被擋。
+- Start-Process、Out-File、Set-Content、tee、cp /dev/null、truncate 等非重定向寫入。
+- merge、cherry-pick、revert、rebase 等其他產生提交的 git 子命令；git checkout <提交> <路徑> 這類以提交內容覆寫檔案的形式；定義於環境的既有 git alias。
 - 產品訪談閘：提問計數以名稱以 ask 開頭的工具呼叫為準，其他名稱的提問機制不計入；紀錄寫入後到下一個事件前是基準未推進的窗口，同批連寫多輪可能共用同一份提問證據；經 shell 與 ZCode js 工具直接改寫紀錄的形態不在辨識範圍；家目錄、其上層與系統頂層目錄不自動建立工作區，因此不設閘。
-- 失敗信號：平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔，askedAt 不因裁示內容重置。
+- 失敗信號：失敗事件未註冊時不計數；平台不發 PostToolUseFailure 事件的失敗（逾時、代理自行判斷的失敗）不計入；ask 一次後的續行由代理依取得的裁示承擔。
 
 這些由代理依授權自律，交付時如實揭露。
 
-每次工具呼叫約 80 ms（Node 啟動約 50 ms），含提交的命令另需讀取 staged 清單。hooks 不設 matcher，工具呼叫計數才涵蓋所有工具。G1 封存、staged 邊界及工作樹檢查各自只證明其所涵蓋的事實。
+每次工具呼叫約 80 ms（Node 啟動約 50 ms），含提交的命令另需讀取 staged 清單。hooks 不設 matcher，工具呼叫計數才涵蓋所有工具。staged 邊界與印章檢查各自只證明其所涵蓋的事實。
 
 ## 維護與發布
 
