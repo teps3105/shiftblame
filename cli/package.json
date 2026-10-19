@@ -1,6 +1,6 @@
 {
   "name": "shiftblame-cli",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "shiftblame CLI——工作區狀態、提交訊息檢查、文件重整與交接快照。",
   "type": "module",
   "scripts": {

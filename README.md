@@ -1,6 +1,6 @@
 # Shiftblame
 
-供 AI 代理使用的開發工作方法與 CLI，版本 **4.0.1**。代理先與使用者對齊目標、範圍與驗收，再直接規劃、實作與驗證；品質底線依變更意圖定檔（行為修補先寫重現測試、新行為先定場景、介面變更先定規格），完成以真實行為證據驗收，而不是代理自述。
+供 AI 代理使用的開發工作方法與 CLI，版本 **4.0.2**。代理先與使用者對齊目標、範圍與驗收，再直接規劃、實作與驗證；品質底線依變更意圖定檔（行為修補先寫重現測試、新行為先定場景、介面變更先定規格），完成以真實行為證據驗收，而不是代理自述。
 
 ## 適用對象與效果
 
@@ -29,7 +29,7 @@ npm install -g github:teps3105/shiftblame
 | [think](skills/think/SKILL.md) | 理解使用者目標與授權，釐清影響結果的差異。 |
 | [rewrite](skills/rewrite/SKILL.md) | 參照型文件的唯一編輯入口，整檔重寫維護。 |
 | [save](skills/save/SKILL.md) | 保存具名交接，跨回合接續。 |
-| [load](skills/load/SKILL.md) | 恢復具名工作並核對差異。 |
+| [load](skills/load/SKILL.md) | 自動恢復最新交接，成功後清空目前 repo 全部交接快照。 |
 | [dice](skills/dice/SKILL.md) | 按已授權範圍丟棄失敗成果。 |
 
 深入方法按問題取用：除錯見 [DEBUG](skills/shiftblame/references/DEBUG.md)，審查見 [AUDIT](skills/shiftblame/references/AUDIT.md)，結構比較見 [STRUCTURE](skills/shiftblame/references/STRUCTURE.md)，交接見 [HANDOFF](skills/shiftblame/references/HANDOFF.md)。[MECHANISMS](skills/shiftblame/references/MECHANISMS.md) 是 CLI 與 hooks 行為及攔截邊界的權威描述；[DOCS](skills/shiftblame/assets/DOCS.md) 是文件撰寫規範；[SOURCES](skills/shiftblame/references/SOURCES.md) 列方法來源。[SOP](skills/shiftblame/assets/SOP.md) 與 [ROADMAP](skills/shiftblame/assets/ROADMAP.md) 是專案規範與路線範本，權威位置與用法見 [DOCS](skills/shiftblame/assets/DOCS.md) 的文件分型。

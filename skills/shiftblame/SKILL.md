@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "4.0.1"
+  version: "4.0.2"
 description: 以明確授權、產品訪談、依意圖定檔的最低品質機制與真實驗收管理開發工作；代理訪談意圖後直接規劃、實作與驗證。
 ---
 # Shiftblame
