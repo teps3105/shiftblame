@@ -40,7 +40,7 @@ CLI 退出碼為 0 通過、1 條件不符、2 用法錯誤。交接的選取、
 
 ## 外部政策
 
-`SHIFTBLAME_POLICY` 指向本機 JavaScript 模組的絕對路徑。未提供環境變數時，載入使用者明確安裝的 `~/.config/shiftblame/policy.json`：
+`SHIFTBLAME_POLICY` 指向本機 JavaScript 模組的絕對路徑。未提供環境變數時，載入使用者明確安裝的 `~/.agents/local/shiftblame-policy.json`：
 
 ```json
 {"module": "/absolute/path/to/policy.mjs"}

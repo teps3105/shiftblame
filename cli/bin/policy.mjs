@@ -8,7 +8,7 @@ let path = process.env.SHIFTBLAME_POLICY;
 // A user-installed policy is explicit configuration. Empty env disables it, e.g. in CI.
 if (path === undefined) {
   try {
-    const config = JSON.parse(readFileSync(join(homedir(), '.config', 'shiftblame', 'policy.json'), 'utf8'));
+    const config = JSON.parse(readFileSync(join(homedir(), '.agents', 'local', 'shiftblame-policy.json'), 'utf8'));
     if (typeof config.module !== 'string' || !config.module) throw new Error('政策設定缺少 module');
     path = config.module;
   } catch (error) {

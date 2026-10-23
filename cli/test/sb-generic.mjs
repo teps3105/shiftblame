@@ -50,8 +50,8 @@ try {
   assert.equal(event('PreToolUse', { tool_name: 'Bash', tool_input: { command: 'rm -rf .' } }, { env: selected }).status, 2, 'policy cannot override base safety');
   assert.notEqual(run(cli, ['state'], { env: { ...env, SHIFTBLAME_POLICY: './relative.mjs' } }).status, 0);
   const home = join(root, 'home');
-  mkdirSync(join(home, '.config/shiftblame'), { recursive: true });
-  writeFileSync(join(home, '.config/shiftblame/policy.json'), JSON.stringify({ module: custom }));
+  mkdirSync(join(home, '.agents/local'), { recursive: true });
+  writeFileSync(join(home, '.agents/local/shiftblame-policy.json'), JSON.stringify({ module: custom }));
   const configured = { ...env, HOME: home, USERPROFILE: home };
   delete configured.SHIFTBLAME_POLICY;
   assert.equal(run(cli, ['commitmsg', 'wrong'], { env: configured }).status, 1, 'explicit installed config applies');
