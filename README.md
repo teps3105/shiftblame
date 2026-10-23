@@ -1,43 +1,53 @@
 # Shiftblame
 
-供 AI 代理使用的開發工作方法與 CLI，版本 **4.0.2**。代理先與使用者對齊目標、範圍與驗收，再直接規劃、實作與驗證；品質底線依變更意圖定檔（行為修補先寫重現測試、新行為先定場景、介面變更先定規格），完成以真實行為證據驗收，而不是代理自述。
+供 AI 代理使用的通用工作流與 CLI，版本 **4.0.2**。從已授權目標出發，規劃可驗收片段，完成實作、驗證、審查與交接。需求有缺口才提問，方法依任務風險選擇，結果以實際證據判定。
 
-## 適用對象與效果
+## 開始使用
 
-在支援 hooks 的 AI 代理平台（Claude Code、Codex、ZCode）上做開發，並希望工作有明確授權、結果可驗證的使用者。安裝後無須設定，每個對話自動啟動：
-
-- 產品訪談：對話開始先向使用者提問並寫下目標、範圍與驗收。
-- 工作防護：破壞性刪除與丟棄變更須以絕對路徑錨定，提交訊息須自含白話、文件須過結構與可讀性檢查。
-- 品質底線：提交含程式碼而沒有測試同批時，先自證檔位或補測試。
-- 失敗引導：工具連續失敗時提示換方法，再升級為向使用者取得決定。
-
-## 安裝
-
-插件從 [GitHub 市集](https://github.com/teps3105/shiftblame) 安裝或更新；全域 CLI 另行安裝：
+從 [GitHub 市集](https://github.com/teps3105/shiftblame) 安裝插件，或安裝全域 CLI：
 
 ```sh
 npm install -g github:teps3105/shiftblame
+sb --help
 ```
 
-開發工作目錄僅供開發和測試；消費端使用已發布的獨立快照。發布後，既有平台須更新插件，並依平台要求重新信任變更過的 hooks。
+主技能適用於理解需求、安排工作及驗證結果。Hooks 提供本機路徑防護與觀測；是否支援各事件由使用平台決定。
 
-## 技能與參照
+## 工作方法與工具
 
-| 技能 | 用途 |
+| 入口 | 用途 |
 | --- | --- |
-| [shiftblame](skills/shiftblame/SKILL.md) | 主技能：授權、產品訪談、工作方式、分工、驗證與文件原則。 |
-| [think](skills/think/SKILL.md) | 理解使用者目標與授權，釐清影響結果的差異。 |
-| [rewrite](skills/rewrite/SKILL.md) | 參照型文件的唯一編輯入口，整檔重寫維護。 |
-| [save](skills/save/SKILL.md) | 保存具名交接，跨回合接續。 |
-| [load](skills/load/SKILL.md) | 自動恢復最新交接，成功後清空目前 repo 全部交接快照。 |
-| [dice](skills/dice/SKILL.md) | 按已授權範圍丟棄失敗成果。 |
+| [shiftblame](skills/shiftblame/SKILL.md) | 授權、需求釐清、規劃、實作、驗證與交付。 |
+| [think](skills/think/SKILL.md) | 理解目標，查證事實並釐清必要缺口。 |
+| [rewrite](skills/rewrite/SKILL.md) | 保存文件原稿，依讀者任務重整內容。 |
+| [save](skills/save/SKILL.md) | 保存具名交接與 Git 定位事實。 |
+| [load](skills/load/SKILL.md) | 載入最新或指定交接，成功後清空本 repo 全部交接快照。 |
+| [dice](skills/dice/SKILL.md) | 在明確授權範圍內撤除失敗成果。 |
 
-深入方法按問題取用：除錯見 [DEBUG](skills/shiftblame/references/DEBUG.md)，審查見 [AUDIT](skills/shiftblame/references/AUDIT.md)，結構比較見 [STRUCTURE](skills/shiftblame/references/STRUCTURE.md)，交接見 [HANDOFF](skills/shiftblame/references/HANDOFF.md)。[MECHANISMS](skills/shiftblame/references/MECHANISMS.md) 是 CLI 與 hooks 行為及攔截邊界的權威描述；[DOCS](skills/shiftblame/assets/DOCS.md) 是文件撰寫規範；[SOURCES](skills/shiftblame/references/SOURCES.md) 列方法來源。[SOP](skills/shiftblame/assets/SOP.md) 與 [ROADMAP](skills/shiftblame/assets/ROADMAP.md) 是專案規範與路線範本，權威位置與用法見 [DOCS](skills/shiftblame/assets/DOCS.md) 的文件分型。
+`sb state` 顯示工作區入口，`sb rewrite` 預設快照根 README、`docs/` 與框架本機文件。`sb commitmsg` 檢查非空單行訊息及暫存區邊界，產生可選提交章。`sb handoff` 提供具名保存、查詢及載入。
 
-## 測試
+文件位置、編號、提交格式與版本管理策略遵循專案慣例。TDD、BDD、SDD 是可選方法；需求訪談、測試同批及提交印章不作通用強制條件。CLI 與 hook 的完整邊界見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+
+## 本機文件與忽略規則
+
+一般將 `AGENTS.md` 與 `ROADMAP.md` 放 repo 根。若上游已追蹤任一同名文件，或有多位 Git 作者，就改放 `.shiftblame/`。框架保留已追蹤的上游文件，以 Git local exclude 忽略本機工作資料。
+
+使用 `sb workspace migrate` 搬移既有本機內容；`init` 才建立缺少的範本。`check` 唯讀核對，`clean` 顯式清理既有 `.gitignore` 污染。新忽略規則寫入 Git 實際使用的 `info/exclude`，不加入 `.gitignore`。完整判準、衝突處理與命令契約見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+
+## 接入本機政策
+
+個人稱謂、語言、模型與平台規則由使用者環境管理。需要額外檢查時，以 `SHIFTBLAME_POLICY` 指定本機政策模組的絕對路徑，或在使用者設定檔中明確安裝政策。未設定時使用通用行為；空的環境變數可停用已安裝政策。
+
+政策模組可增加文件、提交及 hook 規則，不能放寬核心路徑防護。模組是可執行的本機設定，應由使用者選定。介面、設定位置及錯誤處理見 [MECHANISMS](skills/shiftblame/references/MECHANISMS.md)。
+
+## 深入參照與驗證
+
+除錯見 [DEBUG](skills/shiftblame/references/DEBUG.md)，審查見 [AUDIT](skills/shiftblame/references/AUDIT.md)，結構設計見 [STRUCTURE](skills/shiftblame/references/STRUCTURE.md)。交接契約見 [HANDOFF](skills/shiftblame/references/HANDOFF.md)，文件方法見 [DOCS](skills/shiftblame/assets/DOCS.md)，方法來源見 [SOURCES](skills/shiftblame/references/SOURCES.md)。
+
+[INTERVIEW](skills/shiftblame/assets/INTERVIEW.md)、[AGENTS](skills/shiftblame/assets/AGENTS.md) 與 [ROADMAP](skills/shiftblame/assets/ROADMAP.md) 是可調整的範本。代理指引與路線文件採上述本機工作區布局。
 
 ```sh
 npm test --prefix cli
 ```
 
-測試在臨時 repo 驗證提交與 hook 攔截、產品訪談、失敗引導、文件檢查與具名交接等行為；[.github/workflows/test.yml](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行同一套。測試成功支持已覆蓋的行為；模型效能須以代表任務另外量測。
+測試使用臨時 repo 核對通用預設、外部政策入口、路徑防護及交接行為。[CI](.github/workflows/test.yml) 在 ubuntu、macOS 與 Windows 執行檢查。通過只支持已覆蓋的行為；方法效益仍須以代表任務量測。

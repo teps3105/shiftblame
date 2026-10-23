@@ -1,5 +1,3 @@
-# shiftblame 工作區（流程狀態、筆記與暫存；不入庫）
-.shiftblame/
 # npm CLI 依賴
 cli/node_modules/
 .obsidian/

@@ -1,3 +1,4 @@
+process.env.SHIFTBLAME_POLICY = '';
 // sb-state-lock：紀錄寫入的鎖與原子寫入——排他鎖、殘鎖清除、多程序讀改寫不遺失；並行的 hook 各自計數。
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';

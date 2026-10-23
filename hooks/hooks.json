@@ -7,7 +7,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 載入精簡治理提示"
+            "statusMessage": "shiftblame: 載入工作原則與已選政策"
           }
         ]
       }
@@ -19,7 +19,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 更新回合觀測與訪談提示"
+            "statusMessage": "shiftblame: 更新觀測與已選政策"
           }
         ]
       }
@@ -31,7 +31,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 核對訪談、路徑與提交邊界"
+            "statusMessage": "shiftblame: 核對路徑與已選政策"
           }
         ]
       }
@@ -43,7 +43,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 成功時歸零失敗計數"
+            "statusMessage": "shiftblame: 傳遞成功事件至已選政策"
           }
         ]
       }
@@ -55,7 +55,7 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/shiftblame-guard.mjs\"",
             "timeout": 10,
-            "statusMessage": "shiftblame: 累計連續失敗並注入引導"
+            "statusMessage": "shiftblame: 傳遞失敗事件至已選政策"
           }
         ]
       }

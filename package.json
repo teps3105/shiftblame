@@ -1,7 +1,7 @@
 {
   "name": "shiftblame",
   "version": "4.0.2",
-  "description": "shiftblame — 授權、訪談與真實驗收的 agent 開發方法（全域 CLI：sb）",
+  "description": "shiftblame — 通用代理工作流、驗收與交接工具",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -12,6 +12,7 @@
   },
   "files": [
     "cli/bin/",
+    "hooks/",
     "skills/shiftblame/assets/"
   ]
 }

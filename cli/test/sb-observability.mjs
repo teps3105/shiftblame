@@ -1,3 +1,4 @@
+process.env.SHIFTBLAME_POLICY = '';
 // sb-observability：觀測紀律——sb 每次調用落 usage 事件，hook 計數純觀測、不設預算與上限。
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

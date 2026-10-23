@@ -4,7 +4,7 @@
   "description": "shiftblame CLI——工作區狀態、提交訊息檢查、文件重整與交接快照。",
   "type": "module",
   "scripts": {
-    "test": "node test/sb-commit-format.mjs && node --test test/sb-feedback.mjs && node test/sb-rewrite.mjs && node test/sb-root-anchor.mjs && node test/sb-agent-governance.mjs && node test/sb-hooks.mjs && node test/sb-shell-coverage.mjs && node test/sb-observability.mjs && node test/sb-readme-placement.mjs && node test/sb-handoff.mjs && node test/sb-interview.mjs && node test/sb-state-lock.mjs"
+    "test": "node test/sb-generic.mjs && node test/sb-workspace.mjs && node test/sb-root-anchor.mjs && node test/sb-agent-governance.mjs && node test/sb-observability.mjs && node test/sb-handoff.mjs && node test/sb-state-lock.mjs"
   },
   "bin": {
     "sb": "bin/sb.mjs"

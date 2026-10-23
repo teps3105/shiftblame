@@ -1,14 +1,14 @@
 {
   "name": "shiftblame",
   "version": "4.0.2",
-  "description": "依授權推進開發：先訪談對齊目標與驗收，依變更意圖定品質底線，以真實行為證據驗收。",
+  "description": "通用代理工作流：釐清需求、規劃、驗收與交接；個人政策由外部模組明確啟用。",
   "author": {
     "name": "teps3105"
   },
   "interface": {
     "displayName": "shiftblame",
-    "shortDescription": "以授權、訪談與真實驗收治理 AI agent 開發",
-    "longDescription": "依授權推進開發：先訪談對齊目標與驗收，依變更意圖定品質底線，以真實行為證據驗收。",
+    "shortDescription": "需求、規劃、驗收與交接的通用代理工作流",
+    "longDescription": "通用代理工作流：釐清需求、規劃、驗收與交接；個人政策由外部模組明確啟用。",
     "developerName": "teps3105",
     "category": "Engineering",
     "capabilities": [
@@ -16,9 +16,9 @@
       "Skills"
     ],
     "defaultPrompt": [
-      "開始一個受 shiftblame 治理的新需求。",
-      "繼續目前未完成的 shiftblame 工作。",
-      "檢查目前工作狀態與交接。"
+      "釐清新需求並定義驗收。",
+      "繼續目前已授權的工作。",
+      "核對目前工作與交接。"
     ]
   },
   "skills": "./skills/"
