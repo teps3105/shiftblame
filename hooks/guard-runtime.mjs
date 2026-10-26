@@ -5,7 +5,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, unli
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
-import { commitMessageIssue } from '../cli/bin/commit-format.mjs';
+import { commitMessageIssue, stagedFiles, stagedSystemMessage } from '../cli/bin/commit-format.mjs';
 import { acquireLock, hookRecordsPath, objectRecord, readHookRecords, writeAtomic } from '../cli/bin/state-io.mjs';
 import { policy } from '../cli/bin/policy.mjs';
 import { ensureWorkspaceStorage } from '../cli/bin/workspace.mjs';
@@ -468,16 +468,8 @@ function commitMessage(subArgs) {
 }
 // staged 不入庫（系統檔）：讀 git 展開後的事實清單；純刪除（D）放行＝git rm --cached 清理通道。
 function checkStaged(anchor) {
-  try {
-    const out = execFileSync('git', ['-C', anchor, '-c', 'core.quotePath=false', 'diff', '--cached', '--name-only', '--diff-filter=ACMRTUB'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    // git 在不分大小寫的系統上保留使用者輸入的大小寫（.SHIFTBLAME/x）：一律折疊後比對。
-    const hits = out.split('\n').map((l) => l.trim()).filter(Boolean).filter((p) => {
-      const rel = (() => { try { return relTo(anchor, absPath(anchor, p)); } catch { return p; } })();
-      return systemRel(rel.toLowerCase());
-    });
-    if (hits.length) return `系統檔不入庫——staged 含 ${hits.slice(0, 5).join('、')}${hits.length > 5 ? ` 等 ${hits.length} 檔` : ''}（.shiftblame/ 須列入 .gitignore；先 git restore --staged 移除再提交）`;
-  } catch { /* git 不可用（非 git repo）→ 印章層照常把關 */ }
-  return null;
+  const { system } = stagedFiles(anchor);
+  return system.length ? stagedSystemMessage(system) : null;
 }
 function checkCommitStamp(anchor, msg) {
   // 格式與 sb commitmsg 同判據（commit-format.mjs 單一來源）：印章檔在可寫的 tmp、可被手寫，

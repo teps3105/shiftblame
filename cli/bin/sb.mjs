@@ -6,8 +6,7 @@
 
 import { appendFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { execSync } from 'node:child_process';
-import { commitMessageIssue } from './commit-format.mjs';
+import { commitMessageIssue, stagedFiles, stagedSystemMessage } from './commit-format.mjs';
 import { policy } from './policy.mjs';
 import { runHandoff } from './handoff.mjs';
 import { findRoot } from './project-root.mjs';
@@ -82,13 +81,8 @@ function cmdState() {
 
 function cmdCommitmsg(msg) {
   if (!msg) usage();
-  let staged = [];
-  try {
-    staged = execSync('git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMRTUB', { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .split('\n').map(l => l.trim()).filter(Boolean);
-  } catch { /* Non-Git directories have no index to inspect. */ }
-  const sys = staged.filter(p => /^\.shiftblame(?:\/|$)/i.test(p));
-  if (sys.length) die([`系統檔不入庫——staged 含 ${sys.slice(0, 5).join('、')}（.shiftblame/ 須列入 .gitignore）`]);
+  const { staged, system } = stagedFiles(ROOT);
+  if (system.length) die([stagedSystemMessage(system)]);
   // Validator failures must remain failures, including exceptions from external policy.
   documentPolicy?.checkStaged?.(staged);
   const issue = commitMessageIssue(msg);
