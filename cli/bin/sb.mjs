@@ -33,7 +33,8 @@ const usage = (code = 2) => {
     '  sb handoff save <task> <notes.md>     保存具名工作的機械快照',
     '  sb handoff list                       列出具名工作及損壞診斷',
     '  sb handoff show <task>                讀取指定交接並核對目前差異',
-    '  sb handoff load [task]                預設載入最新交接，成功後清空本 repo 快照',
+    '  sb handoff load                       從當前 Git 重新整理並讀取交接',
+    '  sb handoff refresh                    從當前 Git 更新交接文件',
     '  sb --help',
   ].join('\n'));
   process.exit(code);
@@ -76,7 +77,7 @@ function cmdRewrite() {
 function cmdState() {
   out(`專案根：${ROOT}`);
   out(`工作區：${existsSync(SB_DIR) ? `${SB_DIR}（不入庫）` : '尚未建立（使用 CLI 時按需建立）'}`);
-  out('直接作業交接：sb handoff load 自動載入最新交接，成功後清空本 repo 全部交接快照；show <task> 僅供唯讀檢視。');
+  out('交接：sb handoff load 從當前 Git 重新整理；show <task> 可查閱舊快照。');
 }
 
 function cmdCommitmsg(msg) {

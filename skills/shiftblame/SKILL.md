@@ -54,6 +54,6 @@ description: 通用代理工作流：理解需求與授權、規劃可驗收片�
 
 使用 `sb workspace migrate` 搬移現有本機內容；`init` 才補缺少範本，`check` 唯讀核對，`clean` 顯式清理既有忽略污染。細節見 [MECHANISMS](references/MECHANISMS.md)。
 
-跨回合或換代理時依 [save](../save/SKILL.md) 保存交接，再由 [load](../load/SKILL.md) 核對接續。交接不新增授權，也不恢復產品檔案。撤除失敗成果見 [dice](../dice/SKILL.md)。
+跨回合或換代理時依 [save](../save/SKILL.md) 從 Git 整理交接，再由 [load](../load/SKILL.md) 重新核對接續。交接不新增授權，也不恢復產品檔案。撤除失敗成果見 [dice](../dice/SKILL.md)。
 
 CLI、通用防護與外部政策入口見 [MECHANISMS](references/MECHANISMS.md)；交接契約見 [HANDOFF](references/HANDOFF.md)；查證方法來源見 [SOURCES](references/SOURCES.md)。

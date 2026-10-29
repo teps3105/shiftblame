@@ -55,87 +55,75 @@ function rehash(snapshot) {
   return snapshot;
 }
 
-test('load 依 savedAt 自動選最新，完整輸出後清空全部快照，保留草稿與產品', t => {
-  const f = fixture(t), other = fixture(t);
-  f.save('z-old'); f.save('a-new'); other.save();
-  for (const [task, savedAt, notes] of [['z-old', at, '舊工作'], ['a-new', '2026-10-19T00:00:00.000Z', '最新交接\n'.repeat(14000)]]) {
-    const s = f.read(task); s.savedAt = savedAt; s.notes = notes; s.notesSha256 = hash(notes);
-    writeFileSync(f.path(task), JSON.stringify(rehash(s)));
-  }
-  const draft = f.put('.shiftblame/tmp/main/z-old/draft.md', '保留草稿');
-  const index = indexBytes(f), product = readFileSync(join(f.root, 'product.txt'));
-  const loaded = ok(f.run('handoff', 'load')).stdout;
-  assert.match(loaded, /task: a-new/);
-  assert.ok(loaded.includes('最新交接\n'.repeat(14000)));
-  assert.equal(existsSync(f.path('z-old')), false); assert.equal(existsSync(f.path('a-new')), false);
-  assert.equal(readFileSync(draft, 'utf8'), '保留草稿');
-  assert.deepEqual(indexBytes(f), index); assert.deepEqual(readFileSync(join(f.root, 'product.txt')), product);
-  assert.equal(existsSync(other.path('alpha')), true);
-  bad(f.run('handoff', 'load'), /沒有具名交接/);
-  f.save('z-old'); ok(f.run('handoff', 'list'));
-});
-
-test('load 可指定工作，但成功後仍清空目前 repo 全部快照', t => {
+test('自動交接以目前 Git 更新，舊紀錄保留且不參與載入', t => {
   const f = fixture(t); f.save('alpha'); f.save('beta');
-  assert.match(ok(f.run('handoff', 'load', 'alpha')).stdout, /task: alpha/);
-  assert.equal(existsSync(f.path('alpha')), false); assert.equal(existsSync(f.path('beta')), false);
-});
-
-test('load 檢查失敗或保存鎖存在時保留全部快照；show 仍唯讀', t => {
-  const f = fixture(t); f.save('alpha'); f.save('beta');
-  const before = readFileSync(f.path('alpha'));
-  const lock = join(resolve(f.path('beta'), '..'), '.save.lock'); writeFileSync(lock, '');
-  bad(f.run('handoff', 'load'), /save.lock|正在保存/);
-  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(existsSync(f.path('beta')), true);
-  assert.equal(existsSync(join(resolve(f.path('alpha'), '..'), '.save.lock')), false);
-  rmSync(lock); writeFileSync(f.path('beta'), '{broken');
-  bad(f.run('handoff', 'load'), /損壞/);
-  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(readFileSync(f.path('beta'), 'utf8'), '{broken');
-  ok(f.run('handoff', 'show', 'alpha')); assert.deepEqual(readFileSync(f.path('alpha')), before);
-});
-
-test('load 最新時間相同時穩定選名稱首項，指定不存在工作不清理', t => {
-  const f = fixture(t); f.save('beta'); f.save('alpha');
-  for (const task of ['alpha', 'beta']) {
-    const s = f.read(task); s.savedAt = at; writeFileSync(f.path(task), JSON.stringify(rehash(s)));
-  }
-  bad(f.run('handoff', 'load', 'missing'), /不存在/);
+  f.put('product.txt', 'second'); f.git('add', 'product.txt'); f.commit('second commit');
+  f.put('uncommitted.txt', 'unfinished');
+  const result = ok(f.run('handoff', 'load')).stdout;
+  assert.match(result, /second commit/); assert.match(result, /uncommitted.txt/);
+  assert.doesNotMatch(result, /交接原文/);
   assert.equal(existsSync(f.path('alpha')), true); assert.equal(existsSync(f.path('beta')), true);
-  assert.match(ok(f.run('handoff', 'load')).stdout, /task: alpha/);
+  assert.equal(readFileSync(join(f.root, '.git/git-handoff.md'), 'utf8'), result);
+  f.git('add', 'uncommitted.txt'); f.commit('third commit');
+  const refreshed = ok(f.run('handoff', 'refresh')).stdout;
+  assert.match(refreshed, /third commit/); assert.doesNotMatch(refreshed, /second commit/);
+  assert.equal(readFileSync(join(f.root, '.git/git-handoff.md'), 'utf8'), refreshed);
 });
 
-test('load 下游關閉輸出管線時保留全部快照', async t => {
-  const f = fixture(t); writeFileSync(f.notes, '完整交接\n'.repeat(500000)); f.save();
-  const child = spawn(process.execPath, [cli, 'handoff', 'load'], { cwd: f.root, stdio: ['ignore', 'pipe', 'pipe'] });
-  let stderr = ''; child.stderr.on('data', bytes => { stderr += bytes; });
-  child.stdout.once('data', () => child.stdout.destroy());
-  const status = await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', resolve); });
-  assert.notEqual(status, 0, stderr);
-  assert.equal(existsSync(f.path('alpha')), true);
-  assert.equal(existsSync(join(resolve(f.path('alpha'), '..'), '.save.lock')), false);
+test('新倉庫不污染工作樹，合併提交列出相對第一父提交的檔案', t => {
+  const f = fixture(t);
+  ok(f.run('handoff', 'refresh'));
+  assert.equal(f.git('status', '--porcelain').stdout.trim(), '');
+  f.git('checkout', '-b', 'side');
+  f.put('merged.txt', 'merged'); f.git('add', 'merged.txt'); f.commit('side commit');
+  f.git('checkout', 'main');
+  f.git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'merge', '--no-ff', 'side', '-m', 'merge side');
+  const output = ok(f.run('handoff', 'load')).stdout;
+  assert.match(output, /merge side/); assert.match(output, /merged\.txt/);
 });
 
-test('load 整批清理中遇到 Windows 檔案占用時回復已移動快照', { skip: process.platform !== 'win32' }, t => {
-  const f = fixture(t); f.save('alpha'); f.save('beta');
-  const before = readFileSync(f.path('alpha'));
-  const script = `
-$ErrorActionPreference = 'Stop'
-[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-$held = [System.IO.File]::Open($env:SB_TEST_SNAPSHOT, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
-try {
-  $ErrorActionPreference = 'Continue'
-  & $env:SB_TEST_NODE $env:SB_TEST_CLI handoff load 2>&1 | Out-String | Write-Output
-  exit $LASTEXITCODE
-} finally { $held.Dispose() }
-`;
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
-    cwd: f.root, env: { ...process.env, SB_TEST_NODE: process.execPath, SB_TEST_CLI: cli, SB_TEST_SNAPSHOT: f.path('beta') },
-    encoding: 'utf8', windowsHide: true, timeout: 15000,
-  });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stdout + result.stderr, /EPERM|EACCES|EBUSY/);
-  assert.deepEqual(readFileSync(f.path('alpha')), before); assert.equal(existsSync(f.path('beta')), true);
-  for (const task of ['alpha', 'beta']) assert.deepEqual(readdirSync(resolve(f.path(task), '..')), ['handoff.json']);
+test('無提交及 detached HEAD 均以現況整理', t => {
+  const fresh = fixture(t, { initial: false });
+  assert.match(ok(fresh.run('handoff', 'load')).stdout, /尚無提交/);
+  const f = fixture(t);
+  f.git('checkout', '--detach');
+  assert.match(ok(f.run('handoff', 'load')).stdout, /\(detached\)/);
+});
+
+test('中斷或並行整理不會讓後續讀取卡住，也不使用舊紀錄', async t => {
+  const f = fixture(t);
+  const marker = join(f.temp, 'rename-started');
+  const shim = join(f.temp, 'pause.cjs');
+  writeFileSync(shim, `const fs = require('fs'); const original = fs.renameSync; let first = true; fs.renameSync = (...args) => { if (first && String(args[1]).endsWith('git-handoff.md')) { first = false; fs.writeFileSync(process.env.SB_MARKER, 'started'); Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 6000); } return original(...args); };`);
+  const delayed = () => spawn(process.execPath, ['--require', shim, cli, 'handoff', 'refresh'], { cwd: f.root, stdio: 'ignore', env: { ...process.env, SB_MARKER: marker } });
+  const waitMarker = async () => {
+    const deadline = Date.now() + 15000;
+    while (!existsSync(marker) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
+    assert.ok(existsSync(marker), '整理程序必須到達寫入階段');
+    rmSync(marker);
+  };
+  const child = delayed();
+  const childExit = new Promise(resolve => child.on('close', resolve));
+  await waitMarker();
+  child.kill();
+  await childExit;
+  assert.match(ok(f.run('handoff', 'load')).stdout, /test fixture baseline/);
+  const older = delayed();
+  const olderExit = new Promise(resolve => older.on('close', resolve));
+  await waitMarker();
+  f.put('product.txt', 'changed'); f.git('add', 'product.txt'); f.commit('newest commit');
+  ok(f.run('handoff', 'refresh'));
+  assert.equal(await olderExit, 0);
+  assert.match(readFileSync(join(f.root, '.git/git-handoff.md'), 'utf8'), /newest commit/);
+  assert.match(ok(f.run('handoff', 'load')).stdout, /newest commit/);
+  const beforeDirty = delayed();
+  const dirtyExit = new Promise(resolve => beforeDirty.on('close', resolve));
+  await waitMarker();
+  f.put('new-dirty.txt', 'uncommitted');
+  ok(f.run('handoff', 'refresh'));
+  assert.equal(await dirtyExit, 0);
+  assert.match(readFileSync(join(f.root, '.git/git-handoff.md'), 'utf8'), /new-dirty\.txt/);
+  assert.equal(existsSync(join(f.root, '.git/git-handoff.lock')), false);
 });
 
 test('fresh unborn roundtrip：原樣 notes、null HEAD、無狀態檔／索引寫入', t => {
@@ -361,7 +349,7 @@ for (const parts of [['.shiftblame'], ['.shiftblame', 'tmp'], ['.shiftblame', 't
     bad(f.run('handoff', 'save', 'alpha', f.notes), /不安全/);
     bad(f.run('handoff', 'show', 'alpha'), /不安全/);
     bad(f.run('handoff', 'list'), /不安全/);
-    bad(f.run('handoff', 'load'), /不安全/);
+    ok(f.run('handoff', 'load'));
     assert.deepEqual(readdirSync(external), [], '包括遙測也不得寫到外部目錄');
   });
 }

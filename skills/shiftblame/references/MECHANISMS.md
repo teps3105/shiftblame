@@ -17,7 +17,7 @@ revision: 4.0.2
 | `sb commitmsg "<訊息>"` | 檢查非空單行訊息，拒絕 staged 工作區內部檔案，產生 `.shiftblame/tmp/commit-stamp.json`。提交章是否必要由外部政策決定。 |
 | `sb handoff save <task> <草稿.md>` | 保存具名交接及可核對的 Git 事實。 |
 | `sb handoff list`、`show <task>` | 唯讀查找或核對交接。 |
-| `sb handoff load [task]` | 預設載入最新或指定交接，成功後清空目前 repo 全部交接快照。 |
+| `sb handoff load` | 依當前 Git 重新整理並讀取交接，保留舊快照。 |
 
 CLI 退出碼為 0 通過、1 條件不符、2 用法錯誤。交接的選取、完整性、清理及資料邊界見 [HANDOFF](HANDOFF.md)。命令與參數摘要可記於 `.shiftblame/tmp/sb-usage.jsonl`；觀測失敗不改變命令結果。
 
