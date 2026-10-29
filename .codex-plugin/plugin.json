@@ -1,6 +1,6 @@
 {
   "name": "shiftblame",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "通用代理工作流：釐清需求、規劃、驗收與交接；個人政策由外部模組明確啟用。",
   "author": {
     "name": "teps3105"

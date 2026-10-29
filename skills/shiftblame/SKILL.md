@@ -1,7 +1,7 @@
 ---
 name: shiftblame
 metadata:
-  version: "4.0.2"
+  version: "4.0.3"
 description: 通用代理工作流：理解需求與授權、規劃可驗收片段、實作、驗證、審查及交接；依專案慣例與任務風險選擇方法。
 ---
 # Shiftblame
