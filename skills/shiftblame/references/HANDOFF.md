@@ -2,17 +2,17 @@
 name: 交接
 revision: 4.0.0
 ---
-# Git 交接與舊快照
+# Git 交接與工作快照
 
 工作需要跨回合、換代理或交給其他工作階段時使用；可以位於任一已授權分支。
 
 ## 當前交接
 
-`sb handoff refresh` 依目前工作樹最新提交及未提交狀態，更新工作樹對應 Git 目錄中的 `git-handoff.md`；`sb handoff load` 每次先重新整理再輸出。提交內容、涉及檔案及未提交狀態均來自 Git，不由模型推測。未記錄於 Git 的需求、授權、測試和中斷原因，須核對原對話與正式來源。
+`sb handoff refresh` 依目前工作樹最新提交及未提交狀態，更新工作樹對應 Git 目錄中的 `git-handoff.md`；`sb handoff load` 每次先重新整理再輸出；`sb handoff load <task>` 同時讀取具名保存的工作資訊。提交內容、涉及檔案及未提交狀態均來自 Git，不由模型推測。未記錄於 Git 的需求、授權、測試和中斷原因，須核對原對話與正式來源。
 
-舊具名快照不參與自動載入，也不刪除。`sb handoff list` 與 `sb handoff show <task>` 保留唯讀查閱；手動保存仍可使用 `sb handoff save <task> <notes.md>`。舊資料必須核對當前工作樹與來源，不能視為最新事實。命令不恢復產品檔案或給予授權。
+具名快照依使用者指定或核對的工作名稱載入，保留其他快照。`sb handoff list` 與 `sb handoff show <task>` 保留唯讀查閱；明確保存工作使用 `sb handoff save <task> <notes.md>`。舊資料必須核對當前工作樹與來源，不能視為最新事實。命令不恢復產品檔案或給予授權。
 
-## 舊具名快照的邊界
+## 具名快照的邊界
 
 任何狀態都可保存，無須先初始化；舊版遺留的流程狀態檔不影響保存與查詢。
 

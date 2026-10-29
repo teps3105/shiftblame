@@ -59,6 +59,8 @@ test('自動交接以目前 Git 更新，舊紀錄保留且不參與載入', t =
   const f = fixture(t); f.save('alpha'); f.save('beta');
   f.put('product.txt', 'second'); f.git('add', 'product.txt'); f.commit('second commit');
   f.put('uncommitted.txt', 'unfinished');
+  const named = ok(f.run('handoff', 'load', 'alpha')).stdout;
+  assert.match(named, /第一項工作|notes Markdown/);
   const result = ok(f.run('handoff', 'load')).stdout;
   assert.match(result, /second commit/); assert.match(result, /uncommitted.txt/);
   assert.doesNotMatch(result, /交接原文/);

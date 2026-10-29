@@ -323,14 +323,17 @@ export async function runHandoff(args) {
     process.stdout.write(refresh(root));
     return 0;
   }
-  if (!((action === 'save' && args.length === 3) || (action === 'show' && args.length === 2) || (action === 'list' && args.length === 1))) {
-    console.error('用法：sb handoff save <task> <notes.md> | sb handoff list | sb handoff show <task> | sb handoff load | sb handoff refresh');
+  if (!((action === 'save' && args.length === 3) || ((action === 'show' || action === 'load') && args.length === 2) || (action === 'list' && args.length === 1))) {
+    console.error('用法：sb handoff save <task> <notes.md> | sb handoff list | sb handoff show <task> | sb handoff load [task] | sb handoff refresh');
     return 2;
   }
   if (action !== 'list' && !(action === 'load' && task === undefined) && !validTask(task)) fail('task 須為具名工作（1–80 個字母、數字、點、底線或連字號；字母／數字起首），不可使用路徑、尾點或 Windows 保留名。');
   const root = repoRoot();
   if (action === 'save') save(root, task, source);
-  else if (action === 'show') show(root, task);
+  else if (action === 'show' || action === 'load') {
+    if (action === 'load') process.stdout.write(refresh(root));
+    show(root, task);
+  }
   else return list(root);
   return 0;
 }
